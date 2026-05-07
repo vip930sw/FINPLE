@@ -1,0 +1,77 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+# FINPLE env / secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+!.env.production.example
+!.env.security.example
+
+server/.env
+server/.env.*
+!server/.env.example
+!server/.env.production.example
+!server/.env.security.example
+
+# Build outputs
+dist
+server/dist
+
+# Dependencies
+node_modules
+server/node_modules
+
+
+# FINPLE backup/archive files
+bak/
+*.zip
+*.msi
+
+# FINPLE secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+!.env.production.example
+!.env.security.example
+
+server/.env
+server/.env.*
+!server/.env.example
+!server/.env.production.example
+!server/.env.security.example
+
+# Dependencies / build
+node_modules/
+server/node_modules/
+dist/
+server/dist/
+
+# FINPLE extra env files
+server/*.env
+*.env

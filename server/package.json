@@ -1,0 +1,17 @@
+{
+  "name": "finple-asset-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:note": "node -e \"console.log('Run SQL in server/db/migrations/001_init.sql in your PostgreSQL console.')\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}

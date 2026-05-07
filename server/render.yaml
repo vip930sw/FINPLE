@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: finple-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ASSET_DATA_PROVIDER
+        value: alpha_vantage
+      - key: ASSET_PRICE_CURRENCY
+        value: KRW
+      - key: DEFAULT_USD_KRW_RATE
+        value: "1350"
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: ALPHA_VANTAGE_FETCH_FX
+        value: "false"
+      - key: ALPHA_VANTAGE_FETCH_OVERVIEW
+        value: "false"
+      - key: ASSET_CACHE_TTL_MS
+        value: "86400000"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: FINPLE_ADMIN_TOKEN
+        sync: false
+      - key: SUPPORT_NOTIFY_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SUPPORT_EMAIL_FROM
+        sync: false
