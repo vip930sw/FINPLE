@@ -1,3 +1,111 @@
+import { useState } from "react";
+
+const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
+const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
+const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
+const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+
+function getApiBaseUrl() {
+  const env = import.meta?.env || {};
+  const runtimeConfig =
+    typeof window !== "undefined" ? window.FINPLE_ASSET_DATA_CONFIG || {} : {};
+
+  return String(
+    runtimeConfig.apiBaseUrl || env.VITE_FINPLE_API_BASE_URL || DEFAULT_API_BASE_URL
+  ).replace(/\/+$/, "");
+}
+
+function readJsonStorage(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    return rawValue ? JSON.parse(rawValue) : fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function getServerRequestHeaders() {
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (typeof window !== "undefined") {
+    const userId = window.localStorage.getItem("finple-user-id");
+    if (userId) {
+      headers["x-finple-user-id"] = userId;
+    }
+  }
+
+  return headers;
+}
+
+async function readApiJson(response) {
+  try {
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeServerPortfolioForLocal(portfolio, index = 0) {
+  const assets = Array.isArray(portfolio?.assets)
+    ? portfolio.assets.map((asset, assetIndex) => ({
+        id: asset.id || `server-asset-${index}-${assetIndex}`,
+        ticker: asset.ticker || "",
+        name: asset.name || asset.ticker || "",
+        market: asset.market || "US",
+        currency: asset.currency || "KRW",
+        quantity: Number(asset.quantity || 0),
+        price: Number(asset.price || 0),
+        cagr: Number(asset.cagr || 0),
+        beta: Number(asset.beta || 0),
+        mdd: Number(asset.mdd || 0),
+        dividendYield: Number(asset.dividendYield || 0),
+        priceMode: asset.priceMode || "manual",
+        metricMode: asset.metricMode || "manual",
+        dataSource: asset.dataSource || "server-db",
+        cacheMode: asset.cacheMode || null,
+        rawPrice:
+          asset.rawPrice === null || asset.rawPrice === undefined
+            ? null
+            : Number(asset.rawPrice),
+        rawCurrency: asset.rawCurrency || null,
+        exchangeRate:
+          asset.exchangeRate === null || asset.exchangeRate === undefined
+            ? null
+            : Number(asset.exchangeRate),
+        lastUpdatedAt: asset.lastUpdatedAt || asset.fetchedAt || null,
+      }))
+    : [];
+
+  return {
+    id: portfolio.id || `server-portfolio-${index}`,
+    name: portfolio.name || `서버 포트폴리오 ${index + 1}`,
+    settings: {
+      monthlyCashFlow: Number(portfolio.monthlyInvestment || 1000000),
+      years: Number(portfolio.investmentYears || 30),
+      inflationRate: Number(portfolio.inflationRate || 2.5),
+      dividendReinvest:
+        portfolio.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),
+    },
+    assets,
+    updatedAt: portfolio.updatedAt || portfolio.createdAt || new Date().toISOString(),
+  };
+}
+
+function getGlobalSettingsFromServerPortfolio(portfolio) {
+  return {
+    monthlyCashFlow: Number(portfolio?.monthlyInvestment || 1000000),
+    years: Number(portfolio?.investmentYears || 30),
+    inflationRate: Number(portfolio?.inflationRate || 2.5),
+    dividendReinvest:
+      portfolio?.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),
+  };
+}
+
 export default function PortfolioManagerPanel({
   portfolioList,
   activePortfolioId,
@@ -15,6 +123,118 @@ export default function PortfolioManagerPanel({
   restorePortfolioBackup,
   dataManagementSummary,
 }) {
+  const [serverSyncStatus, setServerSyncStatus] = useState(
+    "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요."
+  );
+  const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
+
+  async function savePortfoliosToServer() {
+    if (isServerSyncLoading) return;
+
+    const localPortfolioList = readJsonStorage(
+      PORTFOLIO_LIST_STORAGE_KEY,
+      Array.isArray(portfolioList) ? portfolioList : []
+    );
+    const globalSettings = readJsonStorage(GLOBAL_SETTINGS_STORAGE_KEY, {});
+
+    if (!Array.isArray(localPortfolioList) || localPortfolioList.length === 0) {
+      window.alert("저장할 포트폴리오가 없습니다.");
+      return;
+    }
+
+    setIsServerSyncLoading(true);
+    setServerSyncStatus("서버에 포트폴리오를 저장하는 중입니다...");
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/account/portfolios/sync-local`, {
+        method: "POST",
+        headers: getServerRequestHeaders(),
+        body: JSON.stringify({
+          portfolioList: localPortfolioList,
+          activePortfolioId,
+          globalSettings,
+        }),
+      });
+
+      const payload = await readApiJson(response);
+
+      if (!response.ok || payload?.ok === false) {
+        throw new Error(payload?.message || "서버 저장에 실패했습니다.");
+      }
+
+      setServerSyncStatus(
+        payload?.message ||
+          `서버 저장 완료: ${payload?.syncedCount || localPortfolioList.length}개 포트폴리오`
+      );
+    } catch (error) {
+      setServerSyncStatus(`서버 저장 실패: ${error?.message || "알 수 없는 오류"}`);
+      window.alert(error?.message || "서버 저장에 실패했습니다.");
+    } finally {
+      setIsServerSyncLoading(false);
+    }
+  }
+
+  async function loadPortfoliosFromServer() {
+    if (isServerSyncLoading) return;
+
+    const shouldLoad = window.confirm(
+      "서버에 저장된 포트폴리오를 불러오면 현재 브라우저의 포트폴리오 목록이 서버 데이터로 교체됩니다. 계속할까요?"
+    );
+
+    if (!shouldLoad) return;
+
+    setIsServerSyncLoading(true);
+    setServerSyncStatus("서버 포트폴리오를 불러오는 중입니다...");
+
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/account/portfolios`, {
+        method: "GET",
+        headers: getServerRequestHeaders(),
+      });
+
+      const payload = await readApiJson(response);
+
+      if (!response.ok || payload?.ok === false) {
+        throw new Error(payload?.message || "서버 포트폴리오를 불러오지 못했습니다.");
+      }
+
+      const serverPortfolios = Array.isArray(payload?.portfolios)
+        ? payload.portfolios
+        : [];
+
+      if (serverPortfolios.length === 0) {
+        setServerSyncStatus("서버에 저장된 포트폴리오가 없습니다.");
+        window.alert("서버에 저장된 포트폴리오가 없습니다. 먼저 서버 저장을 실행해주세요.");
+        return;
+      }
+
+      const nextPortfolioList = serverPortfolios.map(normalizeServerPortfolioForLocal);
+      const nextActivePortfolioId =
+        nextPortfolioList.find((portfolio) => portfolio.id === activePortfolioId)?.id ||
+        nextPortfolioList[0].id;
+      const nextGlobalSettings = getGlobalSettingsFromServerPortfolio(serverPortfolios[0]);
+
+      window.localStorage.setItem(
+        PORTFOLIO_LIST_STORAGE_KEY,
+        JSON.stringify(nextPortfolioList)
+      );
+      window.localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, nextActivePortfolioId);
+      window.localStorage.setItem(
+        GLOBAL_SETTINGS_STORAGE_KEY,
+        JSON.stringify(nextGlobalSettings)
+      );
+
+      setServerSyncStatus(`서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오`);
+      window.alert("서버 포트폴리오를 불러왔습니다. 화면을 새로고침합니다.");
+      window.location.reload();
+    } catch (error) {
+      setServerSyncStatus(`서버 불러오기 실패: ${error?.message || "알 수 없는 오류"}`);
+      window.alert(error?.message || "서버 포트폴리오를 불러오지 못했습니다.");
+    } finally {
+      setIsServerSyncLoading(false);
+    }
+  }
+
   return (
     <div className="portfolioManager">
       <div className="portfolioManagerTop">
@@ -97,7 +317,6 @@ export default function PortfolioManagerPanel({
         </button>
       </div>
 
-
       <div className="portfolioDataStatusPanel">
         <div>
           <p>브라우저 저장 상태</p>
@@ -121,6 +340,34 @@ export default function PortfolioManagerPanel({
             <span>백업 버전</span>
             <strong>{dataManagementSummary?.backupVersion || "1.0.0"}</strong>
           </div>
+        </div>
+      </div>
+
+      <div className="portfolioBackupPanel">
+        <div>
+          <p>서버 저장 / 불러오기</p>
+          <span>
+            현재 브라우저의 포트폴리오를 Supabase 서버 DB에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다.
+          </span>
+          <span>{serverSyncStatus}</span>
+        </div>
+
+        <div className="portfolioBackupActions">
+          <button
+            type="button"
+            onClick={savePortfoliosToServer}
+            disabled={isServerSyncLoading}
+          >
+            {isServerSyncLoading ? "처리 중..." : "서버 저장"}
+          </button>
+
+          <button
+            type="button"
+            onClick={loadPortfoliosFromServer}
+            disabled={isServerSyncLoading}
+          >
+            서버 불러오기
+          </button>
         </div>
       </div>
 
