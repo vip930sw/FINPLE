@@ -91,7 +91,7 @@ function normalizeServerPortfolioForLocal(portfolio, index = 0) {
     name: portfolio.name || `서버 포트폴리오 ${index + 1}`,
     settings: {
       monthlyCashFlow: Number(portfolio.monthlyInvestment || 1000000),
-      years: Number(portfolio.investmentYears || 30),
+      years: Number(portfolio.investmentYears || 10),
       inflationRate: Number(portfolio.inflationRate || 2.5),
       dividendReinvest:
         portfolio.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),
@@ -104,7 +104,7 @@ function normalizeServerPortfolioForLocal(portfolio, index = 0) {
 function getGlobalSettingsFromServerPortfolio(portfolio) {
   return {
     monthlyCashFlow: Number(portfolio?.monthlyInvestment || 1000000),
-    years: Number(portfolio?.investmentYears || 30),
+    years: Number(portfolio?.investmentYears || 10),
     inflationRate: Number(portfolio?.inflationRate || 2.5),
     dividendReinvest:
       portfolio?.dividendReinvest === undefined ? true : Boolean(portfolio.dividendReinvest),

@@ -278,7 +278,7 @@ function normalizePortfolioInput(input = {}, options = {}) {
     ),
     investmentYears: optionalNumber(
       input.investmentYears ?? input.investment_years ?? input.periodYears ?? conditions.investmentYears,
-      partial ? undefined : 30
+      partial ? undefined : 10
     ),
     inflationRate: optionalNumber(
       input.inflationRate ?? input.inflation_rate ?? conditions.inflationRate,

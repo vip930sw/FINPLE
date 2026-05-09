@@ -344,7 +344,7 @@ function App() {
 
       <section id="features" className="section howSection">
         <p className="sectionLabel">How</p>
-        <h2>FINPLE은 포트폴리오를 “입력표”가 아니라 의사결정 흐름으로 보여줍니다.</h2>
+        <h2>FINPLE은 포트폴리오 시뮬레이터를 통해 성장과 위험에 대응합니다.</h2>
         <p>
           단순 수익률 계산기와 달리, 현재 보유 자산의 평가금액에서 출발해 추가 투자금,
           자산별 기대지표, 최대낙폭, 배당률, 물가상승률을 하나의 흐름으로 연결합니다.
@@ -362,7 +362,7 @@ function App() {
 
       <section id="how" className="section white whatSection">
         <p className="sectionLabel">What</p>
-        <h2>사용자가 얻는 것은 숫자가 아니라, 장기 투자 판단의 기준입니다.</h2>
+        <h2>FINPLE은 다양한 투자 의사결정과 대안을 제시합니다.</h2>
         <p>
           FINPLE의 결과물은 “몇 년 뒤 얼마”에 그치지 않습니다.
           투자금, 수익금, 배당금, 실질가치, 위험지표를 함께 보며
@@ -370,37 +370,64 @@ function App() {
         </p>
 
         <div className="whatPreviewGrid">
-          <article className="whatPreviewCard">
+          <article className="whatPreviewCard visualPreviewCard">
             <span>Simulator</span>
             <h3>내 자산을 기준으로 시작</h3>
-            <div className="miniScreen simulatorMini">
-              <i />
-              <i />
-              <i />
+            <div className="whatIllustration portfolioInputIllustration" aria-hidden="true">
+              <div className="illustrationHeader">
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="inputSceneRow wide" />
+              <div className="inputSceneRow" />
+              <div className="inputSceneRow short" />
+              <div className="allocationChips">
+                <b>성장</b>
+                <b>배당</b>
+                <b>채권</b>
+                <b>금</b>
+              </div>
             </div>
-            <p>보유 수량과 현재가, 월 투자금, 투자기간을 입력해 내 포트폴리오의 출발점을 만듭니다.</p>
+            <p>보유 자산과 월 투자금, 투자기간, 기대지표를 입력해 포트폴리오의 출발점을 만듭니다.</p>
           </article>
 
-          <article className="whatPreviewCard">
+          <article className="whatPreviewCard visualPreviewCard">
             <span>Growth Chart</span>
-            <h3>30년 흐름을 시각화</h3>
-            <div className="miniScreen chartMini">
-              <b style={{ height: "34%" }} />
-              <b style={{ height: "52%" }} />
-              <b style={{ height: "68%" }} />
-              <b style={{ height: "86%" }} />
+            <h3>자산흐름을 시각화</h3>
+            <div className="whatIllustration growthFlowIllustration" aria-hidden="true">
+              <div className="growthGridLine one" />
+              <div className="growthGridLine two" />
+              <div className="growthArea" />
+              <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                <path d="M4 104 C38 94, 56 83, 82 75 C118 64, 126 51, 160 42 C190 34, 204 21, 236 12" />
+              </svg>
+              <div className="growthBars">
+                <b style={{ height: "30%" }} />
+                <b style={{ height: "44%" }} />
+                <b style={{ height: "58%" }} />
+                <b style={{ height: "76%" }} />
+              </div>
             </div>
             <p>누적 납입금, 수익금, 배당금, 실질 평가금액을 한 화면에서 비교합니다.</p>
           </article>
 
-          <article className="whatPreviewCard">
+          <article className="whatPreviewCard visualPreviewCard">
             <span>Report</span>
             <h3>결과를 다시 읽는 리포트</h3>
-            <div className="miniScreen reportMini">
-              <em />
-              <em />
-              <em />
-              <em />
+            <div className="whatIllustration decisionReportIllustration" aria-hidden="true">
+              <div className="reportSheet">
+                <strong />
+                <em />
+                <em />
+                <em className="short" />
+              </div>
+              <div className="decisionBadge">Check</div>
+              <div className="riskMeter">
+                <i />
+                <i />
+                <i />
+              </div>
             </div>
             <p>요약 해석과 PDF 저장 기능으로 투자 아이디어를 정리하고 다시 검토할 수 있습니다.</p>
           </article>
@@ -411,6 +438,15 @@ function App() {
           <Step number="02" title="분석" text="장기 성과, 실질가치, 배당금, 위험지표를 함께 계산합니다." />
           <Step number="03" title="결과물" text="차트와 리포트를 통해 내 포트폴리오의 성격을 확인합니다." />
         </div>
+
+        <article className="investmentMbtiTeaser" aria-label="투자 성향 테스트 준비 중">
+          <div>
+            <p className="sectionLabel">Coming Soon</p>
+            <h3>투자 MBTI 테스트</h3>
+            <span>간단한 질문으로 나의 투자 성향을 파악하고, 시뮬레이터의 기본 가정값과 포트폴리오 유형을 추천하는 기능을 준비 중입니다.</span>
+          </div>
+          <button type="button" onClick={goPersonal}>시뮬레이터 먼저 사용하기</button>
+        </article>
       </section>
 
       <DemoCalculator />

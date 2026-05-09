@@ -11314,3 +11314,318 @@ body,
     padding: 7px 10px;
   }
 }
+
+/* STEP105_3_HOME_VISUAL_AND_DEFAULT_YEARS */
+.howSection,
+.whatSection {
+  max-width: 1240px;
+}
+
+.howSection .sectionLabel,
+.whatSection .sectionLabel {
+  color: #2563eb !important;
+}
+
+.howSection > h2,
+.howSection > p,
+.whatSection > h2,
+.whatSection > p {
+  max-width: 980px;
+}
+
+.howDifferentiatorGrid,
+.whatPreviewGrid {
+  width: 100%;
+}
+
+.howDifferentiatorGrid .featureCard,
+.whatPreviewCard,
+.whatStepGrid .stepCard {
+  min-height: 0;
+}
+
+.howDifferentiatorGrid .featureCard p,
+.whatPreviewCard p,
+.whatStepGrid .stepCard p {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  line-height: 1.55 !important;
+}
+
+.howDifferentiatorGrid .featureCard p,
+.whatPreviewCard p {
+  font-size: 14px;
+}
+
+.visualPreviewCard {
+  overflow: hidden;
+}
+
+.whatIllustration {
+  position: relative;
+  min-height: 160px;
+  margin: 18px 0;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.18), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(14, 165, 233, 0.18), transparent 26%),
+    linear-gradient(135deg, #f8fbff 0%, #eff6ff 48%, #ffffff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.illustrationHeader {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.illustrationHeader i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #2563eb;
+  opacity: 0.72;
+}
+
+.inputSceneRow {
+  position: absolute;
+  left: 18px;
+  right: 78px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.inputSceneRow.wide {
+  top: 56px;
+  right: 36px;
+}
+
+.inputSceneRow:not(.wide):not(.short) {
+  top: 84px;
+}
+
+.inputSceneRow.short {
+  top: 112px;
+  right: 118px;
+}
+
+.allocationChips {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.allocationChips b {
+  padding: 7px 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 11px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.growthFlowIllustration {
+  overflow: hidden;
+}
+
+.growthGridLine {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.36);
+}
+
+.growthGridLine.one {
+  top: 54px;
+}
+
+.growthGridLine.two {
+  top: 104px;
+}
+
+.growthArea {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 78px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.2), rgba(37, 99, 235, 0.02));
+  clip-path: polygon(0 82%, 20% 70%, 36% 56%, 52% 48%, 68% 32%, 84% 22%, 100% 8%, 100% 100%, 0 100%);
+}
+
+.growthFlowIllustration svg {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 26px;
+  width: calc(100% - 36px);
+  height: 112px;
+}
+
+.growthFlowIllustration path {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.growthBars {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  height: 106px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.growthBars b {
+  width: 12px;
+  border-radius: 999px 999px 4px 4px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.decisionReportIllustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.reportSheet {
+  width: 118px;
+  height: 118px;
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+.reportSheet strong,
+.reportSheet em {
+  display: block;
+  border-radius: 999px;
+}
+
+.reportSheet strong {
+  width: 74px;
+  height: 14px;
+  background: #0f172a;
+  margin-bottom: 18px;
+}
+
+.reportSheet em {
+  height: 10px;
+  margin-top: 10px;
+  background: #bfdbfe;
+}
+
+.reportSheet em.short {
+  width: 62%;
+}
+
+.decisionBadge {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.riskMeter {
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  border: 10px solid rgba(37, 99, 235, 0.18);
+  border-top-color: #2563eb;
+  transform: rotate(38deg);
+}
+
+.riskMeter i {
+  display: none;
+}
+
+.investmentMbtiTeaser {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.investmentMbtiTeaser h3 {
+  margin: 6px 0 8px;
+  font-size: 24px;
+  color: #0f172a;
+}
+
+.investmentMbtiTeaser span {
+  display: block;
+  max-width: 760px;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.investmentMbtiTeaser button {
+  border: none;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 13px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .howSection,
+  .whatSection {
+    max-width: 100%;
+  }
+
+  .howSection > h2,
+  .howSection > p,
+  .whatSection > h2,
+  .whatSection > p {
+    max-width: none;
+  }
+
+  .whatIllustration {
+    min-height: 148px;
+  }
+
+  .investmentMbtiTeaser {
+    display: block;
+  }
+
+  .investmentMbtiTeaser button {
+    width: 100%;
+    margin-top: 16px;
+  }
+}

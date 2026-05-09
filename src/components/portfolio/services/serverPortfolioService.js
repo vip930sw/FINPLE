@@ -241,7 +241,7 @@ export function importServerPortfoliosToBrowser(serverPortfolios = [], options =
     const nextSettings = {
       ...currentSettings,
       monthlyCashFlow: currentSettings?.monthlyCashFlow ?? first.monthlyInvestment ?? 1000000,
-      years: currentSettings?.years ?? first.investmentYears ?? 30,
+      years: currentSettings?.years ?? first.investmentYears ?? 10,
       inflationRate: currentSettings?.inflationRate ?? first.inflationRate ?? 2.5,
       dividendReinvest: currentSettings?.dividendReinvest ?? first.dividendReinvest ?? true,
     };
@@ -283,7 +283,7 @@ function normalizeServerPortfolioForLocal(portfolio, index = 0) {
     title: portfolio.name || `서버 포트폴리오 ${index + 1}`,
     description: portfolio.description || "",
     monthlyInvestment: Number(portfolio.monthlyInvestment ?? portfolio.monthly_investment ?? 1000000),
-    investmentYears: Number(portfolio.investmentYears ?? portfolio.investment_years ?? 30),
+    investmentYears: Number(portfolio.investmentYears ?? portfolio.investment_years ?? 10),
     inflationRate: Number(portfolio.inflationRate ?? portfolio.inflation_rate ?? 2.5),
     dividendReinvest: Boolean(portfolio.dividendReinvest ?? portfolio.dividend_reinvest ?? true),
     assets,
