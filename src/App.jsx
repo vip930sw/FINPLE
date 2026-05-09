@@ -344,7 +344,7 @@ function App() {
 
       <section id="features" className="section howSection">
         <p className="sectionLabel">How</p>
-        <h2>FINPLE은 포트폴리오 시뮬레이터를 통해 성장과 위험에 대응합니다.</h2>
+        <h2>포트폴리오 시뮬레이터를 통해 성장과 위험에 대응합니다.</h2>
         <p>
           단순 수익률 계산기와 달리, 현재 보유 자산의 평가금액에서 출발해 추가 투자금,
           자산별 기대지표, 최대낙폭, 배당률, 물가상승률을 하나의 흐름으로 연결합니다.
