@@ -19,6 +19,21 @@ import {
 
 const PAGE_STORAGE_KEY = "finple-current-page";
 
+function getPathForPage(page) {
+  switch (page) {
+    case "admin-login":
+      return "/admin";
+    case "privacy":
+      return "/privacy";
+    case "terms":
+      return "/terms";
+    case "investment-disclaimer":
+      return "/disclaimer";
+    default:
+      return "/";
+  }
+}
+
 function getInitialPage() {
   if (typeof window === "undefined") return "home";
 
@@ -50,6 +65,13 @@ function App() {
   useEffect(() => {
     if (currentPage !== "admin-login") {
       localStorage.setItem(PAGE_STORAGE_KEY, currentPage);
+    }
+
+    const nextPath = getPathForPage(currentPage);
+    const currentPath = window.location.pathname || "/";
+
+    if (currentPath !== nextPath) {
+      window.history.replaceState(null, "", nextPath);
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
