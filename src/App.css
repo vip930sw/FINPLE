@@ -8933,3 +8933,288 @@ body,
     transform-origin: right bottom;
   }
 }
+
+
+/* === STEP 79-3: Mobile compact home sections START === */
+@media (max-width: 640px) {
+  /*
+    Mobile home compact mode
+    - Keep the TradingView ticker visible with a more stable height.
+    - Reduce vertical length by turning repeated card groups into horizontal swipe rows.
+    - Keep body overflow-x hidden while allowing intentional card-row swipes.
+  */
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .page {
+    overflow-x: hidden;
+  }
+
+  .header {
+    height: auto;
+    min-height: 86px;
+    padding: 14px 16px 12px;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .headerActions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .headerButton,
+  .primaryButton,
+  .secondaryButton {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .tickerArea {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    align-items: stretch !important;
+    background: #020617;
+    overflow: hidden;
+  }
+
+  .tickerArea .tradingview-widget-container,
+  .tickerArea .tradingview-widget-container__widget,
+  .tickerArea iframe {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  .tickerArea iframe {
+    display: block !important;
+  }
+
+  .hero {
+    padding: 42px 18px 38px;
+    gap: 28px;
+  }
+
+  .badge {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .hero h1 {
+    margin: 16px 0 12px;
+    font-size: 31px;
+    line-height: 1.16;
+    letter-spacing: -1.2px;
+  }
+
+  .description {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .heroButtons {
+    margin-top: 22px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dashboardCard {
+    border-radius: 24px;
+    padding: 20px;
+  }
+
+  .cardHeader h2 {
+    font-size: 23px;
+  }
+
+  .metric {
+    padding: 14px;
+  }
+
+  .metric p {
+    font-size: 12px;
+  }
+
+  .metric strong {
+    font-size: 22px;
+  }
+
+  .section {
+    padding: 46px 18px;
+  }
+
+  .section h2 {
+    margin: 10px 0 18px;
+    font-size: 27px;
+    line-height: 1.22;
+    letter-spacing: -0.8px;
+  }
+
+  .section > p:not(.sectionLabel) {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .sectionLabel {
+    font-size: 11px;
+    letter-spacing: 1.6px;
+  }
+
+  .featureGrid,
+  .stepGrid,
+  .priceGrid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 12px;
+    margin-top: 22px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 2px 14px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .featureGrid::-webkit-scrollbar,
+  .stepGrid::-webkit-scrollbar,
+  .priceGrid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .featureGrid::-webkit-scrollbar-thumb,
+  .stepGrid::-webkit-scrollbar-thumb,
+  .priceGrid::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+
+  .featureCard,
+  .stepCard,
+  .priceCard {
+    flex: 0 0 min(82vw, 300px);
+    scroll-snap-align: start;
+    border-radius: 22px;
+    padding: 18px;
+    min-height: 150px;
+  }
+
+  .featureCard h3,
+  .stepCard h3,
+  .priceCard h3 {
+    font-size: 19px;
+    margin-bottom: 8px;
+  }
+
+  .featureCard p,
+  .stepCard p {
+    font-size: 13px;
+    line-height: 1.55;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+  }
+
+  .priceCard {
+    min-height: 244px;
+  }
+
+  .priceCard strong {
+    margin: 10px 0;
+    font-size: 24px;
+  }
+
+  .priceCard ul {
+    margin: 0 0 14px;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .priceCard button,
+  .priceCard a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    min-width: 86px;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 12px;
+  }
+
+  .calculatorSection,
+  .calendarSection {
+    padding-top: 46px;
+    padding-bottom: 46px;
+  }
+
+  .economicGrid {
+    margin-top: 22px;
+    gap: 20px;
+  }
+
+  .investingCalendarBox {
+    padding: 12px 10px;
+  }
+
+  .investingCalendarFrame {
+    min-height: 500px;
+  }
+
+  .indicatorLink {
+    min-height: 58px;
+    padding: 0 16px;
+  }
+
+  .indicatorLink span {
+    font-size: 15px;
+  }
+
+  .summaryCard {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .floatingTopButton,
+  .homeTopButton {
+    right: 14px !important;
+    bottom: 14px !important;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    padding: 0;
+    font-size: 12px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
+  }
+}
+
+@media (max-width: 380px) {
+  .featureCard,
+  .stepCard,
+  .priceCard {
+    flex-basis: 84vw;
+  }
+
+  .hero h1 {
+    font-size: 29px;
+  }
+
+  .section h2 {
+    font-size: 25px;
+  }
+
+  .priceCard {
+    min-height: 232px;
+  }
+}
+/* === STEP 79-3: Mobile compact home sections END === */
