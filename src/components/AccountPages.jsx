@@ -60,13 +60,15 @@ function AccountShell({ eyebrow, title, description, children, onNavigate }) {
 
 export function LoginPage({ onNavigate }) {
   const [statusMessage, setStatusMessage] = useState("개발용 계정으로 서버 사용자 연결을 테스트할 수 있습니다.");
+  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
+  const [adminStatusMessage, setAdminStatusMessage] = useState("관리자 토큰이 있는 경우 문의사항 관리자 기능을 사용할 수 있습니다.");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleDemoLogin() {
     setIsLoading(true);
     try {
       const user = await createOrLoadDemoUser();
-      setStatusMessage(`${user.name || "FINPLE Demo User"} 계정으로 연결되었습니다.`);
+      setStatusMessage((user.name || "FINPLE Demo User") + " 계정으로 연결되었습니다.");
       onNavigate("mypage");
     } catch (error) {
       setStatusMessage(error?.message || "로그인 데모에 실패했습니다.");
@@ -75,27 +77,79 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
+  function handleAdminLogin() {
+    const token = adminTokenInput.trim();
+
+    if (!token) {
+      setAdminStatusMessage("관리자 토큰을 입력해 주세요.");
+      return;
+    }
+
+    window.localStorage.setItem("finple-admin-token", token);
+    window.dispatchEvent(new Event("finple-admin-token-updated"));
+    setAdminStatusMessage("관리자 토큰을 저장했습니다. MY PAGE에서 관리자 문의 조회를 사용할 수 있습니다.");
+    onNavigate("mypage");
+  }
+
   return (
     <AccountShell
       eyebrow="Account"
       title="로그인"
-      description="현재는 개발용 사용자로 서버 저장 기능을 검증하는 단계입니다. 실제 네이버/카카오/구글 로그인은 이후 연결합니다."
+      description="일반 사용자 로그인과 관리자 로그인을 구분합니다. 현재는 개발용 사용자와 관리자 토큰으로 기능을 검증하는 단계입니다."
       onNavigate={onNavigate}
     >
-      <section className="accountCard accountFormCard">
-        <label>
-          이메일
-          <input type="email" placeholder="you@example.com" />
-        </label>
-        <label>
-          비밀번호
-          <input type="password" placeholder="비밀번호" />
-        </label>
-        <p className="accountInlineStatus">{statusMessage}</p>
-        <button type="button" className="primaryButton" onClick={handleDemoLogin} disabled={isLoading}>
-          {isLoading ? "연결 중..." : "개발 사용자로 로그인"}
-        </button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입으로 이동</button>
+      <section className="accountLoginGrid">
+        <section className="accountCard accountFormCard loginRoleCard">
+          <div className="loginRoleHeader">
+            <p className="accountMiniLabel">User Login</p>
+            <h2>일반 사용자 로그인</h2>
+            <span>포트폴리오 저장, 요금제 상태, MY PAGE 기능을 테스트합니다.</span>
+          </div>
+
+          <label>
+            이메일
+            <input type="email" placeholder="you@example.com" />
+          </label>
+          <label>
+            비밀번호
+            <input type="password" placeholder="비밀번호" />
+          </label>
+
+          <p className="accountInlineStatus">{statusMessage}</p>
+
+          <button type="button" className="primaryButton" onClick={handleDemoLogin} disabled={isLoading}>
+            {isLoading ? "연결 중..." : "개발 사용자로 로그인"}
+          </button>
+          <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입으로 이동</button>
+        </section>
+
+        <section className="accountCard accountFormCard loginRoleCard adminLoginCard">
+          <div className="loginRoleHeader">
+            <p className="accountMiniLabel">Admin Login</p>
+            <h2>관리자 로그인</h2>
+            <span>문의사항 조회와 처리 상태 변경은 관리자 토큰이 있는 브라우저에서만 사용할 수 있습니다.</span>
+          </div>
+
+          <label>
+            관리자 토큰
+            <input
+              type="password"
+              value={adminTokenInput}
+              onChange={(event) => setAdminTokenInput(event.target.value)}
+              placeholder="FINPLE_ADMIN_TOKEN 입력"
+              autoComplete="off"
+            />
+          </label>
+
+          <p className="accountInlineStatus">{adminStatusMessage}</p>
+
+          <button type="button" className="primaryButton" onClick={handleAdminLogin}>
+            관리자 모드로 이동
+          </button>
+          <p className="adminLoginHint">
+            관리자 토큰은 현재 브라우저에만 저장됩니다. 공용 PC에서는 MY PAGE에서 관리자 모드 해제를 눌러 주세요.
+          </p>
+        </section>
       </section>
     </AccountShell>
   );
@@ -472,39 +526,7 @@ function AdminInquiryPanel() {
   }
 
   if (!isAdminMode) {
-    return (
-      <section className="accountCard adminInquiryPanel">
-        <div className="serverStorageHeader">
-          <div>
-            <p className="accountMiniLabel">Admin Locked</p>
-            <h2>관리자 문의 조회</h2>
-            <p>관리자 토큰이 있는 브라우저에서만 문의 목록 조회와 처리 상태 변경을 사용할 수 있습니다.</p>
-          </div>
-          <span className="serverStatusBadge">잠김</span>
-        </div>
-
-        <div className="accountFormCard adminTokenBox">
-          <label>
-            관리자 토큰
-            <input
-              type="password"
-              value={adminTokenInput}
-              onChange={(event) => setAdminTokenInput(event.target.value)}
-              placeholder="FINPLE_ADMIN_TOKEN 입력"
-              autoComplete="off"
-            />
-          </label>
-
-          <p className="serverStorageMessage compact">{statusMessage}</p>
-
-          <div className="serverStorageActions compactActions">
-            <button type="button" className="primaryButton" onClick={handleSaveAdminToken}>
-              관리자 모드 열기
-            </button>
-          </div>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (

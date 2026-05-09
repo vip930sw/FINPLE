@@ -10618,3 +10618,60 @@ body,
     margin-bottom: 72px;
   }
 }
+
+/* =========================
+   Step 81-3. Login split
+========================= */
+
+.accountLoginGrid {
+  max-width: 1120px;
+  margin: 0 auto 72px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.loginRoleCard {
+  align-self: stretch;
+}
+
+.loginRoleHeader {
+  margin-bottom: 20px;
+}
+
+.loginRoleHeader h2 {
+  margin: 8px 0 10px;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+}
+
+.loginRoleHeader span,
+.adminLoginHint {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.adminLoginCard {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.adminLoginCard .primaryButton {
+  background: #1d4ed8;
+}
+
+@media (max-width: 900px) {
+  .accountLoginGrid {
+    grid-template-columns: 1fr;
+    margin-bottom: 44px;
+    padding: 0 16px;
+  }
+
+  .loginRoleHeader h2 {
+    font-size: 22px;
+  }
+}
