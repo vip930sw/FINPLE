@@ -35,3 +35,6 @@
 - 사용자 피드백은 Step 89 기준에 따라 P0 / P1 / P2 / HOLD로 분류합니다.
 - 실제 결제, 실제 회원가입, Pro 기능은 HOLD 항목으로 유지합니다.
 - [Step 99. 사용자 FAQ](./FINPLE_step99_user_faq.md)
+
+## Beta Operation
+- [Step 102. 베타 운영 안정성 점검](./FINPLE_step102_beta_stability_check.md)
