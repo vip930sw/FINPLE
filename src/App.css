@@ -10557,3 +10557,64 @@ body,
     font-weight: 900;
   }
 }
+
+
+/* Step 80-2 Pricing card visual alignment */
+/* Keep Free / Personal / Pro pricing cards visually consistent. */
+.accountPlanCard.featured {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #dbeafe;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+}
+
+.accountPlanCard.featured h2,
+.accountPlanCard.featured p,
+.accountPlanCard.featured li,
+.accountPlanCard.featured strong {
+  color: #0f172a;
+}
+
+.accountPlanCard.featured .planLimitList span {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.accountPlanCard.featured button {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.priceCard.featured {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.priceCard.featured ul {
+  color: #475569;
+}
+
+.priceCard.featured button,
+.priceCard.featured a {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.pricingNoticeBox {
+  margin-bottom: 72px;
+}
+
+.accountPage .pricingNoticeBox:last-child {
+  margin-bottom: 88px;
+}
+
+@media (max-width: 900px) {
+  .pricingNoticeBox {
+    margin-bottom: 56px;
+  }
+
+  .accountPage .pricingNoticeBox:last-child {
+    margin-bottom: 72px;
+  }
+}

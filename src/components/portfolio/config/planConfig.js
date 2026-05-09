@@ -28,7 +28,7 @@ export const FINPLE_PLAN_CONFIGS = {
     key: "personal",
     label: "Personal",
     priceLabel: "월 9,900원",
-    featured: true,
+    featured: false,
     serverStorageLabel: "서버 저장 지원",
     items: [
       "서버 포트폴리오 저장",
