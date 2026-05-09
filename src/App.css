@@ -11711,3 +11711,28 @@ body,
   }
 }
 /* Step 110-2: home white section full-bleed background fix end */
+
+
+/* Step 110-3: simulator intro width and white section background */
+
+/* 시뮬레이터 상단 설명문은 서비스 핵심 설명이므로 너무 좁게 끊기지 않도록 확장합니다. */
+.personalPage .simulatorSection .simulatorIntroText,
+.simulatorSection .simulatorIntroText {
+  width: min(100%, 1120px);
+  max-width: 1120px !important;
+}
+
+/* 홈의 흰색 섹션은 콘텐츠 폭은 유지하되 배경만 화면 전체로 이어지게 처리합니다.
+   이렇게 하면 회색/흰색 경계가 계단처럼 깨져 보이는 현상을 줄일 수 있습니다. */
+.page > .section.white {
+  box-shadow: 0 0 0 100vmax #ffffff;
+  clip-path: inset(0 -100vmax);
+}
+
+@media (max-width: 900px) {
+  .personalPage .simulatorSection .simulatorIntroText,
+  .simulatorSection .simulatorIntroText {
+    width: 100%;
+    max-width: 100% !important;
+  }
+}
