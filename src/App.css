@@ -10806,3 +10806,38 @@ body,
     padding: 8px 11px;
   }
 }
+
+/* STEP84_2_ACCOUNT_HERO_WIDE_COPY */
+@media (min-width: 901px) {
+  .accountPage .accountHero {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: 1120px;
+  }
+
+  .accountPage .accountHero h1 {
+    max-width: 760px;
+  }
+
+  .accountPage .accountHero .sectionLabel {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: none;
+  }
+}
