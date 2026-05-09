@@ -24,9 +24,9 @@ import {
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
 
-function AccountShell({ eyebrow, title, description, children, onNavigate }) {
+function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   return (
-    <main className="accountPage">
+    <main className={["accountPage", pageClassName].filter(Boolean).join(" ")}>
       <header className="accountHeader">
         <button type="button" className="brandLogo resetButton" onClick={() => onNavigate("home")}>
           <div className="brandIcon">
@@ -81,6 +81,7 @@ export function LoginPage({ onNavigate }) {
       title="로그인"
       description="일반 사용자를 위한 로그인 화면입니다. 현재는 체험 계정으로 포트폴리오 저장과 MY PAGE 기능을 이용할 수 있습니다."
       onNavigate={onNavigate}
+      pageClassName="legalPage"
     >
       <section className="accountCard accountFormCard loginRoleCard singleLoginCard">
         <div className="loginRoleHeader">

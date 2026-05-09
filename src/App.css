@@ -10841,3 +10841,28 @@ body,
     max-width: none;
   }
 }
+
+/* Step 84-3: legal page hero width */
+.legalPage .accountHero {
+  max-width: 1180px;
+}
+
+.legalPage .accountHero > p:not(.sectionLabel) {
+  max-width: 1080px;
+}
+
+.legalPage .legalDocumentCard {
+  width: min(100%, 1080px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 768px) {
+  .legalPage .accountHero > p:not(.sectionLabel) {
+    max-width: 100%;
+  }
+
+  .legalPage .legalDocumentCard {
+    width: 100%;
+  }
+}
