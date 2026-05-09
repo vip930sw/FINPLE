@@ -2,7 +2,7 @@ const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
-const AUTH_USER_STORAGE_KEY = "finple-demo-auth-user";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 function getBuildTimeEnv() {
   return import.meta?.env || {};
@@ -32,14 +32,21 @@ export function getStoredFinpleAuthUser() {
 export function setStoredFinpleAuthUser(user) {
   if (typeof window === "undefined") return null;
 
+  const displayEmail = user?.email === "trial@finple.local"
+    ? "trial@finple.local"
+    : user?.email || "trial@finple.local";
+  const displayName = user?.name === "FINPLE 체험 사용자"
+    ? "FINPLE 체험 사용자"
+    : user?.name || user?.nickname || "FINPLE 체험 사용자";
+
   const normalizedUser = user
     ? {
         id: user.id,
-        email: user.email || "dev@finple.local",
-        name: user.name || user.nickname || "FINPLE Demo User",
-        nickname: user.nickname || "demo",
+        email: displayEmail,
+        name: displayName,
+        nickname: user.nickname === "trial" ? "trial" : user.nickname || "trial",
         plan: user.plan || "free",
-        authMode: user.authMode || "dev-user",
+        authMode: user.authMode || "trial-user",
         connectedAt: user.connectedAt || new Date().toISOString(),
       }
     : null;
@@ -63,12 +70,12 @@ export async function createOrLoadDemoUser() {
   const user = payload?.user;
 
   if (!user?.id) {
-    throw new Error("개발용 사용자 정보를 불러오지 못했습니다.");
+    throw new Error("체험 사용자 정보를 불러오지 못했습니다.");
   }
 
   return setStoredFinpleAuthUser({
     ...user,
-    authMode: "dev-user",
+    authMode: "trial-user",
     connectedAt: new Date().toISOString(),
   });
 }

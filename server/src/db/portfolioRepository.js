@@ -4,8 +4,8 @@ import { query, withTransaction } from "./database.js";
 
 const DEFAULT_DEV_USER_ID =
   process.env.FINPLE_DEV_USER_ID || "00000000-0000-4000-8000-000000000001";
-const DEFAULT_DEV_USER_EMAIL = process.env.FINPLE_DEV_USER_EMAIL || "dev@finple.local";
-const DEFAULT_DEV_USER_NAME = process.env.FINPLE_DEV_USER_NAME || "FINPLE Demo User";
+const DEFAULT_DEV_USER_EMAIL = process.env.FINPLE_DEV_USER_EMAIL || "trial@finple.local";
+const DEFAULT_DEV_USER_NAME = process.env.FINPLE_DEV_USER_NAME || "FINPLE 체험 사용자";
 
 export function getDefaultUserId() {
   return DEFAULT_DEV_USER_ID;
@@ -16,8 +16,11 @@ export async function ensureDevUser(userId = DEFAULT_DEV_USER_ID) {
     `INSERT INTO users (id, email, name, nickname, plan)
      VALUES ($1, $2, $3, $4, 'free')
      ON CONFLICT (id) DO UPDATE
-     SET updated_at = NOW()` ,
-    [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "demo"]
+     SET email = EXCLUDED.email,
+         name = EXCLUDED.name,
+         nickname = EXCLUDED.nickname,
+         updated_at = NOW()` ,
+    [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "trial"]
   );
 
   return getUserById(userId);
@@ -43,7 +46,7 @@ async function ensureUserExistsForRead(userId) {
       await query(
         `INSERT INTO users (id, email, name, nickname, plan)
          VALUES ($1, $2, $3, $4, 'free')`,
-        [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "demo"]
+        [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "trial"]
       );
     }
   }
@@ -200,7 +203,7 @@ async function ensureUserExistsForTransaction(tx, userId) {
     `INSERT INTO users (id, email, name, nickname, plan)
      VALUES ($1, $2, $3, $4, 'free')
      ON CONFLICT (id) DO NOTHING`,
-    [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "demo"]
+    [userId, DEFAULT_DEV_USER_EMAIL, DEFAULT_DEV_USER_NAME, "trial"]
   );
 }
 
