@@ -10986,3 +10986,331 @@ body,
   }
 }
 
+
+
+/* STEP105_2_GOLDEN_CIRCLE_EXPANDED */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supportHeaderButton {
+  white-space: nowrap;
+}
+
+.whySection,
+.howSection,
+.whatSection {
+  scroll-margin-top: 92px;
+}
+
+.whyTopRow h2 {
+  white-space: normal;
+}
+
+.whyNarrativeGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 34px;
+}
+
+.whyLeadCard,
+.whyVisualPanel,
+.sourceCard,
+.whatPreviewCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.whyLeadCard {
+  padding: 30px;
+}
+
+.whyLeadCard span,
+.whatPreviewCard span {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.whyLeadCard h3,
+.whatPreviewCard h3 {
+  margin: 0 0 14px;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+}
+
+.whyLeadCard p,
+.whyVisualPanel p,
+.sourceCard p,
+.whatPreviewCard p,
+.howSection > p,
+.whatSection > p {
+  color: #475569;
+  line-height: 1.75;
+}
+
+.whyLeadCard p {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.whyVisualPanel {
+  padding: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 38%),
+    linear-gradient(135deg, #f8fafc, #ffffff);
+}
+
+.marketCycleVisual {
+  position: relative;
+  min-height: 270px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.92)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cycleCenter {
+  position: relative;
+  z-index: 3;
+  width: 132px;
+  height: 132px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+}
+
+.cycleOrbit {
+  position: absolute;
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  border-radius: 999px;
+}
+
+.cycleOrbit.one {
+  width: 230px;
+  height: 230px;
+}
+
+.cycleOrbit.two {
+  width: 310px;
+  height: 160px;
+  transform: rotate(-24deg);
+}
+
+.cycleDot {
+  position: absolute;
+  z-index: 4;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.2);
+}
+
+.cycleDot.growth {
+  top: 42px;
+  left: 42px;
+}
+
+.cycleDot.defense {
+  top: 44px;
+  right: 44px;
+}
+
+.cycleDot.income {
+  bottom: 48px;
+  left: 54px;
+}
+
+.cycleDot.real {
+  bottom: 48px;
+  right: 54px;
+}
+
+.whyEvidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.sourceCard {
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.sourceCard strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.sourceCard p {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.sourceCard a {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.howDifferentiatorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.whatPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.whatPreviewCard {
+  padding: 24px;
+}
+
+.miniScreen {
+  min-height: 160px;
+  margin: 18px 0;
+  border-radius: 22px;
+  border: 1px solid #dbeafe;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.simulatorMini {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.simulatorMini i {
+  display: block;
+  height: 30px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #e2e8f0, #bfdbfe);
+}
+
+.chartMini {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px;
+}
+
+.chartMini b {
+  width: 34px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, #2563eb, #0f4c5c);
+}
+
+.reportMini {
+  padding: 20px;
+}
+
+.reportMini em {
+  display: block;
+  height: 14px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.reportMini em:first-child {
+  width: 48%;
+  height: 20px;
+  background: #2563eb;
+}
+
+.reportMini em:nth-child(2) {
+  width: 82%;
+}
+
+.reportMini em:nth-child(3) {
+  width: 66%;
+}
+
+.reportMini em:nth-child(4) {
+  width: 74%;
+}
+
+.whatStepGrid {
+  margin-top: 28px;
+}
+
+@media (max-width: 1100px) {
+  .whyNarrativeGrid,
+  .whyEvidenceGrid,
+  .howDifferentiatorGrid,
+  .whatPreviewGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .whyLeadCard {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .headerActions {
+    gap: 8px;
+  }
+
+  .supportHeaderButton {
+    display: none;
+  }
+
+  .whyNarrativeGrid,
+  .whyEvidenceGrid,
+  .howDifferentiatorGrid,
+  .whatPreviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketCycleVisual {
+    min-height: 230px;
+  }
+
+  .whyLeadCard h3,
+  .whatPreviewCard h3 {
+    font-size: 23px;
+  }
+
+  .cycleDot {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+}

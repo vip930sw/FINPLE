@@ -212,12 +212,12 @@ function App() {
 
         <nav>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("problem")}>Problem</button>
+          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
-          <button type="button" className="navTextButton" onClick={() => setCurrentPage("support")}>문의사항</button>
         </nav>
 
         <div className="headerActions">
+          <button className="secondaryHeaderButton supportHeaderButton" onClick={() => setCurrentPage("support")}>문의사항</button>
           <button className="secondaryHeaderButton" onClick={() => setCurrentPage("login")}>로그인</button>
           <button className="headerButton" onClick={goPersonal}>시작하기</button>
         </div>
@@ -281,47 +281,135 @@ function App() {
         <EconomicCalendarSection />
       </div>
 
-      <section id="problem" className="section white goldenSection whySection">
+      <section id="intro" className="section white whySection">
         <p className="sectionLabel">Why</p>
-        <div className="sectionTopRow">
-          <h2>왜 포트폴리오는 수익률보다 지속 가능성이 먼저일까요?</h2>
+        <div className="sectionTopRow whyTopRow">
+          <h2>시장은 예측보다 오래 버티는 구조를 요구합니다.</h2>
           <p className="sectionSideText">
-            투자는 높은 수익률 하나를 맞히는 일이 아니라, 하락장과 변동성 속에서도 계획을 유지할 수 있는 구조를 만드는 일입니다.
-            FINPLE은 내 자산의 위험, 현금흐름, 실질가치를 함께 보며 오래 버틸 수 있는 투자 결정을 돕습니다.
+            FINPLE은 “무엇을 살까”보다 먼저 “내가 감당할 수 있는 구조인가”를 점검하도록 돕습니다.
           </p>
         </div>
-      </section>
 
-      <section id="features" className="section goldenSection">
-        <p className="sectionLabel">How</p>
-        <h2>어떻게 장기 투자 구조를 점검하나요?</h2>
-        <p>
-          FINPLE은 자산별 기대수익률만 보여주지 않습니다. 거시경제 환경, 자산배분, 최대낙폭, 배당, 물가 반영 실질가치를 함께 계산해
-          포트폴리오가 실제로 견딜 수 있는 구조인지 확인합니다.
-        </p>
+        <div className="whyNarrativeGrid">
+          <article className="whyLeadCard">
+            <span>WHY WE BUILT THIS</span>
+            <h3>수익률만 보는 투자는 오래가기 어렵습니다.</h3>
+            <p>
+              장기 투자는 단순히 높은 CAGR을 고르는 문제가 아닙니다.
+              시장 하락을 견딜 수 있는지, 물가를 반영해도 실질가치가 남는지,
+              배당과 추가 투자금이 시간이 지날수록 어떤 역할을 하는지 함께 봐야 합니다.
+            </p>
+            <p>
+              FINPLE은 포트폴리오를 숫자 하나로 평가하지 않고, 성장·방어·현금흐름·실질가치의 균형을 함께 확인하는 것을 목표로 합니다.
+            </p>
+          </article>
 
-        <div className="featureGrid">
-          <Feature title="시장 환경을 함께 보기" text="금리, 물가, 고용, 환율 등 주요 지표를 함께 확인해 투자 판단의 배경을 점검합니다." />
-          <Feature title="가정값을 직접 조정" text="월 투자금, 투자기간, CAGR, MDD, 배당률을 직접 조정해 여러 시나리오를 비교합니다." />
-          <Feature title="하락 위험 먼저 확인" text="최대낙폭과 변동성을 기준으로 하락장에서 감당 가능한 포트폴리오인지 점검합니다." />
-          <Feature title="자산배분 균형 점검" text="성장주, 가치주, 채권, 금 등 자산군 비중을 보며 편중된 구조를 조정합니다." />
-          <Feature title="실질가치와 배당 확인" text="물가상승률을 반영한 실질 평가금액과 예상 배당금을 함께 확인합니다." />
-          <Feature title="리포트로 판단 근거 정리" text="계산 결과를 차트와 리포트로 정리해 투자 구조를 반복적으로 검토합니다." />
+          <div className="whyVisualPanel" aria-label="장기 포트폴리오 이미지">
+            <div className="marketCycleVisual">
+              <span className="cycleDot growth">성장</span>
+              <span className="cycleDot defense">방어</span>
+              <span className="cycleDot income">배당</span>
+              <span className="cycleDot real">실질가치</span>
+              <div className="cycleOrbit one" />
+              <div className="cycleOrbit two" />
+              <div className="cycleCenter">Long-term<br />Portfolio</div>
+            </div>
+            <p>경기 국면이 바뀌어도 한쪽 자산에만 의존하지 않는 구조를 시각적으로 점검합니다.</p>
+          </div>
+        </div>
+
+        <div className="whyEvidenceGrid">
+          <article className="sourceCard">
+            <strong>분산과 자산배분</strong>
+            <p>자산군을 나누고 정기적으로 리밸런싱하는 것은 투자 위험을 관리하는 핵심 도구입니다.</p>
+            <a href="https://www.finra.org/investors/investing/investing-basics/asset-allocation-diversification" target="_blank" rel="noreferrer">출처: FINRA Investor Education</a>
+          </article>
+          <article className="sourceCard">
+            <strong>장기 계획과 리밸런싱</strong>
+            <p>시장 움직임으로 비중이 흐트러질 수 있으므로, 목표 자산배분을 유지하는 점검 과정이 필요합니다.</p>
+            <a href="https://investor.vanguard.com/investor-resources-education/portfolio-management/diversifying-your-portfolio" target="_blank" rel="noreferrer">출처: Vanguard</a>
+          </article>
+          <article className="sourceCard">
+            <strong>마켓 타이밍보다 계획</strong>
+            <p>완벽한 매수 시점을 기다리기보다 계획을 세우고 시장에 머무르는 접근이 장기 투자에서 중요합니다.</p>
+            <a href="https://www.schwab.com/learn/story/does-market-timing-work" target="_blank" rel="noreferrer">출처: Schwab Center for Financial Research</a>
+          </article>
+          <article className="sourceCard">
+            <strong>목표 기간과 위험감내도</strong>
+            <p>투자기간과 위험감내도에 따라 적절한 자산배분은 달라집니다. FINPLE은 이 가정을 직접 조정해보는 도구입니다.</p>
+            <a href="https://www.investor.gov/introduction-investing/getting-started/asset-allocation" target="_blank" rel="noreferrer">출처: Investor.gov</a>
+          </article>
         </div>
       </section>
 
-      <section id="how" className="section white goldenSection">
-        <p className="sectionLabel">What</p>
-        <h2>무엇을 입력하고 무엇을 확인하나요?</h2>
+      <section id="features" className="section howSection">
+        <p className="sectionLabel">How</p>
+        <h2>FINPLE은 포트폴리오를 “입력표”가 아니라 의사결정 흐름으로 보여줍니다.</h2>
         <p>
-          자산을 찾고, 수량과 기대지표를 입력한 뒤, 장기 성과·위험·실질가치·배당 흐름을 확인합니다.
-          결과는 포트폴리오 비교와 상세분석 리포트로 이어집니다.
+          단순 수익률 계산기와 달리, 현재 보유 자산의 평가금액에서 출발해 추가 투자금,
+          자산별 기대지표, 최대낙폭, 배당률, 물가상승률을 하나의 흐름으로 연결합니다.
         </p>
 
-        <div className="stepGrid">
-          <Step number="01" title="자산 후보 선택" text="스크리너에서 ETF·주식 후보를 찾고 포트폴리오에 추가합니다." />
-          <Step number="02" title="조건 입력" text="보유 수량, 월 투자금, 투자기간, CAGR, MDD, 배당률을 입력합니다." />
-          <Step number="03" title="결과 확인" text="예상 성과, 실질가치, 배당금, 위험 지표와 리포트를 확인합니다." />
+        <div className="howDifferentiatorGrid">
+          <Feature title="가정값을 직접 조정" text="CAGR, BETA, MDD, 배당률을 사용자가 직접 바꾸며 보수적·중립적·공격적 시나리오를 비교합니다." />
+          <Feature title="실질가치까지 확인" text="명목 평가금액뿐 아니라 물가상승률을 반영한 실질 평가금액을 함께 확인합니다." />
+          <Feature title="위험을 먼저 보는 구조" text="하락장에서 버틸 수 있는지 확인하기 위해 최대낙폭과 변동성 지표를 결과와 함께 보여줍니다." />
+          <Feature title="서버 저장과 재확인" text="브라우저 저장을 기본으로 하되, 체험 계정에서 서버 저장과 불러오기를 통해 같은 분석을 다시 확인할 수 있습니다." />
+          <Feature title="경제지표와 함께 판단" text="금리, 물가, 고용, 환율 같은 거시경제 지표를 함께 보며 투자 환경을 점검합니다." />
+          <Feature title="리포트형 결과물" text="차트, 연차별 표, 요약 문구, PDF 저장을 통해 분석 결과를 다시 읽고 공유할 수 있게 구성합니다." />
+        </div>
+      </section>
+
+      <section id="how" className="section white whatSection">
+        <p className="sectionLabel">What</p>
+        <h2>사용자가 얻는 것은 숫자가 아니라, 장기 투자 판단의 기준입니다.</h2>
+        <p>
+          FINPLE의 결과물은 “몇 년 뒤 얼마”에 그치지 않습니다.
+          투자금, 수익금, 배당금, 실질가치, 위험지표를 함께 보며
+          내 포트폴리오가 어떤 성격인지 이해할 수 있게 돕습니다.
+        </p>
+
+        <div className="whatPreviewGrid">
+          <article className="whatPreviewCard">
+            <span>Simulator</span>
+            <h3>내 자산을 기준으로 시작</h3>
+            <div className="miniScreen simulatorMini">
+              <i />
+              <i />
+              <i />
+            </div>
+            <p>보유 수량과 현재가, 월 투자금, 투자기간을 입력해 내 포트폴리오의 출발점을 만듭니다.</p>
+          </article>
+
+          <article className="whatPreviewCard">
+            <span>Growth Chart</span>
+            <h3>30년 흐름을 시각화</h3>
+            <div className="miniScreen chartMini">
+              <b style={{ height: "34%" }} />
+              <b style={{ height: "52%" }} />
+              <b style={{ height: "68%" }} />
+              <b style={{ height: "86%" }} />
+            </div>
+            <p>누적 납입금, 수익금, 배당금, 실질 평가금액을 한 화면에서 비교합니다.</p>
+          </article>
+
+          <article className="whatPreviewCard">
+            <span>Report</span>
+            <h3>결과를 다시 읽는 리포트</h3>
+            <div className="miniScreen reportMini">
+              <em />
+              <em />
+              <em />
+              <em />
+            </div>
+            <p>요약 해석과 PDF 저장 기능으로 투자 아이디어를 정리하고 다시 검토할 수 있습니다.</p>
+          </article>
+        </div>
+
+        <div className="stepGrid whatStepGrid">
+          <Step number="01" title="입력" text="보유 자산, 월 투자금, 투자기간, 기대지표를 입력합니다." />
+          <Step number="02" title="분석" text="장기 성과, 실질가치, 배당금, 위험지표를 함께 계산합니다." />
+          <Step number="03" title="결과물" text="차트와 리포트를 통해 내 포트폴리오의 성격을 확인합니다." />
         </div>
       </section>
 
