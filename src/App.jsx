@@ -7,6 +7,7 @@ import DemoCalculator from "./components/DemoCalculator";
 import PersonalPage from "./components/PersonalPage";
 import {
   LoginPage,
+  AdminLoginPage,
   SignupPage,
   MyPage,
   PricingPage,
@@ -15,13 +16,27 @@ import {
 
 const PAGE_STORAGE_KEY = "finple-current-page";
 
+function getInitialPage() {
+  if (typeof window === "undefined") return "home";
+
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const hash = window.location.hash.replace("#", "");
+
+  if (pathname === "/admin" || hash === "admin") {
+    return "admin-login";
+  }
+
+  return localStorage.getItem(PAGE_STORAGE_KEY) || "home";
+}
+
 function App() {
-  const [currentPage, setCurrentPage] = useState(() => {
-    return localStorage.getItem(PAGE_STORAGE_KEY) || "home";
-  });
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
 
   useEffect(() => {
-    localStorage.setItem(PAGE_STORAGE_KEY, currentPage);
+    if (currentPage !== "admin-login") {
+      localStorage.setItem(PAGE_STORAGE_KEY, currentPage);
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
 
@@ -66,6 +81,10 @@ function App() {
 
   if (currentPage === "personal") {
     return <PersonalPage onBack={goHome} />;
+  }
+
+  if (currentPage === "admin-login") {
+    return <AdminLoginPage onNavigate={setCurrentPage} />;
   }
 
   if (currentPage === "login") {
