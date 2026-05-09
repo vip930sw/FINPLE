@@ -191,6 +191,10 @@ function App() {
       <section className="hero">
         <div className="heroText">
           <p className="badge">투자 포트폴리오 분석 웹앱</p>
+          <div className="betaNoticeBanner" role="note">
+            <strong>Beta</strong>
+            <span>FINPLE은 현재 베타 운영 중입니다. 일부 기능과 데이터는 테스트 단계이며, 투자 판단 전 공식 자료를 함께 확인해 주세요.</span>
+          </div>
           <h1>
             내 포트폴리오의
             <br />

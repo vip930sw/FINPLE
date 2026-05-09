@@ -10866,3 +10866,60 @@ body,
     width: 100%;
   }
 }
+
+/* STEP92_BETA_NOTICE_BANNER */
+.betaNoticeBanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 680px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.92);
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.betaNoticeBanner strong {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.betaNoticeBanner span {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .betaNoticeBanner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: 16px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .betaNoticeBanner strong {
+    min-width: 44px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
