@@ -85,6 +85,37 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  useEffect(() => {
+    function isEditableTarget(target) {
+      if (!(target instanceof Element)) return false;
+
+      return Boolean(
+        target.closest(
+          "input, textarea, select, button, a, [contenteditable='true'], .allowTextSelection"
+        )
+      );
+    }
+
+    function preventCopyInteraction(event) {
+      if (isEditableTarget(event.target)) return;
+      event.preventDefault();
+    }
+
+    document.body.classList.add("finpleCopyGuard");
+    document.addEventListener("contextmenu", preventCopyInteraction);
+    document.addEventListener("dragstart", preventCopyInteraction);
+    document.addEventListener("selectstart", preventCopyInteraction);
+    document.addEventListener("copy", preventCopyInteraction);
+
+    return () => {
+      document.body.classList.remove("finpleCopyGuard");
+      document.removeEventListener("contextmenu", preventCopyInteraction);
+      document.removeEventListener("dragstart", preventCopyInteraction);
+      document.removeEventListener("selectstart", preventCopyInteraction);
+      document.removeEventListener("copy", preventCopyInteraction);
+    };
+  }, []);
+
   const stockIndexSymbols = [
     { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
     { description: "Nasdaq 100", proName: "CAPITALCOM:US100" },
@@ -181,7 +212,7 @@ function App() {
 
         <nav>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
+          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("problem")}>Problem</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
           <button type="button" className="navTextButton" onClick={() => setCurrentPage("support")}>문의사항</button>
         </nav>
@@ -238,21 +269,11 @@ function App() {
           </div>
 
           <div className="bars">
-            <Bar label="미국 주식" value={55} />
-            <Bar label="배당주" value={25} />
+            <Bar label="성장주" value={55} />
+            <Bar label="가치주" value={25} />
             <Bar label="채권" value={15} />
-            <Bar label="현금" value={5} />
+            <Bar label="금" value={5} />
           </div>
-        </div>
-      </section>
-
-      <section className="section white">
-        <p className="sectionLabel">Problem</p>
-        <div className="sectionTopRow">
-          <h2>수익률만 보고 투자하면 포트폴리오의 위험을 놓치기 쉽습니다.</h2>
-          <p className="sectionSideText">
-            변동성·최대낙폭·분산 효과·현금 비중·리밸런싱 기준까지 함께 고려해야 합니다.
-          </p>
         </div>
       </section>
 
@@ -260,32 +281,51 @@ function App() {
         <EconomicCalendarSection />
       </div>
 
-      <DemoCalculator />
+      <section id="problem" className="section white goldenSection whySection">
+        <p className="sectionLabel">Why</p>
+        <div className="sectionTopRow">
+          <h2>왜 포트폴리오는 수익률보다 지속 가능성이 먼저일까요?</h2>
+          <p className="sectionSideText">
+            투자는 높은 수익률 하나를 맞히는 일이 아니라, 하락장과 변동성 속에서도 계획을 유지할 수 있는 구조를 만드는 일입니다.
+            FINPLE은 내 자산의 위험, 현금흐름, 실질가치를 함께 보며 오래 버틸 수 있는 투자 결정을 돕습니다.
+          </p>
+        </div>
+      </section>
 
-      <section id="features" className="section">
-        <p className="sectionLabel">Features</p>
-        <h2>포트폴리오를 숫자와 시각화로 분석합니다.</h2>
+      <section id="features" className="section goldenSection">
+        <p className="sectionLabel">How</p>
+        <h2>어떻게 장기 투자 구조를 점검하나요?</h2>
+        <p>
+          FINPLE은 자산별 기대수익률만 보여주지 않습니다. 거시경제 환경, 자산배분, 최대낙폭, 배당, 물가 반영 실질가치를 함께 계산해
+          포트폴리오가 실제로 견딜 수 있는 구조인지 확인합니다.
+        </p>
 
         <div className="featureGrid">
-          <Feature title="거시경제 지표 확인" text="금리, 물가, 고용, 환율 등 주요 경제지표를 함께 확인하여 시장 환경을 입체적으로 파악합니다." />
-          <Feature title="CAGR 기반 자산평가" text="자산별 연평균 성장률을 기준으로 기대수익률을 설정하고 포트폴리오의 예상 성과를 계산합니다." />
-          <Feature title="MDD 중심 리스크 관리" text="최대낙폭을 기준으로 하락장에서 견딜 수 있는 포트폴리오인지 점검하고 위험 수준을 확인합니다." />
-          <Feature title="자산배분과 리밸런싱" text="현재 비중과 목표 비중을 비교하여 어떤 자산을 늘리거나 줄여야 하는지 판단할 수 있습니다." />
-          <Feature title="올웨더 포트폴리오 템플릿" text="주식, 채권, 금, 원자재, 현금 등 다양한 자산군을 활용한 분산 포트폴리오 구성을 지원합니다." />
-          <Feature title="복잡하지 않은 분석 리포트" text="투자 경험이 많지 않아도 이해할 수 있도록 핵심 수치와 해석을 간단한 리포트 형태로 제공합니다." />
+          <Feature title="시장 환경을 함께 보기" text="금리, 물가, 고용, 환율 등 주요 지표를 함께 확인해 투자 판단의 배경을 점검합니다." />
+          <Feature title="가정값을 직접 조정" text="월 투자금, 투자기간, CAGR, MDD, 배당률을 직접 조정해 여러 시나리오를 비교합니다." />
+          <Feature title="하락 위험 먼저 확인" text="최대낙폭과 변동성을 기준으로 하락장에서 감당 가능한 포트폴리오인지 점검합니다." />
+          <Feature title="자산배분 균형 점검" text="성장주, 가치주, 채권, 금 등 자산군 비중을 보며 편중된 구조를 조정합니다." />
+          <Feature title="실질가치와 배당 확인" text="물가상승률을 반영한 실질 평가금액과 예상 배당금을 함께 확인합니다." />
+          <Feature title="리포트로 판단 근거 정리" text="계산 결과를 차트와 리포트로 정리해 투자 구조를 반복적으로 검토합니다." />
         </div>
       </section>
 
-      <section id="how" className="section white">
-        <p className="sectionLabel">How it works</p>
-        <h2>입력하고, 분석하고, 조정합니다.</h2>
+      <section id="how" className="section white goldenSection">
+        <p className="sectionLabel">What</p>
+        <h2>무엇을 입력하고 무엇을 확인하나요?</h2>
+        <p>
+          자산을 찾고, 수량과 기대지표를 입력한 뒤, 장기 성과·위험·실질가치·배당 흐름을 확인합니다.
+          결과는 포트폴리오 비교와 상세분석 리포트로 이어집니다.
+        </p>
 
         <div className="stepGrid">
-          <Step number="01" title="자산 찾기" text="스크리너에서 ETF·주식 후보를 검색하고 포트폴리오에 추가합니다." />
-          <Step number="02" title="조건 입력" text="수량, 월 투자금, 투자기간, 기대지표를 입력합니다." />
-          <Step number="03" title="리포트 확인" text="상세분석과 PDF 리포트로 포트폴리오의 성격과 위험을 점검합니다." />
+          <Step number="01" title="자산 후보 선택" text="스크리너에서 ETF·주식 후보를 찾고 포트폴리오에 추가합니다." />
+          <Step number="02" title="조건 입력" text="보유 수량, 월 투자금, 투자기간, CAGR, MDD, 배당률을 입력합니다." />
+          <Step number="03" title="결과 확인" text="예상 성과, 실질가치, 배당금, 위험 지표와 리포트를 확인합니다." />
         </div>
       </section>
+
+      <DemoCalculator />
 
       <section id="pricing" className="section">
         <p className="sectionLabel">Pricing</p>

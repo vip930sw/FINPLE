@@ -10923,3 +10923,66 @@ body,
     font-size: 11px;
   }
 }
+
+
+/* STEP105_HOME_GOLDEN_COPY_GUARD */
+.goldenSection > p:not(.sectionLabel) {
+  max-width: 980px;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.85;
+}
+
+.whySection .sectionTopRow h2 {
+  max-width: 980px;
+  white-space: normal;
+}
+
+.whySection .sectionSideText {
+  max-width: 980px;
+  white-space: normal;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.85;
+  font-weight: 700;
+}
+
+.goldenSection .featureCard p,
+.goldenSection .stepCard p {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.goldenSection .stepCard p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.finpleCopyGuard .page,
+.finpleCopyGuard .personalPage,
+.finpleCopyGuard .accountPage {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.finpleCopyGuard input,
+.finpleCopyGuard textarea,
+.finpleCopyGuard select,
+.finpleCopyGuard [contenteditable="true"],
+.finpleCopyGuard .allowTextSelection {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media (max-width: 900px) {
+  .goldenSection > p:not(.sectionLabel),
+  .whySection .sectionSideText {
+    font-size: 16px;
+    line-height: 1.75;
+  }
+}
+
