@@ -1,5 +1,10 @@
 import { useState } from "react";
 
+import {
+  FINPLE_PLAN_CONFIGS,
+  getStoredFinplePlan,
+} from "../config/planConfig";
+
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
@@ -106,6 +111,24 @@ function getGlobalSettingsFromServerPortfolio(portfolio) {
   };
 }
 
+function getCurrentPlanPortfolioLimit() {
+  const planKey = getStoredFinplePlan();
+  const currentPlan = FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
+  const portfolioLimit = currentPlan?.limits?.portfolios;
+
+  return Number.isFinite(portfolioLimit) ? Math.max(1, Number(portfolioLimit)) : Infinity;
+}
+
+function applyPortfolioLimit(portfolioList) {
+  const portfolioLimit = getCurrentPlanPortfolioLimit();
+
+  if (!Number.isFinite(portfolioLimit)) {
+    return portfolioList;
+  }
+
+  return portfolioList.slice(0, portfolioLimit);
+}
+
 export default function PortfolioManagerPanel({
   portfolioList,
   activePortfolioId,
@@ -208,7 +231,8 @@ export default function PortfolioManagerPanel({
         return;
       }
 
-      const nextPortfolioList = serverPortfolios.map(normalizeServerPortfolioForLocal);
+      const normalizedServerPortfolioList = serverPortfolios.map(normalizeServerPortfolioForLocal);
+      const nextPortfolioList = applyPortfolioLimit(normalizedServerPortfolioList);
       const nextActivePortfolioId =
         nextPortfolioList.find((portfolio) => portfolio.id === activePortfolioId)?.id ||
         nextPortfolioList[0].id;
@@ -224,7 +248,12 @@ export default function PortfolioManagerPanel({
         JSON.stringify(nextGlobalSettings)
       );
 
-      setServerSyncStatus(`서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오`);
+      const limitedCount = normalizedServerPortfolioList.length - nextPortfolioList.length;
+      setServerSyncStatus(
+        limitedCount > 0
+          ? `서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오. 현재 요금제 제한으로 ${limitedCount}개는 제외했습니다.`
+          : `서버 불러오기 완료: ${nextPortfolioList.length}개 포트폴리오`
+      );
       window.alert("서버 포트폴리오를 불러왔습니다. 화면을 새로고침합니다.");
       window.location.reload();
     } catch (error) {
