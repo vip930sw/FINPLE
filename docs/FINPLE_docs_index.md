@@ -46,3 +46,4 @@
 - [FINPLE_step106_home_qa_checklist.md](./FINPLE_step106_home_qa_checklist.md)  
   홈 화면 최종 QA, 내비게이션, Why/How/What 메시지, 모바일 화면, 복사 방지, 임시 파일 정리 전 점검 기준을 정리한 문서입니다.
 - [Step 107. 임시 패치 파일 정리](./FINPLE_step107_temp_file_cleanup.md)
+- [Step 108. Beta v0.1 마감 / Git 태그 준비](./FINPLE_step108_beta_v01_release_tag.md)
