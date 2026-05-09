@@ -1,10 +1,10 @@
 export default function PortfolioCompareLineChart({ portfolios }) {
   if (!portfolios || portfolios.length === 0) return null;
 
-  const width = 1000;
-  const height = 340;
-  const paddingLeft = 86;
-  const paddingRight = 150;
+  const width = 760;
+  const height = 320;
+  const paddingLeft = 72;
+  const paddingRight = 44;
   const paddingTop = 42;
   const paddingBottom = 58;
 
@@ -179,13 +179,7 @@ export default function PortfolioCompareLineChart({ portfolios }) {
                 return `${x},${y}`;
               })
               .join(" ");
-
-            const lastRow =
-              portfolio.result.performanceRows[
-                portfolio.result.performanceRows.length - 1
-              ];
-
-            return (
+return (
               <g key={portfolio.id}>
               <polyline
                   points={points}
@@ -195,23 +189,7 @@ export default function PortfolioCompareLineChart({ portfolios }) {
                   strokeLinecap="round"
                   strokeLinejoin="round"
               />
-
-                  {lastRow && (
-                  <text
-                  x={width - paddingRight + 18}
-                  y={getY(lastRow.inflationAdjustedValue) + index * 22 - 10}
-                  textAnchor="start"
-                  className={
-                    portfolio.realValueRank === 1
-                      ? "compareLineEndLabel rank1"
-                      : "compareLineEndLabel"
-                  }
-                  fill={colors[index % colors.length]}
-                >
-                  {`${portfolio.realValueRank}위 · ${portfolio.name}`}
-                </text>
-                  )}
-              </g>
+</g>
             );
           })}
         </svg>

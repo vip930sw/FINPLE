@@ -10230,3 +10230,181 @@ body,
 }
 
 /* ===== End Step 79-7 Mobile Final Polish ===== */
+
+
+/* Step 79-8 Mobile chart and sticky table final fix */
+
+/* 모바일 공통: 섹션 설명은 말줄임 없이 모두 표시 */
+@media (max-width: 700px) {
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .performanceHeader p:not(.sectionLabel),
+  .assetValueNotice span,
+  .assetValueNotice small,
+  .simulatorIntroText,
+  .calculatorNotice {
+    display: block !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: initial !important;
+    max-width: 100% !important;
+  }
+
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 24px !important;
+    line-height: 1.24 !important;
+    letter-spacing: -0.6px !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .assetValueNotice {
+    overflow: hidden !important;
+  }
+
+  .assetValueNotice strong,
+  .assetValueNotice p,
+  .assetValueNotice span,
+  .assetValueNotice small {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+  }
+}
+
+/* Portfolio Compare: 모바일에서 30년 구간 전체가 한 화면에 들어오도록 강제 */
+.compareLineChart,
+.compareLineChartSvgWrap {
+  max-width: 100%;
+}
+
+.compareLineChartSvgWrap {
+  overflow: visible !important;
+}
+
+.compareLineChartSvg {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+}
+
+@media (max-width: 700px) {
+  .compareLineChart {
+    padding: 18px !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvg {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareAxisLabel {
+    font-size: 19px !important;
+    font-weight: 900 !important;
+  }
+
+  .compareLineEndLabel {
+    display: none !important;
+  }
+
+  .compareLineLegend.grouped {
+    margin-top: 14px !important;
+  }
+}
+
+/* Annual Performance: 모바일에서 헤더/연차 컬럼 위로 본문이 비쳐 보이지 않도록 배경과 z-index 강화 */
+@media (max-width: 700px) {
+  .performanceTableWrap {
+    position: relative;
+    overflow: auto !important;
+    background: #ffffff !important;
+  }
+
+  .performanceTable {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    min-width: 620px !important;
+  }
+
+  .performanceTable th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child {
+    left: 0 !important;
+    z-index: 12 !important;
+    background: #f8fafc !important;
+    box-shadow: 1px 0 0 #e2e8f0, 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 6 !important;
+    background: #ffffff !important;
+    box-shadow: 1px 0 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* 모바일 시뮬레이터 표 입력칸 추가 안정화 */
+@media (max-width: 700px) {
+  .calculatorTableWrap {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calculatorTable {
+    width: 980px !important;
+    min-width: 980px !important;
+    table-layout: fixed !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    box-sizing: border-box;
+  }
+
+  .calculatorTable input {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .calculatorTable th:nth-child(7),
+  .calculatorTable td:nth-child(7),
+  .calculatorTable th:nth-child(8),
+  .calculatorTable td:nth-child(8),
+  .calculatorTable th:nth-child(9),
+  .calculatorTable td:nth-child(9),
+  .calculatorTable th:nth-child(10),
+  .calculatorTable td:nth-child(10) {
+    width: 80px !important;
+  }
+}
