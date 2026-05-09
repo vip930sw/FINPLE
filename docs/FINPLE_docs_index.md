@@ -40,3 +40,8 @@
 - [Step 102. 베타 운영 안정성 점검](./FINPLE_step102_beta_stability_check.md)
 
 - [Step 103. 운영용 오류 안내 문구 정책](./FINPLE_step103_error_message_policy.md)
+
+## Step 106
+
+- [FINPLE_step106_home_qa_checklist.md](./FINPLE_step106_home_qa_checklist.md)  
+  홈 화면 최종 QA, 내비게이션, Why/How/What 메시지, 모바일 화면, 복사 방지, 임시 파일 정리 전 점검 기준을 정리한 문서입니다.
