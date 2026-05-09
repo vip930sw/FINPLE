@@ -9218,3 +9218,241 @@ body,
   }
 }
 /* === STEP 79-3: Mobile compact home sections END === */
+
+
+/* STEP 79-4 MOBILE DEEP FIX */
+@media (max-width: 640px) {
+  /* 모바일에서는 TradingView 티커 위젯을 숨깁니다. 위젯 iframe이 작은 폭에서 지나치게 납작해지는 문제를 방지합니다. */
+  .tickerArea {
+    display: none !important;
+  }
+
+  /* 전체 섹션 간격 축소 */
+  .hero,
+  .section,
+  .personalHero,
+  .calculatorSection,
+  .simulatorSection {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .hero {
+    padding-top: 48px !important;
+    padding-bottom: 44px !important;
+    gap: 28px !important;
+  }
+
+  .section {
+    padding-top: 44px !important;
+    padding-bottom: 44px !important;
+  }
+
+  .section h2,
+  .personalHero h1,
+  .performanceHeader h3,
+  .chartCard h3,
+  .portfolioComparePanel h3,
+  .calculatorSection h2 {
+    white-space: normal !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .section h2 {
+    font-size: 26px !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .section > p:not(.sectionLabel),
+  .description,
+  .personalHero p:not(.sectionLabel),
+  .performanceHeader p:not(.sectionLabel) {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+  }
+
+  /* 모바일 홈 계산기 영역 압축 */
+  .calculatorSection {
+    padding-top: 42px !important;
+    padding-bottom: 42px !important;
+  }
+
+  .calculatorSection h2 {
+    font-size: 25px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .calculatorSummary {
+    gap: 12px !important;
+    margin: 22px 0 18px !important;
+  }
+
+  .summaryCard {
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .summaryCard p {
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .summaryCard strong {
+    font-size: 21px !important;
+  }
+
+  .summaryCard input,
+  .calculatorTable input {
+    min-height: 40px;
+    font-size: 14px !important;
+  }
+
+  /* 개인 시뮬레이터 상단 설명 축소 */
+  .personalHero {
+    padding-top: 40px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .personalHero h1 {
+    font-size: 27px !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .personalHero p:not(.sectionLabel) {
+    margin-top: 12px !important;
+    max-height: 4.9em;
+    overflow: hidden;
+  }
+
+  .personalPage .calculatorSection {
+    padding-top: 24px !important;
+  }
+
+  .personalPage .calculatorSection > .sectionLabel + h2,
+  .personalPage .calculatorSection h2 {
+    font-size: 28px !important;
+  }
+
+  /* 모바일에서 시뮬레이터는 PC 권장 안내를 먼저 보여줍니다. */
+  .personalPage .simulatorSection::before {
+    content: '모바일에서는 표 입력과 세부 편집이 제한적일 수 있습니다. 정확한 입력과 검토는 PC 이용을 권장합니다.';
+    display: block;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 800;
+  }
+
+  /* 자산 입력 테이블은 억지로 좁히지 않고 가로 스크롤로 처리합니다. */
+  .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 18px !important;
+  }
+
+  .calculatorTable {
+    width: max-content !important;
+    min-width: 820px !important;
+    table-layout: auto !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .calculatorTable input {
+    min-width: 56px;
+    padding: 8px 9px !important;
+  }
+
+  .addButton {
+    width: 100%;
+    margin-top: 14px !important;
+  }
+
+  /* 포트폴리오 비교/차트 영역 넘침 보정 */
+  .portfolioManager,
+  .portfolioComparePanel,
+  .chartCard,
+  .chartStatement,
+  .performanceTableWrap {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+    overflow-x: auto;
+  }
+
+  .performanceChartSection,
+  .performanceSection {
+    margin-top: 28px !important;
+  }
+
+  .performanceHeader {
+    margin-bottom: 14px !important;
+  }
+
+  .performanceHeader h3 {
+    font-size: 22px !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  .svgChartWrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svgChart {
+    width: max-content !important;
+    min-width: 640px !important;
+  }
+
+  .chartLegend {
+    gap: 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* 포트폴리오 비교 카드가 화면 밖으로 밀리지 않게 보정 */
+  .portfolioComparePanel * {
+    max-width: 100%;
+  }
+
+  .portfolioComparePanel h3,
+  .portfolioComparePanel strong,
+  .chartCard h3 {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* 모바일 버튼 크기 보정 */
+  .headerButton,
+  .primaryButton,
+  .secondaryButton,
+  .toggleButton {
+    font-size: 14px !important;
+    padding: 10px 14px !important;
+  }
+
+  .floatingTopButton,
+  .homeTopButton {
+    right: 14px !important;
+    bottom: 14px !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 12px !important;
+  }
+}
