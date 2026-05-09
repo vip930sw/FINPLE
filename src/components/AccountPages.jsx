@@ -6,6 +6,7 @@ import {
   fetchCurrentServerUser,
   fetchServerPortfolios,
   fetchSupportInquiries,
+  getFinpleAdminToken,
   getLocalPortfolioSnapshot,
   getStoredFinpleAuthUser,
   setStoredFinpleAuthUser,
@@ -393,10 +394,14 @@ const INQUIRY_STATUS_LABELS = {
 };
 
 function AdminInquiryPanel() {
+  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
+  const [isAdminMode, setIsAdminMode] = useState(() => Boolean(getFinpleAdminToken()));
   const [inquiries, setInquiries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [statusMessage, setStatusMessage] = useState("문의사항 목록을 불러오면 최근 접수 건을 확인할 수 있습니다.");
+  const [statusMessage, setStatusMessage] = useState(
+    "관리자 토큰을 입력하면 문의사항 목록을 조회할 수 있습니다."
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const filteredInquiries = useMemo(() => {
@@ -404,7 +409,33 @@ function AdminInquiryPanel() {
     return inquiries.filter((inquiry) => inquiry.status === statusFilter);
   }, [inquiries, statusFilter]);
 
-  const selectedInquiry = filteredInquiries.find((inquiry) => inquiry.id === selectedId) || filteredInquiries[0] || null;
+  const selectedInquiry =
+    filteredInquiries.find((inquiry) => inquiry.id === selectedId) ||
+    filteredInquiries[0] ||
+    null;
+
+  function handleSaveAdminToken() {
+    const token = adminTokenInput.trim();
+
+    if (!token) {
+      setStatusMessage("관리자 토큰을 입력해 주세요.");
+      return;
+    }
+
+    window.localStorage.setItem("finple-admin-token", token);
+    setIsAdminMode(true);
+    setStatusMessage("관리자 토큰을 저장했습니다. 문의 목록을 불러올 수 있습니다.");
+  }
+
+  function handleClearAdminToken() {
+    window.localStorage.removeItem("finple-admin-token");
+    setAdminTokenInput("");
+    setIsAdminMode(false);
+    setInquiries([]);
+    setSelectedId(null);
+    setStatusFilter("all");
+    setStatusMessage("관리자 모드를 해제했습니다. 문의 목록은 더 이상 표시되지 않습니다.");
+  }
 
   async function handleLoadInquiries() {
     setIsLoading(true);
@@ -412,7 +443,7 @@ function AdminInquiryPanel() {
       const nextInquiries = await fetchSupportInquiries({ scope: "all" });
       setInquiries(nextInquiries);
       setSelectedId(nextInquiries[0]?.id || null);
-      setStatusMessage(`문의사항 ${nextInquiries.length}건을 불러왔습니다.`);
+      setStatusMessage("문의사항 " + nextInquiries.length + "건을 불러왔습니다.");
     } catch (error) {
       setStatusMessage(error?.message || "문의사항 목록을 불러오지 못했습니다.");
     } finally {
@@ -431,7 +462,7 @@ function AdminInquiryPanel() {
       setInquiries((current) => current.map((inquiry) => (
         inquiry.id === inquiryId ? { ...inquiry, ...updatedInquiry } : inquiry
       )));
-      setStatusMessage(`문의 상태를 “${INQUIRY_STATUS_LABELS[status] || status}”로 변경했습니다.`);
+      setStatusMessage("문의 상태를 “" + (INQUIRY_STATUS_LABELS[status] || status) + "”로 변경했습니다.");
     } catch (error) {
       setStatusMessage(error?.message || "문의 상태를 변경하지 못했습니다.");
     } finally {
@@ -439,15 +470,51 @@ function AdminInquiryPanel() {
     }
   }
 
+  if (!isAdminMode) {
+    return (
+      <section className="accountCard adminInquiryPanel">
+        <div className="serverStorageHeader">
+          <div>
+            <p className="accountMiniLabel">Admin Locked</p>
+            <h2>관리자 문의 조회</h2>
+            <p>관리자 토큰이 있는 브라우저에서만 문의 목록 조회와 처리 상태 변경을 사용할 수 있습니다.</p>
+          </div>
+          <span className="serverStatusBadge">잠김</span>
+        </div>
+
+        <div className="accountFormCard adminTokenBox">
+          <label>
+            관리자 토큰
+            <input
+              type="password"
+              value={adminTokenInput}
+              onChange={(event) => setAdminTokenInput(event.target.value)}
+              placeholder="FINPLE_ADMIN_TOKEN 입력"
+              autoComplete="off"
+            />
+          </label>
+
+          <p className="serverStorageMessage compact">{statusMessage}</p>
+
+          <div className="serverStorageActions compactActions">
+            <button type="button" className="primaryButton" onClick={handleSaveAdminToken}>
+              관리자 모드 열기
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="accountCard adminInquiryPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Admin Preview</p>
+          <p className="accountMiniLabel">Admin Mode</p>
           <h2>문의사항 관리자 조회</h2>
-          <p>Supabase inquiries 테이블에 접수된 문의를 확인하고 처리 상태를 바꾸는 개발자 모드용 화면입니다.</p>
+          <p>Supabase inquiries 테이블에 접수된 문의를 확인하고 처리 상태를 변경합니다.</p>
         </div>
-        <span className="serverStatusBadge ready">개발자 모드</span>
+        <span className="serverStatusBadge ready">관리자 모드</span>
       </div>
 
       <div className="adminInquiryToolbar">
@@ -462,6 +529,9 @@ function AdminInquiryPanel() {
           <option value="closed">종료</option>
         </select>
         <span>{filteredInquiries.length}건 표시</span>
+        <button type="button" className="secondaryButton" onClick={handleClearAdminToken}>
+          관리자 모드 해제
+        </button>
       </div>
 
       <p className="serverStorageMessage compact">{statusMessage}</p>
@@ -476,7 +546,7 @@ function AdminInquiryPanel() {
                 className={inquiry.id === selectedInquiry?.id ? "adminInquiryItem active" : "adminInquiryItem"}
                 onClick={() => setSelectedId(inquiry.id)}
               >
-                <span className={`inquiryStatusBadge status-${inquiry.status || "open"}`}>
+                <span className={"inquiryStatusBadge status-" + (inquiry.status || "open")}>
                   {INQUIRY_STATUS_LABELS[inquiry.status] || inquiry.status || "접수"}
                 </span>
                 <strong>{inquiry.title || "제목 없는 문의"}</strong>
@@ -517,7 +587,7 @@ function AdminInquiryPanel() {
       </div>
 
       <p className="adminInquiryNotice">
-        실제 운영 전에는 관리자 권한 체크를 추가해야 합니다. 현재는 개발 사용자 검증용 화면입니다.
+        관리자 토큰은 현재 브라우저에만 저장됩니다. 공용 PC에서는 반드시 관리자 모드 해제를 눌러 주세요.
       </p>
     </section>
   );
