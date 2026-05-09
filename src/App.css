@@ -9456,3 +9456,255 @@ body,
     font-size: 12px !important;
   }
 }
+
+
+/* =========================
+   Step 79-5 Mobile Simulator Final Fix
+========================= */
+
+.mobileDesktopNotice {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* Personal Page introductory hero is removed; tighten simulator entry. */
+  .personalPage .simulatorSection {
+    padding-top: 34px !important;
+  }
+
+  .simulatorSection > .sectionLabel,
+  .simulatorSection > h2,
+  .simulatorIntroText {
+    max-width: 100% !important;
+  }
+
+  .simulatorSection > h2 {
+    margin-bottom: 12px !important;
+    font-size: 26px !important;
+    line-height: 1.22 !important;
+    letter-spacing: -0.8px !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .simulatorIntroText {
+    margin-bottom: 22px !important;
+    font-size: 14px !important;
+    line-height: 1.72 !important;
+    color: #475569 !important;
+  }
+
+  .mobileDesktopNotice {
+    display: block;
+    margin: 14px 0 12px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.55;
+  }
+
+  /* Asset table: do not squeeze columns on mobile; make it horizontally scrollable. */
+  .settingsPanel .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 18px !important;
+  }
+
+  .settingsPanel .calculatorTable {
+    width: 980px !important;
+    min-width: 980px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+  }
+
+  .settingsPanel .calculatorTable th,
+  .settingsPanel .calculatorTable td {
+    padding: 10px 8px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 12px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(1),
+  .settingsPanel .calculatorTable td:nth-child(1) {
+    width: 82px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(2),
+  .settingsPanel .calculatorTable td:nth-child(2) {
+    width: 155px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(3),
+  .settingsPanel .calculatorTable td:nth-child(3) {
+    width: 88px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(4),
+  .settingsPanel .calculatorTable td:nth-child(4),
+  .settingsPanel .calculatorTable th:nth-child(5),
+  .settingsPanel .calculatorTable td:nth-child(5) {
+    width: 140px !important;
+  }
+
+  .settingsPanel .calculatorTable input {
+    min-width: 64px !important;
+    padding: 9px 8px !important;
+    font-size: 12px !important;
+    text-align: right !important;
+  }
+
+  .settingsPanel .tableActionRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .settingsPanel .tableActionRow button,
+  .settingsPanel .addButton,
+  .settingsPanel .resetPortfolioButton {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Put Saved Portfolios at the bottom with less visual dominance. */
+  .portfolioAnchor {
+    margin-top: 34px !important;
+  }
+
+  .portfolioManager {
+    margin: 0 !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .portfolioManagerTop {
+    gap: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .portfolioManager h3 {
+    font-size: 20px !important;
+  }
+
+  .portfolioTabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  .portfolioTab {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  /* Compare: keep cards and chart inside viewport; chart scrolls horizontally only inside its box. */
+  .comparePanel,
+  .portfolioComparePanel {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .portfolioCompareGrid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .portfolioCompareCard {
+    max-width: 100% !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .portfolioCompareCardTop {
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .portfolioCompareCardTop strong,
+  .portfolioCompareCard dl dd,
+  .portfolioCompareCard .realValue {
+    overflow-wrap: anywhere !important;
+    word-break: keep-all !important;
+  }
+
+  .compareRankGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .compareLineChart {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .compareLineChartHeader h4 {
+    font-size: 22px !important;
+    line-height: 1.22 !important;
+    word-break: keep-all !important;
+  }
+
+  .compareLineChartHeader p {
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+  }
+
+  .compareLineChartSvg {
+    width: 760px !important;
+    min-width: 760px !important;
+    max-width: none !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  .compareLineLegend.grouped {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .compareLineLegendGroup,
+  .compareLineLegendItem {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Detail report titles should wrap instead of clipping. */
+  .detailPanel,
+  .reportSection,
+  .performanceChartSection,
+  .chartCard {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .detailPanel h3,
+  .detailPanel h4,
+  .performanceHeader h3,
+  .chartCard h3,
+  .chartCard h4 {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+  }
+}

@@ -114,6 +114,10 @@ export default function SettingsPanel({
         </span>
       </div>
 
+      <div className="mobileDesktopNotice">
+        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 수량·현재가·CAGR·MDD 등을 많이 수정할 때는 PC 화면 사용을 권장합니다.
+      </div>
+
       <AssetInputTable
         assets={assets}
         totalAssetValue={totalAssetValue}

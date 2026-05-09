@@ -44,16 +44,6 @@ function PersonalPage({ onBack }) {
           홈으로
         </button>
       </header>
-
-      <section className="personalHero">
-        <p className="sectionLabel">Personal Page</p>
-        <h1>나만의 포트폴리오를 시뮬레이션합니다.</h1>
-        <p>
-            현재 보유 자산의 평가금액을 시작점으로 삼고, 투자금과 자산별
-            CAGR, MDD, 배당률을 반영해 장기 포트폴리오 성과를 계산합니다.
-        </p>
-      </section>
-
       <PortfolioSimulator ref={simulatorRef} />
     </main>
   );

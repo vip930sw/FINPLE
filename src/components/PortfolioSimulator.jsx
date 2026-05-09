@@ -132,29 +132,9 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
           <p className="sectionLabel">Portfolio Simulator</p>
           <h2>CAGR 기반 포트폴리오 시뮬레이터</h2>
           <p className="simulatorIntroText">
-              보유 자산의 평가금액, 월 투자금, 자산별 기대지표를 기준으로
-              포트폴리오의 장기 성과와 실질가치를 계산합니다.
+              보유 자산의 평가금액을 시작점으로 삼고, 월 투자금과 자산별 CAGR,
+              MDD, 배당률을 반영해 장기 포트폴리오 성과와 실질가치를 계산합니다.
           </p>
-
-        <div id="portfolio" className="portfolioAnchor">
-        <PortfolioManagerPanel
-          portfolioList={portfolioList}
-          activePortfolioId={activePortfolioId}
-          activePortfolio={activePortfolio}
-          isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
-          setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
-          createPortfolioFromTemplate={createPortfolioFromTemplate}
-          duplicateActivePortfolio={duplicateActivePortfolio}
-          selectPortfolio={selectPortfolio}
-          renameActivePortfolio={renameActivePortfolio}
-          deleteActivePortfolio={deleteActivePortfolio}
-          downloadPortfolioBackup={downloadPortfolioBackup}
-          openPortfolioBackupFile={openPortfolioBackupFile}
-          backupFileInputRef={backupFileInputRef}
-          restorePortfolioBackup={restorePortfolioBackup}
-          dataManagementSummary={dataManagementSummary}
-        />
-        </div>
 
         <SimulatorTabNav
           activeSimulatorTab={activeSimulatorTab}
@@ -250,6 +230,27 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
           />
           </div>
         )}
+
+
+        <div id="portfolio" className="portfolioAnchor">
+          <PortfolioManagerPanel
+            portfolioList={portfolioList}
+            activePortfolioId={activePortfolioId}
+            activePortfolio={activePortfolio}
+            isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
+            setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
+            createPortfolioFromTemplate={createPortfolioFromTemplate}
+            duplicateActivePortfolio={duplicateActivePortfolio}
+            selectPortfolio={selectPortfolio}
+            renameActivePortfolio={renameActivePortfolio}
+            deleteActivePortfolio={deleteActivePortfolio}
+            downloadPortfolioBackup={downloadPortfolioBackup}
+            openPortfolioBackupFile={openPortfolioBackupFile}
+            backupFileInputRef={backupFileInputRef}
+            restorePortfolioBackup={restorePortfolioBackup}
+            dataManagementSummary={dataManagementSummary}
+          />
+        </div>
 
   {shouldShowFloatingPortfolioDropdown && (
           <FloatingPortfolioDropdown
