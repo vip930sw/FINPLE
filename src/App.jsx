@@ -131,8 +131,9 @@ function App() {
             한눈에 분석하세요
           </h1>
           <p className="description">
-            자산 비중, 기대수익률, 변동성, 리밸런싱 필요 여부를 분석하여
-            오래 버틸 수 있는 투자 구조를 설계할 수 있도록 돕습니다.
+            자산 비중, 기대수익률, 변동성, 최대낙폭을 함께 확인하여
+            장기 투자 구조를 점검할 수 있도록 돕습니다. 분석 결과는
+            투자 판단을 돕기 위한 참고자료입니다.
           </p>
           <div className="heroButtons">
             <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
@@ -211,15 +212,31 @@ function App() {
         <h2>처음에는 가볍게, 필요할 때 더 깊게 분석하세요.</h2>
 
         <div className="priceGrid">
-          <Price title="Free" price="0원" items={["브라우저 저장", "기본 시뮬레이션", "기본 PDF 리포트"]} onSelect={() => setCurrentPage("signup")} />
-          <Price title="Personal" price="월 9,900원" featured items={["서버 저장", "포트폴리오 확대", "API 조회량 확대", "고급 리포트"]} onSelect={() => setCurrentPage("pricing")} />
-          <Price title="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱 도구", "팀/업무용 기능"]} onSelect={() => setCurrentPage("support")} />
+          <Price
+            title="Free"
+            price="0원"
+            items={["브라우저 자동 저장", "기본 시뮬레이션", "제한된 자산 조회", "요약 리포트 확인"]}
+            onSelect={() => setCurrentPage("signup")}
+          />
+          <Price
+            title="Personal"
+            price="월 9,900원"
+            featured
+            items={["서버 포트폴리오 저장", "여러 포트폴리오 관리", "API 조회량 확대", "PDF 리포트 저장", "문의 지원"]}
+            onSelect={() => setCurrentPage("pricing")}
+          />
+          <Price
+            title="Pro"
+            price="준비 중"
+            items={["고급 백테스트", "리밸런싱 분석", "고급 위험 지표", "장기 성과 비교", "업무용 확장 기능"]}
+            onSelect={() => setCurrentPage("support")}
+          />
         </div>
       </section>
 
       <footer className="footer">
         <p>© 2026 Portfolio Lab. All rights reserved.</p>
-        <p>본 서비스는 투자 참고용 분석 도구이며, 투자 결과를 보장하지 않습니다.</p>
+        <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
       </footer>
 
       <button type="button" className="floatingTopButton homeTopButton" onClick={scrollHomeToTop} aria-label="메인 페이지 상단으로 이동">

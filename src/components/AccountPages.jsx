@@ -195,7 +195,7 @@ export function MyPage({ onNavigate }) {
 
 export function PricingPage({ onNavigate }) {
   const [selectedPlan, setSelectedPlan] = useState(() => getStoredFinplePlan());
-  const [statusMessage, setStatusMessage] = useState("요금제를 선택하면 브라우저에 선택 상태가 저장됩니다. 실제 결제는 아직 연결되지 않았습니다.");
+  const [statusMessage, setStatusMessage] = useState("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제는 아직 연결되지 않았습니다.");
   const plans = Object.values(FINPLE_PLAN_CONFIGS);
 
   function handleSelectPlan(planKey) {
@@ -209,7 +209,7 @@ export function PricingPage({ onNavigate }) {
 
     setStatusMessage(
       plan.key === "free"
-        ? "Free 플랜이 선택되었습니다. 임시 체험 기능만 제공되며 서버 저장, PDF 저장, 고급 리포트는 제한됩니다."
+        ? "Free 플랜이 선택되었습니다. 브라우저 저장과 기본 시뮬레이션 중심으로 제공되며 서버 저장, PDF 저장, 고급 리포트는 제한됩니다."
         : `${plan.label} 플랜이 선택되었습니다. 실제 결제 연동 전까지는 데모 상태로 표시됩니다.`
     );
   }
@@ -218,7 +218,7 @@ export function PricingPage({ onNavigate }) {
     <AccountShell
       eyebrow="Pricing"
       title="요금제"
-      description="무료/개인/프로 플랜의 기능 제한 기준을 먼저 잡아두었습니다. 실제 결제는 추후 PG 또는 구독 결제 서비스와 연결합니다."
+      description="처음에는 가볍게 체험하고, 필요할 때 서버 저장·리포트·조회량을 확장할 수 있도록 플랜 기준을 정리했습니다."
       onNavigate={onNavigate}
     >
       <section className="pricingStatusPanel">
@@ -263,6 +263,7 @@ export function PricingPage({ onNavigate }) {
       <section className="pricingNoticeBox">
         <strong>결제 연동 전 안내</strong>
         <p>현재는 플랜 선택과 제한값을 화면에 반영하는 단계입니다. 카드 결제, 구독 갱신, 영수증 처리는 이후 결제 서비스 연동 단계에서 추가합니다.</p>
+        <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
       </section>
     </AccountShell>
   );
