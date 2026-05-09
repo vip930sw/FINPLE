@@ -129,6 +129,34 @@ function applyPortfolioLimit(portfolioList) {
   return portfolioList.slice(0, portfolioLimit);
 }
 
+function getFriendlyServerSyncErrorMessage(error, actionLabel) {
+  const rawMessage = String(error?.message || "").trim();
+  const normalizedMessage = rawMessage.toLowerCase();
+
+  if (
+    normalizedMessage.includes("failed to fetch") ||
+    normalizedMessage.includes("networkerror") ||
+    normalizedMessage.includes("network request failed")
+  ) {
+    return `${actionLabel}에 실패했습니다. 서버가 잠시 대기 상태이거나 네트워크 연결이 불안정할 수 있습니다. 30~60초 후 다시 시도해 주세요.`;
+  }
+
+  if (
+    normalizedMessage.includes("unauthorized") ||
+    normalizedMessage.includes("forbidden") ||
+    normalizedMessage.includes("401") ||
+    normalizedMessage.includes("403")
+  ) {
+    return `${actionLabel}에 실패했습니다. 체험 계정 연결 상태를 다시 확인해 주세요.`;
+  }
+
+  if (normalizedMessage.includes("timeout") || normalizedMessage.includes("timed out")) {
+    return `${actionLabel}에 실패했습니다. 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.`;
+  }
+
+  return `${actionLabel}에 실패했습니다. ${rawMessage || "잠시 후 다시 시도해 주세요."}`;
+}
+
 export default function PortfolioManagerPanel({
   portfolioList,
   activePortfolioId,
@@ -147,7 +175,7 @@ export default function PortfolioManagerPanel({
   dataManagementSummary,
 }) {
   const [serverSyncStatus, setServerSyncStatus] = useState(
-    "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요."
+    "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요. 첫 요청은 서버 준비로 잠시 지연될 수 있습니다."
   );
   const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
 
@@ -166,7 +194,7 @@ export default function PortfolioManagerPanel({
     }
 
     setIsServerSyncLoading(true);
-    setServerSyncStatus("서버에 포트폴리오를 저장하는 중입니다...");
+    setServerSyncStatus("서버에 포트폴리오를 저장하는 중입니다. 첫 요청은 잠시 걸릴 수 있습니다...");
 
     try {
       const response = await fetch(`${getApiBaseUrl()}/account/portfolios/sync-local`, {
@@ -190,8 +218,9 @@ export default function PortfolioManagerPanel({
           `서버 저장 완료: ${payload?.syncedCount || localPortfolioList.length}개 포트폴리오`
       );
     } catch (error) {
-      setServerSyncStatus(`서버 저장 실패: ${error?.message || "알 수 없는 오류"}`);
-      window.alert(error?.message || "서버 저장에 실패했습니다.");
+      const friendlyMessage = getFriendlyServerSyncErrorMessage(error, "서버 저장");
+      setServerSyncStatus(friendlyMessage);
+      window.alert(friendlyMessage);
     } finally {
       setIsServerSyncLoading(false);
     }
@@ -207,7 +236,7 @@ export default function PortfolioManagerPanel({
     if (!shouldLoad) return;
 
     setIsServerSyncLoading(true);
-    setServerSyncStatus("서버 포트폴리오를 불러오는 중입니다...");
+    setServerSyncStatus("서버 포트폴리오를 불러오는 중입니다. 첫 요청은 잠시 걸릴 수 있습니다...");
 
     try {
       const response = await fetch(`${getApiBaseUrl()}/account/portfolios`, {
@@ -257,8 +286,9 @@ export default function PortfolioManagerPanel({
       window.alert("서버 포트폴리오를 불러왔습니다. 화면을 새로고침합니다.");
       window.location.reload();
     } catch (error) {
-      setServerSyncStatus(`서버 불러오기 실패: ${error?.message || "알 수 없는 오류"}`);
-      window.alert(error?.message || "서버 포트폴리오를 불러오지 못했습니다.");
+      const friendlyMessage = getFriendlyServerSyncErrorMessage(error, "서버 불러오기");
+      setServerSyncStatus(friendlyMessage);
+      window.alert(friendlyMessage);
     } finally {
       setIsServerSyncLoading(false);
     }
@@ -376,7 +406,7 @@ export default function PortfolioManagerPanel({
         <div>
           <p>서버 저장 / 불러오기</p>
           <span>
-            현재 브라우저의 포트폴리오를 Supabase 서버 DB에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다.
+            현재 브라우저의 포트폴리오를 FINPLE 서버에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다. 첫 요청이 느리면 잠시 후 다시 시도해 주세요.
           </span>
           <span>{serverSyncStatus}</span>
         </div>

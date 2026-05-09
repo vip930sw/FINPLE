@@ -340,7 +340,7 @@ async function requestJson(path, options = {}, config = {}) {
     throw new Error(
       payload?.message ||
         resultErrors.slice(0, 3).join(" / ") ||
-        "서버 요청에 실패했습니다."
+        "서버 요청에 실패했습니다. 서버가 잠시 대기 상태이거나 네트워크 연결이 불안정할 수 있습니다. 잠시 후 다시 시도해 주세요."
     );
   }
 

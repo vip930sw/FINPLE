@@ -38,3 +38,5 @@
 
 ## Beta Operation
 - [Step 102. 베타 운영 안정성 점검](./FINPLE_step102_beta_stability_check.md)
+
+- [Step 103. 운영용 오류 안내 문구 정책](./FINPLE_step103_error_message_policy.md)
