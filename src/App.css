@@ -10408,3 +10408,152 @@ body,
     width: 80px !important;
   }
 }
+
+/* STEP79_9_COMPARE_GROWTH_ANNUAL_MASK */
+.portfolioCompareGrowthChart {
+  margin-top: 34px;
+}
+
+.portfolioCompareGrowthChart .performanceHeader {
+  margin-bottom: 18px;
+}
+
+.compareGrowthCard {
+  overflow: hidden;
+}
+
+.compareGrowthSvgWrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.compareGrowthSvg {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+}
+
+.compareGrowthLegend {
+  align-items: flex-start;
+}
+
+.compareGrowthLegend > span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+}
+
+.compareGrowthLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.performanceTableWrap {
+  position: relative;
+  background: #ffffff;
+  isolation: isolate;
+}
+
+.performanceTable {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff;
+}
+
+.performanceTable thead th {
+  background: #f8fafc !important;
+  z-index: 8 !important;
+  box-shadow: 0 1px 0 #e2e8f0, 0 10px 14px rgba(248, 250, 252, 0.98);
+}
+
+.performanceTable thead th:first-child {
+  z-index: 12 !important;
+  background: #f8fafc !important;
+  box-shadow: 1px 0 0 #e2e8f0, 0 1px 0 #e2e8f0, 12px 0 16px rgba(248, 250, 252, 0.98);
+}
+
+.performanceTable tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 7 !important;
+  background: #ffffff !important;
+  box-shadow: 1px 0 0 #e2e8f0, 14px 0 18px rgba(255, 255, 255, 0.98);
+}
+
+@media (max-width: 900px) {
+  .performanceChartSection .performanceHeader h3,
+  .detailPanel .performanceHeader h3 {
+    font-size: 23px !important;
+    line-height: 1.28 !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .portfolioCompareGrowthChart .performanceHeader h3 {
+    font-size: 23px !important;
+  }
+
+  .compareGrowthSvg {
+    width: 720px !important;
+    min-width: 720px !important;
+    max-width: none !important;
+  }
+
+  .compareGrowthSvgWrap {
+    margin: 0 -4px;
+    padding: 0 4px 8px;
+  }
+
+  .compareGrowthLegend {
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .compareGrowthLegend > span {
+    width: 100%;
+    border-radius: 16px;
+    justify-content: flex-start;
+  }
+
+  .performanceTableWrap {
+    overflow: auto !important;
+    max-height: 520px;
+    border-radius: 20px;
+  }
+
+  .performanceTable {
+    min-width: 960px !important;
+    table-layout: fixed !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    background-clip: padding-box;
+  }
+
+  .performanceTable thead th {
+    position: sticky;
+    top: 0;
+  }
+
+  .performanceTable th:first-child,
+  .performanceTable td:first-child {
+    width: 84px !important;
+    min-width: 84px !important;
+    max-width: 84px !important;
+  }
+
+  .performanceTable tbody td:first-child {
+    color: #2563eb;
+    font-weight: 900;
+  }
+}

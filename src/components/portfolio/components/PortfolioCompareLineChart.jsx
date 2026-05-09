@@ -1,37 +1,35 @@
 export default function PortfolioCompareLineChart({ portfolios }) {
   if (!portfolios || portfolios.length === 0) return null;
 
-  const width = 760;
-  const height = 320;
-  const paddingLeft = 72;
-  const paddingRight = 44;
-  const paddingTop = 42;
-  const paddingBottom = 58;
+  const width = 1000;
+  const height = 360;
+  const padding = 76;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
 
   const colors = ["#2563eb", "#0f4c5c", "#f59e0b", "#7c3aed", "#64748b"];
 
-  const allValues = portfolios.flatMap((portfolio) =>
-    portfolio.result.performanceRows.map((row) => row.inflationAdjustedValue)
-  );
-
-  const maxValue = Math.max(...allValues, 1);
+  const rowsByPortfolio = portfolios.map((portfolio) => ({
+    ...portfolio,
+    rows: Array.isArray(portfolio?.result?.performanceRows)
+      ? portfolio.result.performanceRows
+      : [],
+  }));
 
   const maxYear = Math.max(
-    ...portfolios.map((portfolio) => Number(portfolio.settings.years || 0)),
+    ...rowsByPortfolio.flatMap((portfolio) =>
+      portfolio.rows.map((row) => Number(row.year || 0))
+    ),
+    ...rowsByPortfolio.map((portfolio) => Number(portfolio?.settings?.years || 0)),
     1
   );
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1];
+  const allValues = rowsByPortfolio.flatMap((portfolio) =>
+    portfolio.rows.map((row) => Number(row.inflationAdjustedValue || 0))
+  );
 
-  const xTicks = Array.from(
-    new Set([
-      1,
-      Math.max(1, Math.round(maxYear * 0.25)),
-      Math.max(1, Math.round(maxYear * 0.5)),
-      Math.max(1, Math.round(maxYear * 0.75)),
-      maxYear,
-    ])
-  ).sort((a, b) => a - b);
+  const maxValue = Math.max(...allValues, 1);
+  const yTicks = [0, 0.25, 0.5, 0.75, 1];
 
   function formatCompactWon(value) {
     if (value >= 100000000) {
@@ -46,177 +44,164 @@ export default function PortfolioCompareLineChart({ portfolios }) {
   }
 
   function getX(year) {
-    return (
-      paddingLeft +
-      ((year - 1) / Math.max(maxYear - 1, 1)) *
-        (width - paddingLeft - paddingRight)
-    );
+    return padding + ((Number(year || 1) - 1) / Math.max(maxYear - 1, 1)) * chartWidth;
   }
 
   function getY(value) {
-    return (
-      height -
-      paddingBottom -
-      (value / (maxValue || 1)) *
-        (height - paddingTop - paddingBottom)
-    );
+    return height - padding - (Number(value || 0) / maxValue) * chartHeight;
   }
 
   function getRankLabel(portfolio) {
-      const sameRankCount = portfolios.filter(
-        (item) => item.realValueRank === portfolio.realValueRank
-      ).length;
+    const sameRankCount = rowsByPortfolio.filter(
+      (item) => item.realValueRank === portfolio.realValueRank
+    ).length;
 
-      return sameRankCount > 1
-        ? `공동 ${portfolio.realValueRank}위`
-        : `${portfolio.realValueRank}위`;
+    return sameRankCount > 1
+      ? `공동 ${portfolio.realValueRank}위`
+      : `${portfolio.realValueRank}위`;
+  }
+
+  const legendGroups = rowsByPortfolio.reduce((groups, portfolio, index) => {
+    const existingGroup = groups.find((group) => group.rank === portfolio.realValueRank);
+    const item = {
+      ...portfolio,
+      color: colors[index % colors.length],
+    };
+
+    if (existingGroup) {
+      existingGroup.items.push(item);
+      return groups;
     }
 
-    const legendGroups = portfolios.reduce((groups, portfolio, index) => {
-      const existingGroup = groups.find(
-        (group) => group.rank === portfolio.realValueRank
-      );
-
-      const item = {
-        ...portfolio,
-        color: colors[index % colors.length],
-      };
-
-      if (existingGroup) {
-        existingGroup.items.push(item);
-        return groups;
-      }
-
-      return [
-        ...groups,
-        {
-          rank: portfolio.realValueRank,
-          label: getRankLabel(portfolio),
-          items: [item],
-        },
-      ];
-    }, []);
+    return [
+      ...groups,
+      {
+        rank: portfolio.realValueRank,
+        label: getRankLabel(portfolio),
+        items: [item],
+      },
+    ];
+  }, []);
 
   return (
-    <div className="compareLineChart">
-      <div className="compareLineChartHeader">
-        <h4>실질 평가금액 비교</h4>
+    <div className="compareLineChart portfolioCompareGrowthChart">
+      <div className="performanceHeader compareGrowthHeader">
+        <div>
+          <p className="sectionLabel">Compare Chart</p>
+          <h3>실질 평가금액 비교</h3>
+        </div>
+
         <p>
-        물가 반영 실질가치 기준 3위까지 비교합니다. 공동 순위는 함께 표시합니다.
-       </p>
+          물가 반영 실질가치 기준 상위 포트폴리오의 장기 흐름을 비교합니다.
+          30년 구간은 상세분석 차트와 같은 가로 스크롤 방식으로 확인합니다.
+        </p>
       </div>
 
-      <div className="compareLineChartSvgWrap">
-        <svg
-          className="compareLineChartSvg"
-          viewBox={`0 0 ${width} ${height}`}
-          role="img"
-          aria-label="포트폴리오별 실질 평가금액 비교 차트"
-        >
-          {yTicks.map((ratio) => {
-            const value = maxValue * ratio;
-            const y = getY(value);
+      <div className="chartCard compareGrowthCard">
+        <div className="svgChartWrap compareGrowthSvgWrap">
+          <svg
+            className="svgChart compareGrowthSvg"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label="포트폴리오별 실질 평가금액 비교 차트"
+          >
+            {yTicks.map((ratio) => {
+              const value = maxValue * ratio;
+              const y = height - padding - ratio * chartHeight;
 
-            return (
-              <g key={ratio}>
-                <line
-                  x1={paddingLeft}
-                  y1={y}
-                  x2={width - paddingRight}
-                  y2={y}
-                  className="chartGridLine"
-                />
-                <text
-                  x={paddingLeft - 14}
-                  y={y + 4}
-                  textAnchor="end"
-                  className="compareAxisLabel"
-                >
-                  {formatCompactWon(value)}
-                </text>
-              </g>
-            );
-          })}
+              return (
+                <g key={ratio}>
+                  <line
+                    x1={padding}
+                    y1={y}
+                    x2={width - padding}
+                    y2={y}
+                    className="chartGridLine"
+                  />
 
-          {xTicks.map((year) => {
-            const x = getX(year);
+                  <text
+                    x={padding - 12}
+                    y={y + 4}
+                    textAnchor="end"
+                    className="chartAxisLabel"
+                  >
+                    {formatCompactWon(value)}
+                  </text>
+                </g>
+              );
+            })}
 
-            return (
-              <text
-                key={year}
-                x={x}
-                y={height - paddingBottom + 30}
-                textAnchor="middle"
-                className="compareAxisLabel"
-              >
-                {year}년
-              </text>
-            );
-          })}
+            <line
+              x1={padding}
+              y1={height - padding}
+              x2={width - padding}
+              y2={height - padding}
+              className="chartAxis"
+            />
 
-          <line
-            x1={paddingLeft}
-            y1={height - paddingBottom}
-            x2={width - paddingRight}
-            y2={height - paddingBottom}
-            className="chartAxis"
-          />
+            <line
+              x1={padding}
+              y1={padding}
+              x2={padding}
+              y2={height - padding}
+              className="chartAxis"
+            />
 
-          <line
-            x1={paddingLeft}
-            y1={paddingTop}
-            x2={paddingLeft}
-            y2={height - paddingBottom}
-            className="chartAxis"
-          />
+            {rowsByPortfolio.map((portfolio, index) => {
+              const points = portfolio.rows
+                .map((row) => `${getX(row.year)},${getY(row.inflationAdjustedValue)}`)
+                .join(" ");
 
-          {portfolios.map((portfolio, index) => {
-            const points = portfolio.result.performanceRows
-              .map((row) => {
-                const x = getX(row.year);
-                const y = getY(row.inflationAdjustedValue);
-
-                return `${x},${y}`;
-              })
-              .join(" ");
-return (
-              <g key={portfolio.id}>
-              <polyline
+              return (
+                <polyline
+                  key={portfolio.id}
                   points={points}
                   fill="none"
                   stroke={colors[index % colors.length]}
                   strokeWidth={portfolio.realValueRank === 1 ? "5" : "3.5"}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-              />
-</g>
-            );
-          })}
-        </svg>
-      </div>
+                />
+              );
+            })}
 
-      <div className="compareLineLegend grouped">
-      {legendGroups.map((group) => (
-          <div
-          key={group.rank}
-          className={
-              group.rank === 1
-              ? "compareLineLegendGroup rank1"
-              : "compareLineLegendGroup"
-          }
-          >
-          <strong>{group.label}</strong>
+            {Array.from(
+              new Set([
+                1,
+                5,
+                10,
+                15,
+                20,
+                25,
+                maxYear,
+              ].filter((year) => year <= maxYear))
+            ).map((year) => (
+              <text
+                key={year}
+                x={getX(year)}
+                y={height - 18}
+                textAnchor="middle"
+                className="chartYearLabel"
+              >
+                {year}
+              </text>
+            ))}
+          </svg>
+        </div>
 
-          <div>
+        <div className="chartLegend compareGrowthLegend">
+          {legendGroups.map((group) => (
+            <span key={group.rank}>
+              <strong>{group.label}</strong>
               {group.items.map((portfolio) => (
-              <span key={portfolio.id} className="compareLineLegendItem">
-                  <i style={{ background: portfolio.color }} />
+                <span key={portfolio.id} className="compareGrowthLegendItem">
+                  <i className="legendDot" style={{ background: portfolio.color }} />
                   {portfolio.name}
-              </span>
+                </span>
               ))}
-          </div>
-          </div>
-      ))}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
