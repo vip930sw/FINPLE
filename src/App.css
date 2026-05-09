@@ -8863,3 +8863,73 @@ body,
     font-size: 15px;
   }
 }
+
+
+/* STEP 79-2 MOBILE TICKER AND PRICING COMPACT FIX */
+@media (max-width: 640px) {
+  .tickerArea {
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    align-items: center;
+  }
+
+  .tickerArea .tradingview-widget-container,
+  .tickerArea .tradingview-widget-container__widget,
+  .tickerArea iframe {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  .priceGrid {
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .priceCard {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 22px;
+    padding: 18px 18px 16px;
+  }
+
+  .priceCard h3 {
+    margin-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .priceCard strong {
+    margin: 10px 0 12px;
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .priceCard ul {
+    margin: 0 0 16px;
+    padding-left: 18px;
+    line-height: 1.65;
+    font-size: 13px;
+  }
+
+  .priceCard li {
+    margin: 0;
+  }
+
+  .priceCard button,
+  .priceCard a {
+    width: auto;
+    min-width: 92px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .homeTopButton,
+  .floatingTopButton {
+    right: 14px;
+    bottom: 14px;
+    transform: scale(0.9);
+    transform-origin: right bottom;
+  }
+}
