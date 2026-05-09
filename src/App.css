@@ -11629,3 +11629,84 @@ body,
     margin-top: 16px;
   }
 }
+
+/* STEP 105-5: HOW WHAT WIDER LAYOUT START */
+@media (min-width: 901px) {
+  .howSection,
+  .whatSection {
+    width: min(1560px, calc(100vw - 56px));
+    max-width: min(1560px, calc(100vw - 56px));
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(32px, 3.8vw, 72px);
+    padding-right: clamp(32px, 3.8vw, 72px);
+  }
+
+  .howSection h2,
+  .whatSection h2 {
+    max-width: min(1380px, 100%);
+  }
+
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: min(1320px, 100%);
+  }
+
+  .howDifferentiatorGrid,
+  .whatPreviewGrid,
+  .whatStepGrid {
+    width: 100%;
+    max-width: none;
+  }
+
+  .howDifferentiatorGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .whatPreviewGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .whatStepGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .howDifferentiatorGrid .featureCard,
+  .whatPreviewCard,
+  .whatStepGrid .stepCard {
+    min-width: 0;
+  }
+
+  .howDifferentiatorGrid .featureCard p,
+  .whatPreviewCard p,
+  .whatStepGrid .stepCard p {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .howSection,
+  .whatSection {
+    width: min(1640px, calc(100vw - 96px));
+    max-width: min(1640px, calc(100vw - 96px));
+  }
+
+  .howSection h2,
+  .whatSection h2 {
+    max-width: min(1480px, 100%);
+  }
+
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: min(1420px, 100%);
+  }
+}
+/* STEP 105-5: HOW WHAT WIDER LAYOUT END */
