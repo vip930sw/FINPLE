@@ -17,65 +17,73 @@ import {
   InvestmentDisclaimerPage,
 } from "./components/AccountPages";
 
-const PAGE_STORAGE_KEY = "finple-current-page";
+const ROUTE_PATHS = {
+  home: "/",
+  personal: "/simulator",
+  login: "/login",
+  signup: "/signup",
+  mypage: "/mypage",
+  pricing: "/pricing",
+  support: "/support",
+  "admin-login": "/admin",
+  privacy: "/privacy",
+  terms: "/terms",
+  "investment-disclaimer": "/disclaimer",
+};
+
+function normalizePathname(pathname) {
+  return String(pathname || "/").replace(/\/+$/, "") || "/";
+}
 
 function getPathForPage(page) {
-  switch (page) {
-    case "admin-login":
-      return "/admin";
-    case "privacy":
-      return "/privacy";
-    case "terms":
-      return "/terms";
-    case "investment-disclaimer":
-      return "/disclaimer";
-    default:
-      return "/";
-  }
+  return ROUTE_PATHS[page] || "/";
+}
+
+function getPageForPath(pathname, hash = "") {
+  const normalizedPath = normalizePathname(pathname);
+  const normalizedHash = String(hash || "").replace("#", "");
+
+  if (normalizedPath === "/simulator" || normalizedHash === "simulator") return "personal";
+  if (normalizedPath === "/login" || normalizedHash === "login") return "login";
+  if (normalizedPath === "/signup" || normalizedHash === "signup") return "signup";
+  if (normalizedPath === "/mypage" || normalizedHash === "mypage") return "mypage";
+  if (normalizedPath === "/pricing" || normalizedHash === "pricing") return "pricing";
+  if (normalizedPath === "/support" || normalizedHash === "support") return "support";
+  if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
+  if (normalizedPath === "/privacy" || normalizedHash === "privacy") return "privacy";
+  if (normalizedPath === "/terms" || normalizedHash === "terms") return "terms";
+  if (normalizedPath === "/disclaimer" || normalizedHash === "disclaimer") return "investment-disclaimer";
+
+  return "home";
 }
 
 function getInitialPage() {
   if (typeof window === "undefined") return "home";
-
-  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
-  const hash = window.location.hash.replace("#", "");
-
-  if (pathname === "/admin" || hash === "admin") {
-    return "admin-login";
-  }
-
-  if (pathname === "/privacy" || hash === "privacy") {
-    return "privacy";
-  }
-
-  if (pathname === "/terms" || hash === "terms") {
-    return "terms";
-  }
-
-  if (pathname === "/disclaimer" || hash === "disclaimer") {
-    return "investment-disclaimer";
-  }
-
-  return localStorage.getItem(PAGE_STORAGE_KEY) || "home";
+  return getPageForPath(window.location.pathname, window.location.hash);
 }
 
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
 
   useEffect(() => {
-    if (currentPage !== "admin-login") {
-      localStorage.setItem(PAGE_STORAGE_KEY, currentPage);
-    }
-
     const nextPath = getPathForPage(currentPage);
-    const currentPath = window.location.pathname || "/";
+    const currentPath = normalizePathname(window.location.pathname || "/");
 
     if (currentPath !== nextPath) {
-      window.history.replaceState(null, "", nextPath);
+      window.history.pushState({ page: currentPage }, "", nextPath);
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
+
+  useEffect(() => {
+    function handlePopState() {
+      setCurrentPage(getPageForPath(window.location.pathname, window.location.hash));
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const stockIndexSymbols = [
     { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
