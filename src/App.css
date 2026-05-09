@@ -9897,3 +9897,336 @@ body,
 }
 /* === STEP 79-6 MOBILE TABLE / CHART / TOP FIX END === */
 
+/* =========================
+   Step 79-7 Mobile Final Polish
+========================= */
+
+@media (max-width: 900px) {
+  /* Mobile common: section titles smaller, descriptions should not be ellipsized */
+  .section h2,
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 24px !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.7px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: keep-all !important;
+  }
+
+  .simulatorIntroText,
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .section > p:not(.sectionLabel),
+  .assetValueNotice span,
+  .assetValueNotice small,
+  .calculatorNotice,
+  .calendarNotice {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: initial !important;
+    word-break: keep-all !important;
+  }
+
+  .tabSectionHeader,
+  .portfolioCompareHeader,
+  .performanceHeader {
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  .sectionLabel {
+    font-size: 11px !important;
+    letter-spacing: 1.8px !important;
+  }
+
+  /* Simulator top cards: prevent text overflow */
+  .assetValueNotice {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 18px !important;
+    overflow: hidden !important;
+  }
+
+  .assetValueNotice p,
+  .assetValueNotice strong,
+  .assetValueNotice span,
+  .assetValueNotice small {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .assetValueNotice strong {
+    font-size: 24px !important;
+  }
+
+  .assetLookupNotice {
+    display: block !important;
+    padding: 14px !important;
+  }
+
+  .assetLookupNotice span {
+    display: block !important;
+    margin-top: 8px !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+  }
+
+  /* Asset input table: keep PC-like table and make horizontal scroll explicit */
+  .settingsPanel .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px !important;
+    position: relative !important;
+  }
+
+  .settingsPanel .calculatorTableWrap::after {
+    content: '좌우로 밀어 전체 항목을 확인하세요';
+    position: sticky;
+    left: 0;
+    bottom: 0;
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    padding: 8px 12px;
+    color: #64748b;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .settingsPanel .calculatorTable {
+    width: 1320px !important;
+    min-width: 1320px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+
+  .settingsPanel .calculatorTable th,
+  .settingsPanel .calculatorTable td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(1),
+  .settingsPanel .calculatorTable td:nth-child(1) { width: 90px !important; }
+  .settingsPanel .calculatorTable th:nth-child(2),
+  .settingsPanel .calculatorTable td:nth-child(2) { width: 190px !important; }
+  .settingsPanel .calculatorTable th:nth-child(3),
+  .settingsPanel .calculatorTable td:nth-child(3) { width: 92px !important; }
+  .settingsPanel .calculatorTable th:nth-child(4),
+  .settingsPanel .calculatorTable td:nth-child(4) { width: 170px !important; }
+  .settingsPanel .calculatorTable th:nth-child(5),
+  .settingsPanel .calculatorTable td:nth-child(5) { width: 170px !important; }
+  .settingsPanel .calculatorTable th:nth-child(6),
+  .settingsPanel .calculatorTable td:nth-child(6) { width: 92px !important; }
+  .settingsPanel .calculatorTable th:nth-child(7),
+  .settingsPanel .calculatorTable td:nth-child(7) { width: 104px !important; }
+  .settingsPanel .calculatorTable th:nth-child(8),
+  .settingsPanel .calculatorTable td:nth-child(8) { width: 96px !important; }
+  .settingsPanel .calculatorTable th:nth-child(9),
+  .settingsPanel .calculatorTable td:nth-child(9) { width: 104px !important; }
+  .settingsPanel .calculatorTable th:nth-child(10),
+  .settingsPanel .calculatorTable td:nth-child(10) { width: 112px !important; }
+  .settingsPanel .calculatorTable th:nth-child(11),
+  .settingsPanel .calculatorTable td:nth-child(11) { width: 88px !important; }
+  .settingsPanel .calculatorTable th:nth-child(12),
+  .settingsPanel .calculatorTable td:nth-child(12) { width: 82px !important; }
+
+  .settingsPanel .calculatorTable input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    text-align: right !important;
+  }
+
+  .settingsPanel .calculatorTable td:first-child input,
+  .settingsPanel .calculatorTable td:nth-child(2) input {
+    text-align: left !important;
+  }
+
+  .settingsPanel .assetTextValue,
+  .settingsPanel .numberTextValue,
+  .settingsPanel .numberCell {
+    display: block !important;
+    width: 100% !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .settingsPanel .assetInfoStack {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .tableActionRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .tableActionRow button,
+  .addButton,
+  .resetPortfolioButton {
+    width: 100% !important;
+  }
+
+  /* Portfolio compare chart: fit all years into mobile width */
+  .compareLineChart {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareLineEndLabel {
+    display: none !important;
+  }
+
+  .compareAxisLabel {
+    font-size: 20px !important;
+  }
+
+  .compareLineLegend.grouped {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+
+  .compareLineLegendGroup {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Annual performance: sticky header and sticky year column on mobile */
+  .performanceTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 540px !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px !important;
+  }
+
+  .performanceTable {
+    min-width: 680px !important;
+    width: 680px !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    padding: 12px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .performanceTable th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child,
+  .performanceTable td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+    background: #ffffff !important;
+    z-index: 3 !important;
+    box-shadow: 1px 0 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child {
+    z-index: 5 !important;
+    background: #f8fafc !important;
+  }
+
+  .performanceTable tbody tr:nth-child(even) td {
+    background: #f8fafc !important;
+  }
+
+  .performanceTable tbody tr:nth-child(even) td:first-child {
+    background: #f8fafc !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .section h2,
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 22px !important;
+  }
+
+  .simulatorIntroText,
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .section > p:not(.sectionLabel) {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+  }
+
+  .portfolioManager,
+  .portfolioComparePanel,
+  .chartCard,
+  .simulatorTabPanel {
+    padding: 16px !important;
+    border-radius: 22px !important;
+  }
+}
+
+/* ===== End Step 79-7 Mobile Final Polish ===== */
