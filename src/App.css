@@ -11629,3 +11629,85 @@ body,
     margin-top: 16px;
   }
 }
+
+/* === Step 110. Home section width and spacing QA START === */
+@media (min-width: 901px) {
+  .howSection h2,
+  .whatSection h2 {
+    max-width: 1120px;
+  }
+
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: 1060px;
+  }
+
+  .howDifferentiatorGrid,
+  .whatPreviewGrid,
+  .whatStepGrid {
+    width: 100%;
+  }
+
+  .whatSection {
+    padding-bottom: 48px;
+  }
+
+  .demoCalculatorSection {
+    padding-top: 48px;
+  }
+
+  .investmentMbtiTeaser {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .howSection h2,
+  .whatSection h2,
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: 100%;
+  }
+
+  .whatSection {
+    padding-bottom: 44px;
+  }
+
+  .demoCalculatorSection {
+    padding-top: 44px;
+  }
+}
+/* === Step 110. Home section width and spacing QA END === */
+
+/* Step 110-2: home white section full-bleed background fix start */
+/*
+  What 섹션과 Demo Calculator 섹션 사이에서 흰 배경 폭이 서로 달라 보이는 현상을 보정합니다.
+  콘텐츠 폭은 기존 max-width를 유지하고, 흰 배경만 화면 전체로 자연스럽게 이어지도록 처리합니다.
+*/
+.whySection.section.white,
+.whatSection.section.white,
+.demoCalculatorSection.section.white {
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 0 0 100vmax #ffffff;
+  clip-path: inset(0 -100vmax);
+}
+
+.whatSection.section.white {
+  padding-bottom: 56px;
+}
+
+.demoCalculatorSection.section.white {
+  padding-top: 56px;
+}
+
+@media (max-width: 900px) {
+  .whatSection.section.white {
+    padding-bottom: 48px;
+  }
+
+  .demoCalculatorSection.section.white {
+    padding-top: 48px;
+  }
+}
+/* Step 110-2: home white section full-bleed background fix end */
