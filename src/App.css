@@ -9708,3 +9708,192 @@ body,
     overflow-wrap: anywhere !important;
   }
 }
+
+
+/* === STEP 79-6 MOBILE TABLE / CHART / TOP FIX START === */
+@media (max-width: 900px) {
+  /*
+    모바일 시뮬레이터 표는 작은 폭에 억지로 압축하면
+    CAGR/BETA/MDD/배당률 입력칸이 서로 겹칩니다.
+    표 자체는 PC 작업형 UI로 유지하고, 모바일에서는 명확한 가로 스크롤로 처리합니다.
+  */
+  .calculatorTableWrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 22px;
+  }
+
+  .calculatorTable {
+    width: max-content !important;
+    min-width: 1220px !important;
+    table-layout: auto !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    padding: 12px 10px;
+  }
+
+  .calculatorTable th:nth-child(1),
+  .calculatorTable td:nth-child(1) {
+    min-width: 86px;
+    width: 86px;
+  }
+
+  .calculatorTable th:nth-child(2),
+  .calculatorTable td:nth-child(2) {
+    min-width: 150px;
+    width: 150px;
+  }
+
+  .calculatorTable th:nth-child(3),
+  .calculatorTable td:nth-child(3) {
+    min-width: 82px;
+    width: 82px;
+  }
+
+  .calculatorTable th:nth-child(4),
+  .calculatorTable td:nth-child(4) {
+    min-width: 148px;
+    width: 148px;
+  }
+
+  .calculatorTable th:nth-child(5),
+  .calculatorTable td:nth-child(5) {
+    min-width: 132px;
+    width: 132px;
+  }
+
+  .calculatorTable th:nth-child(6),
+  .calculatorTable td:nth-child(6) {
+    min-width: 86px;
+    width: 86px;
+  }
+
+  .calculatorTable th:nth-child(7),
+  .calculatorTable td:nth-child(7),
+  .calculatorTable th:nth-child(8),
+  .calculatorTable td:nth-child(8),
+  .calculatorTable th:nth-child(9),
+  .calculatorTable td:nth-child(9),
+  .calculatorTable th:nth-child(10),
+  .calculatorTable td:nth-child(10) {
+    min-width: 104px;
+    width: 104px;
+  }
+
+  .calculatorTable th:nth-child(11),
+  .calculatorTable td:nth-child(11) {
+    min-width: 96px;
+    width: 96px;
+  }
+
+  .calculatorTable th:nth-child(12),
+  .calculatorTable td:nth-child(12) {
+    min-width: 78px;
+    width: 78px;
+  }
+
+  .calculatorTable input {
+    min-width: 68px;
+    width: 100%;
+  }
+
+  .calculatorTable td:nth-child(7) input,
+  .calculatorTable td:nth-child(8) input,
+  .calculatorTable td:nth-child(9) input,
+  .calculatorTable td:nth-child(10) input {
+    min-width: 86px;
+    text-align: right;
+  }
+
+  .calculatorTable .numberTextValue,
+  .assetTextValue.numberTextValue {
+    min-width: 72px;
+    display: inline-flex;
+    justify-content: flex-end;
+  }
+
+  /*
+    포트폴리오 비교 차트는 모바일에서 가로 스크롤보다
+    전체 30년 구간을 한 화면에 축소 표시하는 쪽이 읽기 쉽습니다.
+  */
+  .compareLineChart {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: visible !important;
+  }
+
+  .compareLineChartSvg {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareLineEndLabel {
+    display: none;
+  }
+
+  .compareLineChartHeader h4 {
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .compareLineChartHeader p {
+    white-space: normal;
+  }
+
+  /*
+    상세분석 연차별 예상 성과 표는 모바일에서 sticky header가
+    본문과 겹쳐 보일 수 있어 모바일에서는 고정 헤더를 해제합니다.
+  */
+  .performanceTable th {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+
+  .performanceTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .performanceTable {
+    min-width: 560px;
+  }
+
+  .floatingTopButton {
+    right: 14px;
+    bottom: 14px;
+    width: 58px;
+    height: 58px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .calculatorTable {
+    min-width: 1180px !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+/* === STEP 79-6 MOBILE TABLE / CHART / TOP FIX END === */
+

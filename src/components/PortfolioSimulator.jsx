@@ -266,7 +266,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
   <button
           className="floatingTopButton"
-          onClick={scrollToPortfolioTop}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="포트폴리오 상단으로 이동"
         >
           ↑ TOP
