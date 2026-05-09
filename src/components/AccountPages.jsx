@@ -333,6 +333,160 @@ export function PricingPage({ onNavigate }) {
   );
 }
 
+
+function LegalDocumentPage({ eyebrow, title, description, sections, onNavigate }) {
+  return (
+    <AccountShell
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      onNavigate={onNavigate}
+    >
+      <section className="accountCard legalDocumentCard">
+        {sections.map((section) => (
+          <article key={section.title} className="legalDocumentSection">
+            <h2>{section.title}</h2>
+            {section.paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+            {section.items ? (
+              <ul>
+                {section.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            ) : null}
+          </article>
+        ))}
+      </section>
+    </AccountShell>
+  );
+}
+
+export function PrivacyPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Privacy"
+      title="개인정보처리방침"
+      description="FINPLE Portfolio Lab이 수집·이용하는 개인정보와 보관 기준을 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 수집하는 정보",
+          paragraphs: [
+            "서비스 이용 과정에서 이메일, 문의 내용, 브라우저에 저장된 사용자 식별 정보, 포트폴리오 저장 데이터, 접속 환경 정보가 수집될 수 있습니다.",
+            "현재 로그인과 결제는 개발 검증 단계이며, 실제 소셜 로그인·결제 연동 시 수집 항목은 별도로 고지합니다.",
+          ],
+          items: ["이메일 및 문의 답변 연락처", "문의 제목·내용·처리 상태", "포트폴리오 구성 및 저장 데이터", "서비스 오류 확인을 위한 접속 환경 정보"],
+        },
+        {
+          title: "2. 이용 목적",
+          paragraphs: [
+            "수집한 정보는 포트폴리오 저장·불러오기, 문의 응대, 오류 확인, 요금제 상태 표시, 서비스 품질 개선을 위해 사용합니다.",
+          ],
+        },
+        {
+          title: "3. 보관 기간",
+          paragraphs: [
+            "일반 문의와 오류 신고는 처리 및 서비스 개선을 위해 원칙적으로 1년간 보관할 수 있습니다. 결제 관련 정보는 결제 기능 도입 이후 관련 법령과 내부 기준에 따라 별도로 정합니다.",
+            "사용자가 삭제를 요청하거나 보관 목적이 사라진 경우 지체 없이 삭제합니다. 단, 법령상 보관 의무가 있는 정보는 해당 기간 동안 보관할 수 있습니다.",
+          ],
+        },
+        {
+          title: "4. 제3자 제공 및 위탁",
+          paragraphs: [
+            "현재 서비스 운영을 위해 데이터베이스, 호스팅, 배포, API 제공 서비스가 사용될 수 있습니다. 실제 상용 운영 전 이용 중인 외부 서비스와 위탁 범위를 명확히 고지합니다.",
+          ],
+        },
+        {
+          title: "5. 이용자 권리",
+          paragraphs: [
+            "이용자는 본인의 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 문의사항 메뉴를 통해 요청하면 확인 후 처리합니다.",
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+export function TermsPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Terms"
+      title="이용약관"
+      description="FINPLE Portfolio Lab 이용 조건과 서비스 범위를 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 서비스 목적",
+          paragraphs: [
+            "FINPLE Portfolio Lab은 사용자가 입력한 자산 구성과 가정값을 바탕으로 포트폴리오의 장기 예상 흐름, 위험 지표, 리포트를 확인할 수 있도록 돕는 분석 도구입니다.",
+          ],
+        },
+        {
+          title: "2. 계정 및 저장 데이터",
+          paragraphs: [
+            "현재 계정 기능은 개발 검증 단계이며, 브라우저 저장과 서버 저장 기능을 테스트하는 용도로 제공됩니다. 실제 회원가입, 소셜 로그인, 결제 기능은 추후 별도 연동됩니다.",
+          ],
+        },
+        {
+          title: "3. 이용자 책임",
+          paragraphs: [
+            "이용자는 본인이 입력한 자산 정보와 가정값의 정확성을 직접 확인해야 합니다. 입력 오류, 데이터 지연, 외부 API 장애로 인한 분석 결과 차이가 발생할 수 있습니다.",
+          ],
+        },
+        {
+          title: "4. 서비스 변경 및 제한",
+          paragraphs: [
+            "서비스 기능, 요금제, API 조회량, 리포트 제공 범위는 운영 상황에 따라 변경될 수 있습니다. 중요한 변경 사항은 서비스 화면을 통해 안내합니다.",
+          ],
+        },
+        {
+          title: "5. 면책",
+          paragraphs: [
+            "본 서비스는 투자 판단을 돕는 참고 도구이며, 특정 금융상품의 매수·매도 추천, 투자 자문, 수익 보장을 제공하지 않습니다. 최종 투자 판단과 결과에 대한 책임은 이용자 본인에게 있습니다.",
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+export function InvestmentDisclaimerPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Investment Notice"
+      title="투자 유의사항"
+      description="FINPLE의 분석 결과를 해석할 때 반드시 확인해야 하는 투자 유의사항입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 투자 자문이 아닙니다",
+          paragraphs: [
+            "FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료입니다. 특정 종목, ETF, 금융상품의 매수·매도 추천이나 투자 자문이 아닙니다.",
+          ],
+        },
+        {
+          title: "2. 수익을 보장하지 않습니다",
+          paragraphs: [
+            "CAGR, MDD, 배당률, 물가상승률 등은 사용자가 입력하거나 제한된 데이터에 기반한 가정값입니다. 과거 데이터나 예상값이 미래 수익을 보장하지 않습니다.",
+          ],
+        },
+        {
+          title: "3. 데이터 오류 가능성",
+          paragraphs: [
+            "외부 API, 환율, 가격, 배당, 지표 데이터는 지연되거나 누락될 수 있습니다. 중요한 투자 의사결정 전에는 반드시 공식 자료와 증권사 정보를 별도로 확인해야 합니다.",
+          ],
+        },
+        {
+          title: "4. 최종 판단 책임",
+          paragraphs: [
+            "투자에는 원금 손실 가능성이 있습니다. 최종 투자 판단과 그 결과에 대한 책임은 이용자 본인에게 있습니다.",
+          ],
+        },
+      ]}
+    />
+  );
+}
+
 export function SupportPage({ onNavigate }) {
   const [category, setCategory] = useState("feature");
   const [email, setEmail] = useState("");
@@ -413,6 +567,11 @@ export function SupportPage({ onNavigate }) {
               placeholder="오류 상황, 필요한 기능, 결제 문의 등 내용을 입력해 주세요."
             />
           </label>
+
+          <div className="supportPrivacyNotice">
+            <strong>개인정보 수집 안내</strong>
+            <p>답변 이메일과 문의 내용은 문의 처리와 서비스 개선을 위해 저장됩니다. 운영 전 테스트 데이터는 종료 처리하거나 삭제할 수 있습니다.</p>
+          </div>
 
           <p className="accountInlineStatus supportStatusText">{statusMessage}</p>
 

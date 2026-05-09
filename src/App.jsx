@@ -12,6 +12,9 @@ import {
   MyPage,
   PricingPage,
   SupportPage,
+  PrivacyPage,
+  TermsPage,
+  InvestmentDisclaimerPage,
 } from "./components/AccountPages";
 
 const PAGE_STORAGE_KEY = "finple-current-page";
@@ -24,6 +27,18 @@ function getInitialPage() {
 
   if (pathname === "/admin" || hash === "admin") {
     return "admin-login";
+  }
+
+  if (pathname === "/privacy" || hash === "privacy") {
+    return "privacy";
+  }
+
+  if (pathname === "/terms" || hash === "terms") {
+    return "terms";
+  }
+
+  if (pathname === "/disclaimer" || hash === "disclaimer") {
+    return "investment-disclaimer";
   }
 
   return localStorage.getItem(PAGE_STORAGE_KEY) || "home";
@@ -105,6 +120,18 @@ function App() {
 
   if (currentPage === "support") {
     return <SupportPage onNavigate={setCurrentPage} />;
+  }
+
+  if (currentPage === "privacy") {
+    return <PrivacyPage onNavigate={setCurrentPage} />;
+  }
+
+  if (currentPage === "terms") {
+    return <TermsPage onNavigate={setCurrentPage} />;
+  }
+
+  if (currentPage === "investment-disclaimer") {
+    return <InvestmentDisclaimerPage onNavigate={setCurrentPage} />;
   }
 
   return (
@@ -254,6 +281,11 @@ function App() {
       </section>
 
       <footer className="footer">
+        <div className="footerLegalLinks" aria-label="서비스 정책 문서">
+          <button type="button" onClick={() => setCurrentPage("privacy")}>개인정보처리방침</button>
+          <button type="button" onClick={() => setCurrentPage("terms")}>이용약관</button>
+          <button type="button" onClick={() => setCurrentPage("investment-disclaimer")}>투자 유의사항</button>
+        </div>
         <p>© 2026 Portfolio Lab. All rights reserved.</p>
         <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
       </footer>
