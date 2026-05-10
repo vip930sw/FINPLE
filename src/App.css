@@ -11785,3 +11785,33 @@ body,
     gap: 10px;
   }
 }
+
+
+/* Step 114-4 MY PAGE storage visual simplification */
+.accountStatusPanel .accountActionRow button:nth-child(n + 2) {
+  display: none !important;
+}
+
+.serverStoragePanel .accountActionRow button:nth-child(1),
+.serverStoragePanel .accountActionRow button:nth-child(2),
+.serverStoragePanel .accountActionRow button:nth-child(3),
+.serverStoragePanel .accountActionRow button:nth-child(5) {
+  display: none !important;
+}
+
+.serverStoragePanel .accountActionRow {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.serverStoragePanel .accountActionRow button {
+  min-width: 180px;
+}
+
+@media (max-width: 720px) {
+  .serverStoragePanel .accountActionRow button,
+  .accountStatusPanel .accountActionRow button {
+    width: 100%;
+    min-width: 0;
+  }
+}

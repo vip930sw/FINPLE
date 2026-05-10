@@ -982,7 +982,7 @@ function AccountStatusPanel({ onNavigate }) {
 
       <div className="serverStorageActions compactActions">
         <button type="button" className="primaryButton" onClick={handleConnectDemoUser} disabled={isLoading}>
-          {authUser ? "체험 사용자 재연결" : "체험 사용자 연결"}
+          {authUser ? "계정 상태 새로고침" : "체험 사용자 연결"}
         </button>
         <button type="button" className="secondaryButton" onClick={handleRefreshServerUser} disabled={isLoading || !authUser}>
           서버 사용자 확인
@@ -1005,7 +1005,7 @@ function ServerStoragePanel({ planKey = "free" }) {
   const [serverPortfolios, setServerPortfolios] = useState([]);
   const [statusMessage, setStatusMessage] = useState(
     canUseServerStorage
-      ? "서버 DB 상태를 확인해 주세요."
+      ? "필요한 작업을 선택해 주세요."
       : "Free 체험 플랜은 서버 저장/불러오기와 PDF 저장이 제한됩니다. Personal 이상에서 사용할 수 있습니다."
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -1145,10 +1145,10 @@ function ServerStoragePanel({ planKey = "free" }) {
       <div className="serverStorageHeader">
         <div>
           <p className="accountMiniLabel">Server Storage</p>
-          <h2>서버 저장 동기화 준비</h2>
+          <h2>서버 저장</h2>
           <p>
             {canUseServerStorage
-              ? "브라우저 저장 데이터를 서버 DB로 옮기고, 서버 데이터를 다시 불러올 수 있습니다."
+              ? "브라우저 포트폴리오를 서버에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다."
               : "Free 체험 플랜에서는 서버 저장 기능과 PDF 저장 기능이 제한됩니다. Personal 이상에서 서버 동기화를 사용할 수 있습니다."}
           </p>
         </div>
@@ -1198,7 +1198,7 @@ function ServerStoragePanel({ planKey = "free" }) {
             ) : null}
           </div>
         ) : (
-          <p className="serverPortfolioEmpty">아직 서버 목록을 불러오지 않았습니다.</p>
+          <p className="serverPortfolioEmpty">서버에서 불러오기 전에는 목록이 표시되지 않습니다.</p>
         )}
       </div>
 
@@ -1213,13 +1213,13 @@ function ServerStoragePanel({ planKey = "free" }) {
           서버 목록 확인
         </button>
         <button type="button" className="primaryButton" onClick={handleSyncToServer} disabled={isServerActionDisabled}>
-          서버로 동기화
+          서버로 저장
         </button>
         <button type="button" className="secondaryButton" onClick={() => handleLoadServerPortfolios("merge")} disabled={isServerActionDisabled}>
           서버 데이터 병합
         </button>
         <button type="button" className="secondaryButton dangerSubtle" onClick={() => handleLoadServerPortfolios("replace")} disabled={isServerActionDisabled}>
-          서버 데이터로 교체
+          서버에서 불러오기
         </button>
       </div>
     </section>
