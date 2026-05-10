@@ -25,6 +25,24 @@ import {
 } from "./portfolio/config/planConfig";
 
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
+  const storedUser = getStoredFinpleAuthUser();
+  const isLoggedIn = Boolean(storedUser?.id);
+
+  function handleMyPageClick() {
+    onNavigate(isLoggedIn ? "mypage" : "login");
+  }
+
+  function handleLoginLogoutClick() {
+    if (isLoggedIn) {
+      clearStoredFinpleAuthUser();
+      window.dispatchEvent(new Event("finple-local-storage-updated"));
+      onNavigate("home");
+      return;
+    }
+
+    onNavigate("login");
+  }
+
   return (
     <main className={["accountPage", pageClassName].filter(Boolean).join(" ")}>
       <header className="accountHeader">
@@ -44,6 +62,10 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
           <button type="button" onClick={() => onNavigate("personal")}>시뮬레이터</button>
           <button type="button" onClick={() => onNavigate("pricing")}>요금제</button>
           <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
+          <button type="button" onClick={handleMyPageClick}>MY PAGE</button>
+          <button type="button" className="accountNavAuthButton" onClick={handleLoginLogoutClick}>
+            {isLoggedIn ? "로그아웃" : "로그인"}
+          </button>
         </nav>
       </header>
 
@@ -243,16 +265,19 @@ export function MyPage({ onNavigate }) {
         <AdminInquiryPanel />
       </section>
 
-      <section className="accountGrid accountGridAfterPanels">
-        <InfoCard title="저장 데이터 관리" text="브라우저 저장 데이터와 향후 서버 저장 데이터를 관리합니다." items={["포트폴리오 백업", "복원 이력", "최근 저장 시각"]} />
-        <InfoCard title="포트폴리오 관리" text="저장된 포트폴리오 목록, 이름 변경, 삭제, 대표 포트폴리오를 관리합니다." items={["포트폴리오 목록", "PDF 리포트 이력", "대표 포트폴리오"]} />
-        <InfoCard title="계정 관리" text="이메일, 비밀번호, 알림 수신 설정을 관리합니다." items={["이메일", "비밀번호", "알림 설정"]} />
-        <InfoCard title="구독/결제" text="무료/개인/프로 플랜과 결제 상태를 확인합니다." items={["현재 플랜", "결제 수단", "API 조회 한도"]} />
-      </section>
-
-      <section className="accountActionRow">
-        <button type="button" className="primaryButton" onClick={() => onNavigate("personal")}>시뮬레이터로 이동</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("pricing")}>요금제 확인</button>
+      <section className="accountCard myPageBetaCompactNotice">
+        <div>
+          <p className="accountMiniLabel">Beta My Page</p>
+          <h2>MY PAGE 기능은 단계적으로 확장됩니다.</h2>
+          <p>
+            현재는 계정 연결 상태, 요금제 상태, 서버 저장 동기화 흐름을 먼저 검증합니다.
+            포트폴리오 이름 관리, 결제 수단, PDF 이력 등은 정식 계정 기능과 함께 확장할 예정입니다.
+          </p>
+        </div>
+        <div className="accountActionRow compactMyPageActions">
+          <button type="button" className="primaryButton" onClick={() => onNavigate("personal")}>시뮬레이터로 이동</button>
+          <button type="button" className="secondaryButton" onClick={() => onNavigate("pricing")}>요금제 확인</button>
+        </div>
       </section>
     </AccountShell>
   );

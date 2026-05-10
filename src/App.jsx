@@ -6,6 +6,10 @@ import EconomicCalendarSection from "./components/EconomicCalendarSection";
 import DemoCalculator from "./components/DemoCalculator";
 import PersonalPage from "./components/PersonalPage";
 import {
+  clearStoredFinpleAuthUser,
+  getStoredFinpleAuthUser,
+} from "./components/portfolio/services/serverPortfolioService";
+import {
   LoginPage,
   AdminLoginPage,
   SignupPage,
@@ -142,6 +146,25 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function isFinpleUserLoggedIn() {
+    return Boolean(getStoredFinpleAuthUser()?.id);
+  }
+
+  function goMyPageOrLogin() {
+    setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login");
+  }
+
+  function handleHeaderLoginLogout() {
+    if (isFinpleUserLoggedIn()) {
+      clearStoredFinpleAuthUser();
+      window.dispatchEvent(new Event("finple-local-storage-updated"));
+      setCurrentPage("home");
+      return;
+    }
+
+    setCurrentPage("login");
+  }
+
   function scrollHomeToSection(sectionId) {
     if (currentPage !== "home") {
       setCurrentPage("home");
@@ -218,7 +241,10 @@ function App() {
 
         <div className="headerActions">
           <button className="secondaryHeaderButton supportHeaderButton" onClick={() => setCurrentPage("support")}>문의사항</button>
-          <button className="secondaryHeaderButton" onClick={() => setCurrentPage("login")}>로그인</button>
+          <button className="secondaryHeaderButton" onClick={goMyPageOrLogin}>MY PAGE</button>
+          <button className="secondaryHeaderButton" onClick={handleHeaderLoginLogout}>
+            {isFinpleUserLoggedIn() ? "로그아웃" : "로그인"}
+          </button>
           <button className="headerButton" onClick={goPersonal}>시작하기</button>
         </div>
       </header>

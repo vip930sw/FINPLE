@@ -11736,3 +11736,52 @@ body,
     max-width: 100% !important;
   }
 }
+
+
+/* =========================
+   Step 113. My Page beta simplification
+========================= */
+
+.myPageBetaCompactNotice {
+  max-width: 1100px;
+  margin: 32px auto 0;
+}
+
+.myPageBetaCompactNotice h2 {
+  margin: 6px 0 10px;
+  font-size: 24px;
+  letter-spacing: -0.6px;
+}
+
+.myPageBetaCompactNotice p:not(.accountMiniLabel) {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.compactMyPageActions {
+  margin-top: 24px;
+}
+
+.accountNavAuthButton {
+  color: #2563eb !important;
+  font-weight: 900 !important;
+}
+
+.betaServerAdvancedAction,
+.betaServerDangerAction {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .myPageBetaCompactNotice {
+    margin-top: 24px;
+  }
+
+  .compactMyPageActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
