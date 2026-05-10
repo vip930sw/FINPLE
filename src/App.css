@@ -11786,31 +11786,22 @@ body,
   }
 }
 
-
-/* Step 114-4 MY PAGE storage visual simplification */
-.accountStatusPanel .accountActionRow button:nth-child(n + 2) {
+/* Step 114-5 MY PAGE storage simplification */
+.betaHiddenAction {
   display: none !important;
 }
 
-.serverStoragePanel .accountActionRow button:nth-child(1),
-.serverStoragePanel .accountActionRow button:nth-child(2),
-.serverStoragePanel .accountActionRow button:nth-child(3),
-.serverStoragePanel .accountActionRow button:nth-child(5) {
-  display: none !important;
-}
-
-.serverStoragePanel .accountActionRow {
+.accountPanelStack .accountActionRow {
   justify-content: flex-start;
   gap: 14px;
 }
 
-.serverStoragePanel .accountActionRow button {
+.accountPanelStack .accountActionRow button {
   min-width: 180px;
 }
 
 @media (max-width: 720px) {
-  .serverStoragePanel .accountActionRow button,
-  .accountStatusPanel .accountActionRow button {
+  .accountPanelStack .accountActionRow button {
     width: 100%;
     min-width: 0;
   }
