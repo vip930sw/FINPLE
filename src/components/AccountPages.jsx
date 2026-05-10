@@ -985,7 +985,7 @@ function AccountStatusPanel({ onNavigate }) {
           {authUser ? "계정 상태 새로고침" : "체험 사용자 연결"}
         </button>
         <button type="button" className="secondaryButton betaHiddenAction" onClick={handleRefreshServerUser} disabled={isLoading || !authUser}>서버 사용자 확인</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("login")}>로그인 화면</button>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => onNavigate("login")}>로그인 화면</button>
         <button type="button" className="secondaryButton dangerSubtle betaHiddenAction" onClick={handleLogout} disabled={isLoading || !authUser}>로그아웃 데모</button>
       </div>
     </section>
@@ -1200,14 +1200,14 @@ function ServerStoragePanel({ planKey = "free" }) {
 
       <div className="serverStorageActions">
         <button type="button" className="secondaryButton betaHiddenAction" onClick={handleRefreshLocalSnapshot} disabled={isLoading}>브라우저 데이터 다시 읽기</button>
-        <button type="button" className="secondaryButton" onClick={() => refreshDatabaseStatus()} disabled={isLoading}>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => refreshDatabaseStatus()} disabled={isLoading}>
           DB 상태 확인
         </button>
         <button type="button" className="secondaryButton betaHiddenAction" onClick={handleServerListCheck} disabled={isServerActionDisabled}>서버 목록 확인</button>
         <button type="button" className="primaryButton" onClick={handleSyncToServer} disabled={isServerActionDisabled}>
           서버로 저장
         </button>
-        <button type="button" className="secondaryButton" onClick={() => handleLoadServerPortfolios("merge")} disabled={isServerActionDisabled}>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => handleLoadServerPortfolios("merge")} disabled={isServerActionDisabled}>
           서버 데이터 병합
         </button>
         <button type="button" className="secondaryButton dangerSubtle" onClick={() => handleLoadServerPortfolios("replace")} disabled={isServerActionDisabled}>
