@@ -95,10 +95,6 @@ function PersonalPage({ onBack }) {
             시뮬레이터
           </button>
 
-          <button type="button" onClick={() => setPersonalView("screener")}>
-            스크리너
-          </button>
-
           <button type="button" onClick={() => moveToSimulatorTab("compare")}>
             포트폴리오
           </button>
