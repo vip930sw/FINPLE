@@ -1,0 +1,226 @@
+.investmentMbtiPage {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(96, 165, 250, 0.18), transparent 32%),
+    radial-gradient(circle at 90% 0%, rgba(14, 165, 233, 0.16), transparent 30%),
+    #f8fafc;
+}
+
+.investmentMbtiHero {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 72px 32px 24px;
+  text-align: center;
+}
+
+.investmentMbtiHero h1 {
+  margin: 18px 0 16px;
+  font-size: clamp(42px, 7vw, 76px);
+  line-height: 1.02;
+  letter-spacing: -3px;
+  color: #0f172a;
+}
+
+.investmentMbtiHero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.75;
+  word-break: keep-all;
+}
+
+.investmentMbtiContent {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 28px 32px 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 22px;
+  align-items: start;
+}
+
+.investmentMbtiQuestionList {
+  display: grid;
+  gap: 16px;
+}
+
+.investmentMbtiQuestionCard {
+  padding: 26px;
+  border-radius: 26px;
+  border: 1px solid #dbe5f3;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 52px rgba(15, 23, 42, 0.07);
+}
+
+.investmentMbtiQuestionCard > strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 28px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+}
+
+.investmentMbtiQuestionCard h2 {
+  margin: 16px 0 18px;
+  font-size: 21px;
+  letter-spacing: -0.7px;
+  color: #0f172a;
+  word-break: keep-all;
+}
+
+.investmentMbtiOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.investmentMbtiOptions button {
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.investmentMbtiOptions button.selected {
+  border-color: #2563eb;
+  background: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.22);
+}
+
+.investmentMbtiResult {
+  position: sticky;
+  top: 96px;
+  padding: 28px;
+  border-radius: 30px;
+  border: 1px solid #dbe5f3;
+  background: #ffffff;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.1);
+}
+
+.investmentMbtiResult.ready {
+  background: linear-gradient(160deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+  border-color: rgba(191, 219, 254, 0.5);
+}
+
+.investmentMbtiResult h2 {
+  margin: 8px 0 18px;
+  font-size: 26px;
+  line-height: 1.32;
+  letter-spacing: -1.1px;
+}
+
+.investmentMbtiResult p {
+  color: #64748b;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.investmentMbtiResult.ready p,
+.investmentMbtiResult.ready .sectionLabel {
+  color: #dbeafe;
+}
+
+.investmentMbtiResult dl {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.investmentMbtiResult dl div {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.investmentMbtiResult dt {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #bfdbfe;
+  font-weight: 800;
+}
+
+.investmentMbtiResult dd {
+  margin: 0;
+  font-weight: 900;
+}
+
+.investmentMbtiResultActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.investmentMbtiResultActions button {
+  border: none;
+  border-radius: 999px;
+  padding: 13px 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.investmentMbtiResultActions .secondaryMbtiButton {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.investmentMbtiNotice {
+  max-width: 1080px;
+  margin: 0 auto 80px;
+  padding: 22px 26px;
+  border-radius: 24px;
+  border: 1px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.86);
+  color: #475569;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.investmentMbtiNotice strong {
+  display: block;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.investmentMbtiNotice p {
+  margin: 0;
+}
+
+@media (max-width: 940px) {
+  .investmentMbtiContent {
+    grid-template-columns: 1fr;
+  }
+
+  .investmentMbtiResult {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .investmentMbtiHero {
+    padding: 54px 20px 18px;
+  }
+
+  .investmentMbtiContent {
+    padding: 20px;
+  }
+
+  .investmentMbtiOptions {
+    grid-template-columns: 1fr;
+  }
+
+  .investmentMbtiNotice {
+    margin: 0 20px 56px;
+  }
+}
