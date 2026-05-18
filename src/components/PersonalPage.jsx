@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import PortfolioSimulator from "./PortfolioSimulator";
 import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
+import ScreenerPage from "./ScreenerPage";
 
 function PersonalPage({ onBack }) {
   const [personalView, setPersonalView] = useState("hub");
@@ -24,7 +25,7 @@ function PersonalPage({ onBack }) {
     }
 
     if (nextTarget === "screener") {
-      openSimulator("screener");
+      setPersonalView("screener");
       return;
     }
 
@@ -64,6 +65,16 @@ function PersonalPage({ onBack }) {
     );
   }
 
+  if (personalView === "screener") {
+    return (
+      <ScreenerPage
+        onBack={() => setPersonalView("hub")}
+        onHome={onBack}
+        onOpenSimulator={() => openSimulator("settings")}
+      />
+    );
+  }
+
   return (
     <main className="page personalPage">
       <header className="header">
@@ -82,10 +93,6 @@ function PersonalPage({ onBack }) {
         <nav className="headerNav">
           <button type="button" onClick={() => moveToSimulatorTab("settings")}>
             시뮬레이터
-          </button>
-
-          <button type="button" onClick={() => moveToSimulatorTab("screener")}>
-            스크리너
           </button>
 
           <button type="button" onClick={() => moveToSimulatorTab("compare")}>
