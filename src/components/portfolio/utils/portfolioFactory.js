@@ -132,29 +132,16 @@ export function createDefaultPortfolioList() {
         name: "포트폴리오 1",
         assets: DEFAULT_ASSETS,
       }),
-      createPortfolio({
-        name: "포트폴리오 2",
-        assets: DIVIDEND_ASSETS,
-      }),
-      createPortfolio({
-        name: "포트폴리오 3",
-        assets: STABLE_ASSETS,
-      }),
     ];
   }
 export function ensureMinimumPortfolios(portfolioList) {
     const normalizedPortfolioList = normalizePortfolioList(portfolioList);
 
-    if (normalizedPortfolioList.length >= 3) {
+    if (normalizedPortfolioList.length >= 1) {
       return normalizedPortfolioList;
     }
 
-    const defaultPortfolioList = createDefaultPortfolioList();
-
-    return [
-      ...normalizedPortfolioList,
-      ...defaultPortfolioList.slice(normalizedPortfolioList.length),
-    ];
+    return createDefaultPortfolioList();
   }
 export function loadPortfolioState() {
   try {

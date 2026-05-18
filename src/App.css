@@ -8553,3 +8553,3256 @@ body {
     width: 100% !important;
   }
 }
+
+/* =========================
+   Step 79. Mobile layout hardening
+========================= */
+
+/* 모바일에서 특정 위젯/그리드가 viewport 밖으로 밀리는 현상을 방지합니다. */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.page,
+.accountPage,
+.personalPage {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hero,
+.section,
+.personalHero,
+.footer {
+  width: 100%;
+}
+
+.featureGrid,
+.stepGrid,
+.priceGrid,
+.economicGrid,
+.calculatorSummary,
+.simulatorControls,
+.expectedSummary,
+.finalValueRow,
+.metrics {
+  min-width: 0;
+}
+
+.featureCard,
+.stepCard,
+.priceCard,
+.dashboardCard,
+.summaryCard,
+.metric,
+.indicatorLinkPanel,
+.investingCalendarBox {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: auto;
+    min-height: 64px;
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .headerButton,
+  .secondaryHeaderButton,
+  .primaryButton,
+  .secondaryButton {
+    padding: 10px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .tickerArea {
+    height: 48px;
+  }
+
+  .tickerArea .tradingview-widget-container,
+  .tickerArea .tradingview-widget-container__widget,
+  .tickerArea iframe {
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+  }
+
+  .hero,
+  .section,
+  .personalHero {
+    max-width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .hero {
+    padding-top: 56px;
+    padding-bottom: 56px;
+    gap: 28px;
+  }
+
+  .hero h1,
+  .section h2,
+  .personalHero h1 {
+    max-width: 100%;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 10vw, 42px);
+    letter-spacing: -1.4px;
+  }
+
+  .section h2 {
+    font-size: clamp(29px, 8vw, 36px);
+    letter-spacing: -0.8px;
+  }
+
+  .description,
+  .section > p:not(.sectionLabel),
+  .personalHero p:not(.sectionLabel) {
+    max-width: 100%;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .heroButtons {
+    flex-wrap: wrap;
+  }
+
+  .dashboardCard {
+    width: 100%;
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .metric {
+    padding: 14px;
+  }
+
+  .metric strong {
+    font-size: 23px;
+  }
+
+  .featureGrid,
+  .stepGrid,
+  .priceGrid,
+  .economicGrid {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .featureCard,
+  .stepCard,
+  .priceCard {
+    width: 100%;
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .featureCard p {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+    overflow: visible;
+  }
+
+  .stepCard p {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .investingCalendarBox {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 16px 12px;
+  }
+
+  .investingCalendarFrame {
+    width: 100%;
+    min-width: 320px;
+    max-width: 100%;
+  }
+
+  .indicatorLink {
+    min-height: 60px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .indicatorLink span {
+    font-size: 16px;
+    letter-spacing: -0.2px;
+  }
+
+  .calendarNotice {
+    white-space: normal;
+  }
+
+  .calculatorSection {
+    overflow-x: hidden;
+  }
+
+  .calculatorTableWrap,
+  .svgChartWrap,
+  .performanceTableWrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .footer {
+    padding: 28px 20px;
+  }
+
+  .floatingTopButton,
+  .homeTopButton {
+    right: 14px;
+    bottom: 14px;
+    transform: scale(0.9);
+    transform-origin: right bottom;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 8px 12px;
+  }
+
+  .brandLogo {
+    gap: 8px;
+  }
+
+  .brandIcon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brandIcon span {
+    font-size: 19px;
+  }
+
+  .brandText strong {
+    font-size: 16px;
+  }
+
+  .headerButton,
+  .secondaryHeaderButton {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .hero,
+  .section,
+  .personalHero {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero {
+    padding-top: 44px;
+    padding-bottom: 48px;
+  }
+
+  .badge {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .hero h1 {
+    font-size: 34px;
+  }
+
+  .section h2 {
+    font-size: 28px;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboardCard,
+  .featureCard,
+  .stepCard,
+  .priceCard,
+  .summaryCard {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .priceCard strong {
+    font-size: 26px;
+  }
+
+  .indicatorLink {
+    padding: 0 12px;
+  }
+
+  .indicatorLink span {
+    font-size: 15px;
+  }
+}
+
+
+/* STEP 79-2 MOBILE TICKER AND PRICING COMPACT FIX */
+@media (max-width: 640px) {
+  .tickerArea {
+    height: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    align-items: center;
+  }
+
+  .tickerArea .tradingview-widget-container,
+  .tickerArea .tradingview-widget-container__widget,
+  .tickerArea iframe {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  .priceGrid {
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .priceCard {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 22px;
+    padding: 18px 18px 16px;
+  }
+
+  .priceCard h3 {
+    margin-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .priceCard strong {
+    margin: 10px 0 12px;
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .priceCard ul {
+    margin: 0 0 16px;
+    padding-left: 18px;
+    line-height: 1.65;
+    font-size: 13px;
+  }
+
+  .priceCard li {
+    margin: 0;
+  }
+
+  .priceCard button,
+  .priceCard a {
+    width: auto;
+    min-width: 92px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .homeTopButton,
+  .floatingTopButton {
+    right: 14px;
+    bottom: 14px;
+    transform: scale(0.9);
+    transform-origin: right bottom;
+  }
+}
+
+
+/* === STEP 79-3: Mobile compact home sections START === */
+@media (max-width: 640px) {
+  /*
+    Mobile home compact mode
+    - Keep the TradingView ticker visible with a more stable height.
+    - Reduce vertical length by turning repeated card groups into horizontal swipe rows.
+    - Keep body overflow-x hidden while allowing intentional card-row swipes.
+  */
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .page {
+    overflow-x: hidden;
+  }
+
+  .header {
+    height: auto;
+    min-height: 86px;
+    padding: 14px 16px 12px;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .headerActions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .headerButton,
+  .primaryButton,
+  .secondaryButton {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .tickerArea {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    align-items: stretch !important;
+    background: #020617;
+    overflow: hidden;
+  }
+
+  .tickerArea .tradingview-widget-container,
+  .tickerArea .tradingview-widget-container__widget,
+  .tickerArea iframe {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  .tickerArea iframe {
+    display: block !important;
+  }
+
+  .hero {
+    padding: 42px 18px 38px;
+    gap: 28px;
+  }
+
+  .badge {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .hero h1 {
+    margin: 16px 0 12px;
+    font-size: 31px;
+    line-height: 1.16;
+    letter-spacing: -1.2px;
+  }
+
+  .description {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .heroButtons {
+    margin-top: 22px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dashboardCard {
+    border-radius: 24px;
+    padding: 20px;
+  }
+
+  .cardHeader h2 {
+    font-size: 23px;
+  }
+
+  .metric {
+    padding: 14px;
+  }
+
+  .metric p {
+    font-size: 12px;
+  }
+
+  .metric strong {
+    font-size: 22px;
+  }
+
+  .section {
+    padding: 46px 18px;
+  }
+
+  .section h2 {
+    margin: 10px 0 18px;
+    font-size: 27px;
+    line-height: 1.22;
+    letter-spacing: -0.8px;
+  }
+
+  .section > p:not(.sectionLabel) {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .sectionLabel {
+    font-size: 11px;
+    letter-spacing: 1.6px;
+  }
+
+  .featureGrid,
+  .stepGrid,
+  .priceGrid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 12px;
+    margin-top: 22px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 2px 14px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .featureGrid::-webkit-scrollbar,
+  .stepGrid::-webkit-scrollbar,
+  .priceGrid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .featureGrid::-webkit-scrollbar-thumb,
+  .stepGrid::-webkit-scrollbar-thumb,
+  .priceGrid::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+
+  .featureCard,
+  .stepCard,
+  .priceCard {
+    flex: 0 0 min(82vw, 300px);
+    scroll-snap-align: start;
+    border-radius: 22px;
+    padding: 18px;
+    min-height: 150px;
+  }
+
+  .featureCard h3,
+  .stepCard h3,
+  .priceCard h3 {
+    font-size: 19px;
+    margin-bottom: 8px;
+  }
+
+  .featureCard p,
+  .stepCard p {
+    font-size: 13px;
+    line-height: 1.55;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+  }
+
+  .priceCard {
+    min-height: 244px;
+  }
+
+  .priceCard strong {
+    margin: 10px 0;
+    font-size: 24px;
+  }
+
+  .priceCard ul {
+    margin: 0 0 14px;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .priceCard button,
+  .priceCard a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    min-width: 86px;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 12px;
+  }
+
+  .calculatorSection,
+  .calendarSection {
+    padding-top: 46px;
+    padding-bottom: 46px;
+  }
+
+  .economicGrid {
+    margin-top: 22px;
+    gap: 20px;
+  }
+
+  .investingCalendarBox {
+    padding: 12px 10px;
+  }
+
+  .investingCalendarFrame {
+    min-height: 500px;
+  }
+
+  .indicatorLink {
+    min-height: 58px;
+    padding: 0 16px;
+  }
+
+  .indicatorLink span {
+    font-size: 15px;
+  }
+
+  .summaryCard {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .floatingTopButton,
+  .homeTopButton {
+    right: 14px !important;
+    bottom: 14px !important;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    padding: 0;
+    font-size: 12px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
+  }
+}
+
+@media (max-width: 380px) {
+  .featureCard,
+  .stepCard,
+  .priceCard {
+    flex-basis: 84vw;
+  }
+
+  .hero h1 {
+    font-size: 29px;
+  }
+
+  .section h2 {
+    font-size: 25px;
+  }
+
+  .priceCard {
+    min-height: 232px;
+  }
+}
+/* === STEP 79-3: Mobile compact home sections END === */
+
+
+/* STEP 79-4 MOBILE DEEP FIX */
+@media (max-width: 640px) {
+  /* 모바일에서는 TradingView 티커 위젯을 숨깁니다. 위젯 iframe이 작은 폭에서 지나치게 납작해지는 문제를 방지합니다. */
+  .tickerArea {
+    display: none !important;
+  }
+
+  /* 전체 섹션 간격 축소 */
+  .hero,
+  .section,
+  .personalHero,
+  .calculatorSection,
+  .simulatorSection {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .hero {
+    padding-top: 48px !important;
+    padding-bottom: 44px !important;
+    gap: 28px !important;
+  }
+
+  .section {
+    padding-top: 44px !important;
+    padding-bottom: 44px !important;
+  }
+
+  .section h2,
+  .personalHero h1,
+  .performanceHeader h3,
+  .chartCard h3,
+  .portfolioComparePanel h3,
+  .calculatorSection h2 {
+    white-space: normal !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .section h2 {
+    font-size: 26px !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .section > p:not(.sectionLabel),
+  .description,
+  .personalHero p:not(.sectionLabel),
+  .performanceHeader p:not(.sectionLabel) {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+  }
+
+  /* 모바일 홈 계산기 영역 압축 */
+  .calculatorSection {
+    padding-top: 42px !important;
+    padding-bottom: 42px !important;
+  }
+
+  .calculatorSection h2 {
+    font-size: 25px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .calculatorSummary {
+    gap: 12px !important;
+    margin: 22px 0 18px !important;
+  }
+
+  .summaryCard {
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .summaryCard p {
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .summaryCard strong {
+    font-size: 21px !important;
+  }
+
+  .summaryCard input,
+  .calculatorTable input {
+    min-height: 40px;
+    font-size: 14px !important;
+  }
+
+  /* 개인 시뮬레이터 상단 설명 축소 */
+  .personalHero {
+    padding-top: 40px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .personalHero h1 {
+    font-size: 27px !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .personalHero p:not(.sectionLabel) {
+    margin-top: 12px !important;
+    max-height: 4.9em;
+    overflow: hidden;
+  }
+
+  .personalPage .calculatorSection {
+    padding-top: 24px !important;
+  }
+
+  .personalPage .calculatorSection > .sectionLabel + h2,
+  .personalPage .calculatorSection h2 {
+    font-size: 28px !important;
+  }
+
+  /* 모바일에서 시뮬레이터는 PC 권장 안내를 먼저 보여줍니다. */
+  .personalPage .simulatorSection::before {
+    content: '모바일에서는 표 입력과 세부 편집이 제한적일 수 있습니다. 정확한 입력과 검토는 PC 이용을 권장합니다.';
+    display: block;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 800;
+  }
+
+  /* 자산 입력 테이블은 억지로 좁히지 않고 가로 스크롤로 처리합니다. */
+  .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 18px !important;
+  }
+
+  .calculatorTable {
+    width: max-content !important;
+    min-width: 820px !important;
+    table-layout: auto !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .calculatorTable input {
+    min-width: 56px;
+    padding: 8px 9px !important;
+  }
+
+  .addButton {
+    width: 100%;
+    margin-top: 14px !important;
+  }
+
+  /* 포트폴리오 비교/차트 영역 넘침 보정 */
+  .portfolioManager,
+  .portfolioComparePanel,
+  .chartCard,
+  .chartStatement,
+  .performanceTableWrap {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+    overflow-x: auto;
+  }
+
+  .performanceChartSection,
+  .performanceSection {
+    margin-top: 28px !important;
+  }
+
+  .performanceHeader {
+    margin-bottom: 14px !important;
+  }
+
+  .performanceHeader h3 {
+    font-size: 22px !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  .svgChartWrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svgChart {
+    width: max-content !important;
+    min-width: 640px !important;
+  }
+
+  .chartLegend {
+    gap: 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* 포트폴리오 비교 카드가 화면 밖으로 밀리지 않게 보정 */
+  .portfolioComparePanel * {
+    max-width: 100%;
+  }
+
+  .portfolioComparePanel h3,
+  .portfolioComparePanel strong,
+  .chartCard h3 {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* 모바일 버튼 크기 보정 */
+  .headerButton,
+  .primaryButton,
+  .secondaryButton,
+  .toggleButton {
+    font-size: 14px !important;
+    padding: 10px 14px !important;
+  }
+
+  .floatingTopButton,
+  .homeTopButton {
+    right: 14px !important;
+    bottom: 14px !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 12px !important;
+  }
+}
+
+
+/* =========================
+   Step 79-5 Mobile Simulator Final Fix
+========================= */
+
+.mobileDesktopNotice {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* Personal Page introductory hero is removed; tighten simulator entry. */
+  .personalPage .simulatorSection {
+    padding-top: 34px !important;
+  }
+
+  .simulatorSection > .sectionLabel,
+  .simulatorSection > h2,
+  .simulatorIntroText {
+    max-width: 100% !important;
+  }
+
+  .simulatorSection > h2 {
+    margin-bottom: 12px !important;
+    font-size: 26px !important;
+    line-height: 1.22 !important;
+    letter-spacing: -0.8px !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .simulatorIntroText {
+    margin-bottom: 22px !important;
+    font-size: 14px !important;
+    line-height: 1.72 !important;
+    color: #475569 !important;
+  }
+
+  .mobileDesktopNotice {
+    display: block;
+    margin: 14px 0 12px;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 16px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.55;
+  }
+
+  /* Asset table: do not squeeze columns on mobile; make it horizontally scrollable. */
+  .settingsPanel .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 18px !important;
+  }
+
+  .settingsPanel .calculatorTable {
+    width: 980px !important;
+    min-width: 980px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+  }
+
+  .settingsPanel .calculatorTable th,
+  .settingsPanel .calculatorTable td {
+    padding: 10px 8px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 12px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(1),
+  .settingsPanel .calculatorTable td:nth-child(1) {
+    width: 82px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(2),
+  .settingsPanel .calculatorTable td:nth-child(2) {
+    width: 155px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(3),
+  .settingsPanel .calculatorTable td:nth-child(3) {
+    width: 88px !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(4),
+  .settingsPanel .calculatorTable td:nth-child(4),
+  .settingsPanel .calculatorTable th:nth-child(5),
+  .settingsPanel .calculatorTable td:nth-child(5) {
+    width: 140px !important;
+  }
+
+  .settingsPanel .calculatorTable input {
+    min-width: 64px !important;
+    padding: 9px 8px !important;
+    font-size: 12px !important;
+    text-align: right !important;
+  }
+
+  .settingsPanel .tableActionRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .settingsPanel .tableActionRow button,
+  .settingsPanel .addButton,
+  .settingsPanel .resetPortfolioButton {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Put Saved Portfolios at the bottom with less visual dominance. */
+  .portfolioAnchor {
+    margin-top: 34px !important;
+  }
+
+  .portfolioManager {
+    margin: 0 !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .portfolioManagerTop {
+    gap: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .portfolioManager h3 {
+    font-size: 20px !important;
+  }
+
+  .portfolioTabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  .portfolioTab {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  /* Compare: keep cards and chart inside viewport; chart scrolls horizontally only inside its box. */
+  .comparePanel,
+  .portfolioComparePanel {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .portfolioCompareGrid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .portfolioCompareCard {
+    max-width: 100% !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .portfolioCompareCardTop {
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .portfolioCompareCardTop strong,
+  .portfolioCompareCard dl dd,
+  .portfolioCompareCard .realValue {
+    overflow-wrap: anywhere !important;
+    word-break: keep-all !important;
+  }
+
+  .compareRankGrid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .compareLineChart {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .compareLineChartHeader h4 {
+    font-size: 22px !important;
+    line-height: 1.22 !important;
+    word-break: keep-all !important;
+  }
+
+  .compareLineChartHeader p {
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+  }
+
+  .compareLineChartSvg {
+    width: 760px !important;
+    min-width: 760px !important;
+    max-width: none !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  .compareLineLegend.grouped {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .compareLineLegendGroup,
+  .compareLineLegendItem {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Detail report titles should wrap instead of clipping. */
+  .detailPanel,
+  .reportSection,
+  .performanceChartSection,
+  .chartCard {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .detailPanel h3,
+  .detailPanel h4,
+  .performanceHeader h3,
+  .chartCard h3,
+  .chartCard h4 {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+
+
+/* === STEP 79-6 MOBILE TABLE / CHART / TOP FIX START === */
+@media (max-width: 900px) {
+  /*
+    모바일 시뮬레이터 표는 작은 폭에 억지로 압축하면
+    CAGR/BETA/MDD/배당률 입력칸이 서로 겹칩니다.
+    표 자체는 PC 작업형 UI로 유지하고, 모바일에서는 명확한 가로 스크롤로 처리합니다.
+  */
+  .calculatorTableWrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 22px;
+  }
+
+  .calculatorTable {
+    width: max-content !important;
+    min-width: 1220px !important;
+    table-layout: auto !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    padding: 12px 10px;
+  }
+
+  .calculatorTable th:nth-child(1),
+  .calculatorTable td:nth-child(1) {
+    min-width: 86px;
+    width: 86px;
+  }
+
+  .calculatorTable th:nth-child(2),
+  .calculatorTable td:nth-child(2) {
+    min-width: 150px;
+    width: 150px;
+  }
+
+  .calculatorTable th:nth-child(3),
+  .calculatorTable td:nth-child(3) {
+    min-width: 82px;
+    width: 82px;
+  }
+
+  .calculatorTable th:nth-child(4),
+  .calculatorTable td:nth-child(4) {
+    min-width: 148px;
+    width: 148px;
+  }
+
+  .calculatorTable th:nth-child(5),
+  .calculatorTable td:nth-child(5) {
+    min-width: 132px;
+    width: 132px;
+  }
+
+  .calculatorTable th:nth-child(6),
+  .calculatorTable td:nth-child(6) {
+    min-width: 86px;
+    width: 86px;
+  }
+
+  .calculatorTable th:nth-child(7),
+  .calculatorTable td:nth-child(7),
+  .calculatorTable th:nth-child(8),
+  .calculatorTable td:nth-child(8),
+  .calculatorTable th:nth-child(9),
+  .calculatorTable td:nth-child(9),
+  .calculatorTable th:nth-child(10),
+  .calculatorTable td:nth-child(10) {
+    min-width: 104px;
+    width: 104px;
+  }
+
+  .calculatorTable th:nth-child(11),
+  .calculatorTable td:nth-child(11) {
+    min-width: 96px;
+    width: 96px;
+  }
+
+  .calculatorTable th:nth-child(12),
+  .calculatorTable td:nth-child(12) {
+    min-width: 78px;
+    width: 78px;
+  }
+
+  .calculatorTable input {
+    min-width: 68px;
+    width: 100%;
+  }
+
+  .calculatorTable td:nth-child(7) input,
+  .calculatorTable td:nth-child(8) input,
+  .calculatorTable td:nth-child(9) input,
+  .calculatorTable td:nth-child(10) input {
+    min-width: 86px;
+    text-align: right;
+  }
+
+  .calculatorTable .numberTextValue,
+  .assetTextValue.numberTextValue {
+    min-width: 72px;
+    display: inline-flex;
+    justify-content: flex-end;
+  }
+
+  /*
+    포트폴리오 비교 차트는 모바일에서 가로 스크롤보다
+    전체 30년 구간을 한 화면에 축소 표시하는 쪽이 읽기 쉽습니다.
+  */
+  .compareLineChart {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: visible !important;
+  }
+
+  .compareLineChartSvg {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareLineEndLabel {
+    display: none;
+  }
+
+  .compareLineChartHeader h4 {
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .compareLineChartHeader p {
+    white-space: normal;
+  }
+
+  /*
+    상세분석 연차별 예상 성과 표는 모바일에서 sticky header가
+    본문과 겹쳐 보일 수 있어 모바일에서는 고정 헤더를 해제합니다.
+  */
+  .performanceTable th {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+
+  .performanceTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .performanceTable {
+    min-width: 560px;
+  }
+
+  .floatingTopButton {
+    right: 14px;
+    bottom: 14px;
+    width: 58px;
+    height: 58px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .calculatorTable {
+    min-width: 1180px !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+/* === STEP 79-6 MOBILE TABLE / CHART / TOP FIX END === */
+
+/* =========================
+   Step 79-7 Mobile Final Polish
+========================= */
+
+@media (max-width: 900px) {
+  /* Mobile common: section titles smaller, descriptions should not be ellipsized */
+  .section h2,
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 24px !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.7px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: keep-all !important;
+  }
+
+  .simulatorIntroText,
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .section > p:not(.sectionLabel),
+  .assetValueNotice span,
+  .assetValueNotice small,
+  .calculatorNotice,
+  .calendarNotice {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: initial !important;
+    word-break: keep-all !important;
+  }
+
+  .tabSectionHeader,
+  .portfolioCompareHeader,
+  .performanceHeader {
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  .sectionLabel {
+    font-size: 11px !important;
+    letter-spacing: 1.8px !important;
+  }
+
+  /* Simulator top cards: prevent text overflow */
+  .assetValueNotice {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 18px !important;
+    overflow: hidden !important;
+  }
+
+  .assetValueNotice p,
+  .assetValueNotice strong,
+  .assetValueNotice span,
+  .assetValueNotice small {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .assetValueNotice strong {
+    font-size: 24px !important;
+  }
+
+  .assetLookupNotice {
+    display: block !important;
+    padding: 14px !important;
+  }
+
+  .assetLookupNotice span {
+    display: block !important;
+    margin-top: 8px !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+  }
+
+  /* Asset input table: keep PC-like table and make horizontal scroll explicit */
+  .settingsPanel .calculatorTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px !important;
+    position: relative !important;
+  }
+
+  .settingsPanel .calculatorTableWrap::after {
+    content: '좌우로 밀어 전체 항목을 확인하세요';
+    position: sticky;
+    left: 0;
+    bottom: 0;
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    padding: 8px 12px;
+    color: #64748b;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .settingsPanel .calculatorTable {
+    width: 1320px !important;
+    min-width: 1320px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+
+  .settingsPanel .calculatorTable th,
+  .settingsPanel .calculatorTable td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .settingsPanel .calculatorTable th:nth-child(1),
+  .settingsPanel .calculatorTable td:nth-child(1) { width: 90px !important; }
+  .settingsPanel .calculatorTable th:nth-child(2),
+  .settingsPanel .calculatorTable td:nth-child(2) { width: 190px !important; }
+  .settingsPanel .calculatorTable th:nth-child(3),
+  .settingsPanel .calculatorTable td:nth-child(3) { width: 92px !important; }
+  .settingsPanel .calculatorTable th:nth-child(4),
+  .settingsPanel .calculatorTable td:nth-child(4) { width: 170px !important; }
+  .settingsPanel .calculatorTable th:nth-child(5),
+  .settingsPanel .calculatorTable td:nth-child(5) { width: 170px !important; }
+  .settingsPanel .calculatorTable th:nth-child(6),
+  .settingsPanel .calculatorTable td:nth-child(6) { width: 92px !important; }
+  .settingsPanel .calculatorTable th:nth-child(7),
+  .settingsPanel .calculatorTable td:nth-child(7) { width: 104px !important; }
+  .settingsPanel .calculatorTable th:nth-child(8),
+  .settingsPanel .calculatorTable td:nth-child(8) { width: 96px !important; }
+  .settingsPanel .calculatorTable th:nth-child(9),
+  .settingsPanel .calculatorTable td:nth-child(9) { width: 104px !important; }
+  .settingsPanel .calculatorTable th:nth-child(10),
+  .settingsPanel .calculatorTable td:nth-child(10) { width: 112px !important; }
+  .settingsPanel .calculatorTable th:nth-child(11),
+  .settingsPanel .calculatorTable td:nth-child(11) { width: 88px !important; }
+  .settingsPanel .calculatorTable th:nth-child(12),
+  .settingsPanel .calculatorTable td:nth-child(12) { width: 82px !important; }
+
+  .settingsPanel .calculatorTable input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    text-align: right !important;
+  }
+
+  .settingsPanel .calculatorTable td:first-child input,
+  .settingsPanel .calculatorTable td:nth-child(2) input {
+    text-align: left !important;
+  }
+
+  .settingsPanel .assetTextValue,
+  .settingsPanel .numberTextValue,
+  .settingsPanel .numberCell {
+    display: block !important;
+    width: 100% !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .settingsPanel .assetInfoStack {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .tableActionRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .tableActionRow button,
+  .addButton,
+  .resetPortfolioButton {
+    width: 100% !important;
+  }
+
+  /* Portfolio compare chart: fit all years into mobile width */
+  .compareLineChart {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareLineEndLabel {
+    display: none !important;
+  }
+
+  .compareAxisLabel {
+    font-size: 20px !important;
+  }
+
+  .compareLineLegend.grouped {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+
+  .compareLineLegendGroup {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Annual performance: sticky header and sticky year column on mobile */
+  .performanceTableWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 540px !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px !important;
+  }
+
+  .performanceTable {
+    min-width: 680px !important;
+    width: 680px !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    padding: 12px 10px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .performanceTable th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child,
+  .performanceTable td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+    background: #ffffff !important;
+    z-index: 3 !important;
+    box-shadow: 1px 0 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child {
+    z-index: 5 !important;
+    background: #f8fafc !important;
+  }
+
+  .performanceTable tbody tr:nth-child(even) td {
+    background: #f8fafc !important;
+  }
+
+  .performanceTable tbody tr:nth-child(even) td:first-child {
+    background: #f8fafc !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .section h2,
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 22px !important;
+  }
+
+  .simulatorIntroText,
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .section > p:not(.sectionLabel) {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+  }
+
+  .portfolioManager,
+  .portfolioComparePanel,
+  .chartCard,
+  .simulatorTabPanel {
+    padding: 16px !important;
+    border-radius: 22px !important;
+  }
+}
+
+/* ===== End Step 79-7 Mobile Final Polish ===== */
+
+
+/* Step 79-8 Mobile chart and sticky table final fix */
+
+/* 모바일 공통: 섹션 설명은 말줄임 없이 모두 표시 */
+@media (max-width: 700px) {
+  .tabSectionHeader p,
+  .portfolioCompareHeader p,
+  .compareLineChartHeader p,
+  .performanceHeader p,
+  .performanceHeader p:not(.sectionLabel),
+  .assetValueNotice span,
+  .assetValueNotice small,
+  .simulatorIntroText,
+  .calculatorNotice {
+    display: block !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: initial !important;
+    max-width: 100% !important;
+  }
+
+  .tabSectionHeader h3,
+  .portfolioCompareHeader h3,
+  .compareLineChartHeader h4,
+  .performanceHeader h3 {
+    font-size: 24px !important;
+    line-height: 1.24 !important;
+    letter-spacing: -0.6px !important;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .assetValueNotice {
+    overflow: hidden !important;
+  }
+
+  .assetValueNotice strong,
+  .assetValueNotice p,
+  .assetValueNotice span,
+  .assetValueNotice small {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+  }
+}
+
+/* Portfolio Compare: 모바일에서 30년 구간 전체가 한 화면에 들어오도록 강제 */
+.compareLineChart,
+.compareLineChartSvgWrap {
+  max-width: 100%;
+}
+
+.compareLineChartSvgWrap {
+  overflow: visible !important;
+}
+
+.compareLineChartSvg {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+}
+
+@media (max-width: 700px) {
+  .compareLineChart {
+    padding: 18px !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvgWrap {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .compareLineChartSvg {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .compareAxisLabel {
+    font-size: 19px !important;
+    font-weight: 900 !important;
+  }
+
+  .compareLineEndLabel {
+    display: none !important;
+  }
+
+  .compareLineLegend.grouped {
+    margin-top: 14px !important;
+  }
+}
+
+/* Annual Performance: 모바일에서 헤더/연차 컬럼 위로 본문이 비쳐 보이지 않도록 배경과 z-index 강화 */
+@media (max-width: 700px) {
+  .performanceTableWrap {
+    position: relative;
+    overflow: auto !important;
+    background: #ffffff !important;
+  }
+
+  .performanceTable {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    min-width: 620px !important;
+  }
+
+  .performanceTable th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th:first-child {
+    left: 0 !important;
+    z-index: 12 !important;
+    background: #f8fafc !important;
+    box-shadow: 1px 0 0 #e2e8f0, 0 1px 0 #e2e8f0 !important;
+  }
+
+  .performanceTable td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 6 !important;
+    background: #ffffff !important;
+    box-shadow: 1px 0 0 #e2e8f0 !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* 모바일 시뮬레이터 표 입력칸 추가 안정화 */
+@media (max-width: 700px) {
+  .calculatorTableWrap {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calculatorTable {
+    width: 980px !important;
+    min-width: 980px !important;
+    table-layout: fixed !important;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    box-sizing: border-box;
+  }
+
+  .calculatorTable input {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .calculatorTable th:nth-child(7),
+  .calculatorTable td:nth-child(7),
+  .calculatorTable th:nth-child(8),
+  .calculatorTable td:nth-child(8),
+  .calculatorTable th:nth-child(9),
+  .calculatorTable td:nth-child(9),
+  .calculatorTable th:nth-child(10),
+  .calculatorTable td:nth-child(10) {
+    width: 80px !important;
+  }
+}
+
+/* STEP79_9_COMPARE_GROWTH_ANNUAL_MASK */
+.portfolioCompareGrowthChart {
+  margin-top: 34px;
+}
+
+.portfolioCompareGrowthChart .performanceHeader {
+  margin-bottom: 18px;
+}
+
+.compareGrowthCard {
+  overflow: hidden;
+}
+
+.compareGrowthSvgWrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.compareGrowthSvg {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+}
+
+.compareGrowthLegend {
+  align-items: flex-start;
+}
+
+.compareGrowthLegend > span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+}
+
+.compareGrowthLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.performanceTableWrap {
+  position: relative;
+  background: #ffffff;
+  isolation: isolate;
+}
+
+.performanceTable {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff;
+}
+
+.performanceTable thead th {
+  background: #f8fafc !important;
+  z-index: 8 !important;
+  box-shadow: 0 1px 0 #e2e8f0, 0 10px 14px rgba(248, 250, 252, 0.98);
+}
+
+.performanceTable thead th:first-child {
+  z-index: 12 !important;
+  background: #f8fafc !important;
+  box-shadow: 1px 0 0 #e2e8f0, 0 1px 0 #e2e8f0, 12px 0 16px rgba(248, 250, 252, 0.98);
+}
+
+.performanceTable tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 7 !important;
+  background: #ffffff !important;
+  box-shadow: 1px 0 0 #e2e8f0, 14px 0 18px rgba(255, 255, 255, 0.98);
+}
+
+@media (max-width: 900px) {
+  .performanceChartSection .performanceHeader h3,
+  .detailPanel .performanceHeader h3 {
+    font-size: 23px !important;
+    line-height: 1.28 !important;
+    letter-spacing: -0.7px !important;
+  }
+
+  .portfolioCompareGrowthChart .performanceHeader h3 {
+    font-size: 23px !important;
+  }
+
+  .compareGrowthSvg {
+    width: 720px !important;
+    min-width: 720px !important;
+    max-width: none !important;
+  }
+
+  .compareGrowthSvgWrap {
+    margin: 0 -4px;
+    padding: 0 4px 8px;
+  }
+
+  .compareGrowthLegend {
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .compareGrowthLegend > span {
+    width: 100%;
+    border-radius: 16px;
+    justify-content: flex-start;
+  }
+
+  .performanceTableWrap {
+    overflow: auto !important;
+    max-height: 520px;
+    border-radius: 20px;
+  }
+
+  .performanceTable {
+    min-width: 960px !important;
+    table-layout: fixed !important;
+  }
+
+  .performanceTable th,
+  .performanceTable td {
+    background-clip: padding-box;
+  }
+
+  .performanceTable thead th {
+    position: sticky;
+    top: 0;
+  }
+
+  .performanceTable th:first-child,
+  .performanceTable td:first-child {
+    width: 84px !important;
+    min-width: 84px !important;
+    max-width: 84px !important;
+  }
+
+  .performanceTable tbody td:first-child {
+    color: #2563eb;
+    font-weight: 900;
+  }
+}
+
+
+/* Step 80-2 Pricing card visual alignment */
+/* Keep Free / Personal / Pro pricing cards visually consistent. */
+.accountPlanCard.featured {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #dbeafe;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+}
+
+.accountPlanCard.featured h2,
+.accountPlanCard.featured p,
+.accountPlanCard.featured li,
+.accountPlanCard.featured strong {
+  color: #0f172a;
+}
+
+.accountPlanCard.featured .planLimitList span {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.accountPlanCard.featured button {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.priceCard.featured {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.priceCard.featured ul {
+  color: #475569;
+}
+
+.priceCard.featured button,
+.priceCard.featured a {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.pricingNoticeBox {
+  margin-bottom: 72px;
+}
+
+.accountPage .pricingNoticeBox:last-child {
+  margin-bottom: 88px;
+}
+
+@media (max-width: 900px) {
+  .pricingNoticeBox {
+    margin-bottom: 56px;
+  }
+
+  .accountPage .pricingNoticeBox:last-child {
+    margin-bottom: 72px;
+  }
+}
+
+/* =========================
+   Step 81-3. Login split
+========================= */
+
+.accountLoginGrid {
+  max-width: 1120px;
+  margin: 0 auto 72px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.loginRoleCard {
+  align-self: stretch;
+}
+
+.loginRoleHeader {
+  margin-bottom: 20px;
+}
+
+.loginRoleHeader h2 {
+  margin: 8px 0 10px;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.6px;
+}
+
+.loginRoleHeader span,
+.adminLoginHint {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.adminLoginCard {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.adminLoginCard .primaryButton {
+  background: #1d4ed8;
+}
+
+@media (max-width: 900px) {
+  .accountLoginGrid {
+    grid-template-columns: 1fr;
+    margin-bottom: 44px;
+    padding: 0 16px;
+  }
+
+  .loginRoleHeader h2 {
+    font-size: 22px;
+  }
+}
+
+/* Step 81-4: hidden admin route */
+.singleLoginCard {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.adminRouteLoginCard {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.adminRouteLoginCard .primaryButton {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .singleLoginCard {
+    max-width: none;
+  }
+}
+
+
+/* =========================================
+   Step 82 Legal Pages / Footer Links
+========================================= */
+.footerLegalLinks {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.footerLegalLinks button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.footerLegalLinks button:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.legalDocumentCard {
+  max-width: 980px;
+  margin: 0 auto 72px;
+  padding: 36px;
+}
+
+.legalDocumentSection + .legalDocumentSection {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.legalDocumentSection h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.legalDocumentSection p {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.legalDocumentSection ul {
+  margin: 12px 0 0;
+  padding-left: 22px;
+  color: #334155;
+  line-height: 1.9;
+  font-weight: 700;
+}
+
+.supportPrivacyNotice {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin: 18px 0;
+  color: #1e3a8a;
+}
+
+.supportPrivacyNotice strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.supportPrivacyNotice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #334155;
+}
+
+@media (max-width: 720px) {
+  .legalDocumentCard {
+    padding: 24px 20px;
+    margin-bottom: 48px;
+  }
+
+  .legalDocumentSection h2 {
+    font-size: 20px;
+  }
+
+  .legalDocumentSection p {
+    font-size: 14px;
+    line-height: 1.75;
+  }
+
+  .footerLegalLinks {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .footerLegalLinks button {
+    font-size: 12px;
+    padding: 8px 11px;
+  }
+}
+
+/* STEP84_2_ACCOUNT_HERO_WIDE_COPY */
+@media (min-width: 901px) {
+  .accountPage .accountHero {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: 1120px;
+  }
+
+  .accountPage .accountHero h1 {
+    max-width: 760px;
+  }
+
+  .accountPage .accountHero .sectionLabel {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .accountPage .accountHero > p:not(.sectionLabel) {
+    max-width: none;
+  }
+}
+
+/* Step 84-3: legal page hero width */
+.legalPage .accountHero {
+  max-width: 1180px;
+}
+
+.legalPage .accountHero > p:not(.sectionLabel) {
+  max-width: 1080px;
+}
+
+.legalPage .legalDocumentCard {
+  width: min(100%, 1080px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 768px) {
+  .legalPage .accountHero > p:not(.sectionLabel) {
+    max-width: 100%;
+  }
+
+  .legalPage .legalDocumentCard {
+    width: 100%;
+  }
+}
+
+/* STEP92_BETA_NOTICE_BANNER */
+.betaNoticeBanner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 680px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.92);
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.betaNoticeBanner strong {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.betaNoticeBanner span {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .betaNoticeBanner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: 16px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .betaNoticeBanner strong {
+    min-width: 44px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+
+/* STEP105_HOME_GOLDEN_COPY_GUARD */
+.goldenSection > p:not(.sectionLabel) {
+  max-width: 980px;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.85;
+}
+
+.whySection .sectionTopRow h2 {
+  max-width: 980px;
+  white-space: normal;
+}
+
+.whySection .sectionSideText {
+  max-width: 980px;
+  white-space: normal;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.85;
+  font-weight: 700;
+}
+
+.goldenSection .featureCard p,
+.goldenSection .stepCard p {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.goldenSection .stepCard p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.finpleCopyGuard .page,
+.finpleCopyGuard .personalPage,
+.finpleCopyGuard .accountPage {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.finpleCopyGuard input,
+.finpleCopyGuard textarea,
+.finpleCopyGuard select,
+.finpleCopyGuard [contenteditable="true"],
+.finpleCopyGuard .allowTextSelection {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media (max-width: 900px) {
+  .goldenSection > p:not(.sectionLabel),
+  .whySection .sectionSideText {
+    font-size: 16px;
+    line-height: 1.75;
+  }
+}
+
+
+
+/* STEP105_2_GOLDEN_CIRCLE_EXPANDED */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supportHeaderButton {
+  white-space: nowrap;
+}
+
+.whySection,
+.howSection,
+.whatSection {
+  scroll-margin-top: 92px;
+}
+
+.whyTopRow h2 {
+  white-space: normal;
+}
+
+.whyNarrativeGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 34px;
+}
+
+.whyLeadCard,
+.whyVisualPanel,
+.sourceCard,
+.whatPreviewCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.whyLeadCard {
+  padding: 30px;
+}
+
+.whyLeadCard span,
+.whatPreviewCard span {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.whyLeadCard h3,
+.whatPreviewCard h3 {
+  margin: 0 0 14px;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+}
+
+.whyLeadCard p,
+.whyVisualPanel p,
+.sourceCard p,
+.whatPreviewCard p,
+.howSection > p,
+.whatSection > p {
+  color: #475569;
+  line-height: 1.75;
+}
+
+.whyLeadCard p {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.whyVisualPanel {
+  padding: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 38%),
+    linear-gradient(135deg, #f8fafc, #ffffff);
+}
+
+.marketCycleVisual {
+  position: relative;
+  min-height: 270px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.92)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cycleCenter {
+  position: relative;
+  z-index: 3;
+  width: 132px;
+  height: 132px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.25;
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+}
+
+.cycleOrbit {
+  position: absolute;
+  border: 1px solid rgba(191, 219, 254, 0.45);
+  border-radius: 999px;
+}
+
+.cycleOrbit.one {
+  width: 230px;
+  height: 230px;
+}
+
+.cycleOrbit.two {
+  width: 310px;
+  height: 160px;
+  transform: rotate(-24deg);
+}
+
+.cycleDot {
+  position: absolute;
+  z-index: 4;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.2);
+}
+
+.cycleDot.growth {
+  top: 42px;
+  left: 42px;
+}
+
+.cycleDot.defense {
+  top: 44px;
+  right: 44px;
+}
+
+.cycleDot.income {
+  bottom: 48px;
+  left: 54px;
+}
+
+.cycleDot.real {
+  bottom: 48px;
+  right: 54px;
+}
+
+.whyEvidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.sourceCard {
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.sourceCard strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.sourceCard p {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.sourceCard a {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.howDifferentiatorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.whatPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.whatPreviewCard {
+  padding: 24px;
+}
+
+.miniScreen {
+  min-height: 160px;
+  margin: 18px 0;
+  border-radius: 22px;
+  border: 1px solid #dbeafe;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.simulatorMini {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.simulatorMini i {
+  display: block;
+  height: 30px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #e2e8f0, #bfdbfe);
+}
+
+.chartMini {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px;
+}
+
+.chartMini b {
+  width: 34px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, #2563eb, #0f4c5c);
+}
+
+.reportMini {
+  padding: 20px;
+}
+
+.reportMini em {
+  display: block;
+  height: 14px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.reportMini em:first-child {
+  width: 48%;
+  height: 20px;
+  background: #2563eb;
+}
+
+.reportMini em:nth-child(2) {
+  width: 82%;
+}
+
+.reportMini em:nth-child(3) {
+  width: 66%;
+}
+
+.reportMini em:nth-child(4) {
+  width: 74%;
+}
+
+.whatStepGrid {
+  margin-top: 28px;
+}
+
+@media (max-width: 1100px) {
+  .whyNarrativeGrid,
+  .whyEvidenceGrid,
+  .howDifferentiatorGrid,
+  .whatPreviewGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .whyLeadCard {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .headerActions {
+    gap: 8px;
+  }
+
+  .supportHeaderButton {
+    display: none;
+  }
+
+  .whyNarrativeGrid,
+  .whyEvidenceGrid,
+  .howDifferentiatorGrid,
+  .whatPreviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketCycleVisual {
+    min-height: 230px;
+  }
+
+  .whyLeadCard h3,
+  .whatPreviewCard h3 {
+    font-size: 23px;
+  }
+
+  .cycleDot {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+}
+
+/* STEP105_3_HOME_VISUAL_AND_DEFAULT_YEARS */
+.howSection,
+.whatSection {
+  max-width: 1240px;
+}
+
+.howSection .sectionLabel,
+.whatSection .sectionLabel {
+  color: #2563eb !important;
+}
+
+.howSection > h2,
+.howSection > p,
+.whatSection > h2,
+.whatSection > p {
+  max-width: 980px;
+}
+
+.howDifferentiatorGrid,
+.whatPreviewGrid {
+  width: 100%;
+}
+
+.howDifferentiatorGrid .featureCard,
+.whatPreviewCard,
+.whatStepGrid .stepCard {
+  min-height: 0;
+}
+
+.howDifferentiatorGrid .featureCard p,
+.whatPreviewCard p,
+.whatStepGrid .stepCard p {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  line-height: 1.55 !important;
+}
+
+.howDifferentiatorGrid .featureCard p,
+.whatPreviewCard p {
+  font-size: 14px;
+}
+
+.visualPreviewCard {
+  overflow: hidden;
+}
+
+.whatIllustration {
+  position: relative;
+  min-height: 160px;
+  margin: 18px 0;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.18), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(14, 165, 233, 0.18), transparent 26%),
+    linear-gradient(135deg, #f8fbff 0%, #eff6ff 48%, #ffffff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.illustrationHeader {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.illustrationHeader i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #2563eb;
+  opacity: 0.72;
+}
+
+.inputSceneRow {
+  position: absolute;
+  left: 18px;
+  right: 78px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.inputSceneRow.wide {
+  top: 56px;
+  right: 36px;
+}
+
+.inputSceneRow:not(.wide):not(.short) {
+  top: 84px;
+}
+
+.inputSceneRow.short {
+  top: 112px;
+  right: 118px;
+}
+
+.allocationChips {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.allocationChips b {
+  padding: 7px 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 11px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.growthFlowIllustration {
+  overflow: hidden;
+}
+
+.growthGridLine {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.36);
+}
+
+.growthGridLine.one {
+  top: 54px;
+}
+
+.growthGridLine.two {
+  top: 104px;
+}
+
+.growthArea {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  height: 78px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.2), rgba(37, 99, 235, 0.02));
+  clip-path: polygon(0 82%, 20% 70%, 36% 56%, 52% 48%, 68% 32%, 84% 22%, 100% 8%, 100% 100%, 0 100%);
+}
+
+.growthFlowIllustration svg {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 26px;
+  width: calc(100% - 36px);
+  height: 112px;
+}
+
+.growthFlowIllustration path {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.growthBars {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  height: 106px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.growthBars b {
+  width: 12px;
+  border-radius: 999px 999px 4px 4px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.decisionReportIllustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.reportSheet {
+  width: 118px;
+  height: 118px;
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+.reportSheet strong,
+.reportSheet em {
+  display: block;
+  border-radius: 999px;
+}
+
+.reportSheet strong {
+  width: 74px;
+  height: 14px;
+  background: #0f172a;
+  margin-bottom: 18px;
+}
+
+.reportSheet em {
+  height: 10px;
+  margin-top: 10px;
+  background: #bfdbfe;
+}
+
+.reportSheet em.short {
+  width: 62%;
+}
+
+.decisionBadge {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.riskMeter {
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  border: 10px solid rgba(37, 99, 235, 0.18);
+  border-top-color: #2563eb;
+  transform: rotate(38deg);
+}
+
+.riskMeter i {
+  display: none;
+}
+
+.investmentMbtiTeaser {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #dbeafe;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.investmentMbtiTeaser h3 {
+  margin: 6px 0 8px;
+  font-size: 24px;
+  color: #0f172a;
+}
+
+.investmentMbtiTeaser span {
+  display: block;
+  max-width: 760px;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.investmentMbtiTeaser button {
+  border: none;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 13px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .howSection,
+  .whatSection {
+    max-width: 100%;
+  }
+
+  .howSection > h2,
+  .howSection > p,
+  .whatSection > h2,
+  .whatSection > p {
+    max-width: none;
+  }
+
+  .whatIllustration {
+    min-height: 148px;
+  }
+
+  .investmentMbtiTeaser {
+    display: block;
+  }
+
+  .investmentMbtiTeaser button {
+    width: 100%;
+    margin-top: 16px;
+  }
+}
+
+/* === Step 110. Home section width and spacing QA START === */
+@media (min-width: 901px) {
+  .howSection h2,
+  .whatSection h2 {
+    max-width: 1120px;
+  }
+
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: 1060px;
+  }
+
+  .howDifferentiatorGrid,
+  .whatPreviewGrid,
+  .whatStepGrid {
+    width: 100%;
+  }
+
+  .whatSection {
+    padding-bottom: 48px;
+  }
+
+  .demoCalculatorSection {
+    padding-top: 48px;
+  }
+
+  .investmentMbtiTeaser {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .howSection h2,
+  .whatSection h2,
+  .howSection > p:not(.sectionLabel),
+  .whatSection > p:not(.sectionLabel) {
+    max-width: 100%;
+  }
+
+  .whatSection {
+    padding-bottom: 44px;
+  }
+
+  .demoCalculatorSection {
+    padding-top: 44px;
+  }
+}
+/* === Step 110. Home section width and spacing QA END === */
+
+/* Step 110-2: home white section full-bleed background fix start */
+/*
+  What 섹션과 Demo Calculator 섹션 사이에서 흰 배경 폭이 서로 달라 보이는 현상을 보정합니다.
+  콘텐츠 폭은 기존 max-width를 유지하고, 흰 배경만 화면 전체로 자연스럽게 이어지도록 처리합니다.
+*/
+.whySection.section.white,
+.whatSection.section.white,
+.demoCalculatorSection.section.white {
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 0 0 100vmax #ffffff;
+  clip-path: inset(0 -100vmax);
+}
+
+.whatSection.section.white {
+  padding-bottom: 56px;
+}
+
+.demoCalculatorSection.section.white {
+  padding-top: 56px;
+}
+
+@media (max-width: 900px) {
+  .whatSection.section.white {
+    padding-bottom: 48px;
+  }
+
+  .demoCalculatorSection.section.white {
+    padding-top: 48px;
+  }
+}
+/* Step 110-2: home white section full-bleed background fix end */
+
+
+/* Step 110-3: simulator intro width and white section background */
+
+/* 시뮬레이터 상단 설명문은 서비스 핵심 설명이므로 너무 좁게 끊기지 않도록 확장합니다. */
+.personalPage .simulatorSection .simulatorIntroText,
+.simulatorSection .simulatorIntroText {
+  width: min(100%, 1120px);
+  max-width: 1120px !important;
+}
+
+/* 홈의 흰색 섹션은 콘텐츠 폭은 유지하되 배경만 화면 전체로 이어지게 처리합니다.
+   이렇게 하면 회색/흰색 경계가 계단처럼 깨져 보이는 현상을 줄일 수 있습니다. */
+.page > .section.white {
+  box-shadow: 0 0 0 100vmax #ffffff;
+  clip-path: inset(0 -100vmax);
+}
+
+@media (max-width: 900px) {
+  .personalPage .simulatorSection .simulatorIntroText,
+  .simulatorSection .simulatorIntroText {
+    width: 100%;
+    max-width: 100% !important;
+  }
+}
+
+
+/* =========================
+   Step 113. My Page beta simplification
+========================= */
+
+.myPageBetaCompactNotice {
+  max-width: 1100px;
+  margin: 32px auto 0;
+}
+
+.myPageBetaCompactNotice h2 {
+  margin: 6px 0 10px;
+  font-size: 24px;
+  letter-spacing: -0.6px;
+}
+
+.myPageBetaCompactNotice p:not(.accountMiniLabel) {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.compactMyPageActions {
+  margin-top: 24px;
+}
+
+.accountNavAuthButton {
+  color: #2563eb !important;
+  font-weight: 900 !important;
+}
+
+.betaServerAdvancedAction,
+.betaServerDangerAction {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .myPageBetaCompactNotice {
+    margin-top: 24px;
+  }
+
+  .compactMyPageActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Step 114-5 MY PAGE storage simplification */
+.betaHiddenAction {
+  display: none !important;
+}
+
+.accountPanelStack .accountActionRow {
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.accountPanelStack .accountActionRow button {
+  min-width: 180px;
+}
+
+@media (max-width: 720px) {
+  .accountPanelStack .accountActionRow button {
+    width: 100%;
+    min-width: 0;
+  }
+}

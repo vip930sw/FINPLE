@@ -108,6 +108,53 @@ function getCurrentPlanConfig() {
   return FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
 }
 
+function applyPortfolioPlanLimitToState(portfolioState) {
+  const currentPlan = getCurrentPlanConfig();
+  const portfolioLimit = currentPlan?.limits?.portfolios;
+
+  if (!portfolioState || !Array.isArray(portfolioState.portfolioList)) {
+    return portfolioState;
+  }
+
+  if (!Number.isFinite(portfolioLimit)) {
+    return portfolioState;
+  }
+
+  const limit = Math.max(1, Number(portfolioLimit));
+
+  if (portfolioState.portfolioList.length <= limit) {
+    return portfolioState;
+  }
+
+  const activePortfolio =
+    portfolioState.portfolioList.find(
+      (portfolio) => portfolio.id === portfolioState.activePortfolioId
+    ) || portfolioState.portfolioList[0];
+
+  let nextPortfolioList = portfolioState.portfolioList.slice(0, limit);
+
+  if (
+    activePortfolio &&
+    !nextPortfolioList.some((portfolio) => portfolio.id === activePortfolio.id)
+  ) {
+    nextPortfolioList = [
+      ...nextPortfolioList.slice(0, Math.max(0, limit - 1)),
+      activePortfolio,
+    ];
+  }
+
+  const nextActivePortfolio =
+    nextPortfolioList.find((portfolio) => portfolio.id === activePortfolio?.id) ||
+    nextPortfolioList[0];
+
+  return {
+    ...portfolioState,
+    portfolioList: nextPortfolioList,
+    activePortfolioId: nextActivePortfolio.id,
+    activePortfolio: nextActivePortfolio,
+  };
+}
+
 function openPricingSection() {
   if (typeof window === "undefined") return;
 
@@ -150,7 +197,9 @@ function isActivatingEmptyAsset(currentAsset, field, value) {
 }
 
 export default function usePortfolioSimulator() {
-    const [initialPortfolioState] = useState(() => loadPortfolioState());
+    const [initialPortfolioState] = useState(() =>
+      applyPortfolioPlanLimitToState(loadPortfolioState())
+    );
 
     const [portfolioList, setPortfolioList] = useState(
       initialPortfolioState.portfolioList

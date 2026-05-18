@@ -4,7 +4,7 @@ export const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
 export const LEGACY_STORAGE_KEY = "finple-portfolio-simulator";
 export const DEFAULT_SETTINGS = {
     monthlyCashFlow: 1000000,
-    years: 30,
+    years: 10,
     dividendReinvest: true,
     inflationRate: 2.5,
   };

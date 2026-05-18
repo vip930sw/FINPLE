@@ -157,6 +157,26 @@ router.post("/sync-local", async (request, response, next) => {
       }
     }
 
+    const syncedPortfolioIds = new Set(
+      results
+        .filter((result) => result.status === "synced" && result.id)
+        .map((result) => result.id)
+    );
+
+    let archivedStaleCount = 0;
+
+    if (syncedPortfolioIds.size > 0) {
+      const currentServerPortfolios = await listPortfolios(userId);
+      const stalePortfolios = currentServerPortfolios.filter(
+        (portfolio) => !syncedPortfolioIds.has(portfolio.id)
+      );
+
+      for (const stalePortfolio of stalePortfolios) {
+        await archivePortfolio(stalePortfolio.id, userId);
+        archivedStaleCount += 1;
+      }
+    }
+
     const syncedCount = results.filter((result) => result.status === "synced").length;
     const errorCount = results.filter((result) => result.status === "error").length;
 
@@ -168,10 +188,13 @@ router.post("/sync-local", async (request, response, next) => {
       ok: errorCount === 0,
       source: "server-db",
       syncedCount,
+      archivedStaleCount,
       errorCount,
       message: errorCount > 0
         ? `일부 포트폴리오 동기화 실패: ${errorMessages.slice(0, 3).join(" / ")}`
-        : "브라우저 포트폴리오를 서버 DB에 동기화했습니다.",
+        : archivedStaleCount > 0
+          ? `브라우저 포트폴리오를 서버 DB에 동기화했습니다. 오래된 서버 포트폴리오 ${archivedStaleCount}개를 정리했습니다.`
+          : "브라우저 포트폴리오를 서버 DB에 동기화했습니다.",
       results,
     });
   } catch (error) {

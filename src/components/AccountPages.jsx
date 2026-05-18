@@ -6,6 +6,7 @@ import {
   fetchCurrentServerUser,
   fetchServerPortfolios,
   fetchSupportInquiries,
+  getFinpleAdminToken,
   getLocalPortfolioSnapshot,
   getStoredFinpleAuthUser,
   setStoredFinpleAuthUser,
@@ -23,9 +24,27 @@ import {
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
 
-function AccountShell({ eyebrow, title, description, children, onNavigate }) {
+function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
+  const storedUser = getStoredFinpleAuthUser();
+  const isLoggedIn = Boolean(storedUser?.id);
+
+  function handleMyPageClick() {
+    onNavigate(isLoggedIn ? "mypage" : "login");
+  }
+
+  function handleLoginLogoutClick() {
+    if (isLoggedIn) {
+      clearStoredFinpleAuthUser();
+      window.dispatchEvent(new Event("finple-local-storage-updated"));
+      onNavigate("home");
+      return;
+    }
+
+    onNavigate("login");
+  }
+
   return (
-    <main className="accountPage">
+    <main className={["accountPage", pageClassName].filter(Boolean).join(" ")}>
       <header className="accountHeader">
         <button type="button" className="brandLogo resetButton" onClick={() => onNavigate("home")}>
           <div className="brandIcon">
@@ -43,6 +62,10 @@ function AccountShell({ eyebrow, title, description, children, onNavigate }) {
           <button type="button" onClick={() => onNavigate("personal")}>시뮬레이터</button>
           <button type="button" onClick={() => onNavigate("pricing")}>요금제</button>
           <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
+          <button type="button" onClick={handleMyPageClick}>MY PAGE</button>
+          <button type="button" className="accountNavAuthButton" onClick={handleLoginLogoutClick}>
+            {isLoggedIn ? "로그아웃" : "로그인"}
+          </button>
         </nav>
       </header>
 
@@ -58,17 +81,17 @@ function AccountShell({ eyebrow, title, description, children, onNavigate }) {
 }
 
 export function LoginPage({ onNavigate }) {
-  const [statusMessage, setStatusMessage] = useState("개발용 계정으로 서버 사용자 연결을 테스트할 수 있습니다.");
+  const [statusMessage, setStatusMessage] = useState("체험 계정으로 포트폴리오 저장 기능을 이용할 수 있습니다.");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleDemoLogin() {
     setIsLoading(true);
     try {
       const user = await createOrLoadDemoUser();
-      setStatusMessage(`${user.name || "FINPLE Demo User"} 계정으로 연결되었습니다.`);
+      setStatusMessage((user.name || "FINPLE 체험 사용자") + " 계정으로 연결되었습니다.");
       onNavigate("mypage");
     } catch (error) {
-      setStatusMessage(error?.message || "로그인 데모에 실패했습니다.");
+      setStatusMessage(error?.message || "체험 계정 연결에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +101,17 @@ export function LoginPage({ onNavigate }) {
     <AccountShell
       eyebrow="Account"
       title="로그인"
-      description="현재는 개발용 사용자로 서버 저장 기능을 검증하는 단계입니다. 실제 네이버/카카오/구글 로그인은 이후 연결합니다."
+      description="일반 사용자를 위한 로그인 화면입니다. 현재는 체험 계정으로 포트폴리오 저장과 MY PAGE 기능을 이용할 수 있습니다."
       onNavigate={onNavigate}
+      pageClassName="legalPage"
     >
-      <section className="accountCard accountFormCard">
+      <section className="accountCard accountFormCard loginRoleCard singleLoginCard">
+        <div className="loginRoleHeader">
+          <p className="accountMiniLabel">User Login</p>
+          <h2>일반 사용자 로그인</h2>
+          <span>포트폴리오 저장, 요금제 상태, MY PAGE 기능을 이용합니다.</span>
+        </div>
+
         <label>
           이메일
           <input type="email" placeholder="you@example.com" />
@@ -90,9 +120,11 @@ export function LoginPage({ onNavigate }) {
           비밀번호
           <input type="password" placeholder="비밀번호" />
         </label>
+
         <p className="accountInlineStatus">{statusMessage}</p>
+
         <button type="button" className="primaryButton" onClick={handleDemoLogin} disabled={isLoading}>
-          {isLoading ? "연결 중..." : "개발 사용자로 로그인"}
+          {isLoading ? "연결 중..." : "체험 계정으로 시작"}
         </button>
         <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입으로 이동</button>
       </section>
@@ -100,18 +132,74 @@ export function LoginPage({ onNavigate }) {
   );
 }
 
+export function AdminLoginPage({ onNavigate }) {
+  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
+  const [adminStatusMessage, setAdminStatusMessage] = useState("관리자 토큰이 있는 경우 문의사항 관리자 기능을 사용할 수 있습니다.");
+
+  function handleAdminLogin() {
+    const token = adminTokenInput.trim();
+
+    if (!token) {
+      setAdminStatusMessage("관리자 토큰을 입력해 주세요.");
+      return;
+    }
+
+    window.localStorage.setItem("finple-admin-token", token);
+    window.dispatchEvent(new Event("finple-admin-token-updated"));
+    setAdminStatusMessage("관리자 토큰을 저장했습니다. MY PAGE에서 관리자 문의 조회를 사용할 수 있습니다.");
+    onNavigate("mypage");
+  }
+
+  return (
+    <AccountShell
+      eyebrow="Admin"
+      title="관리자 로그인"
+      description="관리자 전용 접속 화면입니다. 일반 로그인 화면에는 관리자 영역을 표시하지 않습니다."
+      onNavigate={onNavigate}
+    >
+      <section className="accountCard accountFormCard loginRoleCard singleLoginCard adminRouteLoginCard">
+        <div className="loginRoleHeader">
+          <p className="accountMiniLabel">Admin Login</p>
+          <h2>관리자 로그인</h2>
+          <span>문의사항 조회와 처리 상태 변경은 관리자 토큰이 있는 브라우저에서만 사용할 수 있습니다.</span>
+        </div>
+
+        <label>
+          관리자 토큰
+          <input
+            type="password"
+            value={adminTokenInput}
+            onChange={(event) => setAdminTokenInput(event.target.value)}
+            placeholder="FINPLE_ADMIN_TOKEN 입력"
+            autoComplete="off"
+          />
+        </label>
+
+        <p className="accountInlineStatus">{adminStatusMessage}</p>
+
+        <button type="button" className="primaryButton" onClick={handleAdminLogin}>
+          관리자 모드로 이동
+        </button>
+        <p className="adminLoginHint">
+          관리자 주소는 직접 공유하지 마세요. 관리자 토큰은 현재 브라우저에만 저장되며, 공용 PC에서는 MY PAGE에서 관리자 모드 해제를 눌러 주세요.
+        </p>
+      </section>
+    </AccountShell>
+  );
+}
+
 export function SignupPage({ onNavigate }) {
-  const [statusMessage, setStatusMessage] = useState("가입 데모를 누르면 개발용 서버 사용자를 생성/연결합니다.");
+  const [statusMessage, setStatusMessage] = useState("체험 계정으로 회원가입 흐름을 확인할 수 있습니다.");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleDemoSignup() {
     setIsLoading(true);
     try {
       const user = await createOrLoadDemoUser();
-      setStatusMessage(`${user.name || "FINPLE Demo User"} 계정이 준비되었습니다.`);
+      setStatusMessage(`${user.name || "FINPLE 체험 사용자"} 계정이 준비되었습니다.`);
       onNavigate("mypage");
     } catch (error) {
-      setStatusMessage(error?.message || "가입 데모에 실패했습니다.");
+      setStatusMessage(error?.message || "체험 계정 준비에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +209,7 @@ export function SignupPage({ onNavigate }) {
     <AccountShell
       eyebrow="Create Account"
       title="회원가입"
-      description="사용자별 포트폴리오 저장, PDF 리포트 이력, 결제 상태 관리를 위한 계정 화면입니다."
+      description="포트폴리오 저장, PDF 리포트 이력, 요금제 상태 관리를 위한 계정 화면입니다."
       onNavigate={onNavigate}
     >
       <section className="accountCard accountFormCard">
@@ -139,7 +227,7 @@ export function SignupPage({ onNavigate }) {
         </label>
         <p className="accountInlineStatus">{statusMessage}</p>
         <button type="button" className="primaryButton" onClick={handleDemoSignup} disabled={isLoading}>
-          {isLoading ? "계정 준비 중..." : "가입 데모"}
+          {isLoading ? "계정 준비 중..." : "체험 계정으로 가입"}
         </button>
         <button type="button" className="secondaryButton" onClick={() => onNavigate("login")}>이미 계정이 있어요</button>
       </section>
@@ -167,7 +255,7 @@ export function MyPage({ onNavigate }) {
     <AccountShell
       eyebrow="My Page"
       title="MY PAGE"
-      description="저장 데이터, 계정, 포트폴리오, 결제 상태를 관리하는 사용자 공간입니다."
+      description="저장 데이터, 계정, 포트폴리오, 요금제 상태를 관리하는 사용자 공간입니다."
       onNavigate={onNavigate}
     >
       <section className="accountPanelStack" aria-label="계정 및 서버 관리 패널">
@@ -177,16 +265,19 @@ export function MyPage({ onNavigate }) {
         <AdminInquiryPanel />
       </section>
 
-      <section className="accountGrid accountGridAfterPanels">
-        <InfoCard title="저장 데이터 관리" text="브라우저 저장 데이터와 향후 서버 저장 데이터를 관리합니다." items={["포트폴리오 백업", "복원 이력", "최근 저장 시각"]} />
-        <InfoCard title="포트폴리오 관리" text="저장된 포트폴리오 목록, 이름 변경, 삭제, 대표 포트폴리오를 관리합니다." items={["포트폴리오 목록", "PDF 리포트 이력", "대표 포트폴리오"]} />
-        <InfoCard title="계정 관리" text="이메일, 비밀번호, 알림 수신 설정을 관리합니다." items={["이메일", "비밀번호", "알림 설정"]} />
-        <InfoCard title="구독/결제" text="무료/개인/프로 플랜과 결제 상태를 확인합니다." items={["현재 플랜", "결제 수단", "API 조회 한도"]} />
-      </section>
-
-      <section className="accountActionRow">
-        <button type="button" className="primaryButton" onClick={() => onNavigate("personal")}>시뮬레이터로 이동</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("pricing")}>요금제 확인</button>
+      <section className="accountCard myPageBetaCompactNotice">
+        <div>
+          <p className="accountMiniLabel">Beta My Page</p>
+          <h2>MY PAGE 기능은 단계적으로 확장됩니다.</h2>
+          <p>
+            현재는 계정 연결 상태, 요금제 상태, 서버 저장 동기화 흐름을 먼저 검증합니다.
+            포트폴리오 이름 관리, 결제 수단, PDF 이력 등은 정식 계정 기능과 함께 확장할 예정입니다.
+          </p>
+        </div>
+        <div className="accountActionRow compactMyPageActions">
+          <button type="button" className="primaryButton" onClick={() => onNavigate("personal")}>시뮬레이터로 이동</button>
+          <button type="button" className="secondaryButton" onClick={() => onNavigate("pricing")}>요금제 확인</button>
+        </div>
       </section>
     </AccountShell>
   );
@@ -194,7 +285,7 @@ export function MyPage({ onNavigate }) {
 
 export function PricingPage({ onNavigate }) {
   const [selectedPlan, setSelectedPlan] = useState(() => getStoredFinplePlan());
-  const [statusMessage, setStatusMessage] = useState("요금제를 선택하면 브라우저에 선택 상태가 저장됩니다. 실제 결제는 아직 연결되지 않았습니다.");
+  const [statusMessage, setStatusMessage] = useState("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다.");
   const plans = Object.values(FINPLE_PLAN_CONFIGS);
 
   function handleSelectPlan(planKey) {
@@ -208,8 +299,8 @@ export function PricingPage({ onNavigate }) {
 
     setStatusMessage(
       plan.key === "free"
-        ? "Free 플랜이 선택되었습니다. 임시 체험 기능만 제공되며 서버 저장, PDF 저장, 고급 리포트는 제한됩니다."
-        : `${plan.label} 플랜이 선택되었습니다. 실제 결제 연동 전까지는 데모 상태로 표시됩니다.`
+        ? "Free 플랜이 선택되었습니다. 브라우저 저장과 기본 시뮬레이션 중심으로 제공되며 서버 저장, PDF 저장, 고급 리포트는 제한됩니다."
+        : `${plan.label} 플랜이 선택되었습니다. 실제 결제 기능 도입 전까지는 체험 상태로 표시됩니다.`
     );
   }
 
@@ -217,7 +308,7 @@ export function PricingPage({ onNavigate }) {
     <AccountShell
       eyebrow="Pricing"
       title="요금제"
-      description="무료/개인/프로 플랜의 기능 제한 기준을 먼저 잡아두었습니다. 실제 결제는 추후 PG 또는 구독 결제 서비스와 연결합니다."
+      description="처음에는 가볍게 체험하고, 필요할 때 서버 저장·리포트·조회량을 확장할 수 있도록 플랜 기준을 정리했습니다."
       onNavigate={onNavigate}
     >
       <section className="pricingStatusPanel">
@@ -260,10 +351,165 @@ export function PricingPage({ onNavigate }) {
       </section>
 
       <section className="pricingNoticeBox">
-        <strong>결제 연동 전 안내</strong>
-        <p>현재는 플랜 선택과 제한값을 화면에 반영하는 단계입니다. 카드 결제, 구독 갱신, 영수증 처리는 이후 결제 서비스 연동 단계에서 추가합니다.</p>
+        <strong>결제 기능 안내</strong>
+        <p>현재는 플랜 선택과 제한값을 먼저 제공합니다. 카드 결제, 구독 갱신, 영수증 처리는 이후 결제 기능 도입 단계에서 추가합니다.</p>
+        <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
       </section>
     </AccountShell>
+  );
+}
+
+
+function LegalDocumentPage({ eyebrow, title, description, sections, onNavigate }) {
+  return (
+    <AccountShell
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      onNavigate={onNavigate}
+    >
+      <section className="accountCard legalDocumentCard">
+        {sections.map((section) => (
+          <article key={section.title} className="legalDocumentSection">
+            <h2>{section.title}</h2>
+            {section.paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
+            ))}
+            {section.items ? (
+              <ul>
+                {section.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            ) : null}
+          </article>
+        ))}
+      </section>
+    </AccountShell>
+  );
+}
+
+export function PrivacyPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Privacy"
+      title="개인정보처리방침"
+      description="FINPLE Portfolio Lab이 수집·이용하는 개인정보와 보관 기준을 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 수집하는 정보",
+          paragraphs: [
+            "서비스 이용 과정에서 이메일, 문의 내용, 브라우저에 저장된 사용자 식별 정보, 포트폴리오 저장 데이터, 접속 환경 정보가 수집될 수 있습니다.",
+            "현재 로그인과 결제 기능은 체험 운영 단계이며, 실제 소셜 로그인·결제 기능 도입 시 수집 항목은 별도로 고지합니다.",
+          ],
+          items: ["이메일 및 문의 답변 연락처", "문의 제목·내용·처리 상태", "포트폴리오 구성 및 저장 데이터", "서비스 오류 확인을 위한 접속 환경 정보"],
+        },
+        {
+          title: "2. 이용 목적",
+          paragraphs: [
+            "수집한 정보는 포트폴리오 저장·불러오기, 문의 응대, 오류 확인, 요금제 상태 표시, 서비스 품질 개선을 위해 사용합니다.",
+          ],
+        },
+        {
+          title: "3. 보관 기간",
+          paragraphs: [
+            "일반 문의와 오류 신고는 처리 및 서비스 개선을 위해 원칙적으로 1년간 보관할 수 있습니다. 결제 관련 정보는 결제 기능 도입 이후 관련 법령과 내부 기준에 따라 별도로 정합니다.",
+            "사용자가 삭제를 요청하거나 보관 목적이 사라진 경우 지체 없이 삭제합니다. 단, 법령상 보관 의무가 있는 정보는 해당 기간 동안 보관할 수 있습니다.",
+          ],
+        },
+        {
+          title: "4. 제3자 제공 및 위탁",
+          paragraphs: [
+            "현재 서비스 운영을 위해 데이터베이스, 호스팅, 배포, API 제공 서비스가 사용될 수 있습니다. 실제 상용 운영 전 이용 중인 외부 서비스와 위탁 범위를 명확히 고지합니다.",
+          ],
+        },
+        {
+          title: "5. 이용자 권리",
+          paragraphs: [
+            "이용자는 본인의 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 문의사항 메뉴를 통해 요청하면 확인 후 처리합니다.",
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+export function TermsPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Terms"
+      title="이용약관"
+      description="FINPLE Portfolio Lab 이용 조건과 서비스 범위를 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 서비스 목적",
+          paragraphs: [
+            "FINPLE Portfolio Lab은 사용자가 입력한 자산 구성과 가정값을 바탕으로 포트폴리오의 장기 예상 흐름, 위험 지표, 리포트를 확인할 수 있도록 돕는 분석 도구입니다.",
+          ],
+        },
+        {
+          title: "2. 계정 및 저장 데이터",
+          paragraphs: [
+            "현재 계정 기능은 체험 운영 단계이며, 브라우저 저장과 서버 저장 기능을 먼저 제공합니다. 실제 회원가입, 소셜 로그인, 결제 기능은 추후 별도 연동됩니다.",
+          ],
+        },
+        {
+          title: "3. 이용자 책임",
+          paragraphs: [
+            "이용자는 본인이 입력한 자산 정보와 가정값의 정확성을 직접 확인해야 합니다. 입력 오류, 데이터 지연, 외부 API 장애로 인한 분석 결과 차이가 발생할 수 있습니다.",
+          ],
+        },
+        {
+          title: "4. 서비스 변경 및 제한",
+          paragraphs: [
+            "서비스 기능, 요금제, API 조회량, 리포트 제공 범위는 운영 상황에 따라 변경될 수 있습니다. 중요한 변경 사항은 서비스 화면을 통해 안내합니다.",
+          ],
+        },
+        {
+          title: "5. 면책",
+          paragraphs: [
+            "본 서비스는 투자 판단을 돕는 참고 도구이며, 특정 금융상품의 매수·매도 추천, 투자 자문, 수익 보장을 제공하지 않습니다. 최종 투자 판단과 결과에 대한 책임은 이용자 본인에게 있습니다.",
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+export function InvestmentDisclaimerPage({ onNavigate }) {
+  return (
+    <LegalDocumentPage
+      eyebrow="Investment Notice"
+      title="투자 유의사항"
+      description="FINPLE의 분석 결과를 해석할 때 반드시 확인해야 하는 투자 유의사항입니다."
+      onNavigate={onNavigate}
+      sections={[
+        {
+          title: "1. 투자 자문이 아닙니다",
+          paragraphs: [
+            "FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료입니다. 특정 종목, ETF, 금융상품의 매수·매도 추천이나 투자 자문이 아닙니다.",
+          ],
+        },
+        {
+          title: "2. 수익을 보장하지 않습니다",
+          paragraphs: [
+            "CAGR, MDD, 배당률, 물가상승률 등은 사용자가 입력하거나 제한된 데이터에 기반한 가정값입니다. 과거 데이터나 예상값이 미래 수익을 보장하지 않습니다.",
+          ],
+        },
+        {
+          title: "3. 데이터 오류 가능성",
+          paragraphs: [
+            "외부 API, 환율, 가격, 배당, 지표 데이터는 지연되거나 누락될 수 있습니다. 중요한 투자 의사결정 전에는 반드시 공식 자료와 증권사 정보를 별도로 확인해야 합니다.",
+          ],
+        },
+        {
+          title: "4. 최종 판단 책임",
+          paragraphs: [
+            "투자에는 원금 손실 가능성이 있습니다. 최종 투자 판단과 그 결과에 대한 책임은 이용자 본인에게 있습니다.",
+          ],
+        },
+      ]}
+    />
   );
 }
 
@@ -272,7 +518,7 @@ export function SupportPage({ onNavigate }) {
   const [email, setEmail] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [statusMessage, setStatusMessage] = useState("문의 내용을 작성하면 Supabase inquiries 테이블에 저장됩니다.");
+  const [statusMessage, setStatusMessage] = useState("문의 내용을 작성하면 관리자 확인을 위해 접수됩니다.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event) {
@@ -348,6 +594,11 @@ export function SupportPage({ onNavigate }) {
             />
           </label>
 
+          <div className="supportPrivacyNotice">
+            <strong>개인정보 수집 안내</strong>
+            <p>답변 이메일과 문의 내용은 문의 처리와 서비스 개선을 위해 저장됩니다. 접수된 문의는 처리 완료 후 종료 처리될 수 있습니다.</p>
+          </div>
+
           <p className="accountInlineStatus supportStatusText">{statusMessage}</p>
 
           <div className="supportActionRow">
@@ -393,10 +644,14 @@ const INQUIRY_STATUS_LABELS = {
 };
 
 function AdminInquiryPanel() {
+  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
+  const [isAdminMode, setIsAdminMode] = useState(() => Boolean(getFinpleAdminToken()));
   const [inquiries, setInquiries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [statusMessage, setStatusMessage] = useState("문의사항 목록을 불러오면 최근 접수 건을 확인할 수 있습니다.");
+  const [statusMessage, setStatusMessage] = useState(
+    "관리자 토큰을 입력하면 문의사항 목록을 조회할 수 있습니다."
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const filteredInquiries = useMemo(() => {
@@ -404,7 +659,33 @@ function AdminInquiryPanel() {
     return inquiries.filter((inquiry) => inquiry.status === statusFilter);
   }, [inquiries, statusFilter]);
 
-  const selectedInquiry = filteredInquiries.find((inquiry) => inquiry.id === selectedId) || filteredInquiries[0] || null;
+  const selectedInquiry =
+    filteredInquiries.find((inquiry) => inquiry.id === selectedId) ||
+    filteredInquiries[0] ||
+    null;
+
+  function handleSaveAdminToken() {
+    const token = adminTokenInput.trim();
+
+    if (!token) {
+      setStatusMessage("관리자 토큰을 입력해 주세요.");
+      return;
+    }
+
+    window.localStorage.setItem("finple-admin-token", token);
+    setIsAdminMode(true);
+    setStatusMessage("관리자 토큰을 저장했습니다. 문의 목록을 불러올 수 있습니다.");
+  }
+
+  function handleClearAdminToken() {
+    window.localStorage.removeItem("finple-admin-token");
+    setAdminTokenInput("");
+    setIsAdminMode(false);
+    setInquiries([]);
+    setSelectedId(null);
+    setStatusFilter("all");
+    setStatusMessage("관리자 모드를 해제했습니다. 문의 목록은 더 이상 표시되지 않습니다.");
+  }
 
   async function handleLoadInquiries() {
     setIsLoading(true);
@@ -412,7 +693,7 @@ function AdminInquiryPanel() {
       const nextInquiries = await fetchSupportInquiries({ scope: "all" });
       setInquiries(nextInquiries);
       setSelectedId(nextInquiries[0]?.id || null);
-      setStatusMessage(`문의사항 ${nextInquiries.length}건을 불러왔습니다.`);
+      setStatusMessage("문의사항 " + nextInquiries.length + "건을 불러왔습니다.");
     } catch (error) {
       setStatusMessage(error?.message || "문의사항 목록을 불러오지 못했습니다.");
     } finally {
@@ -431,7 +712,7 @@ function AdminInquiryPanel() {
       setInquiries((current) => current.map((inquiry) => (
         inquiry.id === inquiryId ? { ...inquiry, ...updatedInquiry } : inquiry
       )));
-      setStatusMessage(`문의 상태를 “${INQUIRY_STATUS_LABELS[status] || status}”로 변경했습니다.`);
+      setStatusMessage("문의 상태를 “" + (INQUIRY_STATUS_LABELS[status] || status) + "”로 변경했습니다.");
     } catch (error) {
       setStatusMessage(error?.message || "문의 상태를 변경하지 못했습니다.");
     } finally {
@@ -439,15 +720,19 @@ function AdminInquiryPanel() {
     }
   }
 
+  if (!isAdminMode) {
+    return null;
+  }
+
   return (
     <section className="accountCard adminInquiryPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Admin Preview</p>
+          <p className="accountMiniLabel">Admin Mode</p>
           <h2>문의사항 관리자 조회</h2>
-          <p>Supabase inquiries 테이블에 접수된 문의를 확인하고 처리 상태를 바꾸는 개발자 모드용 화면입니다.</p>
+          <p>접수된 문의를 확인하고 처리 상태를 변경합니다.</p>
         </div>
-        <span className="serverStatusBadge ready">개발자 모드</span>
+        <span className="serverStatusBadge ready">관리자 모드</span>
       </div>
 
       <div className="adminInquiryToolbar">
@@ -462,6 +747,9 @@ function AdminInquiryPanel() {
           <option value="closed">종료</option>
         </select>
         <span>{filteredInquiries.length}건 표시</span>
+        <button type="button" className="secondaryButton" onClick={handleClearAdminToken}>
+          관리자 모드 해제
+        </button>
       </div>
 
       <p className="serverStorageMessage compact">{statusMessage}</p>
@@ -476,7 +764,7 @@ function AdminInquiryPanel() {
                 className={inquiry.id === selectedInquiry?.id ? "adminInquiryItem active" : "adminInquiryItem"}
                 onClick={() => setSelectedId(inquiry.id)}
               >
-                <span className={`inquiryStatusBadge status-${inquiry.status || "open"}`}>
+                <span className={"inquiryStatusBadge status-" + (inquiry.status || "open")}>
                   {INQUIRY_STATUS_LABELS[inquiry.status] || inquiry.status || "접수"}
                 </span>
                 <strong>{inquiry.title || "제목 없는 문의"}</strong>
@@ -517,7 +805,7 @@ function AdminInquiryPanel() {
       </div>
 
       <p className="adminInquiryNotice">
-        실제 운영 전에는 관리자 권한 체크를 추가해야 합니다. 현재는 개발 사용자 검증용 화면입니다.
+        관리자 토큰은 현재 브라우저에만 저장됩니다. 공용 PC에서는 반드시 관리자 모드 해제를 눌러 주세요.
       </p>
     </section>
   );
@@ -615,7 +903,7 @@ function AccountStatusPanel({ onNavigate }) {
   const [authUser, setAuthUser] = useState(() => getStoredFinpleAuthUser());
   const [serverUser, setServerUser] = useState(null);
   const [statusMessage, setStatusMessage] = useState(
-    authUser ? "개발 사용자 세션이 브라우저에 저장되어 있습니다." : "아직 로그인 데모가 연결되지 않았습니다."
+    authUser ? "체험 사용자 세션이 브라우저에 저장되어 있습니다." : "아직 로그인 데모가 연결되지 않았습니다."
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -633,9 +921,9 @@ function AccountStatusPanel({ onNavigate }) {
     try {
       const user = await createOrLoadDemoUser();
       setAuthUser(user);
-      setStatusMessage("개발 사용자와 서버 DB가 연결되었습니다.");
+      setStatusMessage("체험 사용자와 서버 DB가 연결되었습니다.");
     } catch (error) {
-      setStatusMessage(error?.message || "개발 사용자 연결에 실패했습니다.");
+      setStatusMessage(error?.message || "체험 사용자 연결에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -658,7 +946,7 @@ function AccountStatusPanel({ onNavigate }) {
     clearStoredFinpleAuthUser();
     setAuthUser(null);
     setServerUser(null);
-    setStatusMessage("브라우저의 개발 사용자 세션을 해제했습니다.");
+    setStatusMessage("브라우저의 체험 사용자 세션을 해제했습니다.");
   }
 
   return (
@@ -667,14 +955,14 @@ function AccountStatusPanel({ onNavigate }) {
         <p className="accountMiniLabel">Account Status</p>
         <h2>계정 연결 상태</h2>
         <p>
-          현재는 실제 소셜 로그인 전 단계입니다. 개발 사용자로 서버 저장/불러오기 흐름을 먼저 검증합니다.
+          현재는 실제 소셜 로그인 전 단계입니다. 체험 사용자로 서버 저장/불러오기 흐름을 먼저 검증합니다.
         </p>
       </div>
 
       <div className="accountStatusGrid">
         <div>
           <span>로그인 상태</span>
-          <strong>{authUser ? "개발 사용자 연결됨" : "미연결"}</strong>
+          <strong>{authUser ? "체험 사용자 연결됨" : "미연결"}</strong>
         </div>
         <div>
           <span>사용자</span>
@@ -694,15 +982,11 @@ function AccountStatusPanel({ onNavigate }) {
 
       <div className="serverStorageActions compactActions">
         <button type="button" className="primaryButton" onClick={handleConnectDemoUser} disabled={isLoading}>
-          {authUser ? "개발 사용자 재연결" : "개발 사용자 연결"}
+          {authUser ? "계정 상태 새로고침" : "체험 사용자 연결"}
         </button>
-        <button type="button" className="secondaryButton" onClick={handleRefreshServerUser} disabled={isLoading || !authUser}>
-          서버 사용자 확인
-        </button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("login")}>로그인 화면</button>
-        <button type="button" className="secondaryButton dangerSubtle" onClick={handleLogout} disabled={isLoading || !authUser}>
-          로그아웃 데모
-        </button>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={handleRefreshServerUser} disabled={isLoading || !authUser}>서버 사용자 확인</button>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => onNavigate("login")}>로그인 화면</button>
+        <button type="button" className="secondaryButton dangerSubtle betaHiddenAction" onClick={handleLogout} disabled={isLoading || !authUser}>로그아웃 데모</button>
       </div>
     </section>
   );
@@ -717,7 +1001,7 @@ function ServerStoragePanel({ planKey = "free" }) {
   const [serverPortfolios, setServerPortfolios] = useState([]);
   const [statusMessage, setStatusMessage] = useState(
     canUseServerStorage
-      ? "서버 DB 상태를 확인해 주세요."
+      ? "필요한 작업을 선택해 주세요."
       : "Free 체험 플랜은 서버 저장/불러오기와 PDF 저장이 제한됩니다. Personal 이상에서 사용할 수 있습니다."
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -857,10 +1141,10 @@ function ServerStoragePanel({ planKey = "free" }) {
       <div className="serverStorageHeader">
         <div>
           <p className="accountMiniLabel">Server Storage</p>
-          <h2>서버 저장 동기화 준비</h2>
+          <h2>서버 저장</h2>
           <p>
             {canUseServerStorage
-              ? "브라우저 저장 데이터를 서버 DB로 옮기고, 서버 데이터를 다시 불러올 수 있습니다."
+              ? "브라우저 포트폴리오를 서버에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다."
               : "Free 체험 플랜에서는 서버 저장 기능과 PDF 저장 기능이 제한됩니다. Personal 이상에서 서버 동기화를 사용할 수 있습니다."}
           </p>
         </div>
@@ -910,28 +1194,24 @@ function ServerStoragePanel({ planKey = "free" }) {
             ) : null}
           </div>
         ) : (
-          <p className="serverPortfolioEmpty">아직 서버 목록을 불러오지 않았습니다.</p>
+          <p className="serverPortfolioEmpty">서버에서 불러오기 전에는 목록이 표시되지 않습니다.</p>
         )}
       </div>
 
       <div className="serverStorageActions">
-        <button type="button" className="secondaryButton" onClick={handleRefreshLocalSnapshot} disabled={isLoading}>
-          브라우저 데이터 다시 읽기
-        </button>
-        <button type="button" className="secondaryButton" onClick={() => refreshDatabaseStatus()} disabled={isLoading}>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={handleRefreshLocalSnapshot} disabled={isLoading}>브라우저 데이터 다시 읽기</button>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => refreshDatabaseStatus()} disabled={isLoading}>
           DB 상태 확인
         </button>
-        <button type="button" className="secondaryButton" onClick={handleServerListCheck} disabled={isServerActionDisabled}>
-          서버 목록 확인
-        </button>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={handleServerListCheck} disabled={isServerActionDisabled}>서버 목록 확인</button>
         <button type="button" className="primaryButton" onClick={handleSyncToServer} disabled={isServerActionDisabled}>
-          서버로 동기화
+          서버로 저장
         </button>
-        <button type="button" className="secondaryButton" onClick={() => handleLoadServerPortfolios("merge")} disabled={isServerActionDisabled}>
+        <button type="button" className="secondaryButton betaHiddenAction" onClick={() => handleLoadServerPortfolios("merge")} disabled={isServerActionDisabled}>
           서버 데이터 병합
         </button>
         <button type="button" className="secondaryButton dangerSubtle" onClick={() => handleLoadServerPortfolios("replace")} disabled={isServerActionDisabled}>
-          서버 데이터로 교체
+          서버에서 불러오기
         </button>
       </div>
     </section>

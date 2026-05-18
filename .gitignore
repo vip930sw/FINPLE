@@ -75,3 +75,9 @@ server/dist/
 # FINPLE extra env files
 server/*.env
 *.env
+
+# FINPLE local patch / backup files
+apply_step*.cjs
+*.bak_step*
+*.bak
+어플 개발 지원*.txt

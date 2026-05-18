@@ -2,7 +2,7 @@ const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
-const AUTH_USER_STORAGE_KEY = "finple-demo-auth-user";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 function getBuildTimeEnv() {
   return import.meta?.env || {};
@@ -32,14 +32,21 @@ export function getStoredFinpleAuthUser() {
 export function setStoredFinpleAuthUser(user) {
   if (typeof window === "undefined") return null;
 
+  const displayEmail = user?.email === "trial@finple.local"
+    ? "trial@finple.local"
+    : user?.email || "trial@finple.local";
+  const displayName = user?.name === "FINPLE 체험 사용자"
+    ? "FINPLE 체험 사용자"
+    : user?.name || user?.nickname || "FINPLE 체험 사용자";
+
   const normalizedUser = user
     ? {
         id: user.id,
-        email: user.email || "dev@finple.local",
-        name: user.name || user.nickname || "FINPLE Demo User",
-        nickname: user.nickname || "demo",
+        email: displayEmail,
+        name: displayName,
+        nickname: user.nickname === "trial" ? "trial" : user.nickname || "trial",
         plan: user.plan || "free",
-        authMode: user.authMode || "dev-user",
+        authMode: user.authMode || "trial-user",
         connectedAt: user.connectedAt || new Date().toISOString(),
       }
     : null;
@@ -63,12 +70,12 @@ export async function createOrLoadDemoUser() {
   const user = payload?.user;
 
   if (!user?.id) {
-    throw new Error("개발용 사용자 정보를 불러오지 못했습니다.");
+    throw new Error("체험 사용자 정보를 불러오지 못했습니다.");
   }
 
   return setStoredFinpleAuthUser({
     ...user,
-    authMode: "dev-user",
+    authMode: "trial-user",
     connectedAt: new Date().toISOString(),
   });
 }
@@ -234,7 +241,7 @@ export function importServerPortfoliosToBrowser(serverPortfolios = [], options =
     const nextSettings = {
       ...currentSettings,
       monthlyCashFlow: currentSettings?.monthlyCashFlow ?? first.monthlyInvestment ?? 1000000,
-      years: currentSettings?.years ?? first.investmentYears ?? 30,
+      years: currentSettings?.years ?? first.investmentYears ?? 10,
       inflationRate: currentSettings?.inflationRate ?? first.inflationRate ?? 2.5,
       dividendReinvest: currentSettings?.dividendReinvest ?? first.dividendReinvest ?? true,
     };
@@ -276,7 +283,7 @@ function normalizeServerPortfolioForLocal(portfolio, index = 0) {
     title: portfolio.name || `서버 포트폴리오 ${index + 1}`,
     description: portfolio.description || "",
     monthlyInvestment: Number(portfolio.monthlyInvestment ?? portfolio.monthly_investment ?? 1000000),
-    investmentYears: Number(portfolio.investmentYears ?? portfolio.investment_years ?? 30),
+    investmentYears: Number(portfolio.investmentYears ?? portfolio.investment_years ?? 10),
     inflationRate: Number(portfolio.inflationRate ?? portfolio.inflation_rate ?? 2.5),
     dividendReinvest: Boolean(portfolio.dividendReinvest ?? portfolio.dividend_reinvest ?? true),
     assets,
@@ -333,7 +340,7 @@ async function requestJson(path, options = {}, config = {}) {
     throw new Error(
       payload?.message ||
         resultErrors.slice(0, 3).join(" / ") ||
-        "서버 요청에 실패했습니다."
+        "서버 요청에 실패했습니다. 서버가 잠시 대기 상태이거나 네트워크 연결이 불안정할 수 있습니다. 잠시 후 다시 시도해 주세요."
     );
   }
 
