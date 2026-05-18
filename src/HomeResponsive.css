@@ -1,0 +1,78 @@
+/* =========================================================
+   FINPLE Home Responsive Landing Flow
+   - PC: keep Why / How / What explanatory sections
+   - Mobile: shorten the landing flow around action-oriented sections
+========================================================= */
+
+.homeMobileFlowHint {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-bottom: 36px;
+  }
+
+  .hero .secondaryButton {
+    display: none;
+  }
+
+  .homeMobileFlowHint {
+    display: block;
+    margin: 0 20px 44px;
+    padding: 22px;
+    border: 1px solid #bfdbfe;
+    border-radius: 24px;
+    background: #eff6ff;
+    color: #1e3a8a;
+    word-break: keep-all;
+  }
+
+  .homeMobileFlowHint strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .homeMobileFlowHint p {
+    margin: 0;
+    color: #475569;
+    line-height: 1.7;
+    font-weight: 700;
+  }
+
+  .whySection,
+  .howSection {
+    display: none;
+  }
+
+  .whatSection {
+    padding-top: 42px;
+    padding-bottom: 42px;
+  }
+
+  .whatSection > .sectionLabel,
+  .whatSection > h2,
+  .whatSection > p,
+  .whatPreviewGrid,
+  .whatStepGrid {
+    display: none;
+  }
+
+  .investmentMbtiTeaser {
+    margin-top: 0;
+  }
+
+  .investmentMbtiTeaser .sectionLabel {
+    display: block;
+  }
+
+  .investmentMbtiTeaser h3 {
+    margin-top: 4px;
+  }
+
+  #pricing {
+    padding-top: 54px;
+  }
+}
