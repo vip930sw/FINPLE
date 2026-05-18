@@ -268,13 +268,12 @@ function App() {
             한눈에 분석하세요
           </h1>
           <p className="description">
-            자산 비중, 기대수익률, 변동성, 최대낙폭을 함께 확인하여
-            장기 투자 구조를 점검할 수 있도록 돕습니다. 분석 결과는
-            투자 판단을 돕기 위한 참고자료입니다.
+            투자 MBTI로 성향을 확인하고, 자산 스크리너로 후보를 탐색한 뒤,
+            포트폴리오 시뮬레이터에서 장기 수익·위험·배당·실질가치를 함께 점검합니다.
           </p>
           <div className="heroButtons">
             <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
-            <a className="secondaryButton" href="#features">기능 살펴보기</a>
+            <a className="secondaryButton" href="#features">흐름 살펴보기</a>
           </div>
         </div>
 
@@ -310,23 +309,22 @@ function App() {
       <section id="intro" className="section white whySection">
         <p className="sectionLabel">Why</p>
         <div className="sectionTopRow whyTopRow">
-          <h2>시장은 예측보다 오래 버티는 구조를 요구합니다.</h2>
+          <h2>수익률보다 먼저, 오래 버틸 수 있는 구조가 필요합니다.</h2>
           <p className="sectionSideText">
-            FINPLE은 “무엇을 살까”보다 먼저 “내가 감당할 수 있는 구조인가”를 점검하도록 돕습니다.
+            FINPLE은 “무엇을 살까”보다 먼저 “내 포트폴리오가 어느 정도의 하락과 변동을 감당할 수 있는가”를 확인하도록 돕습니다.
           </p>
         </div>
 
         <div className="whyNarrativeGrid">
           <article className="whyLeadCard">
             <span>WHY WE BUILT THIS</span>
-            <h3>수익률만 보는 투자는 오래가기 어렵습니다.</h3>
+            <h3>높은 기대수익률만으로는 좋은 포트폴리오를 판단하기 어렵습니다.</h3>
             <p>
-              장기 투자는 단순히 높은 CAGR을 고르는 문제가 아닙니다.
-              시장 하락을 견딜 수 있는지, 물가를 반영해도 실질가치가 남는지,
-              배당과 추가 투자금이 시간이 지날수록 어떤 역할을 하는지 함께 봐야 합니다.
+              장기 투자는 CAGR 하나를 고르는 문제가 아닙니다.
+              같은 수익률이라도 최대낙폭, 변동성, 배당, 물가상승률, 추가 투자금에 따라 실제 체감 결과는 크게 달라질 수 있습니다.
             </p>
             <p>
-              FINPLE은 포트폴리오를 숫자 하나로 평가하지 않고, 성장·방어·현금흐름·실질가치의 균형을 함께 확인하는 것을 목표로 합니다.
+              FINPLE은 성향 확인, 자산 후보 탐색, 시뮬레이션을 하나의 흐름으로 연결해 사용자가 스스로 감당 가능한 투자 구조를 점검할 수 있도록 설계되었습니다.
             </p>
           </article>
 
@@ -370,35 +368,34 @@ function App() {
 
       <section id="features" className="section howSection">
         <p className="sectionLabel">How</p>
-        <h2>포트폴리오 시뮬레이터를 통해 성장과 위험에 대응합니다.</h2>
+        <h2>투자 성향 확인에서 시뮬레이션까지, 시작 흐름을 나눴습니다.</h2>
         <p>
-          단순 수익률 계산기와 달리, 현재 보유 자산의 평가금액에서 출발해 추가 투자금,
-          자산별 기대지표, 최대낙폭, 배당률, 물가상승률을 하나의 흐름으로 연결합니다.
+          처음부터 많은 지표를 입력하지 않아도 됩니다. 투자 MBTI로 방향을 잡거나, 스크리너에서 후보 자산을 고른 뒤,
+          시뮬레이터에서 수익률·위험·배당·물가상승률을 단계적으로 조정할 수 있습니다.
         </p>
 
         <div className="howDifferentiatorGrid">
-          <Feature title="가정값을 직접 조정" text="CAGR, BETA, MDD, 배당률을 직접 조정해 여러 시나리오를 비교합니다." />
+          <Feature title="투자 MBTI로 시작" text="12문항 성향 진단으로 안정/성장, 장기/기회, 자동/주도, 분산/확신 축을 확인합니다." />
+          <Feature title="스크리너로 후보 탐색" text="ETF와 주요 자산 후보를 목적, 위험도, 유형별로 분리해 탐색합니다." />
+          <Feature title="직접 입력 시뮬레이션" text="이미 보유한 포트폴리오는 수량, 현재가, CAGR, BETA, MDD, 배당률을 직접 입력해 분석합니다." />
           <Feature title="실질가치까지 확인" text="명목 평가금액과 물가상승률 반영 실질가치를 함께 확인합니다." />
           <Feature title="위험을 먼저 보는 구조" text="최대낙폭과 변동성 지표로 하락장 대응력을 함께 점검합니다." />
-          <Feature title="서버 저장과 재확인" text="브라우저 저장과 서버 저장을 함께 활용해 분석을 다시 확인합니다." />
-          <Feature title="경제지표와 함께 판단" text="금리, 물가, 고용, 환율 등 주요 경제지표와 함께 판단합니다." />
-          <Feature title="리포트형 결과물" text="차트, 표, 요약 문구, PDF 저장으로 결과를 다시 읽을 수 있습니다." />
+          <Feature title="리포트형 결과물" text="차트, 표, 요약 문구, PDF 저장으로 분석 결과를 다시 읽을 수 있습니다." />
         </div>
       </section>
 
       <section id="how" className="section white whatSection">
         <p className="sectionLabel">What</p>
-        <h2>FINPLE은 다양한 투자 의사결정과 대안을 제시합니다.</h2>
+        <h2>FINPLE은 세 가지 출발점과 하나의 분석 결과를 제공합니다.</h2>
         <p>
-          FINPLE의 결과물은 “몇 년 뒤 얼마”에 그치지 않습니다.
-          투자금, 수익금, 배당금, 실질가치, 위험지표를 함께 보며
-          내 포트폴리오가 어떤 성격인지 이해할 수 있게 돕습니다.
+          잘 모르겠다면 투자 MBTI로 시작하고, 후보 자산이 필요하면 스크리너를 사용하고,
+          이미 보유한 자산이 있다면 바로 시뮬레이터에 입력할 수 있습니다.
         </p>
 
         <div className="whatPreviewGrid">
           <article className="whatPreviewCard visualPreviewCard">
             <span>Simulator</span>
-            <h3>내 자산을 기준으로 시작</h3>
+            <h3>내 자산을 기준으로 직접 입력</h3>
             <div className="whatIllustration portfolioInputIllustration" aria-hidden="true">
               <div className="illustrationHeader">
                 <i />
@@ -419,8 +416,8 @@ function App() {
           </article>
 
           <article className="whatPreviewCard visualPreviewCard">
-            <span>Growth Chart</span>
-            <h3>자산흐름을 시각화</h3>
+            <span>Investment MBTI</span>
+            <h3>성향 기반 예시 프리셋</h3>
             <div className="whatIllustration growthFlowIllustration" aria-hidden="true">
               <div className="growthGridLine one" />
               <div className="growthGridLine two" />
@@ -435,12 +432,12 @@ function App() {
                 <b style={{ height: "76%" }} />
               </div>
             </div>
-            <p>누적 납입금, 수익금, 배당금, 실질 평가금액을 한 화면에서 비교합니다.</p>
+            <p>성향 결과를 바탕으로 예시 포트폴리오를 만들고, 시뮬레이터에서 가정값을 직접 조정합니다.</p>
           </article>
 
           <article className="whatPreviewCard visualPreviewCard">
-            <span>Report</span>
-            <h3>결과를 다시 읽는 리포트</h3>
+            <span>Screener & Report</span>
+            <h3>후보 탐색과 결과 리포트</h3>
             <div className="whatIllustration decisionReportIllustration" aria-hidden="true">
               <div className="reportSheet">
                 <strong />
@@ -455,23 +452,23 @@ function App() {
                 <i />
               </div>
             </div>
-            <p>요약 해석과 PDF 저장 기능으로 투자 아이디어를 정리하고 다시 검토할 수 있습니다.</p>
+            <p>자산 후보를 담고, 분석 결과를 차트와 리포트 형태로 다시 확인할 수 있습니다.</p>
           </article>
         </div>
 
         <div className="stepGrid whatStepGrid">
-          <Step number="01" title="입력" text="보유 자산, 월 투자금, 투자기간, 기대지표를 입력합니다." />
-          <Step number="02" title="분석" text="장기 성과, 실질가치, 배당금, 위험지표를 함께 계산합니다." />
-          <Step number="03" title="결과물" text="차트와 리포트를 통해 내 포트폴리오의 성격을 확인합니다." />
+          <Step number="01" title="시작점 선택" text="투자 MBTI, 시뮬레이터, 스크리너 중 목적에 맞는 시작 방식을 선택합니다." />
+          <Step number="02" title="조건 입력" text="보유 자산, 투자금, 기간, 기대수익률, 위험지표, 배당률을 조정합니다." />
+          <Step number="03" title="결과 확인" text="장기 성과, 실질가치, 배당금, 위험지표를 차트와 리포트로 확인합니다." />
         </div>
 
-        <article className="investmentMbtiTeaser" aria-label="투자 성향 테스트 준비 중">
+        <article className="investmentMbtiTeaser" aria-label="투자 성향 테스트 베타">
           <div>
-            <p className="sectionLabel">Coming Soon</p>
-            <h3>투자 MBTI 테스트</h3>
-            <span>간단한 질문으로 나의 투자 성향을 파악하고, 시뮬레이터의 기본 가정값과 포트폴리오 유형을 추천하는 기능을 준비 중입니다.</span>
+            <p className="sectionLabel">Live Beta</p>
+            <h3>투자 MBTI 베타 공개</h3>
+            <span>12문항으로 나의 투자 성향을 확인하고, 예시 포트폴리오 프리셋을 시뮬레이터에서 바로 점검할 수 있습니다.</span>
           </div>
-          <button type="button" onClick={goPersonal}>시뮬레이터 먼저 사용하기</button>
+          <button type="button" onClick={goPersonal}>시작 메뉴 열기</button>
         </article>
       </section>
 
