@@ -1,23 +1,73 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import PortfolioSimulator from "./PortfolioSimulator";
+import StartHubPage from "./StartHubPage";
+import InvestmentMbtiPage from "./InvestmentMbtiPage";
 
-function PersonalPage({ onBack, initialTab = "settings" }) {
+function PersonalPage({ onBack }) {
+  const [personalView, setPersonalView] = useState("hub");
+  const [initialTab, setInitialTab] = useState("settings");
   const simulatorRef = useRef(null);
 
   function moveToSimulatorTab(tabName) {
     simulatorRef.current?.changeTab(tabName);
   }
 
+  function openSimulator(tabName = "settings") {
+    setInitialTab(tabName);
+    setPersonalView("simulator");
+  }
+
+  function handleHubNavigate(nextTarget) {
+    if (nextTarget === "investment-mbti") {
+      setPersonalView("investment-mbti");
+      return;
+    }
+
+    if (nextTarget === "screener") {
+      openSimulator("screener");
+      return;
+    }
+
+    if (nextTarget === "support") {
+      window.location.href = "/support";
+      return;
+    }
+
+    openSimulator("settings");
+  }
+
   useEffect(() => {
+    if (personalView !== "simulator") return;
+
     window.setTimeout(() => {
       moveToSimulatorTab(initialTab);
     }, 120);
-  }, [initialTab]);
+  }, [personalView, initialTab]);
+
+  if (personalView === "hub") {
+    return <StartHubPage onBack={onBack} onNavigate={handleHubNavigate} />;
+  }
+
+  if (personalView === "investment-mbti") {
+    return (
+      <InvestmentMbtiPage
+        onBack={() => setPersonalView("hub")}
+        onNavigate={(nextTarget) => {
+          if (nextTarget === "personal") {
+            openSimulator("settings");
+            return;
+          }
+
+          handleHubNavigate(nextTarget);
+        }}
+      />
+    );
+  }
 
   return (
     <main className="page personalPage">
       <header className="header">
-        <button className="brandLogo resetButton" onClick={onBack}>
+        <button className="brandLogo resetButton" onClick={() => setPersonalView("hub")}>
           <div className="brandIcon">
             <span>F</span>
             <i />
@@ -47,9 +97,14 @@ function PersonalPage({ onBack, initialTab = "settings" }) {
           </button>
         </nav>
 
-        <button className="headerButton" onClick={onBack}>
-          홈으로
-        </button>
+        <div className="headerActions">
+          <button className="secondaryHeaderButton" onClick={() => setPersonalView("hub")}>
+            시작 메뉴
+          </button>
+          <button className="headerButton" onClick={onBack}>
+            홈으로
+          </button>
+        </div>
       </header>
 
       <section className="personalHero">
