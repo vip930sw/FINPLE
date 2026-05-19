@@ -1,6 +1,7 @@
 /* =========================================================
    Step 130 - Auth Form Polish
    - 회원가입 동의 체크박스와 문구 라인 정렬 보정
+   - 필수/선택 여부를 명확하게 표시
 ========================================================= */
 
 .authConsentBox {
@@ -16,7 +17,7 @@
 
 .authConsentBox label {
   display: grid !important;
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 20px minmax(0, 1fr) 48px;
   align-items: center;
   gap: 12px;
   margin: 0 !important;
@@ -44,10 +45,21 @@
   word-break: keep-all;
 }
 
+.authConsentRequired,
+.authConsentOptional {
+  justify-self: start;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.authConsentRequired {
+  color: #ef4444;
+}
+
 .authConsentOptional {
   color: #64748b;
-  font-size: 13px;
-  font-weight: 800;
 }
 
 @media (max-width: 640px) {
@@ -56,6 +68,7 @@
   }
 
   .authConsentBox label {
+    grid-template-columns: 20px minmax(0, 1fr) 44px;
     align-items: flex-start;
     font-size: 14px;
   }
