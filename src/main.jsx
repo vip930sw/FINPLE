@@ -6,6 +6,7 @@ import './HomeResponsive.css'
 import './FooterDisclaimer.css'
 import './HeaderStartButtonPatch.css'
 import './MyPageBetaSimplify.css'
+import './AuthFormPolish.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
