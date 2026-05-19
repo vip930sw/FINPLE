@@ -11,24 +11,25 @@
 .footerLegalLinks {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 18px;
   align-items: center;
 }
 
 .footerLegalLinks button {
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border: none;
+  background: transparent;
   color: #475569;
-  border-radius: 999px;
-  padding: 8px 12px;
+  border-radius: 0;
+  padding: 0;
   font-size: 12px;
   font-weight: 900;
+  line-height: 1.5;
 }
 
 .footerLegalLinks button:hover {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .footer p {
@@ -55,10 +56,12 @@
 
   .footerLegalLinks {
     width: 100%;
+    gap: 14px;
   }
 
   .footerLegalLinks button {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
+    font-size: 12px;
   }
 
   .footerDisclaimerText {
