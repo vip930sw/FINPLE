@@ -207,15 +207,30 @@ function App() {
   }
 
   if (currentPage === "privacy") {
-    return <PrivacyPage onNavigate={setCurrentPage} />;
+    return (
+      <>
+        <PrivacyPage onNavigate={setCurrentPage} />
+        <LegalPolicyFooter onNavigate={setCurrentPage} />
+      </>
+    );
   }
 
   if (currentPage === "terms") {
-    return <TermsPage onNavigate={setCurrentPage} />;
+    return (
+      <>
+        <TermsPage onNavigate={setCurrentPage} />
+        <LegalPolicyFooter onNavigate={setCurrentPage} />
+      </>
+    );
   }
 
   if (currentPage === "investment-disclaimer") {
-    return <InvestmentDisclaimerPage onNavigate={setCurrentPage} />;
+    return (
+      <>
+        <InvestmentDisclaimerPage onNavigate={setCurrentPage} />
+        <LegalPolicyFooter onNavigate={setCurrentPage} />
+      </>
+    );
   }
 
   return (
@@ -397,20 +412,11 @@ function App() {
             <span>Simulator</span>
             <h3>내 자산을 기준으로 직접 입력</h3>
             <div className="whatIllustration portfolioInputIllustration" aria-hidden="true">
-              <div className="illustrationHeader">
-                <i />
-                <i />
-                <i />
-              </div>
+              <div className="illustrationHeader"><i /><i /><i /></div>
               <div className="inputSceneRow wide" />
               <div className="inputSceneRow" />
               <div className="inputSceneRow short" />
-              <div className="allocationChips">
-                <b>성장</b>
-                <b>배당</b>
-                <b>채권</b>
-                <b>금</b>
-              </div>
+              <div className="allocationChips"><b>성장</b><b>배당</b><b>채권</b><b>금</b></div>
             </div>
             <p>보유 자산과 월 투자금, 투자기간, 기대지표를 입력해 포트폴리오의 출발점을 만듭니다.</p>
           </article>
@@ -422,15 +428,8 @@ function App() {
               <div className="growthGridLine one" />
               <div className="growthGridLine two" />
               <div className="growthArea" />
-              <svg viewBox="0 0 240 120" preserveAspectRatio="none">
-                <path d="M4 104 C38 94, 56 83, 82 75 C118 64, 126 51, 160 42 C190 34, 204 21, 236 12" />
-              </svg>
-              <div className="growthBars">
-                <b style={{ height: "30%" }} />
-                <b style={{ height: "44%" }} />
-                <b style={{ height: "58%" }} />
-                <b style={{ height: "76%" }} />
-              </div>
+              <svg viewBox="0 0 240 120" preserveAspectRatio="none"><path d="M4 104 C38 94, 56 83, 82 75 C118 64, 126 51, 160 42 C190 34, 204 21, 236 12" /></svg>
+              <div className="growthBars"><b style={{ height: "30%" }} /><b style={{ height: "44%" }} /><b style={{ height: "58%" }} /><b style={{ height: "76%" }} /></div>
             </div>
             <p>성향 결과를 바탕으로 예시 포트폴리오를 만들고, 시뮬레이터에서 가정값을 직접 조정합니다.</p>
           </article>
@@ -439,18 +438,9 @@ function App() {
             <span>Screener & Report</span>
             <h3>후보 탐색과 결과 리포트</h3>
             <div className="whatIllustration decisionReportIllustration" aria-hidden="true">
-              <div className="reportSheet">
-                <strong />
-                <em />
-                <em />
-                <em className="short" />
-              </div>
+              <div className="reportSheet"><strong /><em /><em /><em className="short" /></div>
               <div className="decisionBadge">Check</div>
-              <div className="riskMeter">
-                <i />
-                <i />
-                <i />
-              </div>
+              <div className="riskMeter"><i /><i /><i /></div>
             </div>
             <p>자산 후보를 담고, 분석 결과를 차트와 리포트 형태로 다시 확인할 수 있습니다.</p>
           </article>
@@ -479,25 +469,9 @@ function App() {
         <h2>처음에는 가볍게, 필요할 때 더 깊게 분석하세요.</h2>
 
         <div className="priceGrid">
-          <Price
-            title="Free"
-            price="0원"
-            items={["브라우저 자동 저장", "기본 시뮬레이션", "제한된 자산 조회", "요약 리포트 확인"]}
-            onSelect={() => setCurrentPage("signup")}
-          />
-          <Price
-            title="Personal"
-            price="월 9,900원"
-            featured
-            items={["서버 포트폴리오 저장", "여러 포트폴리오 관리", "API 조회량 확대", "PDF 리포트 저장", "문의 지원"]}
-            onSelect={() => setCurrentPage("pricing")}
-          />
-          <Price
-            title="Pro"
-            price="준비 중"
-            items={["고급 백테스트", "리밸런싱 분석", "고급 위험 지표", "장기 성과 비교", "업무용 확장 기능"]}
-            onSelect={() => setCurrentPage("support")}
-          />
+          <Price title="Free" price="0원" items={["브라우저 자동 저장", "기본 시뮬레이션", "제한된 자산 조회", "요약 리포트 확인"]} onSelect={() => setCurrentPage("signup")} />
+          <Price title="Personal" price="월 9,900원" featured items={["서버 포트폴리오 저장", "여러 포트폴리오 관리", "API 조회량 확대", "PDF 리포트 저장", "문의 지원"]} onSelect={() => setCurrentPage("pricing")} />
+          <Price title="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱 분석", "고급 위험 지표", "장기 성과 비교", "업무용 확장 기능"]} onSelect={() => setCurrentPage("support")} />
         </div>
       </section>
 
@@ -515,9 +489,7 @@ function App() {
         </p>
       </footer>
 
-      <button type="button" className="floatingTopButton homeTopButton" onClick={scrollHomeToTop} aria-label="메인 페이지 상단으로 이동">
-        ↑ TOP
-      </button>
+      <button type="button" className="floatingTopButton homeTopButton" onClick={scrollHomeToTop} aria-label="메인 페이지 상단으로 이동">↑ TOP</button>
     </main>
   );
 }
@@ -527,12 +499,7 @@ function Metric({ label, value }) {
 }
 
 function Bar({ label, value }) {
-  return (
-    <div className="barItem">
-      <div className="barLabel"><span>{label}</span><span>{value}%</span></div>
-      <div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div>
-    </div>
-  );
+  return <div className="barItem"><div className="barLabel"><span>{label}</span><span>{value}%</span></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>;
 }
 
 function Feature({ title, text }) {
@@ -544,13 +511,17 @@ function Step({ number, title, text }) {
 }
 
 function Price({ title, price, items, featured, onSelect }) {
+  return <div className={featured ? "priceCard featured" : "priceCard"}><h3>{title}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" onClick={onSelect}>선택하기</button></div>;
+}
+
+function LegalPolicyFooter({ onNavigate }) {
   return (
-    <div className={featured ? "priceCard featured" : "priceCard"}>
-      <h3>{title}</h3>
-      <strong>{price}</strong>
-      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-      <button type="button" onClick={onSelect}>선택하기</button>
-    </div>
+    <footer className="legalPolicyTextFooter" aria-label="정책 문서 바로가기">
+      <button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button>
+      <button type="button" onClick={() => onNavigate("terms")}>이용약관</button>
+      <button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button>
+      <button type="button" onClick={() => onNavigate("home")}>홈으로 이동</button>
+    </footer>
   );
 }
 
