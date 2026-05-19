@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './FriendlyFetchErrors.js'
 import './index.css'
 import './HomeResponsive.css'
 import './FooterDisclaimer.css'
