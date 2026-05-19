@@ -1,9 +1,9 @@
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 
 import { query, withTransaction } from "./database.js";
 
-const pbkdf2Async = promisify(randomBytes.constructor.prototype.constructor("return require('node:crypto').pbkdf2")());
+const pbkdf2Async = promisify(pbkdf2);
 const PASSWORD_HASH_ITERATIONS = Number(process.env.FINPLE_PASSWORD_HASH_ITERATIONS || 210000);
 const PASSWORD_HASH_KEYLEN = 32;
 const PASSWORD_HASH_DIGEST = "sha256";
