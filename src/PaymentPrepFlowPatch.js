@@ -1,6 +1,7 @@
 /* =========================================================
    Step 134 - Pricing -> Login -> Payment Prep Flow
-   - PG 실제 연동 전 결제 준비 흐름을 보강합니다.
+   Step 136 - Refund / Cancellation Policy Notice
+   - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
 
@@ -61,7 +62,7 @@ function insertBillingPrepBanner() {
   if (!pricingPanel?.parentNode) return;
 
   const banner = document.createElement("section");
-  banner.className = "billingPrepBanner";
+  banner.className = "billingPrepBanner billingPrepBanner--policy";
   banner.setAttribute("role", "note");
   banner.innerHTML = `
     <div>
@@ -74,9 +75,15 @@ function insertBillingPrepBanner() {
         <li>정산 계좌: 사업자 계좌 등록 예정</li>
         <li>카드정보: FINPLE 서버에 직접 저장하지 않음</li>
       </ul>
+      <div class="billingPolicyBox">
+        <strong>환불·해지 정책 초안</strong>
+        <p>월 구독형 디지털 서비스 특성상 구독 해지 시 즉시 환불 또는 일할 환불을 기본으로 제공하지 않습니다. 해지 후에도 이미 결제된 이용기간 종료일까지 Personal 기능을 계속 사용할 수 있고, 다음 결제일부터 자동 갱신이 중단되는 방향으로 준비합니다.</p>
+        <p>중복 결제, 명백한 오결제, FINPLE 귀책으로 핵심 유료 기능을 장시간 제공하지 못한 경우 등은 이용 이력과 결제 내역 확인 후 별도 검토합니다.</p>
+      </div>
     </div>
     <div class="billingPrepActions">
       <button type="button" class="primaryButton billingPrepPrimary">베타 무료로 계속 사용</button>
+      <button type="button" class="secondaryButton billingPrepTerms">약관 확인</button>
       <button type="button" class="secondaryButton billingPrepSupport">결제 문의</button>
     </div>
   `;
@@ -84,6 +91,7 @@ function insertBillingPrepBanner() {
   pricingPanel.parentNode.insertBefore(banner, pricingPanel);
 
   banner.querySelector(".billingPrepPrimary")?.addEventListener("click", () => navigateTo("/simulator"));
+  banner.querySelector(".billingPrepTerms")?.addEventListener("click", () => navigateTo("/terms"));
   banner.querySelector(".billingPrepSupport")?.addEventListener("click", () => navigateTo("/support"));
 }
 
