@@ -1,0 +1,83 @@
+/* =========================================================
+   Step 130 - Auth Form Polish
+   - 회원가입 동의 체크박스와 문구 라인 정렬 보정
+   - 필수/선택 여부를 명확하게 표시
+========================================================= */
+
+.authConsentBox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 22px 0 20px;
+  padding: 20px 22px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #eff6ff;
+}
+
+.authConsentBox label {
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 12px;
+  margin: 0 !important;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.authConsentBox input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  margin: 0 !important;
+  accent-color: #0f172a;
+  transform: translateY(0);
+}
+
+.authConsentText {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.authConsentRequired,
+.authConsentOptional {
+  justify-self: start;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.authConsentRequired {
+  color: #ef4444;
+}
+
+.authConsentOptional {
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .authConsentBox {
+    padding: 16px;
+  }
+
+  .authConsentBox label {
+    grid-template-columns: 20px minmax(0, 1fr) 44px;
+    align-items: flex-start;
+    font-size: 14px;
+  }
+
+  .authConsentBox input[type="checkbox"] {
+    transform: translateY(2px);
+  }
+
+  .authConsentText {
+    display: inline;
+  }
+}

@@ -269,14 +269,15 @@ export function SignupPage({ onNavigate }) {
             />
           </label>
 
-          <div className="supportPrivacyNotice">
+          <div className="authConsentBox">
             <label>
               <input
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(event) => setTermsAccepted(event.target.checked)}
               />
-              이용약관에 동의합니다.
+              <span className="authConsentText">이용약관에 동의합니다.</span>
+              <em className="authConsentRequired">필수</em>
             </label>
             <label>
               <input
@@ -284,7 +285,8 @@ export function SignupPage({ onNavigate }) {
                 checked={privacyAccepted}
                 onChange={(event) => setPrivacyAccepted(event.target.checked)}
               />
-              개인정보처리방침에 동의합니다.
+              <span className="authConsentText">개인정보처리방침에 동의합니다.</span>
+              <em className="authConsentRequired">필수</em>
             </label>
             <label>
               <input
@@ -292,7 +294,8 @@ export function SignupPage({ onNavigate }) {
                 checked={marketingAgreed}
                 onChange={(event) => setMarketingAgreed(event.target.checked)}
               />
-              마케팅 안내 수신에 동의합니다. 선택
+              <span className="authConsentText">마케팅 안내 수신에 동의합니다.</span>
+              <em className="authConsentOptional">선택</em>
             </label>
           </div>
 
