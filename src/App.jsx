@@ -480,12 +480,11 @@ function App() {
           <button type="button" onClick={() => setCurrentPage("privacy")}>개인정보처리방침</button>
           <button type="button" onClick={() => setCurrentPage("terms")}>이용약관</button>
           <button type="button" onClick={() => setCurrentPage("investment-disclaimer")}>투자 유의사항</button>
+          <button type="button" onClick={() => setCurrentPage("support")}>문의사항</button>
         </div>
         <p>© 2026 Portfolio Lab. All rights reserved.</p>
         <p className="footerDisclaimerText">
-          FINPLE은 사용자가 입력한 가정과 데이터를 바탕으로 포트폴리오 분석 결과를 제공하는 참고용 시뮬레이션 서비스입니다.
-          본 서비스의 내용은 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 의미하지 않습니다.
-          모든 투자 판단과 그 결과에 대한 책임은 사용자 본인에게 있습니다.
+          FINPLE은 투자 판단을 돕는 참고용 분석 도구이며, 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 제공하지 않습니다.
         </p>
       </footer>
 
