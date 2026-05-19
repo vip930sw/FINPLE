@@ -1,0 +1,109 @@
+/* =========================================================
+   FINPLE Footer Investment Disclaimer
+========================================================= */
+
+.footer {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.footerLegalLinks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+}
+
+.footer .footerLegalLinks button {
+  border: 0;
+  background: transparent;
+  color: #475569;
+  border-radius: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+.footer .footerLegalLinks button:hover {
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footerDisclaimerText {
+  flex: 1 1 520px;
+  max-width: 760px;
+  margin-left: auto !important;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+  word-break: keep-all;
+  text-align: right;
+}
+
+.legalPolicyTextFooter {
+  max-width: 1180px;
+  margin: 0 auto 56px;
+  padding: 0 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px;
+  color: #475569;
+}
+
+.legalPolicyTextFooter button {
+  border: 0;
+  background: transparent;
+  color: #475569;
+  border-radius: 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+.legalPolicyTextFooter button:hover {
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 900px) {
+  .footer {
+    padding: 28px 22px 88px;
+    gap: 16px;
+  }
+
+  .footerLegalLinks {
+    width: 100%;
+    gap: 14px;
+  }
+
+  .footer .footerLegalLinks button {
+    flex: 0 0 auto;
+    font-size: 12px;
+  }
+
+  .footerDisclaimerText {
+    max-width: none;
+    margin-left: 0 !important;
+    text-align: left;
+    font-size: 11px;
+  }
+
+  .legalPolicyTextFooter {
+    justify-content: flex-start;
+    gap: 16px;
+    margin-bottom: 72px;
+    padding: 0 24px;
+  }
+}
