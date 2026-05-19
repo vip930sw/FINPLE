@@ -1,0 +1,87 @@
+/* =========================================================
+   Step 122 - Beta MY PAGE User View Simplification
+   - 일반 사용자가 바로 이해해야 하는 항목만 남기고 개발/운영 점검성 정보는 숨김
+========================================================= */
+
+.myPageBetaCompactNotice {
+  display: none !important;
+}
+
+.accountPage .accountHero {
+  padding-bottom: 32px;
+}
+
+.accountPanelStack {
+  gap: 24px;
+}
+
+.accountStatusPanel .accountStatusGrid,
+.planStatusPanel .planUsageGridExpanded,
+.serverStoragePanel .serverStorageStats {
+  gap: 12px;
+}
+
+/* 사용자 ID는 베타 사용자가 이해할 필요가 낮아 숨김 */
+.accountStatusPanel .accountStatusGrid > div:nth-child(4) {
+  display: none !important;
+}
+
+.accountStatusPanel .accountStatusGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* 플랜 영역은 포트폴리오/현재 자산/서버 저장 중심으로 단순화 */
+.planStatusPanel .planUsageGridExpanded > div:nth-child(3),
+.planStatusPanel .planUsageGridExpanded > div:nth-child(5) {
+  display: none !important;
+}
+
+.planStatusPanel .planUsageGridExpanded {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.planStatusPanel .serverStorageActions .secondaryButton {
+  display: none !important;
+}
+
+/* 서버 저장 영역은 사용자가 실행할 액션만 보이도록 정리 */
+.serverStoragePanel .serverStorageStats > div:nth-child(3),
+.serverStoragePanel .serverStorageStats > div:nth-child(4) {
+  display: none !important;
+}
+
+.serverStoragePanel .serverStorageStats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.serverPortfolioListBox {
+  display: none !important;
+}
+
+.serverStoragePanel .serverStorageActions .betaHiddenAction {
+  display: none !important;
+}
+
+.serverStoragePanel .serverStorageActions .dangerSubtle {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+}
+
+.serverStoragePanel .serverStorageActions .dangerSubtle:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.serverStorageMessage.compact,
+.serverStorageMessage {
+  word-break: keep-all;
+}
+
+@media (max-width: 900px) {
+  .accountStatusPanel .accountStatusGrid,
+  .planStatusPanel .planUsageGridExpanded,
+  .serverStoragePanel .serverStorageStats {
+    grid-template-columns: 1fr;
+  }
+}
