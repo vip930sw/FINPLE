@@ -1,6 +1,7 @@
 /* =========================================================
    Step 134 - Pricing -> Login -> Payment Prep Flow
    Step 136 - Refund / Cancellation Policy Notice
+   Step 137 - Scope payment prep to /pricing only
    - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
@@ -12,6 +13,10 @@ const BILLING_QUERY = "finpleBillingReady";
 
 function isLoggedIn() {
   return Boolean(getStoredFinpleAuthUser()?.id);
+}
+
+function isPricingPage() {
+  return window.location.pathname === "/pricing";
 }
 
 function navigateTo(path) {
@@ -28,13 +33,13 @@ function handlePricingClick(event) {
   const button = event.target?.closest?.("button");
   if (!button || !isPersonalButton(button)) return;
 
-  const onPricingArea = Boolean(
+  const isPricingAction = Boolean(
     button.closest("#pricing") ||
     button.closest(".accountPlanCard") ||
     button.closest(".priceCard")
   );
 
-  if (!onPricingArea) return;
+  if (!isPricingAction) return;
 
   setPendingCheckoutPlan("personal");
 
@@ -45,10 +50,19 @@ function handlePricingClick(event) {
     return;
   }
 
+  if (!isPricingPage()) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigateTo(`/pricing?${BILLING_QUERY}=personal`);
+    return;
+  }
+
   window.setTimeout(insertBillingPrepBanner, 80);
 }
 
 function shouldShowBillingPrep() {
+  if (!isPricingPage()) return false;
+
   const pending = getPendingCheckoutPlan();
   if (pending?.planKey === "personal" && isLoggedIn()) return true;
   return new URLSearchParams(window.location.search).has(BILLING_QUERY);
@@ -58,7 +72,7 @@ function insertBillingPrepBanner() {
   if (!shouldShowBillingPrep()) return;
   if (document.querySelector(".billingPrepBanner")) return;
 
-  const pricingPanel = document.querySelector(".pricingStatusPanel") || document.querySelector(".priceGrid") || document.querySelector(".accountPlanGrid");
+  const pricingPanel = document.querySelector(".pricingStatusPanel");
   if (!pricingPanel?.parentNode) return;
 
   const banner = document.createElement("section");
