@@ -338,7 +338,7 @@ function App() {
               <div className="cycleOrbit two" />
               <div className="cycleCenter">Long-term<br />Portfolio</div>
             </div>
-            <p>경기 국면이 바뀌어도 한쪽 자산에만 의존하지 않는 구조를 시각적으로 점검합니다.</p>
+            <p>경기 흐름이 바뀌어도 한쪽 자산에만 의존하지 않는 구조를 시각적으로 점검합니다.</p>
           </div>
         </div>
 
@@ -508,7 +508,11 @@ function App() {
           <button type="button" onClick={() => setCurrentPage("investment-disclaimer")}>투자 유의사항</button>
         </div>
         <p>© 2026 Portfolio Lab. All rights reserved.</p>
-        <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
+        <p className="footerDisclaimerText">
+          FINPLE은 사용자가 입력한 가정과 데이터를 바탕으로 포트폴리오 분석 결과를 제공하는 참고용 시뮬레이션 서비스입니다.
+          본 서비스의 내용은 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 의미하지 않습니다.
+          모든 투자 판단과 그 결과에 대한 책임은 사용자 본인에게 있습니다.
+        </p>
       </footer>
 
       <button type="button" className="floatingTopButton homeTopButton" onClick={scrollHomeToTop} aria-label="메인 페이지 상단으로 이동">
