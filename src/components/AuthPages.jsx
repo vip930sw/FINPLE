@@ -178,8 +178,8 @@ export function SignupPage({ onNavigate }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingAgreed, setMarketingAgreed] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("이메일과 비밀번호로 FINPLE 계정을 만들 수 있습니다.");
   const [emailCheck, setEmailCheck] = useState({ status: "idle", email: "" });
+  const [formNotice, setFormNotice] = useState("");
   const [isEmailChecking, setIsEmailChecking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
@@ -199,8 +199,24 @@ export function SignupPage({ onNavigate }) {
     if (emailCheck.status === "taken" && emailCheck.email === signupEmail) {
       return "이미 가입된 이메일입니다. 로그인해 주세요.";
     }
+    if (emailCheck.status === "error" && emailCheck.email === signupEmail) {
+      return "이메일 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    }
     return "회원가입 전 이메일 중복확인을 해주세요.";
   }, [emailCheck, emailLocal, signupEmail]);
+
+  const passwordStatus = useMemo(() => {
+    if (password && password.length < 8) {
+      return { status: "error", text: "비밀번호는 8자 이상으로 입력해 주세요." };
+    }
+    if (passwordConfirm && password !== passwordConfirm) {
+      return { status: "error", text: "비밀번호 확인이 일치하지 않습니다." };
+    }
+    if (password && passwordConfirm && password === passwordConfirm && password.length >= 8) {
+      return { status: "available", text: "비밀번호가 일치합니다." };
+    }
+    return { status: "idle", text: "" };
+  }, [password, passwordConfirm]);
 
   function handleEmailFieldChange(setter) {
     return (event) => {
@@ -210,8 +226,10 @@ export function SignupPage({ onNavigate }) {
   }
 
   async function handleEmailCheck() {
+    setFormNotice("");
+
     if (!signupEmail || !signupEmail.includes("@")) {
-      setStatusMessage("이메일 아이디와 도메인을 입력해 주세요.");
+      setEmailCheck({ status: "error", email: signupEmail });
       return;
     }
 
@@ -222,10 +240,8 @@ export function SignupPage({ onNavigate }) {
         status: result.available ? "available" : "taken",
         email: result.email || signupEmail,
       });
-      setStatusMessage(result.available ? "사용 가능한 이메일입니다." : "이미 가입된 이메일입니다. 로그인해 주세요.");
     } catch (error) {
       setEmailCheck({ status: "error", email: signupEmail });
-      setStatusMessage(error?.message || "이메일 중복확인에 실패했습니다.");
     } finally {
       setIsEmailChecking(false);
     }
@@ -233,30 +249,30 @@ export function SignupPage({ onNavigate }) {
 
   async function handleEmailSignup(event) {
     event.preventDefault();
+    setFormNotice("");
 
     if (!signupEmail || !password) {
-      setStatusMessage("이메일과 비밀번호를 입력해 주세요.");
+      setFormNotice("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
 
     if (emailCheck.status !== "available" || emailCheck.email !== signupEmail) {
-      setStatusMessage("회원가입 전 이메일 중복확인을 완료해 주세요.");
+      setFormNotice("회원가입 전 이메일 중복확인을 완료해 주세요.");
       return;
     }
 
-    if (password !== passwordConfirm) {
-      setStatusMessage("비밀번호 확인이 일치하지 않습니다.");
+    if (passwordStatus.status === "error" || password !== passwordConfirm) {
       return;
     }
 
     if (!termsAccepted || !privacyAccepted) {
-      setStatusMessage("이용약관과 개인정보처리방침에 동의해 주세요.");
+      setFormNotice("이용약관과 개인정보처리방침에 동의해 주세요.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const user = await signupWithEmailPassword({
+      await signupWithEmailPassword({
         email: signupEmail,
         password,
         name,
@@ -264,10 +280,9 @@ export function SignupPage({ onNavigate }) {
         termsAccepted,
         marketingAgreed,
       });
-      setStatusMessage(`${user.email || "FINPLE 계정"} 가입이 완료되었습니다.`);
       onNavigate("mypage");
     } catch (error) {
-      setStatusMessage(error?.message || "회원가입에 실패했습니다.");
+      setFormNotice(error?.message || "회원가입에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -276,11 +291,10 @@ export function SignupPage({ onNavigate }) {
   async function handleDemoSignup() {
     setIsDemoLoading(true);
     try {
-      const user = await createOrLoadDemoUser();
-      setStatusMessage(`${user.name || "FINPLE 체험 사용자"} 계정이 준비되었습니다.`);
+      await createOrLoadDemoUser();
       onNavigate("mypage");
     } catch (error) {
-      setStatusMessage(error?.message || "체험 계정 준비에 실패했습니다.");
+      setFormNotice(error?.message || "체험 계정 준비에 실패했습니다.");
     } finally {
       setIsDemoLoading(false);
     }
@@ -360,6 +374,9 @@ export function SignupPage({ onNavigate }) {
               autoComplete="new-password"
             />
           </label>
+          {passwordStatus.text ? (
+            <p className={["authPasswordStatus", `authPasswordStatus--${passwordStatus.status}`].join(" ")}>{passwordStatus.text}</p>
+          ) : null}
 
           <div className="authConsentBox">
             <label>
@@ -390,8 +407,8 @@ export function SignupPage({ onNavigate }) {
               <em className="authConsentOptional">선택</em>
             </label>
           </div>
+          {formNotice ? <p className="authFormNotice">{formNotice}</p> : null}
 
-          <p className="accountInlineStatus">{statusMessage}</p>
           <button type="submit" className="primaryButton" disabled={isLoading || isDemoLoading}>
             {isLoading ? "가입 중..." : "회원가입"}
           </button>
