@@ -2,6 +2,7 @@
    Step 134 - Payment Prep UI
    Step 136 - Refund / Cancellation Policy Notice
    Step 137 - Scope and polish payment prep UI
+   Step 138 - Terms policy section spacing
 ========================================================= */
 
 .accountPage .billingPrepBanner {
@@ -125,6 +126,23 @@
   color: #334155;
   font-weight: 800;
   line-height: 1.7;
+}
+
+.termsPaymentPolicyPatch h2 + p,
+.termsPaymentPolicyPatch p + p,
+.termsPaymentPolicyPatch ul + h2 {
+  margin-top: 16px;
+}
+
+.termsPaymentPolicyPatch ul + h2 {
+  padding-top: 28px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.termsPaymentPolicyPatch ul + h2::before {
+  content: "";
+  display: block;
+  height: 2px;
 }
 
 @media (max-width: 820px) {
