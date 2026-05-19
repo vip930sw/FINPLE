@@ -1,0 +1,44 @@
+/* =========================================================
+   Step 121 - Header Start Button Consistency
+   - 홈: 분석 시작 문구를 시작하기로 표시
+   - 계정/MY PAGE 계열: 시뮬레이터 메뉴를 시작하기 CTA로 표시
+========================================================= */
+
+.page:not(.personalPage) > .header .headerActions .headerButton {
+  font-size: 0;
+}
+
+.page:not(.personalPage) > .header .headerActions .headerButton::after {
+  content: "시작하기";
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.accountNav button:nth-child(2) {
+  border: none;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 0;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.accountNav button:nth-child(2)::after {
+  content: "시작하기";
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.accountNav button:nth-child(2):hover {
+  background: #111827;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .page:not(.personalPage) > .header .headerActions .headerButton::after,
+  .accountNav button:nth-child(2)::after {
+    font-size: 14px;
+  }
+}
