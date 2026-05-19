@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 
+import authRoutes from "./routes/authRoutes.js";
 import dbRoutes from "./routes/dbRoutes.js";
 import portfolioDbRoutes from "./routes/portfolioDbRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
@@ -26,15 +27,8 @@ const port = Number(process.env.PORT || 5050);
 
 function getCorsOrigin() {
   const rawOrigin = process.env.CORS_ORIGIN;
-
-  if (!rawOrigin || rawOrigin === "true" || rawOrigin === "*") {
-    return true;
-  }
-
-  return rawOrigin
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  if (!rawOrigin || rawOrigin === "true" || rawOrigin === "*") return true;
+  return rawOrigin.split(",").map((origin) => origin.trim()).filter(Boolean);
 }
 
 const corsOrigin = getCorsOrigin();
@@ -47,13 +41,10 @@ app.use((request, response, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: corsOrigin,
-  })
-);
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "1mb" }));
 
+app.use("/api/auth", authRoutes);
 app.use("/api/db", dbRoutes);
 app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/inquiries", inquiryRoutes);
@@ -68,7 +59,6 @@ app.get("/api/health", (request, response) => {
   });
 });
 
-
 app.get("/api/tickers/search", (request, response) => {
   const results = searchTickerMaster({
     query: request.query.q,
@@ -79,11 +69,7 @@ app.get("/api/tickers/search", (request, response) => {
     beginnerFit: request.query.beginnerFit || "all",
     limit: request.query.limit || 20,
   });
-
-  response.json({
-    results,
-    filters: getTickerFilterOptions(),
-  });
+  response.json({ results, filters: getTickerFilterOptions() });
 });
 
 app.get("/api/tickers/screener", (request, response) => {
@@ -99,24 +85,15 @@ app.get("/api/tickers/screener", (request, response) => {
     beginnerOnly: request.query.beginnerOnly === "true",
     limit: request.query.limit || 30,
   });
-
-  response.json({
-    results,
-    filters: getTickerFilterOptions(),
-  });
+  response.json({ results, filters: getTickerFilterOptions() });
 });
 
 app.get("/api/tickers/:ticker", (request, response) => {
   const item = getTickerMasterItem(request.params.ticker);
-
   if (!item) {
-    response.status(404).json({
-      ok: false,
-      message: "티커 마스터에서 해당 티커를 찾지 못했습니다.",
-    });
+    response.status(404).json({ ok: false, message: "티커 마스터에서 해당 티커를 찾지 못했습니다." });
     return;
   }
-
   response.json(item);
 });
 
@@ -133,9 +110,7 @@ app.post("/api/assets/batch", async (request, response, next) => {
   try {
     const tickers = Array.isArray(request.body?.tickers) ? request.body.tickers : [];
     const results = await getAssetDataBatch(tickers);
-    response.json({
-      results,
-    });
+    response.json({ results });
   } catch (error) {
     next(error);
   }
@@ -143,11 +118,7 @@ app.post("/api/assets/batch", async (request, response, next) => {
 
 app.use((error, request, response, next) => {
   const statusCode = Number(error.statusCode || 500);
-
-  response.status(statusCode).json({
-    ok: false,
-    message: error.message || "서버 오류가 발생했습니다.",
-  });
+  response.status(statusCode).json({ ok: false, message: error.message || "서버 오류가 발생했습니다." });
 });
 
 app.listen(port, () => {
