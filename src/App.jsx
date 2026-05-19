@@ -260,7 +260,7 @@ function App() {
           <button className="secondaryHeaderButton" onClick={handleHeaderLoginLogout}>
             {isFinpleUserLoggedIn() ? "로그아웃" : "로그인"}
           </button>
-          <button className="headerButton" onClick={goPersonal}>시작하기</button>
+          <button className="headerButton" onClick={goPersonal}>분석 시작</button>
         </div>
       </header>
 
