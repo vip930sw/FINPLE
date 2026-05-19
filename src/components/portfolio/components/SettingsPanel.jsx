@@ -1,5 +1,33 @@
 import AssetInputTable from "./AssetInputTable";
 
+function formatLookupSummary(message = "") {
+  const summary = String(message || "").trim();
+
+  if (!summary) return "";
+
+  const failedMatch = summary.match(/^([A-Z0-9.\-]+)\s+조회 실패/i);
+  if (failedMatch) {
+    const ticker = failedMatch[1];
+    return `${ticker} 가격 정보를 불러오지 못했습니다. 현재 입력값은 유지되며, 필요한 경우 수동으로 수정할 수 있습니다.`;
+  }
+
+  if (summary.includes("전체 조회 중 오류")) {
+    return "전체 조회 중 일부 가격 정보를 불러오지 못했습니다. 현재 입력값은 유지되며, 필요한 경우 다시 조회하거나 수동으로 수정할 수 있습니다.";
+  }
+
+  if (summary.includes("Alpha Vantage 호출 제한")) {
+    return summary.replace("Alpha Vantage 호출 제한:", "조회 한도 안내:");
+  }
+
+  return summary;
+}
+
+function getLookupSummaryClassName(message = "") {
+  const summary = String(message || "");
+  const isSoftWarning = summary.includes("조회 실패") || summary.includes("전체 조회 중 오류") || summary.includes("호출 제한") || summary.includes("조회 한도");
+  return isSoftWarning ? "assetLookupSummary lookupNoticeSoft" : "assetLookupSummary";
+}
+
 export default function SettingsPanel({
   settings,
   totalAssetValue,
@@ -27,6 +55,8 @@ export default function SettingsPanel({
   resetActivePortfolioAssets,
   resetGlobalSettings,
 }) {
+  const cleanLookupSummary = formatLookupSummary(assetLookupSummary);
+
   return (
     <div className="simulatorTabPanel settingsPanel">
       <div className="tabSectionHeader">
@@ -100,9 +130,9 @@ export default function SettingsPanel({
         </div>
       </div>
 
-      {assetLookupSummary && (
-        <div className="assetLookupSummary" role="status">
-          {assetLookupSummary}
+      {cleanLookupSummary && (
+        <div className={getLookupSummaryClassName(assetLookupSummary)} role="status">
+          {cleanLookupSummary}
         </div>
       )}
 
