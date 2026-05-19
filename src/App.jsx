@@ -5,14 +5,11 @@ import TradingViewTicker from "./components/TradingViewTicker";
 import EconomicCalendarSection from "./components/EconomicCalendarSection";
 import DemoCalculator from "./components/DemoCalculator";
 import PersonalPage from "./components/PersonalPage";
+import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
+import { logoutFinpleAuth } from "./components/authClientService";
+import { LoginPage, SignupPage } from "./components/AuthPages";
 import {
-  clearStoredFinpleAuthUser,
-  getStoredFinpleAuthUser,
-} from "./components/portfolio/services/serverPortfolioService";
-import {
-  LoginPage,
   AdminLoginPage,
-  SignupPage,
   MyPage,
   PricingPage,
   SupportPage,
@@ -154,10 +151,9 @@ function App() {
     setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login");
   }
 
-  function handleHeaderLoginLogout() {
+  async function handleHeaderLoginLogout() {
     if (isFinpleUserLoggedIn()) {
-      clearStoredFinpleAuthUser();
-      window.dispatchEvent(new Event("finple-local-storage-updated"));
+      await logoutFinpleAuth();
       setCurrentPage("home");
       return;
     }
