@@ -1,0 +1,70 @@
+/* =========================================================
+   FINPLE Footer Investment Disclaimer
+   - Footer policy links and investment notice polish
+========================================================= */
+
+.footer {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.footerLegalLinks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.footerLegalLinks button {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.footerLegalLinks button:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footerDisclaimerText {
+  flex: 1 1 520px;
+  max-width: 760px;
+  margin-left: auto !important;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+  word-break: keep-all;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .footer {
+    padding: 28px 22px 88px;
+    gap: 16px;
+  }
+
+  .footerLegalLinks {
+    width: 100%;
+  }
+
+  .footerLegalLinks button {
+    flex: 1 1 auto;
+  }
+
+  .footerDisclaimerText {
+    max-width: none;
+    margin-left: 0 !important;
+    text-align: left;
+    font-size: 11px;
+  }
+}
