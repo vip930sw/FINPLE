@@ -103,6 +103,21 @@ function storeAuthResult(payload) {
   return user;
 }
 
+export async function checkEmailAvailability(email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail || !normalizedEmail.includes("@")) {
+    throw new Error("올바른 이메일 주소를 입력해 주세요.");
+  }
+
+  const query = new URLSearchParams({ email: normalizedEmail });
+  const payload = await requestAuth(`/auth/check-email?${query.toString()}`);
+
+  return {
+    email: payload.email || normalizedEmail,
+    available: Boolean(payload.available),
+  };
+}
+
 export async function signupWithEmailPassword({ email, password, name, privacyAccepted, termsAccepted, marketingAgreed }) {
   const payload = await requestAuth("/auth/signup", {
     email,

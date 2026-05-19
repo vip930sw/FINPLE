@@ -1,6 +1,7 @@
 import express from "express";
 
 import {
+  checkEmailAvailability,
   getUserByAuthHeader,
   getUserBySessionToken,
   loginWithEmail,
@@ -30,6 +31,18 @@ function getSessionToken(request) {
     ""
   );
 }
+
+router.get("/check-email", async (request, response, next) => {
+  try {
+    const result = await checkEmailAvailability(request.query.email);
+    response.json({
+      ok: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post("/signup", async (request, response, next) => {
   try {

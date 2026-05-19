@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   createOrLoadDemoUser,
   getStoredFinpleAuthUser,
 } from "./portfolio/services/serverPortfolioService";
 import {
+  checkEmailAvailability,
   loginWithEmailPassword,
   logoutFinpleAuth,
   signupWithEmailPassword,
 } from "./authClientService";
+
+const EMAIL_DOMAIN_OPTIONS = [
+  "naver.com",
+  "gmail.com",
+  "kakao.com",
+  "daum.net",
+  "hanmail.net",
+  "직접입력",
+];
 
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   const storedUser = getStoredFinpleAuthUser();
@@ -44,7 +54,7 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
 
         <nav className="accountNav">
           <button type="button" onClick={() => onNavigate("home")}>홈</button>
-          <button type="button" onClick={() => onNavigate("personal")}>시뮬레이터</button>
+          <button type="button" onClick={() => onNavigate("personal")}>시작하기</button>
           <button type="button" onClick={() => onNavigate("pricing")}>요금제</button>
           <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
           <button type="button" onClick={handleMyPageClick}>MY PAGE</button>
@@ -160,21 +170,77 @@ export function LoginPage({ onNavigate }) {
 
 export function SignupPage({ onNavigate }) {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [emailLocal, setEmailLocal] = useState("");
+  const [emailDomain, setEmailDomain] = useState("naver.com");
+  const [customDomain, setCustomDomain] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingAgreed, setMarketingAgreed] = useState(false);
   const [statusMessage, setStatusMessage] = useState("이메일과 비밀번호로 FINPLE 계정을 만들 수 있습니다.");
+  const [emailCheck, setEmailCheck] = useState({ status: "idle", email: "" });
+  const [isEmailChecking, setIsEmailChecking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  const signupEmail = useMemo(() => {
+    const local = emailLocal.trim().replace(/@/g, "");
+    const domain = (emailDomain === "직접입력" ? customDomain : emailDomain).trim().replace(/^@/, "");
+    return local && domain ? `${local}@${domain}`.toLowerCase() : "";
+  }, [emailLocal, emailDomain, customDomain]);
+
+  const emailStatusText = useMemo(() => {
+    if (!emailLocal.trim()) return "이메일 아이디를 입력해 주세요.";
+    if (!signupEmail.includes("@")) return "이메일 도메인을 선택해 주세요.";
+    if (emailCheck.status === "available" && emailCheck.email === signupEmail) {
+      return "사용 가능한 이메일입니다.";
+    }
+    if (emailCheck.status === "taken" && emailCheck.email === signupEmail) {
+      return "이미 가입된 이메일입니다. 로그인해 주세요.";
+    }
+    return "회원가입 전 이메일 중복확인을 해주세요.";
+  }, [emailCheck, emailLocal, signupEmail]);
+
+  function handleEmailFieldChange(setter) {
+    return (event) => {
+      setter(event.target.value);
+      setEmailCheck({ status: "idle", email: "" });
+    };
+  }
+
+  async function handleEmailCheck() {
+    if (!signupEmail || !signupEmail.includes("@")) {
+      setStatusMessage("이메일 아이디와 도메인을 입력해 주세요.");
+      return;
+    }
+
+    setIsEmailChecking(true);
+    try {
+      const result = await checkEmailAvailability(signupEmail);
+      setEmailCheck({
+        status: result.available ? "available" : "taken",
+        email: result.email || signupEmail,
+      });
+      setStatusMessage(result.available ? "사용 가능한 이메일입니다." : "이미 가입된 이메일입니다. 로그인해 주세요.");
+    } catch (error) {
+      setEmailCheck({ status: "error", email: signupEmail });
+      setStatusMessage(error?.message || "이메일 중복확인에 실패했습니다.");
+    } finally {
+      setIsEmailChecking(false);
+    }
+  }
 
   async function handleEmailSignup(event) {
     event.preventDefault();
 
-    if (!email.trim() || !password) {
+    if (!signupEmail || !password) {
       setStatusMessage("이메일과 비밀번호를 입력해 주세요.");
+      return;
+    }
+
+    if (emailCheck.status !== "available" || emailCheck.email !== signupEmail) {
+      setStatusMessage("회원가입 전 이메일 중복확인을 완료해 주세요.");
       return;
     }
 
@@ -191,7 +257,7 @@ export function SignupPage({ onNavigate }) {
     setIsLoading(true);
     try {
       const user = await signupWithEmailPassword({
-        email,
+        email: signupEmail,
         password,
         name,
         privacyAccepted,
@@ -238,16 +304,42 @@ export function SignupPage({ onNavigate }) {
               autoComplete="name"
             />
           </label>
-          <label>
-            이메일
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-          </label>
+
+          <div className="authEmailField">
+            <span className="authFieldLabel">이메일</span>
+            <div className="authEmailRow">
+              <input
+                type="text"
+                value={emailLocal}
+                onChange={handleEmailFieldChange(setEmailLocal)}
+                placeholder="이메일 아이디"
+                autoComplete="email"
+              />
+              <span className="authEmailAt">@</span>
+              <select value={emailDomain} onChange={handleEmailFieldChange(setEmailDomain)}>
+                {EMAIL_DOMAIN_OPTIONS.map((domain) => (
+                  <option key={domain} value={domain}>{domain}</option>
+                ))}
+              </select>
+            </div>
+            {emailDomain === "직접입력" ? (
+              <input
+                className="authCustomDomainInput"
+                type="text"
+                value={customDomain}
+                onChange={handleEmailFieldChange(setCustomDomain)}
+                placeholder="도메인 직접입력 예: company.com"
+                autoComplete="off"
+              />
+            ) : null}
+            <div className="authEmailCheckRow">
+              <span className={["authEmailStatus", `authEmailStatus--${emailCheck.status}`].join(" ")}>{emailStatusText}</span>
+              <button type="button" className="secondaryButton authEmailCheckButton" onClick={handleEmailCheck} disabled={isEmailChecking || isLoading || isDemoLoading}>
+                {isEmailChecking ? "확인 중..." : "중복확인"}
+              </button>
+            </div>
+          </div>
+
           <label>
             비밀번호
             <input

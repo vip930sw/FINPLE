@@ -104,6 +104,18 @@ async function getUserByEmail(email) {
   return mapUser(result.rows[0]);
 }
 
+export async function checkEmailAvailability(email) {
+  const normalizedEmail = assertEmail(email);
+  const result = await query("SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1", [
+    normalizedEmail,
+  ]);
+
+  return {
+    email: normalizedEmail,
+    available: result.rowCount === 0,
+  };
+}
+
 async function getUserById(userId) {
   const result = await query(
     `SELECT id, email, name, nickname, plan, auth_status, email_verified_at, created_at, updated_at, last_login_at
