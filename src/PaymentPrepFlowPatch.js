@@ -4,6 +4,7 @@
    Step 137 - Scope payment prep to /pricing only
    Step 142 - Prevent stale checkout state from hijacking MY PAGE
    Step 144 - Connect Pricing Personal to prepare API
+   Step 144B - Prevent MutationObserver render loop on /pricing
    - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
@@ -21,6 +22,7 @@ const BILLING_QUERY = "finpleBillingReady";
 let lastPreparePayload = null;
 let isPreparingCheckout = false;
 let prepareErrorMessage = "";
+let hasAutoPrepareRequested = false;
 
 function isLoggedIn() {
   return Boolean(getStoredFinpleAuthUser()?.id);
@@ -38,6 +40,14 @@ function isPersonalButton(button) {
   const text = button?.textContent || "";
   const cardText = button?.closest?.("article, .priceCard, .accountPlanCard")?.textContent || "";
   return /Personal|월 9,900원|Personal 선택|선택하기/.test(`${cardText} ${text}`);
+}
+
+function setTextIfChanged(node, value) {
+  if (!node) return;
+  const nextValue = String(value ?? "");
+  if (node.textContent !== nextValue) {
+    node.textContent = nextValue;
+  }
 }
 
 function formatWon(value) {
@@ -124,30 +134,32 @@ function updateBillingPrepBanner() {
   const statusNode = banner.querySelector("[data-billing-status]");
   const testLink = banner.querySelector("[data-billing-test-link]");
 
-  if (orderIdNode) {
-    orderIdNode.textContent = lastPreparePayload?.orderId || (isPreparingCheckout ? "생성 중" : "Personal 선택 후 생성");
-  }
-
-  if (amountNode) {
-    amountNode.textContent = formatWon(lastPreparePayload?.amount || 9900);
-  }
+  setTextIfChanged(
+    orderIdNode,
+    lastPreparePayload?.orderId || (isPreparingCheckout ? "생성 중" : "Personal 선택 후 생성")
+  );
+  setTextIfChanged(amountNode, formatWon(lastPreparePayload?.amount || 9900));
 
   if (statusNode) {
-    statusNode.textContent = getStatusText();
+    setTextIfChanged(statusNode, getStatusText());
     statusNode.classList.toggle("billingPrepareStatus--error", Boolean(prepareErrorMessage));
   }
 
   if (testLink) {
     const successUrl = lastPreparePayload?.successUrl || "/billing/success?orderId=prepare_test&amount=9900";
-    testLink.setAttribute("data-billing-nav", successUrl.replace(/^https?:\/\/[^/]+/i, ""));
-    testLink.disabled = isPreparingCheckout;
+    const nextTarget = successUrl.replace(/^https?:\/\/[^/]+/i, "");
+    if (testLink.getAttribute("data-billing-nav") !== nextTarget) {
+      testLink.setAttribute("data-billing-nav", nextTarget);
+    }
+    if (testLink.disabled !== isPreparingCheckout) {
+      testLink.disabled = isPreparingCheckout;
+    }
   }
 }
 
 function insertBillingPrepBanner() {
   if (!shouldShowBillingPrep()) return;
   if (document.querySelector(".billingPrepBanner")) {
-    updateBillingPrepBanner();
     return;
   }
 
@@ -220,6 +232,9 @@ function clearStaleCheckoutOnManualPages() {
 
   if (path === "/mypage" || (path === "/pricing" && !hasBillingQuery)) {
     clearPendingCheckoutPlan();
+    lastPreparePayload = null;
+    prepareErrorMessage = "";
+    hasAutoPrepareRequested = false;
   }
 }
 
@@ -236,7 +251,8 @@ function bootPaymentPrepFlow() {
   window.setTimeout(() => {
     insertBillingPrepBanner();
     redirectPendingCheckoutAfterLogin();
-    if (shouldShowBillingPrep() && isLoggedIn()) {
+    if (shouldShowBillingPrep() && isLoggedIn() && !hasAutoPrepareRequested) {
+      hasAutoPrepareRequested = true;
       requestPrepareAndRender();
     }
   }, 200);
