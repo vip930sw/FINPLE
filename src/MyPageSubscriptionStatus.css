@@ -1,0 +1,68 @@
+/* =========================================================
+   Step 145 - MY PAGE subscription status panel
+========================================================= */
+
+.subscriptionStatusPanel {
+  position: relative;
+}
+
+.subscriptionStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.subscriptionStatusGrid > div {
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.subscriptionStatusGrid span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.subscriptionStatusGrid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  word-break: keep-all;
+}
+
+.subscriptionStatusGrid em {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.subscriptionStatusMessage {
+  margin-top: 18px;
+}
+
+.subscriptionStatusPanel--error .subscriptionStatusMessage {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #dc2626;
+}
+
+@media (max-width: 920px) {
+  .subscriptionStatusGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .subscriptionStatusGrid {
+    grid-template-columns: 1fr;
+  }
+}
