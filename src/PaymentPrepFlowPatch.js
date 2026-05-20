@@ -2,11 +2,16 @@
    Step 134 - Pricing -> Login -> Payment Prep Flow
    Step 136 - Refund / Cancellation Policy Notice
    Step 137 - Scope payment prep to /pricing only
+   Step 142 - Prevent stale checkout state from hijacking MY PAGE
    - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
 
-import { getPendingCheckoutPlan, setPendingCheckoutPlan } from "./components/paymentFlowService";
+import {
+  clearPendingCheckoutPlan,
+  getPendingCheckoutPlan,
+  setPendingCheckoutPlan,
+} from "./components/paymentFlowService";
 import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 
 const BILLING_QUERY = "finpleBillingReady";
@@ -104,7 +109,10 @@ function insertBillingPrepBanner() {
 
   pricingPanel.parentNode.insertBefore(banner, pricingPanel);
 
-  banner.querySelector(".billingPrepPrimary")?.addEventListener("click", () => navigateTo("/simulator"));
+  banner.querySelector(".billingPrepPrimary")?.addEventListener("click", () => {
+    clearPendingCheckoutPlan();
+    navigateTo("/simulator");
+  });
   banner.querySelector(".billingPrepTerms")?.addEventListener("click", () => navigateTo("/terms"));
   banner.querySelector(".billingPrepSupport")?.addEventListener("click", () => navigateTo("/support"));
 }
@@ -114,12 +122,27 @@ function redirectPendingCheckoutAfterLogin() {
   if (!pending?.planKey || !isLoggedIn()) return;
 
   const path = window.location.pathname;
-  if (path === "/mypage" || path === "/login" || path === "/signup") {
+
+  if (path === "/pricing" || path === "/mypage") {
+    return;
+  }
+
+  if (path === "/login" || path === "/signup") {
     navigateTo(`/pricing?${BILLING_QUERY}=personal`);
   }
 }
 
+function clearStaleCheckoutOnManualPages() {
+  const path = window.location.pathname;
+  const hasBillingQuery = new URLSearchParams(window.location.search).has(BILLING_QUERY);
+
+  if (path === "/mypage" || (path === "/pricing" && !hasBillingQuery)) {
+    clearPendingCheckoutPlan();
+  }
+}
+
 function bootPaymentPrepFlow() {
+  clearStaleCheckoutOnManualPages();
   document.addEventListener("click", handlePricingClick, true);
 
   const observer = new MutationObserver(() => {
