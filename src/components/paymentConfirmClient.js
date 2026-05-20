@@ -2,13 +2,44 @@ import { getStoredFinpleAuthSession } from "./authClientService";
 import {
   getFinpleApiBaseUrl,
   getStoredFinpleAuthUser,
+  setStoredFinpleAuthUser,
 } from "./portfolio/services/serverPortfolioService";
+import { setStoredFinplePlan } from "./portfolio/config/planConfig";
 
 async function readResponseJson(response) {
   try {
     return await response.json();
   } catch (error) {
     return null;
+  }
+}
+
+function syncConfirmedPlanToBrowser(payload) {
+  if (!payload?.ok) return;
+
+  const confirmedPlan = payload.entitlementUpdated || payload.entitlementUpdate?.applied
+    ? payload.plan || payload.entitlementUpdate?.plan || "personal"
+    : "";
+
+  if (confirmedPlan !== "personal") return;
+
+  const storedUser = getStoredFinpleAuthUser();
+  if (storedUser?.id) {
+    setStoredFinpleAuthUser({
+      ...storedUser,
+      plan: "personal",
+      billingStatus: "active",
+      subscriptionId: payload.entitlementUpdate?.subscriptionId || storedUser.subscriptionId || null,
+      entitlementValidUntil: payload.entitlementUpdate?.validUntil || storedUser.entitlementValidUntil || null,
+    });
+  }
+
+  setStoredFinplePlan("personal");
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("finple-auth-updated"));
+    window.dispatchEvent(new Event("finple-plan-updated"));
+    window.dispatchEvent(new Event("finple-local-storage-updated"));
   }
 }
 
@@ -66,6 +97,8 @@ export async function confirmTossPayment(params = getBillingSuccessParams()) {
     error.payload = payload;
     throw error;
   }
+
+  syncConfirmedPlanToBrowser(payload);
 
   return payload;
 }
