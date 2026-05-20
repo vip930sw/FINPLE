@@ -3,11 +3,16 @@
    - 실제 결제창 연결 전 결제 전 고지와 필수 동의 체크를 추가합니다.
    Step 149B - Ensure payment mode status patch is loaded
    Step 149C - Improve consent status spacing
+   Step 151 - Connect confirmed consent to Toss test checkout
 ========================================================= */
 
 import "./PaymentModeStatusPatch.js";
+import { canOpenTossCheckout, openTossTestCheckout } from "./components/tossCheckoutClient";
 
 const REQUIRED_KEYS = ["terms", "privacy", "refund", "recurring", "disclaimer"];
+
+let checkoutErrorMessage = "";
+let isOpeningCheckout = false;
 
 function isPricingPage() {
   return window.location.pathname === "/pricing";
@@ -15,6 +20,10 @@ function isPricingPage() {
 
 function navigateTo(path) {
   window.location.href = path;
+}
+
+function getLatestPreparePayload() {
+  return window.__finpleLatestPreparePayload || null;
 }
 
 function injectConsentStyles() {
@@ -108,6 +117,12 @@ function injectConsentStyles() {
       color: #15803d;
     }
 
+    .paymentConsentStatus.error {
+      border-color: #fecaca;
+      background: #fff7f7;
+      color: #dc2626;
+    }
+
     .paymentConsentConfirmButton {
       width: 100%;
       margin-top: 12px;
@@ -194,20 +209,54 @@ function isReady() {
   return REQUIRED_KEYS.every((key) => box.querySelector(`[data-consent-key="${key}"]`)?.checked);
 }
 
+function getReadyText() {
+  const payload = getLatestPreparePayload();
+  if (canOpenTossCheckout(payload)) return "필수 확인이 완료되었습니다. 테스트 결제창을 열 수 있습니다.";
+  return "필수 확인이 완료되었습니다. 결제 준비 정보가 생성되면 테스트 결제창을 열 수 있습니다.";
+}
+
 function updateConsentState() {
   const box = getConsentBox();
   if (!box) return;
 
   const ready = isReady();
+  const payload = getLatestPreparePayload();
+  const canCheckout = ready && canOpenTossCheckout(payload) && !isOpeningCheckout;
   const button = box.querySelector("[data-payment-consent-confirm]");
   const status = box.querySelector("[data-payment-consent-status]");
 
-  if (button) button.disabled = !ready;
+  if (button) {
+    button.disabled = !canCheckout;
+    button.textContent = canOpenTossCheckout(payload) ? "테스트 결제하기" : "결제 준비 완료 확인";
+  }
+
   if (status) {
-    status.classList.toggle("ready", ready);
-    status.textContent = ready
-      ? "필수 확인이 완료되었습니다. 현재는 실제 결제 없이 준비 완료 상태만 확인합니다."
-      : "필수 확인 항목을 모두 체크하면 결제 준비 완료를 확인할 수 있습니다.";
+    status.classList.toggle("ready", ready && !checkoutErrorMessage);
+    status.classList.toggle("error", Boolean(checkoutErrorMessage));
+    if (checkoutErrorMessage) {
+      status.textContent = checkoutErrorMessage;
+    } else {
+      status.textContent = ready
+        ? getReadyText()
+        : "필수 확인 항목을 모두 체크하면 결제 준비 완료를 확인할 수 있습니다.";
+    }
+  }
+}
+
+async function handleCheckoutClick() {
+  const box = getConsentBox();
+  if (!box || !isReady()) return;
+
+  try {
+    checkoutErrorMessage = "";
+    isOpeningCheckout = true;
+    updateConsentState();
+    await openTossTestCheckout(getLatestPreparePayload());
+  } catch (error) {
+    checkoutErrorMessage = error?.message || "테스트 결제창을 열지 못했습니다.";
+  } finally {
+    isOpeningCheckout = false;
+    updateConsentState();
   }
 }
 
@@ -217,18 +266,15 @@ function wireConsentBox() {
 
   box.dataset.wired = "true";
   box.querySelectorAll("[data-consent-key]").forEach((input) => {
-    input.addEventListener("change", updateConsentState);
+    input.addEventListener("change", () => {
+      checkoutErrorMessage = "";
+      updateConsentState();
+    });
   });
   box.querySelectorAll("[data-consent-nav]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-consent-nav") || "/pricing"));
   });
-  box.querySelector("[data-payment-consent-confirm]")?.addEventListener("click", () => {
-    const status = box.querySelector("[data-payment-consent-status]");
-    if (status) {
-      status.classList.add("ready");
-      status.textContent = "결제 전 고지 확인이 완료되었습니다. Toss 테스트 키 연결 후 이 버튼은 결제하기로 전환됩니다.";
-    }
-  });
+  box.querySelector("[data-payment-consent-confirm]")?.addEventListener("click", handleCheckoutClick);
 
   updateConsentState();
 }
@@ -250,6 +296,7 @@ function upsertConsentBox() {
 function bootPaymentConsentPatch() {
   const observer = new MutationObserver(() => upsertConsentBox());
   observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener("finple:payment-prepare-updated", updateConsentState);
   window.setTimeout(upsertConsentBox, 150);
 }
 
