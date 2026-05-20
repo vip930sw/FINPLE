@@ -190,14 +190,12 @@ function createOrderId(userId, plan) {
   return `finple_${plan}_${userPart}_${suffix}`;
 }
 
-function getSuccessUrl(orderId, amount) {
-  const queryParams = new URLSearchParams({ orderId, amount: String(amount) });
-  return `${getSiteUrl()}${getPaymentSuccessPath()}?${queryParams.toString()}`;
+function getSuccessUrl() {
+  return `${getSiteUrl()}${getPaymentSuccessPath()}`;
 }
 
-function getFailUrl(orderId) {
-  const queryParams = new URLSearchParams({ orderId });
-  return `${getSiteUrl()}${getPaymentFailPath()}?${queryParams.toString()}`;
+function getFailUrl() {
+  return `${getSiteUrl()}${getPaymentFailPath()}`;
 }
 
 router.get("/health", (request, response) => {
@@ -311,8 +309,8 @@ router.post("/toss/prepare", async (request, response, next) => {
         email: user.email,
         name: user.name,
       },
-      successUrl: getSuccessUrl(orderId, amount),
-      failUrl: getFailUrl(orderId),
+      successUrl: getSuccessUrl(),
+      failUrl: getFailUrl(),
       readinessWarnings: readiness.warnings,
       message: checkoutAvailable
         ? "Toss 테스트 결제 준비 정보가 생성되었습니다."
