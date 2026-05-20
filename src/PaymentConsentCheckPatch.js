@@ -2,6 +2,7 @@
    Step 147 - Payment consent check patch
    - 실제 결제창 연결 전 결제 전 고지와 필수 동의 체크를 추가합니다.
    Step 149B - Ensure payment mode status patch is loaded
+   Step 149C - Improve consent status spacing
 ========================================================= */
 
 import "./PaymentModeStatusPatch.js";
@@ -60,6 +61,7 @@ function injectConsentStyles() {
       display: grid;
       gap: 9px;
       margin-top: 12px;
+      margin-bottom: 16px;
     }
 
     .paymentConsentCheck {
@@ -89,7 +91,7 @@ function injectConsentStyles() {
     }
 
     .paymentConsentStatus {
-      margin-top: 13px;
+      margin-top: 0;
       padding: 11px 12px;
       border: 1px solid #bfdbfe;
       border-radius: 13px;
