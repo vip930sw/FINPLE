@@ -7,6 +7,8 @@ import { isDatabaseConfigured, query } from "../db/database.js";
 
 const router = express.Router();
 
+const TOSS_CONFIRM_ENDPOINT = "https://api.tosspayments.com/v1/payments/confirm";
+
 const PLAN_FALLBACKS = {
   free: {
     plan: "free",
@@ -198,6 +200,97 @@ function getFailUrl() {
   return `${getSiteUrl()}${getPaymentFailPath()}`;
 }
 
+function getTossSecretKey() {
+  return String(process.env.TOSS_SECRET_KEY || "").trim();
+}
+
+function getTossAuthorizationHeader() {
+  const secretKey = getTossSecretKey();
+  return `Basic ${Buffer.from(`${secretKey}:`).toString("base64")}`;
+}
+
+async function readExternalJson(response) {
+  try {
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function requestTossConfirm({ paymentKey, orderId, amount }) {
+  const response = await fetch(TOSS_CONFIRM_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: getTossAuthorizationHeader(),
+      "Content-Type": "application/json",
+      "Idempotency-Key": orderId,
+    },
+    body: JSON.stringify({ paymentKey, orderId, amount }),
+  });
+
+  const payload = await readExternalJson(response);
+
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Toss 결제 승인 요청에 실패했습니다.");
+    error.statusCode = response.status;
+    error.code = payload?.code || "TOSS_CONFIRM_FAILED";
+    error.tossPayload = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
+function assertTossPaymentMatches(payment, { orderId, amount }) {
+  if (!payment || typeof payment !== "object") {
+    const error = new Error("Toss 승인 응답이 올바르지 않습니다.");
+    error.statusCode = 502;
+    error.code = "INVALID_TOSS_CONFIRM_RESPONSE";
+    throw error;
+  }
+
+  if (String(payment.orderId || "") !== String(orderId)) {
+    const error = new Error("Toss 승인 응답의 주문번호가 요청값과 일치하지 않습니다.");
+    error.statusCode = 502;
+    error.code = "TOSS_ORDER_ID_MISMATCH";
+    throw error;
+  }
+
+  if (Number(payment.totalAmount || 0) !== Number(amount)) {
+    const error = new Error("Toss 승인 응답의 결제금액이 요청값과 일치하지 않습니다.");
+    error.statusCode = 502;
+    error.code = "TOSS_AMOUNT_MISMATCH";
+    throw error;
+  }
+}
+
+async function recordPaymentConfirmation({ user, plan, amount, orderId, payment }) {
+  if (!isDatabaseConfigured()) {
+    return { stored: false, reason: "database_not_configured" };
+  }
+
+  try {
+    await query(
+      `INSERT INTO payment_events (id, provider, event_id, event_type, user_id, payload, processing_status, processed_at)
+       VALUES ($1, 'toss-payments', $2, 'payment.confirmed', $3, $4::jsonb, 'confirmed', NOW())
+       ON CONFLICT (provider, event_id) DO UPDATE SET
+         payload = EXCLUDED.payload,
+         processing_status = 'confirmed',
+         processed_at = NOW()`,
+      [
+        randomUUID(),
+        payment.paymentKey || orderId,
+        user.id,
+        JSON.stringify({ plan, amount, orderId, payment }),
+      ]
+    );
+
+    return { stored: true };
+  } catch (error) {
+    return { stored: false, reason: "payment_event_store_failed" };
+  }
+}
+
 router.get("/health", (request, response) => {
   response.json({
     ok: true,
@@ -348,7 +441,7 @@ router.post("/toss/confirm", async (request, response, next) => {
       return;
     }
 
-    if (!process.env.TOSS_SECRET_KEY) {
+    if (!getTossSecretKey()) {
       response.status(503).json({
         ok: false,
         code: "TOSS_NOT_CONFIGURED",
@@ -357,17 +450,40 @@ router.post("/toss/confirm", async (request, response, next) => {
       return;
     }
 
-    response.status(501).json({
-      ok: false,
-      code: "TOSS_CONFIRM_NOT_IMPLEMENTED",
+    const payment = await requestTossConfirm({ paymentKey, orderId, amount });
+    assertTossPaymentMatches(payment, { orderId, amount });
+    const storage = await recordPaymentConfirmation({ user, plan, amount, orderId, payment });
+
+    response.json({
+      ok: true,
       provider: "toss-payments",
+      mode: getPaymentMode(),
       plan,
       amount,
       orderId,
-      mode: getPaymentMode(),
-      message: "Toss 승인 API 호출은 테스트 키 등록 후 다음 단계에서 연결합니다.",
+      paymentKey: payment.paymentKey,
+      paymentStatus: payment.status,
+      approvedAt: payment.approvedAt,
+      method: payment.method,
+      totalAmount: payment.totalAmount,
+      receiptUrl: payment.receipt?.url || payment.checkout?.url || null,
+      stored: storage.stored,
+      storage,
+      payment,
+      message: "Toss 결제 승인이 확인되었습니다. Personal 권한 전환은 다음 단계에서 연결합니다.",
     });
   } catch (error) {
+    if (error?.tossPayload) {
+      response.status(error.statusCode || 400).json({
+        ok: false,
+        code: error.code || "TOSS_CONFIRM_FAILED",
+        message: error.message || "Toss 결제 승인 요청에 실패했습니다.",
+        provider: "toss-payments",
+        toss: error.tossPayload,
+      });
+      return;
+    }
+
     next(error);
   }
 });
