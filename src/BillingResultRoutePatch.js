@@ -1,7 +1,8 @@
 /* =========================================================
    Step 141 - Billing Result Route Patch
+   Step 141B - Render before React app fallback
    - Toss Payments 실제 연동 전 결제 성공/실패/취소 화면을 제공합니다.
-   - App.jsx를 크게 건드리지 않기 위해 독립 라우트 패치로 처리합니다.
+   - App.jsx를 크게 건드리지 않기 위해 main.jsx에서 조건부 렌더링합니다.
 ========================================================= */
 
 const RESULT_COPY = {
@@ -76,7 +77,11 @@ function navigateTo(path) {
   window.location.href = path;
 }
 
-function renderBillingResultPage() {
+export function isBillingResultPath(pathname = window.location.pathname) {
+  return Boolean(RESULT_COPY[normalizePathname(pathname)]);
+}
+
+export function renderBillingResultPage() {
   const path = normalizePathname(window.location.pathname);
   const copy = RESULT_COPY[path];
   if (!copy) return false;
@@ -149,17 +154,4 @@ function renderBillingResultPage() {
   });
 
   return true;
-}
-
-function bootBillingResultRoutePatch() {
-  if (renderBillingResultPage()) return;
-  window.setTimeout(renderBillingResultPage, 50);
-}
-
-if (typeof window !== "undefined") {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootBillingResultRoutePatch, { once: true });
-  } else {
-    bootBillingResultRoutePatch();
-  }
 }
