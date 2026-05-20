@@ -1,11 +1,17 @@
 /* =========================================================
-   Step 145 - MY PAGE subscription status patch
+   Step 154 - MY PAGE subscription status patch
    - /api/payments/subscription/me와 MY PAGE 구독 상태 패널을 연결합니다.
+   - 서버 구독/권한 상태를 브라우저 사용자·플랜 상태에 동기화합니다.
    - 기존 React 구조 변경을 최소화하기 위해 DOM 패치 레이어로 적용합니다.
 ========================================================= */
 
-import { getFinpleApiBaseUrl, getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
+import {
+  getFinpleApiBaseUrl,
+  getStoredFinpleAuthUser,
+  setStoredFinpleAuthUser,
+} from "./components/portfolio/services/serverPortfolioService";
 import { getStoredFinpleAuthSession } from "./components/authClientService";
+import { normalizeFinplePlan, setStoredFinplePlan } from "./components/portfolio/config/planConfig";
 
 let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
@@ -56,7 +62,13 @@ function getSubscriptionMessage(payload) {
   if (lastSubscriptionError) return lastSubscriptionError;
   if (!payload) return "구독 상태를 불러오고 있습니다.";
   if (!payload.authenticated) return payload.message || "로그인 후 구독 상태를 확인할 수 있습니다.";
-  return payload.message || "현재는 베타 운영 단계입니다. 실제 결제 구독 상태는 Toss 연동 후 반영됩니다.";
+
+  const plan = String(payload.plan || payload.entitlement?.plan || payload.subscription?.plan || "free").toLowerCase();
+  if (plan === "personal") {
+    return "서버 기준 Personal 권한이 확인되었습니다. 브라우저 표시 상태도 서버 기준으로 동기화됩니다.";
+  }
+
+  return payload.message || "서버 기준 구독 상태를 확인했습니다.";
 }
 
 function setText(node, value) {
@@ -72,7 +84,7 @@ function getSubscriptionPanelHtml() {
         <div>
           <p class="accountMiniLabel">Billing Status</p>
           <h2>구독 / 결제 상태</h2>
-          <p>서버 결제 API 기준으로 현재 구독 상태를 확인합니다. 현재는 Toss 실제 결제 전 준비 단계입니다.</p>
+          <p>서버 결제 API 기준으로 현재 구독 상태와 권한 반영 상태를 확인합니다.</p>
         </div>
         <span class="serverStatusBadge ready" data-subscription-badge>확인 중</span>
       </div>
@@ -91,7 +103,7 @@ function getSubscriptionPanelHtml() {
         <div>
           <span>다음 결제일</span>
           <strong data-subscription-next-billing>해당 없음</strong>
-          <em>베타 단계</em>
+          <em>정기결제 연결 후 표시</em>
         </div>
         <div>
           <span>이용 종료 예정일</span>
@@ -144,6 +156,33 @@ function wireSubscriptionPanelActions() {
   });
 }
 
+function getPlanFromPayload(payload) {
+  return normalizeFinplePlan(payload?.plan || payload?.entitlement?.plan || payload?.subscription?.plan || "free");
+}
+
+function syncSubscriptionPayloadToBrowser(payload) {
+  if (!payload?.authenticated) return;
+
+  const plan = getPlanFromPayload(payload);
+  const storedUser = getStoredFinpleAuthUser();
+
+  if (storedUser?.id) {
+    setStoredFinpleAuthUser({
+      ...storedUser,
+      plan,
+      billingStatus: payload.status || payload.subscription?.status || "beta_free",
+      subscriptionId: payload.subscription?.id || storedUser.subscriptionId || null,
+      entitlementValidUntil: payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null,
+    });
+  }
+
+  setStoredFinplePlan(plan);
+
+  window.dispatchEvent(new Event("finple-auth-updated"));
+  window.dispatchEvent(new Event("finple-plan-updated"));
+  window.dispatchEvent(new Event("finple-local-storage-updated"));
+}
+
 function updateSubscriptionPanel() {
   const panel = document.querySelector("[data-subscription-status-panel]");
   if (!panel) return;
@@ -151,7 +190,7 @@ function updateSubscriptionPanel() {
   const payload = lastSubscriptionPayload;
   const subscription = payload?.subscription || {};
   const entitlement = payload?.entitlement || {};
-  const plan = payload?.plan || entitlement?.plan || subscription?.plan || "free";
+  const plan = getPlanFromPayload(payload);
   const status = payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
@@ -203,6 +242,7 @@ async function requestSubscriptionStatusOnce() {
 
   try {
     lastSubscriptionPayload = await fetchSubscriptionStatus();
+    syncSubscriptionPayloadToBrowser(lastSubscriptionPayload);
   } catch (error) {
     lastSubscriptionPayload = null;
     lastSubscriptionError = error?.message || "구독 상태를 불러오지 못했습니다.";
