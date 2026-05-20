@@ -5,6 +5,7 @@
    Step 142 - Prevent stale checkout state from hijacking MY PAGE
    Step 144 - Connect Pricing Personal to prepare API
    Step 144B - Prevent MutationObserver render loop on /pricing
+   Step 151 - Expose latest prepare payload for Toss checkout
    - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
@@ -23,6 +24,14 @@ let lastPreparePayload = null;
 let isPreparingCheckout = false;
 let prepareErrorMessage = "";
 let hasAutoPrepareRequested = false;
+
+function publishPreparePayload() {
+  if (typeof window === "undefined") return;
+  window.__finpleLatestPreparePayload = lastPreparePayload;
+  window.dispatchEvent(new CustomEvent("finple:payment-prepare-updated", {
+    detail: { payload: lastPreparePayload, error: prepareErrorMessage, loading: isPreparingCheckout },
+  }));
+}
 
 function isLoggedIn() {
   return Boolean(getStoredFinpleAuthUser()?.id);
@@ -63,6 +72,7 @@ async function requestPrepareAndRender() {
   prepareErrorMessage = "";
   insertBillingPrepBanner();
   updateBillingPrepBanner();
+  publishPreparePayload();
 
   try {
     lastPreparePayload = await preparePersonalCheckout();
@@ -73,6 +83,7 @@ async function requestPrepareAndRender() {
   } finally {
     isPreparingCheckout = false;
     updateBillingPrepBanner();
+    publishPreparePayload();
   }
 }
 
@@ -120,7 +131,7 @@ function shouldShowBillingPrep() {
 function getStatusText() {
   if (isPreparingCheckout) return "서버 결제 준비 정보를 확인하고 있습니다.";
   if (prepareErrorMessage) return prepareErrorMessage;
-  if (lastPreparePayload?.checkoutAvailable) return "Toss 결제 연결 준비가 완료되었습니다.";
+  if (lastPreparePayload?.checkoutAvailable) return "Toss 테스트 결제창을 열 준비가 완료되었습니다.";
   if (lastPreparePayload?.orderId) return lastPreparePayload.message || "현재는 결제 준비 단계입니다.";
   return "Personal을 선택하면 서버에서 결제 준비 정보를 생성합니다.";
 }
@@ -235,6 +246,7 @@ function clearStaleCheckoutOnManualPages() {
     lastPreparePayload = null;
     prepareErrorMessage = "";
     hasAutoPrepareRequested = false;
+    publishPreparePayload();
   }
 }
 
