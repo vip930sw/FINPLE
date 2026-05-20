@@ -1,7 +1,10 @@
 /* =========================================================
    Step 147 - Payment consent check patch
    - 실제 결제창 연결 전 결제 전 고지와 필수 동의 체크를 추가합니다.
+   Step 149B - Ensure payment mode status patch is loaded
 ========================================================= */
+
+import "./PaymentModeStatusPatch.js";
 
 const REQUIRED_KEYS = ["terms", "privacy", "refund", "recurring", "disclaimer"];
 
