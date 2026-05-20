@@ -35,6 +35,60 @@ function getSiteUrl() {
   return String(process.env.FINPLE_SITE_URL || "https://finple.co.kr").replace(/\/+$/, "");
 }
 
+function normalizePath(path, fallback) {
+  const value = String(path || fallback || "").trim();
+  if (!value) return fallback;
+  return value.startsWith("/") ? value : `/${value}`;
+}
+
+function getPaymentSuccessPath() {
+  return normalizePath(process.env.FINPLE_PAYMENT_SUCCESS_PATH, "/billing/success");
+}
+
+function getPaymentFailPath() {
+  return normalizePath(process.env.FINPLE_PAYMENT_FAIL_PATH, "/billing/fail");
+}
+
+function getRequestedPaymentMode() {
+  const mode = String(process.env.FINPLE_PAYMENT_MODE || "stub").trim().toLowerCase();
+  return ["stub", "test", "live"].includes(mode) ? mode : "stub";
+}
+
+function getPaymentMode() {
+  const requestedMode = getRequestedPaymentMode();
+  const hasSecretKey = Boolean(process.env.TOSS_SECRET_KEY);
+
+  if (!hasSecretKey) return "stub";
+  return requestedMode === "live" ? "live-ready" : "test-ready";
+}
+
+function getPaymentReadiness() {
+  const requestedMode = getRequestedPaymentMode();
+  const hasSecretKey = Boolean(process.env.TOSS_SECRET_KEY);
+  const hasWebhookSecret = Boolean(process.env.TOSS_WEBHOOK_SECRET);
+  const isLiveMode = requestedMode === "live";
+
+  return {
+    requestedMode,
+    mode: getPaymentMode(),
+    provider: "toss-payments",
+    tossConfigured: hasSecretKey,
+    webhookConfigured: hasWebhookSecret,
+    checkoutServerReady: hasSecretKey,
+    liveModeRequested: isLiveMode,
+    secretKeyLocation: "Render environment only",
+    clientKeyLocation: "Vercel environment only",
+    siteUrl: getSiteUrl(),
+    successPath: getPaymentSuccessPath(),
+    failPath: getPaymentFailPath(),
+    warnings: [
+      ...(hasSecretKey ? [] : ["TOSS_SECRET_KEY is not configured. Checkout remains disabled."]),
+      ...(hasWebhookSecret ? [] : ["TOSS_WEBHOOK_SECRET is not configured. Webhook signature verification is pending."]),
+      ...(isLiveMode ? ["Live mode is requested. Confirm that live keys are intentional before enabling checkout."] : []),
+    ],
+  };
+}
+
 function getSessionToken(request) {
   const authHeader = request.get("authorization") || "";
   const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -136,26 +190,20 @@ function createOrderId(userId, plan) {
   return `finple_${plan}_${userPart}_${suffix}`;
 }
 
-function getPaymentMode() {
-  return process.env.TOSS_SECRET_KEY ? "toss-test-ready" : "stub";
-}
-
 function getSuccessUrl(orderId, amount) {
   const queryParams = new URLSearchParams({ orderId, amount: String(amount) });
-  return `${getSiteUrl()}/billing/success?${queryParams.toString()}`;
+  return `${getSiteUrl()}${getPaymentSuccessPath()}?${queryParams.toString()}`;
 }
 
 function getFailUrl(orderId) {
   const queryParams = new URLSearchParams({ orderId });
-  return `${getSiteUrl()}/billing/fail?${queryParams.toString()}`;
+  return `${getSiteUrl()}${getPaymentFailPath()}?${queryParams.toString()}`;
 }
 
 router.get("/health", (request, response) => {
   response.json({
     ok: true,
-    provider: "toss-payments",
-    mode: getPaymentMode(),
-    tossConfigured: Boolean(process.env.TOSS_SECRET_KEY),
+    ...getPaymentReadiness(),
     checkedAt: new Date().toISOString(),
   });
 });
@@ -241,14 +289,17 @@ router.post("/toss/prepare", async (request, response, next) => {
     const planConfig = await getPlanConfig(plan);
     const amount = assertAmountMatchesPlan(request.body?.amount, planConfig);
     const orderId = createOrderId(user.id, plan);
-    const tossConfigured = Boolean(process.env.TOSS_SECRET_KEY);
-    const checkoutAvailable = tossConfigured && Boolean(planConfig.isPaymentEnabled);
+    const readiness = getPaymentReadiness();
+    const checkoutAvailable = Boolean(readiness.checkoutServerReady && planConfig.isPaymentEnabled);
 
     response.json({
       ok: true,
-      mode: getPaymentMode(),
-      provider: "toss-payments",
+      mode: readiness.mode,
+      requestedMode: readiness.requestedMode,
+      provider: readiness.provider,
       checkoutAvailable,
+      tossConfigured: readiness.tossConfigured,
+      webhookConfigured: readiness.webhookConfigured,
       orderId,
       orderName: "FINPLE Personal",
       plan: planConfig.plan,
@@ -261,6 +312,7 @@ router.post("/toss/prepare", async (request, response, next) => {
       },
       successUrl: getSuccessUrl(orderId, amount),
       failUrl: getFailUrl(orderId),
+      readinessWarnings: readiness.warnings,
       message: checkoutAvailable
         ? "Toss 결제 준비 정보가 생성되었습니다."
         : "현재는 결제 준비 단계입니다. Toss 키와 결제 활성화 후 실제 결제를 진행할 수 있습니다.",
@@ -313,6 +365,7 @@ router.post("/toss/confirm", async (request, response, next) => {
       plan,
       amount,
       orderId,
+      mode: getPaymentMode(),
       message: "Toss 승인 API 호출은 테스트 키 등록 후 다음 단계에서 연결합니다.",
     });
   } catch (error) {
@@ -354,6 +407,7 @@ router.post("/toss/webhook", async (request, response, next) => {
       eventId,
       eventType,
       stored,
+      webhookConfigured: Boolean(process.env.TOSS_WEBHOOK_SECRET),
       message: storageMessage,
     });
   } catch (error) {
