@@ -297,6 +297,90 @@ async function recordPaymentConfirmation({ user, plan, amount, orderId, payment 
   }
 }
 
+async function findExistingConfirmedPayment({ user, paymentKey, orderId, amount }) {
+  if (!isDatabaseConfigured()) return null;
+
+  try {
+    const result = await query(
+      `SELECT
+         p.id AS payment_id,
+         p.user_id,
+         p.plan,
+         p.amount,
+         p.status,
+         p.provider_payment_id,
+         p.provider_order_id,
+         p.receipt_url,
+         p.subscription_id,
+         p.metadata,
+         p.requested_at,
+         p.created_at,
+         s.status AS subscription_status,
+         s.current_period_end,
+         ue.plan AS entitlement_plan,
+         ue.valid_until
+       FROM payments p
+       LEFT JOIN subscriptions s ON s.id = p.subscription_id
+       LEFT JOIN user_entitlements ue ON ue.user_id = p.user_id
+       WHERE p.provider = 'toss-payments'
+         AND p.provider_payment_id = $1
+         AND p.provider_order_id = $2
+         AND p.user_id = $3
+         AND p.amount = $4
+         AND p.status = 'confirmed'
+       LIMIT 1`,
+      [paymentKey, orderId, user.id, amount]
+    );
+
+    return result.rows[0] || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function buildExistingConfirmedPaymentResponse({ existingPayment, plan, amount, orderId, paymentKey }) {
+  const entitlementPlan = existingPayment?.entitlement_plan || existingPayment?.plan || plan;
+  const entitlementApplied = String(entitlementPlan || "").toLowerCase() === plan;
+
+  return {
+    ok: true,
+    provider: "toss-payments",
+    mode: getPaymentMode(),
+    duplicate: true,
+    alreadyConfirmed: true,
+    plan: entitlementPlan,
+    amount: Number(existingPayment?.amount || amount),
+    orderId,
+    paymentKey,
+    paymentStatus: "DONE",
+    approvedAt: existingPayment?.requested_at || existingPayment?.created_at || null,
+    method: existingPayment?.metadata?.method || null,
+    totalAmount: Number(existingPayment?.amount || amount),
+    receiptUrl: existingPayment?.receipt_url || null,
+    stored: true,
+    storage: { stored: true, duplicate: true, reason: "existing_confirmed_payment" },
+    entitlementUpdated: entitlementApplied,
+    entitlementUpdate: {
+      applied: entitlementApplied,
+      duplicate: true,
+      plan: entitlementPlan,
+      subscriptionId: existingPayment?.subscription_id || null,
+      paymentId: existingPayment?.payment_id || null,
+      validUntil: existingPayment?.valid_until || existingPayment?.current_period_end || null,
+    },
+    payment: {
+      paymentKey,
+      orderId,
+      status: "DONE",
+      totalAmount: Number(existingPayment?.amount || amount),
+      receipt: existingPayment?.receipt_url ? { url: existingPayment.receipt_url } : undefined,
+    },
+    message: entitlementApplied
+      ? "이미 승인 처리된 결제입니다. Personal 권한 상태를 다시 확인했습니다."
+      : "이미 승인 처리된 결제입니다. 권한 상태 확인이 필요합니다.",
+  };
+}
+
 async function applyPersonalEntitlementAfterPayment({ user, plan, amount, orderId, payment }) {
   if (!isDatabaseConfigured()) {
     return { applied: false, reason: "database_not_configured" };
@@ -568,6 +652,12 @@ router.post("/toss/confirm", async (request, response, next) => {
       return;
     }
 
+    const existingPayment = await findExistingConfirmedPayment({ user, paymentKey, orderId, amount });
+    if (existingPayment) {
+      response.json(buildExistingConfirmedPaymentResponse({ existingPayment, plan, amount, orderId, paymentKey }));
+      return;
+    }
+
     if (!getTossSecretKey()) {
       response.status(503).json({
         ok: false,
@@ -586,6 +676,8 @@ router.post("/toss/confirm", async (request, response, next) => {
       ok: true,
       provider: "toss-payments",
       mode: getPaymentMode(),
+      duplicate: false,
+      alreadyConfirmed: false,
       plan,
       amount,
       orderId,
