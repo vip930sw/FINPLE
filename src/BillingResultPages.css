@@ -109,7 +109,7 @@
 .billingResultBulletList {
   display: grid;
   gap: 10px;
-  margin: 0 0 26px;
+  margin: 0 0 34px;
   padding-left: 20px;
 }
 
@@ -124,6 +124,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 6px;
 }
 
 .billingResultActions button {
