@@ -3,6 +3,7 @@
    Step 136 - Refund / Cancellation Policy Notice
    Step 137 - Scope and polish payment prep UI
    Step 138 - Terms policy section spacing
+   Step 144 - Prepare API status UI
 ========================================================= */
 
 .accountPage .billingPrepBanner {
@@ -69,6 +70,25 @@
   content: "•";
   margin-right: 8px;
   color: #2563eb;
+}
+
+.billingPrepareStatus {
+  max-width: 760px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.6;
+}
+
+.billingPrepareStatus--error {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #dc2626;
 }
 
 .billingPolicyBox {
