@@ -4,6 +4,7 @@ import express from "express";
 
 import authRoutes from "./routes/authRoutes.js";
 import dbRoutes from "./routes/dbRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import portfolioDbRoutes from "./routes/portfolioDbRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 
@@ -46,6 +47,7 @@ app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/db", dbRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 
