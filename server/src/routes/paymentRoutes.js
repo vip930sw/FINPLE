@@ -290,7 +290,8 @@ router.post("/toss/prepare", async (request, response, next) => {
     const amount = assertAmountMatchesPlan(request.body?.amount, planConfig);
     const orderId = createOrderId(user.id, plan);
     const readiness = getPaymentReadiness();
-    const checkoutAvailable = Boolean(readiness.checkoutServerReady && planConfig.isPaymentEnabled);
+    const isTestMode = readiness.requestedMode === "test";
+    const checkoutAvailable = Boolean(readiness.checkoutServerReady && (isTestMode || planConfig.isPaymentEnabled));
 
     response.json({
       ok: true,
@@ -314,7 +315,7 @@ router.post("/toss/prepare", async (request, response, next) => {
       failUrl: getFailUrl(orderId),
       readinessWarnings: readiness.warnings,
       message: checkoutAvailable
-        ? "Toss 결제 준비 정보가 생성되었습니다."
+        ? "Toss 테스트 결제 준비 정보가 생성되었습니다."
         : "현재는 결제 준비 단계입니다. Toss 키와 결제 활성화 후 실제 결제를 진행할 수 있습니다.",
     });
   } catch (error) {
