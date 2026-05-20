@@ -119,4 +119,5 @@ if (typeof window !== "undefined" && typeof window.fetch === "function" && !wind
 
 if (typeof window !== "undefined") {
   import("./PricingButtonScrollPatch.js");
+  import("./PaymentConsentCheckPatch.js");
 }
