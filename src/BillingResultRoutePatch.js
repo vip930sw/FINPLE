@@ -1,18 +1,21 @@
 /* =========================================================
    Step 141 - Billing Result Route Patch
    Step 141B - Render before React app fallback
-   - Toss Payments 실제 연동 전 결제 성공/실패/취소 화면을 제공합니다.
+   Step 152 - Confirm Toss payment from success page
+   - Toss Payments 결제 성공/실패/취소 화면을 제공합니다.
    - App.jsx를 크게 건드리지 않기 위해 main.jsx에서 조건부 렌더링합니다.
 ========================================================= */
+
+import { confirmTossPayment, getBillingSuccessParams, hasBillingConfirmParams } from "./components/paymentConfirmClient";
 
 const RESULT_COPY = {
   "/billing/success": {
     eyebrow: "Billing Success",
     title: "결제 요청이 접수되었습니다.",
     description:
-      "현재는 Toss Payments 테스트 연동 전 준비 화면입니다. 실제 결제 승인과 Personal 권한 반영은 서버 결제 API 연결 이후 자동 처리됩니다.",
+      "Toss Payments 테스트 결제 요청이 접수되었습니다. 서버 승인 확인 결과에 따라 상태가 갱신됩니다.",
     tone: "success",
-    statusLabel: "승인 확인 대기",
+    statusLabel: "승인 확인 중",
     badge: "TEST FLOW",
     bullets: [
       "결제 승인 API 연결 후 payments와 subscriptions에 기록됩니다.",
@@ -77,6 +80,72 @@ function navigateTo(path) {
   window.location.href = path;
 }
 
+function setText(node, value) {
+  if (!node) return;
+  node.textContent = String(value || "");
+}
+
+function updateConfirmStatus({ statusLabel, message, tone = "success", badge = "TEST FLOW" }) {
+  const card = document.querySelector(".billingResultCard");
+  const statusNode = document.querySelector("[data-billing-confirm-status]");
+  const badgeNode = document.querySelector("[data-billing-confirm-badge]");
+  const messageBox = document.querySelector("[data-billing-confirm-message]");
+
+  setText(statusNode, statusLabel);
+  setText(badgeNode, badge);
+
+  if (messageBox) {
+    messageBox.classList.remove("billingResultMessageBox--success", "billingResultMessageBox--danger");
+    messageBox.classList.add(tone === "danger" ? "billingResultMessageBox--danger" : "billingResultMessageBox--success");
+    messageBox.innerHTML = `<strong>${escapeHtml(statusLabel)}</strong><p>${escapeHtml(message)}</p>`;
+  }
+
+  if (card) {
+    card.classList.remove("billingResultCard--success", "billingResultCard--danger", "billingResultCard--neutral");
+    card.classList.add(`billingResultCard--${tone}`);
+  }
+}
+
+async function confirmSuccessPaymentIfNeeded() {
+  if (normalizePathname(window.location.pathname) !== "/billing/success") return;
+
+  const params = getBillingSuccessParams();
+
+  if (!hasBillingConfirmParams(params)) {
+    updateConfirmStatus({
+      statusLabel: "승인 정보 부족",
+      message: "paymentKey, orderId, amount 중 일부가 없어 서버 승인 확인을 진행하지 못했습니다.",
+      tone: "danger",
+      badge: "CHECK NEEDED",
+    });
+    return;
+  }
+
+  updateConfirmStatus({
+    statusLabel: "승인 확인 중",
+    message: "FINPLE 서버에서 Toss 결제 승인 여부를 확인하고 있습니다.",
+    tone: "success",
+    badge: "CONFIRMING",
+  });
+
+  try {
+    const result = await confirmTossPayment(params);
+    updateConfirmStatus({
+      statusLabel: "승인 확인 완료",
+      message: result.message || "Toss 결제 승인이 확인되었습니다. Personal 권한 전환은 다음 단계에서 연결합니다.",
+      tone: "success",
+      badge: result.paymentStatus || "CONFIRMED",
+    });
+  } catch (error) {
+    updateConfirmStatus({
+      statusLabel: "승인 확인 실패",
+      message: error?.message || "결제 승인 확인에 실패했습니다. 결제 문의로 접수해 주세요.",
+      tone: "danger",
+      badge: error?.code || "CONFIRM FAILED",
+    });
+  }
+}
+
 export function isBillingResultPath(pathname = window.location.pathname) {
   return Boolean(RESULT_COPY[normalizePathname(pathname)]);
 }
@@ -118,8 +187,8 @@ export function renderBillingResultPage() {
 
       <section class="accountCard billingResultCard billingResultCard--${copy.tone}">
         <div class="billingResultStatusRow">
-          <div><span>상태</span><strong>${copy.statusLabel}</strong></div>
-          <em>${copy.badge}</em>
+          <div><span>상태</span><strong data-billing-confirm-status>${copy.statusLabel}</strong></div>
+          <em data-billing-confirm-badge>${copy.badge}</em>
         </div>
 
         <div class="billingResultGrid">
@@ -129,12 +198,10 @@ export function renderBillingResultPage() {
           <div><span>처리 방식</span><strong>월 구독 / 정기결제</strong></div>
         </div>
 
-        ${code || message ? `
-          <div class="billingResultMessageBox">
-            <strong>${escapeHtml(code || "PG 메시지")}</strong>
-            <p>${escapeHtml(message || "결제 처리 중 메시지가 전달되었습니다.")}</p>
-          </div>
-        ` : ""}
+        <div class="billingResultMessageBox" data-billing-confirm-message>
+          <strong>${escapeHtml(code || copy.statusLabel)}</strong>
+          <p>${escapeHtml(message || "서버 승인 확인 결과가 여기에 표시됩니다.")}</p>
+        </div>
 
         <ul class="billingResultBulletList">
           ${copy.bullets.map((item) => `<li>${item}</li>`).join("")}
@@ -152,6 +219,8 @@ export function renderBillingResultPage() {
   root.querySelectorAll("[data-billing-nav]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-billing-nav") || "/"));
   });
+
+  window.setTimeout(confirmSuccessPaymentIfNeeded, 80);
 
   return true;
 }
