@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
-import { isDatabaseConfigured, query } from "../db/database.js";
+import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
 
 const router = express.Router();
 
@@ -264,6 +264,12 @@ function assertTossPaymentMatches(payment, { orderId, amount }) {
   }
 }
 
+function getPeriodEndIso() {
+  const periodEnd = new Date();
+  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  return periodEnd.toISOString();
+}
+
 async function recordPaymentConfirmation({ user, plan, amount, orderId, payment }) {
   if (!isDatabaseConfigured()) {
     return { stored: false, reason: "database_not_configured" };
@@ -287,7 +293,128 @@ async function recordPaymentConfirmation({ user, plan, amount, orderId, payment 
 
     return { stored: true };
   } catch (error) {
-    return { stored: false, reason: "payment_event_store_failed" };
+    return { stored: false, reason: "payment_event_store_failed", message: error.message };
+  }
+}
+
+async function applyPersonalEntitlementAfterPayment({ user, plan, amount, orderId, payment }) {
+  if (!isDatabaseConfigured()) {
+    return { applied: false, reason: "database_not_configured" };
+  }
+
+  try {
+    return await withTransaction(async (tx) => {
+      const periodEndIso = getPeriodEndIso();
+      const subscriptionId = randomUUID();
+      const paymentId = randomUUID();
+      const providerPaymentId = payment.paymentKey || orderId;
+      const receiptUrl = payment.receipt?.url || payment.checkout?.url || null;
+      const metadata = JSON.stringify({ orderId, paymentKey: payment.paymentKey, method: payment.method, status: payment.status });
+
+      await tx(
+        `INSERT INTO subscriptions (
+           id, user_id, plan, status, provider, provider_subscription_id,
+           billing_cycle, current_period_start, current_period_end,
+           cancel_at_period_end, metadata
+         )
+         VALUES ($1, $2, $3, 'active', 'toss-payments', $4,
+           'monthly', NOW(), $5, FALSE, $6::jsonb)
+         ON CONFLICT (provider, provider_subscription_id) WHERE provider_subscription_id IS NOT NULL
+         DO UPDATE SET
+           status = 'active',
+           plan = EXCLUDED.plan,
+           current_period_start = EXCLUDED.current_period_start,
+           current_period_end = EXCLUDED.current_period_end,
+           cancel_at_period_end = FALSE,
+           metadata = EXCLUDED.metadata
+         RETURNING id`,
+        [subscriptionId, user.id, plan, orderId, periodEndIso, metadata]
+      );
+
+      const subscriptionResult = await tx(
+        `SELECT id
+         FROM subscriptions
+         WHERE provider = 'toss-payments' AND provider_subscription_id = $1
+         LIMIT 1`,
+        [orderId]
+      );
+      const activeSubscriptionId = subscriptionResult.rows[0]?.id || subscriptionId;
+
+      const paymentResult = await tx(
+        `INSERT INTO payments (
+           id, user_id, provider, amount, currency, status,
+           subscription_id, plan, provider_payment_id, provider_order_id,
+           receipt_url, requested_at, metadata
+         )
+         VALUES ($1, $2, 'toss-payments', $3, 'KRW', 'confirmed',
+           $4, $5, $6, $7, $8, NOW(), $9::jsonb)
+         ON CONFLICT (provider, provider_payment_id) WHERE provider_payment_id IS NOT NULL
+         DO UPDATE SET
+           status = 'confirmed',
+           subscription_id = EXCLUDED.subscription_id,
+           provider_order_id = EXCLUDED.provider_order_id,
+           receipt_url = EXCLUDED.receipt_url,
+           metadata = EXCLUDED.metadata
+         RETURNING id`,
+        [paymentId, user.id, amount, activeSubscriptionId, plan, providerPaymentId, orderId, receiptUrl, JSON.stringify(payment)]
+      );
+      const activePaymentId = paymentResult.rows[0]?.id || paymentId;
+
+      await tx(
+        `INSERT INTO user_entitlements (
+           user_id, plan, portfolio_limit, assets_per_portfolio_limit,
+           server_storage_enabled, api_lookup_limit_per_day, pdf_report_enabled,
+           report_level, screener_level, support_level, source, valid_from, valid_until
+         )
+         SELECT $1, ent.plan, ent.portfolio_limit, ent.assets_per_portfolio_limit,
+           ent.server_storage_enabled, ent.api_lookup_limit_per_day, ent.pdf_report_enabled,
+           ent.report_level, ent.screener_level, ent.support_level, 'payment', NOW(), $3
+         FROM plan_entitlements ent
+         WHERE ent.plan = $2
+         ON CONFLICT (user_id) DO UPDATE SET
+           plan = EXCLUDED.plan,
+           portfolio_limit = EXCLUDED.portfolio_limit,
+           assets_per_portfolio_limit = EXCLUDED.assets_per_portfolio_limit,
+           server_storage_enabled = EXCLUDED.server_storage_enabled,
+           api_lookup_limit_per_day = EXCLUDED.api_lookup_limit_per_day,
+           pdf_report_enabled = EXCLUDED.pdf_report_enabled,
+           report_level = EXCLUDED.report_level,
+           screener_level = EXCLUDED.screener_level,
+           support_level = EXCLUDED.support_level,
+           source = EXCLUDED.source,
+           valid_from = EXCLUDED.valid_from,
+           valid_until = EXCLUDED.valid_until,
+           updated_at = NOW()`,
+        [user.id, plan, periodEndIso]
+      );
+
+      await tx("UPDATE users SET plan = $2, updated_at = NOW() WHERE id = $1", [user.id, plan]);
+
+      await tx(
+        `UPDATE payment_events
+         SET payment_id = $1,
+             subscription_id = $2,
+             user_id = $3,
+             processing_status = 'confirmed',
+             processed_at = NOW()
+         WHERE provider = 'toss-payments' AND event_id = $4`,
+        [activePaymentId, activeSubscriptionId, user.id, providerPaymentId]
+      );
+
+      return {
+        applied: true,
+        plan,
+        subscriptionId: activeSubscriptionId,
+        paymentId: activePaymentId,
+        validUntil: periodEndIso,
+      };
+    });
+  } catch (error) {
+    return {
+      applied: false,
+      reason: "entitlement_update_failed",
+      message: error.message,
+    };
   }
 }
 
@@ -453,6 +580,7 @@ router.post("/toss/confirm", async (request, response, next) => {
     const payment = await requestTossConfirm({ paymentKey, orderId, amount });
     assertTossPaymentMatches(payment, { orderId, amount });
     const storage = await recordPaymentConfirmation({ user, plan, amount, orderId, payment });
+    const entitlementUpdate = await applyPersonalEntitlementAfterPayment({ user, plan, amount, orderId, payment });
 
     response.json({
       ok: true,
@@ -469,8 +597,12 @@ router.post("/toss/confirm", async (request, response, next) => {
       receiptUrl: payment.receipt?.url || payment.checkout?.url || null,
       stored: storage.stored,
       storage,
+      entitlementUpdated: entitlementUpdate.applied,
+      entitlementUpdate,
       payment,
-      message: "Toss 결제 승인이 확인되었습니다. Personal 권한 전환은 다음 단계에서 연결합니다.",
+      message: entitlementUpdate.applied
+        ? "Toss 결제 승인이 확인되어 Personal 권한으로 전환되었습니다."
+        : "Toss 결제 승인은 확인되었지만 Personal 권한 전환은 확인이 필요합니다.",
     });
   } catch (error) {
     if (error?.tossPayload) {
