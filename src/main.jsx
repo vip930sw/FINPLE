@@ -10,6 +10,7 @@ import './HeaderStartButtonPatch.css'
 import './MyPageBetaSimplify.css'
 import './AuthFormPolish.css'
 import './PaymentPrepFlow.css'
+import './BillingResultPages.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
