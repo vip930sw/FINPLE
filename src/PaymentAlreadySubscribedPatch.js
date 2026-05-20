@@ -1,4 +1,4 @@
-/* Step 157C - safe already subscribed payment state patch */
+/* Step 157D - keep already subscribed payment state after consent changes */
 
 let rafId = 0;
 let lastAppliedSignature = "";
@@ -48,10 +48,11 @@ function applyAlreadySubscribedCopy() {
   const button = document.querySelector("[data-payment-consent-confirm]");
   if (!status && !button) return;
 
-  const message = payload.message || "이미 Personal을 이용 중입니다. 추가 결제는 필요하지 않습니다.";
-  const signature = `${message}|already-personal`;
+  const message = payload.message || "이미 Personal을 이용 중입니다. 현재 이용기간 종료일까지 추가 결제 없이 Personal 기능을 사용할 수 있습니다.";
+  const buttonText = "이미 Personal 이용 중";
+  const signature = `${message}|${buttonText}`;
 
-  if (lastAppliedSignature === signature && status?.textContent === message && button?.textContent === "이미 Personal 이용 중") {
+  if (lastAppliedSignature === signature && status?.textContent === message && button?.textContent === buttonText && button?.disabled) {
     return;
   }
 
@@ -63,7 +64,7 @@ function applyAlreadySubscribedCopy() {
 
   if (button) {
     setDisabledIfChanged(button, true);
-    setTextIfChanged(button, "이미 Personal 이용 중");
+    setTextIfChanged(button, buttonText);
   }
 
   lastAppliedSignature = signature;
@@ -74,11 +75,19 @@ function scheduleAlreadySubscribedCopy() {
   rafId = window.requestAnimationFrame(applyAlreadySubscribedCopy);
 }
 
+function scheduleAfterConsentChange(event) {
+  if (!event.target?.matches?.("[data-consent-key]")) return;
+  window.setTimeout(scheduleAlreadySubscribedCopy, 0);
+  window.setTimeout(scheduleAlreadySubscribedCopy, 80);
+}
+
 function bootAlreadySubscribedPatch() {
   if (eventBound) return;
   eventBound = true;
 
   window.addEventListener("finple:payment-prepare-updated", scheduleAlreadySubscribedCopy);
+  document.addEventListener("change", scheduleAfterConsentChange, true);
+  document.addEventListener("click", scheduleAfterConsentChange, true);
   window.setTimeout(scheduleAlreadySubscribedCopy, 150);
   window.setTimeout(scheduleAlreadySubscribedCopy, 600);
 }
