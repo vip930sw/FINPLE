@@ -90,12 +90,30 @@
   background: #fff7f7;
 }
 
+.billingResultMessageBox--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.billingResultMessageBox--danger {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
 .billingResultMessageBox strong {
   display: block;
   margin-bottom: 8px;
   color: #dc2626;
   font-size: 14px;
   font-weight: 900;
+}
+
+.billingResultMessageBox--success strong {
+  color: #15803d;
+}
+
+.billingResultMessageBox--danger strong {
+  color: #dc2626;
 }
 
 .billingResultMessageBox p {
