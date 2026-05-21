@@ -502,6 +502,171 @@ async function applyPersonalEntitlementAfterPayment({ user, plan, amount, orderI
   }
 }
 
+function getWebhookData(payload) {
+  if (!payload || typeof payload !== "object") return {};
+  if (payload.data && typeof payload.data === "object") return payload.data;
+  if (payload.payment && typeof payload.payment === "object") return payload.payment;
+  return payload;
+}
+
+function getWebhookEventId(payload, request) {
+  const data = getWebhookData(payload);
+  return (
+    String(payload.eventId || payload.event_id || payload.id || "").trim() ||
+    String(request.get("x-toss-event-id") || request.get("x-tosspayments-event-id") || "").trim() ||
+    String(data.eventId || data.event_id || data.id || "").trim() ||
+    randomUUID()
+  );
+}
+
+function getWebhookEventType(payload) {
+  return String(payload.eventType || payload.event_type || payload.type || "unknown").trim();
+}
+
+function getWebhookIdentifiers(payload) {
+  const data = getWebhookData(payload);
+  const paymentKey = String(
+    data.paymentKey || data.payment_key || payload.paymentKey || payload.payment_key || ""
+  ).trim();
+  const orderId = String(
+    data.orderId || data.order_id || payload.orderId || payload.order_id || ""
+  ).trim();
+  const status = String(
+    data.status || data.paymentStatus || data.payment_status || data.cancelStatus || data.cancel_status || payload.status || ""
+  ).trim();
+  const totalAmount = normalizeAmount(
+    data.totalAmount || data.total_amount || data.amount || payload.totalAmount || payload.amount
+  );
+
+  return { paymentKey, orderId, status, totalAmount: Number.isNaN(totalAmount) ? null : totalAmount };
+}
+
+function mapWebhookPaymentStatus(eventType, status) {
+  const normalizedEventType = String(eventType || "").toUpperCase();
+  const normalizedStatus = String(status || "").toUpperCase();
+
+  if (normalizedEventType === "CANCEL_STATUS_CHANGED") return "canceled";
+  if (["CANCELED", "CANCELLED", "PARTIAL_CANCELED", "PARTIAL_CANCELLED"].includes(normalizedStatus)) return "canceled";
+  if (["DONE", "APPROVED", "PAID"].includes(normalizedStatus)) return "confirmed";
+  if (["WAITING_FOR_DEPOSIT", "IN_PROGRESS", "READY"].includes(normalizedStatus)) return "pending";
+  if (["ABORTED", "EXPIRED", "FAILED"].includes(normalizedStatus)) return "failed";
+
+  return null;
+}
+
+async function findPaymentForWebhook({ paymentKey, orderId }) {
+  if (!isDatabaseConfigured()) return null;
+  if (!paymentKey && !orderId) return null;
+
+  try {
+    const result = await query(
+      `SELECT id, user_id, subscription_id, plan, amount, status, provider_payment_id, provider_order_id
+       FROM payments
+       WHERE provider = 'toss-payments'
+         AND (
+           ($1 <> '' AND provider_payment_id = $1)
+           OR ($2 <> '' AND provider_order_id = $2)
+         )
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [paymentKey, orderId]
+    );
+
+    return result.rows[0] || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function recordAndProcessWebhook({ payload, eventId, eventType }) {
+  if (!isDatabaseConfigured()) {
+    return {
+      stored: false,
+      matched: false,
+      processed: false,
+      processingStatus: "not_stored",
+      reason: "database_not_configured",
+    };
+  }
+
+  const identifiers = getWebhookIdentifiers(payload);
+  const matchedPayment = await findPaymentForWebhook(identifiers);
+  const nextPaymentStatus = mapWebhookPaymentStatus(eventType, identifiers.status);
+  const processingStatus = matchedPayment ? "processed" : "received";
+  const processedAtSql = matchedPayment ? "NOW()" : "NULL";
+
+  try {
+    await withTransaction(async (tx) => {
+      await tx(
+        `INSERT INTO payment_events (
+           id, provider, event_id, event_type, user_id, payment_id, subscription_id,
+           payload, processing_status, processed_at
+         )
+         VALUES ($1, 'toss-payments', $2, $3, $4, $5, $6, $7::jsonb, $8, ${processedAtSql})
+         ON CONFLICT (provider, event_id) DO UPDATE SET
+           event_type = EXCLUDED.event_type,
+           user_id = COALESCE(EXCLUDED.user_id, payment_events.user_id),
+           payment_id = COALESCE(EXCLUDED.payment_id, payment_events.payment_id),
+           subscription_id = COALESCE(EXCLUDED.subscription_id, payment_events.subscription_id),
+           payload = EXCLUDED.payload,
+           processing_status = EXCLUDED.processing_status,
+           processed_at = COALESCE(EXCLUDED.processed_at, payment_events.processed_at)`,
+        [
+          randomUUID(),
+          eventId,
+          eventType,
+          matchedPayment?.user_id || null,
+          matchedPayment?.id || null,
+          matchedPayment?.subscription_id || null,
+          JSON.stringify({ ...payload, finpleWebhookMatch: { identifiers, matched: Boolean(matchedPayment) } }),
+          processingStatus,
+        ]
+      );
+
+      if (matchedPayment && nextPaymentStatus) {
+        await tx(
+          `UPDATE payments
+           SET status = $2,
+               metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
+           WHERE id = $1`,
+          [
+            matchedPayment.id,
+            nextPaymentStatus,
+            JSON.stringify({
+              lastWebhookEventType: eventType,
+              lastWebhookStatus: identifiers.status || null,
+              lastWebhookEventId: eventId,
+              lastWebhookReceivedAt: new Date().toISOString(),
+            }),
+          ]
+        );
+      }
+    });
+
+    return {
+      stored: true,
+      matched: Boolean(matchedPayment),
+      processed: Boolean(matchedPayment),
+      processingStatus,
+      paymentId: matchedPayment?.id || null,
+      subscriptionId: matchedPayment?.subscription_id || null,
+      userId: matchedPayment?.user_id || null,
+      paymentStatusUpdatedTo: matchedPayment && nextPaymentStatus ? nextPaymentStatus : null,
+      identifiers,
+    };
+  } catch (error) {
+    return {
+      stored: false,
+      matched: Boolean(matchedPayment),
+      processed: false,
+      processingStatus: "store_failed",
+      reason: "webhook_store_failed",
+      message: error.message,
+      identifiers,
+    };
+  }
+}
+
 router.get("/health", (request, response) => {
   response.json({
     ok: true,
@@ -544,7 +709,7 @@ router.get("/subscription/me", async (request, response, next) => {
                   cancel_at_period_end, ended_at, provider
            FROM subscriptions
            WHERE user_id = $1
-           ORDER BY created_at DESC
+           ORDER BY current_period_start DESC NULLS LAST, current_period_end DESC NULLS LAST
            LIMIT 1`,
           [user.id]
         );
@@ -715,39 +880,27 @@ router.post("/toss/confirm", async (request, response, next) => {
 router.post("/toss/webhook", async (request, response, next) => {
   try {
     const payload = request.body || {};
-    const eventId =
-      String(payload.eventId || payload.event_id || payload.id || request.get("x-toss-event-id") || "").trim() ||
-      randomUUID();
-    const eventType = String(payload.eventType || payload.event_type || payload.type || "unknown").trim();
-
-    let stored = false;
-    let storageMessage = "Webhook endpoint가 이벤트를 수신했습니다. 서명 검증과 DB 반영은 다음 단계에서 연결합니다.";
-
-    if (isDatabaseConfigured()) {
-      try {
-        await query(
-          `INSERT INTO payment_events (id, provider, event_id, event_type, payload, processing_status)
-           VALUES ($1, 'toss-payments', $2, $3, $4::jsonb, 'received')
-           ON CONFLICT (provider, event_id) DO NOTHING`,
-          [randomUUID(), eventId, eventType, JSON.stringify(payload)]
-        );
-        stored = true;
-        storageMessage = "Webhook 이벤트를 payment_events에 수신 기록으로 저장했습니다.";
-      } catch (error) {
-        stored = false;
-        storageMessage = "Webhook 이벤트를 수신했지만 DB 저장은 보류되었습니다.";
-      }
-    }
+    const eventId = getWebhookEventId(payload, request);
+    const eventType = getWebhookEventType(payload);
+    const processing = await recordAndProcessWebhook({ payload, eventId, eventType });
 
     response.json({
       ok: true,
       provider: "toss-payments",
-      mode: "webhook-stub",
+      mode: "webhook-processor",
       eventId,
       eventType,
-      stored,
+      stored: processing.stored,
+      matched: processing.matched,
+      processed: processing.processed,
+      processingStatus: processing.processingStatus,
+      paymentId: processing.paymentId || null,
+      subscriptionId: processing.subscriptionId || null,
+      paymentStatusUpdatedTo: processing.paymentStatusUpdatedTo || null,
       webhookConfigured: Boolean(process.env.TOSS_WEBHOOK_SECRET),
-      message: storageMessage,
+      message: processing.processed
+        ? "Webhook 이벤트를 기존 결제 기록과 매칭해 처리했습니다."
+        : "Webhook 이벤트를 수신 기록으로 저장했습니다. 기존 결제와 매칭되지 않으면 기록만 유지합니다.",
     });
   } catch (error) {
     next(error);
