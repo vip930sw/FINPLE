@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 165 - Billing Result / Payment Method Pages
+   Step 167C - Billing Result / Payment Method Pages
 ========================================================= */
 
 .billingResultPage {
@@ -136,6 +136,11 @@
   font-size: 14px;
   font-weight: 700;
   line-height: 1.7;
+}
+
+.paymentMethodStatusText--error {
+  color: #dc2626 !important;
+  font-weight: 900 !important;
 }
 
 .billingResultBulletList {
