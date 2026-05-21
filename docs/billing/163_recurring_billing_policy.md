@@ -34,8 +34,7 @@ Recommended notice schedule:
 ```text
 D-3: upcoming charge notice
 D-day: payment success or failure notice
-D+1: retry notice after first failure
-D+3: final failure / downgrade notice if retry still fails
+D+1: retry result notice after first failure
 ```
 
 Recommended D-3 notice content:
@@ -94,17 +93,15 @@ Recommended policy:
 D-day automatic charge failed
 → subscription.status = past_due
 → notify customer
-→ keep account/data accessible
-→ optionally limit new paid actions during grace period
+→ keep account/data accessible during short grace period
+→ allow payment method update
+→ schedule one retry on D+1
 
 D+1 retry failed
-→ notify customer again
-→ allow payment method update
-
-D+3 final retry failed
 → subscription.status = payment_failed
 → user_entitlements = free
 → users.plan = free
+→ notify customer of failed renewal and Free conversion
 → keep portfolio data, but apply Free limits to new usage
 ```
 
@@ -113,12 +110,13 @@ Recommended retry count:
 ```text
 Attempt 1: billing date
 Attempt 2: billing date + 1 day
-Attempt 3: billing date + 3 days
 ```
 
 Recommended abuse control:
 
 ```text
+Grace period ends at D+1 retry failure.
+No D+3 final grace stage.
 No indefinite Personal grace period.
 Do not extend current_period_end unless payment succeeds.
 Repeated failed billing should not create new active subscriptions.
