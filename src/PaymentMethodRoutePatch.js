@@ -1,12 +1,11 @@
 /* =========================================================
-   Step 167C - Recurring payment method setup route patch
+   Step 168 - Recurring payment method setup route patch
    - 자동결제 결제수단 등록 준비와 Toss 등록창 열기를 하나의 버튼으로 통합합니다.
+   - success 페이지에서 authKey를 서버로 전달해 billingKey 발급/저장을 시도합니다.
    - orderId/customerKey/successUrl 등 사용자가 알 필요 없는 기술 항목은 화면에서 숨깁니다.
-   - 취소/오류 문구는 연두색 안내 박스 안에서 붉은 글씨로만 표시합니다.
-   - 실제 billingKey 발급/저장은 Step 168 이후 연결합니다.
 ========================================================= */
 
-import { prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
+import { issueBillingKey, prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
 
 const PAYMENT_METHOD_PATHS = new Set([
   "/payment-method/setup",
@@ -16,6 +15,10 @@ const PAYMENT_METHOD_PATHS = new Set([
 
 let billingAuthError = "";
 let isStartingBillingAuth = false;
+let isIssuingBillingKey = false;
+let billingIssueResult = null;
+let billingIssueError = "";
+let billingIssueStarted = false;
 
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -49,10 +52,10 @@ function getPageCopy(path) {
     return {
       eyebrow: "Payment Method",
       title: "결제수단 등록이 완료되었습니다.",
-      description: "자동결제 결제수단 등록 성공 후 표시될 화면입니다. 다음 단계에서 등록 결과 검증과 저장 로직을 연결합니다.",
+      description: "자동결제 결제수단 인증이 완료되었습니다. 서버 저장 결과를 확인합니다.",
       tone: "success",
       badge: "SETUP SUCCESS",
-      statusLabel: "등록 완료",
+      statusLabel: "등록 확인 중",
     };
   }
 
@@ -72,7 +75,7 @@ function getPageCopy(path) {
     title: "자동결제 결제수단 등록",
     description: "FINPLE Personal 월 구독 자동결제를 위한 결제수단 등록 화면입니다. 카드번호는 FINPLE 서버에 직접 저장하지 않습니다.",
     tone: "neutral",
-    badge: "STEP 167",
+    badge: "자동결제 등록",
     statusLabel: "등록 준비 중",
   };
 }
@@ -160,22 +163,108 @@ function getSetupCardHtml() {
   `;
 }
 
+function getSuccessMessage() {
+  if (isIssuingBillingKey) return { title: "서버 저장 확인 중", message: "결제수단 인증 결과를 확인하고 있습니다." };
+  if (billingIssueResult?.stored) return { title: "결제수단 등록 완료", message: "자동결제 결제수단이 안전하게 등록되었습니다." };
+  if (billingIssueError) return { title: "서버 저장 확인 필요", message: billingIssueError };
+  return { title: "결제수단 인증 완료", message: "결제수단 인증 결과를 서버에 저장할 준비를 하고 있습니다." };
+}
+
+function updateSuccessUi() {
+  const root = document.getElementById("root");
+  if (!root) return;
+
+  const statusTitle = root.querySelector("[data-payment-method-success-title]");
+  const statusMessage = root.querySelector("[data-payment-method-success-message]");
+  const statusBox = root.querySelector("[data-payment-method-success-box]");
+  const statusLabel = root.querySelector("[data-payment-method-result-status]");
+  const methodLabel = root.querySelector("[data-payment-method-display-label]");
+  const nextStep = root.querySelector("[data-payment-method-next-step]");
+
+  const copy = getSuccessMessage();
+  setText(statusTitle, copy.title);
+  setText(statusMessage, copy.message);
+  setText(statusLabel, billingIssueResult?.stored ? "등록 완료" : billingIssueError ? "확인 필요" : "확인 중");
+  setText(methodLabel, billingIssueResult?.method?.displayLabel || billingIssueResult?.storage?.displayLabel || "등록 확인 중");
+  setText(nextStep, billingIssueResult?.stored ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "서버 저장");
+
+  statusBox?.classList.toggle("billingResultMessageBox--success", !billingIssueError);
+  statusBox?.classList.toggle("billingResultMessageBox--danger", Boolean(billingIssueError));
+}
+
+async function handleIssueBillingKeyFromSuccess() {
+  if (billingIssueStarted || isIssuingBillingKey) return;
+
+  const authKey = getQueryValue("authKey");
+  const customerKey = getQueryValue("customerKey");
+  const orderId = getQueryValue("orderId");
+
+  if (!authKey) {
+    billingIssueError = "Toss 결제수단 인증값이 없어 서버 저장을 진행할 수 없습니다.";
+    updateSuccessUi();
+    return;
+  }
+
+  billingIssueStarted = true;
+  isIssuingBillingKey = true;
+  billingIssueError = "";
+  billingIssueResult = null;
+  updateSuccessUi();
+
+  try {
+    billingIssueResult = await issueBillingKey({ authKey, orderId, customerKey });
+  } catch (error) {
+    billingIssueError = error?.message || "자동결제 결제수단 서버 저장에 실패했습니다.";
+  } finally {
+    isIssuingBillingKey = false;
+    updateSuccessUi();
+  }
+}
+
 function getResultCardHtml(path) {
   const message = getQueryValue("message");
   const code = getQueryValue("code");
   const isSuccess = path === "/payment-method/success";
 
+  if (isSuccess) {
+    return `
+      <div class="billingResultGrid">
+        <div><span>상품</span><strong>FINPLE Personal</strong></div>
+        <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
+        <div><span>등록 상태</span><strong data-payment-method-result-status>확인 중</strong></div>
+        <div><span>결제수단</span><strong data-payment-method-display-label>등록 확인 중</strong></div>
+      </div>
+
+      <div class="billingResultMessageBox billingResultMessageBox--success" data-payment-method-success-box>
+        <strong data-payment-method-success-title>결제수단 인증 완료</strong>
+        <p data-payment-method-success-message>결제수단 인증 결과를 서버에 저장할 준비를 하고 있습니다.</p>
+      </div>
+
+      <ul class="billingResultBulletList">
+        <li>FINPLE은 카드번호 원문을 서버에 직접 저장하지 않습니다.</li>
+        <li>등록된 결제수단은 MY PAGE에서 확인·변경할 수 있도록 연결할 예정입니다.</li>
+        <li>정기결제 성공 시 다음 이용기간이 자동 연장됩니다.</li>
+      </ul>
+
+      <div class="billingResultActions">
+        <button type="button" class="primaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
+        <button type="button" class="secondaryButton" data-payment-method-nav="/payment-method/setup">결제수단 다시 등록</button>
+        <button type="button" class="secondaryButton" data-payment-method-nav="/support">결제 문의</button>
+      </div>
+    `;
+  }
+
   return `
     <div class="billingResultGrid">
       <div><span>상품</span><strong>FINPLE Personal</strong></div>
       <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
-      <div><span>등록 상태</span><strong>${isSuccess ? "등록 인증 완료" : "등록 실패"}</strong></div>
-      <div><span>다음 단계</span><strong>${isSuccess ? "서버 저장 확인" : "다시 등록"}</strong></div>
+      <div><span>등록 상태</span><strong>등록 실패</strong></div>
+      <div><span>다음 단계</span><strong>다시 등록</strong></div>
     </div>
 
-    <div class="billingResultMessageBox ${isSuccess ? "billingResultMessageBox--success" : "billingResultMessageBox--danger"}">
-      <strong>${isSuccess ? "결제수단 인증 완료" : escapeHtml(code || "등록 실패")}</strong>
-      <p>${escapeHtml(message || (isSuccess ? "결제수단 인증이 완료되었습니다. 다음 단계에서 서버 저장을 연결합니다." : "결제수단 등록을 완료하지 못했습니다. 다시 시도하거나 문의해 주세요."))}</p>
+    <div class="billingResultMessageBox billingResultMessageBox--danger">
+      <strong>${escapeHtml(code || "등록 실패")}</strong>
+      <p>${escapeHtml(message || "결제수단 등록을 완료하지 못했습니다. 다시 시도하거나 문의해 주세요.")}</p>
     </div>
 
     <ul class="billingResultBulletList">
@@ -185,8 +274,8 @@ function getResultCardHtml(path) {
     </ul>
 
     <div class="billingResultActions">
-      <button type="button" class="primaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
-      <button type="button" class="secondaryButton" data-payment-method-nav="/payment-method/setup">결제수단 등록으로 이동</button>
+      <button type="button" class="primaryButton" data-payment-method-nav="/payment-method/setup">결제수단 다시 등록</button>
+      <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/support">결제 문의</button>
     </div>
   `;
@@ -205,6 +294,7 @@ export function renderPaymentMethodPage() {
 
   const copy = getPageCopy(path);
   const isSetup = path === "/payment-method/setup";
+  const isSuccess = path === "/payment-method/success";
 
   root.innerHTML = `
     <main class="accountPage billingResultPage paymentMethodPage">
@@ -248,6 +338,11 @@ export function renderPaymentMethodPage() {
     });
     root.querySelector("[data-payment-method-start]")?.addEventListener("click", handleStartBillingAuth);
     updateSetupUi();
+  }
+
+  if (isSuccess) {
+    updateSuccessUi();
+    handleIssueBillingKeyFromSuccess();
   }
 
   return true;
