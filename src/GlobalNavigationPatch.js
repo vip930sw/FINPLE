@@ -1,9 +1,7 @@
 /* =========================================================
-   Step 170 - Global navigation / brand normalizer
-   - 모든 주요 페이지의 우측 상단 메뉴 구성을 통일합니다.
-   - 시작하기는 CTA 버튼으로 강조합니다.
-   - 현재 위치는 밑줄/강조로 표시합니다.
-   - 좌측 FINPLE 로고 문구를 FINPLE PORTFOLIO LAB으로 통일하고 클릭 시 홈으로 이동합니다.
+   Hotfix - Global navigation / brand normalizer
+   - MutationObserver가 헤더를 계속 다시 그리며 렉을 유발하지 않도록 idempotent 방식으로 수정합니다.
+   - 메뉴 상태가 실제로 바뀐 경우에만 DOM을 갱신합니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
@@ -29,6 +27,10 @@ function getActiveKey() {
   if (path === "/login" || path === "/signup") return "login";
   if (path === "/admin") return "admin";
   return "home";
+}
+
+function getHeaderStateKey() {
+  return `${getActiveKey()}|${isLoggedIn() ? "in" : "out"}`;
 }
 
 function navigateTo(path) {
@@ -77,8 +79,8 @@ function normalizeBrand(header) {
 
   const strong = brand.querySelector(".brandText strong");
   const span = brand.querySelector(".brandText span");
-  if (strong) strong.textContent = "FINPLE";
-  if (span) span.textContent = "PORTFOLIO LAB";
+  if (strong && strong.textContent !== "FINPLE") strong.textContent = "FINPLE";
+  if (span && span.textContent !== "PORTFOLIO LAB") span.textContent = "PORTFOLIO LAB";
 
   if (brand.getAttribute("data-finple-brand-normalized") === "true") return;
   brand.setAttribute("data-finple-brand-normalized", "true");
@@ -88,25 +90,21 @@ function normalizeBrand(header) {
   });
 }
 
-function removeOldRightMenus(header) {
+function removeOldRightMenusOnce(header) {
+  if (header.getAttribute("data-finple-old-menus-removed") === "true") return;
+
   Array.from(header.children).forEach((child) => {
     if (child.matches(".finpleGlobalNav")) return;
     if (child.matches(".accountNav, .headerActions")) child.remove();
   });
+
+  header.setAttribute("data-finple-old-menus-removed", "true");
 }
 
-function insertGlobalNav(header) {
-  let nav = header.querySelector(".finpleGlobalNav");
-  const html = getNavHtml();
+function wireGlobalNav(nav) {
+  if (!nav || nav.getAttribute("data-finple-global-nav-wired") === "true") return;
 
-  if (!nav) {
-    header.insertAdjacentHTML("beforeend", html);
-    nav = header.querySelector(".finpleGlobalNav");
-  } else {
-    nav.outerHTML = html;
-    nav = header.querySelector(".finpleGlobalNav");
-  }
-
+  nav.setAttribute("data-finple-global-nav-wired", "true");
   nav.querySelectorAll("[data-finple-nav-path]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-finple-nav-path") || "/"));
   });
@@ -118,20 +116,54 @@ function insertGlobalNav(header) {
   });
 }
 
+function ensureGlobalNav(header) {
+  const stateKey = getHeaderStateKey();
+  let nav = header.querySelector(".finpleGlobalNav");
+
+  if (nav && header.getAttribute("data-finple-global-nav-state") === stateKey) {
+    wireGlobalNav(nav);
+    return;
+  }
+
+  const html = getNavHtml();
+
+  if (!nav) {
+    header.insertAdjacentHTML("beforeend", html);
+  } else {
+    const template = document.createElement("template");
+    template.innerHTML = html.trim();
+    nav.replaceWith(template.content.firstElementChild);
+  }
+
+  header.setAttribute("data-finple-global-nav-state", stateKey);
+  nav = header.querySelector(".finpleGlobalNav");
+  wireGlobalNav(nav);
+}
+
 function patchHeader(header) {
-  if (!header || header.getAttribute("data-finple-global-header-lock") === "true") return;
+  if (!header) return;
   header.classList.add("finpleUnifiedHeader");
   normalizeBrand(header);
-  removeOldRightMenus(header);
-  insertGlobalNav(header);
+  removeOldRightMenusOnce(header);
+  ensureGlobalNav(header);
 }
 
 function patchAllHeaders() {
   document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
 }
 
+let patchScheduled = false;
+function schedulePatch() {
+  if (patchScheduled) return;
+  patchScheduled = true;
+  window.requestAnimationFrame(() => {
+    patchScheduled = false;
+    patchAllHeaders();
+  });
+}
+
 function bootGlobalNavigationPatch() {
-  const observer = new MutationObserver(() => patchAllHeaders());
+  const observer = new MutationObserver(() => schedulePatch());
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener("popstate", () => window.setTimeout(patchAllHeaders, 60));
   window.addEventListener("finple-auth-updated", () => window.setTimeout(patchAllHeaders, 60));
