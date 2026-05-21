@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 145 - MY PAGE subscription status panel
+   Step 162B - MY PAGE subscription status panel
 ========================================================= */
 
 .subscriptionStatusPanel {
@@ -49,10 +49,38 @@
   margin-top: 18px;
 }
 
+.subscriptionStatusPanel--scheduled .subscriptionStatusMessage {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
 .subscriptionStatusPanel--error .subscriptionStatusMessage {
   border-color: #fecaca;
   background: #fff7f7;
   color: #dc2626;
+}
+
+.subscriptionStatusActions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.subscriptionEndButton {
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+.subscriptionEndButton:hover:not(:disabled) {
+  background: #fff1f2 !important;
+}
+
+.subscriptionEndButton:disabled,
+.subscriptionEndButton--scheduled {
+  border-color: #cbd5e1 !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  cursor: not-allowed;
 }
 
 @media (max-width: 920px) {
