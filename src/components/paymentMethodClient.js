@@ -83,6 +83,33 @@ export async function issueBillingKey({ authKey, orderId, customerKey }) {
   return payload;
 }
 
+export async function fetchBillingMethodStatus() {
+  const session = getStoredFinpleAuthSession();
+  const user = getStoredFinpleAuthUser();
+
+  if (!session?.token && !user?.id) {
+    const error = new Error("결제수단 확인을 위해 로그인이 필요합니다.");
+    error.code = "AUTH_REQUIRED";
+    throw error;
+  }
+
+  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/method`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const payload = await readResponseJson(response);
+
+  if (!response.ok || payload?.ok === false) {
+    const error = new Error(payload?.message || "결제수단 상태를 확인하지 못했습니다.");
+    error.code = payload?.code || "BILLING_METHOD_STATUS_FAILED";
+    error.payload = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
 function loadTossPaymentsSdk() {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("브라우저에서만 결제수단 등록을 진행할 수 있습니다."));
