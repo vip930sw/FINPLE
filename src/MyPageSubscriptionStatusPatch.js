@@ -1,7 +1,8 @@
 /* =========================================================
-   Step 154 - MY PAGE subscription status patch
+   Step 162B - MY PAGE subscription status and period-end request patch
    - /api/payments/subscription/me와 MY PAGE 구독 상태 패널을 연결합니다.
    - 서버 구독/권한 상태를 브라우저 사용자·플랜 상태에 동기화합니다.
+   - Personal 구독의 이용기간 종료 예약 버튼을 제공합니다.
    - 기존 React 구조 변경을 최소화하기 위해 DOM 패치 레이어로 적용합니다.
 ========================================================= */
 
@@ -16,6 +17,7 @@ import { normalizeFinplePlan, setStoredFinplePlan } from "./components/portfolio
 let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
 let lastSubscriptionError = "";
+let isRequestingPeriodEnd = false;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -58,12 +60,23 @@ function readDateLabel(value) {
   }
 }
 
+function isPeriodEndScheduled(status, subscription) {
+  return status === "cancel_at_period_end" || Boolean(subscription?.cancel_at_period_end || subscription?.cancelAtPeriodEnd);
+}
+
 function getSubscriptionMessage(payload) {
   if (lastSubscriptionError) return lastSubscriptionError;
   if (!payload) return "구독 상태를 불러오고 있습니다.";
   if (!payload.authenticated) return payload.message || "로그인 후 구독 상태를 확인할 수 있습니다.";
 
-  const plan = String(payload.plan || payload.entitlement?.plan || payload.subscription?.plan || "free").toLowerCase();
+  const subscription = payload.subscription || {};
+  const status = payload.status || subscription.status || "beta_free";
+  const plan = String(payload.plan || payload.entitlement?.plan || subscription.plan || "free").toLowerCase();
+
+  if (plan === "personal" && isPeriodEndScheduled(status, subscription)) {
+    return "구독 해지가 예약되었습니다. 현재 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.";
+  }
+
   if (plan === "personal") {
     return "서버 기준 Personal 권한이 확인되었습니다. 브라우저 표시 상태도 서버 기준으로 동기화됩니다.";
   }
@@ -103,7 +116,7 @@ function getSubscriptionPanelHtml() {
         <div>
           <span>다음 결제일</span>
           <strong data-subscription-next-billing>해당 없음</strong>
-          <em>정기결제 연결 후 표시</em>
+          <em data-subscription-next-billing-note>정기결제 연결 후 표시</em>
         </div>
         <div>
           <span>이용 종료 예정일</span>
@@ -114,9 +127,10 @@ function getSubscriptionPanelHtml() {
 
       <p class="serverStorageMessage compact subscriptionStatusMessage" data-subscription-message>구독 상태를 불러오고 있습니다.</p>
 
-      <div class="serverStorageActions compactActions">
+      <div class="serverStorageActions compactActions subscriptionStatusActions">
         <button type="button" class="primaryButton" data-subscription-pricing>요금제 / 결제 준비</button>
         <button type="button" class="secondaryButton" data-subscription-refresh>구독 상태 새로고침</button>
+        <button type="button" class="secondaryButton subscriptionEndButton" data-subscription-end-at-period hidden>구독 해지 예약</button>
         <button type="button" class="secondaryButton" data-subscription-support>결제 문의</button>
       </div>
     </section>
@@ -154,6 +168,7 @@ function wireSubscriptionPanelActions() {
     hasRequestedSubscriptionStatus = false;
     requestSubscriptionStatusOnce();
   });
+  panel.querySelector("[data-subscription-end-at-period]")?.addEventListener("click", requestPeriodEndSchedule);
 }
 
 function getPlanFromPayload(payload) {
@@ -183,6 +198,34 @@ function syncSubscriptionPayloadToBrowser(payload) {
   window.dispatchEvent(new Event("finple-local-storage-updated"));
 }
 
+function getNextBillingLabel({ plan, status, subscription }) {
+  if (plan !== "personal") return "해당 없음";
+  if (isPeriodEndScheduled(status, subscription)) return "다음 결제 없음";
+  return readDateLabel(subscription?.next_billing_at || subscription?.nextBillingAt);
+}
+
+function updatePeriodEndButton({ panel, plan, status, subscription }) {
+  const button = panel.querySelector("[data-subscription-end-at-period]");
+  if (!button) return;
+
+  const shouldShow = plan === "personal" && ["active", "cancel_at_period_end"].includes(status);
+  button.hidden = !shouldShow;
+
+  if (!shouldShow) return;
+
+  const scheduled = isPeriodEndScheduled(status, subscription);
+  button.disabled = scheduled || isRequestingPeriodEnd;
+  button.classList.toggle("subscriptionEndButton--scheduled", scheduled);
+
+  if (isRequestingPeriodEnd) {
+    setText(button, "처리 중");
+  } else if (scheduled) {
+    setText(button, "해지 예약됨");
+  } else {
+    setText(button, "구독 해지 예약");
+  }
+}
+
 function updateSubscriptionPanel() {
   const panel = document.querySelector("[data-subscription-status-panel]");
   if (!panel) return;
@@ -192,31 +235,40 @@ function updateSubscriptionPanel() {
   const entitlement = payload?.entitlement || {};
   const plan = getPlanFromPayload(payload);
   const status = payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
+  const scheduled = isPeriodEndScheduled(status, subscription);
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
   setText(panel.querySelector("[data-subscription-plan]"), formatPlanLabel(plan));
   setText(panel.querySelector("[data-subscription-status]"), formatStatusLabel(status));
-  setText(panel.querySelector("[data-subscription-next-billing]"), readDateLabel(subscription?.next_billing_at || subscription?.nextBillingAt));
+  setText(panel.querySelector("[data-subscription-next-billing]"), getNextBillingLabel({ plan, status, subscription }));
+  setText(panel.querySelector("[data-subscription-next-billing-note]"), scheduled ? "해지 예약됨" : "정기결제 연결 후 표시");
   setText(
     panel.querySelector("[data-subscription-period-end]"),
     readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil)
   );
   setText(panel.querySelector("[data-subscription-message]"), getSubscriptionMessage(payload));
 
+  updatePeriodEndButton({ panel, plan, status, subscription });
   panel.classList.toggle("subscriptionStatusPanel--error", Boolean(lastSubscriptionError));
+  panel.classList.toggle("subscriptionStatusPanel--scheduled", scheduled);
 }
 
-async function fetchSubscriptionStatus() {
+function getAuthHeaders() {
   const session = getStoredFinpleAuthSession();
   const user = getStoredFinpleAuthUser();
 
+  return {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    ...(user?.id ? { "x-finple-user-id": user.id } : {}),
+  };
+}
+
+async function fetchSubscriptionStatus() {
   const response = await fetch(`${getFinpleApiBaseUrl()}/payments/subscription/me`, {
     method: "GET",
-    headers: {
-      Accept: "application/json",
-      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-      ...(user?.id ? { "x-finple-user-id": user.id } : {}),
-    },
+    headers: getAuthHeaders(),
   });
 
   let payload = null;
@@ -231,6 +283,63 @@ async function fetchSubscriptionStatus() {
   }
 
   return payload;
+}
+
+async function postPeriodEndSchedule() {
+  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/subscription/end-at-period`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({}),
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+
+  if (!response.ok || payload?.ok === false) {
+    throw new Error(payload?.message || "구독 해지 예약을 처리하지 못했습니다.");
+  }
+
+  return payload;
+}
+
+async function requestPeriodEndSchedule() {
+  if (isRequestingPeriodEnd) return;
+
+  const subscription = lastSubscriptionPayload?.subscription || {};
+  const endLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || lastSubscriptionPayload?.entitlement?.valid_until);
+  const confirmed = window.confirm(
+    `구독 해지를 예약하시겠습니까?\n\n${endLabel}까지 Personal 기능을 계속 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.`
+  );
+
+  if (!confirmed) return;
+
+  isRequestingPeriodEnd = true;
+  lastSubscriptionError = "";
+  updateSubscriptionPanel();
+
+  try {
+    const result = await postPeriodEndSchedule();
+    lastSubscriptionPayload = {
+      ...(lastSubscriptionPayload || {}),
+      authenticated: true,
+      plan: result.plan || lastSubscriptionPayload?.plan || "personal",
+      status: result.status || "cancel_at_period_end",
+      subscription: result.subscription || lastSubscriptionPayload?.subscription,
+      message: result.message,
+    };
+    syncSubscriptionPayloadToBrowser(lastSubscriptionPayload);
+    hasRequestedSubscriptionStatus = false;
+    await requestSubscriptionStatusOnce();
+  } catch (error) {
+    lastSubscriptionError = error?.message || "구독 해지 예약을 처리하지 못했습니다.";
+  } finally {
+    isRequestingPeriodEnd = false;
+    updateSubscriptionPanel();
+  }
 }
 
 async function requestSubscriptionStatusOnce() {
