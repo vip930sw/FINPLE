@@ -1,7 +1,8 @@
 /* =========================================================
-   Step 167B - Recurring payment method setup route patch
+   Step 167C - Recurring payment method setup route patch
    - 자동결제 결제수단 등록 준비와 Toss 등록창 열기를 하나의 버튼으로 통합합니다.
    - orderId/customerKey/successUrl 등 사용자가 알 필요 없는 기술 항목은 화면에서 숨깁니다.
+   - 취소/오류 문구는 연두색 안내 박스 안에서 붉은 글씨로만 표시합니다.
    - 실제 billingKey 발급/저장은 Step 168 이후 연결합니다.
 ========================================================= */
 
@@ -87,13 +88,15 @@ function updateSetupUi() {
   if (!root) return;
 
   const status = root.querySelector("[data-payment-method-status]");
+  const statusBox = root.querySelector("[data-payment-method-status-box]");
   const startButton = root.querySelector("[data-payment-method-start]");
   const checkedCount = root.querySelectorAll("[data-payment-method-check]:checked").length;
   const allChecked = checkedCount >= 3;
 
   setText(status, getSetupStatusMessage());
-  status?.classList.toggle("billingResultMessageBox--danger", Boolean(billingAuthError));
-  status?.classList.toggle("billingResultMessageBox--success", !billingAuthError);
+  status?.classList.toggle("paymentMethodStatusText--error", Boolean(billingAuthError));
+  statusBox?.classList.add("billingResultMessageBox--success");
+  statusBox?.classList.remove("billingResultMessageBox--danger");
 
   if (startButton) {
     startButton.disabled = !allChecked || isStartingBillingAuth;
@@ -139,7 +142,7 @@ function getSetupCardHtml() {
       <label><input type="checkbox" data-payment-method-check /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단되는 점을 확인했습니다.</label>
     </div>
 
-    <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox">
+    <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
       <strong>등록 안내</strong>
       <p data-payment-method-status>필수 확인 항목을 체크하면 자동결제 결제수단 등록을 시작할 수 있습니다.</p>
     </div>
