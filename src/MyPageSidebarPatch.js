@@ -1,9 +1,8 @@
 /* =========================================================
-   Step 170B - MY PAGE single-card menu navigation patch
-   - MY PAGE 좌측 메뉴와 오른쪽 카드를 1:1로 매칭합니다.
+   Hotfix - MY PAGE single-card menu navigation patch
+   - MY PAGE MutationObserver 반복 갱신을 중단해 무한로딩/렉을 방지합니다.
    - 내 투자성향 메뉴에서 최근 투자 MBTI 결과와 포트폴리오 비율을 다시 확인합니다.
    - 각 도구별 진입 링크를 분리합니다.
-   - 결제수단 메뉴에서 실제 자동결제 등록 상태를 조회해 표시합니다.
 ========================================================= */
 
 import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
@@ -44,6 +43,11 @@ function setText(node, value) {
   if (!node) return;
   const nextValue = String(value ?? "");
   if (node.textContent !== nextValue) node.textContent = nextValue;
+}
+function setHtml(node, value) {
+  if (!node) return;
+  const nextValue = String(value ?? "");
+  if (node.innerHTML !== nextValue) node.innerHTML = nextValue;
 }
 function readJson(key) {
   try { return JSON.parse(window.localStorage.getItem(key) || "null"); } catch (error) { return null; }
@@ -105,7 +109,7 @@ function getInvestmentProfilePanelHtml() {
 function renderList(listNode, items, fallback) {
   if (!listNode) return;
   const nextItems = items.length ? items : [fallback];
-  listNode.innerHTML = nextItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  setHtml(listNode, nextItems.map((item) => `<li>${escapeHtml(item)}</li>`).join(""));
 }
 
 function updateInvestmentResultDetails(panel, result, hasResult) {
@@ -116,7 +120,7 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
   resultButton.disabled = !hasResult;
   setText(resultButton, isInvestmentResultOpen ? "결과 접기" : "결과 자세히 보기");
   box.hidden = !hasResult || !isInvestmentResultOpen;
-  if (!hasResult) return;
+  if (!hasResult || !isInvestmentResultOpen) return;
 
   setText(panel.querySelector("[data-investment-profile-summary-title]"), `${result?.nickname || "투자 MBTI"} 결과`);
   setText(panel.querySelector("[data-investment-profile-result-date]"), formatMbtiDate(result?.createdAt));
@@ -124,9 +128,9 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
 
   const ratioNode = panel.querySelector("[data-investment-profile-ratios]");
   const ratios = getPresetEntries(result);
-  ratioNode.innerHTML = ratios.length
+  setHtml(ratioNode, ratios.length
     ? ratios.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${item.value}%</strong><i style="width:${Math.max(4, Math.min(100, item.value))}%"></i></div>`).join("")
-    : `<p class="investmentProfileEmptyRatio">저장된 포트폴리오 비율이 없습니다.</p>`;
+    : `<p class="investmentProfileEmptyRatio">저장된 포트폴리오 비율이 없습니다.</p>`);
 
   renderList(panel.querySelector("[data-investment-profile-sectors]"), getArrayItems(result?.sectors), "저장된 섹터 정보 없음");
   renderList(panel.querySelector("[data-investment-profile-actions]"), getArrayItems(result?.actions), "저장된 권장 액션 없음");
@@ -142,23 +146,36 @@ function updateInvestmentProfileUi() {
   setText(panel.querySelector("[data-investment-profile-created]"), hasResult ? formatMbtiDate(result?.createdAt) : "투자 MBTI 필요");
   setText(panel.querySelector("[data-investment-profile-type]"), result?.finpleType || "-영역");
   setText(panel.querySelector("[data-investment-profile-risk]"), result?.riskProfile || "-영역");
-  setText(
-    panel.querySelector("[data-investment-profile-message]"),
-    hasResult
-      ? "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다."
-      : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요."
-  );
+  setText(panel.querySelector("[data-investment-profile-message]"), hasResult
+    ? "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다."
+    : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요.");
   updateInvestmentResultDetails(panel, result, hasResult);
 }
 
 function bindInvestmentProfileActions() {
-  document.querySelector("[data-investment-profile-result]")?.addEventListener("click", () => {
-    isInvestmentResultOpen = !isInvestmentResultOpen;
-    updateInvestmentProfileUi();
-  });
-  document.querySelector("[data-investment-profile-start]")?.addEventListener("click", () => navigateTo("/simulator?tool=investment-mbti"));
-  document.querySelector("[data-investment-profile-simulator]")?.addEventListener("click", () => navigateTo("/simulator?tool=simulator"));
-  document.querySelector("[data-investment-profile-screener]")?.addEventListener("click", () => navigateTo("/simulator?tool=screener"));
+  const resultButton = document.querySelector("[data-investment-profile-result]");
+  if (resultButton && resultButton.getAttribute("data-investment-profile-wired") !== "true") {
+    resultButton.setAttribute("data-investment-profile-wired", "true");
+    resultButton.addEventListener("click", () => {
+      isInvestmentResultOpen = !isInvestmentResultOpen;
+      updateInvestmentProfileUi();
+    });
+  }
+  const startButton = document.querySelector("[data-investment-profile-start]");
+  if (startButton && startButton.getAttribute("data-investment-profile-wired") !== "true") {
+    startButton.setAttribute("data-investment-profile-wired", "true");
+    startButton.addEventListener("click", () => navigateTo("/simulator?tool=investment-mbti"));
+  }
+  const simulatorButton = document.querySelector("[data-investment-profile-simulator]");
+  if (simulatorButton && simulatorButton.getAttribute("data-investment-profile-wired") !== "true") {
+    simulatorButton.setAttribute("data-investment-profile-wired", "true");
+    simulatorButton.addEventListener("click", () => navigateTo("/simulator?tool=simulator"));
+  }
+  const screenerButton = document.querySelector("[data-investment-profile-screener]");
+  if (screenerButton && screenerButton.getAttribute("data-investment-profile-wired") !== "true") {
+    screenerButton.setAttribute("data-investment-profile-wired", "true");
+    screenerButton.addEventListener("click", () => navigateTo("/simulator?tool=screener"));
+  }
 }
 
 function ensureInvestmentProfilePanel() {
@@ -204,9 +221,21 @@ function hideStandalonePanels() {
   STANDALONE_PANELS_TO_HIDE.forEach((selector) => document.querySelectorAll(selector).forEach((panel) => { panel.classList.add("myPagePanelHidden"); panel.toggleAttribute("hidden", true); }));
 }
 function bindPaymentMethodPanelActions() {
-  document.querySelector("[data-payment-method-setup]")?.addEventListener("click", () => navigateTo("/payment-method/setup"));
-  document.querySelector("[data-payment-method-pricing]")?.addEventListener("click", () => navigateTo("/pricing"));
-  document.querySelector("[data-billing-method-refresh]")?.addEventListener("click", () => loadBillingMethodStatus({ force: true }));
+  const setupButton = document.querySelector("[data-payment-method-setup]");
+  if (setupButton && setupButton.getAttribute("data-payment-method-wired") !== "true") {
+    setupButton.setAttribute("data-payment-method-wired", "true");
+    setupButton.addEventListener("click", () => navigateTo("/payment-method/setup"));
+  }
+  const pricingButton = document.querySelector("[data-payment-method-pricing]");
+  if (pricingButton && pricingButton.getAttribute("data-payment-method-wired") !== "true") {
+    pricingButton.setAttribute("data-payment-method-wired", "true");
+    pricingButton.addEventListener("click", () => navigateTo("/pricing"));
+  }
+  const refreshButton = document.querySelector("[data-billing-method-refresh]");
+  if (refreshButton && refreshButton.getAttribute("data-payment-method-wired") !== "true") {
+    refreshButton.setAttribute("data-payment-method-wired", "true");
+    refreshButton.addEventListener("click", () => loadBillingMethodStatus({ force: true }));
+  }
 }
 function ensurePaymentMethodPanel() {
   if (document.querySelector("[data-payment-method-panel]")) { bindPaymentMethodPanelActions(); return; }
@@ -283,7 +312,11 @@ function wrapMyPageLayout() {
   wireSidebarActions(wrapper);
 }
 function wireSidebarActions(wrapper) {
-  wrapper.querySelectorAll("[data-mypage-menu-key]").forEach((button) => button.addEventListener("click", () => setActivePanel(button.getAttribute("data-mypage-menu-key") || "account", { scrollToTop: true })));
+  wrapper.querySelectorAll("[data-mypage-menu-key]").forEach((button) => {
+    if (button.getAttribute("data-mypage-menu-wired") === "true") return;
+    button.setAttribute("data-mypage-menu-wired", "true");
+    button.addEventListener("click", () => setActivePanel(button.getAttribute("data-mypage-menu-key") || "account", { scrollToTop: true }));
+  });
 }
 function getFallbackActiveKey() {
   const activeItem = MENU_ITEMS.find((item) => document.querySelector(item.selector));
@@ -324,11 +357,10 @@ function applyMyPageSidebar() {
   updateInvestmentProfileUi();
 }
 function bootMyPageSidebarPatch() {
-  const observer = new MutationObserver(() => applyMyPageSidebar());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  [80, 180, 420, 900, 1600, 2600].forEach((delay) => window.setTimeout(applyMyPageSidebar, delay));
   window.addEventListener("scroll", updateTopButtonVisibility, { passive: true });
   window.addEventListener("popstate", () => window.setTimeout(applyMyPageSidebar, 80));
-  window.setTimeout(applyMyPageSidebar, 150);
+  window.addEventListener("finple-auth-updated", () => window.setTimeout(applyMyPageSidebar, 120));
 }
 if (typeof window !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootMyPageSidebarPatch, { once: true });
