@@ -1,7 +1,7 @@
 /* =========================================================
-   Step 166B - MY PAGE single-card menu navigation patch
+   Step 166C - MY PAGE single-card menu navigation patch
    - MY PAGE 좌측 메뉴와 오른쪽 카드를 1:1로 매칭합니다.
-   - 메뉴 클릭 시 해당 카드만 표시하고 나머지 카드는 숨깁니다.
+   - 문의/관리 영역은 /admin 별도 접속으로 분리하고 MY PAGE 메뉴에서는 제외합니다.
    - 페이지가 길어질 상황을 대비해 TOP 버튼을 추가합니다.
 ========================================================= */
 
@@ -11,8 +11,9 @@ const MENU_ITEMS = [
   { key: "plan", label: "요금제 상태", description: "한도·권한", selector: ".planStatusPanel" },
   { key: "payment-method", label: "결제수단", description: "자동결제 등록", selector: "[data-payment-method-panel]" },
   { key: "storage", label: "서버 저장", description: "저장·불러오기", selector: ".serverStoragePanel" },
-  { key: "support", label: "문의 / 관리", description: "문의·관리자", selector: ".adminInquiryPanel" },
 ];
+
+const STANDALONE_PANELS_TO_HIDE = [".adminInquiryPanel"];
 
 let activeMenuKey = "account";
 
@@ -79,6 +80,15 @@ function markPanelKeys() {
   MENU_ITEMS.forEach((item) => {
     const panel = document.querySelector(item.selector);
     if (panel) panel.setAttribute("data-mypage-panel-key", item.key);
+  });
+}
+
+function hideStandalonePanels() {
+  STANDALONE_PANELS_TO_HIDE.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((panel) => {
+      panel.classList.add("myPagePanelHidden");
+      panel.toggleAttribute("hidden", true);
+    });
   });
 }
 
@@ -204,6 +214,7 @@ function applyMyPageSidebar() {
 
   ensurePaymentMethodPanel();
   markPanelKeys();
+  hideStandalonePanels();
   wrapMyPageLayout();
   ensureTopButton();
   setActivePanel(activeMenuKey);
