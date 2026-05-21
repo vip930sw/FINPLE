@@ -6,6 +6,7 @@ import './PaymentAlreadySubscribedPatch.js'
 import './TermsPaymentPolicyPatch.js'
 import './MyPageSubscriptionStatusPatch.js'
 import { isBillingResultPath, renderBillingResultPage } from './BillingResultRoutePatch.js'
+import { isPaymentMethodPath, renderPaymentMethodPage } from './PaymentMethodRoutePatch.js'
 import './index.css'
 import './HomeResponsive.css'
 import './FooterDisclaimer.css'
@@ -19,6 +20,8 @@ import App from './App.jsx'
 
 if (isBillingResultPath()) {
   renderBillingResultPage()
+} else if (isPaymentMethodPath()) {
+  renderPaymentMethodPage()
 } else {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
