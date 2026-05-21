@@ -1,9 +1,9 @@
 /* =========================================================
-   Step 162B - MY PAGE subscription status and period-end request patch
+   Step 170 - MY PAGE subscription status and period-end request patch
    - /api/payments/subscription/me와 MY PAGE 구독 상태 패널을 연결합니다.
    - 서버 구독/권한 상태를 브라우저 사용자·플랜 상태에 동기화합니다.
+   - 다음 결제일과 이용 종료 예정일은 current_period_end를 기본 기준으로 표시합니다.
    - Personal 구독의 이용기간 종료 예약 버튼을 제공합니다.
-   - 기존 React 구조 변경을 최소화하기 위해 DOM 패치 레이어로 적용합니다.
 ========================================================= */
 
 import {
@@ -36,11 +36,12 @@ function formatStatusLabel(status) {
   const labels = {
     guest: "비로그인",
     beta_free: "베타 무료 이용 중",
-    active: "구독 활성",
+    active: "이용 중",
     cancel_at_period_end: "해지 예약",
     expired: "만료",
     refunded: "환불 처리",
     payment_failed: "결제 실패",
+    past_due: "결제 재시도 대기",
   };
 
   return labels[normalized] || normalized;
@@ -72,13 +73,14 @@ function getSubscriptionMessage(payload) {
   const subscription = payload.subscription || {};
   const status = payload.status || subscription.status || "beta_free";
   const plan = String(payload.plan || payload.entitlement?.plan || subscription.plan || "free").toLowerCase();
+  const periodEndLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || payload.entitlement?.valid_until || payload.entitlement?.validUntil);
 
   if (plan === "personal" && isPeriodEndScheduled(status, subscription)) {
-    return "구독 해지가 예약되었습니다. 현재 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.";
+    return `구독 해지가 예약되었습니다. ${periodEndLabel}까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.`;
   }
 
   if (plan === "personal") {
-    return "서버 기준 Personal 권한이 확인되었습니다. 브라우저 표시 상태도 서버 기준으로 동기화됩니다.";
+    return `Personal 이용 중입니다. 다음 결제 예정일과 현재 이용기간 종료 예정일은 ${periodEndLabel} 기준으로 표시됩니다.`;
   }
 
   return payload.message || "서버 기준 구독 상태를 확인했습니다.";
@@ -97,7 +99,7 @@ function getSubscriptionPanelHtml() {
         <div>
           <p class="accountMiniLabel">Billing Status</p>
           <h2>구독 / 결제 상태</h2>
-          <p>서버 결제 API 기준으로 현재 구독 상태와 권한 반영 상태를 확인합니다.</p>
+          <p>서버 결제 API 기준으로 현재 구독 상태, 다음 결제일, 이용 종료 예정일을 확인합니다.</p>
         </div>
         <span class="serverStatusBadge ready" data-subscription-badge>확인 중</span>
       </div>
@@ -116,12 +118,12 @@ function getSubscriptionPanelHtml() {
         <div>
           <span>다음 결제일</span>
           <strong data-subscription-next-billing>해당 없음</strong>
-          <em data-subscription-next-billing-note>정기결제 연결 후 표시</em>
+          <em data-subscription-next-billing-note>정기결제 기준</em>
         </div>
         <div>
           <span>이용 종료 예정일</span>
           <strong data-subscription-period-end>해당 없음</strong>
-          <em>해지 예약 시 표시</em>
+          <em data-subscription-period-end-note>현재 이용기간 기준</em>
         </div>
       </div>
 
@@ -198,10 +200,14 @@ function syncSubscriptionPayloadToBrowser(payload) {
   window.dispatchEvent(new Event("finple-local-storage-updated"));
 }
 
-function getNextBillingLabel({ plan, status, subscription }) {
+function getPeriodEndValue(subscription, entitlement) {
+  return subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil || null;
+}
+
+function getNextBillingLabel({ plan, status, subscription, entitlement }) {
   if (plan !== "personal") return "해당 없음";
   if (isPeriodEndScheduled(status, subscription)) return "다음 결제 없음";
-  return readDateLabel(subscription?.next_billing_at || subscription?.nextBillingAt);
+  return readDateLabel(subscription?.next_billing_at || subscription?.nextBillingAt || getPeriodEndValue(subscription, entitlement));
 }
 
 function updatePeriodEndButton({ panel, plan, status, subscription }) {
@@ -236,16 +242,15 @@ function updateSubscriptionPanel() {
   const plan = getPlanFromPayload(payload);
   const status = payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
   const scheduled = isPeriodEndScheduled(status, subscription);
+  const periodEndValue = getPeriodEndValue(subscription, entitlement);
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
   setText(panel.querySelector("[data-subscription-plan]"), formatPlanLabel(plan));
   setText(panel.querySelector("[data-subscription-status]"), formatStatusLabel(status));
-  setText(panel.querySelector("[data-subscription-next-billing]"), getNextBillingLabel({ plan, status, subscription }));
-  setText(panel.querySelector("[data-subscription-next-billing-note]"), scheduled ? "해지 예약됨" : "정기결제 연결 후 표시");
-  setText(
-    panel.querySelector("[data-subscription-period-end]"),
-    readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil)
-  );
+  setText(panel.querySelector("[data-subscription-next-billing]"), getNextBillingLabel({ plan, status, subscription, entitlement }));
+  setText(panel.querySelector("[data-subscription-next-billing-note]"), scheduled ? "해지 예약됨" : "정기결제 기준");
+  setText(panel.querySelector("[data-subscription-period-end]"), readDateLabel(periodEndValue));
+  setText(panel.querySelector("[data-subscription-period-end-note]"), scheduled ? "종료 예정" : "현재 이용기간 기준");
   setText(panel.querySelector("[data-subscription-message]"), getSubscriptionMessage(payload));
 
   updatePeriodEndButton({ panel, plan, status, subscription });
