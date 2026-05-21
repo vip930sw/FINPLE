@@ -1,13 +1,23 @@
 /* =========================================================
-   Step 170 - MY PAGE single-card menu navigation patch
+   Step 170B - MY PAGE single-card menu navigation patch
    - MY PAGE 좌측 메뉴와 오른쪽 카드를 1:1로 매칭합니다.
-   - 내 투자성향 메뉴에서 최근 투자 MBTI 결과를 다시 확인합니다.
+   - 내 투자성향 메뉴에서 최근 투자 MBTI 결과와 포트폴리오 비율을 다시 확인합니다.
+   - 각 도구별 진입 링크를 분리합니다.
    - 결제수단 메뉴에서 실제 자동결제 등록 상태를 조회해 표시합니다.
 ========================================================= */
 
 import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
 
 const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
+const ASSET_LABELS = {
+  growthStock: "성장주",
+  valueStock: "가치·배당",
+  bond: "채권",
+  reit: "리츠",
+  gold: "금",
+  crypto: "코인",
+  cash: "현금",
+};
 
 const MENU_ITEMS = [
   { key: "account", label: "계정 상태", description: "로그인·사용자", selector: ".accountStatusPanel" },
@@ -21,6 +31,7 @@ const MENU_ITEMS = [
 const STANDALONE_PANELS_TO_HIDE = [".adminInquiryPanel"];
 
 let activeMenuKey = "account";
+let isInvestmentResultOpen = false;
 let billingMethodRequested = false;
 let billingMethodState = { loading: false, registered: false, method: null, error: "" };
 
@@ -41,6 +52,16 @@ function formatMbtiDate(value) {
   if (!value) return "저장일 없음";
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value)); } catch (error) { return "저장일 없음"; }
 }
+function getPresetEntries(result) {
+  const preset = result?.preset || result?.allocation || {};
+  return Object.entries(preset)
+    .map(([key, value]) => ({ key, label: ASSET_LABELS[key] || key, value: Number(value) }))
+    .filter((item) => Number.isFinite(item.value) && item.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
+function getArrayItems(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
 
 function getInvestmentProfilePanelHtml() {
   return `
@@ -59,12 +80,56 @@ function getInvestmentProfilePanelHtml() {
         <div><span>위험성향</span><strong data-investment-profile-risk>확인 중</strong><em>참고용</em></div>
       </div>
       <p class="serverStorageMessage compact paymentMethodEntryMessage" data-investment-profile-message>투자 MBTI 결과를 확인하고 있습니다.</p>
-      <div class="serverStorageActions compactActions">
-        <button type="button" class="primaryButton" data-investment-profile-start>투자 MBTI 다시 하기</button>
-        <button type="button" class="secondaryButton" data-investment-profile-simulator>시뮬레이터 열기</button>
+      <div class="investmentProfileResultBox" data-investment-profile-result-box hidden>
+        <div class="investmentProfileResultHeader">
+          <strong data-investment-profile-summary-title>투자 MBTI 결과</strong>
+          <span data-investment-profile-result-date>저장일 없음</span>
+        </div>
+        <p data-investment-profile-summary>저장된 요약이 없습니다.</p>
+        <div class="investmentProfileRatioList" data-investment-profile-ratios></div>
+        <div class="investmentProfileResultColumns">
+          <div><span>관심 섹터</span><ul data-investment-profile-sectors></ul></div>
+          <div><span>권장 액션</span><ul data-investment-profile-actions></ul></div>
+        </div>
+      </div>
+      <div class="serverStorageActions compactActions investmentProfileActions">
+        <button type="button" class="primaryButton" data-investment-profile-result>결과 자세히 보기</button>
+        <button type="button" class="secondaryButton" data-investment-profile-start>투자 MBTI 다시 하기</button>
+        <button type="button" class="secondaryButton" data-investment-profile-simulator>포트폴리오 시뮬레이터</button>
+        <button type="button" class="secondaryButton" data-investment-profile-screener>자산 스크리너</button>
       </div>
     </section>
   `;
+}
+
+function renderList(listNode, items, fallback) {
+  if (!listNode) return;
+  const nextItems = items.length ? items : [fallback];
+  listNode.innerHTML = nextItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function updateInvestmentResultDetails(panel, result, hasResult) {
+  const box = panel.querySelector("[data-investment-profile-result-box]");
+  const resultButton = panel.querySelector("[data-investment-profile-result]");
+  if (!box || !resultButton) return;
+
+  resultButton.disabled = !hasResult;
+  setText(resultButton, isInvestmentResultOpen ? "결과 접기" : "결과 자세히 보기");
+  box.hidden = !hasResult || !isInvestmentResultOpen;
+  if (!hasResult) return;
+
+  setText(panel.querySelector("[data-investment-profile-summary-title]"), `${result?.nickname || "투자 MBTI"} 결과`);
+  setText(panel.querySelector("[data-investment-profile-result-date]"), formatMbtiDate(result?.createdAt));
+  setText(panel.querySelector("[data-investment-profile-summary]"), result?.summary || "저장된 요약이 없습니다.");
+
+  const ratioNode = panel.querySelector("[data-investment-profile-ratios]");
+  const ratios = getPresetEntries(result);
+  ratioNode.innerHTML = ratios.length
+    ? ratios.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${item.value}%</strong><i style="width:${Math.max(4, Math.min(100, item.value))}%"></i></div>`).join("")
+    : `<p class="investmentProfileEmptyRatio">저장된 포트폴리오 비율이 없습니다.</p>`;
+
+  renderList(panel.querySelector("[data-investment-profile-sectors]"), getArrayItems(result?.sectors), "저장된 섹터 정보 없음");
+  renderList(panel.querySelector("[data-investment-profile-actions]"), getArrayItems(result?.actions), "저장된 권장 액션 없음");
 }
 
 function updateInvestmentProfileUi() {
@@ -80,14 +145,20 @@ function updateInvestmentProfileUi() {
   setText(
     panel.querySelector("[data-investment-profile-message]"),
     hasResult
-      ? "최근 투자 MBTI 결과가 저장되어 있습니다. 이 결과는 참고용 성향 진단이며 투자자문이나 수익보장을 의미하지 않습니다."
-      : "아직 저장된 투자 MBTI 결과가 없습니다. 시작하기에서 투자 MBTI를 진행한 뒤 프리셋을 시뮬레이터에 적용하면 이곳에서 다시 볼 수 있습니다."
+      ? "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다."
+      : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요."
   );
+  updateInvestmentResultDetails(panel, result, hasResult);
 }
 
 function bindInvestmentProfileActions() {
-  document.querySelector("[data-investment-profile-start]")?.addEventListener("click", () => navigateTo("/simulator"));
-  document.querySelector("[data-investment-profile-simulator]")?.addEventListener("click", () => navigateTo("/simulator"));
+  document.querySelector("[data-investment-profile-result]")?.addEventListener("click", () => {
+    isInvestmentResultOpen = !isInvestmentResultOpen;
+    updateInvestmentProfileUi();
+  });
+  document.querySelector("[data-investment-profile-start]")?.addEventListener("click", () => navigateTo("/simulator?tool=investment-mbti"));
+  document.querySelector("[data-investment-profile-simulator]")?.addEventListener("click", () => navigateTo("/simulator?tool=simulator"));
+  document.querySelector("[data-investment-profile-screener]")?.addEventListener("click", () => navigateTo("/simulator?tool=screener"));
 }
 
 function ensureInvestmentProfilePanel() {
