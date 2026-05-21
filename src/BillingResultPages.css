@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 141 - Billing Result Pages
+   Step 165 - Billing Result / Payment Method Pages
 ========================================================= */
 
 .billingResultPage {
@@ -25,7 +25,8 @@
 }
 
 .billingResultStatusRow span,
-.billingResultGrid span {
+.billingResultGrid span,
+.paymentMethodNoticeGrid span {
   display: block;
   margin-bottom: 8px;
   color: #64748b;
@@ -61,25 +62,38 @@
   color: #dc2626;
 }
 
-.billingResultGrid {
+.billingResultGrid,
+.paymentMethodNoticeGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 22px;
 }
 
-.billingResultGrid > div {
+.billingResultGrid > div,
+.paymentMethodNoticeGrid > div {
   padding: 18px;
   border: 1px solid #dbeafe;
   border-radius: 18px;
   background: #f8fafc;
 }
 
-.billingResultGrid strong {
+.billingResultGrid strong,
+.paymentMethodNoticeGrid strong {
+  display: block;
   color: #0f172a;
   font-size: 17px;
   font-weight: 900;
   word-break: break-word;
+}
+
+.paymentMethodNoticeGrid em {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .billingResultMessageBox {
@@ -138,6 +152,37 @@
   line-height: 1.7;
 }
 
+.paymentMethodChecklist {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.paymentMethodChecklist label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+.paymentMethodChecklist input {
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  accent-color: #0f172a;
+}
+
+.paymentMethodMessageBox {
+  margin-top: 4px;
+}
+
 .billingResultActions {
   display: flex;
   flex-wrap: wrap;
@@ -150,6 +195,11 @@
   justify-content: center;
 }
 
+.billingResultActions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 720px) {
   .billingResultCard {
     padding: 24px;
@@ -159,7 +209,8 @@
     flex-direction: column;
   }
 
-  .billingResultGrid {
+  .billingResultGrid,
+  .paymentMethodNoticeGrid {
     grid-template-columns: 1fr;
   }
 
