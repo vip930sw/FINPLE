@@ -55,6 +55,34 @@ export async function prepareBillingAuth() {
   return payload;
 }
 
+export async function issueBillingKey({ authKey, orderId, customerKey }) {
+  const session = getStoredFinpleAuthSession();
+  const user = getStoredFinpleAuthUser();
+
+  if (!session?.token && !user?.id) {
+    const error = new Error("자동결제 결제수단 저장을 위해 로그인이 필요합니다.");
+    error.code = "AUTH_REQUIRED";
+    throw error;
+  }
+
+  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/issue`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ authKey, orderId, customerKey }),
+  });
+
+  const payload = await readResponseJson(response);
+
+  if (!response.ok || payload?.ok === false) {
+    const error = new Error(payload?.message || "자동결제 결제수단 저장에 실패했습니다.");
+    error.code = payload?.code || "BILLING_KEY_ISSUE_FAILED";
+    error.payload = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
 function loadTossPaymentsSdk() {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("브라우저에서만 결제수단 등록을 진행할 수 있습니다."));
