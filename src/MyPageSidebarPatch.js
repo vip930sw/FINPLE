@@ -1,7 +1,8 @@
 /* =========================================================
-   Step 166A - MY PAGE sidebar navigation patch
-   - MY PAGE 카드가 늘어나는 흐름에 맞춰 좌측 메뉴형 레이아웃으로 전환합니다.
-   - 결제수단 자동결제 등록 진입 패널을 MY PAGE 안에 추가합니다.
+   Step 166B - MY PAGE single-card menu navigation patch
+   - MY PAGE 좌측 메뉴와 오른쪽 카드를 1:1로 매칭합니다.
+   - 메뉴 클릭 시 해당 카드만 표시하고 나머지 카드는 숨깁니다.
+   - 페이지가 길어질 상황을 대비해 TOP 버튼을 추가합니다.
 ========================================================= */
 
 const MENU_ITEMS = [
@@ -12,6 +13,8 @@ const MENU_ITEMS = [
   { key: "storage", label: "서버 저장", description: "저장·불러오기", selector: ".serverStoragePanel" },
   { key: "support", label: "문의 / 관리", description: "문의·관리자", selector: ".adminInquiryPanel" },
 ];
+
+let activeMenuKey = "account";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -118,12 +121,32 @@ function getSidebarHtml() {
   `;
 }
 
+function ensureTopButton() {
+  if (document.querySelector("[data-mypage-top-button]")) return;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "myPageTopButton";
+  button.setAttribute("data-mypage-top-button", "true");
+  button.textContent = "TOP";
+  button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  document.body.appendChild(button);
+}
+
+function updateTopButtonVisibility() {
+  const button = document.querySelector("[data-mypage-top-button]");
+  if (!button) return;
+
+  const shouldShow = isMyPagePath() && window.scrollY > 260;
+  button.classList.toggle("visible", shouldShow);
+}
+
 function wrapMyPageLayout() {
   const stack = document.querySelector(".accountPanelStack");
   if (!stack || stack.closest(".myPageDashboardLayout")) return;
 
   const wrapper = document.createElement("section");
-  wrapper.className = "myPageDashboardLayout";
+  wrapper.className = "myPageDashboardLayout myPageDashboardLayout--singlePanel";
   wrapper.setAttribute("aria-label", "MY PAGE 관리 메뉴와 패널");
   wrapper.innerHTML = getSidebarHtml();
 
@@ -135,14 +158,15 @@ function wrapMyPageLayout() {
 function wireSidebarActions(wrapper) {
   wrapper.querySelectorAll("[data-mypage-menu-key]").forEach((button) => {
     button.addEventListener("click", () => {
-      const key = button.getAttribute("data-mypage-menu-key");
-      const panel = document.querySelector(`[data-mypage-panel-key="${key}"]`);
-      if (!panel) return;
-
-      panel.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveMenu(key);
+      const key = button.getAttribute("data-mypage-menu-key") || "account";
+      setActivePanel(key, { scrollToTop: true });
     });
   });
+}
+
+function getFallbackActiveKey() {
+  const activeItem = MENU_ITEMS.find((item) => document.querySelector(item.selector));
+  return activeItem?.key || "account";
 }
 
 function setActiveMenu(activeKey) {
@@ -151,24 +175,28 @@ function setActiveMenu(activeKey) {
   });
 }
 
-function updateActiveMenuByScroll() {
-  if (!isMyPagePath()) return;
+function setActivePanel(nextKey, options = {}) {
+  activeMenuKey = MENU_ITEMS.some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
 
-  let activeKey = MENU_ITEMS[0]?.key || "account";
-  let bestDistance = Number.POSITIVE_INFINITY;
+  const selectedPanel = document.querySelector(`[data-mypage-panel-key="${activeMenuKey}"]`);
+  if (!selectedPanel) {
+    activeMenuKey = getFallbackActiveKey();
+  }
 
-  MENU_ITEMS.forEach((item) => {
-    const panel = document.querySelector(item.selector);
-    if (!panel) return;
-
-    const distance = Math.abs(panel.getBoundingClientRect().top - 120);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      activeKey = item.key;
-    }
+  document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
+    const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;
+    panel.classList.toggle("myPagePanelActive", isActive);
+    panel.classList.toggle("myPagePanelHidden", !isActive);
+    panel.toggleAttribute("hidden", !isActive);
   });
 
-  setActiveMenu(activeKey);
+  setActiveMenu(activeMenuKey);
+
+  if (options.scrollToTop) {
+    const layout = document.querySelector(".myPageDashboardLayout");
+    const top = layout ? Math.max(0, layout.getBoundingClientRect().top + window.scrollY - 90) : 0;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
 }
 
 function applyMyPageSidebar() {
@@ -177,14 +205,16 @@ function applyMyPageSidebar() {
   ensurePaymentMethodPanel();
   markPanelKeys();
   wrapMyPageLayout();
-  updateActiveMenuByScroll();
+  ensureTopButton();
+  setActivePanel(activeMenuKey);
+  updateTopButtonVisibility();
 }
 
 function bootMyPageSidebarPatch() {
   const observer = new MutationObserver(() => applyMyPageSidebar());
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
-  window.addEventListener("scroll", updateActiveMenuByScroll, { passive: true });
+  window.addEventListener("scroll", updateTopButtonVisibility, { passive: true });
   window.addEventListener("popstate", () => window.setTimeout(applyMyPageSidebar, 80));
 
   window.setTimeout(applyMyPageSidebar, 150);
