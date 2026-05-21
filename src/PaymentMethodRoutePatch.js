@@ -1,14 +1,22 @@
 /* =========================================================
-   Step 165 - Recurring payment method setup route patch
-   - 자동결제 결제수단 등록 준비 화면을 제공합니다.
-   - 실제 PG 결제수단 등록 API는 Step 166 이후 연결합니다.
+   Step 167 - Recurring payment method setup route patch
+   - 자동결제 결제수단 등록 준비 정보를 서버에서 생성합니다.
+   - Toss Billing Auth 진입 버튼을 연결합니다.
+   - 실제 billingKey 발급/저장은 Step 168 이후 연결합니다.
 ========================================================= */
+
+import { prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
 
 const PAYMENT_METHOD_PATHS = new Set([
   "/payment-method/setup",
   "/payment-method/success",
   "/payment-method/fail",
 ]);
+
+let billingAuthPayload = null;
+let billingAuthError = "";
+let isPreparingBillingAuth = false;
+let isOpeningBillingAuth = false;
 
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -29,6 +37,12 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function setText(node, value) {
+  if (!node) return;
+  const nextValue = String(value ?? "");
+  if (node.textContent !== nextValue) node.textContent = nextValue;
 }
 
 function getPageCopy(path) {
@@ -56,12 +70,86 @@ function getPageCopy(path) {
 
   return {
     eyebrow: "Recurring Billing Setup",
-    title: "자동결제 결제수단 등록 준비",
+    title: "자동결제 결제수단 등록",
     description: "FINPLE Personal 월 구독 자동결제를 위한 결제수단 등록 화면입니다. 카드번호는 FINPLE 서버에 직접 저장하지 않고 PG 결제수단 참조값만 사용합니다.",
     tone: "neutral",
-    badge: "STEP 165",
+    badge: "STEP 167",
     statusLabel: "등록 준비 중",
   };
+}
+
+function getSetupStatusMessage() {
+  if (isPreparingBillingAuth) return "서버에서 자동결제 등록 준비 정보를 생성하고 있습니다.";
+  if (isOpeningBillingAuth) return "Toss 결제수단 등록창을 열고 있습니다.";
+  if (billingAuthError) return billingAuthError;
+  if (billingAuthPayload?.billingAuthAvailable) return "자동결제 결제수단 등록창을 열 준비가 완료되었습니다.";
+  return "필수 확인 항목을 체크하면 자동결제 등록 준비 정보를 생성할 수 있습니다.";
+}
+
+function updateSetupUi() {
+  const root = document.getElementById("root");
+  if (!root) return;
+
+  const status = root.querySelector("[data-payment-method-status]");
+  const orderId = root.querySelector("[data-payment-method-order-id]");
+  const customerKey = root.querySelector("[data-payment-method-customer-key]");
+  const successUrl = root.querySelector("[data-payment-method-success-url]");
+  const prepareButton = root.querySelector("[data-payment-method-prepare]");
+  const openButton = root.querySelector("[data-payment-method-open]");
+  const checkedCount = root.querySelectorAll("[data-payment-method-check]:checked").length;
+  const allChecked = checkedCount >= 4;
+  const hasPrepared = Boolean(billingAuthPayload?.billingAuthAvailable);
+
+  setText(status, getSetupStatusMessage());
+  status?.classList.toggle("billingResultMessageBox--danger", Boolean(billingAuthError));
+  status?.classList.toggle("billingResultMessageBox--success", !billingAuthError && hasPrepared);
+  setText(orderId, billingAuthPayload?.orderId || "준비 전");
+  setText(customerKey, billingAuthPayload?.customerKey || "준비 전");
+  setText(successUrl, billingAuthPayload?.successUrl ? "/payment-method/success" : "준비 전");
+
+  if (prepareButton) {
+    prepareButton.disabled = !allChecked || isPreparingBillingAuth || isOpeningBillingAuth;
+    setText(prepareButton, isPreparingBillingAuth ? "준비 정보 생성 중" : hasPrepared ? "준비 정보 다시 생성" : "자동결제 등록 준비");
+  }
+
+  if (openButton) {
+    openButton.disabled = !hasPrepared || isPreparingBillingAuth || isOpeningBillingAuth;
+    setText(openButton, isOpeningBillingAuth ? "등록창 여는 중" : "Toss 결제수단 등록창 열기");
+  }
+}
+
+async function handlePrepareBillingAuth() {
+  if (isPreparingBillingAuth) return;
+
+  isPreparingBillingAuth = true;
+  billingAuthError = "";
+  updateSetupUi();
+
+  try {
+    billingAuthPayload = await prepareBillingAuth();
+  } catch (error) {
+    billingAuthPayload = null;
+    billingAuthError = error?.message || "자동결제 등록 준비 요청에 실패했습니다.";
+  } finally {
+    isPreparingBillingAuth = false;
+    updateSetupUi();
+  }
+}
+
+async function handleOpenBillingAuth() {
+  if (isOpeningBillingAuth || !billingAuthPayload) return;
+
+  isOpeningBillingAuth = true;
+  billingAuthError = "";
+  updateSetupUi();
+
+  try {
+    await requestTossBillingAuth(billingAuthPayload);
+  } catch (error) {
+    isOpeningBillingAuth = false;
+    billingAuthError = error?.message || "Toss 결제수단 등록창을 열지 못했습니다.";
+    updateSetupUi();
+  }
 }
 
 function getSetupCardHtml() {
@@ -90,19 +178,27 @@ function getSetupCardHtml() {
     </div>
 
     <div class="paymentMethodChecklist">
-      <label><input type="checkbox" disabled /> 월 9,900원이 매월 자동결제되는 점을 확인했습니다.</label>
-      <label><input type="checkbox" disabled /> 결제 예정일 전 사전 안내가 제공되는 점을 확인했습니다.</label>
-      <label><input type="checkbox" disabled /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있음을 확인했습니다.</label>
-      <label><input type="checkbox" disabled /> 자동결제 실패 시 D+1 1회 재시도 후 Free로 전환될 수 있음을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 월 9,900원이 매월 자동결제되는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 결제 예정일 전 사전 안내가 제공되는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있음을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 자동결제 실패 시 D+1 1회 재시도 후 Free로 전환될 수 있음을 확인했습니다.</label>
+    </div>
+
+    <div class="billingResultGrid paymentMethodPrepareGrid">
+      <div><span>주문번호</span><strong data-payment-method-order-id>준비 전</strong></div>
+      <div><span>Customer Key</span><strong data-payment-method-customer-key>준비 전</strong></div>
+      <div><span>성공 경로</span><strong data-payment-method-success-url>준비 전</strong></div>
+      <div><span>저장 방식</span><strong>PG 참조값 저장 예정</strong></div>
     </div>
 
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox">
-      <strong>다음 단계 연결 예정</strong>
-      <p>현재 화면은 자동결제 등록 전 사전 고지와 흐름 확인용입니다. Step 166에서 PG 결제수단 등록 API를 연결합니다.</p>
+      <strong>등록 준비 상태</strong>
+      <p data-payment-method-status>필수 확인 항목을 체크하면 자동결제 등록 준비 정보를 생성할 수 있습니다.</p>
     </div>
 
     <div class="billingResultActions">
-      <button type="button" class="primaryButton" disabled>결제수단 등록 연동 준비 중</button>
+      <button type="button" class="secondaryButton" data-payment-method-prepare disabled>자동결제 등록 준비</button>
+      <button type="button" class="primaryButton" data-payment-method-open disabled>Toss 결제수단 등록창 열기</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE로 돌아가기</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/pricing">요금제 확인</button>
     </div>
@@ -110,8 +206,9 @@ function getSetupCardHtml() {
 }
 
 function getResultCardHtml(path) {
-  const code = getQueryValue("code");
+  const code = getQueryValue("code") || getQueryValue("authKey") || getQueryValue("customerKey");
   const message = getQueryValue("message");
+  const orderId = getQueryValue("orderId");
   const isSuccess = path === "/payment-method/success";
 
   return `
@@ -119,12 +216,12 @@ function getResultCardHtml(path) {
       <div><span>상품</span><strong>FINPLE Personal</strong></div>
       <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
       <div><span>등록 상태</span><strong>${isSuccess ? "등록 완료" : "등록 실패"}</strong></div>
-      <div><span>다음 단계</span><strong>${isSuccess ? "서버 저장 확인" : "다시 등록"}</strong></div>
+      <div><span>주문번호</span><strong>${escapeHtml(orderId || "확인 필요")}</strong></div>
     </div>
 
     <div class="billingResultMessageBox ${isSuccess ? "billingResultMessageBox--success" : "billingResultMessageBox--danger"}">
       <strong>${escapeHtml(code || (isSuccess ? "등록 완료" : "등록 실패"))}</strong>
-      <p>${escapeHtml(message || (isSuccess ? "결제수단 등록 후 서버 저장 결과가 여기에 표시됩니다." : "결제수단 등록 실패 사유가 여기에 표시됩니다."))}</p>
+      <p>${escapeHtml(message || (isSuccess ? "결제수단 인증이 완료되었습니다. 다음 단계에서 billingKey 발급과 서버 저장을 연결합니다." : "결제수단 등록 실패 사유가 여기에 표시됩니다."))}</p>
     </div>
 
     <ul class="billingResultBulletList">
@@ -190,6 +287,15 @@ export function renderPaymentMethodPage() {
   root.querySelectorAll("[data-payment-method-nav]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-payment-method-nav") || "/"));
   });
+
+  if (isSetup) {
+    root.querySelectorAll("[data-payment-method-check]").forEach((checkbox) => {
+      checkbox.addEventListener("change", updateSetupUi);
+    });
+    root.querySelector("[data-payment-method-prepare]")?.addEventListener("click", handlePrepareBillingAuth);
+    root.querySelector("[data-payment-method-open]")?.addEventListener("click", handleOpenBillingAuth);
+    updateSetupUi();
+  }
 
   return true;
 }
