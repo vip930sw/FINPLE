@@ -1,8 +1,8 @@
 /* =========================================================
-   Step 168 - Recurring payment method setup route patch
+   Step 168B - Recurring payment method setup route patch
    - 자동결제 결제수단 등록 준비와 Toss 등록창 열기를 하나의 버튼으로 통합합니다.
    - success 페이지에서 authKey를 서버로 전달해 billingKey 발급/저장을 시도합니다.
-   - orderId/customerKey/successUrl 등 사용자가 알 필요 없는 기술 항목은 화면에서 숨깁니다.
+   - 상단 상태와 등록 상태 카드 문구를 동일하게 동기화합니다.
 ========================================================= */
 
 import { issueBillingKey, prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
@@ -163,6 +163,12 @@ function getSetupCardHtml() {
   `;
 }
 
+function getSuccessStateLabel() {
+  if (billingIssueResult?.stored) return "등록 완료";
+  if (billingIssueError) return "확인 필요";
+  return "등록 확인 중";
+}
+
 function getSuccessMessage() {
   if (isIssuingBillingKey) return { title: "서버 저장 확인 중", message: "결제수단 인증 결과를 확인하고 있습니다." };
   if (billingIssueResult?.stored) return { title: "결제수단 등록 완료", message: "자동결제 결제수단이 안전하게 등록되었습니다." };
@@ -174,6 +180,7 @@ function updateSuccessUi() {
   const root = document.getElementById("root");
   if (!root) return;
 
+  const pageStatus = root.querySelector("[data-payment-method-page-status]");
   const statusTitle = root.querySelector("[data-payment-method-success-title]");
   const statusMessage = root.querySelector("[data-payment-method-success-message]");
   const statusBox = root.querySelector("[data-payment-method-success-box]");
@@ -181,10 +188,12 @@ function updateSuccessUi() {
   const methodLabel = root.querySelector("[data-payment-method-display-label]");
   const nextStep = root.querySelector("[data-payment-method-next-step]");
 
+  const stateLabel = getSuccessStateLabel();
   const copy = getSuccessMessage();
+  setText(pageStatus, stateLabel);
   setText(statusTitle, copy.title);
   setText(statusMessage, copy.message);
-  setText(statusLabel, billingIssueResult?.stored ? "등록 완료" : billingIssueError ? "확인 필요" : "확인 중");
+  setText(statusLabel, stateLabel);
   setText(methodLabel, billingIssueResult?.method?.displayLabel || billingIssueResult?.storage?.displayLabel || "등록 확인 중");
   setText(nextStep, billingIssueResult?.stored ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "서버 저장");
 
@@ -231,7 +240,7 @@ function getResultCardHtml(path) {
       <div class="billingResultGrid">
         <div><span>상품</span><strong>FINPLE Personal</strong></div>
         <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
-        <div><span>등록 상태</span><strong data-payment-method-result-status>확인 중</strong></div>
+        <div><span>등록 상태</span><strong data-payment-method-result-status>등록 확인 중</strong></div>
         <div><span>결제수단</span><strong data-payment-method-display-label>등록 확인 중</strong></div>
       </div>
 
@@ -320,7 +329,7 @@ export function renderPaymentMethodPage() {
 
       <section class="accountCard billingResultCard billingResultCard--${copy.tone} paymentMethodCard">
         <div class="billingResultStatusRow">
-          <div><span>상태</span><strong>${copy.statusLabel}</strong></div>
+          <div><span>상태</span><strong data-payment-method-page-status>${copy.statusLabel}</strong></div>
           <em>${copy.badge}</em>
         </div>
         ${isSetup ? getSetupCardHtml() : getResultCardHtml(path)}
