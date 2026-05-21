@@ -4,8 +4,17 @@ import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
 import ScreenerPage from "./ScreenerPage";
 
+function getInitialPersonalView() {
+  if (typeof window === "undefined") return "hub";
+  const tool = new URLSearchParams(window.location.search).get("tool");
+  if (tool === "investment-mbti") return "investment-mbti";
+  if (tool === "screener") return "screener";
+  if (tool === "simulator") return "simulator";
+  return "hub";
+}
+
 function PersonalPage({ onBack }) {
-  const [personalView, setPersonalView] = useState("hub");
+  const [personalView, setPersonalView] = useState(getInitialPersonalView);
   const [initialTab, setInitialTab] = useState("settings");
   const simulatorRef = useRef(null);
 
@@ -44,6 +53,12 @@ function PersonalPage({ onBack }) {
       moveToSimulatorTab(initialTab);
     }, 120);
   }, [personalView, initialTab]);
+
+  useEffect(() => {
+    const tool = new URLSearchParams(window.location.search).get("tool");
+    if (!tool) return;
+    window.history.replaceState({ page: "personal" }, "", "/simulator");
+  }, []);
 
   if (personalView === "hub") {
     return <StartHubPage onBack={onBack} onNavigate={handleHubNavigate} />;
@@ -86,7 +101,7 @@ function PersonalPage({ onBack }) {
 
           <div className="brandText">
             <strong>FINPLE</strong>
-            <span>Personal Lab</span>
+            <span>PORTFOLIO LAB</span>
           </div>
         </button>
 
@@ -107,9 +122,6 @@ function PersonalPage({ onBack }) {
         <div className="headerActions">
           <button className="secondaryHeaderButton" onClick={() => setPersonalView("hub")}>
             시작 메뉴
-          </button>
-          <button className="headerButton" onClick={onBack}>
-            홈으로
           </button>
         </div>
       </header>
