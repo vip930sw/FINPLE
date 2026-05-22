@@ -2,13 +2,9 @@ import {
   ACTIVE_PORTFOLIO_STORAGE_KEY,
   DEFAULT_ASSETS,
   DEFAULT_SETTINGS,
-  DIVIDEND_ASSETS,
-  EMPTY_ASSETS,
-  GLOBAL_SETTINGS_STORAGE_KEY,
-  GROWTH_ASSETS,
   LEGACY_STORAGE_KEY,
   PORTFOLIO_LIST_STORAGE_KEY,
-  STABLE_ASSETS,
+  GLOBAL_SETTINGS_STORAGE_KEY,
 } from "../constants";
 
 export function createId() {
@@ -104,6 +100,10 @@ export function normalizeGlobalSettings(settings = {}) {
         settings.inflationRate !== undefined
           ? Number(settings.inflationRate)
           : DEFAULT_SETTINGS.inflationRate,
+      startValue:
+        settings.startValue !== undefined
+          ? Number(settings.startValue)
+          : DEFAULT_SETTINGS.startValue,
     };
   }
 export function loadGlobalSettings() {
