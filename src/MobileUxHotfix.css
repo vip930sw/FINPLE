@@ -3,8 +3,36 @@
    - 모바일 상단 메뉴 압축
    - 시뮬레이터 3단계 내비 sticky 처리
    - 스크리너 모바일 검색/조건 버튼 배치 보정
-   - 편집 가능한 입력칸 가독성 보정
+   - 비중 입력칸 가독성 보정
 ========================================================= */
+
+.weightInputWrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.weightInputWrap input {
+  max-width: 92px;
+  text-align: right;
+}
+
+.weightInputWrap span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.primaryFinderButton {
+  border: none;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 900;
+}
 
 @media (max-width: 900px) {
   .finpleUnifiedHeader,
@@ -41,7 +69,9 @@
   }
 
   .brandText span {
+    display: block !important;
     font-size: 10px !important;
+    text-transform: none !important;
   }
 
   .simulatorSection {
@@ -49,40 +79,42 @@
     padding-right: 16px !important;
   }
 
+  .simulatorSection > .simulatorTabNav.threeStepNav,
   .simulatorTabNav.threeStepNav {
-    position: sticky;
-    top: 116px;
-    z-index: 8;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    margin: 0 -6px 18px;
-    padding: 8px 6px;
-    background: rgba(248, 250, 252, 0.96);
+    position: sticky !important;
+    top: 72px !important;
+    z-index: 25 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin: 0 -8px 18px !important;
+    padding: 8px 8px !important;
+    background: rgba(248, 250, 252, 0.98) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid #e2e8f0;
   }
 
-  .simulatorTabButton {
+  .simulatorTabNav.threeStepNav .simulatorTabButton {
     border-radius: 14px !important;
-    padding: 10px 6px !important;
-    min-height: 62px;
+    padding: 9px 4px !important;
+    min-height: 56px !important;
+    white-space: normal !important;
   }
 
-  .simulatorTabButton span {
-    display: block;
-    font-size: 9px;
+  .simulatorTabNav.threeStepNav .simulatorTabButton span {
+    display: block !important;
+    font-size: 9px !important;
     letter-spacing: 0.03em;
   }
 
-  .simulatorTabButton strong {
-    display: block;
-    font-size: 12px;
-    line-height: 1.15;
+  .simulatorTabNav.threeStepNav .simulatorTabButton strong {
+    display: block !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
   }
 
-  .simulatorTabButton small {
-    display: none;
+  .simulatorTabNav.threeStepNav .simulatorTabButton small {
+    display: none !important;
   }
 
   .tickerSearchForm {
@@ -92,8 +124,7 @@
   }
 
   .tickerSearchForm button {
-    order: 10;
-    width: 100%;
+    display: none !important;
   }
 
   .screenerControls {
@@ -102,24 +133,22 @@
     gap: 10px !important;
   }
 
-  .secondaryFinderButton {
+  .secondaryFinderButton,
+  .primaryFinderButton {
     width: 100% !important;
   }
 
+  .primaryFinderButton {
+    order: 20;
+  }
+
   .calculatorTable input {
-    min-width: 92px;
+    min-width: 84px;
   }
 
-  .editablePriceStack input {
-    text-align: right;
-  }
-
-  .editableMetaLine {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 4px;
-    margin-top: 4px;
+  .weightInputWrap input {
+    min-width: 76px;
+    max-width: 84px;
   }
 }
 
