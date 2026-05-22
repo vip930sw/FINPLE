@@ -2,7 +2,6 @@ function formatLookupTime(value) {
   if (!value) return "";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleString("ko-KR", {
@@ -18,22 +17,10 @@ function getDataSourceInfo(asset) {
   const source = String(asset?.dataSource || "manual").toLowerCase();
   const cacheMode = String(asset?.cacheMode || "").toLowerCase();
 
-  if (source.includes("cache") || cacheMode === "hit") {
-    return { label: "캐시값", className: "cache" };
-  }
-
-  if (source.includes("alpha-vantage") || source.includes("alpha_vantage")) {
-    return { label: "Alpha Vantage", className: "alpha" };
-  }
-
-  if (source.includes("mock")) {
-    return { label: "Mock", className: "mock" };
-  }
-
-  if (source.includes("ticker-master")) {
-    return { label: "마스터", className: "master" };
-  }
-
+  if (source.includes("cache") || cacheMode === "hit") return { label: "캐시값", className: "cache" };
+  if (source.includes("alpha-vantage") || source.includes("alpha_vantage")) return { label: "Alpha Vantage", className: "alpha" };
+  if (source.includes("mock")) return { label: "Mock", className: "mock" };
+  if (source.includes("ticker-master")) return { label: "마스터", className: "master" };
   return { label: "수동값", className: "manual" };
 }
 
@@ -43,14 +30,8 @@ function getPriceBasisText(asset, formatDecimal) {
   const rawCurrency = asset?.rawCurrency || "USD";
   const currency = asset?.currency || "KRW";
 
-  if (rawCurrency && currency === rawCurrency && rawPrice > 0) {
-    return `${rawCurrency} ${formatDecimal(rawPrice, 2)}`;
-  }
-
-  if (rawPrice > 0 && exchangeRate > 0) {
-    return `${rawCurrency} ${formatDecimal(rawPrice, 2)} × ${Math.round(exchangeRate).toLocaleString()}원`;
-  }
-
+  if (rawCurrency && currency === rawCurrency && rawPrice > 0) return `${rawCurrency} ${formatDecimal(rawPrice, 2)}`;
+  if (rawPrice > 0 && exchangeRate > 0) return `${rawCurrency} ${formatDecimal(rawPrice, 2)} × ${Math.round(exchangeRate).toLocaleString()}원`;
   if (currency) return `${currency} 기준`;
   return "";
 }
@@ -79,20 +60,25 @@ function LookupRequiredValue({ quantity }) {
   );
 }
 
-function PriceSourceHint({ asset, formatDecimal }) {
+function PriceTextValue({ asset, formatDecimal }) {
   const sourceInfo = getDataSourceInfo(asset);
   const lookupTime = formatLookupTime(asset.lastUpdatedAt);
   const priceBasisText = getPriceBasisText(asset, formatDecimal);
 
-  if (!asset?.dataSource && !lookupTime && !priceBasisText) return null;
-
   return (
-    <span className="assetMetaLine editableMetaLine">
-      <span className={`dataSourceBadge ${sourceInfo.className}`}>{sourceInfo.label}</span>
-      {lookupTime && <span className="lookupTimeText">{lookupTime}</span>}
+    <div className="assetInfoStack alignRight">
+      <span className="assetTextValue numberTextValue">{formatDecimal(asset.price, 2)}</span>
+      <span className="assetMetaLine">
+        <span className={`dataSourceBadge ${sourceInfo.className}`}>{sourceInfo.label}</span>
+        {lookupTime && <span className="lookupTimeText">{lookupTime}</span>}
+      </span>
       {priceBasisText && <small className="priceBasisText">{priceBasisText}</small>}
-    </span>
+    </div>
   );
+}
+
+function MetricTextValue({ value, formatDecimal }) {
+  return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
 }
 
 export default function AssetInputTable({
@@ -100,10 +86,8 @@ export default function AssetInputTable({
   totalAssetValue,
   isEmptyAssetRow,
   isAutoAsset,
-  formatNumber,
   formatDecimal,
   formatPercent,
-  toNumber,
   updateAsset,
   assetLookupStatus,
   recentlyAddedAssetId,
@@ -178,13 +162,8 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td>
-                  <input
-                    type="number"
-                    value={asset.quantity}
-                    onChange={(e) => updateAsset(index, "quantity", Number(e.target.value))}
-                    disabled={isBulkAssetLookupLoading}
-                  />
+                <td className="numberCell">
+                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}
                 </td>
 
                 <td>
@@ -193,44 +172,36 @@ export default function AssetInputTable({
                   ) : lookupRequired ? (
                     <LookupRequiredValue quantity={asset.quantity} />
                   ) : (
-                    <div className="assetInfoStack alignRight editablePriceStack">
-                      <input
-                        type="text"
-                        value={formatNumber(asset.price)}
-                        onChange={(e) => updateAsset(index, "price", toNumber(e.target.value))}
-                        disabled={isBulkAssetLookupLoading}
-                      />
-                      <PriceSourceHint asset={asset} formatDecimal={formatDecimal} />
-                    </div>
+                    <PriceTextValue asset={asset} formatDecimal={formatDecimal} />
                   )}
                 </td>
 
                 <td className={valueCellClassName}>{Math.floor(value).toLocaleString()}원</td>
-                <td className={valueCellClassName}>{formatPercent(weight)}</td>
 
                 <td>
-                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
-                    <input type="number" value={asset.cagr} onChange={(e) => updateAsset(index, "cagr", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
+                  {emptyRow ? (
+                    <span className="emptyTextValue numberTextValue">-</span>
+                  ) : (
+                    <div className="weightInputWrap">
+                      <input
+                        type="number"
+                        value={Number.isFinite(weight) ? Number(weight.toFixed(2)) : 0}
+                        onChange={(e) => updateAsset(index, "targetWeight", Number(e.target.value))}
+                        step="0.01"
+                        min="0"
+                        max="99.99"
+                        disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
+                        aria-label="비중 입력"
+                      />
+                      <span>%</span>
+                    </div>
                   )}
                 </td>
 
-                <td>
-                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
-                    <input type="number" value={asset.beta} onChange={(e) => updateAsset(index, "beta", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
-                  )}
-                </td>
-
-                <td>
-                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
-                    <input type="number" value={asset.mdd} onChange={(e) => updateAsset(index, "mdd", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
-                  )}
-                </td>
-
-                <td>
-                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
-                    <input type="number" value={asset.dividendYield} onChange={(e) => updateAsset(index, "dividendYield", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
-                  )}
-                </td>
+                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
+                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
+                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
+                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
 
                 <td>
                   <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
