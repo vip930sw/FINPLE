@@ -2,10 +2,14 @@
    FINPLE global header normalizer
    - 우측 글로벌 메뉴를 모든 주요 화면에서 동일하게 유지합니다.
    - 홈 내부 내비와 시뮬레이터 내부 내비는 가운데 영역에 남겨둡니다.
+   - React 화면 전환/로고 클릭 후 재렌더링되어도 헤더를 다시 정리합니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const TOOL_PATHS = ["/start", "/tools", "/mbti", "/simulator", "/screener"];
+let globalHeaderPatchTimer = null;
+let globalHeaderObserver = null;
+let isPatchingHeader = false;
 
 function normalizePath(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -133,19 +137,43 @@ function patchHeader(header) {
 }
 
 function patchAllHeaders() {
-  document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
+  if (isPatchingHeader) return;
+  isPatchingHeader = true;
+  try {
+    document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
+  } finally {
+    isPatchingHeader = false;
+  }
 }
 
 function schedulePatch() {
-  [0, 40, 120, 280, 600].forEach((delay) => window.setTimeout(patchAllHeaders, delay));
+  if (globalHeaderPatchTimer) window.clearTimeout(globalHeaderPatchTimer);
+  globalHeaderPatchTimer = window.setTimeout(() => {
+    patchAllHeaders();
+    [40, 120, 280, 600].forEach((delay) => window.setTimeout(patchAllHeaders, delay));
+  }, 0);
 }
 
 function bootGlobalNavigationPatch() {
   schedulePatch();
   window.addEventListener("popstate", schedulePatch);
+  window.addEventListener("pushstate", schedulePatch);
   window.addEventListener("finple-auth-updated", schedulePatch);
   window.addEventListener("finple-route-changed", schedulePatch);
   window.addEventListener("finple-local-storage-updated", schedulePatch);
+
+  if (!globalHeaderObserver) {
+    globalHeaderObserver = new MutationObserver((mutations) => {
+      if (isPatchingHeader) return;
+      const shouldPatch = mutations.some((mutation) =>
+        Array.from(mutation.addedNodes || []).some((node) =>
+          node instanceof Element && (node.matches?.(".header, .accountHeader") || node.querySelector?.(".header, .accountHeader"))
+        )
+      );
+      if (shouldPatch) schedulePatch();
+    });
+    globalHeaderObserver.observe(document.body, { childList: true, subtree: true });
+  }
 }
 
 if (typeof window !== "undefined") {
