@@ -138,12 +138,25 @@ function isActivatingEmptyAsset(currentAsset, field, value) {
   return !currentTicker && Boolean(nextTicker);
 }
 
+function parseWeightValue(value) {
+  if (value === "" || value === null || value === undefined) return 0;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return 0;
+  return Math.max(0, numberValue);
+}
+
+function isCashAsset(asset) {
+  const ticker = normalizeTicker(asset?.ticker);
+  return ticker === "CASH" || ticker === "KRW" || String(asset?.name || "").includes("현금");
+}
+
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
   const [activePortfolioId, setActivePortfolioId] = useState(initialPortfolioState.activePortfolioId);
   const [settings, setSettings] = useState(initialPortfolioState.globalSettings || DEFAULT_SETTINGS);
   const [assets, setAssets] = useState(() => cloneAssets(initialPortfolioState.activePortfolio.assets));
+  const [targetWeightDrafts, setTargetWeightDrafts] = useState({});
   const [activeSimulatorTab, setActiveSimulatorTab] = useState("screener");
   const [isPortfolioDropdownOpen, setIsPortfolioDropdownOpen] = useState(false);
   const [isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen] = useState(false);
@@ -173,6 +186,50 @@ export default function usePortfolioSimulator() {
   const emptyAssetCount = assets.length - activeAssetCount;
   const dataManagementSummary = { appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, portfolioCount: portfolioList.length, activeAssetCount, emptyAssetCount, lastLocalSaveAt, lastLocalSaveText: formatStorageDate(lastLocalSaveAt), activePortfolioUpdatedAt: activePortfolio?.updatedAt || null, activePortfolioUpdatedText: formatStorageDate(activePortfolio?.updatedAt) };
 
+  function getAssetDraftKey(asset, index) {
+    return asset?.id || `${normalizeTicker(asset?.ticker) || "asset"}-${index}`;
+  }
+
+  function getActualAssetWeight(asset) {
+    if (!asset || totalAssetValue <= 0) return 0;
+    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    if (!Number.isFinite(value) || value <= 0) return 0;
+    return (value / totalAssetValue) * 100;
+  }
+
+  function getEffectiveTargetWeight(asset, index) {
+    const key = getAssetDraftKey(asset, index);
+    if (Object.prototype.hasOwnProperty.call(targetWeightDrafts, key)) return parseWeightValue(targetWeightDrafts[key]);
+    return Number(getActualAssetWeight(asset).toFixed(2));
+  }
+
+  const targetWeightRows = assets.map((asset, index) => ({
+    asset,
+    index,
+    key: getAssetDraftKey(asset, index),
+    ticker: normalizeTicker(asset?.ticker),
+    price: Number(asset?.price || 0),
+    currentWeight: getActualAssetWeight(asset),
+    targetWeight: getEffectiveTargetWeight(asset, index),
+    isCash: isCashAsset(asset),
+    isEmpty: isEmptyAssetRow(asset),
+  })).filter((row) => !row.isEmpty && row.ticker);
+
+  const targetWeightTotal = targetWeightRows.reduce((sum, row) => sum + row.targetWeight, 0);
+  const targetWeightOverAmount = Math.max(0, targetWeightTotal - 100);
+  const targetWeightRemaining = Math.max(0, 100 - targetWeightTotal);
+  const targetWeightHasCash = targetWeightRows.some((row) => row.isCash && row.price > 0);
+  const targetWeightUnsupportedCount = targetWeightRows.filter((row) => row.targetWeight > 0 && row.price <= 0).length;
+  const targetWeightSummary = {
+    total: Number(targetWeightTotal.toFixed(2)),
+    remaining: Number(targetWeightRemaining.toFixed(2)),
+    overAmount: Number(targetWeightOverAmount.toFixed(2)),
+    hasCash: targetWeightHasCash,
+    unsupportedCount: targetWeightUnsupportedCount,
+    isOver: targetWeightTotal > 100.0001,
+    isApplyDisabled: targetWeightRows.length === 0 || totalAssetValue <= 0 || targetWeightTotal > 100.0001 || targetWeightUnsupportedCount > 0,
+  };
+
   function showPlanLimitNotice(type) {
     const currentPlan = getCurrentPlanConfig();
     const message = getPlanLimitMessage(currentPlan.key, type);
@@ -186,15 +243,82 @@ export default function usePortfolioSimulator() {
 
   function updateSetting(field, value) { setSettings({ ...settings, [field]: value }); }
 
-  function getTargetQuantityFromWeight(currentAsset, targetWeight) {
-    const price = Number(currentAsset?.price || 0);
-    const currentValue = Number(currentAsset?.quantity || 0) * price;
-    const otherAssetValue = assets.reduce((sum, asset) => sum + Number(asset.quantity || 0) * Number(asset.price || 0), 0) - currentValue;
-    const safeWeight = Math.max(0, Math.min(99.99, Number(targetWeight || 0)));
-    if (price <= 0) return Number(currentAsset?.quantity || 0);
-    if (safeWeight <= 0) return 0;
-    const targetValue = (safeWeight * otherAssetValue) / (100 - safeWeight);
-    return Number((targetValue / price).toFixed(6));
+  function updateTargetWeightDraft(index, value) {
+    const asset = assets[index];
+    if (!asset) return;
+    const key = getAssetDraftKey(asset, index);
+    setTargetWeightDrafts((previousDrafts) => ({ ...previousDrafts, [key]: value }));
+  }
+
+  function resetTargetWeights() {
+    setTargetWeightDrafts({});
+    setAssetLookupSummary("목표비중 입력값을 현재 실제 비중으로 되돌렸습니다.");
+  }
+
+  function equalizeTargetWeights() {
+    const rows = targetWeightRows.filter((row) => row.price > 0);
+    if (rows.length === 0) {
+      window.alert("균등분배할 수 있는 자산이 없습니다. 현재가가 있는 자산을 먼저 조회해 주세요.");
+      return;
+    }
+
+    const baseWeight = Math.floor((100 / rows.length) * 100) / 100;
+    const nextDrafts = {};
+    rows.forEach((row, rowIndex) => {
+      const value = rowIndex === rows.length - 1 ? Number((100 - baseWeight * (rows.length - 1)).toFixed(2)) : baseWeight;
+      nextDrafts[row.key] = String(value);
+    });
+    setTargetWeightDrafts(nextDrafts);
+    setAssetLookupSummary("전체 자산 목표비중을 균등분배했습니다. 적용 버튼을 누르면 수량이 반영됩니다.");
+  }
+
+  function applyTargetWeights() {
+    if (totalAssetValue <= 0) {
+      window.alert("시작 평가금액이 0원입니다. 현재가와 수량이 있는 자산이 필요합니다.");
+      return;
+    }
+
+    const rows = targetWeightRows.filter((row) => row.ticker);
+    if (rows.length === 0) {
+      window.alert("목표비중을 적용할 자산이 없습니다.");
+      return;
+    }
+
+    const unsupportedRows = rows.filter((row) => row.targetWeight > 0 && row.price <= 0);
+    if (unsupportedRows.length > 0) {
+      window.alert("현재가가 없는 자산에는 목표비중을 적용할 수 없습니다. 먼저 조회를 진행해 주세요.");
+      return;
+    }
+
+    let nextRows = rows.map((row) => ({ ...row }));
+    let nextTotal = nextRows.reduce((sum, row) => sum + row.targetWeight, 0);
+
+    if (nextTotal > 100.0001) {
+      window.alert("목표비중 합계가 100%를 초과했습니다. 비중을 조정해 주세요.");
+      return;
+    }
+
+    if (nextTotal < 99.9999) {
+      const cashRow = nextRows.find((row) => row.isCash && row.price > 0);
+      if (!cashRow) {
+        window.alert("목표비중 합계가 100% 미만입니다. 현금 자산이 없으면 합계를 100%로 맞춰 주세요.");
+        return;
+      }
+      cashRow.targetWeight = Number((cashRow.targetWeight + (100 - nextTotal)).toFixed(6));
+      nextTotal = 100;
+    }
+
+    const targetMap = new Map(nextRows.map((row) => [row.index, row.targetWeight]));
+    setAssets((previousAssets) => previousAssets.map((asset, index) => {
+      if (!targetMap.has(index)) return asset;
+      const price = Number(asset.price || 0);
+      const targetWeight = Number(targetMap.get(index) || 0);
+      const targetValue = totalAssetValue * (targetWeight / 100);
+      const quantity = price > 0 ? Number((targetValue / price).toFixed(6)) : 0;
+      return { ...asset, quantity };
+    }));
+    setTargetWeightDrafts({});
+    setAssetLookupSummary("목표비중을 적용했습니다. 수량과 평가금액이 한 번에 재계산되었습니다.");
   }
 
   function updateAsset(index, field, value) {
@@ -210,12 +334,17 @@ export default function usePortfolioSimulator() {
     }
 
     if (field === "targetWeight") {
-      nextAssets[index] = { ...currentAsset, quantity: getTargetQuantityFromWeight(currentAsset, value) };
-      setAssets(nextAssets);
+      updateTargetWeightDraft(index, value);
       return;
     }
 
     if (field === "ticker") {
+      const currentKey = getAssetDraftKey(currentAsset, index);
+      setTargetWeightDrafts((previousDrafts) => {
+        const nextDrafts = { ...previousDrafts };
+        delete nextDrafts[currentKey];
+        return nextDrafts;
+      });
       const nextTicker = normalizeTicker(value);
       const previousTicker = normalizeTicker(currentAsset.ticker);
       const tickerChanged = nextTicker !== previousTicker;
@@ -268,7 +397,7 @@ export default function usePortfolioSimulator() {
         nextAssets[index] = applyTickerCandidateToAsset(currentAsset, candidate, index);
         return nextAssets;
       });
-      if (!options.silent) setAssetLookupSummary(`${ticker} 티커 마스터 정보 적용. 수량 입력 후 조회하면 현재가를 가져올 수 있습니다.`);
+      if (!options.silent) setAssetLookupSummary(`${ticker} 티커 마스터 정보 적용. 비중을 입력하고 목표비중 적용을 누르면 수량이 계산됩니다.`);
       return candidate;
     } catch (error) {
       if (!options.silent) setAssetLookupSummary(`${ticker}는 티커 마스터에서 찾지 못했습니다. 직접 입력값으로 유지합니다.`);
@@ -390,20 +519,21 @@ export default function usePortfolioSimulator() {
     });
     setRecentlyAddedAssetId(nextAsset.id);
     window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
-    const message = `${ticker} 후보 자산을 현재 포트폴리오에 추가했습니다. 수량 입력 후 조회하세요.`;
+    const message = `${ticker} 후보 자산을 현재 포트폴리오에 추가했습니다. 비중을 입력하고 목표비중 적용을 누르세요.`;
     setAssetLookupSummary(message);
     return { status: "success", ticker, asset: nextAsset, message };
   }
 
   function addAsset() { setAssets([...assets, normalizeAsset({ ...EMPTY_ASSETS[0], id: `asset-${Date.now()}` }, assets.length)]); }
-  function removeAsset(index) { setAssets(assets.filter((_, assetIndex) => assetIndex !== index)); }
-  function cleanEmptyAssetRows() { const nextAssets = assets.filter((asset) => !isEmptyAssetRow(asset)); setAssets(nextAssets.length > 0 ? nextAssets : cloneAssets(DEFAULT_ASSETS)); }
+  function removeAsset(index) { const targetAsset = assets[index]; const targetKey = getAssetDraftKey(targetAsset, index); setTargetWeightDrafts((previousDrafts) => { const nextDrafts = { ...previousDrafts }; delete nextDrafts[targetKey]; return nextDrafts; }); setAssets(assets.filter((_, assetIndex) => assetIndex !== index)); }
+  function cleanEmptyAssetRows() { const nextAssets = assets.filter((asset) => !isEmptyAssetRow(asset)); setAssets(nextAssets.length > 0 ? nextAssets : cloneAssets(DEFAULT_ASSETS)); setTargetWeightDrafts({}); }
 
   function selectPortfolio(id) {
     const nextPortfolio = portfolioList.find((portfolio) => portfolio.id === id);
     if (!nextPortfolio) return;
     setActivePortfolioId(id);
     setAssets(cloneAssets(nextPortfolio.assets));
+    setTargetWeightDrafts({});
     setIsPortfolioDropdownOpen(false);
   }
 
@@ -414,13 +544,14 @@ export default function usePortfolioSimulator() {
     setPortfolioList([nextPortfolio, ...portfolioList]);
     setActivePortfolioId(nextPortfolio.id);
     setAssets(cloneAssets(nextPortfolio.assets));
+    setTargetWeightDrafts({});
     setIsNewPortfolioMenuOpen(false);
   }
 
-  function duplicateActivePortfolio() { const duplicatedPortfolio = createPortfolio({ name: `${activePortfolio?.name || "포트폴리오"} 복사본`, assets, settings }); setPortfolioList([duplicatedPortfolio, ...portfolioList]); setActivePortfolioId(duplicatedPortfolio.id); setAssets(cloneAssets(duplicatedPortfolio.assets)); }
+  function duplicateActivePortfolio() { const duplicatedPortfolio = createPortfolio({ name: `${activePortfolio?.name || "포트폴리오"} 복사본`, assets, settings }); setPortfolioList([duplicatedPortfolio, ...portfolioList]); setActivePortfolioId(duplicatedPortfolio.id); setAssets(cloneAssets(duplicatedPortfolio.assets)); setTargetWeightDrafts({}); }
   function renameActivePortfolio(nextName) { setPortfolioList((previousList) => previousList.map((portfolio) => portfolio.id === activePortfolioId ? { ...portfolio, name: nextName, updatedAt: new Date().toISOString() } : portfolio)); }
-  function deleteActivePortfolio() { if (portfolioList.length <= 1) return; const nextPortfolioList = portfolioList.filter((portfolio) => portfolio.id !== activePortfolioId); const nextActivePortfolio = nextPortfolioList[0]; setPortfolioList(nextPortfolioList); setActivePortfolioId(nextActivePortfolio.id); setAssets(cloneAssets(nextActivePortfolio.assets)); }
-  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS)); }
+  function deleteActivePortfolio() { if (portfolioList.length <= 1) return; const nextPortfolioList = portfolioList.filter((portfolio) => portfolio.id !== activePortfolioId); const nextActivePortfolio = nextPortfolioList[0]; setPortfolioList(nextPortfolioList); setActivePortfolioId(nextActivePortfolio.id); setAssets(cloneAssets(nextActivePortfolio.assets)); setTargetWeightDrafts({}); }
+  function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS)); setTargetWeightDrafts({}); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
   function changeSimulatorTab(nextTab) { setActiveSimulatorTab(nextTab); }
   function scrollToPortfolioTop() { document.getElementById("portfolio")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
@@ -428,12 +559,12 @@ export default function usePortfolioSimulator() {
 
   function downloadPortfolioBackup() { downloadJsonFile({ portfolioList, activePortfolioId, globalSettings: settings, appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, schemaVersion: FINPLE_BACKUP_SCHEMA_VERSION, exportedAt: new Date().toISOString() }, createBackupFileName(activePortfolio?.name)); }
   function openPortfolioBackupFile() { backupFileInputRef.current?.click(); }
-  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = applyPortfolioPlanLimitToState(loadPortfolioState(parsedData)); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio.assets)); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
+  function restorePortfolioBackup(event) { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsedData = JSON.parse(reader.result); if (!isValidBackupData(parsedData)) throw new Error("백업 파일 형식이 올바르지 않습니다."); const nextState = applyPortfolioPlanLimitToState(loadPortfolioState(parsedData)); setPortfolioList(nextState.portfolioList); setActivePortfolioId(nextState.activePortfolioId); setAssets(cloneAssets(nextState.activePortfolio.assets)); setTargetWeightDrafts({}); setSettings(normalizeGlobalSettings(nextState.globalSettings || DEFAULT_SETTINGS)); } catch (error) { window.alert(error?.message || "백업 파일을 복원하지 못했습니다."); } finally { event.target.value = ""; } }; reader.readAsText(file); }
   function downloadReportText() { downloadTextFile(createPortfolioReportText({ activePortfolio, detailReport, settings, result, assets }), `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.txt`); }
   function saveReportPdf() { window.print(); }
   function printReport() { window.print(); }
   function reportPdfFileName() { return `${createSafeFileName(activePortfolio?.name, "FINPLE-report")}.pdf`; }
   function copyReportSummary() { navigator.clipboard?.writeText(createReportSummaryText({ activePortfolio, detailReport, settings, result, assets })); }
 
-  return { portfolioList, activePortfolioId, activePortfolio, settings, assets, assetLookupStatus, isBulkAssetLookupLoading, assetLookupSummary, recentlyAddedAssetId, dataManagementSummary, activeSimulatorTab, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, fetchAssetData, fetchAllAssetData, resolveTickerCandidate, addAsset, addAssetFromTickerCandidate, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isAutoPriceAsset, isAutoMetricAsset, isEmptyAssetRow };
+  return { portfolioList, activePortfolioId, activePortfolio, settings, assets, targetWeightDrafts, targetWeightSummary, assetLookupStatus, isBulkAssetLookupLoading, assetLookupSummary, recentlyAddedAssetId, dataManagementSummary, activeSimulatorTab, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen, backupFileInputRef, result, yearlyContribution, totalAssetValue, simulationStartValue, expectedCagr, expectedDividendYield, expectedBeta, simpleMdd, expectedCalmar, expectedAnnualDividend, performanceRows, futureValue, inflationAdjustedFutureValue, insightComparisonPortfolios, chartComparisonPortfolios, detailReport, updateSetting, updateAsset, updateTargetWeightDraft, applyTargetWeights, resetTargetWeights, equalizeTargetWeights, fetchAssetData, fetchAllAssetData, resolveTickerCandidate, addAsset, addAssetFromTickerCandidate, removeAsset, cleanEmptyAssetRows, selectPortfolio, createPortfolioFromTemplate, duplicateActivePortfolio, downloadPortfolioBackup, openPortfolioBackupFile, restorePortfolioBackup, downloadReportText, saveReportPdf, printReport, reportPdfFileName, copyReportSummary, renameActivePortfolio, deleteActivePortfolio, resetActivePortfolioAssets, resetGlobalSettings, changeSimulatorTab, scrollToPortfolioTop, selectPortfolioFromFloating, formatNumber, formatDecimal, formatPercent, toNumber, isAutoAsset, isAutoPriceAsset, isAutoMetricAsset, isEmptyAssetRow };
 }
