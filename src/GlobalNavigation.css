@@ -2,17 +2,20 @@
    Global navigation / brand consistency
    - PC와 모바일 모두 상단 메뉴를 고정 표시합니다.
    - 브랜드 보조 문구는 Portfolio Lab 대소문자 그대로 유지합니다.
+   - 홈/시뮬레이터의 로컬 내비는 가운데 영역에 배치합니다.
 ========================================================= */
 
 .finpleUnifiedHeader {
   position: sticky !important;
   top: 0 !important;
   z-index: 1000 !important;
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: 240px minmax(240px, 1fr) auto !important;
   align-items: center !important;
-  justify-content: space-between !important;
   gap: 24px !important;
   min-height: 72px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   background: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid #e2e8f0 !important;
   backdrop-filter: blur(12px) !important;
@@ -24,8 +27,30 @@
 }
 
 .finpleUnifiedHeader .brandText span {
+  display: block !important;
   text-transform: none !important;
   letter-spacing: 0.02em !important;
+}
+
+.homeHeader .homeSectionNav,
+.personalPage .headerNav {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 28px !important;
+  width: 100% !important;
+  color: #334155;
+  font-weight: 900;
+}
+
+.homeHeader .homeSectionNav button,
+.personalPage .headerNav button {
+  border: 0;
+  background: transparent;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 950;
+  white-space: nowrap;
 }
 
 .finpleGlobalNav {
@@ -99,14 +124,38 @@
   color: #2563eb !important;
 }
 
+.accountPage .accountHero,
+.legalPage .accountHero {
+  padding-top: 56px !important;
+}
+
+@media (max-width: 1180px) {
+  .finpleUnifiedHeader {
+    grid-template-columns: 210px minmax(120px, 1fr) auto !important;
+    gap: 16px !important;
+  }
+
+  .homeHeader .homeSectionNav,
+  .personalPage .headerNav {
+    gap: 18px !important;
+  }
+
+  .finpleGlobalNav {
+    gap: 16px !important;
+  }
+}
+
 @media (max-width: 960px) {
   .finpleUnifiedHeader {
-    flex-wrap: nowrap !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
     height: auto !important;
-    min-height: 118px !important;
-    padding-top: 14px !important;
+    min-height: 112px !important;
+    padding-top: 12px !important;
     padding-bottom: 10px !important;
-    align-content: flex-start !important;
+    gap: 10px !important;
   }
 
   .finpleUnifiedHeader .brandLogo {
@@ -114,10 +163,9 @@
     width: 100%;
   }
 
-  .finpleUnifiedHeader {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
+  .homeHeader .homeSectionNav,
+  .personalPage .headerNav {
+    display: none !important;
   }
 
   .finpleGlobalNav {
@@ -141,7 +189,7 @@
 
 @media (max-width: 480px) {
   .finpleUnifiedHeader {
-    min-height: 112px !important;
+    min-height: 110px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
