@@ -24,18 +24,6 @@ function getDataSourceInfo(asset) {
   return { label: "수동값", className: "manual" };
 }
 
-function getPriceBasisText(asset, formatDecimal) {
-  const rawPrice = Number(asset?.rawPrice || 0);
-  const exchangeRate = Number(asset?.exchangeRate || 0);
-  const rawCurrency = asset?.rawCurrency || "USD";
-  const currency = asset?.currency || "KRW";
-
-  if (rawCurrency && currency === rawCurrency && rawPrice > 0) return `${rawCurrency} ${formatDecimal(rawPrice, 2)}`;
-  if (rawPrice > 0 && exchangeRate > 0) return `${rawCurrency} ${formatDecimal(rawPrice, 2)} × ${Math.round(exchangeRate).toLocaleString()}원`;
-  if (currency) return `${currency} 기준`;
-  return "";
-}
-
 function isLookupRequiredAsset(asset, emptyRow) {
   const ticker = String(asset?.ticker || "").trim();
   const price = Number(asset?.price || 0);
@@ -73,7 +61,6 @@ function LookupRequiredValue({ quantity }) {
 function PriceTextValue({ asset, formatDecimal }) {
   const sourceInfo = getDataSourceInfo(asset);
   const lookupTime = formatLookupTime(asset.lastUpdatedAt);
-  const priceBasisText = getPriceBasisText(asset, formatDecimal);
 
   return (
     <div className="assetInfoStack alignRight">
@@ -82,7 +69,6 @@ function PriceTextValue({ asset, formatDecimal }) {
         <span className={`dataSourceBadge ${sourceInfo.className}`}>{sourceInfo.label}</span>
         {lookupTime && <span className="lookupTimeText">{lookupTime}</span>}
       </span>
-      {priceBasisText && <small className="priceBasisText">{priceBasisText}</small>}
     </div>
   );
 }
@@ -115,7 +101,7 @@ export default function AssetInputTable({
             <th>티커</th>
             <th>자산명</th>
             <th className="numberHeader">수량</th>
-            <th className="numberHeader">현재가</th>
+            <th className="numberHeader">현재가 (원, KRW)</th>
             <th className="numberHeader">평가금액</th>
             <th className="numberHeader">목표비중</th>
             <th className="numberHeader">실제비중</th>
@@ -124,7 +110,6 @@ export default function AssetInputTable({
             <th className="numberHeader">MDD (%)</th>
             <th className="numberHeader">배당률 (%)</th>
             <th>조회</th>
-            <th></th>
           </tr>
         </thead>
 
@@ -151,18 +136,23 @@ export default function AssetInputTable({
             return (
               <tr key={asset.id || index} className={rowClassName}>
                 <td>
-                  <input
-                    value={asset.ticker}
-                    onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
-                    onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        e.currentTarget.blur();
-                      }
-                    }}
-                    disabled={isBulkAssetLookupLoading}
-                  />
+                  <div className="tickerCellStack">
+                    <input
+                      value={asset.ticker}
+                      onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
+                      onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      disabled={isBulkAssetLookupLoading}
+                    />
+                    {!emptyRow && (
+                      <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
+                    )}
+                  </div>
                 </td>
 
                 <td>
@@ -195,12 +185,12 @@ export default function AssetInputTable({
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : (
-                    <div className="weightInputWrap">
+                    <div className="weightInputWrap targetWeightInputWrap">
                       <input
                         type="number"
                         value={targetWeightValue}
                         onChange={(e) => updateTargetWeightDraft?.(index, e.target.value)}
-                        step="0.1"
+                        step="0.01"
                         min="0"
                         max="100"
                         disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
@@ -221,10 +211,6 @@ export default function AssetInputTable({
                   <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
                     {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
                   </button>
-                </td>
-
-                <td>
-                  <button type="button" className="removeButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
                 </td>
               </tr>
             );
