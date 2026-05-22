@@ -15,7 +15,6 @@ import {
 import {
   cloneAssets,
   createPortfolio,
-  ensureMinimumPortfolios,
   loadPortfolioState,
   normalizeAsset,
   normalizeGlobalSettings,
@@ -145,11 +144,6 @@ function parseWeightValue(value) {
   return Math.max(0, numberValue);
 }
 
-function isCashAsset(asset) {
-  const ticker = normalizeTicker(asset?.ticker);
-  return ticker === "CASH" || ticker === "KRW" || String(asset?.name || "").includes("현금");
-}
-
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
@@ -211,23 +205,22 @@ export default function usePortfolioSimulator() {
     price: Number(asset?.price || 0),
     currentWeight: getActualAssetWeight(asset),
     targetWeight: getEffectiveTargetWeight(asset, index),
-    isCash: isCashAsset(asset),
     isEmpty: isEmptyAssetRow(asset),
   })).filter((row) => !row.isEmpty && row.ticker);
 
   const targetWeightTotal = targetWeightRows.reduce((sum, row) => sum + row.targetWeight, 0);
   const targetWeightOverAmount = Math.max(0, targetWeightTotal - 100);
   const targetWeightRemaining = Math.max(0, 100 - targetWeightTotal);
-  const targetWeightHasCash = targetWeightRows.some((row) => row.isCash && row.price > 0);
   const targetWeightUnsupportedCount = targetWeightRows.filter((row) => row.targetWeight > 0 && row.price <= 0).length;
+  const targetWeightIsBalanced = Math.abs(targetWeightTotal - 100) <= 0.01;
   const targetWeightSummary = {
     total: Number(targetWeightTotal.toFixed(2)),
     remaining: Number(targetWeightRemaining.toFixed(2)),
     overAmount: Number(targetWeightOverAmount.toFixed(2)),
-    hasCash: targetWeightHasCash,
+    hasCash: false,
     unsupportedCount: targetWeightUnsupportedCount,
-    isOver: targetWeightTotal > 100.0001,
-    isApplyDisabled: targetWeightRows.length === 0 || totalAssetValue <= 0 || targetWeightTotal > 100.0001 || targetWeightUnsupportedCount > 0,
+    isOver: targetWeightTotal > 100.01,
+    isApplyDisabled: targetWeightRows.length === 0 || simulationStartValue <= 0 || !targetWeightIsBalanced || targetWeightUnsupportedCount > 0,
   };
 
   function showPlanLimitNotice(type) {
@@ -241,7 +234,7 @@ export default function usePortfolioSimulator() {
     return message;
   }
 
-  function updateSetting(field, value) { setSettings({ ...settings, [field]: value }); }
+  function updateSetting(field, value) { setSettings((previous) => ({ ...previous, [field]: value })); }
 
   function updateTargetWeightDraft(index, value) {
     const asset = assets[index];
@@ -273,8 +266,9 @@ export default function usePortfolioSimulator() {
   }
 
   function applyTargetWeights() {
-    if (totalAssetValue <= 0) {
-      window.alert("시작 평가금액이 0원입니다. 현재가와 수량이 있는 자산이 필요합니다.");
+    const startValue = Number(simulationStartValue || 0);
+    if (startValue <= 0) {
+      window.alert("시작 평가금액이 0원입니다. 시작 평가금액을 입력해 주세요.");
       return;
     }
 
@@ -290,35 +284,23 @@ export default function usePortfolioSimulator() {
       return;
     }
 
-    let nextRows = rows.map((row) => ({ ...row }));
-    let nextTotal = nextRows.reduce((sum, row) => sum + row.targetWeight, 0);
-
-    if (nextTotal > 100.0001) {
-      window.alert("목표비중 합계가 100%를 초과했습니다. 비중을 조정해 주세요.");
+    const nextTotal = rows.reduce((sum, row) => sum + row.targetWeight, 0);
+    if (Math.abs(nextTotal - 100) > 0.01) {
+      window.alert("목표비중 합계를 100%로 맞춘 뒤 적용해 주세요.");
       return;
     }
 
-    if (nextTotal < 99.9999) {
-      const cashRow = nextRows.find((row) => row.isCash && row.price > 0);
-      if (!cashRow) {
-        window.alert("목표비중 합계가 100% 미만입니다. 현금 자산이 없으면 합계를 100%로 맞춰 주세요.");
-        return;
-      }
-      cashRow.targetWeight = Number((cashRow.targetWeight + (100 - nextTotal)).toFixed(6));
-      nextTotal = 100;
-    }
-
-    const targetMap = new Map(nextRows.map((row) => [row.index, row.targetWeight]));
+    const targetMap = new Map(rows.map((row) => [row.index, row.targetWeight]));
     setAssets((previousAssets) => previousAssets.map((asset, index) => {
       if (!targetMap.has(index)) return asset;
       const price = Number(asset.price || 0);
       const targetWeight = Number(targetMap.get(index) || 0);
-      const targetValue = totalAssetValue * (targetWeight / 100);
+      const targetValue = startValue * (targetWeight / 100);
       const quantity = price > 0 ? Number((targetValue / price).toFixed(6)) : 0;
       return { ...asset, quantity };
     }));
     setTargetWeightDrafts({});
-    setAssetLookupSummary("목표비중을 적용했습니다. 수량과 평가금액이 한 번에 재계산되었습니다.");
+    setAssetLookupSummary("목표비중을 적용했습니다. 시작 평가금액 기준으로 수량과 평가금액이 재계산되었습니다.");
   }
 
   function updateAsset(index, field, value) {
