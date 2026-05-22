@@ -1,7 +1,7 @@
 /* =========================================================
    Hotfix - Global navigation / brand normalizer
-   - MutationObserver가 헤더를 계속 다시 그리며 렉을 유발하지 않도록 idempotent 방식으로 수정합니다.
-   - 메뉴 상태가 실제로 바뀐 경우에만 DOM을 갱신합니다.
+   - MutationObserver를 제거해 헤더 반복 갱신과 모바일 렉을 방지합니다.
+   - /start를 시작하기 대표 경로로 사용하고 /simulator, /tools는 호환 경로로 유지합니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
@@ -20,7 +20,7 @@ function isLoggedIn() {
 
 function getActiveKey() {
   const path = normalizePath(window.location.pathname);
-  if (path === "/simulator" || path.startsWith("/payment-method")) return "start";
+  if (["/start", "/tools", "/simulator"].includes(path) || path.startsWith("/payment-method")) return "start";
   if (path === "/pricing" || path.startsWith("/billing")) return "pricing";
   if (path === "/support") return "support";
   if (path === "/mypage") return "mypage";
@@ -49,7 +49,7 @@ function getNavHtml() {
   const loggedIn = isLoggedIn();
   const navItems = [
     { key: "home", label: "홈", path: "/", className: "" },
-    { key: "start", label: "시작하기", path: "/simulator", className: "finpleGlobalStartButton" },
+    { key: "start", label: "시작하기", path: "/start", className: "finpleGlobalStartButton" },
     { key: "pricing", label: "요금제", path: "/pricing", className: "" },
     { key: "support", label: "문의사항", path: "/support", className: "" },
     { key: "mypage", label: "MY PAGE", path: "/mypage", className: "" },
@@ -58,17 +58,9 @@ function getNavHtml() {
   return `
     <nav class="finpleGlobalNav" aria-label="FINPLE 주요 메뉴" data-finple-global-nav>
       ${navItems.map((item) => `
-        <button
-          type="button"
-          class="${item.className} ${activeKey === item.key ? "active" : ""}"
-          data-finple-nav-path="${item.path}"
-        >${item.label}</button>
+        <button type="button" class="${item.className} ${activeKey === item.key ? "active" : ""}" data-finple-nav-path="${item.path}">${item.label}</button>
       `).join("")}
-      <button
-        type="button"
-        class="finpleGlobalAuthButton ${activeKey === "login" ? "active" : ""}"
-        data-finple-auth-action="${loggedIn ? "logout" : "login"}"
-      >${loggedIn ? "로그아웃" : "로그인"}</button>
+      <button type="button" class="finpleGlobalAuthButton ${activeKey === "login" ? "active" : ""}" data-finple-auth-action="${loggedIn ? "logout" : "login"}">${loggedIn ? "로그아웃" : "로그인"}</button>
     </nav>
   `;
 }
@@ -80,7 +72,7 @@ function normalizeBrand(header) {
   const strong = brand.querySelector(".brandText strong");
   const span = brand.querySelector(".brandText span");
   if (strong && strong.textContent !== "FINPLE") strong.textContent = "FINPLE";
-  if (span && span.textContent !== "PORTFOLIO LAB") span.textContent = "PORTFOLIO LAB";
+  if (span && span.textContent !== "Portfolio Lab") span.textContent = "Portfolio Lab";
 
   if (brand.getAttribute("data-finple-brand-normalized") === "true") return;
   brand.setAttribute("data-finple-brand-normalized", "true");
@@ -126,7 +118,6 @@ function ensureGlobalNav(header) {
   }
 
   const html = getNavHtml();
-
   if (!nav) {
     header.insertAdjacentHTML("beforeend", html);
   } else {
@@ -136,8 +127,7 @@ function ensureGlobalNav(header) {
   }
 
   header.setAttribute("data-finple-global-nav-state", stateKey);
-  nav = header.querySelector(".finpleGlobalNav");
-  wireGlobalNav(nav);
+  wireGlobalNav(header.querySelector(".finpleGlobalNav"));
 }
 
 function patchHeader(header) {
@@ -152,22 +142,10 @@ function patchAllHeaders() {
   document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
 }
 
-let patchScheduled = false;
-function schedulePatch() {
-  if (patchScheduled) return;
-  patchScheduled = true;
-  window.requestAnimationFrame(() => {
-    patchScheduled = false;
-    patchAllHeaders();
-  });
-}
-
 function bootGlobalNavigationPatch() {
-  const observer = new MutationObserver(() => schedulePatch());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  window.addEventListener("popstate", () => window.setTimeout(patchAllHeaders, 60));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(patchAllHeaders, 60));
-  window.setTimeout(patchAllHeaders, 80);
+  [60, 160, 360, 760, 1400, 2400].forEach((delay) => window.setTimeout(patchAllHeaders, delay));
+  window.addEventListener("popstate", () => window.setTimeout(patchAllHeaders, 80));
+  window.addEventListener("finple-auth-updated", () => window.setTimeout(patchAllHeaders, 80));
 }
 
 if (typeof window !== "undefined") {
