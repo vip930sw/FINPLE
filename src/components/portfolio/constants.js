@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS = {
     years: 10,
     dividendReinvest: true,
     inflationRate: 2.5,
+    startValue: 0,
   };
 export const DEFAULT_ASSETS = [
     {
@@ -218,5 +219,25 @@ export const MOCK_ASSET_DATA = {
       beta: 0.15,
       mdd: -18,
       dividendYield: 0,
+    },
+    BTC: {
+      name: "비트코인",
+      market: "CRYPTO",
+      currency: "KRW",
+      price: 1000000,
+      cagr: 12,
+      beta: 2.2,
+      mdd: -75,
+      dividendYield: 0,
+    },
+    CASH: {
+      name: "현금 / 대기자금",
+      market: "KR",
+      currency: "KRW",
+      price: 10000,
+      cagr: 2.5,
+      beta: 0,
+      mdd: 0,
+      dividendYield: 2,
     },
   };
