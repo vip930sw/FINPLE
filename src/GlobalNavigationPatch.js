@@ -1,11 +1,11 @@
 /* =========================================================
    FINPLE global header normalizer
-   - 모든 주요 화면의 우측 상단 메뉴를 동일하게 유지합니다.
-   - 브랜드 문구는 Portfolio Lab으로 통일합니다.
-   - 로고 클릭 동작은 각 React 화면의 onClick에 맡겨 깜빡임/중복 이동을 막습니다.
+   - 우측 글로벌 메뉴를 모든 주요 화면에서 동일하게 유지합니다.
+   - 홈 내부 내비와 시뮬레이터 내부 내비는 가운데 영역에 남겨둡니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const TOOL_PATHS = ["/start", "/tools", "/mbti", "/simulator", "/screener"];
 
 function normalizePath(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -21,7 +21,7 @@ function isLoggedIn() {
 
 function getActiveKey() {
   const path = normalizePath(window.location.pathname);
-  if (["/start", "/tools", "/simulator"].includes(path) || path.startsWith("/payment-method")) return "start";
+  if (TOOL_PATHS.includes(path) || path.startsWith("/payment-method")) return "start";
   if (path === "/pricing" || path.startsWith("/billing")) return "pricing";
   if (path === "/support") return "support";
   if (path === "/mypage") return "mypage";
