@@ -20,6 +20,7 @@ import './BillingResultPages.css'
 import './MyPageSubscriptionStatus.css'
 import './MyPageSidebar.css'
 import './GlobalNavigation.css'
+import './MobileUxHotfix.css'
 import App from './App.jsx'
 
 if (isBillingResultPath()) {
