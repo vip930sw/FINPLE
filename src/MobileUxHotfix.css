@@ -1,0 +1,139 @@
+/* =========================================================
+   Mobile UX hotfix
+   - 모바일 상단 메뉴 압축
+   - 시뮬레이터 3단계 내비 sticky 처리
+   - 스크리너 모바일 검색/조건 버튼 배치 보정
+   - 편집 가능한 입력칸 가독성 보정
+========================================================= */
+
+@media (max-width: 900px) {
+  .finpleUnifiedHeader,
+  .header,
+  .accountHeader {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .finpleGlobalNav {
+    gap: 12px !important;
+    font-size: 12px !important;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .finpleGlobalNav button {
+    font-size: 12px !important;
+    padding: 8px 0 !important;
+    letter-spacing: -0.02em;
+  }
+
+  .finpleGlobalNav .finpleGlobalStartButton {
+    padding: 10px 16px !important;
+    min-width: 92px;
+  }
+
+  .brandLogo {
+    gap: 10px !important;
+  }
+
+  .brandText strong {
+    font-size: 18px !important;
+  }
+
+  .brandText span {
+    font-size: 10px !important;
+  }
+
+  .simulatorSection {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .simulatorTabNav.threeStepNav {
+    position: sticky;
+    top: 116px;
+    z-index: 8;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0 -6px 18px;
+    padding: 8px 6px;
+    background: rgba(248, 250, 252, 0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .simulatorTabButton {
+    border-radius: 14px !important;
+    padding: 10px 6px !important;
+    min-height: 62px;
+  }
+
+  .simulatorTabButton span {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.03em;
+  }
+
+  .simulatorTabButton strong {
+    display: block;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .simulatorTabButton small {
+    display: none;
+  }
+
+  .tickerSearchForm {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .tickerSearchForm button {
+    order: 10;
+    width: 100%;
+  }
+
+  .screenerControls {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .secondaryFinderButton {
+    width: 100% !important;
+  }
+
+  .calculatorTable input {
+    min-width: 92px;
+  }
+
+  .editablePriceStack input {
+    text-align: right;
+  }
+
+  .editableMetaLine {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .finpleGlobalNav {
+    gap: 10px !important;
+  }
+
+  .finpleGlobalNav button {
+    font-size: 11px !important;
+  }
+
+  .finpleGlobalNav .finpleGlobalStartButton {
+    padding: 9px 14px !important;
+    min-width: 86px;
+  }
+}
