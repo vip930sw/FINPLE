@@ -1,7 +1,8 @@
 /* =========================================================
-   Hotfix - Global navigation / brand normalizer
-   - MutationObserver를 제거해 헤더 반복 갱신과 모바일 렉을 방지합니다.
-   - /start를 시작하기 대표 경로로 사용하고 /simulator, /tools는 호환 경로로 유지합니다.
+   FINPLE global header normalizer
+   - 모든 주요 화면의 우측 상단 메뉴를 동일하게 유지합니다.
+   - 브랜드 문구는 Portfolio Lab으로 통일합니다.
+   - 로고 클릭 동작은 각 React 화면의 onClick에 맡겨 깜빡임/중복 이동을 막습니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
@@ -34,6 +35,10 @@ function getHeaderStateKey() {
 }
 
 function navigateTo(path) {
+  if (window.location.pathname === path) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   window.location.href = path;
 }
 
@@ -75,15 +80,11 @@ function normalizeBrand(header) {
   if (span && span.textContent !== "Portfolio Lab") span.textContent = "Portfolio Lab";
 }
 
-function removeOldRightMenusOnce(header) {
-  if (header.getAttribute("data-finple-old-menus-removed") === "true") return;
-
+function removeOldRightMenus(header) {
   Array.from(header.children).forEach((child) => {
     if (child.matches(".finpleGlobalNav")) return;
     if (child.matches(".accountNav, .headerActions")) child.remove();
   });
-
-  header.setAttribute("data-finple-old-menus-removed", "true");
 }
 
 function wireGlobalNav(nav) {
@@ -127,7 +128,7 @@ function patchHeader(header) {
   if (!header) return;
   header.classList.add("finpleUnifiedHeader");
   normalizeBrand(header);
-  removeOldRightMenusOnce(header);
+  removeOldRightMenus(header);
   ensureGlobalNav(header);
 }
 
@@ -135,10 +136,16 @@ function patchAllHeaders() {
   document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
 }
 
+function schedulePatch() {
+  [0, 40, 120, 280, 600].forEach((delay) => window.setTimeout(patchAllHeaders, delay));
+}
+
 function bootGlobalNavigationPatch() {
-  [60, 160, 360, 760, 1400, 2400].forEach((delay) => window.setTimeout(patchAllHeaders, delay));
-  window.addEventListener("popstate", () => window.setTimeout(patchAllHeaders, 80));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(patchAllHeaders, 80));
+  schedulePatch();
+  window.addEventListener("popstate", schedulePatch);
+  window.addEventListener("finple-auth-updated", schedulePatch);
+  window.addEventListener("finple-route-changed", schedulePatch);
+  window.addEventListener("finple-local-storage-updated", schedulePatch);
 }
 
 if (typeof window !== "undefined") {
