@@ -7,26 +7,84 @@
 ========================================================= */
 
 .weightInputWrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  min-width: 104px;
 }
 
-.weightInputWrap input {
-  max-width: 92px;
+.weightInputWrap input,
+.weightInputWrap.targetWeightInputWrap input {
+  width: 78px;
+  min-width: 78px;
+  max-width: 78px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .weightInputWrap span {
   color: #64748b;
   font-size: 12px;
   font-weight: 900;
+  min-width: 12px;
 }
 
 .actualWeightCell {
   color: #475569;
   font-weight: 900;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tickerCellStack {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+}
+
+.tickerCellStack input {
+  text-align: center;
+}
+
+.removeTextButton {
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0;
+}
+
+.removeTextButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.editableStartValueBox {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.editableStartValueBox input {
+  width: 100%;
+  margin-top: 8px;
+  text-align: right;
+  font-size: 20px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.assetValueActionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .targetWeightPanel {
@@ -35,6 +93,13 @@
   border: 1px solid #bfdbfe;
   border-radius: 18px;
   background: #eff6ff;
+}
+
+.targetWeightPanel.compact {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
 }
 
 .targetWeightPanel.warning {
@@ -46,6 +111,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.targetWeightSummaryGrid.twoColumns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .targetWeightSummaryGrid > div {
@@ -66,10 +135,22 @@
   color: #0f172a;
   font-size: 18px;
   font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetWeightApplyRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.targetWeightApplyRow .addButton {
+  white-space: nowrap;
 }
 
 .targetWeightNoticeText {
-  margin: 12px 0 0;
+  margin: 0;
   color: #1e3a8a;
   font-size: 13px;
   font-weight: 850;
@@ -77,6 +158,8 @@
 }
 
 .targetWeightNoticeText.warningText {
+  grid-column: 1 / -1;
+  margin-top: 8px;
   color: #dc2626;
 }
 
@@ -165,17 +248,50 @@
     order: 20;
   }
 
-  .targetWeightSummaryGrid {
+  .editableStartValueBox,
+  .targetWeightPanel.compact {
     grid-template-columns: 1fr;
+  }
+
+  .assetValueActionGroup,
+  .targetWeightApplyRow {
+    justify-content: stretch;
+  }
+
+  .assetValueActionGroup button,
+  .targetWeightApplyRow .addButton {
+    width: 100%;
+  }
+
+  .targetWeightApplyRow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .targetWeightSummaryGrid,
+  .targetWeightSummaryGrid.twoColumns {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .calculatorTable th,
+  .calculatorTable td {
+    vertical-align: middle;
   }
 
   .calculatorTable input {
     min-width: 84px;
   }
 
-  .weightInputWrap input {
-    min-width: 76px;
+  .weightInputWrap,
+  .weightInputWrap.targetWeightInputWrap {
+    min-width: 110px;
+  }
+
+  .weightInputWrap input,
+  .weightInputWrap.targetWeightInputWrap input {
+    min-width: 84px;
     max-width: 84px;
+    width: 84px;
   }
 }
 
