@@ -47,12 +47,8 @@ function StartHubPage({ onBack, onNavigate }) {
 
           <div className="brandText">
             <strong>FINPLE</strong>
-            <span>Start</span>
+            <span>Portfolio Lab</span>
           </div>
-        </button>
-
-        <button type="button" className="headerButton" onClick={onBack}>
-          홈으로
         </button>
       </header>
 
