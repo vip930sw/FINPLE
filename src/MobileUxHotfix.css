@@ -3,7 +3,7 @@
    - 모바일 상단 메뉴는 GlobalNavigation.css에서 관리
    - 시뮬레이터 3단계 내비 fixed 처리
    - 스크리너 모바일 검색/조건 버튼 배치 보정
-   - 비중 입력칸 가독성 보정
+   - 목표비중 입력/적용 UX 보정
 ========================================================= */
 
 .weightInputWrap {
@@ -22,6 +22,62 @@
   color: #64748b;
   font-size: 12px;
   font-weight: 900;
+}
+
+.actualWeightCell {
+  color: #475569;
+  font-weight: 900;
+}
+
+.targetWeightPanel {
+  margin: 18px 0 16px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #eff6ff;
+}
+
+.targetWeightPanel.warning {
+  border-color: #fecaca;
+  background: #fff7ed;
+}
+
+.targetWeightSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.targetWeightSummaryGrid > div {
+  padding: 13px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.targetWeightSummaryGrid p {
+  margin: 0 0 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.targetWeightSummaryGrid strong {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.targetWeightNoticeText {
+  margin: 12px 0 0;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+.targetWeightNoticeText.warningText {
+  color: #dc2626;
 }
 
 .primaryFinderButton {
@@ -107,6 +163,10 @@
 
   .primaryFinderButton {
     order: 20;
+  }
+
+  .targetWeightSummaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .calculatorTable input {
