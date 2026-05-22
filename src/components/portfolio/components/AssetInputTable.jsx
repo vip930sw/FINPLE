@@ -19,37 +19,22 @@ function getDataSourceInfo(asset) {
   const cacheMode = String(asset?.cacheMode || "").toLowerCase();
 
   if (source.includes("cache") || cacheMode === "hit") {
-    return {
-      label: "캐시값",
-      className: "cache",
-    };
+    return { label: "캐시값", className: "cache" };
   }
 
   if (source.includes("alpha-vantage") || source.includes("alpha_vantage")) {
-    return {
-      label: "Alpha Vantage",
-      className: "alpha",
-    };
+    return { label: "Alpha Vantage", className: "alpha" };
   }
 
   if (source.includes("mock")) {
-    return {
-      label: "Mock",
-      className: "mock",
-    };
+    return { label: "Mock", className: "mock" };
   }
 
   if (source.includes("ticker-master")) {
-    return {
-      label: "마스터",
-      className: "master",
-    };
+    return { label: "마스터", className: "master" };
   }
 
-  return {
-    label: "수동값",
-    className: "manual",
-  };
+  return { label: "수동값", className: "manual" };
 }
 
 function getPriceBasisText(asset, formatDecimal) {
@@ -66,17 +51,8 @@ function getPriceBasisText(asset, formatDecimal) {
     return `${rawCurrency} ${formatDecimal(rawPrice, 2)} × ${Math.round(exchangeRate).toLocaleString()}원`;
   }
 
-  if (currency) {
-    return `${currency} 기준`;
-  }
-
+  if (currency) return `${currency} 기준`;
   return "";
-}
-
-function shouldShowReadOnlyValue(asset) {
-  const source = String(asset?.dataSource || "manual").toLowerCase();
-
-  return source !== "manual";
 }
 
 function isLookupRequiredAsset(asset, emptyRow) {
@@ -103,10 +79,18 @@ function LookupRequiredValue({ quantity }) {
   );
 }
 
-function MetricTextValue({ value, formatDecimal }) {
+function PriceSourceHint({ asset, formatDecimal }) {
+  const sourceInfo = getDataSourceInfo(asset);
+  const lookupTime = formatLookupTime(asset.lastUpdatedAt);
+  const priceBasisText = getPriceBasisText(asset, formatDecimal);
+
+  if (!asset?.dataSource && !lookupTime && !priceBasisText) return null;
+
   return (
-    <span className="assetTextValue numberTextValue">
-      {formatDecimal(value, 2)}
+    <span className="assetMetaLine editableMetaLine">
+      <span className={`dataSourceBadge ${sourceInfo.className}`}>{sourceInfo.label}</span>
+      {lookupTime && <span className="lookupTimeText">{lookupTime}</span>}
+      {priceBasisText && <small className="priceBasisText">{priceBasisText}</small>}
     </span>
   );
 }
@@ -116,8 +100,6 @@ export default function AssetInputTable({
   totalAssetValue,
   isEmptyAssetRow,
   isAutoAsset,
-  isAutoPriceAsset,
-  isAutoMetricAsset,
   formatNumber,
   formatDecimal,
   formatPercent,
@@ -158,10 +140,6 @@ export default function AssetInputTable({
             const lookupKey = asset.id || String(index);
             const lookupStatus = assetLookupStatus?.[lookupKey];
             const isLookingUp = lookupStatus?.status === "loading";
-            const sourceInfo = getDataSourceInfo(asset);
-            const lookupTime = formatLookupTime(asset.lastUpdatedAt);
-            const priceBasisText = getPriceBasisText(asset, formatDecimal);
-            const readOnlyFetchedAsset = shouldShowReadOnlyValue(asset);
             const lookupRequired = isLookupRequiredAsset(asset, emptyRow);
             const quantityMissing = !emptyRow && Number(asset.quantity || 0) <= 0;
             const isNewlyAdded = recentlyAddedAssetId && asset.id === recentlyAddedAssetId;
@@ -169,27 +147,17 @@ export default function AssetInputTable({
               isNewlyAdded ? "newAssetRow" : "",
               lookupRequired ? "lookupRequiredRow" : "",
               quantityMissing ? "quantityMissingRow" : "",
-            ]
-              .filter(Boolean)
-              .join(" ");
-            const valueCellClassName = quantityMissing || lookupRequired
-              ? "numberCell pendingValueCell"
-              : "numberCell";
-            const fetchButtonClassName = lookupRequired
-              ? "fetchAssetButton needsLookup"
-              : "fetchAssetButton";
+            ].filter(Boolean).join(" ");
+            const valueCellClassName = quantityMissing || lookupRequired ? "numberCell pendingValueCell" : "numberCell";
+            const fetchButtonClassName = lookupRequired ? "fetchAssetButton needsLookup" : "fetchAssetButton";
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
                 <td>
                   <input
                     value={asset.ticker}
-                    onChange={(e) =>
-                      updateAsset(index, "ticker", e.target.value.toUpperCase())
-                    }
-                    onBlur={(e) =>
-                      resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })
-                    }
+                    onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
+                    onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -204,15 +172,9 @@ export default function AssetInputTable({
                   {emptyRow ? (
                     <span className="emptyTextValue">-</span>
                   ) : isAutoAsset(asset) ? (
-                    <div className="assetInfoStack">
-                      <span className="assetTextValue">{asset.name || "-"}</span>
-                    </div>
+                    <div className="assetInfoStack"><span className="assetTextValue">{asset.name || "-"}</span></div>
                   ) : (
-                    <input
-                      value={asset.name}
-                      onChange={(e) => updateAsset(index, "name", e.target.value)}
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                    <input value={asset.name} onChange={(e) => updateAsset(index, "name", e.target.value)} disabled={isBulkAssetLookupLoading} />
                   )}
                 </td>
 
@@ -220,9 +182,7 @@ export default function AssetInputTable({
                   <input
                     type="number"
                     value={asset.quantity}
-                    onChange={(e) =>
-                      updateAsset(index, "quantity", Number(e.target.value))
-                    }
+                    onChange={(e) => updateAsset(index, "quantity", Number(e.target.value))}
                     disabled={isBulkAssetLookupLoading}
                   />
                 </td>
@@ -232,35 +192,16 @@ export default function AssetInputTable({
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : lookupRequired ? (
                     <LookupRequiredValue quantity={asset.quantity} />
-                  ) : isAutoPriceAsset(asset) ? (
-                    <div className="assetInfoStack alignRight">
-                      <span className="assetTextValue numberTextValue">
-                        {formatDecimal(asset.price, 2)}
-                      </span>
-
-                      <span className="assetMetaLine">
-                        <span className={`dataSourceBadge ${sourceInfo.className}`}>
-                          {sourceInfo.label}
-                        </span>
-
-                        {lookupTime && (
-                          <span className="lookupTimeText">{lookupTime}</span>
-                        )}
-                      </span>
-
-                      {priceBasisText && (
-                        <small className="priceBasisText">{priceBasisText}</small>
-                      )}
-                    </div>
                   ) : (
-                    <input
-                      type="text"
-                      value={formatNumber(asset.price)}
-                      onChange={(e) =>
-                        updateAsset(index, "price", toNumber(e.target.value))
-                      }
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                    <div className="assetInfoStack alignRight editablePriceStack">
+                      <input
+                        type="text"
+                        value={formatNumber(asset.price)}
+                        onChange={(e) => updateAsset(index, "price", toNumber(e.target.value))}
+                        disabled={isBulkAssetLookupLoading}
+                      />
+                      <PriceSourceHint asset={asset} formatDecimal={formatDecimal} />
+                    </div>
                   )}
                 </td>
 
@@ -268,97 +209,37 @@ export default function AssetInputTable({
                 <td className={valueCellClassName}>{formatPercent(weight)}</td>
 
                 <td>
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : readOnlyFetchedAsset || isAutoMetricAsset(asset) ? (
-                    <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />
-                  ) : (
-                    <input
-                      type="number"
-                      value={asset.cagr}
-                      onChange={(e) =>
-                        updateAsset(index, "cagr", Number(e.target.value))
-                      }
-                      step="0.01"
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
+                    <input type="number" value={asset.cagr} onChange={(e) => updateAsset(index, "cagr", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
                   )}
                 </td>
 
                 <td>
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : readOnlyFetchedAsset || isAutoMetricAsset(asset) ? (
-                    <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />
-                  ) : (
-                    <input
-                      type="number"
-                      value={asset.beta}
-                      onChange={(e) =>
-                        updateAsset(index, "beta", Number(e.target.value))
-                      }
-                      step="0.01"
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
+                    <input type="number" value={asset.beta} onChange={(e) => updateAsset(index, "beta", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
                   )}
                 </td>
 
                 <td>
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : readOnlyFetchedAsset || isAutoMetricAsset(asset) ? (
-                    <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />
-                  ) : (
-                    <input
-                      type="number"
-                      value={asset.mdd}
-                      onChange={(e) =>
-                        updateAsset(index, "mdd", Number(e.target.value))
-                      }
-                      step="0.01"
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
+                    <input type="number" value={asset.mdd} onChange={(e) => updateAsset(index, "mdd", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
                   )}
                 </td>
 
                 <td>
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : readOnlyFetchedAsset || isAutoMetricAsset(asset) ? (
-                    <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />
-                  ) : (
-                    <input
-                      type="number"
-                      value={asset.dividendYield}
-                      onChange={(e) =>
-                        updateAsset(index, "dividendYield", Number(e.target.value))
-                      }
-                      step="0.01"
-                      disabled={isBulkAssetLookupLoading}
-                    />
+                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : (
+                    <input type="number" value={asset.dividendYield} onChange={(e) => updateAsset(index, "dividendYield", Number(e.target.value))} step="0.01" disabled={isBulkAssetLookupLoading} />
                   )}
                 </td>
 
                 <td>
-                  <button
-                    type="button"
-                    className={fetchButtonClassName}
-                    onClick={() => fetchAssetData(index)}
-                    disabled={isLookingUp || isBulkAssetLookupLoading}
-                  >
+                  <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
                     {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
                   </button>
                 </td>
 
                 <td>
-                  <button
-                    type="button"
-                    className="removeButton"
-                    onClick={() => removeAsset(index)}
-                    disabled={isBulkAssetLookupLoading}
-                  >
-                    삭제
-                  </button>
+                  <button type="button" className="removeButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
                 </td>
               </tr>
             );
