@@ -73,13 +73,6 @@ function normalizeBrand(header) {
   const span = brand.querySelector(".brandText span");
   if (strong && strong.textContent !== "FINPLE") strong.textContent = "FINPLE";
   if (span && span.textContent !== "Portfolio Lab") span.textContent = "Portfolio Lab";
-
-  if (brand.getAttribute("data-finple-brand-normalized") === "true") return;
-  brand.setAttribute("data-finple-brand-normalized", "true");
-  brand.addEventListener("click", (event) => {
-    event.preventDefault();
-    navigateTo("/");
-  });
 }
 
 function removeOldRightMenusOnce(header) {
