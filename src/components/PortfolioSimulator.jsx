@@ -178,6 +178,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
           <SettingsPanel
             settings={settings}
             totalAssetValue={totalAssetValue}
+            simulationStartValue={simulationStartValue}
             assets={assets}
             targetWeightDrafts={targetWeightDrafts}
             targetWeightSummary={targetWeightSummary}
