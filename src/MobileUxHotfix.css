@@ -1,7 +1,7 @@
 /* =========================================================
    Mobile UX hotfix
-   - 모바일 상단 메뉴 압축
-   - 시뮬레이터 3단계 내비 sticky 처리
+   - 모바일 상단 메뉴는 GlobalNavigation.css에서 관리
+   - 시뮬레이터 3단계 내비 fixed 처리
    - 스크리너 모바일 검색/조건 버튼 배치 보정
    - 비중 입력칸 가독성 보정
 ========================================================= */
@@ -35,85 +35,52 @@
 }
 
 @media (max-width: 900px) {
-  .finpleUnifiedHeader,
-  .header,
-  .accountHeader {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-
-  .finpleGlobalNav {
-    gap: 12px !important;
-    font-size: 12px !important;
-    overflow-x: auto;
-    scrollbar-width: thin;
-  }
-
-  .finpleGlobalNav button {
-    font-size: 12px !important;
-    padding: 8px 0 !important;
-    letter-spacing: -0.02em;
-  }
-
-  .finpleGlobalNav .finpleGlobalStartButton {
-    padding: 10px 16px !important;
-    min-width: 92px;
-  }
-
-  .brandLogo {
-    gap: 10px !important;
-  }
-
-  .brandText strong {
-    font-size: 18px !important;
-  }
-
-  .brandText span {
-    display: block !important;
-    font-size: 10px !important;
-    text-transform: none !important;
-  }
-
   .simulatorSection {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
 
-  .simulatorSection > .simulatorTabNav.threeStepNav,
-  .simulatorTabNav.threeStepNav {
-    position: sticky !important;
-    top: 72px !important;
-    z-index: 25 !important;
+  .personalPage .simulatorSection {
+    padding-top: 92px !important;
+  }
+
+  .personalPage .simulatorTabNav.threeStepNav {
+    position: fixed !important;
+    top: 112px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 900 !important;
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 6px !important;
-    margin: 0 -8px 18px !important;
-    padding: 8px 8px !important;
+    margin: 0 !important;
+    padding: 8px 16px !important;
     background: rgba(248, 250, 252, 0.98) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
   }
 
-  .simulatorTabNav.threeStepNav .simulatorTabButton {
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton {
     border-radius: 14px !important;
     padding: 9px 4px !important;
     min-height: 56px !important;
     white-space: normal !important;
   }
 
-  .simulatorTabNav.threeStepNav .simulatorTabButton span {
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton span {
     display: block !important;
     font-size: 9px !important;
     letter-spacing: 0.03em;
   }
 
-  .simulatorTabNav.threeStepNav .simulatorTabButton strong {
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton strong {
     display: block !important;
     font-size: 12px !important;
     line-height: 1.15 !important;
   }
 
-  .simulatorTabNav.threeStepNav .simulatorTabButton small {
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton small {
     display: none !important;
   }
 
@@ -153,16 +120,9 @@
 }
 
 @media (max-width: 480px) {
-  .finpleGlobalNav {
-    gap: 10px !important;
-  }
-
-  .finpleGlobalNav button {
-    font-size: 11px !important;
-  }
-
-  .finpleGlobalNav .finpleGlobalStartButton {
-    padding: 9px 14px !important;
-    min-width: 86px;
+  .personalPage .simulatorTabNav.threeStepNav {
+    top: 112px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
 }
