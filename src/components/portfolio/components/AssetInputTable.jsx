@@ -47,6 +47,16 @@ function isLookupRequiredAsset(asset, emptyRow) {
   );
 }
 
+function getAssetDraftKey(asset, index) {
+  return asset?.id || `${String(asset?.ticker || "asset").trim().toUpperCase()}-${index}`;
+}
+
+function getDisplayedTargetWeight(asset, index, actualWeight, targetWeightDrafts = {}) {
+  const key = getAssetDraftKey(asset, index);
+  if (Object.prototype.hasOwnProperty.call(targetWeightDrafts, key)) return targetWeightDrafts[key];
+  return Number.isFinite(actualWeight) ? Number(actualWeight.toFixed(2)) : 0;
+}
+
 function LookupRequiredValue({ quantity }) {
   const quantityMissing = Number(quantity || 0) <= 0;
 
@@ -54,7 +64,7 @@ function LookupRequiredValue({ quantity }) {
     <div className="assetInfoStack alignRight lookupRequiredStack">
       <span className="lookupRequiredText">조회 필요</span>
       <small className="lookupRequiredHint">
-        {quantityMissing ? "수량 입력 후 조회" : "조회 버튼으로 현재가 반영"}
+        {quantityMissing ? "비중 입력 후 조회" : "조회 버튼으로 현재가 반영"}
       </small>
     </div>
   );
@@ -83,12 +93,13 @@ function MetricTextValue({ value, formatDecimal }) {
 
 export default function AssetInputTable({
   assets,
+  targetWeightDrafts,
   totalAssetValue,
   isEmptyAssetRow,
   isAutoAsset,
   formatDecimal,
-  formatPercent,
   updateAsset,
+  updateTargetWeightDraft,
   assetLookupStatus,
   recentlyAddedAssetId,
   isBulkAssetLookupLoading,
@@ -106,7 +117,8 @@ export default function AssetInputTable({
             <th className="numberHeader">수량</th>
             <th className="numberHeader">현재가</th>
             <th className="numberHeader">평가금액</th>
-            <th className="numberHeader">비중</th>
+            <th className="numberHeader">목표비중</th>
+            <th className="numberHeader">실제비중</th>
             <th className="numberHeader">CAGR (%)</th>
             <th className="numberHeader">BETA</th>
             <th className="numberHeader">MDD (%)</th>
@@ -127,6 +139,7 @@ export default function AssetInputTable({
             const lookupRequired = isLookupRequiredAsset(asset, emptyRow);
             const quantityMissing = !emptyRow && Number(asset.quantity || 0) <= 0;
             const isNewlyAdded = recentlyAddedAssetId && asset.id === recentlyAddedAssetId;
+            const targetWeightValue = getDisplayedTargetWeight(asset, index, weight, targetWeightDrafts);
             const rowClassName = [
               isNewlyAdded ? "newAssetRow" : "",
               lookupRequired ? "lookupRequiredRow" : "",
@@ -185,19 +198,20 @@ export default function AssetInputTable({
                     <div className="weightInputWrap">
                       <input
                         type="number"
-                        value={Number.isFinite(weight) ? Number(weight.toFixed(2)) : 0}
-                        onChange={(e) => updateAsset(index, "targetWeight", Number(e.target.value))}
-                        step="0.01"
+                        value={targetWeightValue}
+                        onChange={(e) => updateTargetWeightDraft?.(index, e.target.value)}
+                        step="0.1"
                         min="0"
-                        max="99.99"
+                        max="100"
                         disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
-                        aria-label="비중 입력"
+                        aria-label="목표비중 입력"
                       />
                       <span>%</span>
                     </div>
                   )}
                 </td>
 
+                <td className="numberCell actualWeightCell">{emptyRow ? "-" : `${formatDecimal(weight, 2)}%`}</td>
                 <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
                 <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
