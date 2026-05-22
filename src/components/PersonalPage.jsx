@@ -47,6 +47,12 @@ function PersonalPage({ onBack }) {
   }
 
   useEffect(() => {
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("finple-route-changed", { detail: { page: "personal", view: personalView } }));
+    }, 40);
+  }, [personalView]);
+
+  useEffect(() => {
     if (personalView !== "simulator") return;
 
     window.setTimeout(() => {
@@ -57,7 +63,7 @@ function PersonalPage({ onBack }) {
   useEffect(() => {
     const tool = new URLSearchParams(window.location.search).get("tool");
     if (!tool) return;
-    window.history.replaceState({ page: "personal" }, "", "/simulator");
+    window.history.replaceState({ page: "personal" }, "", "/start");
   }, []);
 
   if (personalView === "hub") {
@@ -67,7 +73,7 @@ function PersonalPage({ onBack }) {
   if (personalView === "investment-mbti") {
     return (
       <InvestmentMbtiPage
-        onBack={() => setPersonalView("hub")}
+        onBack={onBack}
         onNavigate={(nextTarget) => {
           if (nextTarget === "personal") {
             openSimulator("settings");
@@ -83,7 +89,7 @@ function PersonalPage({ onBack }) {
   if (personalView === "screener") {
     return (
       <ScreenerPage
-        onBack={() => setPersonalView("hub")}
+        onBack={onBack}
         onHome={onBack}
         onOpenSimulator={() => openSimulator("settings")}
       />
@@ -93,7 +99,7 @@ function PersonalPage({ onBack }) {
   return (
     <main className="page personalPage">
       <header className="header">
-        <button className="brandLogo resetButton" onClick={() => setPersonalView("hub")}>
+        <button className="brandLogo resetButton" onClick={onBack}>
           <div className="brandIcon">
             <span>F</span>
             <i />
@@ -101,7 +107,7 @@ function PersonalPage({ onBack }) {
 
           <div className="brandText">
             <strong>FINPLE</strong>
-            <span>PORTFOLIO LAB</span>
+            <span>Portfolio Lab</span>
           </div>
         </button>
 
@@ -118,12 +124,6 @@ function PersonalPage({ onBack }) {
             상세분석
           </button>
         </nav>
-
-        <div className="headerActions">
-          <button className="secondaryHeaderButton" onClick={() => setPersonalView("hub")}>
-            시작 메뉴
-          </button>
-        </div>
       </header>
 
       <PortfolioSimulator ref={simulatorRef} />
