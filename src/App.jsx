@@ -32,6 +32,8 @@ const ROUTE_PATHS = {
   "investment-disclaimer": "/disclaimer",
 };
 
+const PERSONAL_ROUTE_PATHS = ["/start", "/tools", "/mbti", "/simulator", "/screener"];
+
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
 }
@@ -44,7 +46,7 @@ function getPageForPath(pathname, hash = "") {
   const normalizedPath = normalizePathname(pathname);
   const normalizedHash = String(hash || "").replace("#", "");
 
-  if (["/start", "/tools", "/simulator"].includes(normalizedPath) || normalizedHash === "simulator") return "personal";
+  if (PERSONAL_ROUTE_PATHS.includes(normalizedPath) || normalizedHash === "simulator") return "personal";
   if (normalizedPath === "/login" || normalizedHash === "login") return "login";
   if (normalizedPath === "/signup" || normalizedHash === "signup") return "signup";
   if (normalizedPath === "/mypage" || normalizedHash === "mypage") return "mypage";
@@ -70,7 +72,11 @@ function App() {
     const nextPath = getPathForPage(currentPage);
     const currentPath = normalizePathname(window.location.pathname || "/");
 
-    if (currentPath !== nextPath && !(currentPage === "personal" && ["/start", "/tools", "/simulator"].includes(currentPath))) {
+    if (currentPage === "personal" && PERSONAL_ROUTE_PATHS.includes(currentPath)) {
+      return;
+    }
+
+    if (currentPath !== nextPath) {
       window.history.pushState({ page: currentPage }, "", nextPath);
     }
 
@@ -132,7 +138,7 @@ function App() {
   ];
 
   function goHome() { setCurrentPage("home"); }
-  function goPersonal() { setCurrentPage("personal"); }
+  function goPersonal() { setCurrentPage("personal"); if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start"); }
   function isFinpleUserLoggedIn() { return Boolean(getStoredFinpleAuthUser()?.id); }
   function goMyPageOrLogin() { setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login"); }
 
@@ -164,13 +170,13 @@ function App() {
 
   return (
     <main className="page">
-      <header className="header">
+      <header className="header homeHeader">
         <button type="button" className="brandLogo resetButton" onClick={goHome}>
           <div className="brandIcon"><span>F</span><i /></div>
           <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
         </button>
 
-        <nav>
+        <nav className="homeSectionNav">
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
