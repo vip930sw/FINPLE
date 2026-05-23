@@ -69,7 +69,7 @@ function LookupRequiredValue({ quantity }) {
 }
 
 function PriceTextValue({ asset, formatDecimal }) {
-  return <span className="assetTextValue numberTextValue priceTextValue">{formatDecimal(asset.price, 2)}</span>;
+  return formatDecimal(asset.price, 2);
 }
 
 function MetricTextValue({ value, formatDecimal }) {
@@ -133,7 +133,7 @@ export default function AssetInputTable({
   };
 
   const renderPrice = (asset, emptyRow, lookupRequired) => {
-    if (emptyRow) return <span className="emptyTextValue numberTextValue">-</span>;
+    if (emptyRow) return "-";
     if (lookupRequired) return <LookupRequiredValue quantity={asset.quantity} />;
     return <PriceTextValue asset={asset} formatDecimal={formatDecimal} />;
   };
@@ -214,7 +214,7 @@ export default function AssetInputTable({
                 <td className="tickerCell">{renderTickerControl(asset, index, emptyRow)}</td>
                 <td className="assetNameCell">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
                 <td className="numberCell tableNumberCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}</td>
-                <td className="numberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
+                <td className="numberCell tableNumberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
                 <td className={valueCellClassName}>{formatEvaluationAmount(value)}</td>
                 <td className="targetWeightCell">{renderTargetWeight(asset, index, emptyRow, targetWeightValue)}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
