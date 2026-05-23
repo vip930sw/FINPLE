@@ -37,9 +37,9 @@ function formatTargetWeightInput(value) {
 
 function formatEvaluationAmount(value) {
   const numberValue = Number(value || 0);
-  if (!Number.isFinite(numberValue)) return "0원";
+  if (!Number.isFinite(numberValue)) return "0";
   const roundedToThousand = Math.round(numberValue / 1000) * 1000;
-  return `${roundedToThousand.toLocaleString()}원`;
+  return roundedToThousand.toLocaleString();
 }
 
 function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoading, onClick }) {
@@ -155,7 +155,6 @@ export default function AssetInputTable({
           disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
           aria-label="목표비중 입력"
         />
-        <span>%</span>
       </div>
     );
   };
