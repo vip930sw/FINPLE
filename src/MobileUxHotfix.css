@@ -240,7 +240,7 @@
 
 .alignedAssetTable {
   table-layout: fixed;
-  min-width: 960px;
+  min-width: 1144px;
 }
 
 .alignedAssetTable .tickerColumn { width: 78px; }
@@ -256,6 +256,7 @@
   height: 74px;
   box-sizing: border-box;
   vertical-align: middle !important;
+  white-space: nowrap;
 }
 
 .alignedAssetTable th,
@@ -296,10 +297,21 @@
   text-align: center;
 }
 
+.alignedAssetTable .priceCell .assetInfoStack,
+.alignedAssetTable .priceCell .assetInfoStack.alignRight {
+  min-height: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.alignedAssetTable .priceCell .assetTextValue,
 .alignedAssetTable .numberTextValue,
 .alignedAssetTable .tableNumberCell,
 .alignedAssetTable .metricCell {
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
 
 .primaryFinderButton {
@@ -421,8 +433,8 @@
 
   .alignedAssetTable {
     display: table !important;
-    min-width: 960px !important;
-    width: 960px !important;
+    min-width: 1144px !important;
+    width: 1144px !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
   }
@@ -464,6 +476,7 @@
     text-align: center !important;
     vertical-align: middle !important;
     box-sizing: border-box !important;
+    white-space: nowrap !important;
   }
 
   .alignedAssetTable td::before {
@@ -482,10 +495,13 @@
     max-width: 170px;
   }
 
-  .alignedAssetTable .assetInfoStack.alignRight {
+  .alignedAssetTable .assetInfoStack.alignRight,
+  .alignedAssetTable .priceCell .assetInfoStack.alignRight {
     align-items: center !important;
     text-align: center !important;
-    min-height: auto;
+    min-height: 0 !important;
+    height: 100% !important;
+    justify-content: center !important;
   }
 
   .alignedAssetTable .weightInputWrap,
