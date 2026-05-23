@@ -1,8 +1,7 @@
-.pricingPreviewSection {
-  max-width: 1280px;
+.pricingPreviewSection > h2 {
+  max-width: 980px;
 }
 
-.pricingPreviewSection > h2,
 .pricingPreviewSection > p:not(.sectionLabel) {
   max-width: 980px;
 }
@@ -15,8 +14,16 @@
   max-width: 980px;
 }
 
+.aboutSectionEyebrow {
+  color: #2563eb !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 1.6px !important;
+  text-transform: uppercase;
+}
+
 .accountNav:not(.standardTopNav) button:nth-child(3) {
-  display: none;
+  display: none !important;
 }
 
 .accountNav:not(.standardTopNav) button:nth-child(2)::before {
