@@ -1,7 +1,7 @@
 const TAB_ITEMS = [
-  { key: "settings", step: "STEP 1", title: "시뮬레이터", description: "조건 입력" },
-  { key: "compare", step: "STEP 2", title: "포트폴리오", description: "저장/비교" },
-  { key: "detail", step: "STEP 3", title: "상세분석", description: "리포트" },
+  { key: "settings", step: "STEP 1", title: "시뮬레이터" },
+  { key: "compare", step: "STEP 2", title: "포트폴리오" },
+  { key: "detail", step: "STEP 3", title: "상세분석" },
 ];
 
 export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab }) {
@@ -19,7 +19,6 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
         >
           <span>{item.step}</span>
           <strong>{item.title}</strong>
-          <small>{item.description}</small>
         </button>
       ))}
     </div>
