@@ -29,7 +29,6 @@ export default function SettingsPanel({
   addAsset,
   cleanEmptyAssetRows,
   resetActivePortfolioAssets,
-  resetGlobalSettings,
 }) {
   const summary = targetWeightSummary || {
     total: 0,
@@ -46,13 +45,18 @@ export default function SettingsPanel({
       : "목표비중 합계가 100%입니다. 계산 버튼을 누르면 수량이 한 번에 재계산됩니다.";
 
   const toNaturalNumber = (value) => Math.max(0, Math.floor(Number(value || 0)));
+  const toOneDecimal = (value) => {
+    const numberValue = Number(value || 0);
+    if (!Number.isFinite(numberValue)) return 0;
+    return Math.round(numberValue * 10) / 10;
+  };
 
   const handleStartValueChange = (value) => {
     updateSetting("startValue", toNaturalNumber(toNumber(value)));
   };
 
-  const handleUseCurrentAssetValue = () => {
-    updateSetting("startValue", toNaturalNumber(totalAssetValue));
+  const handleInflationRateChange = (value) => {
+    updateSetting("inflationRate", toOneDecimal(toNumber(value)));
   };
 
   return (
@@ -79,12 +83,18 @@ export default function SettingsPanel({
         </div>
 
         <div className="summaryCard">
-          <p>물가상승률 (%)</p>
+          <div className="fieldLabelWithTooltip">
+            <p>물가상승률 (%)</p>
+            <span className="infoTooltipIcon" tabIndex={0} aria-label="물가상승률 입력 안내">?</span>
+            <span className="infoTooltipBubble" role="tooltip">
+              기본값은 2.5%입니다. 일반적으로 1.0%~5.0% 범위에서 설정할 수 있으며, 보수적으로 검토할 때는 4.0% 수준을 권장합니다.
+            </span>
+          </div>
           <input
-            type="number"
-            value={settings.inflationRate}
-            onChange={(e) => updateSetting("inflationRate", Number(e.target.value))}
-            step="0.1"
+            type="text"
+            inputMode="decimal"
+            value={formatDecimal(settings.inflationRate, 1)}
+            onChange={(e) => handleInflationRateChange(e.target.value)}
           />
         </div>
 
@@ -96,45 +106,43 @@ export default function SettingsPanel({
         </div>
       </div>
 
-      <div className="assetValueNotice editableStartValueBox">
-        <div>
-          <p>시작 평가금액 (원)</p>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={formatNumber(toNaturalNumber(simulationStartValue))}
-            onChange={(e) => handleStartValueChange(e.target.value)}
-            aria-label="시작 평가금액 입력"
-          />
+      <div className={summary.overAmount > 0 ? "calculationControlPanel warning" : "calculationControlPanel"}>
+        <div className="assetValueNotice editableStartValueBox mergedStartValueBox">
+          <div>
+            <p>시작 평가금액 (원)</p>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={formatNumber(toNaturalNumber(simulationStartValue))}
+              onChange={(e) => handleStartValueChange(e.target.value)}
+              aria-label="시작 평가금액 입력"
+            />
+          </div>
+          <div>
+            <span>시뮬레이션의 기준 평가금액입니다.</span>
+            <small>현재 자산 합계는 {Math.floor(totalAssetValue).toLocaleString()}원입니다. 목표비중 계산 시 시작 평가금액을 기준으로 수량이 재계산됩니다.</small>
+          </div>
         </div>
-        <div>
-          <span>시뮬레이션의 기준 평가금액입니다.</span>
-          <small>현재 자산 합계는 {Math.floor(totalAssetValue).toLocaleString()}원입니다. 목표비중 계산 시 시작 평가금액을 기준으로 수량이 재계산됩니다.</small>
-        </div>
-        <div className="assetValueActionGroup">
-          <button className="resetPortfolioButton secondary" type="button" onClick={handleUseCurrentAssetValue} disabled={isBulkAssetLookupLoading}>자산 합계로 맞춤</button>
-          <button className="resetPortfolioButton secondary" type="button" onClick={resetGlobalSettings} disabled={isBulkAssetLookupLoading}>공통 조건 초기화</button>
-        </div>
-      </div>
 
-      <div className={summary.overAmount > 0 ? "targetWeightPanel warning compact" : "targetWeightPanel compact"}>
-        <div className="targetWeightSummaryGrid twoColumns">
-          <div>
-            <p>목표비중 합계</p>
-            <strong>{formatDecimal(summary.total, 2)}%</strong>
+        <div className="targetWeightPanel compact mergedTargetWeightPanel">
+          <div className="targetWeightSummaryGrid twoColumns">
+            <div>
+              <p>목표비중 합계</p>
+              <strong>{formatDecimal(summary.total, 2)}%</strong>
+            </div>
+            <div>
+              <p>{summary.overAmount > 0 ? "초과 비중" : "남은 비중"}</p>
+              <strong>{summary.overAmount > 0 ? formatDecimal(summary.overAmount, 2) : formatDecimal(summary.remaining, 2)}%</strong>
+            </div>
           </div>
-          <div>
-            <p>{summary.overAmount > 0 ? "초과 비중" : "남은 비중"}</p>
-            <strong>{summary.overAmount > 0 ? formatDecimal(summary.overAmount, 2) : formatDecimal(summary.remaining, 2)}%</strong>
+          <div className="targetWeightApplyRow">
+            <p className="targetWeightNoticeText">{weightNoticeText}</p>
+            <button className="addButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
           </div>
+          {summary.unsupportedCount > 0 && (
+            <p className="targetWeightNoticeText warningText">현재가가 없는 자산 {summary.unsupportedCount}개는 목표비중 계산 전에 조회가 필요합니다.</p>
+          )}
         </div>
-        <div className="targetWeightApplyRow">
-          <p className="targetWeightNoticeText">{weightNoticeText}</p>
-          <button className="addButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
-        </div>
-        {summary.unsupportedCount > 0 && (
-          <p className="targetWeightNoticeText warningText">현재가가 없는 자산 {summary.unsupportedCount}개는 목표비중 계산 전에 조회가 필요합니다.</p>
-        )}
       </div>
 
       {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
