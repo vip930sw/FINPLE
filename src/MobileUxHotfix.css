@@ -124,7 +124,7 @@
 
 .calculationControlPanel {
   display: grid;
-  grid-template-columns: minmax(250px, 1.12fr) minmax(240px, 1.2fr) minmax(150px, 0.72fr) minmax(150px, 0.72fr) minmax(210px, 1.05fr) 76px;
+  grid-template-columns: minmax(240px, 1.18fr) minmax(300px, 1.45fr) minmax(120px, 0.58fr) minmax(120px, 0.58fr) minmax(260px, 1.38fr) 76px;
   align-items: stretch;
   gap: 12px;
   margin: 28px 0 16px;
@@ -229,7 +229,7 @@
 .calculateWeightButton {
   align-self: stretch;
   border: none;
-  border-radius: 999px;
+  border-radius: 22px;
   background: #0f172a;
   color: #ffffff;
   padding: 0 18px;
