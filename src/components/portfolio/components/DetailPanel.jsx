@@ -2,6 +2,16 @@ import PerformanceChart from "../../PerformanceChart";
 import DetailAssetTable from "./DetailAssetTable";
 import { analyzePortfolioProfile } from "../utils/portfolioCalculations";
 
+function MetricTooltip({ label, children }) {
+  return (
+    <span className="detailMetricHelpItem" tabIndex={0}>
+      <span>{label}</span>
+      <em>?</em>
+      <strong>{children}</strong>
+    </span>
+  );
+}
+
 export default function DetailPanel({
   activePortfolio,
   detailReport,
@@ -30,6 +40,31 @@ export default function DetailPanel({
 }) {
   const portfolioAnalysis = analyzePortfolioProfile({ assets, result });
   const monthlyDividend = Math.floor(Number(expectedAnnualDividend || 0) / 12);
+  const cumulativeContribution = Number(simulationStartValue || 0) + Number(yearlyContribution || 0) * Number(settings.years || 0);
+  const cumulativeProfit = Math.max(0, Number(futureValue || 0) - cumulativeContribution);
+
+  const performanceMetrics = [
+    { label: "시작 평가금액", value: `${Math.floor(simulationStartValue).toLocaleString()}원`, note: "시뮬레이션 기준 금액" },
+    { label: `${settings.years}년 후 예상 자산`, value: `${formatNumber(futureValue)}원`, note: "물가 반영 전 예상값" },
+    { label: "물가 반영 실질가치", value: `${formatNumber(inflationAdjustedFutureValue)}원`, note: "구매력 기준 예상값" },
+    { label: "예상 CAGR", value: `${expectedCagr.toFixed(2)}%`, note: "자산 비중 가중 평균" },
+    { label: "누적 투자금", value: `${Math.floor(cumulativeContribution).toLocaleString()}원`, note: "시작금액 + 월 투자금" },
+    { label: "누적 수익금", value: `${Math.floor(cumulativeProfit).toLocaleString()}원`, note: "예상 자산 - 누적 투자금" },
+  ];
+
+  const riskMetrics = [
+    { label: "예상 BETA", value: expectedBeta.toFixed(2), note: "시장 대비 변동 민감도" },
+    { label: "예상 MDD", value: `${simpleMdd.toFixed(2)}%`, note: "최대 하락폭 참고 지표" },
+    { label: "예상 Calmar", value: expectedCalmar.toFixed(2), note: "CAGR 대비 MDD 효율" },
+    { label: "Sharpe", value: "준비 중", note: "변동성 데이터 연동 후 제공" },
+  ];
+
+  const dividendMetrics = [
+    { label: "예상 연배당금", value: `${expectedAnnualDividend.toLocaleString()}원`, note: "현재 평가금액 기준" },
+    { label: "월 예상 배당금", value: `${formatNumber(monthlyDividend)}원`, note: "연배당금의 월 환산" },
+    { label: "예상 배당률", value: `${expectedDividendYield.toFixed(2)}%`, note: "포트폴리오 가중 평균" },
+    { label: "배당재투자", value: settings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
+  ];
 
   return (
     <div id="detail" className="simulatorTabPanel detailPanel">
@@ -116,45 +151,33 @@ export default function DetailPanel({
         </div>
       )}
 
-      <div className="detailExecutiveSection">
+      <div className="detailExecutiveSection detailStep3ExecutiveSection">
         <div className="detailInfoHeader">
           <p className="sectionLabel">Executive Summary</p>
           <h4>핵심 요약</h4>
           <span>현재 자산 비중과 기대지표를 기준으로 포트폴리오의 성격과 주요 리스크를 요약합니다.</span>
         </div>
 
-        <div className="detailMetricGrid">
-          <div className="detailMetricCard primaryMetricCard">
+        <div className="detailHeroMetricGrid">
+          <div className="detailHeroMetricCard primaryMetricCard">
             <span>총 평가금액</span>
             <strong>{formatNumber(result.totalAssetValue)}원</strong>
             <p>현재 보유 수량과 현재가 기준</p>
           </div>
 
-          <div className="detailMetricCard">
+          <div className="detailHeroMetricCard">
             <span>예상 CAGR</span>
             <strong>{expectedCagr.toFixed(2)}%</strong>
-            <p>자산 비중 가중 평균</p>
+            <p>장기 성장성 기준 지표</p>
           </div>
 
-          <div className="detailMetricCard dangerMetricCard">
+          <div className="detailHeroMetricCard dangerMetricCard">
             <span>예상 MDD</span>
             <strong>{simpleMdd.toFixed(2)}%</strong>
             <p>하락장 손실폭 참고 지표</p>
           </div>
 
-          <div className="detailMetricCard">
-            <span>예상 배당률</span>
-            <strong>{expectedDividendYield.toFixed(2)}%</strong>
-            <p>현재 평가금액 기준</p>
-          </div>
-
-          <div className="detailMetricCard">
-            <span>월 예상 배당금</span>
-            <strong>{formatNumber(monthlyDividend)}원</strong>
-            <p>연 예상 배당금의 월 환산</p>
-          </div>
-
-          <div className="detailMetricCard primaryMetricCard">
+          <div className="detailHeroMetricCard primaryMetricCard">
             <span>{settings.years}년 후 예상 자산</span>
             <strong>{formatNumber(futureValue)}원</strong>
             <p>물가 반영 전 장기 예상값</p>
@@ -185,6 +208,20 @@ export default function DetailPanel({
             </div>
           </div>
         </div>
+
+        <div className="detailMetricHelpBox">
+          <div>
+            <p className="sectionLabel">Metric Guide</p>
+            <strong>주요 지표 설명</strong>
+          </div>
+          <div className="detailMetricHelpList">
+            <MetricTooltip label="CAGR">연평균 성장률입니다. 기간 전체 수익률을 매년 같은 비율로 성장한 것처럼 환산해 장기 성과를 비교합니다.</MetricTooltip>
+            <MetricTooltip label="BETA">시장 대비 민감도입니다. 1보다 크면 시장보다 크게 움직이고, 1보다 작으면 상대적으로 덜 움직이는 경향을 의미합니다.</MetricTooltip>
+            <MetricTooltip label="MDD">고점 대비 최대 하락률입니다. 투자자가 체감할 수 있는 하락 위험을 확인하는 핵심 지표입니다.</MetricTooltip>
+            <MetricTooltip label="Calmar">CAGR을 MDD로 나눈 위험조정 지표입니다. 큰 하락을 감수한 만큼 수익이 충분했는지 보는 데 사용합니다.</MetricTooltip>
+            <MetricTooltip label="Sharpe">변동성 대비 초과수익을 보는 지표입니다. FINPLE에서는 변동성 데이터 연동 후 고도화 지표로 제공할 예정입니다.</MetricTooltip>
+          </div>
+        </div>
       </div>
 
       <div className="detailDiagnosisGrid">
@@ -213,7 +250,7 @@ export default function DetailPanel({
         </div>
       </div>
 
-      <div className="detailInfoSection">
+      <div className="detailInfoSection detailConditionsSection">
         <div className="detailInfoHeader">
           <p className="sectionLabel">Analysis Conditions</p>
           <h4>분석 조건</h4>
@@ -266,57 +303,58 @@ export default function DetailPanel({
         </div>
       </div>
 
-      <div className="calculatorSummary expectedSummary">
-        <div className="summaryCard">
-          <p>시작 평가금액</p>
-          <strong>{Math.floor(simulationStartValue).toLocaleString()}원</strong>
+      <div className="detailGroupedMetricsSection">
+        <div className="detailInfoHeader">
+          <p className="sectionLabel">Detailed Metrics</p>
+          <h4>상세 지표</h4>
+          <span>기존 수치 카드는 성과, 위험, 배당/현금흐름 3개 그룹으로 통합했습니다.</span>
         </div>
 
-        <div className="summaryCard">
-          <p>연간 투자금</p>
-          <strong>{Math.floor(yearlyContribution).toLocaleString()}원</strong>
-        </div>
+        <div className="detailGroupedMetricGrid">
+          <article className="detailGroupedMetricCard">
+            <div className="detailGroupedMetricHeader">
+              <span>Performance</span>
+              <strong>성과</strong>
+            </div>
+            <dl>
+              {performanceMetrics.map((metric) => (
+                <div key={metric.label}>
+                  <dt>{metric.label}<small>{metric.note}</small></dt>
+                  <dd>{metric.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
 
-        <div className="summaryCard">
-          <p>예상 연배당금</p>
-          <strong>{expectedAnnualDividend.toLocaleString()}원</strong>
-        </div>
+          <article className="detailGroupedMetricCard">
+            <div className="detailGroupedMetricHeader">
+              <span>Risk</span>
+              <strong>위험</strong>
+            </div>
+            <dl>
+              {riskMetrics.map((metric) => (
+                <div key={metric.label}>
+                  <dt>{metric.label}<small>{metric.note}</small></dt>
+                  <dd>{metric.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
 
-        <div className="summaryCard">
-          <p>예상 배당률</p>
-          <strong>{expectedDividendYield.toFixed(2)}%</strong>
-        </div>
-
-        <div className="summaryCard">
-          <p>예상 CAGR</p>
-          <strong>{expectedCagr.toFixed(2)}%</strong>
-        </div>
-
-        <div className="summaryCard">
-          <p>예상 BETA</p>
-          <strong>{expectedBeta.toFixed(2)}</strong>
-        </div>
-
-        <div className="summaryCard">
-          <p>예상 CALMAR</p>
-          <strong>{expectedCalmar.toFixed(2)}</strong>
-        </div>
-
-        <div className="summaryCard">
-          <p>예상 MDD</p>
-          <strong>{simpleMdd.toFixed(2)}%</strong>
-        </div>
-      </div>
-
-      <div className="finalValueRow">
-        <div className="summaryCard finalValueCard">
-          <p>{settings.years}년 후 예상 평가금액</p>
-          <strong>{futureValue.toLocaleString()}원</strong>
-        </div>
-
-        <div className="summaryCard finalValueCard realValueCard">
-          <p>물가 반영 예상 평가금액</p>
-          <strong>{inflationAdjustedFutureValue.toLocaleString()}원</strong>
+          <article className="detailGroupedMetricCard">
+            <div className="detailGroupedMetricHeader">
+              <span>Dividend</span>
+              <strong>배당 / 현금흐름</strong>
+            </div>
+            <dl>
+              {dividendMetrics.map((metric) => (
+                <div key={metric.label}>
+                  <dt>{metric.label}<small>{metric.note}</small></dt>
+                  <dd>{metric.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
         </div>
       </div>
 
