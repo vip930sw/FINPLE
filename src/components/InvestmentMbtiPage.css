@@ -14,11 +14,12 @@
 
 .investmentMbtiHero h1 {
   margin: 18px 0 16px;
-  font-size: clamp(40px, 6vw, 72px);
-  line-height: 1.04;
-  letter-spacing: -3px;
+  font-size: clamp(34px, 4.4vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -2.4px;
   color: #0f172a;
   word-break: keep-all;
+  white-space: nowrap;
 }
 
 .investmentMbtiHero p {
@@ -179,7 +180,7 @@
 }
 
 .investmentMbtiNotice {
-  max-width: 1080px;
+  max-width: 900px;
   margin: 0 auto 80px;
   padding: 22px 26px;
   border-radius: 24px;
@@ -198,6 +199,11 @@
 
 .investmentMbtiNotice p {
   margin: 0;
+}
+
+.investmentMbtiNotice.resultNotice {
+  margin-top: 30px;
+  max-width: none;
 }
 
 .investmentMbtiNotice.resultNotice p + p {
@@ -378,6 +384,33 @@
   background: #fff7ed;
 }
 
+.investmentMbtiShareActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.investmentMbtiShareActions button {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 12px 16px;
+  font-weight: 900;
+}
+
+.investmentMbtiExportStatus {
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .investmentMbtiResultActions.horizontal {
   justify-content: flex-end;
   margin-top: 24px;
@@ -402,11 +435,20 @@
   .investmentMbtiTwoColumn {
     grid-template-columns: 1fr;
   }
+
+  .investmentMbtiHero h1 {
+    white-space: normal;
+    font-size: clamp(34px, 7vw, 48px);
+  }
 }
 
 @media (max-width: 640px) {
   .investmentMbtiHero {
     padding: 54px 20px 18px;
+  }
+
+  .investmentMbtiHero h1 {
+    font-size: clamp(30px, 8.5vw, 40px);
   }
 
   .investmentMbtiSingleCard,
@@ -427,16 +469,23 @@
   }
 
   .investmentMbtiActions,
-  .investmentMbtiResultActions.horizontal {
+  .investmentMbtiResultActions.horizontal,
+  .investmentMbtiShareActions {
     flex-direction: column;
   }
 
   .investmentMbtiActions button,
-  .investmentMbtiResultActions.horizontal button {
+  .investmentMbtiResultActions.horizontal button,
+  .investmentMbtiShareActions button {
     width: 100%;
   }
 
   .investmentMbtiNotice {
+    max-width: none;
     margin: 0 20px 56px;
+  }
+
+  .investmentMbtiNotice.resultNotice {
+    margin: 30px 0 0;
   }
 }
