@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import "./components/SiteFooter.css";
 
 import TradingViewTicker from "./components/TradingViewTicker";
 import EconomicCalendarSection from "./components/EconomicCalendarSection";
@@ -145,6 +146,10 @@ function App() {
   function isFinpleUserLoggedIn() { return Boolean(getStoredFinpleAuthUser()?.id); }
   function goMyPageOrLogin() { setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login"); }
 
+  function renderWithFooter(pageContent) {
+    return <>{pageContent}<SiteFooter onNavigate={setCurrentPage} /></>;
+  }
+
   async function handleHeaderLoginLogout() {
     if (isFinpleUserLoggedIn()) {
       await logoutFinpleAuth();
@@ -159,18 +164,18 @@ function App() {
     window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
-  if (currentPage === "personal") return <PersonalPage onBack={goHome} />;
-  if (currentPage === "admin-login") return <AdminLoginPage onNavigate={setCurrentPage} />;
-  if (currentPage === "login") return <LoginPage onNavigate={setCurrentPage} />;
-  if (currentPage === "signup") return <SignupPage onNavigate={setCurrentPage} />;
-  if (currentPage === "mypage") return <MyPage onNavigate={setCurrentPage} />;
-  if (currentPage === "pricing") return <PricingPage onNavigate={setCurrentPage} />;
-  if (currentPage === "support") return <SupportPage onNavigate={setCurrentPage} />;
-  if (currentPage === "updates") return <><UpdatesPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
+  if (currentPage === "personal") return renderWithFooter(<PersonalPage onBack={goHome} />);
+  if (currentPage === "admin-login") return renderWithFooter(<AdminLoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "login") return renderWithFooter(<LoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "signup") return renderWithFooter(<SignupPage onNavigate={setCurrentPage} />);
+  if (currentPage === "mypage") return renderWithFooter(<MyPage onNavigate={setCurrentPage} />);
+  if (currentPage === "pricing") return renderWithFooter(<PricingPage onNavigate={setCurrentPage} />);
+  if (currentPage === "support") return renderWithFooter(<SupportPage onNavigate={setCurrentPage} />);
+  if (currentPage === "updates") return renderWithFooter(<UpdatesPage onNavigate={setCurrentPage} />);
 
-  if (currentPage === "privacy") return <><PrivacyPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
-  if (currentPage === "terms") return <><TermsPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
-  if (currentPage === "investment-disclaimer") return <><InvestmentDisclaimerPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
+  if (currentPage === "privacy") return renderWithFooter(<PrivacyPage onNavigate={setCurrentPage} />);
+  if (currentPage === "terms") return renderWithFooter(<TermsPage onNavigate={setCurrentPage} />);
+  if (currentPage === "investment-disclaimer") return renderWithFooter(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
 
   return (
     <main className="page">
@@ -184,7 +189,6 @@ function App() {
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
-          <button type="button" className="navTextButton" onClick={() => setCurrentPage("updates")}>업데이트</button>
         </nav>
 
         <div className="headerActions">
@@ -240,18 +244,27 @@ function Bar({ label, value }) { return <div><div className="barLabel"><span>{la
 function FeatureCard({ title, text }) { return <article className="featureCard"><h3>{title}</h3><p>{text}</p></article>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
+  function handleFooterLink(event, page) {
+    event.preventDefault();
+    onNavigate(page);
+  }
+
   return (
-    <footer className="footer">
-      <strong>FINPLE Portfolio Lab</strong>
-      <span>© 2026 FINPLE. Beta service.</span>
-      <p>
+    <footer className="footer siteFooter">
+      <div className="siteFooterBrandBlock">
+        <strong>FINPLE Portfolio Lab</strong>
+        <span>© 2026 FINPLE. Beta service.</span>
+      </div>
+      <p className="siteFooterNotice">
         FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,
         특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
       </p>
-      <button type="button" onClick={() => onNavigate("updates")}>업데이트</button>
-      <button type="button" onClick={() => onNavigate("terms")}>이용약관</button>
-      <button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button>
-      <button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button>
+      <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
+        <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
+        <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>
+        <a href="/privacy" onClick={(event) => handleFooterLink(event, "privacy")}>개인정보처리방침</a>
+        <a href="/disclaimer" onClick={(event) => handleFooterLink(event, "investment-disclaimer")}>투자 유의사항</a>
+      </nav>
     </footer>
   );
 }
