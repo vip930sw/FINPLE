@@ -336,6 +336,51 @@
   white-space: nowrap;
 }
 
+.detailAssetTable {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.detailAssetTable th,
+.detailAssetTable td {
+  padding-left: 8px;
+  padding-right: 8px;
+  vertical-align: middle;
+}
+
+.detailAssetTable th:nth-child(1),
+.detailAssetTable td:nth-child(1) { width: 8%; }
+.detailAssetTable th:nth-child(2),
+.detailAssetTable td:nth-child(2) { width: 21%; padding-right: 22px; }
+.detailAssetTable th:nth-child(3),
+.detailAssetTable td:nth-child(3) { width: 8%; padding-left: 4px; padding-right: 4px; }
+.detailAssetTable th:nth-child(4),
+.detailAssetTable td:nth-child(4) { width: 11%; padding-left: 4px; padding-right: 4px; }
+.detailAssetTable th:nth-child(5),
+.detailAssetTable td:nth-child(5) { width: 12%; padding-left: 4px; padding-right: 4px; }
+.detailAssetTable th:nth-child(6),
+.detailAssetTable td:nth-child(6) { width: 8%; }
+.detailAssetTable th:nth-child(7),
+.detailAssetTable td:nth-child(7) { width: 9%; }
+.detailAssetTable th:nth-child(8),
+.detailAssetTable td:nth-child(8) { width: 7%; }
+.detailAssetTable th:nth-child(9),
+.detailAssetTable td:nth-child(9) { width: 8%; }
+.detailAssetTable th:nth-child(10),
+.detailAssetTable td:nth-child(10) { width: 8%; }
+
+.detailAssetTable td:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailAssetTable td:nth-child(3),
+.detailAssetTable td:nth-child(4),
+.detailAssetTable td:nth-child(5) {
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .detailHeroMetricGrid,
   .detailNarrativeGrid,
