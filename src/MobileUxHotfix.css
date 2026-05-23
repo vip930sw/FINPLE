@@ -16,9 +16,9 @@
 
 .weightInputWrap input,
 .weightInputWrap.targetWeightInputWrap input {
-  width: 78px;
-  min-width: 78px;
-  max-width: 78px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -124,7 +124,7 @@
 
 .calculationControlPanel {
   display: grid;
-  grid-template-columns: minmax(260px, 1.15fr) minmax(170px, 0.75fr) 92px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   margin: 28px 0 16px;
@@ -206,6 +206,7 @@
 
 .calculateWeightButton {
   align-self: stretch;
+  width: 100%;
   border: none;
   border-radius: 22px;
   background: #0f172a;
@@ -222,6 +223,83 @@
   cursor: not-allowed;
 }
 
+.alignedAssetTable {
+  table-layout: fixed;
+  min-width: 1120px;
+}
+
+.alignedAssetTable .tickerColumn { width: 78px; }
+.alignedAssetTable .assetNameColumn { width: 190px; }
+.alignedAssetTable .quantityColumn { width: 96px; }
+.alignedAssetTable .priceColumn { width: 150px; }
+.alignedAssetTable .valueColumn { width: 150px; }
+.alignedAssetTable .targetWeightColumn { width: 116px; }
+.alignedAssetTable .actualWeightColumn { width: 96px; }
+.alignedAssetTable .metricColumn { width: 86px; }
+.alignedAssetTable .lookupColumn { width: 78px; }
+
+.alignedAssetTable th,
+.alignedAssetTable td {
+  height: 74px;
+  box-sizing: border-box;
+  vertical-align: middle !important;
+}
+
+.alignedAssetTable th {
+  text-align: center;
+}
+
+.alignedAssetTable .numberHeader {
+  text-align: center !important;
+}
+
+.alignedAssetTable .tableNumberCell,
+.alignedAssetTable .priceCell,
+.alignedAssetTable .targetWeightCell,
+.alignedAssetTable .lookupCell {
+  text-align: right;
+}
+
+.alignedAssetTable .targetWeightCell,
+.alignedAssetTable .lookupCell,
+.alignedAssetTable .tickerCell {
+  text-align: center;
+}
+
+.alignedAssetTable .assetNameCell {
+  overflow: hidden;
+}
+
+.alignedAssetTable .assetTextValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alignedAssetTable .assetInfoStack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.alignedAssetTable .assetInfoStack.alignRight {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.alignedAssetTable .numberTextValue,
+.alignedAssetTable .tableNumberCell,
+.alignedAssetTable .metricCell,
+.alignedAssetTable .actualWeightCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.alignedAssetTable .fetchAssetButton {
+  min-width: 54px;
+}
+
 .primaryFinderButton {
   border: none;
   background: #0f172a;
@@ -234,7 +312,7 @@
 
 @media (max-width: 1100px) {
   .calculationControlPanel {
-    grid-template-columns: minmax(0, 1.1fr) minmax(150px, 0.75fr) 86px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -336,16 +414,25 @@
     min-width: 84px;
   }
 
+  .alignedAssetTable {
+    min-width: 1120px;
+  }
+
+  .alignedAssetTable th,
+  .alignedAssetTable td {
+    height: 76px;
+  }
+
   .weightInputWrap,
   .weightInputWrap.targetWeightInputWrap {
-    min-width: 110px;
+    min-width: 118px;
   }
 
   .weightInputWrap input,
   .weightInputWrap.targetWeightInputWrap input {
-    min-width: 84px;
-    max-width: 84px;
-    width: 84px;
+    min-width: 92px;
+    max-width: 92px;
+    width: 92px;
   }
 }
 
