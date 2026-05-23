@@ -64,6 +64,81 @@
   cursor: not-allowed;
 }
 
+.fieldLabelWithTooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.fieldLabelWithTooltip p {
+  margin: 0 !important;
+}
+
+.infoTooltipIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: help;
+}
+
+.infoTooltipBubble {
+  position: absolute;
+  left: 0;
+  top: 26px;
+  z-index: 30;
+  width: 292px;
+  max-width: calc(100vw - 48px);
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.6;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  pointer-events: none;
+}
+
+.fieldLabelWithTooltip:hover .infoTooltipBubble,
+.infoTooltipIcon:focus + .infoTooltipBubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.calculationControlPanel {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.72fr) minmax(480px, 1fr);
+  align-items: stretch;
+  gap: 16px;
+  margin: 28px 0 16px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 24px;
+  background: #eff6ff;
+}
+
+.calculationControlPanel.warning {
+  border-color: #fecaca;
+  background: #fff7ed;
+}
+
 .editableStartValueBox {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
@@ -91,6 +166,14 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
+.mergedStartValueBox {
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
 .assetValueActionGroup {
   display: flex;
   flex-wrap: wrap;
@@ -116,6 +199,13 @@
 .targetWeightPanel.warning {
   border-color: #fecaca;
   background: #fff7ed;
+}
+
+.mergedTargetWeightPanel {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .targetWeightSummaryGrid {
@@ -259,7 +349,9 @@
     order: 20;
   }
 
+  .calculationControlPanel,
   .editableStartValueBox,
+  .mergedStartValueBox,
   .targetWeightPanel.compact {
     grid-template-columns: 1fr;
   }
