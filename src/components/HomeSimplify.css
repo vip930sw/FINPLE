@@ -1,0 +1,39 @@
+.pricingPreviewSection {
+  max-width: 1280px;
+}
+
+.pricingPreviewSection > h2,
+.pricingPreviewSection > p:not(.sectionLabel) {
+  max-width: 980px;
+}
+
+.aboutPage .accountHero.aboutHero {
+  max-width: 980px;
+}
+
+.aboutSectionCard {
+  max-width: 980px;
+}
+
+.accountNav button:nth-child(3):has(+ button) {
+  display: none;
+}
+
+.accountNav button:nth-child(2)::before {
+  content: "시작하기";
+}
+
+.accountNav button:nth-child(2) {
+  font-size: 0;
+}
+
+.accountNav button:nth-child(2)::before {
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .pricingPreviewSection > h2,
+  .pricingPreviewSection > p:not(.sectionLabel) {
+    max-width: none;
+  }
+}
