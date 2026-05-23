@@ -240,14 +240,14 @@
 
 .alignedAssetTable {
   table-layout: fixed;
-  min-width: 1144px;
+  min-width: 1068px;
 }
 
 .alignedAssetTable .tickerColumn { width: 78px; }
 .alignedAssetTable .assetNameColumn { width: 190px; }
-.alignedAssetTable .quantityColumn { width: 96px; }
-.alignedAssetTable .priceColumn { width: 170px; }
-.alignedAssetTable .valueColumn { width: 150px; }
+.alignedAssetTable .quantityColumn { width: 84px; }
+.alignedAssetTable .priceColumn { width: 128px; }
+.alignedAssetTable .valueColumn { width: 128px; }
 .alignedAssetTable .targetWeightColumn { width: 116px; }
 .alignedAssetTable .metricColumn { width: 86px; }
 
@@ -297,13 +297,27 @@
   text-align: center;
 }
 
+.alignedAssetTable .priceCell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: normal !important;
+}
+
 .alignedAssetTable .priceCell .assetInfoStack,
 .alignedAssetTable .priceCell .assetInfoStack.alignRight {
-  min-height: 0;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  display: flex !important;
+  min-height: 74px !important;
+  height: 74px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.alignedAssetTable .priceCell .assetTextValue {
+  display: inline-block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  transform: none !important;
 }
 
 .alignedAssetTable .priceCell .assetTextValue,
@@ -433,8 +447,8 @@
 
   .alignedAssetTable {
     display: table !important;
-    min-width: 1144px !important;
-    width: 1144px !important;
+    min-width: 1068px !important;
+    width: 1068px !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
   }
@@ -479,6 +493,11 @@
     white-space: nowrap !important;
   }
 
+  .alignedAssetTable .priceCell {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
   .alignedAssetTable td::before {
     content: none !important;
   }
@@ -499,8 +518,8 @@
   .alignedAssetTable .priceCell .assetInfoStack.alignRight {
     align-items: center !important;
     text-align: center !important;
-    min-height: 0 !important;
-    height: 100% !important;
+    min-height: 74px !important;
+    height: 74px !important;
     justify-content: center !important;
   }
 
