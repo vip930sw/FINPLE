@@ -1,7 +1,7 @@
 /* =========================================================
    Simulator nav / compare polish
-   - PC/모바일 공통 탭 문구 간격 정리
-   - 모바일 탭 좌측 여백 보정
+   - PC 탭 문구 간격 정리
+   - 모바일 탭은 STEP / 제목 2줄 구조 유지
    - PC 포트폴리오 비교 카드 넘침 방지
 ========================================================= */
 
@@ -101,14 +101,20 @@
 
 @media (max-width: 900px) {
   .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton {
-    justify-content: flex-start !important;
-    padding-left: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    padding-left: 14px !important;
     text-align: left !important;
-    gap: 4px !important;
   }
 
   .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton span,
   .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton strong {
+    display: block !important;
+    width: 100% !important;
     text-align: left !important;
+    line-height: 1.05 !important;
   }
 }
