@@ -20,7 +20,7 @@ function AboutSection({ eyebrow, title, children }) {
   return (
     <section className="accountCard legalDocumentCard aboutSectionCard">
       <article className="legalDocumentSection">
-        <p className="accountMiniLabel">{eyebrow}</p>
+        <p className="accountMiniLabel aboutSectionEyebrow">{eyebrow}</p>
         <h2>{title}</h2>
         {children}
       </article>
@@ -35,10 +35,10 @@ export default function AboutPage({ onNavigate }) {
 
       <section className="accountHero aboutHero">
         <p className="sectionLabel">About FINPLE</p>
-        <h1>FINPLE은 포트폴리오에서 시작해 재테크와 재무관리로 확장되는 분석 도구입니다.</h1>
+        <h1>FINPLE은 Financial Planner에서 시작해 Finance & People로 확장되는 재무관리 도구입니다.</h1>
         <p>
-          FINPLE Portfolio Lab은 현재 미국주식과 ETF 중심의 포트폴리오 분석을 먼저 제공합니다.
-          앞으로는 자산배분, 현금흐름, 재무 목표 점검까지 연결되는 개인 재무 관리 도구로 확장할 예정입니다.
+          FINPLE은 처음에는 포트폴리오를 더 쉽게 점검하기 위한 Financial Planner의 관점에서 출발했습니다.
+          앞으로는 투자, 재테크, 재무 목표를 함께 다루는 Finance & People, 즉 금융과 재무를 실천하는 사람들을 위한 서비스로 확장해 나가려 합니다.
         </p>
       </section>
 
@@ -50,6 +50,17 @@ export default function AboutPage({ onNavigate }) {
         <p>
           현재는 포트폴리오 시뮬레이터, 투자 MBTI, 자산 스크리너를 중심으로 구성되어 있으며,
           사용자는 성향 확인, 후보 탐색, 장기 시뮬레이션을 하나의 흐름 안에서 사용할 수 있습니다.
+        </p>
+      </AboutSection>
+
+      <AboutSection eyebrow="Name" title="FINPLE이라는 이름에 담긴 의미">
+        <p>
+          FINPLE은 Financial Planner에서 출발한 이름입니다. 사용자가 스스로 재무와 투자를 계획하고,
+          포트폴리오를 점검하며, 장기적인 자산 흐름을 관리할 수 있도록 돕는 도구라는 의미를 담고 있습니다.
+        </p>
+        <p>
+          동시에 FINPLE은 Finance & People, 즉 금융과 재무를 실천하는 사람들의 서비스로 확장될 수 있습니다.
+          단순한 계산기를 넘어, 투자자와 생활 재무를 연결하는 플랫폼으로 성장하는 것이 장기 방향입니다.
         </p>
       </AboutSection>
 
