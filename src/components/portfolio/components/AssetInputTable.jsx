@@ -69,11 +69,7 @@ function LookupRequiredValue({ quantity }) {
 }
 
 function PriceTextValue({ asset, formatDecimal }) {
-  return (
-    <div className="assetInfoStack alignRight">
-      <span className="assetTextValue numberTextValue">{formatDecimal(asset.price, 2)}</span>
-    </div>
-  );
+  return <span className="assetTextValue numberTextValue priceTextValue">{formatDecimal(asset.price, 2)}</span>;
 }
 
 function MetricTextValue({ value, formatDecimal }) {
