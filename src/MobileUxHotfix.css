@@ -124,9 +124,9 @@
 
 .calculationControlPanel {
   display: grid;
-  grid-template-columns: minmax(240px, 1.18fr) minmax(300px, 1.45fr) minmax(120px, 0.58fr) minmax(120px, 0.58fr) minmax(260px, 1.38fr) 76px;
+  grid-template-columns: minmax(260px, 1.15fr) minmax(170px, 0.75fr) 92px;
   align-items: stretch;
-  gap: 12px;
+  gap: 14px;
   margin: 28px 0 16px;
   padding: 16px;
   border: 1px solid #bfdbfe;
@@ -140,9 +140,7 @@
 }
 
 .startValueControlBlock,
-.startValueTextBlock,
-.targetMetricCard,
-.targetWeightTextBlock {
+.targetMetricCard {
   min-height: 112px;
   border: 1px solid #dbeafe;
   border-radius: 16px;
@@ -151,8 +149,7 @@
 }
 
 .startValueControlBlock,
-.startValueTextBlock,
-.targetWeightTextBlock {
+.targetMetricCard {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -186,31 +183,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
-.startValueTextBlock strong,
-.targetWeightTextBlock strong {
-  display: block;
-  color: #0f172a;
-  font-size: 15px;
-  font-weight: 950;
-  line-height: 1.45;
-}
-
-.startValueTextBlock small,
-.targetWeightTextBlock small {
-  display: block;
-  margin-top: 8px;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.6;
-}
-
-.targetMetricCard {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .targetMetricCard strong {
   color: #0f172a;
   font-size: 20px;
@@ -218,11 +190,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-.targetWeightTextBlock.ready strong {
-  color: #1e3a8a;
+.currentWeightCard small {
+  display: block;
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.45;
 }
 
-.targetWeightTextBlock .warningText {
+.currentWeightCard .overWeightLabel,
+.currentWeightCard .warningText {
   color: #dc2626;
 }
 
@@ -244,116 +222,6 @@
   cursor: not-allowed;
 }
 
-.editableStartValueBox {
-  display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-}
-
-.editableStartValueBox input {
-  width: 100%;
-  margin-top: 8px;
-  padding: 12px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  background: #ffffff;
-  text-align: right;
-  font-size: 20px;
-  font-weight: 950;
-  font-variant-numeric: tabular-nums;
-  box-sizing: border-box;
-}
-
-.editableStartValueBox input:focus {
-  outline: none;
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
-}
-
-.assetValueActionGroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.targetWeightPanel {
-  margin: 18px 0 16px;
-  padding: 16px;
-  border: 1px solid #bfdbfe;
-  border-radius: 18px;
-  background: #eff6ff;
-}
-
-.targetWeightPanel.compact {
-  display: grid;
-  grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-}
-
-.targetWeightPanel.warning {
-  border-color: #fecaca;
-  background: #fff7ed;
-}
-
-.targetWeightSummaryGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.targetWeightSummaryGrid.twoColumns {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.targetWeightSummaryGrid > div {
-  padding: 13px 14px;
-  border: 1px solid #dbeafe;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.targetWeightSummaryGrid p {
-  margin: 0 0 6px;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.targetWeightSummaryGrid strong {
-  color: #0f172a;
-  font-size: 18px;
-  font-weight: 950;
-  font-variant-numeric: tabular-nums;
-}
-
-.targetWeightApplyRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
-}
-
-.targetWeightApplyRow .addButton {
-  white-space: nowrap;
-}
-
-.targetWeightNoticeText {
-  margin: 0;
-  color: #1e3a8a;
-  font-size: 13px;
-  font-weight: 850;
-  line-height: 1.6;
-}
-
-.targetWeightNoticeText.warningText {
-  grid-column: 1 / -1;
-  margin-top: 8px;
-  color: #dc2626;
-}
-
 .primaryFinderButton {
   border: none;
   background: #0f172a;
@@ -366,12 +234,7 @@
 
 @media (max-width: 1100px) {
   .calculationControlPanel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .calculateWeightButton {
-    min-height: 68px;
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.1fr) minmax(150px, 0.75fr) 86px;
   }
 }
 
@@ -450,42 +313,18 @@
     order: 20;
   }
 
-  .calculationControlPanel,
-  .editableStartValueBox,
-  .targetWeightPanel.compact {
+  .calculationControlPanel {
     grid-template-columns: 1fr;
   }
 
   .startValueControlBlock,
-  .startValueTextBlock,
-  .targetMetricCard,
-  .targetWeightTextBlock {
+  .targetMetricCard {
     min-height: auto;
   }
 
   .calculateWeightButton {
     width: 100%;
     min-height: 58px;
-  }
-
-  .assetValueActionGroup,
-  .targetWeightApplyRow {
-    justify-content: stretch;
-  }
-
-  .assetValueActionGroup button,
-  .targetWeightApplyRow .addButton {
-    width: 100%;
-  }
-
-  .targetWeightApplyRow {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .targetWeightSummaryGrid,
-  .targetWeightSummaryGrid.twoColumns {
-    grid-template-columns: 1fr 1fr;
   }
 
   .calculatorTable th,
