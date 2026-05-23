@@ -42,11 +42,17 @@ export default function SettingsPanel({
   const weightNoticeText = summary.overAmount > 0
     ? `목표비중이 100%를 ${formatDecimal(summary.overAmount, 2)}% 초과했습니다.`
     : summary.remaining > 0
-      ? `목표비중 합계가 ${formatDecimal(summary.remaining, 2)}% 부족합니다. 적용 전 100%로 맞춰 주세요.`
-      : "목표비중 합계가 100%입니다. 적용 버튼을 누르면 수량이 한 번에 재계산됩니다.";
+      ? `목표비중 합계가 ${formatDecimal(summary.remaining, 2)}% 부족합니다. 계산 전 100%로 맞춰 주세요.`
+      : "목표비중 합계가 100%입니다. 계산 버튼을 누르면 수량이 한 번에 재계산됩니다.";
+
+  const toNaturalNumber = (value) => Math.max(0, Math.floor(Number(value || 0)));
+
+  const handleStartValueChange = (value) => {
+    updateSetting("startValue", toNaturalNumber(toNumber(value)));
+  };
 
   const handleUseCurrentAssetValue = () => {
-    updateSetting("startValue", Math.floor(totalAssetValue));
+    updateSetting("startValue", toNaturalNumber(totalAssetValue));
   };
 
   return (
@@ -95,25 +101,20 @@ export default function SettingsPanel({
           <p>시작 평가금액 (원)</p>
           <input
             type="text"
-            value={formatNumber(simulationStartValue)}
-            onChange={(e) => updateSetting("startValue", toNumber(e.target.value))}
+            inputMode="numeric"
+            value={formatNumber(toNaturalNumber(simulationStartValue))}
+            onChange={(e) => handleStartValueChange(e.target.value)}
             aria-label="시작 평가금액 입력"
           />
         </div>
         <div>
           <span>시뮬레이션의 기준 평가금액입니다.</span>
-          <small>현재 자산 합계는 {Math.floor(totalAssetValue).toLocaleString()}원입니다. 목표비중 적용 시 시작 평가금액을 기준으로 수량이 재계산됩니다.</small>
+          <small>현재 자산 합계는 {Math.floor(totalAssetValue).toLocaleString()}원입니다. 목표비중 계산 시 시작 평가금액을 기준으로 수량이 재계산됩니다.</small>
         </div>
         <div className="assetValueActionGroup">
           <button className="resetPortfolioButton secondary" type="button" onClick={handleUseCurrentAssetValue} disabled={isBulkAssetLookupLoading}>자산 합계로 맞춤</button>
           <button className="resetPortfolioButton secondary" type="button" onClick={resetGlobalSettings} disabled={isBulkAssetLookupLoading}>공통 조건 초기화</button>
         </div>
-      </div>
-
-      {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
-
-      <div className="mobileDesktopNotice">
-        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 현재가·CAGR·MDD·배당률은 조회값 또는 기준값을 사용하고, 사용자는 목표비중을 조정합니다.
       </div>
 
       <div className={summary.overAmount > 0 ? "targetWeightPanel warning compact" : "targetWeightPanel compact"}>
@@ -129,11 +130,17 @@ export default function SettingsPanel({
         </div>
         <div className="targetWeightApplyRow">
           <p className="targetWeightNoticeText">{weightNoticeText}</p>
-          <button className="addButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>목표비중 적용</button>
+          <button className="addButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
         </div>
         {summary.unsupportedCount > 0 && (
-          <p className="targetWeightNoticeText warningText">현재가가 없는 자산 {summary.unsupportedCount}개는 목표비중 적용 전에 조회가 필요합니다.</p>
+          <p className="targetWeightNoticeText warningText">현재가가 없는 자산 {summary.unsupportedCount}개는 목표비중 계산 전에 조회가 필요합니다.</p>
         )}
+      </div>
+
+      {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
+
+      <div className="mobileDesktopNotice">
+        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 현재가·CAGR·MDD·배당률은 조회값 또는 기준값을 사용하고, 사용자는 목표비중을 조정합니다.
       </div>
 
       <AssetInputTable
