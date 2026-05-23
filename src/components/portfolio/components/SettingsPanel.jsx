@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import AssetInputTable from "./AssetInputTable";
 
 export default function SettingsPanel({
@@ -38,6 +39,12 @@ export default function SettingsPanel({
     isApplyDisabled: true,
   };
 
+  const [inflationInput, setInflationInput] = useState(formatDecimal(settings.inflationRate, 1));
+
+  useEffect(() => {
+    setInflationInput(formatDecimal(settings.inflationRate, 1));
+  }, [settings.inflationRate, formatDecimal]);
+
   const isTargetWeightReady = summary.overAmount <= 0 && summary.remaining <= 0;
   const weightNoticeTitle = summary.overAmount > 0
     ? `목표비중이 100%를 ${formatDecimal(summary.overAmount, 2)}% 초과했습니다.`
@@ -61,8 +68,20 @@ export default function SettingsPanel({
     updateSetting("startValue", toNaturalNumber(toNumber(value)));
   };
 
-  const handleInflationRateChange = (value) => {
-    updateSetting("inflationRate", toOneDecimal(toNumber(value)));
+  const handleInflationInputChange = (value) => {
+    const sanitized = String(value)
+      .replace(/[^0-9.]/g, "")
+      .replace(/(\..*)\./g, "$1");
+
+    if (/^\d{0,2}(\.\d{0,1})?$/.test(sanitized)) {
+      setInflationInput(sanitized);
+    }
+  };
+
+  const commitInflationRate = () => {
+    const normalized = toOneDecimal(toNumber(inflationInput));
+    updateSetting("inflationRate", normalized);
+    setInflationInput(formatDecimal(normalized, 1));
   };
 
   const TooltipLabel = ({ children, tooltip, label }) => (
@@ -116,15 +135,19 @@ export default function SettingsPanel({
           <input
             type="text"
             inputMode="decimal"
-            value={formatDecimal(settings.inflationRate, 1)}
-            onChange={(e) => handleInflationRateChange(e.target.value)}
+            value={inflationInput}
+            onChange={(e) => handleInflationInputChange(e.target.value)}
+            onBlur={commitInflationRate}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
           />
         </div>
 
         <div className="summaryCard">
           <TooltipLabel
             label="배당재투자"
-            tooltip="배당주의 배당금을 회수하지 않고 다시 투자하는 조건입니다. 배당주기는 월 지급 기준으로 환산해 적용하며, 분기 지급 배당도 월 단위로 나누어 계산합니다."
+            tooltip="배당주의 배당금을 회수하지 않고 다시 투자하는 조건입니다. 배당주기는 월 지급 기준으로 환산해 적용하며, 분기 배당도 월 단위로 환산하여 계산합니다."
           >
             배당재투자
           </TooltipLabel>
