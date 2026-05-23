@@ -126,7 +126,6 @@ export default function AssetInputTable({
           <col className="priceColumn" />
           <col className="valueColumn" />
           <col className="targetWeightColumn" />
-          <col className="actualWeightColumn" />
           <col className="metricColumn" />
           <col className="metricColumn" />
           <col className="metricColumn" />
@@ -141,7 +140,6 @@ export default function AssetInputTable({
             <th className="numberHeader">현재가 (원, KRW)</th>
             <th className="numberHeader">평가금액</th>
             <th className="numberHeader">목표비중</th>
-            <th className="numberHeader">실제비중</th>
             <th className="numberHeader">CAGR (%)</th>
             <th className="numberHeader">BETA</th>
             <th className="numberHeader">MDD (%)</th>
@@ -172,7 +170,7 @@ export default function AssetInputTable({
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
-                <td className="tickerCell">
+                <td className="tickerCell" data-label="티커">
                   <div className="tickerCellStack">
                     <input
                       value={asset.ticker}
@@ -192,7 +190,7 @@ export default function AssetInputTable({
                   </div>
                 </td>
 
-                <td className="assetNameCell">
+                <td className="assetNameCell" data-label="자산명">
                   {emptyRow ? (
                     <span className="emptyTextValue">-</span>
                   ) : isAutoAsset(asset) ? (
@@ -202,11 +200,11 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className="numberCell tableNumberCell">
+                <td className="numberCell tableNumberCell" data-label="수량">
                   {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}
                 </td>
 
-                <td className="numberCell priceCell">
+                <td className="numberCell priceCell" data-label="현재가">
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : lookupRequired ? (
@@ -216,9 +214,9 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className={valueCellClassName}>{formatEvaluationAmount(value)}</td>
+                <td className={valueCellClassName} data-label="평가금액">{formatEvaluationAmount(value)}</td>
 
-                <td className="targetWeightCell">
+                <td className="targetWeightCell" data-label="목표비중">
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : (
@@ -240,13 +238,12 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className="numberCell tableNumberCell actualWeightCell">{emptyRow ? "-" : `${formatDecimal(weight, 2)}%`}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell" data-label="CAGR">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell" data-label="BETA">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell" data-label="MDD">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell" data-label="배당률">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
 
-                <td className="lookupCell">
+                <td className="lookupCell" data-label="조회">
                   <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
                     {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
                   </button>
