@@ -68,6 +68,19 @@ function formatEvaluationAmount(value) {
   return `${roundedToThousand.toLocaleString()}원`;
 }
 
+function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoading, onClick }) {
+  return (
+    <button
+      type="button"
+      className={lookupRequired ? "inlineLookupTextButton needsLookup" : "inlineLookupTextButton"}
+      onClick={onClick}
+      disabled={isLookingUp || isBulkAssetLookupLoading}
+    >
+      {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
+    </button>
+  );
+}
+
 function LookupRequiredValue({ quantity }) {
   const quantityMissing = Number(quantity || 0) <= 0;
 
@@ -75,7 +88,7 @@ function LookupRequiredValue({ quantity }) {
     <div className="assetInfoStack alignRight lookupRequiredStack">
       <span className="lookupRequiredText">조회 필요</span>
       <small className="lookupRequiredHint">
-        {quantityMissing ? "비중 입력 후 조회" : "조회 버튼으로 현재가 반영"}
+        {quantityMissing ? "비중 입력 후 조회" : "현재가 반영 필요"}
       </small>
     </div>
   );
@@ -130,7 +143,6 @@ export default function AssetInputTable({
           <col className="metricColumn" />
           <col className="metricColumn" />
           <col className="metricColumn" />
-          <col className="lookupColumn" />
         </colgroup>
         <thead>
           <tr>
@@ -144,7 +156,6 @@ export default function AssetInputTable({
             <th className="numberHeader">BETA</th>
             <th className="numberHeader">MDD (%)</th>
             <th className="numberHeader">배당률 (%)</th>
-            <th>조회</th>
           </tr>
         </thead>
 
@@ -166,7 +177,6 @@ export default function AssetInputTable({
               quantityMissing ? "quantityMissingRow" : "",
             ].filter(Boolean).join(" ");
             const valueCellClassName = quantityMissing || lookupRequired ? "numberCell tableNumberCell pendingValueCell" : "numberCell tableNumberCell";
-            const fetchButtonClassName = lookupRequired ? "fetchAssetButton needsLookup" : "fetchAssetButton";
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
@@ -204,13 +214,23 @@ export default function AssetInputTable({
                   {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}
                 </td>
 
-                <td className="numberCell priceCell" data-label="현재가">
+                <td className="numberCell priceCell" data-label="현재가 / 조회">
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
-                  ) : lookupRequired ? (
-                    <LookupRequiredValue quantity={asset.quantity} />
                   ) : (
-                    <PriceTextValue asset={asset} formatDecimal={formatDecimal} />
+                    <div className="priceLookupStack">
+                      {lookupRequired ? (
+                        <LookupRequiredValue quantity={asset.quantity} />
+                      ) : (
+                        <PriceTextValue asset={asset} formatDecimal={formatDecimal} />
+                      )}
+                      <InlineLookupButton
+                        isLookingUp={isLookingUp}
+                        lookupRequired={lookupRequired}
+                        isBulkAssetLookupLoading={isBulkAssetLookupLoading}
+                        onClick={() => fetchAssetData(index)}
+                      />
+                    </div>
                   )}
                 </td>
 
@@ -242,12 +262,6 @@ export default function AssetInputTable({
                 <td className="numberCell tableNumberCell metricCell" data-label="BETA">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell" data-label="MDD">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell" data-label="배당률">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
-
-                <td className="lookupCell" data-label="조회">
-                  <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
-                    {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
-                  </button>
-                </td>
               </tr>
             );
           })}
