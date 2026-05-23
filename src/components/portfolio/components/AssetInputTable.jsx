@@ -42,7 +42,30 @@ function getAssetDraftKey(asset, index) {
 function getDisplayedTargetWeight(asset, index, actualWeight, targetWeightDrafts = {}) {
   const key = getAssetDraftKey(asset, index);
   if (Object.prototype.hasOwnProperty.call(targetWeightDrafts, key)) return targetWeightDrafts[key];
-  return Number.isFinite(actualWeight) ? Number(actualWeight.toFixed(2)) : 0;
+  return Number.isFinite(actualWeight) ? actualWeight.toFixed(2) : "0.00";
+}
+
+function sanitizeTargetWeightInput(value) {
+  const sanitized = String(value)
+    .replace(/[^0-9.]/g, "")
+    .replace(/(\..*)\./g, "$1");
+
+  if (/^\d{0,3}(\.\d{0,2})?$/.test(sanitized)) return sanitized;
+  return null;
+}
+
+function formatTargetWeightInput(value) {
+  if (value === "" || value === null || value === undefined) return "0.00";
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return "0.00";
+  return Math.max(0, Math.min(100, numberValue)).toFixed(2);
+}
+
+function formatEvaluationAmount(value) {
+  const numberValue = Number(value || 0);
+  if (!Number.isFinite(numberValue)) return "0원";
+  const roundedToThousand = Math.round(numberValue / 1000) * 1000;
+  return `${roundedToThousand.toLocaleString()}원`;
 }
 
 function LookupRequiredValue({ quantity }) {
@@ -95,7 +118,21 @@ export default function AssetInputTable({
 }) {
   return (
     <div className="calculatorTableWrap">
-      <table className="calculatorTable">
+      <table className="calculatorTable alignedAssetTable">
+        <colgroup>
+          <col className="tickerColumn" />
+          <col className="assetNameColumn" />
+          <col className="quantityColumn" />
+          <col className="priceColumn" />
+          <col className="valueColumn" />
+          <col className="targetWeightColumn" />
+          <col className="actualWeightColumn" />
+          <col className="metricColumn" />
+          <col className="metricColumn" />
+          <col className="metricColumn" />
+          <col className="metricColumn" />
+          <col className="lookupColumn" />
+        </colgroup>
         <thead>
           <tr>
             <th>티커</th>
@@ -130,12 +167,12 @@ export default function AssetInputTable({
               lookupRequired ? "lookupRequiredRow" : "",
               quantityMissing ? "quantityMissingRow" : "",
             ].filter(Boolean).join(" ");
-            const valueCellClassName = quantityMissing || lookupRequired ? "numberCell pendingValueCell" : "numberCell";
+            const valueCellClassName = quantityMissing || lookupRequired ? "numberCell tableNumberCell pendingValueCell" : "numberCell tableNumberCell";
             const fetchButtonClassName = lookupRequired ? "fetchAssetButton needsLookup" : "fetchAssetButton";
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
-                <td>
+                <td className="tickerCell">
                   <div className="tickerCellStack">
                     <input
                       value={asset.ticker}
@@ -155,7 +192,7 @@ export default function AssetInputTable({
                   </div>
                 </td>
 
-                <td>
+                <td className="assetNameCell">
                   {emptyRow ? (
                     <span className="emptyTextValue">-</span>
                   ) : isAutoAsset(asset) ? (
@@ -165,11 +202,11 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className="numberCell">
+                <td className="numberCell tableNumberCell">
                   {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}
                 </td>
 
-                <td>
+                <td className="numberCell priceCell">
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : lookupRequired ? (
@@ -179,20 +216,22 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className={valueCellClassName}>{Math.floor(value).toLocaleString()}원</td>
+                <td className={valueCellClassName}>{formatEvaluationAmount(value)}</td>
 
-                <td>
+                <td className="targetWeightCell">
                   {emptyRow ? (
                     <span className="emptyTextValue numberTextValue">-</span>
                   ) : (
                     <div className="weightInputWrap targetWeightInputWrap">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={targetWeightValue}
-                        onChange={(e) => updateTargetWeightDraft?.(index, e.target.value)}
-                        step="0.01"
-                        min="0"
-                        max="100"
+                        onChange={(e) => {
+                          const sanitized = sanitizeTargetWeightInput(e.target.value);
+                          if (sanitized !== null) updateTargetWeightDraft?.(index, sanitized);
+                        }}
+                        onBlur={() => updateTargetWeightDraft?.(index, formatTargetWeightInput(targetWeightValue))}
                         disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
                         aria-label="목표비중 입력"
                       />
@@ -201,13 +240,13 @@ export default function AssetInputTable({
                   )}
                 </td>
 
-                <td className="numberCell actualWeightCell">{emptyRow ? "-" : `${formatDecimal(weight, 2)}%`}</td>
-                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
-                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
-                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td>{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell actualWeightCell">{emptyRow ? "-" : `${formatDecimal(weight, 2)}%`}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
 
-                <td>
+                <td className="lookupCell">
                   <button type="button" className={fetchButtonClassName} onClick={() => fetchAssetData(index)} disabled={isLookingUp || isBulkAssetLookupLoading}>
                     {isLookingUp ? "조회 중" : lookupRequired ? "조회 필요" : "조회"}
                   </button>
