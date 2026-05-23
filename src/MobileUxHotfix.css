@@ -41,6 +41,13 @@
   text-align: center;
 }
 
+.assetNameLookupStack {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  justify-items: start;
+}
+
 .removeTextButton,
 .inlineLookupTextButton {
   border: none;
@@ -58,8 +65,7 @@
 
 .inlineLookupTextButton {
   color: #2563eb;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
 }
 
 .inlineLookupTextButton.needsLookup {
@@ -70,13 +76,6 @@
 .inlineLookupTextButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-.priceLookupStack {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
 .fieldLabelWithTooltip {
@@ -313,6 +312,10 @@
   font-weight: 900;
 }
 
+.mobileAssetCards {
+  display: none !important;
+}
+
 @media (max-width: 1100px) {
   .calculationControlPanel {
     grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.72fr) minmax(130px, 0.52fr);
@@ -409,106 +412,80 @@
   }
 
   .calculatorTableWrap {
-    overflow-x: visible !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dbeafe !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
   }
 
   .alignedAssetTable {
-    display: block !important;
-    min-width: 0 !important;
-    width: 100% !important;
-    table-layout: auto !important;
-    border-collapse: separate !important;
+    display: table !important;
+    min-width: 960px !important;
+    width: 960px !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
   }
 
   .alignedAssetTable colgroup,
   .alignedAssetTable thead {
-    display: none !important;
+    display: table-header-group !important;
+  }
+
+  .alignedAssetTable colgroup {
+    display: table-column-group !important;
   }
 
   .alignedAssetTable tbody {
-    display: grid !important;
-    gap: 14px !important;
-    width: 100% !important;
+    display: table-row-group !important;
+    width: auto !important;
   }
 
   .alignedAssetTable tr {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    width: 100% !important;
+    display: table-row !important;
+    width: auto !important;
     margin: 0 !important;
-    padding: 14px 16px !important;
-    border: 1px solid #dbeafe !important;
-    border-radius: 20px !important;
-    background: #ffffff !important;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04) !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
     box-sizing: border-box !important;
   }
 
+  .alignedAssetTable th,
   .alignedAssetTable td {
-    display: grid !important;
-    grid-template-columns: 92px minmax(0, 1fr) !important;
-    align-items: center !important;
-    gap: 12px !important;
-    width: 100% !important;
-    min-height: 44px !important;
-    height: auto !important;
-    padding: 9px 0 !important;
+    display: table-cell !important;
+    width: auto !important;
+    height: 74px !important;
+    min-height: 0 !important;
+    padding: 10px 8px !important;
     border-bottom: 1px solid #e2e8f0 !important;
-    text-align: right !important;
+    text-align: center !important;
+    vertical-align: middle !important;
     box-sizing: border-box !important;
-  }
-
-  .alignedAssetTable td:last-child {
-    border-bottom: none !important;
   }
 
   .alignedAssetTable td::before {
-    content: attr(data-label);
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 950;
-    letter-spacing: -0.02em;
-    text-align: left;
+    content: none !important;
   }
 
-  .alignedAssetTable .tickerCell,
-  .alignedAssetTable .assetNameCell,
-  .alignedAssetTable .priceCell,
-  .alignedAssetTable .targetWeightCell {
-    text-align: right !important;
+  .alignedAssetTable .assetNameCell {
+    text-align: left !important;
   }
 
-  .alignedAssetTable .tickerCellStack,
-  .alignedAssetTable .weightInputWrap,
-  .alignedAssetTable .targetWeightInputWrap,
-  .alignedAssetTable .priceLookupStack {
-    justify-self: end !important;
+  .alignedAssetTable .assetNameLookupStack {
+    justify-items: start !important;
   }
 
-  .alignedAssetTable .tickerCellStack {
-    display: inline-grid !important;
-    min-width: 92px;
+  .alignedAssetTable .assetNameCell .assetTextValue {
+    max-width: 170px;
   }
 
-  .alignedAssetTable .assetNameCell .assetInfoStack,
-  .alignedAssetTable .priceCell .assetInfoStack {
-    align-items: flex-end !important;
-    text-align: right !important;
+  .alignedAssetTable .assetInfoStack.alignRight {
+    align-items: center !important;
+    text-align: center !important;
     min-height: auto;
-  }
-
-  .alignedAssetTable .assetTextValue {
-    max-width: 190px;
-  }
-
-  .alignedAssetTable .priceLookupStack {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
   }
 
   .alignedAssetTable .weightInputWrap,
