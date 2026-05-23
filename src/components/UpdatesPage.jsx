@@ -1,7 +1,7 @@
 const UPDATE_ITEMS = [
   {
     version: "Beta v0.2.0",
-    date: "2026.05",
+    date: "2026.05.23",
     category: "기능 안정화",
     title: "로그인·구독 운영 구조 점검",
     impact: "회원가입, MY PAGE, 구독 상태, 결제 운영 전 DB 구조를 정리했습니다.",
@@ -13,7 +13,7 @@ const UPDATE_ITEMS = [
   },
   {
     version: "Beta v0.1.1",
-    date: "2026.05",
+    date: "2026.05.19",
     category: "UX 개선",
     title: "베타 피드백 기반 화면 흐름 정리",
     impact: "시작 흐름, 투자 MBTI, 시뮬레이터 진입 동선을 정리했습니다.",
@@ -25,7 +25,7 @@ const UPDATE_ITEMS = [
   },
   {
     version: "Beta v0.1.0",
-    date: "2026.05",
+    date: "2026.05.10",
     category: "베타 공개",
     title: "FINPLE Portfolio Lab 1차 베타 공개",
     impact: "미국주식·ETF 중심 포트폴리오 분석 기능을 베타로 공개했습니다.",
