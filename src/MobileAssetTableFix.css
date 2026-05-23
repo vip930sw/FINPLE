@@ -1,0 +1,137 @@
+/* =========================================================
+   FINPLE Mobile Asset Table Reset
+   - PC table CSS는 건드리지 않고 모바일에서만 적용합니다.
+   - 기존 카드형/2열형 모바일 보정을 무력화하고 PC 표 구조를 가로 스크롤로 유지합니다.
+========================================================= */
+
+@media (max-width: 900px) {
+  .calculatorTableWrap:has(> table.calculatorTable.alignedAssetTable) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable {
+    display: table !important;
+    width: 1068px !important;
+    min-width: 1068px !important;
+    max-width: none !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable > colgroup {
+    display: table-column-group !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable > colgroup > col {
+    display: table-column !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable > thead {
+    display: table-header-group !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable > tbody {
+    display: table-row-group !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable tr {
+    display: table-row !important;
+    float: none !important;
+    clear: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 74px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable th,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable td {
+    display: table-cell !important;
+    float: none !important;
+    clear: none !important;
+    position: static !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 74px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 10px 8px !important;
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable td::before,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable th::before,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable td::after,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable th::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .tickerColumn { width: 78px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetNameColumn { width: 190px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .quantityColumn { width: 84px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .priceColumn { width: 128px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .valueColumn { width: 128px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .targetWeightColumn { width: 116px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .metricColumn { width: 86px !important; }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetNameCell {
+    text-align: left !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetNameLookupStack,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .tickerCellStack {
+    display: grid !important;
+    align-content: center !important;
+    justify-content: center !important;
+    min-height: 54px !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetNameLookupStack {
+    justify-content: start !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetTextValue {
+    max-width: 170px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable input {
+    box-sizing: border-box !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap.targetWeightInputWrap {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 118px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
