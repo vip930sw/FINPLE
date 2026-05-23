@@ -166,11 +166,11 @@ function App() {
   if (currentPage === "mypage") return <MyPage onNavigate={setCurrentPage} />;
   if (currentPage === "pricing") return <PricingPage onNavigate={setCurrentPage} />;
   if (currentPage === "support") return <SupportPage onNavigate={setCurrentPage} />;
-  if (currentPage === "updates") return <UpdatesPage onNavigate={setCurrentPage} />;
+  if (currentPage === "updates") return <><UpdatesPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
 
-  if (currentPage === "privacy") return <><PrivacyPage onNavigate={setCurrentPage} /><LegalPolicyFooter onNavigate={setCurrentPage} /></>;
-  if (currentPage === "terms") return <><TermsPage onNavigate={setCurrentPage} /><LegalPolicyFooter onNavigate={setCurrentPage} /></>;
-  if (currentPage === "investment-disclaimer") return <><InvestmentDisclaimerPage onNavigate={setCurrentPage} /><LegalPolicyFooter onNavigate={setCurrentPage} /></>;
+  if (currentPage === "privacy") return <><PrivacyPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
+  if (currentPage === "terms") return <><TermsPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
+  if (currentPage === "investment-disclaimer") return <><InvestmentDisclaimerPage onNavigate={setCurrentPage} /><SiteFooter onNavigate={setCurrentPage} /></>;
 
   return (
     <main className="page">
@@ -230,7 +230,7 @@ function App() {
       </section>
 
       <section className="section demoSection"><DemoCalculator /></section>
-      <footer className="footer"><strong>FINPLE Portfolio Lab</strong><span>© 2026 FINPLE. Beta service.</span><button type="button" onClick={() => setCurrentPage("updates")}>업데이트 내역</button></footer>
+      <SiteFooter onNavigate={setCurrentPage} />
     </main>
   );
 }
@@ -239,6 +239,21 @@ function Metric({ label, value }) { return <div className="metric"><p>{label}</p
 function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function FeatureCard({ title, text }) { return <article className="featureCard"><h3>{title}</h3><p>{text}</p></article>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
-function LegalPolicyFooter({ onNavigate }) { return <footer className="footer"><button type="button" onClick={() => onNavigate("updates")}>업데이트 내역</button><button type="button" onClick={() => onNavigate("terms")}>이용약관</button><button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button><button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button></footer>; }
+function SiteFooter({ onNavigate }) {
+  return (
+    <footer className="footer">
+      <strong>FINPLE Portfolio Lab</strong>
+      <span>© 2026 FINPLE. Beta service.</span>
+      <p>
+        FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,
+        특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
+      </p>
+      <button type="button" onClick={() => onNavigate("updates")}>업데이트</button>
+      <button type="button" onClick={() => onNavigate("terms")}>이용약관</button>
+      <button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button>
+      <button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button>
+    </footer>
+  );
+}
 
 export default App;
