@@ -1,0 +1,168 @@
+/* =========================================================
+   MBTI / MY PAGE result UX overrides
+   - 화면 안내 상태 박스 제거
+   - MY PAGE 중복 그래프 제거 및 단일 그래프 확장
+   - PDF 저장 시 1~2페이지에 맞도록 결과 화면 압축
+========================================================= */
+
+.investmentMbtiExportStatus {
+  display: none !important;
+}
+
+.investmentProfileVisualLayout {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.investmentProfileRatioList {
+  display: none !important;
+}
+
+.investmentProfileMiniPreview {
+  width: 100%;
+  min-height: auto;
+}
+
+.investmentProfilePreviewCard > strong {
+  display: none !important;
+}
+
+.investmentProfilePreviewCard > div {
+  grid-template-columns: 92px minmax(0, 1fr) 44px;
+}
+
+.investmentMbtiPanel.priorityInsight {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  html,
+  body,
+  #root,
+  .investmentMbtiPage {
+    width: 100% !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+  }
+
+  .investmentMbtiPage .header,
+  .investmentMbtiShareActions,
+  .investmentMbtiResultActions,
+  .investmentMbtiExportStatus {
+    display: none !important;
+  }
+
+  .investmentMbtiResultPage {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .investmentMbtiResultHero {
+    margin-bottom: 8px !important;
+    padding: 18px 20px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .investmentMbtiResultHero h1 {
+    margin: 6px 0 8px !important;
+    font-size: 24px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.8px !important;
+  }
+
+  .investmentMbtiResultHero p,
+  .investmentMbtiCard p,
+  .investmentMbtiPanel p,
+  .investmentMbtiPanel li,
+  .investmentMbtiNotice p {
+    font-size: 10px !important;
+    line-height: 1.45 !important;
+  }
+
+  .investmentMbtiResultGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .investmentMbtiCard,
+  .investmentMbtiPanel,
+  .investmentMbtiNotice {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .investmentMbtiCard strong {
+    margin: 4px 0 !important;
+    font-size: 16px !important;
+  }
+
+  .investmentMbtiCard span,
+  .investmentMbtiPanel .sectionLabel {
+    font-size: 8px !important;
+  }
+
+  .investmentMbtiPanel {
+    margin-top: 8px !important;
+  }
+
+  .investmentMbtiPanelHeader {
+    margin-bottom: 8px !important;
+  }
+
+  .investmentMbtiPanelHeader h3,
+  .investmentMbtiPanel h3 {
+    margin: 3px 0 0 !important;
+    font-size: 14px !important;
+  }
+
+  .investmentMbtiPortfolioBars {
+    gap: 6px !important;
+  }
+
+  .investmentMbtiPortfolioLabel {
+    margin-bottom: 3px !important;
+    font-size: 10px !important;
+  }
+
+  .investmentMbtiBarTrack {
+    height: 6px !important;
+  }
+
+  .investmentMbtiTwoColumn {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .investmentMbtiTags {
+    gap: 4px !important;
+    margin-top: 8px !important;
+  }
+
+  .investmentMbtiTags span {
+    padding: 4px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .investmentMbtiPanel ul {
+    margin: 6px 0 0 !important;
+    padding-left: 14px !important;
+  }
+
+  .investmentMbtiNotice.resultNotice {
+    margin-top: 8px !important;
+  }
+}
