@@ -129,6 +129,145 @@ export default function AssetInputTable({
   resolveTickerCandidate,
   removeAsset,
 }) {
+  const getRowState = (asset, index) => {
+    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const weight = totalAssetValue > 0 ? (value / totalAssetValue) * 100 : 0;
+    const emptyRow = isEmptyAssetRow(asset);
+    const lookupKey = asset.id || String(index);
+    const lookupStatus = assetLookupStatus?.[lookupKey];
+    const isLookingUp = lookupStatus?.status === "loading";
+    const lookupRequired = isLookupRequiredAsset(asset, emptyRow);
+    const quantityMissing = !emptyRow && Number(asset.quantity || 0) <= 0;
+    const isNewlyAdded = recentlyAddedAssetId && asset.id === recentlyAddedAssetId;
+    const targetWeightValue = getDisplayedTargetWeight(asset, index, weight, targetWeightDrafts);
+    const rowClassName = [
+      isNewlyAdded ? "newAssetRow" : "",
+      lookupRequired ? "lookupRequiredRow" : "",
+      quantityMissing ? "quantityMissingRow" : "",
+    ].filter(Boolean).join(" ");
+    const valueCellClassName = quantityMissing || lookupRequired ? "numberCell tableNumberCell pendingValueCell" : "numberCell tableNumberCell";
+
+    return { value, emptyRow, isLookingUp, lookupRequired, targetWeightValue, rowClassName, valueCellClassName };
+  };
+
+  const renderTickerControl = (asset, index, emptyRow) => (
+    <div className="tickerCellStack">
+      <input
+        value={asset.ticker}
+        onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
+        onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}
+        disabled={isBulkAssetLookupLoading}
+      />
+      {!emptyRow && (
+        <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
+      )}
+    </div>
+  );
+
+  const renderAssetNameWithLookup = (asset, index, emptyRow, isLookingUp, lookupRequired) => {
+    if (emptyRow) return <span className="emptyTextValue">-</span>;
+
+    return (
+      <div className="assetNameLookupStack">
+        {isAutoAsset(asset) ? (
+          <span className="assetTextValue">{asset.name || "-"}</span>
+        ) : (
+          <input value={asset.name} onChange={(e) => updateAsset(index, "name", e.target.value)} disabled={isBulkAssetLookupLoading} />
+        )}
+        <InlineLookupButton
+          isLookingUp={isLookingUp}
+          lookupRequired={lookupRequired}
+          isBulkAssetLookupLoading={isBulkAssetLookupLoading}
+          onClick={() => fetchAssetData(index)}
+        />
+      </div>
+    );
+  };
+
+  const renderPrice = (asset, emptyRow, lookupRequired) => {
+    if (emptyRow) return <span className="emptyTextValue numberTextValue">-</span>;
+    if (lookupRequired) return <LookupRequiredValue quantity={asset.quantity} />;
+    return <PriceTextValue asset={asset} formatDecimal={formatDecimal} />;
+  };
+
+  const renderTargetWeight = (asset, index, emptyRow, targetWeightValue) => {
+    if (emptyRow) return <span className="emptyTextValue numberTextValue">-</span>;
+
+    return (
+      <div className="weightInputWrap targetWeightInputWrap">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={targetWeightValue}
+          onChange={(e) => {
+            const sanitized = sanitizeTargetWeightInput(e.target.value);
+            if (sanitized !== null) updateTargetWeightDraft?.(index, sanitized);
+          }}
+          onBlur={() => updateTargetWeightDraft?.(index, formatTargetWeightInput(targetWeightValue))}
+          disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
+          aria-label="목표비중 입력"
+        />
+        <span>%</span>
+      </div>
+    );
+  };
+
+  const renderMobileAssetCard = (asset, index) => {
+    const state = getRowState(asset, index);
+    const { value, emptyRow, isLookingUp, lookupRequired, targetWeightValue, rowClassName } = state;
+
+    return (
+      <article key={asset.id || index} className={`mobileAssetCard ${rowClassName}`}>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">티커</span>
+          <div className="mobileAssetCardValue">{renderTickerControl(asset, index, emptyRow)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">자산명</span>
+          <div className="mobileAssetCardValue">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">수량</span>
+          <div className="mobileAssetCardValue numberTextValue">{emptyRow ? "-" : formatDecimal(asset.quantity, 4)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">현재가</span>
+          <div className="mobileAssetCardValue">{renderPrice(asset, emptyRow, lookupRequired)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">평가금액</span>
+          <div className="mobileAssetCardValue numberTextValue">{formatEvaluationAmount(value)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">목표비중</span>
+          <div className="mobileAssetCardValue">{renderTargetWeight(asset, index, emptyRow, targetWeightValue)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">CAGR</span>
+          <div className="mobileAssetCardValue numberTextValue">{emptyRow ? "-" : formatDecimal(asset.cagr, 2)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">BETA</span>
+          <div className="mobileAssetCardValue numberTextValue">{emptyRow ? "-" : formatDecimal(asset.beta, 2)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">MDD</span>
+          <div className="mobileAssetCardValue numberTextValue">{emptyRow ? "-" : formatDecimal(asset.mdd, 2)}</div>
+        </div>
+        <div className="mobileAssetCardRow">
+          <span className="mobileAssetCardLabel">배당률</span>
+          <div className="mobileAssetCardValue numberTextValue">{emptyRow ? "-" : formatDecimal(asset.dividendYield, 2)}</div>
+        </div>
+      </article>
+    );
+  };
+
   return (
     <div className="calculatorTableWrap">
       <table className="calculatorTable alignedAssetTable">
@@ -161,112 +300,30 @@ export default function AssetInputTable({
 
         <tbody>
           {assets.map((asset, index) => {
-            const value = Number(asset.quantity || 0) * Number(asset.price || 0);
-            const weight = totalAssetValue > 0 ? (value / totalAssetValue) * 100 : 0;
-            const emptyRow = isEmptyAssetRow(asset);
-            const lookupKey = asset.id || String(index);
-            const lookupStatus = assetLookupStatus?.[lookupKey];
-            const isLookingUp = lookupStatus?.status === "loading";
-            const lookupRequired = isLookupRequiredAsset(asset, emptyRow);
-            const quantityMissing = !emptyRow && Number(asset.quantity || 0) <= 0;
-            const isNewlyAdded = recentlyAddedAssetId && asset.id === recentlyAddedAssetId;
-            const targetWeightValue = getDisplayedTargetWeight(asset, index, weight, targetWeightDrafts);
-            const rowClassName = [
-              isNewlyAdded ? "newAssetRow" : "",
-              lookupRequired ? "lookupRequiredRow" : "",
-              quantityMissing ? "quantityMissingRow" : "",
-            ].filter(Boolean).join(" ");
-            const valueCellClassName = quantityMissing || lookupRequired ? "numberCell tableNumberCell pendingValueCell" : "numberCell tableNumberCell";
+            const state = getRowState(asset, index);
+            const { value, emptyRow, isLookingUp, lookupRequired, targetWeightValue, rowClassName, valueCellClassName } = state;
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
-                <td className="tickerCell" data-label="티커">
-                  <div className="tickerCellStack">
-                    <input
-                      value={asset.ticker}
-                      onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
-                      onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          e.currentTarget.blur();
-                        }
-                      }}
-                      disabled={isBulkAssetLookupLoading}
-                    />
-                    {!emptyRow && (
-                      <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
-                    )}
-                  </div>
-                </td>
-
-                <td className="assetNameCell" data-label="자산명">
-                  {emptyRow ? (
-                    <span className="emptyTextValue">-</span>
-                  ) : isAutoAsset(asset) ? (
-                    <div className="assetInfoStack"><span className="assetTextValue">{asset.name || "-"}</span></div>
-                  ) : (
-                    <input value={asset.name} onChange={(e) => updateAsset(index, "name", e.target.value)} disabled={isBulkAssetLookupLoading} />
-                  )}
-                </td>
-
-                <td className="numberCell tableNumberCell" data-label="수량">
-                  {emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}
-                </td>
-
-                <td className="numberCell priceCell" data-label="현재가 / 조회">
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : (
-                    <div className="priceLookupStack">
-                      {lookupRequired ? (
-                        <LookupRequiredValue quantity={asset.quantity} />
-                      ) : (
-                        <PriceTextValue asset={asset} formatDecimal={formatDecimal} />
-                      )}
-                      <InlineLookupButton
-                        isLookingUp={isLookingUp}
-                        lookupRequired={lookupRequired}
-                        isBulkAssetLookupLoading={isBulkAssetLookupLoading}
-                        onClick={() => fetchAssetData(index)}
-                      />
-                    </div>
-                  )}
-                </td>
-
-                <td className={valueCellClassName} data-label="평가금액">{formatEvaluationAmount(value)}</td>
-
-                <td className="targetWeightCell" data-label="목표비중">
-                  {emptyRow ? (
-                    <span className="emptyTextValue numberTextValue">-</span>
-                  ) : (
-                    <div className="weightInputWrap targetWeightInputWrap">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={targetWeightValue}
-                        onChange={(e) => {
-                          const sanitized = sanitizeTargetWeightInput(e.target.value);
-                          if (sanitized !== null) updateTargetWeightDraft?.(index, sanitized);
-                        }}
-                        onBlur={() => updateTargetWeightDraft?.(index, formatTargetWeightInput(targetWeightValue))}
-                        disabled={isBulkAssetLookupLoading || Number(asset.price || 0) <= 0}
-                        aria-label="목표비중 입력"
-                      />
-                      <span>%</span>
-                    </div>
-                  )}
-                </td>
-
-                <td className="numberCell tableNumberCell metricCell" data-label="CAGR">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell" data-label="BETA">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell" data-label="MDD">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell" data-label="배당률">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
+                <td className="tickerCell">{renderTickerControl(asset, index, emptyRow)}</td>
+                <td className="assetNameCell">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
+                <td className="numberCell tableNumberCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}</td>
+                <td className="numberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
+                <td className={valueCellClassName}>{formatEvaluationAmount(value)}</td>
+                <td className="targetWeightCell">{renderTargetWeight(asset, index, emptyRow, targetWeightValue)}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      <div className="mobileAssetCards">
+        {assets.map((asset, index) => renderMobileAssetCard(asset, index))}
+      </div>
     </div>
   );
 }
