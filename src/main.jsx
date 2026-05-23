@@ -21,6 +21,7 @@ import './MyPageSubscriptionStatus.css'
 import './MyPageSidebar.css'
 import './GlobalNavigation.css'
 import './MobileUxHotfix.css'
+import './MobileAssetTableFix.css'
 import App from './App.jsx'
 
 if (isBillingResultPath()) {
