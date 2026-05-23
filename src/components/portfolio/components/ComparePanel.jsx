@@ -1,5 +1,11 @@
 import PortfolioCompareLineChart from "./PortfolioCompareLineChart";
 
+function getCompactPortfolioName(name) {
+  return String(name || "포트폴리오")
+    .replace(/\s*예시\s*포트폴리오\s*$/u, "")
+    .trim() || "포트폴리오";
+}
+
 export default function ComparePanel({ insightComparisonPortfolios, chartComparisonPortfolios }) {
   return (
     <div className="simulatorTabPanel comparePanel">
@@ -32,7 +38,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
               }`}
             >
               <div className="portfolioCompareCardTop">
-                <strong>{portfolio.name}</strong>
+                <strong title={portfolio.name}>{getCompactPortfolioName(portfolio.name)}</strong>
 
                 {portfolio.realValueRank <= 3 && (
                   <span className={`rankBadge rank${portfolio.realValueRank}`}>
