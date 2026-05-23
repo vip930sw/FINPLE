@@ -181,8 +181,8 @@ export default function AssetInputTable({
             <th>자산명</th>
             <th className="numberHeader">수량</th>
             <th className="numberHeader">현재가 (원, KRW)</th>
-            <th className="numberHeader">평가금액</th>
-            <th className="numberHeader">목표비중</th>
+            <th className="numberHeader">평가금액 (원, KRW)</th>
+            <th className="numberHeader">목표비중 (%)</th>
             <th className="numberHeader">CAGR (%)</th>
             <th className="numberHeader">BETA</th>
             <th className="numberHeader">MDD (%)</th>
