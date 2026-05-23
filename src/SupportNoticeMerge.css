@@ -1,0 +1,52 @@
+/* =========================================================
+   Support notice merge
+   - /support 개인정보 수집 안내와 접수 상태 안내를 하나의 박스로 보이게 정리
+   - PC/모바일 공통 적용
+========================================================= */
+
+.supportFormCard .supportPrivacyNotice {
+  margin-bottom: 0 !important;
+  border-bottom: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  padding-bottom: 14px !important;
+  background: #eff6ff !important;
+}
+
+.supportFormCard .supportPrivacyNotice + .supportStatusText,
+.supportFormCard .supportPrivacyNotice + .accountInlineStatus.supportStatusText {
+  margin-top: 0 !important;
+  margin-bottom: 22px !important;
+  border: 1px solid #bfdbfe !important;
+  border-top: 0 !important;
+  border-radius: 0 0 18px 18px !important;
+  background: #eff6ff !important;
+  color: #0f172a !important;
+  padding: 0 22px 18px !important;
+  min-height: auto !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.65 !important;
+}
+
+.supportFormCard .supportPrivacyNotice + .supportStatusText::before,
+.supportFormCard .supportPrivacyNotice + .accountInlineStatus.supportStatusText::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 0 0 12px;
+  background: rgba(37, 99, 235, 0.16);
+}
+
+@media (max-width: 640px) {
+  .supportFormCard .supportPrivacyNotice {
+    padding-bottom: 12px !important;
+  }
+
+  .supportFormCard .supportPrivacyNotice + .supportStatusText,
+  .supportFormCard .supportPrivacyNotice + .accountInlineStatus.supportStatusText {
+    padding: 0 16px 16px !important;
+    margin-bottom: 18px !important;
+    font-size: 13px !important;
+  }
+}
