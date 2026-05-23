@@ -51,12 +51,12 @@ function UpdatesHeader({ onNavigate }) {
         <div className="brandIcon"><span>F</span><i /></div>
         <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
       </button>
-      <nav className="accountNav">
+      <nav className="accountNav standardTopNav">
         <button type="button" onClick={() => onNavigate("home")}>홈</button>
-        <button type="button" onClick={() => onNavigate("personal")}>시뮬레이터</button>
-        <button type="button" onClick={() => onNavigate("pricing")}>요금제</button>
+        <button type="button" onClick={() => onNavigate("personal")}>시작하기</button>
         <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
         <button type="button" onClick={() => onNavigate("mypage")}>MY PAGE</button>
+        <button type="button" className="accountNavAuthButton" onClick={() => onNavigate("login")}>로그인</button>
       </nav>
     </header>
   );
