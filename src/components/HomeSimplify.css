@@ -22,16 +22,41 @@
   text-transform: uppercase;
 }
 
-.accountHeader {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
+.accountPage {
+  padding-top: 72px !important;
 }
 
-.accountNav:not(.standardTopNav) button:nth-child(3) {
+.accountPage > .accountHeader,
+.legalPage > .accountHeader,
+.aboutPage > .accountHeader {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.accountHeader .accountNav:not(.standardTopNav) > button:nth-child(3),
+.accountHeader .accountNav:not(.standardTopNav) > button:nth-of-type(3),
+.accountPage .accountHeader .accountNav:not(.standardTopNav) > button:nth-child(3),
+.accountPage .accountHeader .accountNav:not(.standardTopNav) > button:nth-of-type(3) {
   display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .accountNav:not(.standardTopNav) button:nth-child(2)::before {
@@ -39,14 +64,18 @@
 }
 
 .accountNav:not(.standardTopNav) button:nth-child(2) {
-  font-size: 0;
+  font-size: 0 !important;
 }
 
 .accountNav:not(.standardTopNav) button:nth-child(2)::before {
-  font-size: 14px;
+  font-size: 14px !important;
 }
 
 @media (max-width: 900px) {
+  .accountPage {
+    padding-top: 68px !important;
+  }
+
   .pricingPreviewSection > h2,
   .pricingPreviewSection > p:not(.sectionLabel) {
     max-width: none;
