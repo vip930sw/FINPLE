@@ -5,6 +5,7 @@ import TradingViewTicker from "./components/TradingViewTicker";
 import EconomicCalendarSection from "./components/EconomicCalendarSection";
 import DemoCalculator from "./components/DemoCalculator";
 import PersonalPage from "./components/PersonalPage";
+import UpdatesPage from "./components/UpdatesPage";
 import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage } from "./components/AuthPages";
@@ -26,6 +27,7 @@ const ROUTE_PATHS = {
   mypage: "/mypage",
   pricing: "/pricing",
   support: "/support",
+  updates: "/updates",
   "admin-login": "/admin",
   privacy: "/privacy",
   terms: "/terms",
@@ -52,6 +54,7 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/mypage" || normalizedHash === "mypage") return "mypage";
   if (normalizedPath === "/pricing" || normalizedHash === "pricing") return "pricing";
   if (normalizedPath === "/support" || normalizedHash === "support") return "support";
+  if (normalizedPath === "/updates" || normalizedHash === "updates" || normalizedHash === "notice" || normalizedHash === "changelog") return "updates";
   if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
   if (normalizedPath === "/privacy" || normalizedHash === "privacy") return "privacy";
   if (normalizedPath === "/terms" || normalizedHash === "terms") return "terms";
@@ -163,6 +166,7 @@ function App() {
   if (currentPage === "mypage") return <MyPage onNavigate={setCurrentPage} />;
   if (currentPage === "pricing") return <PricingPage onNavigate={setCurrentPage} />;
   if (currentPage === "support") return <SupportPage onNavigate={setCurrentPage} />;
+  if (currentPage === "updates") return <UpdatesPage onNavigate={setCurrentPage} />;
 
   if (currentPage === "privacy") return <><PrivacyPage onNavigate={setCurrentPage} /><LegalPolicyFooter onNavigate={setCurrentPage} /></>;
   if (currentPage === "terms") return <><TermsPage onNavigate={setCurrentPage} /><LegalPolicyFooter onNavigate={setCurrentPage} /></>;
@@ -180,6 +184,7 @@ function App() {
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
+          <button type="button" className="navTextButton" onClick={() => setCurrentPage("updates")}>업데이트</button>
         </nav>
 
         <div className="headerActions">
@@ -225,7 +230,7 @@ function App() {
       </section>
 
       <section className="section demoSection"><DemoCalculator /></section>
-      <footer className="footer"><strong>FINPLE Portfolio Lab</strong><span>© 2026 FINPLE. Beta service.</span></footer>
+      <footer className="footer"><strong>FINPLE Portfolio Lab</strong><span>© 2026 FINPLE. Beta service.</span><button type="button" onClick={() => setCurrentPage("updates")}>업데이트 내역</button></footer>
     </main>
   );
 }
@@ -234,6 +239,6 @@ function Metric({ label, value }) { return <div className="metric"><p>{label}</p
 function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function FeatureCard({ title, text }) { return <article className="featureCard"><h3>{title}</h3><p>{text}</p></article>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
-function LegalPolicyFooter({ onNavigate }) { return <footer className="footer"><button type="button" onClick={() => onNavigate("terms")}>이용약관</button><button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button><button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button></footer>; }
+function LegalPolicyFooter({ onNavigate }) { return <footer className="footer"><button type="button" onClick={() => onNavigate("updates")}>업데이트 내역</button><button type="button" onClick={() => onNavigate("terms")}>이용약관</button><button type="button" onClick={() => onNavigate("privacy")}>개인정보처리방침</button><button type="button" onClick={() => onNavigate("investment-disclaimer")}>투자 유의사항</button></footer>; }
 
 export default App;
