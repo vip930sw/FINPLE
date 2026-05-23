@@ -22,6 +22,7 @@ import './MyPageSidebar.css'
 import './GlobalNavigation.css'
 import './MobileUxHotfix.css'
 import './MobileAssetTableFix.css'
+import './SupportNoticeMerge.css'
 import App from './App.jsx'
 
 if (isBillingResultPath()) {
