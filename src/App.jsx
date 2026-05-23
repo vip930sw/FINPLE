@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import "./components/SiteFooter.css";
+import "./components/HomeSimplify.css";
 
 import TradingViewTicker from "./components/TradingViewTicker";
 import EconomicCalendarSection from "./components/EconomicCalendarSection";
-import DemoCalculator from "./components/DemoCalculator";
 import PersonalPage from "./components/PersonalPage";
 import UpdatesPage from "./components/UpdatesPage";
+import AboutPage from "./components/AboutPage";
 import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage } from "./components/AuthPages";
@@ -22,6 +23,7 @@ import {
 
 const ROUTE_PATHS = {
   home: "/",
+  about: "/about",
   personal: "/start",
   login: "/login",
   signup: "/signup",
@@ -50,6 +52,7 @@ function getPageForPath(pathname, hash = "") {
   const normalizedHash = String(hash || "").replace("#", "");
 
   if (PERSONAL_ROUTE_PATHS.includes(normalizedPath) || normalizedHash === "simulator") return "personal";
+  if (normalizedPath === "/about" || normalizedHash === "about") return "about";
   if (normalizedPath === "/login" || normalizedHash === "login") return "login";
   if (normalizedPath === "/signup" || normalizedHash === "signup") return "signup";
   if (normalizedPath === "/mypage" || normalizedHash === "mypage") return "mypage";
@@ -141,8 +144,16 @@ function App() {
     { proName: "BITHUMB:ETHKRW", title: "ETH/KRW" },
   ];
 
-  function goHome() { setCurrentPage("home"); }
-  function goPersonal() { setCurrentPage("personal"); if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start"); }
+  function goHome() {
+    setCurrentPage("home");
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 40);
+  }
+
+  function goPersonal() {
+    setCurrentPage("personal");
+    if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start");
+  }
+
   function isFinpleUserLoggedIn() { return Boolean(getStoredFinpleAuthUser()?.id); }
   function goMyPageOrLogin() { setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login"); }
 
@@ -165,6 +176,7 @@ function App() {
   }
 
   if (currentPage === "personal") return renderWithFooter(<PersonalPage onBack={goHome} />);
+  if (currentPage === "about") return renderWithFooter(<AboutPage onNavigate={setCurrentPage} />);
   if (currentPage === "admin-login") return renderWithFooter(<AdminLoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "login") return renderWithFooter(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "signup") return renderWithFooter(<SignupPage onNavigate={setCurrentPage} />);
@@ -186,28 +198,32 @@ function App() {
         </button>
 
         <nav className="homeSectionNav">
+          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("hero")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("intro")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
         </nav>
 
         <div className="headerActions">
+          <button className="secondaryHeaderButton" onClick={goHome}>홈</button>
+          <button className="headerButton" onClick={goPersonal}>시작하기</button>
           <button className="secondaryHeaderButton supportHeaderButton" onClick={() => setCurrentPage("support")}>문의사항</button>
           <button className="secondaryHeaderButton" onClick={goMyPageOrLogin}>MY PAGE</button>
           <button className="secondaryHeaderButton" onClick={handleHeaderLoginLogout}>{isFinpleUserLoggedIn() ? "로그아웃" : "로그인"}</button>
-          <button className="headerButton" onClick={goPersonal}>분석 시작</button>
         </div>
       </header>
 
       <div className="tickerArea"><TradingViewTicker symbols={[...stockIndexSymbols, ...currencyCryptoSymbols]} /></div>
 
-      <section className="hero">
+      <section id="hero" className="hero">
         <div className="heroText">
           <p className="badge">투자 포트폴리오 분석 웹앱</p>
           <div className="betaNoticeBanner" role="note"><strong>Beta</strong><span>FINPLE은 현재 베타 운영 중입니다. 일부 기능과 데이터는 테스트 단계이며, 투자 판단 전 공식 자료를 함께 확인해 주세요.</span></div>
           <h1>내 포트폴리오의<br />수익과 위험을<br />한눈에 분석하세요</h1>
-          <p className="description">투자 MBTI로 성향을 확인하고, 자산 스크리너로 후보를 탐색한 뒤, 포트폴리오 시뮬레이터에서 장기 수익·위험·배당·실질가치를 함께 점검합니다.</p>
-          <div className="heroButtons"><button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button><a className="secondaryButton" href="#features">흐름 살펴보기</a></div>
+          <p className="description">FINPLE은 개별 종목 추천 서비스가 아니라, 내 포트폴리오의 장기 수익·위험·배당·실질가치를 한 번에 점검하는 투자 분석 도구입니다.</p>
+          <div className="heroButtons">
+            <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
+            <button type="button" className="secondaryButton" onClick={() => setCurrentPage("about")}>FINPLE 알아보기</button>
+          </div>
         </div>
 
         <div className="dashboardCard">
@@ -219,21 +235,11 @@ function App() {
 
       <div id="index" className="homeAnchor"><EconomicCalendarSection /></div>
 
-      <section id="intro" className="section white whySection">
-        <div className="sectionTopRow"><p className="sectionLabel">Why FINPLE</p><h2>흩어진 포트폴리오를 하나의 기준으로 정리합니다</h2><p className="sectionSideText">성향 진단, 후보 탐색, 시뮬레이션, 상세 리포트를 한 흐름으로 연결합니다.</p></div>
-        <div className="featureGrid" id="features">
-          <FeatureCard title="투자 MBTI" text="투자자의 위험 성향과 운용 방식을 참고용으로 정리합니다." />
-          <FeatureCard title="자산 스크리너" text="ETF와 주요 자산 후보를 목적과 위험도 기준으로 탐색합니다." />
-          <FeatureCard title="포트폴리오 시뮬레이터" text="CAGR, MDD, 배당률을 반영해 장기 성과를 비교합니다." />
-        </div>
-      </section>
-
       <section id="pricing" className="section pricingPreviewSection">
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
         <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} /></div>
       </section>
 
-      <section className="section demoSection"><DemoCalculator /></section>
       <SiteFooter onNavigate={setCurrentPage} />
     </main>
   );
@@ -241,7 +247,6 @@ function App() {
 
 function Metric({ label, value }) { return <div className="metric"><p>{label}</p><strong>{value}</strong></div>; }
 function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
-function FeatureCard({ title, text }) { return <article className="featureCard"><h3>{title}</h3><p>{text}</p></article>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
