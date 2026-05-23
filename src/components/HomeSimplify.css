@@ -15,19 +15,19 @@
   max-width: 980px;
 }
 
-.accountNav button:nth-child(3):has(+ button) {
+.accountNav:not(.standardTopNav) button:nth-child(3) {
   display: none;
 }
 
-.accountNav button:nth-child(2)::before {
+.accountNav:not(.standardTopNav) button:nth-child(2)::before {
   content: "시작하기";
 }
 
-.accountNav button:nth-child(2) {
+.accountNav:not(.standardTopNav) button:nth-child(2) {
   font-size: 0;
 }
 
-.accountNav button:nth-child(2)::before {
+.accountNav:not(.standardTopNav) button:nth-child(2)::before {
   font-size: 14px;
 }
 
