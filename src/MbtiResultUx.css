@@ -2,6 +2,7 @@
    MBTI / MY PAGE result UX overrides
    - 화면 안내 상태 박스 제거
    - MY PAGE 중복 그래프 제거 및 단일 그래프 확장
+   - 카드 순서: sectors > actions > strength > caution
    - PDF 저장 시 1~2페이지에 맞도록 결과 화면 압축
 ========================================================= */
 
@@ -30,9 +31,38 @@
   grid-template-columns: 92px minmax(0, 1fr) 44px;
 }
 
+.investmentProfileResultColumns {
+  order: 1;
+}
+
+.investmentProfileInsightCards {
+  order: 2;
+}
+
+.investmentProfileResultBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.investmentProfileResultColumns > div:nth-child(1) {
+  order: 1;
+}
+
+.investmentProfileResultColumns > div:nth-child(2) {
+  order: 2;
+}
+
+.investmentProfileInsightCards > article:nth-child(1) {
+  order: 1;
+}
+
+.investmentProfileInsightCards > article:nth-child(2) {
+  order: 2;
+}
+
 .investmentMbtiPanel.priorityInsight {
-  border-color: #fed7aa;
-  background: #fff7ed;
+  border-color: #dbe5f3;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 @media print {
