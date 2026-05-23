@@ -90,7 +90,14 @@ function getInvestmentProfilePanelHtml() {
           <span data-investment-profile-result-date>저장일 없음</span>
         </div>
         <p data-investment-profile-summary>저장된 요약이 없습니다.</p>
-        <div class="investmentProfileRatioList" data-investment-profile-ratios></div>
+        <div class="investmentProfileVisualLayout">
+          <div class="investmentProfileRatioList" data-investment-profile-ratios></div>
+          <div class="investmentProfileMiniPreview" data-investment-profile-preview></div>
+        </div>
+        <div class="investmentProfileInsightCards">
+          <article><span>강점</span><p data-investment-profile-strength>저장된 강점 정보가 없습니다.</p></article>
+          <article><span>주의점</span><p data-investment-profile-caution>저장된 주의점 정보가 없습니다.</p></article>
+        </div>
         <div class="investmentProfileResultColumns">
           <div><span>관심 섹터</span><ul data-investment-profile-sectors></ul></div>
           <div><span>권장 액션</span><ul data-investment-profile-actions></ul></div>
@@ -99,8 +106,6 @@ function getInvestmentProfilePanelHtml() {
       <div class="serverStorageActions compactActions investmentProfileActions">
         <button type="button" class="primaryButton" data-investment-profile-result>결과 자세히 보기</button>
         <button type="button" class="secondaryButton" data-investment-profile-start>투자 MBTI 다시 하기</button>
-        <button type="button" class="secondaryButton" data-investment-profile-simulator>포트폴리오 시뮬레이터</button>
-        <button type="button" class="secondaryButton" data-investment-profile-screener>자산 스크리너</button>
       </div>
     </section>
   `;
@@ -110,6 +115,11 @@ function renderList(listNode, items, fallback) {
   if (!listNode) return;
   const nextItems = items.length ? items : [fallback];
   setHtml(listNode, nextItems.map((item) => `<li>${escapeHtml(item)}</li>`).join(""));
+}
+
+function getMiniPreviewHtml(ratios) {
+  if (!ratios.length) return `<div class="investmentProfilePreviewEmpty">그래프 데이터 없음</div>`;
+  return `<div class="investmentProfilePreviewCard"><strong>예시 비중</strong>${ratios.slice(0, 7).map((item) => `<div><span>${escapeHtml(item.label)}</span><i><b style="width:${Math.max(4, Math.min(100, item.value))}%"></b></i><em>${item.value}%</em></div>`).join("")}</div>`;
 }
 
 function updateInvestmentResultDetails(panel, result, hasResult) {
@@ -125,12 +135,15 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
   setText(panel.querySelector("[data-investment-profile-summary-title]"), `${result?.nickname || "투자 MBTI"} 결과`);
   setText(panel.querySelector("[data-investment-profile-result-date]"), formatMbtiDate(result?.createdAt));
   setText(panel.querySelector("[data-investment-profile-summary]"), result?.summary || "저장된 요약이 없습니다.");
+  setText(panel.querySelector("[data-investment-profile-strength]"), result?.strengths || "성향에 맞는 포트폴리오 점검 기준을 세우는 데 활용할 수 있습니다.");
+  setText(panel.querySelector("[data-investment-profile-caution]"), result?.cautions || "본 결과는 참고용이며 실제 투자 전 손실 가능성을 확인해야 합니다.");
 
   const ratioNode = panel.querySelector("[data-investment-profile-ratios]");
   const ratios = getPresetEntries(result);
   setHtml(ratioNode, ratios.length
     ? ratios.map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${item.value}%</strong><i style="width:${Math.max(4, Math.min(100, item.value))}%"></i></div>`).join("")
     : `<p class="investmentProfileEmptyRatio">저장된 포트폴리오 비율이 없습니다.</p>`);
+  setHtml(panel.querySelector("[data-investment-profile-preview]"), getMiniPreviewHtml(ratios));
 
   renderList(panel.querySelector("[data-investment-profile-sectors]"), getArrayItems(result?.sectors), "저장된 섹터 정보 없음");
   renderList(panel.querySelector("[data-investment-profile-actions]"), getArrayItems(result?.actions), "저장된 권장 액션 없음");
@@ -164,17 +177,7 @@ function bindInvestmentProfileActions() {
   const startButton = document.querySelector("[data-investment-profile-start]");
   if (startButton && startButton.getAttribute("data-investment-profile-wired") !== "true") {
     startButton.setAttribute("data-investment-profile-wired", "true");
-    startButton.addEventListener("click", () => navigateTo("/simulator?tool=investment-mbti"));
-  }
-  const simulatorButton = document.querySelector("[data-investment-profile-simulator]");
-  if (simulatorButton && simulatorButton.getAttribute("data-investment-profile-wired") !== "true") {
-    simulatorButton.setAttribute("data-investment-profile-wired", "true");
-    simulatorButton.addEventListener("click", () => navigateTo("/simulator?tool=simulator"));
-  }
-  const screenerButton = document.querySelector("[data-investment-profile-screener]");
-  if (screenerButton && screenerButton.getAttribute("data-investment-profile-wired") !== "true") {
-    screenerButton.setAttribute("data-investment-profile-wired", "true");
-    screenerButton.addEventListener("click", () => navigateTo("/simulator?tool=screener"));
+    startButton.addEventListener("click", () => navigateTo("/mbti"));
   }
 }
 
