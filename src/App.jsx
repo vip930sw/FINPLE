@@ -8,6 +8,7 @@ import EconomicCalendarSection from "./components/EconomicCalendarSection";
 import PersonalPage from "./components/PersonalPage";
 import UpdatesPage from "./components/UpdatesPage";
 import AboutPage from "./components/AboutPage";
+import SiteHeader from "./components/SiteHeader";
 import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage } from "./components/AuthPages";
@@ -79,9 +80,7 @@ function App() {
     const nextPath = getPathForPage(currentPage);
     const currentPath = normalizePathname(window.location.pathname || "/");
 
-    if (currentPage === "personal" && PERSONAL_ROUTE_PATHS.includes(currentPath)) {
-      return;
-    }
+    if (currentPage === "personal" && PERSONAL_ROUTE_PATHS.includes(currentPath)) return;
 
     if (currentPath !== nextPath) {
       window.history.pushState({ page: currentPage }, "", nextPath);
@@ -100,28 +99,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    function applyHeaderRules() {
-      document.querySelectorAll(".accountHeader .accountNav button").forEach((button) => {
-        if (button.textContent?.trim() === "요금제") {
-          button.style.display = "none";
-        }
-      });
-    }
-
-    applyHeaderRules();
-    const timeoutId = window.setTimeout(applyHeaderRules, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [currentPage]);
-
-  useEffect(() => {
     function isEditableTarget(target) {
       if (!(target instanceof Element)) return false;
-
-      return Boolean(
-        target.closest(
-          "input, textarea, select, button, a, [contenteditable='true'], .allowTextSelection"
-        )
-      );
+      return Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true'], .allowTextSelection"));
     }
 
     function preventCopyInteraction(event) {
@@ -168,11 +148,8 @@ function App() {
     if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start");
   }
 
-  function isFinpleUserLoggedIn() { return Boolean(getStoredFinpleAuthUser()?.id); }
-  function goMyPageOrLogin() { setCurrentPage(isFinpleUserLoggedIn() ? "mypage" : "login"); }
-
-  function renderWithFooter(pageContent) {
-    return <>{pageContent}<SiteFooter onNavigate={setCurrentPage} /></>;
+  function isFinpleUserLoggedIn() {
+    return Boolean(getStoredFinpleAuthUser()?.id);
   }
 
   async function handleHeaderLoginLogout() {
@@ -189,42 +166,48 @@ function App() {
     window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
-  if (currentPage === "personal") return renderWithFooter(<PersonalPage onBack={goHome} />);
-  if (currentPage === "about") return renderWithFooter(<AboutPage onNavigate={setCurrentPage} />);
-  if (currentPage === "admin-login") return renderWithFooter(<AdminLoginPage onNavigate={setCurrentPage} />);
-  if (currentPage === "login") return renderWithFooter(<LoginPage onNavigate={setCurrentPage} />);
-  if (currentPage === "signup") return renderWithFooter(<SignupPage onNavigate={setCurrentPage} />);
-  if (currentPage === "mypage") return renderWithFooter(<MyPage onNavigate={setCurrentPage} />);
-  if (currentPage === "pricing") return renderWithFooter(<PricingPage onNavigate={setCurrentPage} />);
-  if (currentPage === "support") return renderWithFooter(<SupportPage onNavigate={setCurrentPage} />);
-  if (currentPage === "updates") return renderWithFooter(<UpdatesPage onNavigate={setCurrentPage} />);
+  function renderShell(pageContent, { includeHeader = true } = {}) {
+    return (
+      <>
+        {includeHeader ? (
+          <SiteHeader
+            isLoggedIn={isFinpleUserLoggedIn()}
+            onHome={goHome}
+            onStart={goPersonal}
+            onNavigate={setCurrentPage}
+            onLoginLogout={handleHeaderLoginLogout}
+            onHomeSection={scrollHomeToSection}
+          />
+        ) : null}
+        {pageContent}
+        <SiteFooter onNavigate={setCurrentPage} />
+      </>
+    );
+  }
 
-  if (currentPage === "privacy") return renderWithFooter(<PrivacyPage onNavigate={setCurrentPage} />);
-  if (currentPage === "terms") return renderWithFooter(<TermsPage onNavigate={setCurrentPage} />);
-  if (currentPage === "investment-disclaimer") return renderWithFooter(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
+  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} />, { includeHeader: false });
+  if (currentPage === "about") return renderShell(<AboutPage onNavigate={setCurrentPage} />);
+  if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
+  if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
+  if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
+  if (currentPage === "support") return renderShell(<SupportPage onNavigate={setCurrentPage} />);
+  if (currentPage === "updates") return renderShell(<UpdatesPage onNavigate={setCurrentPage} />);
+  if (currentPage === "privacy") return renderShell(<PrivacyPage onNavigate={setCurrentPage} />);
+  if (currentPage === "terms") return renderShell(<TermsPage onNavigate={setCurrentPage} />);
+  if (currentPage === "investment-disclaimer") return renderShell(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
 
   return (
     <main className="page">
-      <header className="header homeHeader">
-        <button type="button" className="brandLogo resetButton" onClick={goHome}>
-          <div className="brandIcon"><span>F</span><i /></div>
-          <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
-        </button>
-
-        <nav className="homeSectionNav">
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("hero")}>소개</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
-        </nav>
-
-        <div className="headerActions">
-          <button className="secondaryHeaderButton" onClick={goHome}>홈</button>
-          <button className="headerButton" onClick={goPersonal}>시작하기</button>
-          <button className="secondaryHeaderButton supportHeaderButton" onClick={() => setCurrentPage("support")}>문의사항</button>
-          <button className="secondaryHeaderButton" onClick={goMyPageOrLogin}>MY PAGE</button>
-          <button className="secondaryHeaderButton" onClick={handleHeaderLoginLogout}>{isFinpleUserLoggedIn() ? "로그아웃" : "로그인"}</button>
-        </div>
-      </header>
+      <SiteHeader
+        isLoggedIn={isFinpleUserLoggedIn()}
+        onHome={goHome}
+        onStart={goPersonal}
+        onNavigate={setCurrentPage}
+        onLoginLogout={handleHeaderLoginLogout}
+        onHomeSection={scrollHomeToSection}
+      />
 
       <div className="tickerArea"><TradingViewTicker symbols={[...stockIndexSymbols, ...currencyCryptoSymbols]} /></div>
 
