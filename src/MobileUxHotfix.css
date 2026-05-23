@@ -272,7 +272,7 @@
 
 .alignedAssetTable th:last-child,
 .alignedAssetTable td:last-child {
-  padding-right: 28px;
+  padding-right: 48px;
 }
 
 .alignedAssetTable .tickerCell {
@@ -504,7 +504,7 @@
 
   .alignedAssetTable th:last-child,
   .alignedAssetTable td:last-child {
-    padding-right: 20px !important;
+    padding-right: 36px !important;
   }
 
   .alignedAssetTable .priceCell {
