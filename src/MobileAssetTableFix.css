@@ -18,8 +18,8 @@
 
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable {
     display: table !important;
-    width: 1068px !important;
-    min-width: 1068px !important;
+    width: 1084px !important;
+    min-width: 1084px !important;
     max-width: none !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
@@ -96,7 +96,7 @@
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .quantityColumn { width: 84px !important; }
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .priceColumn { width: 128px !important; }
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .valueColumn { width: 128px !important; }
-  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .targetWeightColumn { width: 116px !important; }
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .targetWeightColumn { width: 132px !important; }
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .metricColumn { width: 86px !important; }
 
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .assetNameCell {
@@ -126,12 +126,24 @@
     box-sizing: border-box !important;
   }
 
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .targetWeightCell {
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap,
   .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap.targetWeightInputWrap {
     display: inline-flex !important;
     width: auto !important;
-    min-width: 118px !important;
+    min-width: 104px !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap input,
+  .calculatorTableWrap > table.calculatorTable.alignedAssetTable .weightInputWrap.targetWeightInputWrap input {
+    width: 86px !important;
+    min-width: 86px !important;
+    max-width: 86px !important;
   }
 }
