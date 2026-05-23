@@ -1,0 +1,114 @@
+/* =========================================================
+   Simulator nav / compare polish
+   - PC/모바일 공통 탭 문구 간격 정리
+   - 모바일 탭 좌측 여백 보정
+   - PC 포트폴리오 비교 카드 넘침 방지
+========================================================= */
+
+.simulatorTabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  min-width: 0;
+}
+
+.simulatorTabButton span,
+.simulatorTabButton strong {
+  display: inline-block;
+  line-height: 1.15;
+}
+
+.simulatorTabButton span {
+  flex: 0 0 auto;
+}
+
+.simulatorTabButton strong {
+  min-width: 0;
+}
+
+.portfolioCompareGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.portfolioCompareCard {
+  min-width: 0;
+}
+
+.portfolioCompareCardTop {
+  align-items: flex-start;
+}
+
+.portfolioCompareCardTop strong {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.compareRankGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compareRankGrid div {
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.compareRankGrid p {
+  font-size: 11px;
+}
+
+.portfolioCompareCard dl div {
+  min-width: 0;
+}
+
+.portfolioCompareCard dt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portfolioCompareCard dd {
+  font-size: 14px;
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+  .portfolioComparePanel {
+    padding: 20px;
+  }
+
+  .portfolioCompareGrid {
+    gap: 14px;
+  }
+
+  .portfolioCompareCard {
+    padding: 18px;
+  }
+
+  .portfolioCompareCardTop {
+    gap: 8px;
+  }
+
+  .rankBadge {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 900px) {
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton {
+    justify-content: flex-start !important;
+    padding-left: 18px !important;
+    text-align: left !important;
+    gap: 4px !important;
+  }
+
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton span,
+  .personalPage .simulatorTabNav.threeStepNav .simulatorTabButton strong {
+    text-align: left !important;
+  }
+}
