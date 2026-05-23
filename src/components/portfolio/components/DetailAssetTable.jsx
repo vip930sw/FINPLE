@@ -13,8 +13,8 @@ export default function DetailAssetTable({
             <th>티커</th>
             <th>자산명</th>
             <th>수량</th>
-            <th>현재가</th>
-            <th>평가금액</th>
+            <th>현재가 (원)</th>
+            <th>평가금액 (원)</th>
             <th>비중</th>
             <th>CAGR (%)</th>
             <th>BETA</th>
@@ -33,8 +33,8 @@ export default function DetailAssetTable({
                 <td>{asset.ticker || "-"}</td>
                 <td>{asset.name || "-"}</td>
                 <td>{formatNumber(asset.quantity)}</td>
-                <td>{formatNumber(asset.price)}원</td>
-                <td>{formatNumber(assetValue)}원</td>
+                <td>{formatNumber(asset.price)}</td>
+                <td>{formatNumber(assetValue)}</td>
                 <td>{formatPercent(weight)}</td>
                 <td>{formatDecimal(asset.cagr, 2)}</td>
                 <td>{formatDecimal(asset.beta, 2)}</td>
