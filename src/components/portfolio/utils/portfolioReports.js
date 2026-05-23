@@ -1,4 +1,4 @@
-import { analyzePortfolioProfile } from "./portfolioCalculations";
+import { analyzePortfolioProfile } from "./portfolioAnalysis";
 import { formatNumber, formatPercent, getAssetValue, getAssetWeight } from "./portfolioFormatters";
 
 export function createPortfolioReportText({
