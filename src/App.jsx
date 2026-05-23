@@ -200,7 +200,6 @@ function App() {
         <nav className="homeSectionNav">
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("hero")}>소개</button>
           <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("index")}>인덱스</button>
-          <button type="button" className="navTextButton" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
         </nav>
 
         <div className="headerActions">
