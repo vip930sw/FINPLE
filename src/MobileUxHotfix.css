@@ -97,7 +97,7 @@
   left: 0;
   top: 26px;
   z-index: 30;
-  width: 292px;
+  width: 310px;
   max-width: calc(100vw - 48px);
   padding: 12px 14px;
   border: 1px solid #cbd5e1;
@@ -124,9 +124,9 @@
 
 .calculationControlPanel {
   display: grid;
-  grid-template-columns: minmax(360px, 0.72fr) minmax(480px, 1fr);
+  grid-template-columns: minmax(250px, 1.12fr) minmax(240px, 1.2fr) minmax(150px, 0.72fr) minmax(150px, 0.72fr) minmax(210px, 1.05fr) 76px;
   align-items: stretch;
-  gap: 16px;
+  gap: 12px;
   margin: 28px 0 16px;
   padding: 16px;
   border: 1px solid #bfdbfe;
@@ -137,6 +137,111 @@
 .calculationControlPanel.warning {
   border-color: #fecaca;
   background: #fff7ed;
+}
+
+.startValueControlBlock,
+.startValueTextBlock,
+.targetMetricCard,
+.targetWeightTextBlock {
+  min-height: 112px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 16px;
+}
+
+.startValueControlBlock,
+.startValueTextBlock,
+.targetWeightTextBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.startValueControlBlock p,
+.targetMetricCard p {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.startValueControlBlock input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: right;
+  font-size: 20px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+.startValueControlBlock input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.startValueTextBlock strong,
+.targetWeightTextBlock strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.45;
+}
+
+.startValueTextBlock small,
+.targetWeightTextBlock small {
+  display: block;
+  margin-top: 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.targetMetricCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.targetMetricCard strong {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.targetWeightTextBlock.ready strong {
+  color: #1e3a8a;
+}
+
+.targetWeightTextBlock .warningText {
+  color: #dc2626;
+}
+
+.calculateWeightButton {
+  align-self: stretch;
+  border: none;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0 18px;
+  min-height: 112px;
+  font-size: 16px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.calculateWeightButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .editableStartValueBox {
@@ -166,14 +271,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
 }
 
-.mergedStartValueBox {
-  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
 .assetValueActionGroup {
   display: flex;
   flex-wrap: wrap;
@@ -199,13 +296,6 @@
 .targetWeightPanel.warning {
   border-color: #fecaca;
   background: #fff7ed;
-}
-
-.mergedTargetWeightPanel {
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
 }
 
 .targetWeightSummaryGrid {
@@ -272,6 +362,17 @@
   padding: 14px 18px;
   font-size: 15px;
   font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .calculationControlPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calculateWeightButton {
+    min-height: 68px;
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
@@ -351,9 +452,20 @@
 
   .calculationControlPanel,
   .editableStartValueBox,
-  .mergedStartValueBox,
   .targetWeightPanel.compact {
     grid-template-columns: 1fr;
+  }
+
+  .startValueControlBlock,
+  .startValueTextBlock,
+  .targetMetricCard,
+  .targetWeightTextBlock {
+    min-height: auto;
+  }
+
+  .calculateWeightButton {
+    width: 100%;
+    min-height: 58px;
   }
 
   .assetValueActionGroup,
