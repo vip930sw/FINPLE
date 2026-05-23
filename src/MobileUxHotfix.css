@@ -43,7 +43,7 @@
 
 .assetNameLookupStack {
   display: grid;
-  gap: 6px;
+  gap: 2px;
   align-items: center;
   justify-items: start;
 }
@@ -56,7 +56,7 @@
   font-weight: 950;
   cursor: pointer;
   padding: 0;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .removeTextButton {
@@ -270,12 +270,21 @@
   text-align: center;
 }
 
+.alignedAssetTable th:last-child,
+.alignedAssetTable td:last-child {
+  padding-right: 28px;
+}
+
 .alignedAssetTable .tickerCell {
   text-align: center;
 }
 
 .alignedAssetTable .assetNameCell {
   overflow: hidden;
+}
+
+.alignedAssetTable .assetNameCell .assetTextValue {
+  line-height: 1.15;
 }
 
 .alignedAssetTable .assetTextValue {
@@ -493,6 +502,11 @@
     white-space: nowrap !important;
   }
 
+  .alignedAssetTable th:last-child,
+  .alignedAssetTable td:last-child {
+    padding-right: 20px !important;
+  }
+
   .alignedAssetTable .priceCell {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -508,6 +522,7 @@
 
   .alignedAssetTable .assetNameLookupStack {
     justify-items: start !important;
+    gap: 2px !important;
   }
 
   .alignedAssetTable .assetNameCell .assetTextValue {
