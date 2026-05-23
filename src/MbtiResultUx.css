@@ -44,6 +44,10 @@
   flex-direction: column;
 }
 
+.investmentProfileResultBox[hidden] {
+  display: none !important;
+}
+
 .investmentProfileResultColumns > div:nth-child(1) {
   order: 1;
 }
