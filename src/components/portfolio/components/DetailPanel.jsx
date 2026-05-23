@@ -165,6 +165,12 @@ export default function DetailPanel({
             <p>현재 보유 수량과 현재가 기준</p>
           </div>
 
+          <div className="detailHeroMetricCard primaryMetricCard">
+            <span>{settings.years}년 후 예상 자산</span>
+            <strong>{formatNumber(futureValue)}원</strong>
+            <p>물가 반영 전 장기 예상값</p>
+          </div>
+
           <div className="detailHeroMetricCard">
             <span>예상 CAGR</span>
             <strong>{expectedCagr.toFixed(2)}%</strong>
@@ -175,12 +181,6 @@ export default function DetailPanel({
             <span>예상 MDD</span>
             <strong>{simpleMdd.toFixed(2)}%</strong>
             <p>하락장 손실폭 참고 지표</p>
-          </div>
-
-          <div className="detailHeroMetricCard primaryMetricCard">
-            <span>{settings.years}년 후 예상 자산</span>
-            <strong>{formatNumber(futureValue)}원</strong>
-            <p>물가 반영 전 장기 예상값</p>
           </div>
         </div>
 
@@ -206,20 +206,6 @@ export default function DetailPanel({
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        <div className="detailMetricHelpBox">
-          <div>
-            <p className="sectionLabel">Metric Guide</p>
-            <strong>주요 지표 설명</strong>
-          </div>
-          <div className="detailMetricHelpList">
-            <MetricTooltip label="CAGR">연평균 성장률입니다. 기간 전체 수익률을 매년 같은 비율로 성장한 것처럼 환산해 장기 성과를 비교합니다.</MetricTooltip>
-            <MetricTooltip label="BETA">시장 대비 민감도입니다. 1보다 크면 시장보다 크게 움직이고, 1보다 작으면 상대적으로 덜 움직이는 경향을 의미합니다.</MetricTooltip>
-            <MetricTooltip label="MDD">고점 대비 최대 하락률입니다. 투자자가 체감할 수 있는 하락 위험을 확인하는 핵심 지표입니다.</MetricTooltip>
-            <MetricTooltip label="Calmar">CAGR을 MDD로 나눈 위험조정 지표입니다. 큰 하락을 감수한 만큼 수익이 충분했는지 보는 데 사용합니다.</MetricTooltip>
-            <MetricTooltip label="Sharpe">변동성 대비 초과수익을 보는 지표입니다. FINPLE에서는 변동성 데이터 연동 후 고도화 지표로 제공할 예정입니다.</MetricTooltip>
           </div>
         </div>
       </div>
@@ -355,6 +341,20 @@ export default function DetailPanel({
               ))}
             </dl>
           </article>
+        </div>
+
+        <div className="detailMetricHelpBox">
+          <div>
+            <p className="sectionLabel">Metric Guide</p>
+            <strong>주요 지표 설명</strong>
+          </div>
+          <div className="detailMetricHelpList">
+            <MetricTooltip label="CAGR">연평균 성장률입니다. 기간 전체 수익률을 매년 같은 비율로 성장한 것처럼 환산해 장기 성과를 비교합니다.</MetricTooltip>
+            <MetricTooltip label="BETA">시장 대비 민감도입니다. 1보다 크면 시장보다 크게 움직이고, 1보다 작으면 상대적으로 덜 움직이는 경향을 의미합니다.</MetricTooltip>
+            <MetricTooltip label="MDD">고점 대비 최대 하락률입니다. 투자자가 체감할 수 있는 하락 위험을 확인하는 핵심 지표입니다.</MetricTooltip>
+            <MetricTooltip label="Calmar">CAGR을 MDD로 나눈 위험조정 지표입니다. 큰 하락을 감수한 만큼 수익이 충분했는지 보는 데 사용합니다.</MetricTooltip>
+            <MetricTooltip label="Sharpe">변동성 대비 초과수익을 보는 지표입니다. FINPLE에서는 변동성 데이터 연동 후 고도화 지표로 제공할 예정입니다.</MetricTooltip>
+          </div>
         </div>
       </div>
 
