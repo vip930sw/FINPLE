@@ -52,10 +52,9 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
           </div>
         </button>
 
-        <nav className="accountNav">
+        <nav className="accountNav standardTopNav">
           <button type="button" onClick={() => onNavigate("home")}>홈</button>
           <button type="button" onClick={() => onNavigate("personal")}>시작하기</button>
-          <button type="button" onClick={() => onNavigate("pricing")}>요금제</button>
           <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
           <button type="button" onClick={handleMyPageClick}>MY PAGE</button>
           <button type="button" className="accountNavAuthButton" onClick={handleLoginLogoutClick}>
