@@ -25,6 +25,7 @@ import './GlobalNavigation.css'
 import './MobileUxHotfix.css'
 import './MobileAssetTableFix.css'
 import './SupportNoticeMerge.css'
+import './SimulatorNavComparePolish.css'
 import App from './App.jsx'
 
 if (isBillingResultPath()) {
