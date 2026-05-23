@@ -130,6 +130,44 @@ function getTypeName(axes) {
   return `${prefix} 자동 ${suffix}`;
 }
 
+function getTypeInsight(axes, riskProfile) {
+  const isGrowth = axes.returnStyle === "성장";
+  const isLongTerm = axes.timeStyle === "장기";
+  const isSelfDirected = axes.controlStyle === "주도";
+  const isConcentrated = axes.concentrationStyle === "확신";
+
+  const cautionByRisk = {
+    초안정형: "원금 방어에는 유리하지만 물가상승률을 감안하면 실질 수익률이 낮아질 수 있습니다. 장기 자금 일부는 성장자산 편입도 함께 검토해 보세요.",
+    안정추구형: "손실 회피 성향이 강해 상승장에서 기대수익이 제한될 수 있습니다. 채권·현금 중심을 유지하되 성장자산의 최소 비중을 점검해 보세요.",
+    위험중립형: "균형 잡힌 판단이 장점이지만 시장 상황에 따라 방향성이 흐려질 수 있습니다. 목표비중과 리밸런싱 기준을 미리 정해두는 것이 좋습니다.",
+    적극투자형: "성장 기회를 적극적으로 반영하는 만큼 MDD와 변동성 관리가 중요합니다. 안전자산과 배당자산으로 하방 위험을 분산해 보세요.",
+    공격투자형: "고수익 기회를 선호하지만 급락 구간의 손실 폭이 커질 수 있습니다. 위성자산 비중과 손절·리밸런싱 기준을 반드시 사전에 정해두세요.",
+  };
+
+  const strengths = [
+    isGrowth ? "성장 기회를 빠르게 포착하고 장기 수익률 개선을 목표로 포트폴리오를 설계할 수 있습니다." : "변동성을 낮추고 투자 지속 가능성을 우선하는 안정적 운용 기준을 세우기 좋습니다.",
+    isSelfDirected ? "직접 조정 의지가 강해 시장 변화에 맞춰 비중과 가정값을 능동적으로 점검할 수 있습니다." : "예시 프리셋을 기준으로 과도한 판단 개입을 줄이고 일관된 운용 흐름을 유지하기 좋습니다.",
+    isConcentrated ? "확신 있는 자산을 중심으로 성과 동인을 명확하게 만들 수 있습니다." : "분산을 통해 특정 자산의 변동성이 전체 성과에 미치는 영향을 낮출 수 있습니다.",
+  ].join(" ");
+
+  const actions = [
+    isGrowth ? "성장자산의 목표비중을 정하되 최대낙폭(MDD)을 함께 확인하세요." : "채권·배당·현금 비중을 유지하면서 최소 성장자산 비중을 점검하세요.",
+    isLongTerm ? "장기 투자기간에 맞춰 월 투자금 지속 가능성과 물가상승률을 함께 검토하세요." : "시장 기회에 대응하더라도 매수·매도 기준과 점검 주기를 먼저 정하세요.",
+    isConcentrated ? "확신 자산 비중이 과도해지면 금·채권·현금 등 완충자산으로 위험을 분산하세요." : "자산 수가 많아질수록 중복 노출이 생기지 않는지 정기적으로 정리하세요.",
+  ];
+
+  const sectors = isGrowth
+    ? ["미국 대표지수", "테크", "AI", isConcentrated ? "위성자산" : "배당성장"]
+    : ["배당", "채권형 ETF", "금", isLongTerm ? "필수소비재" : "단기채·현금성"];
+
+  return {
+    strengths,
+    cautions: cautionByRisk[riskProfile] || cautionByRisk.위험중립형,
+    actions,
+    sectors,
+  };
+}
+
 function calculateResult(answers) {
   const axisScores = { returnStyle: 0, timeStyle: 0, controlStyle: 0, concentrationStyle: 0 };
   let riskScore = 0;
@@ -151,6 +189,7 @@ function calculateResult(answers) {
   };
   const preset = getPreset(axes);
   const calculatedRiskProfile = riskProfileFromScore(riskScore);
+  const insight = getTypeInsight(axes, calculatedRiskProfile);
   const nickname = getTypeName(axes);
   const type = {
     typeId: Object.values(axes).join("-"),
@@ -158,11 +197,11 @@ function calculateResult(answers) {
     finpleType: `${axes.returnStyle} ${axes.timeStyle} ${axes.controlStyle} ${axes.concentrationStyle}`,
     riskProfile: calculatedRiskProfile,
     summary: `${Object.values(axes).join(" · ")} 성향을 기반으로 한 참고용 투자 성향입니다.`,
-    strengths: "자신의 투자 기준을 이해하고 포트폴리오를 점검하는 데 활용할 수 있습니다.",
-    cautions: "본 결과는 참고용이며 실제 투자 전 상품 구조, 수수료, 세금, 손실 가능성을 반드시 확인해야 합니다.",
+    strengths: insight.strengths,
+    cautions: insight.cautions,
     preset,
-    sectors: axes.returnStyle === "성장" ? ["미국 대표지수", "테크", "AI", "배당성장"] : ["배당", "채권형 ETF", "금", "필수소비재"],
-    actions: ["예시 비중을 시뮬레이터에서 직접 조정해보세요.", "CAGR, MDD, 배당률을 보수적으로 입력해 비교하세요.", "특정 자산 쏠림이 과도하지 않은지 확인하세요."],
+    sectors: insight.sectors,
+    actions: insight.actions,
     defaults: { years: axes.timeStyle === "장기" ? 15 : 10, monthlyContribution: axes.returnStyle === "성장" ? 800000 : 500000, inflationRate: 2.5 },
   };
 
@@ -213,7 +252,7 @@ function saveResultToSimulator(result) {
     localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
     localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
-    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, actions: type.actions, sectors: type.sectors, simulatorDefaults: type.defaults, createdAt: now }));
+    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, strengths: type.strengths, cautions: type.cautions, actions: type.actions, sectors: type.sectors, simulatorDefaults: type.defaults, createdAt: now }));
     return true;
   } catch (error) {
     console.error("투자 MBTI 프리셋 저장 실패", error);
@@ -312,9 +351,34 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
 }
 
 function MbtiResult({ result, onReset, onApply }) {
+  const [exportStatusMessage, setExportStatusMessage] = useState("");
   const type = result.type;
   const entries = Object.entries(type.preset);
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
+
+  async function handleShareResult() {
+    const shareText = `FINPLE 투자 MBTI: ${type.nickname}\n유형: ${type.finpleType}\n위험성향: ${result.calculatedRiskProfile}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "FINPLE 투자 MBTI 결과", text: shareText, url: window.location.origin + "/mbti" });
+        setExportStatusMessage("공유 창을 열었습니다.");
+        return;
+      }
+      await navigator.clipboard?.writeText(shareText);
+      setExportStatusMessage("공유 문구를 클립보드에 복사했습니다.");
+    } catch (error) {
+      setExportStatusMessage("공유 기능을 사용할 수 없어 목업 상태로 표시됩니다.");
+    }
+  }
+
+  function handleImageMockup() {
+    setExportStatusMessage("이미지 저장은 다음 단계에서 캡처 기능으로 연결할 예정입니다.");
+  }
+
+  function handlePdfSave() {
+    setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.");
+    window.setTimeout(() => window.print(), 80);
+  }
 
   return (
     <section className="investmentMbtiResultPage">
@@ -341,6 +405,12 @@ function MbtiResult({ result, onReset, onApply }) {
         <article className="investmentMbtiPanel warning"><p className="sectionLabel">Caution</p><h3>주의점</h3><p>{type.cautions}</p></article>
       </div>
       <article className="investmentMbtiNotice resultNotice"><strong>투자 유의사항</strong><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>코인 등 고변동성 자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
+      <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
+        <button type="button" onClick={handleShareResult}>SNS 공유</button>
+        <button type="button" onClick={handleImageMockup}>이미지 저장</button>
+        <button type="button" onClick={handlePdfSave}>PDF 저장</button>
+      </div>
+      {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
       <div className="investmentMbtiResultActions horizontal"><button type="button" onClick={onApply}>이 프리셋으로 시뮬레이터 열기</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
     </section>
   );
