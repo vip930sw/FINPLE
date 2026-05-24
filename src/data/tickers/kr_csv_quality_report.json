@@ -1,0 +1,55 @@
+{
+  "sourceFiles": {
+    "stocks": "data_0432_20260524.xlsx",
+    "etfs": "data_0338_20260524.xlsx"
+  },
+  "counts": {
+    "stockRows": 2878,
+    "stockMasterRows": 2878,
+    "etfRows": 1115,
+    "etfMasterRows": 1115,
+    "combinedMasterRows": 3993,
+    "snapshotRows": 3993,
+    "candidateRows": 190
+  },
+  "tickerValidation": {
+    "stockCodesAllSixDigit": false,
+    "etfCodesSixDigit": 874,
+    "etfCodesAlphaMixed": 241,
+    "examplesAlphaMixed": [
+      "0184E0",
+      "0182R0",
+      "0182S0",
+      "0103T0",
+      "0131W0",
+      "0026S0",
+      "0052S0",
+      "0069M0",
+      "0111P0",
+      "0083S0"
+    ],
+    "stockCodesSixDigit": 2808,
+    "stockCodesAlphaMixed": 70,
+    "examplesStockAlphaMixed": [
+      "00104K",
+      "37550L",
+      "37550K",
+      "0099X0",
+      "0037T0",
+      "0072Z0",
+      "38380K",
+      "03473K",
+      "28513K",
+      "0041B0"
+    ]
+  },
+  "assetTypeCounts": {
+    "ETF": 1115,
+    "stock": 2878
+  },
+  "notes": [
+    "CAGR/BETA/MDD/Yield are intentionally blank in candidate CSV.",
+    "KR ETF alpha-mixed product codes are preserved as strings.",
+    "Current snapshot is not long-term historical data."
+  ]
+}
