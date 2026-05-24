@@ -10,7 +10,7 @@
     "etfMasterRows": 4553,
     "combinedMasterRows": 11694,
     "snapshotRows": 11694,
-    "candidateRows": 60
+    "candidateRows": 40
   },
   "stockSourceColumns": [
     "Symbol",
