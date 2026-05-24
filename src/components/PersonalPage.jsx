@@ -3,6 +3,7 @@ import PortfolioSimulator from "./PortfolioSimulator";
 import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
 import ScreenerPage from "./ScreenerPage";
+import KoreanPortfolioSimulatorBetaPage from "./KoreanPortfolioSimulatorBetaPage";
 
 function replaceToolPath(path) {
   if (typeof window === "undefined") return;
@@ -17,12 +18,15 @@ function getInitialPersonalView() {
   const path = window.location.pathname;
   if (path === "/mbti") return "investment-mbti";
   if (path === "/screener") return "screener";
-  if (path === "/simulator") return "simulator";
+  if (path === "/simulator") return "us-simulator";
+  if (path === "/simulator/us") return "us-simulator";
+  if (path === "/simulator/kr") return "kr-simulator";
 
   const tool = new URLSearchParams(window.location.search).get("tool");
   if (tool === "investment-mbti") return "investment-mbti";
   if (tool === "screener") return "screener";
-  if (tool === "simulator") return "simulator";
+  if (tool === "simulator" || tool === "us-simulator") return "us-simulator";
+  if (tool === "kr-simulator") return "kr-simulator";
 
   return "hub";
 }
@@ -30,7 +34,8 @@ function getInitialPersonalView() {
 function getPathForPersonalView(view) {
   if (view === "investment-mbti") return "/mbti";
   if (view === "screener") return "/screener";
-  if (view === "simulator") return "/simulator";
+  if (view === "us-simulator") return "/simulator/us";
+  if (view === "kr-simulator") return "/simulator/kr";
   return "/start";
 }
 
@@ -48,10 +53,15 @@ function PersonalPage({ onBack }) {
     simulatorRef.current?.changeTab(tabName);
   }
 
-  function openSimulator(tabName = "settings") {
+  function openUsSimulator(tabName = "settings") {
     setInitialTab(tabName);
-    setPersonalView("simulator");
-    replaceToolPath("/simulator");
+    setPersonalView("us-simulator");
+    replaceToolPath("/simulator/us");
+  }
+
+  function openKrSimulator() {
+    setPersonalView("kr-simulator");
+    replaceToolPath("/simulator/kr");
   }
 
   function handleHubNavigate(nextTarget) {
@@ -67,12 +77,17 @@ function PersonalPage({ onBack }) {
       return;
     }
 
+    if (nextTarget === "kr-simulator") {
+      openKrSimulator();
+      return;
+    }
+
     if (nextTarget === "support") {
       window.location.href = "/support";
       return;
     }
 
-    openSimulator("settings");
+    openUsSimulator("settings");
   }
 
   useEffect(() => {
@@ -82,7 +97,7 @@ function PersonalPage({ onBack }) {
   }, [personalView]);
 
   useEffect(() => {
-    if (personalView !== "simulator") return;
+    if (personalView !== "us-simulator") return;
 
     window.setTimeout(() => {
       moveToSimulatorTab(initialTab);
@@ -114,7 +129,7 @@ function PersonalPage({ onBack }) {
         onBack={onBack}
         onNavigate={(nextTarget) => {
           if (nextTarget === "personal") {
-            openSimulator("settings");
+            openUsSimulator("settings");
             return;
           }
 
@@ -129,7 +144,17 @@ function PersonalPage({ onBack }) {
       <ScreenerPage
         onBack={onBack}
         onHome={onBack}
-        onOpenSimulator={() => openSimulator("settings")}
+        onOpenSimulator={() => openUsSimulator("settings")}
+      />
+    );
+  }
+
+  if (personalView === "kr-simulator") {
+    return (
+      <KoreanPortfolioSimulatorBetaPage
+        onBack={goStartHub}
+        onOpenUsSimulator={() => openUsSimulator("settings")}
+        onOpenSupport={() => { window.location.href = "/support"; }}
       />
     );
   }
@@ -151,7 +176,7 @@ function PersonalPage({ onBack }) {
 
         <nav className="headerNav">
           <button type="button" onClick={() => moveToSimulatorTab("settings")}>
-            시뮬레이터
+            미국 시뮬레이터
           </button>
 
           <button type="button" onClick={() => moveToSimulatorTab("compare")}>
