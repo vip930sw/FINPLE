@@ -38,7 +38,15 @@ const ROUTE_PATHS = {
   "investment-disclaimer": "/disclaimer",
 };
 
-const PERSONAL_ROUTE_PATHS = ["/start", "/tools", "/mbti", "/simulator", "/screener"];
+const PERSONAL_ROUTE_PATHS = [
+  "/start",
+  "/tools",
+  "/mbti",
+  "/simulator",
+  "/simulator/us",
+  "/simulator/kr",
+  "/screener",
+];
 
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
