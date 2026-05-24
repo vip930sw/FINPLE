@@ -312,18 +312,18 @@
   display: block;
 }
 
-.krTickerResultCard .tickerResultTicker {
+.tickerResultGrid.compact .krTickerResultCard .tickerResultTitleBlock .tickerResultTicker {
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px !important;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
-.krTickerResultCard .tickerResultName {
+.tickerResultGrid.compact .krTickerResultCard .tickerResultTitleBlock .tickerResultName {
   color: #0f172a;
-  font-size: 20px;
+  font-size: 15px !important;
   font-weight: 900;
-  line-height: 1.25;
-  letter-spacing: -0.7px;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
   word-break: keep-all;
 }
