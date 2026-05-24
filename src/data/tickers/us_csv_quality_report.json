@@ -1,0 +1,59 @@
+{
+  "sourceFiles": {
+    "stocks": "nasdaq_screener_1779598386546.csv",
+    "etfs": "nasdaq_etf_screener_1779598693262.csv"
+  },
+  "counts": {
+    "stockRows": 7141,
+    "stockMasterRows": 7141,
+    "etfRows": 4553,
+    "etfMasterRows": 4553,
+    "combinedMasterRows": 11694,
+    "snapshotRows": 11694,
+    "candidateRows": 60
+  },
+  "stockSourceColumns": [
+    "Symbol",
+    "Name",
+    "Last Sale",
+    "Net Change",
+    "% Change",
+    "Market Cap",
+    "Country",
+    "IPO Year",
+    "Volume",
+    "Sector",
+    "Industry"
+  ],
+  "etfSourceColumns": [
+    "SYMBOL",
+    "NAME",
+    "LAST PRICE",
+    "NET CHANGE",
+    "% CHANGE",
+    "DELTA",
+    "1 yr % CHANGE"
+  ],
+  "assetTypeCounts": {
+    "ETF": 4553,
+    "stock": 7141
+  },
+  "countryCountsTop10": [
+    ["United States", 5394],
+    ["blank", 289],
+    ["China", 261],
+    ["Canada", 247],
+    ["Israel", 127],
+    ["Singapore", 89],
+    ["Hong Kong", 88],
+    ["United Kingdom", 84],
+    ["Bermuda", 54],
+    ["Cayman Islands", 50]
+  ],
+  "notes": [
+    "CAGR/BETA/MDD/Yield intentionally blank in candidate CSV.",
+    "Nasdaq exports do not provide long-term price series.",
+    "ETF category/strategy/riskLevel/tags are heuristic and require manual review.",
+    "Some stock rows include special listed security types and should be filtered before full screener use."
+  ]
+}
