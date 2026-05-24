@@ -70,14 +70,20 @@
   margin-top: 20px;
 }
 
-.screenerMarketTabs {
+.screenerMarketTabs,
+.assetTypeFilterBar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 0 0 24px;
 }
 
-.screenerMarketTabs button {
+.assetTypeFilterBar {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.screenerMarketTabs button,
+.assetTypeFilterButton {
   border: 1px solid #dbe5f3;
   border-radius: 22px;
   padding: 18px 20px;
@@ -86,20 +92,31 @@
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
-.screenerMarketTabs button.active {
+.screenerMarketTabs button.active,
+.assetTypeFilterButton.active {
   border-color: #2563eb;
   background: #eff6ff;
 }
 
 .screenerMarketTabs strong,
-.screenerMarketTabs small {
+.screenerMarketTabs small,
+.assetTypeFilterButton strong,
+.assetTypeFilterButton span {
   display: block;
 }
 
-.screenerMarketTabs strong {
+.screenerMarketTabs strong,
+.assetTypeFilterButton strong {
   margin-bottom: 6px;
   color: #0f172a;
   font-size: 20px;
+}
+
+.assetTypeFilterButton span {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: keep-all;
 }
 
 .screenerMarketTabs span {
@@ -147,6 +164,24 @@
   background: #ffffff;
   color: #2563eb;
   font-weight: 800;
+}
+
+.tickerResultTypeBadge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.tickerResultTypeBadge span {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .krScreenerBetaGrid {
@@ -246,6 +281,7 @@
 @media (max-width: 780px) {
   .screenerSummaryGrid,
   .screenerMarketTabs,
+  .assetTypeFilterBar,
   .krScreenerBetaGrid {
     grid-template-columns: 1fr;
   }
