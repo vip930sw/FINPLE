@@ -481,7 +481,8 @@ export default function usePortfolioSimulator() {
   }
 
   function createAssetFromTickerCandidate(candidate = {}, index = assets.length) {
-    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market: candidate.market || "US", currency: "KRW", quantity: 0, price: 0, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: candidate.dividendYield ?? 0, priceMode: "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.currency || null, exchangeRate: null, lastUpdatedAt: null }, index);
+    const market = candidate.market || "US";
+    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market, exchange: candidate.exchange, currency: candidate.currency || "KRW", quoteCurrency: candidate.quoteCurrency || (market === "KR" ? "KRW" : "USD"), assetType: candidate.assetType || candidate.type || "ETF", quantity: 0, price: 0, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: candidate.dividendYield ?? 0, priceMode: market === "KR" ? "manual" : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.quoteCurrency || candidate.currency || (market === "KR" ? "KRW" : "USD"), exchangeRate: null, lastUpdatedAt: null }, index);
   }
 
   function addAssetFromTickerCandidate(candidate) {
@@ -501,7 +502,8 @@ export default function usePortfolioSimulator() {
     });
     setRecentlyAddedAssetId(nextAsset.id);
     window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
-    const message = `${ticker} 후보 자산을 현재 포트폴리오에 추가했습니다. 비중을 입력하고 목표비중 적용을 누르세요.`;
+    const marketLabel = nextAsset.market === "KR" ? "한국" : "미국";
+    const message = `${ticker} ${marketLabel} 후보 자산을 현재 포트폴리오에 추가했습니다. 비중을 입력하고 목표비중 적용을 누르세요.`;
     setAssetLookupSummary(message);
     return { status: "success", ticker, asset: nextAsset, message };
   }
