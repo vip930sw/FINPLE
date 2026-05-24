@@ -28,7 +28,7 @@
 }
 
 .screenerHero .screenerMetricNotice {
-  max-width: 760px;
+  max-width: 820px;
   margin: 18px auto 0;
   padding: 12px 16px;
   border: 1px solid #bfdbfe;
@@ -59,13 +59,34 @@
 }
 
 .screenerSummaryActionCard {
+  position: relative;
   cursor: pointer;
-  color: inherit;
+  overflow: hidden;
+  border-color: #93c5fd;
+  background: linear-gradient(135deg, #bfdbfe 0%, #dbeafe 100%);
+  color: #0f172a;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
 .screenerSummaryActionCard:hover {
   border-color: #2563eb;
+  box-shadow: 0 22px 58px rgba(37, 99, 235, 0.18);
   transform: translateY(-1px);
+}
+
+.screenerSummaryActionCard i {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(15, 23, 42, 0.7);
+  font-style: normal;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.screenerSummaryActionCard strong {
+  padding-right: 42px;
 }
 
 .screenerSummaryGrid span {
@@ -315,6 +336,10 @@
   }
 
   .screenerSummaryGrid {
+    max-width: none;
+  }
+
+  .screenerHero .screenerMetricNotice {
     max-width: none;
   }
 
