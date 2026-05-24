@@ -95,10 +95,16 @@ function filterCandidates({ candidates, query, goal, riskLevel, type, beginnerOn
 }
 
 function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
+  const isKrCandidate = item.market === "KR";
+  const cardClassName = ["tickerResultCard", isAdded ? "added" : "", isKrCandidate ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
+
   return (
-    <article className={isAdded ? "tickerResultCard added" : "tickerResultCard"}>
+    <article className={cardClassName}>
       <div className="tickerResultMain">
-        <div><strong>{item.ticker}</strong><span title={item.koreanName}>{item.koreanName}</span></div>
+        <div className="tickerResultTitleBlock">
+          <strong className="tickerResultTicker">{item.ticker}</strong>
+          <span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span>
+        </div>
         <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
       </div>
       <div className="tickerResultTypeBadge"><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span></div>
