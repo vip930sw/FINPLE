@@ -1,0 +1,61 @@
+ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+069500,KODEX 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+360750,TIGER 미국S&P500,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|S&P500|core,draft candidate; metrics pending; source snapshot 2026-05-24
+396500,TIGER 반도체TOP10,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+102110,TIGER 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+133690,TIGER 미국나스닥100,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+122630,KODEX 레버리지,KR,KRW,KRW,ETF,aggressive,very-high,,,,,aggressive,false,레버리지/인버스|코스피|aggressive,draft candidate; metrics pending; source snapshot 2026-05-24
+379800,KODEX 미국S&P500,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|S&P500|core,draft candidate; metrics pending; source snapshot 2026-05-24
+278530,KODEX 200TR,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+379810,KODEX 미국나스닥100,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+488770,KODEX 머니마켓액티브,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+459580,KODEX CD금리액티브(합성),KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+091160,KODEX 반도체,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,국내지수|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+310970,TIGER MSCI Korea TR,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|core,draft candidate; metrics pending; source snapshot 2026-05-24
+498400,KODEX 200타겟위클리커버드콜,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+381180,TIGER 미국필라델피아반도체나스닥,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+229200,KODEX 코스닥150,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|core,draft candidate; metrics pending; source snapshot 2026-05-24
+487240,KODEX AI전력핵심설비,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+411060,ACE KRX금현물,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+148020,RISE 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+357870,TIGER CD금리투자KIS(합성),KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+381170,TIGER 미국테크TOP10 INDXX,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|core,draft candidate; metrics pending; source snapshot 2026-05-24
+423160,KODEX KOFR금리액티브(합성),KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+273130,KODEX 종합채권(AA-이상)액티브,KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+233740,KODEX 코스닥150레버리지,KR,KRW,KRW,ETF,aggressive,very-high,,,,,aggressive,false,레버리지/인버스|aggressive,draft candidate; metrics pending; source snapshot 2026-05-24
+360200,ACE 미국S&P500,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|S&P500|core,draft candidate; metrics pending; source snapshot 2026-05-24
+102780,KODEX 삼성그룹,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+458730,TIGER 미국배당다우존스,KR,KRW,KRW,ETF,dividend,medium,,,,,dividend|core,true,해외지수|배당|dividend,draft candidate; metrics pending; source snapshot 2026-05-24
+395270,HANARO Fn K-반도체,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+367380,ACE 미국나스닥100,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+0167A0,SOL AI반도체TOP2플러스,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+0043B0,TIGER 머니마켓액티브,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+494310,KODEX 반도체레버리지,KR,KRW,KRW,ETF,aggressive,very-high,,,,,aggressive,false,레버리지/인버스|aggressive,draft candidate; metrics pending; source snapshot 2026-05-24
+278540,KODEX MSCI Korea TR,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|core,draft candidate; metrics pending; source snapshot 2026-05-24
+395160,KODEX AI반도체TOP2플러스,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+481050,KODEX CD1년금리플러스액티브(합성),KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+292150,TIGER 코리아TOP10,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+455890,RISE 머니마켓액티브,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+161510,PLUS 고배당주,KR,KRW,KRW,ETF,dividend,medium,,,,,dividend|core,true,배당/리츠|배당|리츠|dividend,draft candidate; metrics pending; source snapshot 2026-05-24
+0162Z0,RISE 삼성전자SK하이닉스채권혼합50,KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+449170,TIGER KOFR금리액티브(합성),KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,원자재|금|core,draft candidate; metrics pending; source snapshot 2026-05-24
+456600,TIME 글로벌AI인공지능액티브,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+305720,KODEX 2차전지산업,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+294400,KIWOOM 200TR,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+488080,TIGER 반도체TOP10레버리지,KR,KRW,KRW,ETF,aggressive,very-high,,,,,aggressive,false,레버리지/인버스|aggressive,draft candidate; metrics pending; source snapshot 2026-05-24
+139260,TIGER 200 IT,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+385540,RISE 종합채권(A-이상)액티브,KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+487230,KODEX 미국AI전력핵심인프라,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+426030,TIME 미국나스닥100액티브,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+214980,KODEX 단기채권PLUS,KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+284430,KODEX 200미국채혼합,KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|코스피|미국채|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+466920,SOL 조선TOP3플러스,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+105190,ACE 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+315930,KODEX Top5PlusTR,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,ETF|core,draft candidate; metrics pending; source snapshot 2026-05-24
+152100,PLUS 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
+091230,TIGER 반도체,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,국내지수|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+232080,TIGER 코스닥150,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|core,draft candidate; metrics pending; source snapshot 2026-05-24
+453850,ACE 미국30년국채액티브(H),KR,KRW,KRW,ETF,defensive,low-medium,,,,,defensive|core,true,채권|defensive,draft candidate; metrics pending; source snapshot 2026-05-24
+472150,TIGER 배당커버드콜액티브,KR,KRW,KRW,ETF,dividend,medium,,,,,dividend|core,true,배당/리츠|코스피|배당|리츠|dividend,draft candidate; metrics pending; source snapshot 2026-05-24
+486290,TIGER 미국나스닥100타겟데일리커버드콜,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|나스닥|growth,draft candidate; metrics pending; source snapshot 2026-05-24
+446770,ACE 글로벌반도체TOP4 Plus,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,해외지수|growth,draft candidate; metrics pending; source snapshot 2026-05-24
