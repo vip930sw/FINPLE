@@ -76,6 +76,14 @@ function MetricTextValue({ value, formatDecimal }) {
   return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
 }
 
+function DividendYieldTextValue({ value, formatDecimal }) {
+  if (value === null || value === undefined || value === "") {
+    return <span className="assetTextValue numberTextValue pendingMetricText">확인 중</span>;
+  }
+
+  return <MetricTextValue value={value} formatDecimal={formatDecimal} />;
+}
+
 export default function AssetInputTable({
   assets,
   targetWeightDrafts,
@@ -219,7 +227,7 @@ export default function AssetInputTable({
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
               </tr>
             );
           })}

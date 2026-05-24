@@ -16,6 +16,11 @@ export function createAssetId(index = 0) {
       .toString(16)
       .slice(2)}`;
   }
+function normalizeNullableNumber(value, fallback = null) {
+    if (value === null || value === undefined || value === "") return fallback;
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : fallback;
+  }
 export function normalizeAsset(asset, index = 0) {
     const marketMetadata = createAssetMarketMetadata(asset);
     const ticker = normalizeTickerForMarket(asset.ticker || marketMetadata.providerSymbol, marketMetadata.market);
@@ -39,7 +44,7 @@ export function normalizeAsset(asset, index = 0) {
       cagr: Number(asset.cagr || 0),
       beta: Number(asset.beta || 0),
       mdd: Number(asset.mdd || 0),
-      dividendYield: Number(asset.dividendYield || 0),
+      dividendYield: normalizeNullableNumber(asset.dividendYield, null),
 
       priceMode: asset.priceMode || "manual",
       metricMode: asset.metricMode || "manual",

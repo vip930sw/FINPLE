@@ -144,6 +144,12 @@ function parseWeightValue(value) {
   return Math.max(0, numberValue);
 }
 
+function preserveNullableNumber(value, fallback = null) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
@@ -338,7 +344,7 @@ export default function usePortfolioSimulator() {
         cagr: tickerChanged ? 0 : currentAsset.cagr,
         beta: tickerChanged ? 0 : currentAsset.beta,
         mdd: tickerChanged ? 0 : currentAsset.mdd,
-        dividendYield: tickerChanged ? 0 : currentAsset.dividendYield,
+        dividendYield: tickerChanged ? null : currentAsset.dividendYield,
         priceMode: tickerChanged ? "manual" : currentAsset.priceMode,
         metricMode: tickerChanged ? "manual" : currentAsset.metricMode,
         dataSource: tickerChanged ? "manual" : currentAsset.dataSource,
@@ -363,7 +369,7 @@ export default function usePortfolioSimulator() {
     const ticker = normalizeTicker(candidate.ticker || currentAsset.ticker);
     const currentPrice = Number(currentAsset.price || 0);
     const currentQuantity = Number(currentAsset.quantity || 0);
-    return normalizeAsset({ ...currentAsset, ticker, name: candidate.koreanName || candidate.name || currentAsset.name || ticker, market: candidate.market || currentAsset.market || "US", currency: currentAsset.currency || "KRW", quantity: currentQuantity, price: currentPrice, cagr: candidate.expectedCagr ?? candidate.cagr ?? currentAsset.cagr ?? 0, beta: candidate.beta ?? currentAsset.beta ?? 0, mdd: candidate.mdd ?? currentAsset.mdd ?? 0, dividendYield: candidate.dividendYield ?? currentAsset.dividendYield ?? 0, priceMode: currentPrice > 0 ? currentAsset.priceMode : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: currentAsset.rawPrice || null, rawCurrency: candidate.currency || currentAsset.rawCurrency || null, exchangeRate: currentAsset.exchangeRate || null, lastUpdatedAt: currentAsset.lastUpdatedAt || null }, index);
+    return normalizeAsset({ ...currentAsset, ticker, name: candidate.koreanName || candidate.name || currentAsset.name || ticker, market: candidate.market || currentAsset.market || "US", currency: currentAsset.currency || "KRW", quantity: currentQuantity, price: currentPrice, cagr: candidate.expectedCagr ?? candidate.cagr ?? currentAsset.cagr ?? 0, beta: candidate.beta ?? currentAsset.beta ?? 0, mdd: candidate.mdd ?? currentAsset.mdd ?? 0, dividendYield: candidate.dividendYield ?? currentAsset.dividendYield ?? null, priceMode: currentPrice > 0 ? currentAsset.priceMode : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: currentAsset.rawPrice || null, rawCurrency: candidate.currency || currentAsset.rawCurrency || null, exchangeRate: currentAsset.exchangeRate || null, lastUpdatedAt: currentAsset.lastUpdatedAt || null }, index);
   }
 
   async function resolveTickerCandidate(index, options = {}) {
@@ -395,7 +401,7 @@ export default function usePortfolioSimulator() {
     const fetchedNameIsTickerOnly = normalizeTicker(fetchedName) === normalizedTicker;
     const currentNameIsTickerOnly = normalizeTicker(currentName) === normalizeTicker(currentAsset.ticker);
     const nextName = fetchedName && (!fetchedNameIsTickerOnly || !currentName || currentNameIsTickerOnly) ? fetchedName : currentName;
-    return normalizeAsset({ ...currentAsset, ticker: nextTicker, name: nextName, market: assetData.market || currentAsset.market, currency: assetData.currency || currentAsset.currency, price: assetData.price !== null && assetData.price !== undefined ? assetData.price : currentAsset.price, cagr: assetData.cagr !== null && assetData.cagr !== undefined ? assetData.cagr : currentAsset.cagr, beta: assetData.beta !== null && assetData.beta !== undefined ? assetData.beta : currentAsset.beta, mdd: assetData.mdd !== null && assetData.mdd !== undefined ? assetData.mdd : currentAsset.mdd, dividendYield: assetData.dividendYield !== null && assetData.dividendYield !== undefined ? assetData.dividendYield : currentAsset.dividendYield, priceMode: assetData.priceMode || currentAsset.priceMode, metricMode: assetData.metricMode || currentAsset.metricMode, dataSource: assetData.dataSource || currentAsset.dataSource, cacheMode: assetData.cacheMode || currentAsset.cacheMode || null, rawPrice: assetData.rawPrice !== null && assetData.rawPrice !== undefined ? assetData.rawPrice : currentAsset.rawPrice, rawCurrency: assetData.rawCurrency || currentAsset.rawCurrency || null, exchangeRate: assetData.exchangeRate !== null && assetData.exchangeRate !== undefined ? assetData.exchangeRate : currentAsset.exchangeRate, lastUpdatedAt: assetData.fetchedAt || currentAsset.lastUpdatedAt }, index);
+    return normalizeAsset({ ...currentAsset, ticker: nextTicker, name: nextName, market: assetData.market || currentAsset.market, currency: assetData.currency || currentAsset.currency, price: assetData.price !== null && assetData.price !== undefined ? assetData.price : currentAsset.price, cagr: assetData.cagr !== null && assetData.cagr !== undefined ? assetData.cagr : currentAsset.cagr, beta: assetData.beta !== null && assetData.beta !== undefined ? assetData.beta : currentAsset.beta, mdd: assetData.mdd !== null && assetData.mdd !== undefined ? assetData.mdd : currentAsset.mdd, dividendYield: preserveNullableNumber(assetData.dividendYield, currentAsset.dividendYield), priceMode: assetData.priceMode || currentAsset.priceMode, metricMode: assetData.metricMode || currentAsset.metricMode, dataSource: assetData.dataSource || currentAsset.dataSource, cacheMode: assetData.cacheMode || currentAsset.cacheMode || null, rawPrice: assetData.rawPrice !== null && assetData.rawPrice !== undefined ? assetData.rawPrice : currentAsset.rawPrice, rawCurrency: assetData.rawCurrency || currentAsset.rawCurrency || null, exchangeRate: assetData.exchangeRate !== null && assetData.exchangeRate !== undefined ? assetData.exchangeRate : currentAsset.exchangeRate, lastUpdatedAt: assetData.fetchedAt || currentAsset.lastUpdatedAt }, index);
   }
 
   async function fetchAssetData(index) {
@@ -482,7 +488,7 @@ export default function usePortfolioSimulator() {
 
   function createAssetFromTickerCandidate(candidate = {}, index = assets.length) {
     const market = candidate.market || "US";
-    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market, exchange: candidate.exchange, currency: candidate.currency || "KRW", quoteCurrency: candidate.quoteCurrency || (market === "KR" ? "KRW" : "USD"), assetType: candidate.assetType || candidate.type || "ETF", quantity: 0, price: 0, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: candidate.dividendYield ?? 0, priceMode: market === "KR" ? "manual" : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.quoteCurrency || candidate.currency || (market === "KR" ? "KRW" : "USD"), exchangeRate: null, lastUpdatedAt: null }, index);
+    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market, exchange: candidate.exchange, currency: candidate.currency || "KRW", quoteCurrency: candidate.quoteCurrency || (market === "KR" ? "KRW" : "USD"), assetType: candidate.assetType || candidate.type || "ETF", quantity: 0, price: 0, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: preserveNullableNumber(candidate.dividendYield, null), priceMode: market === "KR" ? "manual" : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.quoteCurrency || candidate.currency || (market === "KR" ? "KRW" : "USD"), exchangeRate: null, lastUpdatedAt: null }, index);
   }
 
   function addAssetFromTickerCandidate(candidate) {
