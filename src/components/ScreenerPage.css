@@ -306,3 +306,30 @@
     margin-top: 0;
   }
 }
+
+.tickerResultTitleBlock strong,
+.tickerResultTitleBlock span {
+  display: block;
+}
+
+.krTickerResultCard .tickerResultTitleBlock {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 3px;
+}
+
+.krTickerResultCard .tickerResultTitleBlock strong {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.krTickerResultCard .tickerResultTitleBlock span {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.7px;
+  word-break: keep-all;
+}
