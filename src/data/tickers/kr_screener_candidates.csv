@@ -1,4 +1,4 @@
-ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+﻿ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
 069500,KODEX 200,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,국내지수|코스피|core,draft candidate; metrics pending; source snapshot 2026-05-24
 360750,TIGER 미국S&P500,KR,KRW,KRW,ETF,core,medium,,,,,core|growth,true,해외지수|S&P500|core,draft candidate; metrics pending; source snapshot 2026-05-24
 396500,TIGER 반도체TOP10,KR,KRW,KRW,ETF,growth,medium-high,,,,,growth|core,false,ETF|growth,draft candidate; metrics pending; source snapshot 2026-05-24
