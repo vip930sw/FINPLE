@@ -1,41 +1,41 @@
-﻿ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
-VOO,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,true,대표지수|분산,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-SPY,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,true,대표지수|분산,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-IVV,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,true,대표지수|분산,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-VTI,미국 전체시장 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,true,대표지수|분산,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-QQQ,나스닥100 성장 ETF,US,KRW,USD,ETF,growth,medium-high,,,,,growth|core,false,성장|테크,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-SCHD,미국 배당성장 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|core,true,배당|현금흐름,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-VIG,미국 배당성장 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|core,true,배당|현금흐름,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-VYM,미국 고배당 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|core,true,배당|현금흐름,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-DGRO,미국 배당성장 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|core,true,배당|현금흐름,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-BND,미국 종합채권 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive|core,true,채권|방어,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-TLT,미국 장기채 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive|core,true,채권|방어,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-IEF,미국 중기채 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive|core,true,채권|방어,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-SHY,미국 단기채 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive|core,true,채권|방어,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-GLD,금 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive,true,원자재|헤지,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-IAU,금 ETF,US,KRW,USD,ETF,defensive,low-medium,,,,,defensive,true,원자재|헤지,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-VNQ,미국 리츠 ETF,US,KRW,USD,ETF,dividend,medium-high,,,,,dividend|defensive,false,리츠|인컴,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-XLV,미국 헬스케어 ETF,US,KRW,USD,ETF,defensive,medium,,,,,defensive|growth,false,섹터|헬스케어,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-XLF,미국 금융 섹터 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,false,섹터|금융,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-XLE,미국 에너지 섹터 ETF,US,KRW,USD,ETF,dividend,medium-high,,,,,dividend|core,false,섹터|에너지,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-XLK,미국 기술 섹터 ETF,US,KRW,USD,ETF,growth,medium-high,,,,,growth|core,false,섹터|테크,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-SOXX,미국 반도체 ETF,US,KRW,USD,ETF,growth,medium-high,,,,,growth|core,false,반도체|테크,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-SMH,미국 반도체 ETF,US,KRW,USD,ETF,growth,medium-high,,,,,growth|core,false,반도체|테크,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-IWM,미국 러셀2000 ETF,US,KRW,USD,ETF,core,medium-high,,,,,core|growth,false,대표지수|중소형,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-DIA,미국 다우존스 ETF,US,KRW,USD,ETF,core,medium,,,,,core|growth,true,대표지수|우량주,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-VT,전세계 주식 ETF,US,KRW,USD,ETF,core,medium,,,,,core,true,글로벌|분산,draft candidate; metrics pending; source Nasdaq ETF screener 2026-05-24
-NVDA,엔비디아,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-MSFT,마이크로소프트,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-AAPL,애플,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-AMZN,아마존,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-GOOGL,알파벳 A,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-META,메타 플랫폼스,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,성장|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-TSLA,테슬라,US,KRW,USD,stock,growth,high,,,,,growth|aggressive,false,성장|고변동,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-AVGO,브로드컴,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,반도체|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-LLY,일라이 릴리,US,KRW,USD,stock,defensive,medium,,,,,defensive|core,true,헬스케어|방어주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-JPM,JP모건체이스,US,KRW,USD,stock,core,medium,,,,,core|growth,false,금융|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-V,비자,US,KRW,USD,stock,core,medium,,,,,core|growth,false,금융|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-UNH,유나이티드헬스,US,KRW,USD,stock,defensive,medium,,,,,defensive|core,true,헬스케어|방어주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-XOM,엑슨모빌,US,KRW,USD,stock,dividend,medium-high,,,,,dividend|core,false,에너지|배당,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-MA,마스터카드,US,KRW,USD,stock,core,medium,,,,,core|growth,false,금융|대형주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
-COST,코스트코,US,KRW,USD,stock,defensive,medium,,,,,defensive|core,true,소비재|방어주,draft candidate; metrics pending; source Nasdaq stock screener 2026-05-24
+ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+VOO,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,13.66,1.000,-34.30,1.04,core|core,true,대표지수|S&P500|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+SPY,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,13.63,1.000,-34.10,0.99,core|core,true,대표지수|S&P500|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+IVV,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,13.63,1.002,-33.90,1.08,core|core,true,대표지수|S&P500|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+VTI,미국 전체시장 ETF,US,KRW,USD,ETF,core,medium,13.21,1.025,-35.00,1.03,core|core,true,대표지수|전체시장|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+QQQ,나스닥100 ETF,US,KRW,USD,ETF,growth,medium-high,20.81,1.121,-35.62,0.39,growth|core,false,대표지수|나스닥100|성장|테크,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+SCHD,미국 배당성장 대표 ETF,US,KRW,USD,ETF,dividend,medium,9.37,0.834,-33.37,3.21,dividend|core,true,배당|배당성장|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+VIG,미국 배당성장 ETF,US,KRW,USD,ETF,dividend,medium,11.09,0.841,-31.72,1.48,dividend|core,true,배당|배당성장|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+VYM,미국 고배당 ETF,US,KRW,USD,ETF,dividend,medium,8.57,0.830,-35.67,2.21,dividend|core,true,배당|고배당|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+DGRO,미국 배당성장 ETF,US,KRW,USD,ETF,dividend,medium,10.79,0.867,-35.10,1.97,dividend|core,true,배당|배당성장|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+BND,미국 종합채권 ETF,US,KRW,USD,ETF,defensive,low-medium,-1.23,0.146,-23.96,3.96,defensive|core,true,채권|종합채권|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+TLT,미국 장기채 ETF,US,KRW,USD,ETF,defensive,medium-high,-4.19,0.153,-51.76,4.60,defensive|core,false,채권|장기채|금리민감,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+IEF,미국 중기 국채 ETF,US,KRW,USD,ETF,defensive,low-medium,-1.53,0.075,-27.72,3.90,defensive|core,true,채권|중기채|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+SHY,미국 단기 국채 ETF,US,KRW,USD,ETF,defensive,low-medium,-0.32,0.011,-7.25,3.71,defensive|core,true,채권|단기채|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+GLD,금 ETF,US,KRW,USD,ETF,defensive,medium,13.45,0.115,-22.00,0.00,defensive|core,true,원자재|금|현물|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+IAU,금 저비용 ETF,US,KRW,USD,ETF,defensive,medium,13.62,0.114,-21.82,0.00,defensive|core,true,원자재|금|현물|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+VNQ,미국 리츠 ETF,US,KRW,USD,ETF,dividend,medium-high,1.54,0.912,-42.84,3.60,dividend|core,false,리츠|부동산|인컴,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+XLV,미국 헬스케어 섹터 ETF,US,KRW,USD,ETF,defensive,medium,7.85,0.669,-28.75,1.67,defensive|core,true,섹터|헬스케어|방어,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+XLF,미국 금융 섹터 ETF,US,KRW,USD,ETF,core,medium,10.52,1.041,-43.34,1.52,core|core,false,섹터|금융|경기민감,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+XLE,미국 에너지 섹터 ETF,US,KRW,USD,ETF,dividend,medium-high,6.02,1.064,-70.13,2.51,dividend|core,false,섹터|에너지|배당,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+XLK,미국 기술 섹터 ETF,US,KRW,USD,ETF,growth,medium-high,23.59,1.177,-34.02,0.42,growth|core,false,섹터|테크|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+SOXX,미국 반도체 ETF,US,KRW,USD,ETF,growth,high,33.04,1.487,-46.24,0.31,growth|core,false,반도체|테크|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+SMH,미국 반도체 ETF,US,KRW,USD,ETF,growth,high,35.39,1.452,-45.30,0.19,growth|core,false,반도체|테크|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+IWM,러셀2000 ETF,US,KRW,USD,ETF,growth,medium-high,9.71,1.172,-42.26,0.89,growth|core,false,중소형|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+DIA,다우존스30 ETF,US,KRW,USD,ETF,core,medium,11.09,0.922,-37.06,1.38,core|core,true,대표지수|다우존스|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+VT,글로벌 전체시장 ETF,US,KRW,USD,ETF,core,medium,10.36,0.937,-34.50,1.62,core|core,true,글로벌|대표지수|핵심,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+NVDA,엔비디아,US,KRW,USD,stock,growth,high,69.05,1.816,-66.36,0.02,growth,false,반도체|AI|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+MSFT,마이크로소프트,US,KRW,USD,stock,growth,medium,23.31,0.939,-37.56,0.85,growth,false,테크|클라우드|AI|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+AAPL,애플,US,KRW,USD,stock,growth,medium-high,28.88,1.133,-38.73,0.34,growth,false,테크|빅테크|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+AMZN,아마존,US,KRW,USD,stock,growth,medium-high,22.44,1.298,-56.15,0.00,growth,false,이커머스|클라우드|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+GOOGL,알파벳 A,US,KRW,USD,stock,growth,medium-high,26.47,1.140,-44.32,0.22,growth,false,빅테크|광고|AI|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+META,메타 플랫폼스,US,KRW,USD,stock,growth,medium-high,17.90,1.256,-76.74,0.34,growth,false,빅테크|소셜|AI|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+TSLA,테슬라,US,KRW,USD,stock,aggressive,very-high,40.22,1.864,-73.63,0.00,aggressive,false,전기차|성장|고변동,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+AVGO,브로드컴,US,KRW,USD,stock,growth,medium-high,39.25,1.170,-48.79,0.60,growth,false,반도체|인프라|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+LLY,일라이 릴리,US,KRW,USD,stock,growth,medium-high,30.41,0.356,-34.83,0.61,growth,false,헬스케어|제약|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+JPM,JP모건체이스,US,KRW,USD,stock,dividend,medium,16.87,1.096,-43.99,1.93,dividend,true,금융|은행|배당,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+V,비자,US,KRW,USD,stock,core,medium,15.29,0.880,-36.36,0.79,core,false,결제|금융|우량주,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+UNH,유나이티드헬스,US,KRW,USD,stock,defensive,medium,11.36,0.712,-61.97,2.28,defensive,true,헬스케어|방어주|우량주,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+XOM,엑슨모빌,US,KRW,USD,stock,dividend,medium-high,5.62,0.741,-66.94,2.63,dividend,false,에너지|배당,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+MA,마스터카드,US,KRW,USD,stock,core,medium,17.86,0.956,-41.00,0.65,core,false,결제|금융|우량주,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
+COST,코스트코,US,KRW,USD,stock,defensive,medium,21.86,0.774,-31.51,0.52,defensive,true,필수소비재|방어|성장,metrics close basis 2026-05-24; dividend from yfinance; validate before app import
