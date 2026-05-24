@@ -29,12 +29,12 @@
 }
 
 .startHubGrid {
-  max-width: 1120px;
+  max-width: 1220px;
   margin: 0 auto;
   padding: 28px 32px 72px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .startHubCard {
@@ -78,10 +78,10 @@
 }
 
 .startHubCard h2 {
-  min-height: 56px;
+  min-height: 64px;
   margin: 0 0 12px;
   color: #0f172a;
-  font-size: clamp(20px, 1.8vw, 23px);
+  font-size: clamp(19px, 1.55vw, 22px);
   line-height: 1.22;
   letter-spacing: -1px;
   word-break: keep-all;
@@ -96,7 +96,7 @@
 }
 
 .startHubCard button {
-  margin-top: 30px;
+  margin-top: auto;
   width: 100%;
   border: none;
   border-radius: 999px;
@@ -106,8 +106,38 @@
   font-weight: 800;
 }
 
-@media (max-width: 980px) {
+.krSimulatorBetaGrid {
+  max-width: 920px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-bottom: 28px;
+}
+
+.krSimulatorBetaActions {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 32px 72px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.krSimulatorBetaActions .primaryButton,
+.krSimulatorBetaActions .secondaryButton {
+  border-radius: 999px;
+  padding: 14px 22px;
+  font-weight: 900;
+}
+
+@media (max-width: 1160px) {
   .startHubGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .startHubGrid,
+  .krSimulatorBetaGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -121,7 +151,8 @@
     letter-spacing: -2px;
   }
 
-  .startHubGrid {
+  .startHubGrid,
+  .krSimulatorBetaGrid {
     grid-template-columns: 1fr;
     padding: 20px 20px 56px;
   }
@@ -132,5 +163,14 @@
 
   .startHubCard h2 {
     min-height: auto;
+  }
+
+  .krSimulatorBetaActions {
+    padding: 0 20px 56px;
+  }
+
+  .krSimulatorBetaActions .primaryButton,
+  .krSimulatorBetaActions .secondaryButton {
+    width: 100%;
   }
 }
