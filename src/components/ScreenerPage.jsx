@@ -48,11 +48,11 @@ const TYPE_OPTIONS = [
   { value: "stock", label: "개별주" },
 ];
 const STYLE_OPTIONS = [
-  { key: "all", label: "전체 스타일" },
+  { key: "all", label: "전체 투자 스타일" },
   { key: "beginner", label: "초보자" },
-  { key: "dividend", label: "배당" },
-  { key: "growth", label: "성장" },
-  { key: "defensive", label: "방어" },
+  { key: "dividend", label: "배당형" },
+  { key: "growth", label: "성장형" },
+  { key: "defensive", label: "방어형" },
   { key: "aggressive", label: "공격형" },
   { key: "leveraged_inverse", label: "레버리지/인버스" },
   { key: "bond", label: "채권" },
@@ -70,9 +70,8 @@ function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value ===
 function getTagLabel(value) { return TAG_LABEL_MAP[value] || value; }
 function getRiskLabel(value) { return RISK_OPTIONS.find((item) => item.value === value)?.label || value || "-"; }
 function getTypeLabel(type) { return TYPE_OPTIONS.find((item) => item.value === type)?.label || "전체 자산군"; }
-function getStyleLabel(style) { return STYLE_OPTIONS.find((item) => item.key === style)?.label || "전체 스타일"; }
+function getStyleLabel(style) { return STYLE_OPTIONS.find((item) => item.key === style)?.label || "전체 투자 스타일"; }
 function getMarketLabel(market) { return MARKET_OPTIONS.find((item) => item.key === market)?.label || "전체 시장"; }
-function getMarketDescription(market) { return MARKET_OPTIONS.find((item) => item.key === market)?.description || "미국·한국 후보를 함께 봅니다."; }
 function getCandidateTags(item = {}) {
   return item.tags || [];
 }
@@ -165,19 +164,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   );
 }
 
-function MarketSelect({ activeMarket, onChange }) {
-  return (
-    <label className="screenerMarketSelectLabel">
-      <span>시장</span>
-      <select value={activeMarket} onChange={(event) => onChange(event.target.value)}>
-        {MARKET_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-      </select>
-      <small>{getMarketDescription(activeMarket)}</small>
-    </label>
-  );
-}
-
-function CandidateScreenerPanel({ market, candidates, assets, addAssetFromTickerCandidate }) {
+function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, addAssetFromTickerCandidate }) {
   const [query, setQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState("all");
   const [riskLevel, setRiskLevel] = useState("all");
@@ -186,6 +173,7 @@ function CandidateScreenerPanel({ market, candidates, assets, addAssetFromTicker
   const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
   const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type }), [candidates, query, styleFilter, riskLevel, type]);
 
+  function applyMarket(value) { onMarketChange(value); }
   function applyStyle(value) { setStyleFilter(value); setStatusText(`${getStyleLabel(value)} 후보를 표시합니다.`); }
   function applyTypeFilter(value) { setType(value); setStatusText(`${getTypeLabel(value)} 기준으로 후보를 표시합니다.`); }
   function handleAdd(item) {
@@ -197,9 +185,10 @@ function CandidateScreenerPanel({ market, candidates, assets, addAssetFromTicker
     <section className="assetFinderPanel">
       <div className="assetFinderHeader"><div><p className="sectionLabel">Asset Finder</p><h4>{getMarketLabel(market)} ETF / 개별주 후보 탐색</h4><p>ETF는 지수·섹터를 묶어 노출하고, 개별주는 특정 기업 비중을 직접 확대합니다. 포트폴리오 방향이 달라지므로 시장과 자산군을 먼저 구분해서 선택하세요.</p></div><div className="assetFinderStatusGroup"><span className="tickerMasterCount">{getMarketLabel(market)} CSV 후보 {candidates.length}개</span><span className="assetFinderStatus">{statusText}</span></div></div>
       <div className="screenerFilterGrid" aria-label="스크리너 필터">
-        <label className="screenerFilterSelectLabel"><span>1차 자산군</span><select value={type} onChange={(event) => applyTypeFilter(event.target.value)}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label className="screenerFilterSelectLabel"><span>2차 스타일</span><select value={styleFilter} onChange={(event) => applyStyle(event.target.value)}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
-        <label className="screenerFilterSelectLabel"><span>3차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>1차 시장</span><select value={market} onChange={(event) => applyMarket(event.target.value)}>{MARKET_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>2차 자산군</span><select value={type} onChange={(event) => applyTypeFilter(event.target.value)}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>3차 투자 스타일</span><select value={styleFilter} onChange={(event) => applyStyle(event.target.value)}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>4차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       </div>
       <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, ETF, 개별주, 배당, 나스닥, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
       <div className="assetFinderResultToolbar"><span>{results.length > 0 ? `${results.length}개 후보 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div>
@@ -217,7 +206,7 @@ function ScreenerPage({ onBack, onOpenSimulator }) {
     <main className="page screenerPage">
       <header className="header"><button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button></header>
       <section className="screenerHero"><p className="badge">Asset Screener</p><h1>자산 후보를 먼저 탐색하세요.</h1><p>ETF와 개별주를 구분해 후보를 살펴보고, 필요한 항목만 현재 포트폴리오에 담은 뒤 시뮬레이터에서 비중을 정리할 수 있습니다.</p><div className="screenerSummaryGrid"><article><span>현재 추가 대상</span><strong>{activePortfolio?.name || "포트폴리오"}</strong></article><article><span>현재 자산</span><strong>{activeAssetCount}개</strong></article></div></section>
-      <section className="section calculatorSection screenerStandaloneSection"><div className="tabSectionHeader"><p className="sectionLabel">Asset Screener</p><h2>후보 자산을 탐색하고 포트폴리오에 담습니다.</h2><p>QQQ 같은 ETF와 NVDA 같은 개별주는 같은 기술주 노출이라도 분산도와 집중도가 다릅니다. 먼저 시장과 자산 유형을 구분해 확인하세요.</p></div><MarketSelect activeMarket={activeMarket} onChange={setActiveMarket} /><CandidateScreenerPanel key={activeMarket} market={activeMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} /></section>
+      <section className="section calculatorSection screenerStandaloneSection"><div className="tabSectionHeader"><p className="sectionLabel">Asset Screener</p><h2>후보 자산을 탐색하고 포트폴리오에 담습니다.</h2><p>QQQ 같은 ETF와 NVDA 같은 개별주는 같은 기술주 노출이라도 분산도와 집중도가 다릅니다. 먼저 시장과 자산 유형을 구분해 확인하세요.</p></div><CandidateScreenerPanel key={activeMarket} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} /></section>
       <section className="screenerNextStep" role="note"><div><strong>다음 단계</strong><p>{activeMarket === "KR" ? "한국 Beta 후보군은 표시 단계입니다. 포트폴리오 추가와 계산 로직은 다음 단계에서 연결합니다." : "후보 자산을 담았다면 시뮬레이터에서 ETF 비중, 개별주 비중, 집중도를 함께 점검하세요."}</p></div><button type="button" onClick={onOpenSimulator}>{activeMarket === "KR" ? "미국 시뮬레이터 열기" : "시뮬레이터에서 비중 정리"}</button></section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />
       <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="스크리너 상단으로 이동">↑ TOP</button>

@@ -76,15 +76,19 @@
   word-break: keep-all;
 }
 
-.screenerMarketSelectLabel {
+.screenerFilterGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.screenerFilterSelectLabel {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 0 24px;
-  max-width: 360px;
 }
 
-.screenerMarketSelectLabel span,
 .screenerFilterSelectLabel span {
   color: #2563eb;
   font-size: 12px;
@@ -93,7 +97,6 @@
   text-transform: uppercase;
 }
 
-.screenerMarketSelectLabel select,
 .screenerFilterSelectLabel select {
   width: 100%;
   border: 1px solid #dbe5f3;
@@ -104,26 +107,6 @@
   font-size: 15px;
   font-weight: 800;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-}
-
-.screenerMarketSelectLabel small {
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
-  word-break: keep-all;
-}
-
-.screenerFilterGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 18px;
-}
-
-.screenerFilterSelectLabel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .screenerPage .tickerSearchForm {
@@ -144,7 +127,12 @@
   flex: 0 0 156px;
   min-width: 156px;
   margin-left: auto;
-  border-radius: 16px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  line-height: 1;
 }
 
 .screenerStatusBox {
@@ -289,6 +277,12 @@
   font-weight: 900;
 }
 
+@media (max-width: 980px) {
+  .screenerFilterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 780px) {
   .screenerSummaryGrid,
   .screenerFilterGrid,
@@ -297,10 +291,6 @@
   }
 
   .screenerSummaryGrid {
-    max-width: none;
-  }
-
-  .screenerMarketSelectLabel {
     max-width: none;
   }
 
