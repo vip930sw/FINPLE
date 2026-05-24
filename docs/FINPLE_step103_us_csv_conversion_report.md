@@ -32,7 +32,7 @@ src/data/tickers/us_csv_quality_report.json
 | 미국 ETF 원본 행 | 4,553 |
 | 미국 통합 티커 마스터 가능 행 | 11,694 |
 | 현재가 snapshot 가능 행 | 11,694 |
-| 미국 스크리너 후보 초안 | 60 |
+| 미국 스크리너 후보 초안 | 40 |
 
 ## 5. 이번 PR 반영 기준
 
