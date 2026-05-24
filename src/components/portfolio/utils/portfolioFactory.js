@@ -6,6 +6,7 @@ import {
   PORTFOLIO_LIST_STORAGE_KEY,
   GLOBAL_SETTINGS_STORAGE_KEY,
 } from "../constants";
+import { createAssetMarketMetadata, normalizeTickerForMarket } from "../config/marketConfig";
 
 export function createId() {
     return `portfolio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -16,13 +17,22 @@ export function createAssetId(index = 0) {
       .slice(2)}`;
   }
 export function normalizeAsset(asset, index = 0) {
+    const marketMetadata = createAssetMarketMetadata(asset);
+    const ticker = normalizeTickerForMarket(asset.ticker || marketMetadata.providerSymbol, marketMetadata.market);
+
     return {
       id: asset.id || createAssetId(index),
-      ticker: asset.ticker || "",
+      ticker,
+      displayTicker: asset.displayTicker || ticker,
+      providerSymbol: marketMetadata.providerSymbol || ticker,
       name: asset.name || "",
 
-      market: asset.market || "US",
-      currency: asset.currency || "KRW",
+      market: marketMetadata.market,
+      exchange: marketMetadata.exchange,
+      currency: marketMetadata.currency,
+      quoteCurrency: marketMetadata.quoteCurrency,
+      displayCurrency: marketMetadata.displayCurrency,
+      assetType: marketMetadata.assetType,
 
       quantity: Number(asset.quantity || 0),
       price: Number(asset.price || 0),
@@ -39,7 +49,7 @@ export function normalizeAsset(asset, index = 0) {
         asset.rawPrice === null || asset.rawPrice === undefined
           ? null
           : Number(asset.rawPrice),
-      rawCurrency: asset.rawCurrency || null,
+      rawCurrency: marketMetadata.rawCurrency || null,
       exchangeRate:
         asset.exchangeRate === null || asset.exchangeRate === undefined
           ? null
