@@ -4,6 +4,11 @@ import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import { normalizeTicker } from "./portfolio/services/assetDataService";
 import "./ScreenerPage.css";
 
+const MARKET_TABS = [
+  { key: "US", label: "미국", status: "운영 중", description: "미국주식·미국 ETF 후보" },
+  { key: "KR", label: "한국 Beta", status: "준비 중", description: "한국주식·국내 ETF 후보" },
+];
+
 const SCREENER_CANDIDATES = [
   { ticker: "VOO", koreanName: "미국 S&P500 대표 ETF", type: "ETF", strategy: "core", riskLevel: "medium", expectedCagr: 7.5, beta: 1.0, mdd: -34, dividendYield: 1.4, goals: ["core", "growth"], beginnerFit: true, tags: ["미국", "대표지수", "분산"] },
   { ticker: "QQQ", koreanName: "나스닥100 성장 ETF", type: "ETF", strategy: "growth", riskLevel: "medium-high", expectedCagr: 9.5, beta: 1.18, mdd: -35, dividendYield: 0.7, goals: ["core", "growth"], beginnerFit: true, tags: ["성장", "테크", "나스닥"] },
@@ -91,6 +96,53 @@ function ScreenerCandidateCard({ item, isAdded, onAdd }) {
   );
 }
 
+function MarketTabs({ activeMarket, onChange }) {
+  return (
+    <div className="screenerMarketTabs" role="tablist" aria-label="자산 스크리너 시장 선택">
+      {MARKET_TABS.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={activeMarket === tab.key}
+          className={activeMarket === tab.key ? "active" : ""}
+          onClick={() => onChange(tab.key)}
+        >
+          <strong>{tab.label}</strong>
+          <span>{tab.status}</span>
+          <small>{tab.description}</small>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function KoreanScreenerBetaPanel() {
+  return (
+    <section className="assetFinderPanel krScreenerBetaPanel">
+      <div className="assetFinderHeader">
+        <div>
+          <p className="sectionLabel">Korea Beta</p>
+          <h4>한국주식·국내 ETF 스크리너를 준비 중입니다.</h4>
+          <p>한국 탭은 CSV/API 연결 전 단계입니다. 종목 마스터와 후보군 품질을 먼저 검증한 뒤 실제 검색과 포트폴리오 추가 기능을 연결합니다.</p>
+        </div>
+        <div className="assetFinderStatusGroup"><span className="tickerMasterCount">KR Beta</span><span className="assetFinderStatus">CSV / API 준비 전</span></div>
+      </div>
+
+      <div className="krScreenerBetaGrid">
+        <article><span>1</span><strong>티커 마스터</strong><p>005930, 069500처럼 6자리 KRX 코드와 종목명을 문자열 기준으로 관리합니다.</p></article>
+        <article><span>2</span><strong>후보군 CSV</strong><p>국내 대형주, 주요 ETF, 배당 ETF, 채권 ETF, 해외지수 추종 ETF 후보를 분리합니다.</p></article>
+        <article><span>3</span><strong>시세/API 검증</strong><p>현재가, 장기수익률, 배당·분배금, 수정주가 확보 가능성을 검토합니다.</p></article>
+      </div>
+
+      <div className="krScreenerBetaNotice" role="note">
+        <strong>다음 단계에서 필요한 파일</strong>
+        <p><code>kr_ticker_master.csv</code>, <code>kr_screener_candidates.csv</code>가 필요해지는 단계에서 별도로 요청드리겠습니다.</p>
+      </div>
+    </section>
+  );
+}
+
 function LocalScreenerPanel({ assets, addAssetFromTickerCandidate }) {
   const [query, setQuery] = useState("");
   const [goal, setGoal] = useState("core");
@@ -109,8 +161,8 @@ function LocalScreenerPanel({ assets, addAssetFromTickerCandidate }) {
   return (
     <section className="assetFinderPanel">
       <div className="assetFinderHeader">
-        <div><p className="sectionLabel">Asset Finder</p><h4>티커 검색 / 초보자용 스크리닝</h4><p>현재는 베타 안정성을 위해 기본 후보 데이터로 먼저 표시합니다.</p></div>
-        <div className="assetFinderStatusGroup"><span className="tickerMasterCount">기본 후보 {SCREENER_CANDIDATES.length}개</span><span className="assetFinderStatus">{statusText}</span></div>
+        <div><p className="sectionLabel">US Asset Finder</p><h4>미국 티커 검색 / 초보자용 스크리닝</h4><p>현재는 베타 안정성을 위해 미국주식·미국 ETF 기본 후보 데이터로 먼저 표시합니다.</p></div>
+        <div className="assetFinderStatusGroup"><span className="tickerMasterCount">미국 후보 {SCREENER_CANDIDATES.length}개</span><span className="assetFinderStatus">{statusText}</span></div>
       </div>
 
       <div className="assetFinderPresetBar" aria-label="추천 프리셋">
@@ -144,6 +196,7 @@ function LocalScreenerPanel({ assets, addAssetFromTickerCandidate }) {
 
 function ScreenerPage({ onBack, onOpenSimulator }) {
   const { portfolioList, activePortfolioId, activePortfolio, assets, assetLookupSummary, recentlyAddedAssetId, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, formatNumber, isEmptyAssetRow } = usePortfolioSimulator();
+  const [activeMarket, setActiveMarket] = useState("US");
   const activeAssetCount = assets.filter((asset) => !isEmptyAssetRow(asset)).length;
   const activePortfolioValue = assets.reduce((sum, asset) => sum + Number(asset.price || 0) * Number(asset.quantity || 0), 0);
 
@@ -153,8 +206,8 @@ function ScreenerPage({ onBack, onOpenSimulator }) {
         <button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button>
       </header>
       <section className="screenerHero"><p className="badge">Asset Screener</p><h1>자산 후보를 먼저 탐색하세요.</h1><p>ETF와 자산 후보를 먼저 찾아보고, 필요한 항목만 현재 포트폴리오에 담은 뒤 시뮬레이터에서 비중을 정리할 수 있습니다.</p><div className="screenerSummaryGrid"><article><span>현재 추가 대상</span><strong>{activePortfolio?.name || "포트폴리오"}</strong></article><article><span>현재 자산</span><strong>{activeAssetCount}개</strong></article><article><span>평가금액</span><strong>{formatNumber(activePortfolioValue)}원</strong></article></div></section>
-      <section className="section calculatorSection screenerStandaloneSection"><div className="tabSectionHeader"><p className="sectionLabel">Asset Screener</p><h2>후보 자산을 탐색하고 포트폴리오에 담습니다.</h2><p>추가한 자산은 현재 선택된 포트폴리오에 저장됩니다. 현재가, CAGR, BETA, MDD, 배당률은 조회값을 기준으로 사용하고 비중은 시뮬레이터에서 조정합니다.</p></div><div className="screenerStatusBox"><strong>최근 상태</strong><p>{assetLookupSummary}</p>{recentlyAddedAssetId ? <span>방금 추가한 후보 자산이 있습니다.</span> : null}</div><LocalScreenerPanel assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} /></section>
-      <section className="screenerNextStep" role="note"><div><strong>다음 단계</strong><p>후보 자산을 담았다면 시뮬레이터에서 비중과 투자 조건을 입력하고 장기 성과를 확인하세요.</p></div><button type="button" onClick={onOpenSimulator}>시뮬레이터에서 비중 정리</button></section>
+      <section className="section calculatorSection screenerStandaloneSection"><div className="tabSectionHeader"><p className="sectionLabel">Asset Screener</p><h2>후보 자산을 탐색하고 포트폴리오에 담습니다.</h2><p>추가한 자산은 현재 선택된 포트폴리오에 저장됩니다. 현재가, CAGR, BETA, MDD, 배당률은 조회값을 기준으로 사용하고 비중은 시뮬레이터에서 조정합니다.</p></div><MarketTabs activeMarket={activeMarket} onChange={setActiveMarket} />{activeMarket === "US" ? <><div className="screenerStatusBox"><strong>최근 상태</strong><p>{assetLookupSummary}</p>{recentlyAddedAssetId ? <span>방금 추가한 후보 자산이 있습니다.</span> : null}</div><LocalScreenerPanel assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} /></> : <KoreanScreenerBetaPanel />}</section>
+      <section className="screenerNextStep" role="note"><div><strong>다음 단계</strong><p>{activeMarket === "US" ? "후보 자산을 담았다면 시뮬레이터에서 비중과 투자 조건을 입력하고 장기 성과를 확인하세요." : "한국 Beta 후보군은 CSV/API 검증 후 실제 포트폴리오 추가 기능으로 연결할 예정입니다."}</p></div><button type="button" onClick={onOpenSimulator}>{activeMarket === "US" ? "시뮬레이터에서 비중 정리" : "미국 시뮬레이터 열기"}</button></section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />
       <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="스크리너 상단으로 이동">↑ TOP</button>
     </main>

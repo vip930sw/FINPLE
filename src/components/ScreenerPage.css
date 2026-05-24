@@ -70,6 +70,55 @@
   margin-top: 20px;
 }
 
+.screenerMarketTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.screenerMarketTabs button {
+  border: 1px solid #dbe5f3;
+  border-radius: 22px;
+  padding: 18px 20px;
+  background: #ffffff;
+  text-align: left;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+}
+
+.screenerMarketTabs button.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.screenerMarketTabs strong,
+.screenerMarketTabs small {
+  display: block;
+}
+
+.screenerMarketTabs strong {
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.screenerMarketTabs span {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e0ecff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.screenerMarketTabs small {
+  color: #64748b;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
 .screenerStatusBox {
   margin: 0 0 24px;
   padding: 18px 20px;
@@ -97,6 +146,63 @@
   border-radius: 999px;
   background: #ffffff;
   color: #2563eb;
+  font-weight: 800;
+}
+
+.krScreenerBetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.krScreenerBetaGrid article,
+.krScreenerBetaNotice {
+  padding: 20px;
+  border: 1px solid #dbe5f3;
+  border-radius: 22px;
+  background: #f8fafc;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.krScreenerBetaGrid span {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.krScreenerBetaGrid strong,
+.krScreenerBetaNotice strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.krScreenerBetaGrid p,
+.krScreenerBetaNotice p {
+  margin: 0;
+  color: #64748b;
+}
+
+.krScreenerBetaNotice {
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.krScreenerBetaNotice code {
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e40af;
   font-weight: 800;
 }
 
@@ -138,7 +244,9 @@
 }
 
 @media (max-width: 780px) {
-  .screenerSummaryGrid {
+  .screenerSummaryGrid,
+  .screenerMarketTabs,
+  .krScreenerBetaGrid {
     grid-template-columns: 1fr;
   }
 
