@@ -102,8 +102,17 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
     <article className={cardClassName}>
       <div className="tickerResultMain">
         <div className="tickerResultTitleBlock">
-          <strong>{item.ticker}</strong>
-          <span title={item.koreanName}>{item.koreanName}</span>
+          {isKrCandidate ? (
+            <>
+              <span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span>
+              <strong className="tickerResultTicker">{item.ticker}</strong>
+            </>
+          ) : (
+            <>
+              <strong className="tickerResultTicker">{item.ticker}</strong>
+              <span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span>
+            </>
+          )}
         </div>
         <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
       </div>
