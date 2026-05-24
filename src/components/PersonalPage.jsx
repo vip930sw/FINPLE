@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import PortfolioSimulator from "./PortfolioSimulator";
 import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
+import InvestmentMbtiMarketChoiceBridge from "./InvestmentMbtiMarketChoiceBridge";
 import ScreenerPage from "./ScreenerPage";
 import KoreanPortfolioSimulatorBetaPage from "./KoreanPortfolioSimulatorBetaPage";
 
@@ -125,17 +126,20 @@ function PersonalPage({ onBack }) {
 
   if (personalView === "investment-mbti") {
     return (
-      <InvestmentMbtiPage
-        onBack={onBack}
-        onNavigate={(nextTarget) => {
-          if (nextTarget === "personal") {
-            openUsSimulator("settings");
-            return;
-          }
+      <>
+        <InvestmentMbtiPage
+          onBack={onBack}
+          onNavigate={(nextTarget) => {
+            if (nextTarget === "personal") {
+              openUsSimulator("settings");
+              return;
+            }
 
-          handleHubNavigate(nextTarget);
-        }}
-      />
+            handleHubNavigate(nextTarget);
+          }}
+        />
+        <InvestmentMbtiMarketChoiceBridge onOpenKrSimulator={openKrSimulator} />
+      </>
     );
   }
 
