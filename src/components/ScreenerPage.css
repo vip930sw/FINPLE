@@ -312,20 +312,14 @@
   display: block;
 }
 
-.krTickerResultCard .tickerResultTitleBlock {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 3px;
-}
-
-.krTickerResultCard .tickerResultTitleBlock strong {
+.krTickerResultCard .tickerResultTicker {
   color: #64748b;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
 
-.krTickerResultCard .tickerResultTitleBlock span {
+.krTickerResultCard .tickerResultName {
   color: #0f172a;
   font-size: 20px;
   font-weight: 900;
