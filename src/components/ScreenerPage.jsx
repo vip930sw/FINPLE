@@ -31,6 +31,16 @@ const RISK_OPTIONS = [
   { value: "high", label: "높음" },
   { value: "very-high", label: "매우 높음" },
 ];
+const TAG_LABEL_MAP = {
+  core: "핵심",
+  growth: "성장",
+  dividend: "배당",
+  defensive: "방어",
+  aggressive: "공격형",
+  cyclical: "경기민감",
+  stock: "개별주",
+  ETF: "ETF",
+};
 const TYPE_OPTIONS = [
   { value: "all", label: "전체", description: "ETF와 개별주를 함께 봅니다." },
   { value: "ETF", label: "ETF", description: "지수·섹터·채권 등 분산형 자산 위주입니다." },
@@ -50,7 +60,8 @@ function formatPercentValue(value) {
   if (!Number.isFinite(numberValue)) return "-";
   return `${numberValue.toFixed(2)}%`;
 }
-function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value === value)?.label || value || "-"; }
+function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value === value)?.label || TAG_LABEL_MAP[value] || value || "-"; }
+function getTagLabel(value) { return TAG_LABEL_MAP[value] || value; }
 function getRiskLabel(value) { return RISK_OPTIONS.find((item) => item.value === value)?.label || value || "-"; }
 function getTypeLabel(type) { return type === "stock" ? "개별주" : type === "ETF" ? "ETF" : "전체"; }
 function inferExposureType(item = {}) {
@@ -86,7 +97,7 @@ function getCandidateDescription(item) {
 function filterCandidates({ candidates, query, goal, riskLevel, type, beginnerOnly }) {
   const normalizedQuery = normalizeTicker(query).toLowerCase();
   return candidates.filter((item) => {
-    const searchable = [item.ticker, item.koreanName, item.type, getTypeLabel(item.type), item.strategy, getGoalLabel(item.strategy), getExposureLabel(item), ...(item.tags || [])].join(" ").toLowerCase();
+    const searchable = [item.ticker, item.koreanName, item.type, getTypeLabel(item.type), item.strategy, getGoalLabel(item.strategy), getExposureLabel(item), ...(item.tags || []), ...(item.tags || []).map(getTagLabel)].join(" ").toLowerCase();
     const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
     const matchesGoal = goal === "all" || item.goals?.includes(goal) || item.strategy === goal;
     const matchesRisk = riskLevel === "all" || item.riskLevel === riskLevel;
@@ -114,7 +125,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       <div className="tickerResultMetaGrid compact">
         <span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr)}</span><span>배당 {formatPercentValue(item.dividendYield)}</span><span>MDD {formatPercentValue(item.mdd)}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span>
       </div>
-      <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{tag}</span>)}</div>
+      <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
 }
