@@ -1,0 +1,6 @@
+ticker,providerSymbol,nameKr,nameEn,market,exchange,currency,quoteCurrency,assetType,sector,isEtf,isActive,notes
+005930,005930,삼성전자,Samsung Electronics,KR,KRX,KRW,KRW,stock,반도체,false,true,KOSPI large cap
+000660,000660,SK하이닉스,SK hynix,KR,KRX,KRW,KRW,stock,반도체,false,true,KOSPI large cap
+035420,035420,NAVER,NAVER,KR,KRX,KRW,KRW,stock,인터넷,false,true,KOSPI growth
+069500,069500,KODEX 200,KODEX 200,KR,KRX,KRW,KRW,ETF,국내지수,true,true,KOSPI200 ETF
+360750,360750,TIGER 미국S&P500,TIGER US S&P500,KR,KRX,KRW,KRW,ETF,해외지수,true,true,US index ETF listed in Korea

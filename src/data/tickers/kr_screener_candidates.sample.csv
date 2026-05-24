@@ -1,0 +1,6 @@
+ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+069500,KODEX 200,KR,KRW,KRW,ETF,core,medium,6.0,1.0,-35,1.5,core|growth,true,국내지수|코스피200|분산,KOSPI200 core ETF
+360750,TIGER 미국S&P500,KR,KRW,KRW,ETF,core,medium,7.0,1.0,-34,1.3,core|growth,true,미국지수|S&P500|환노출,US index ETF listed in Korea
+005930,삼성전자,KR,KRW,KRW,stock,growth,medium-high,7.0,1.1,-40,2.0,growth|core,false,반도체|대형주|코스피,KOSPI large cap
+000660,SK하이닉스,KR,KRW,KRW,stock,growth,high,8.0,1.3,-50,1.0,growth,false,반도체|AI|고변동,KOSPI semiconductor
+102110,TIGER 200,KR,KRW,KRW,ETF,core,medium,6.0,1.0,-35,1.4,core|growth,true,국내지수|코스피200|분산,KOSPI200 ETF sample

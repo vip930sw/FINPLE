@@ -1,0 +1,6 @@
+ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+VOO,미국 S&P500 대표 ETF,US,KRW,USD,ETF,core,medium,7.5,1.0,-34,1.4,core|growth,true,미국|대표지수|분산,beginner core
+QQQ,나스닥100 성장 ETF,US,KRW,USD,ETF,growth,medium-high,9.5,1.18,-35,0.7,core|growth,true,성장|테크|나스닥,growth core
+SCHD,배당성장 대표 ETF,US,KRW,USD,ETF,dividend,medium,7.0,0.85,-25,3.5,core|dividend,true,배당|가치|현금흐름,dividend
+BND,미국 종합채권 ETF,US,KRW,USD,ETF,defensive,low-medium,3.5,0.15,-13,3.2,defensive|core,true,채권|방어|분산,defensive core
+NVDA,엔비디아,US,KRW,USD,stock,growth,very-high,12.0,1.8,-65,0.1,growth|aggressive,false,AI|반도체|고성장,high risk stock
