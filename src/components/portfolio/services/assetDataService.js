@@ -84,6 +84,15 @@ function isRateLimitMessage(message = "") {
   return /Alpha Vantage|호출 제한|rate limit|premium/i.test(String(message));
 }
 
+function isKrTickerLike(ticker = "", market = "US") {
+  const normalizedTicker = String(ticker || "").trim().toUpperCase();
+  return market === "KR" || /^\d{6}[A-Z]?$/.test(normalizedTicker);
+}
+
+function getUnsupportedKrLookupMessage(ticker = "") {
+  return `${ticker}는 한국 자산 후보입니다. 한국 현재가 API는 아직 연결 전이므로 현재가·CAGR·BETA·MDD·배당률을 수동값으로 확인해 주세요.`;
+}
+
 function getRateLimitUntil() {
   if (typeof window === "undefined") return 0;
   return Number(window.localStorage.getItem(RATE_LIMIT_STORAGE_KEY) || 0);
@@ -123,6 +132,10 @@ export async function fetchAssetDataByTicker(ticker, options = {}) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
 
+  if (isKrTickerLike(normalizedTicker, config.market)) {
+    throw new Error(getUnsupportedKrLookupMessage(normalizedTicker));
+  }
+
   if (config.provider === "backend") {
     assertNotInRateLimitCooldown();
     return fetchBackendAssetDataByTicker(normalizedTicker, config);
@@ -148,6 +161,23 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
   // 티커별 진행 상태를 호출부로 전달합니다.
   for (let tickerIndex = 0; tickerIndex < uniqueTickers.length; tickerIndex += 1) {
     const ticker = uniqueTickers[tickerIndex];
+
+    if (isKrTickerLike(ticker, config.market)) {
+      const message = getUnsupportedKrLookupMessage(ticker);
+      lookupResults.push({
+        ticker,
+        status: "error",
+        error: message,
+      });
+      onProgress?.({
+        ticker,
+        index: tickerIndex,
+        total: uniqueTickers.length,
+        status: "error",
+        message,
+      });
+      continue;
+    }
 
     if (tickerIndex > 0 && config.provider === "backend" && config.bulkLookupDelayMs > 0) {
       onProgress?.({
