@@ -1,7 +1,5 @@
 .screenerPage {
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 34%),
-    linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+  background: #f8fafc;
 }
 
 .screenerHero {
@@ -95,8 +93,8 @@
 .screenerMarketTabs button.active,
 .assetTypeFilterButton.active {
   border-color: #2563eb;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.12), 0 14px 36px rgba(15, 23, 42, 0.06);
+  background: #eff6ff;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
 .screenerMarketTabs strong,
