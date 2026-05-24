@@ -1,4 +1,10 @@
 import { MOCK_ASSET_DATA } from "../constants";
+import {
+  createAssetMarketMetadata,
+  getMarketQueryValue,
+  normalizeMarketCode,
+  normalizeTickerForMarket,
+} from "../config/marketConfig";
 
 const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
@@ -49,11 +55,12 @@ function getRuntimeAssetConfig(options = {}) {
         buildEnv.VITE_FINPLE_BULK_LOOKUP_DELAY_MS,
       DEFAULT_BULK_LOOKUP_DELAY_MS
     ),
+    market: normalizeMarketCode(options.market || runtimeConfig.market || buildEnv.VITE_FINPLE_MARKET || "US"),
   };
 }
 
-export function normalizeTicker(ticker) {
-  return String(ticker || "").trim().toUpperCase();
+export function normalizeTicker(ticker, market = "US") {
+  return normalizeTickerForMarket(ticker, market);
 }
 
 export function getSupportedMockTickers() {
@@ -109,8 +116,8 @@ function assertNotInRateLimitCooldown() {
 }
 
 export async function fetchAssetDataByTicker(ticker, options = {}) {
-  const normalizedTicker = normalizeTicker(ticker);
   const config = getRuntimeAssetConfig(options);
+  const normalizedTicker = normalizeTicker(ticker, config.market);
 
   if (!normalizedTicker) {
     throw new Error("티커를 먼저 입력해주세요.");
@@ -122,19 +129,19 @@ export async function fetchAssetDataByTicker(ticker, options = {}) {
   }
 
   if (config.provider === "mock") {
-    return fetchMockAssetDataByTicker(normalizedTicker);
+    return fetchMockAssetDataByTicker(normalizedTicker, config);
   }
 
   return fetchAutoAssetDataByTicker(normalizedTicker, config);
 }
 
 export async function fetchAssetDataBatch(tickers, options = {}) {
+  const config = getRuntimeAssetConfig(options);
   const uniqueTickers = Array.from(
-    new Set((tickers || []).map(normalizeTicker).filter(Boolean))
+    new Set((tickers || []).map((ticker) => normalizeTicker(ticker, config.market)).filter(Boolean))
   );
 
   const lookupResults = [];
-  const config = getRuntimeAssetConfig(options);
   const onProgress = typeof options.onProgress === "function" ? options.onProgress : null;
 
   // 전체 조회는 순차 처리하되, 화면이 멈춘 것처럼 보이지 않도록
@@ -217,7 +224,7 @@ async function fetchAutoAssetDataByTicker(ticker, config) {
   try {
     return await fetchBackendAssetDataByTicker(ticker, config);
   } catch (backendError) {
-    const mockData = await fetchMockAssetDataByTicker(ticker);
+    const mockData = await fetchMockAssetDataByTicker(ticker, config);
 
     return {
       ...mockData,
@@ -227,7 +234,7 @@ async function fetchAutoAssetDataByTicker(ticker, config) {
   }
 }
 
-async function fetchMockAssetDataByTicker(ticker) {
+async function fetchMockAssetDataByTicker(ticker, config = {}) {
   await delay();
 
   const mockData = MOCK_ASSET_DATA[ticker];
@@ -238,9 +245,14 @@ async function fetchMockAssetDataByTicker(ticker) {
     );
   }
 
+  const marketMetadata = createAssetMarketMetadata({ ...mockData, ticker }, config.market);
+
   return {
     ticker,
+    displayTicker: ticker,
+    providerSymbol: marketMetadata.providerSymbol || ticker,
     ...mockData,
+    ...marketMetadata,
     priceMode: "auto",
     metricMode: "auto",
     dataSource: "mock",
@@ -249,7 +261,7 @@ async function fetchMockAssetDataByTicker(ticker) {
 }
 
 async function fetchBackendAssetDataByTicker(ticker, config) {
-  const requestUrl = `${config.apiBaseUrl}/assets/${encodeURIComponent(ticker)}`;
+  const requestUrl = `${config.apiBaseUrl}/assets/${encodeURIComponent(ticker)}?market=${encodeURIComponent(getMarketQueryValue(config.market))}`;
   const response = await fetchWithTimeout(requestUrl, {
     timeoutMs: config.backendTimeoutMs,
   });
@@ -270,7 +282,7 @@ async function fetchBackendAssetDataByTicker(ticker, config) {
   const responsePayload = await response.json();
   const data = responsePayload?.data || responsePayload;
 
-  return normalizeBackendAssetData(ticker, data);
+  return normalizeBackendAssetData(ticker, data, config.market);
 }
 
 async function fetchWithTimeout(url, { timeoutMs }) {
@@ -297,12 +309,21 @@ async function readJsonSafely(response) {
   }
 }
 
-function normalizeBackendAssetData(ticker, data = {}) {
+function normalizeBackendAssetData(ticker, data = {}, fallbackMarket = "US") {
+  const marketMetadata = createAssetMarketMetadata({ ...data, ticker: data.ticker || ticker }, fallbackMarket);
+  const normalizedTicker = normalizeTicker(data.ticker || ticker, marketMetadata.market);
+
   return {
-    ticker: normalizeTicker(data.ticker || ticker),
+    ticker: normalizedTicker,
+    displayTicker: data.displayTicker || normalizedTicker,
+    providerSymbol: data.providerSymbol || marketMetadata.providerSymbol || normalizedTicker,
     name: data.name || ticker,
-    market: data.market || "US",
-    currency: data.currency || "KRW",
+    market: marketMetadata.market,
+    exchange: data.exchange || marketMetadata.exchange,
+    currency: data.currency || marketMetadata.currency,
+    quoteCurrency: data.quoteCurrency || marketMetadata.quoteCurrency,
+    displayCurrency: data.displayCurrency || marketMetadata.displayCurrency,
+    assetType: data.assetType || data.type || marketMetadata.assetType,
     price: normalizeNullableNumber(data.price),
     cagr: normalizeNullableNumber(data.cagr),
     beta: normalizeNullableNumber(data.beta),
@@ -313,7 +334,7 @@ function normalizeBackendAssetData(ticker, data = {}) {
     dataSource: data.dataSource || "backend",
     cacheMode: data.cacheMode || null,
     rawPrice: normalizeNullableNumber(data.rawPrice),
-    rawCurrency: data.rawCurrency || null,
+    rawCurrency: data.rawCurrency || marketMetadata.rawCurrency || null,
     exchangeRate: normalizeNullableNumber(data.exchangeRate),
     fetchedAt: data.fetchedAt || new Date().toISOString(),
   };
@@ -327,15 +348,16 @@ function normalizeNullableNumber(value) {
 }
 
 
-export async function fetchTickerCandidateByTicker(ticker) {
-  const normalizedTicker = normalizeTicker(ticker);
+export async function fetchTickerCandidateByTicker(ticker, options = {}) {
+  const market = normalizeMarketCode(options.market || "US");
+  const normalizedTicker = normalizeTicker(ticker, market);
 
   if (!normalizedTicker) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
 
-  const config = getRuntimeAssetConfig();
-  const url = `${config.apiBaseUrl}/tickers/${encodeURIComponent(normalizedTicker)}`;
+  const config = getRuntimeAssetConfig({ market });
+  const url = `${config.apiBaseUrl}/tickers/${encodeURIComponent(normalizedTicker)}?market=${encodeURIComponent(getMarketQueryValue(market))}`;
   const response = await fetchWithTimeout(url, {
     timeoutMs: config.backendTimeoutMs,
   });
@@ -357,10 +379,10 @@ export async function searchTickerCandidates({
   beginnerFit = "all",
   limit = 20,
 } = {}) {
-  const config = getRuntimeAssetConfig();
+  const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
   const url = new URL(`${config.apiBaseUrl}/tickers/search`);
   url.searchParams.set("q", query);
-  url.searchParams.set("market", market);
+  url.searchParams.set("market", market === "all" ? "all" : getMarketQueryValue(market));
   url.searchParams.set("type", type);
   url.searchParams.set("category", category);
   url.searchParams.set("riskLevel", riskLevel);
@@ -391,12 +413,12 @@ export async function screenTickerCandidates({
   beginnerOnly = false,
   limit = 30,
 } = {}) {
-  const config = getRuntimeAssetConfig();
+  const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
   const url = new URL(`${config.apiBaseUrl}/tickers/screener`);
   url.searchParams.set("goal", goal);
   url.searchParams.set("riskLevel", riskLevel);
   url.searchParams.set("type", type);
-  url.searchParams.set("market", market);
+  url.searchParams.set("market", market === "all" ? "all" : getMarketQueryValue(market));
   url.searchParams.set("beginnerOnly", String(beginnerOnly));
   url.searchParams.set("limit", String(limit));
 
