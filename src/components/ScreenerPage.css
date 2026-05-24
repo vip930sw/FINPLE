@@ -76,20 +76,14 @@
   word-break: keep-all;
 }
 
-.screenerMarketTabs,
-.assetTypeFilterBar {
+.screenerMarketTabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 0 0 24px;
 }
 
-.assetTypeFilterBar {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.screenerMarketTabs button,
-.assetTypeFilterButton {
+.screenerMarketTabs button {
   border: 1px solid #dbe5f3;
   border-radius: 22px;
   padding: 18px 20px;
@@ -98,32 +92,21 @@
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
-.screenerMarketTabs button.active,
-.assetTypeFilterButton.active {
+.screenerMarketTabs button.active {
   border-color: #2563eb;
   background: #eff6ff;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
 
 .screenerMarketTabs strong,
-.screenerMarketTabs small,
-.assetTypeFilterButton strong,
-.assetTypeFilterButton span {
+.screenerMarketTabs small {
   display: block;
 }
 
-.screenerMarketTabs strong,
-.assetTypeFilterButton strong {
+.screenerMarketTabs strong {
   margin-bottom: 6px;
   color: #0f172a;
   font-size: 20px;
-}
-
-.assetTypeFilterButton span {
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
-  word-break: keep-all;
 }
 
 .screenerMarketTabs span {
@@ -141,6 +124,39 @@
   color: #64748b;
   line-height: 1.45;
   word-break: keep-all;
+}
+
+.screenerFilterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.screenerFilterSelectLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.screenerFilterSelectLabel span {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.screenerFilterSelectLabel select {
+  width: 100%;
+  border: 1px solid #dbe5f3;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
 }
 
 .screenerStatusBox {
@@ -288,7 +304,7 @@
 @media (max-width: 780px) {
   .screenerSummaryGrid,
   .screenerMarketTabs,
-  .assetTypeFilterBar,
+  .screenerFilterGrid,
   .krScreenerBetaGrid {
     grid-template-columns: 1fr;
   }

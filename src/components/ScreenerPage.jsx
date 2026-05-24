@@ -42,17 +42,20 @@ const TAG_LABEL_MAP = {
   분산: "핵심",
 };
 const TYPE_OPTIONS = [
-  { value: "all", label: "전체", description: "ETF와 개별주를 함께 봅니다." },
-  { value: "ETF", label: "ETF", description: "지수·섹터·채권 등 분산형 자산 위주입니다." },
-  { value: "stock", label: "개별주", description: "NVDA, AAPL처럼 특정 기업 비중을 직접 확대합니다." },
+  { value: "all", label: "전체" },
+  { value: "ETF", label: "ETF" },
+  { value: "stock", label: "개별주" },
 ];
-const PRESET_OPTIONS = [
-  { key: "beginner", label: "초보자 추천", description: "핵심·대표 자산 우선", goal: "core", riskLevel: "all", type: "all", beginnerOnly: true },
-  { key: "core-etf", label: "대표 ETF", description: "분산형 ETF 중심", goal: "core", riskLevel: "all", type: "ETF", beginnerOnly: true },
-  { key: "dividend", label: "배당 후보", description: "현금흐름형 후보", goal: "dividend", riskLevel: "all", type: "all", beginnerOnly: false },
-  { key: "growth", label: "성장형", description: "성장·기술주 후보", goal: "growth", riskLevel: "all", type: "all", beginnerOnly: false },
-  { key: "defensive", label: "방어형", description: "채권·금·헤지 후보", goal: "defensive", riskLevel: "all", type: "all", beginnerOnly: false },
-  { key: "aggressive", label: "공격형", description: "레버리지·고위험 후보", goal: "aggressive", riskLevel: "all", type: "all", beginnerOnly: false },
+const STYLE_OPTIONS = [
+  { key: "all", label: "전체" },
+  { key: "beginner", label: "초보자" },
+  { key: "dividend", label: "배당" },
+  { key: "growth", label: "성장" },
+  { key: "defensive", label: "방어" },
+  { key: "aggressive", label: "공격형" },
+  { key: "leveraged_inverse", label: "레버리지/인버스" },
+  { key: "commodity", label: "원자재" },
+  { key: "reit", label: "부동산/리츠" },
 ];
 
 function formatPercentValue(value) {
@@ -64,6 +67,7 @@ function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value ===
 function getTagLabel(value) { return TAG_LABEL_MAP[value] || value; }
 function getRiskLabel(value) { return RISK_OPTIONS.find((item) => item.value === value)?.label || value || "-"; }
 function getTypeLabel(type) { return type === "stock" ? "개별주" : type === "ETF" ? "ETF" : "전체"; }
+function getStyleLabel(style) { return STYLE_OPTIONS.find((item) => item.key === style)?.label || "전체"; }
 function inferExposureType(item = {}) {
   const tags = (item.tags || []).join(" ");
   const name = item.koreanName || "";
@@ -71,7 +75,7 @@ function inferExposureType(item = {}) {
   if (/레버리지|인버스|3배|2배/.test(tags + name)) return "leveraged_inverse";
   if (/채권|장기채|금리/.test(tags + name)) return "bond";
   if (/배당|현금흐름|인컴/.test(tags + name)) return "dividend";
-  if (/금|원자재|헤지/.test(tags + name)) return "commodity";
+  if (/금|원자재|원유|구리|은|헤지/.test(tags + name)) return "commodity";
   if (/리츠|부동산/.test(tags + name)) return "reit";
   if (/섹터|헬스케어|반도체|테크/.test(tags + name)) return "sector";
   return "broad_index";
@@ -93,17 +97,29 @@ function getCandidateDescription(item) {
   if (item.type === "stock") return `${item.koreanName} 개별주 후보입니다. 특정 기업 비중이 직접 커질 수 있으므로 집중도를 함께 확인하세요.`;
   return `${item.koreanName} ETF 후보입니다. 여러 종목·섹터를 묶어 노출하는 자산으로, 기초 노출과 중복 비중을 함께 확인하세요.`;
 }
+function matchesStyleFilter(item, styleFilter) {
+  if (styleFilter === "all") return true;
+  if (styleFilter === "beginner") return item.beginnerFit;
 
-function filterCandidates({ candidates, query, goal, riskLevel, type, beginnerOnly }) {
+  const exposureType = inferExposureType(item);
+  const tagText = [item.koreanName, item.strategy, ...(item.tags || [])].join(" ");
+
+  if (styleFilter === "leveraged_inverse") return exposureType === "leveraged_inverse" || /레버리지|인버스|3배|2배/.test(tagText);
+  if (styleFilter === "commodity") return exposureType === "commodity" || /원자재|금|원유|구리|은/.test(tagText);
+  if (styleFilter === "reit") return exposureType === "reit" || /리츠|부동산/.test(tagText);
+
+  return item.goals?.includes(styleFilter) || item.strategy === styleFilter;
+}
+
+function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
   const normalizedQuery = normalizeTicker(query).toLowerCase();
   return candidates.filter((item) => {
     const searchable = [item.ticker, item.koreanName, item.type, getTypeLabel(item.type), item.strategy, getGoalLabel(item.strategy), getExposureLabel(item), ...(item.tags || []), ...(item.tags || []).map(getTagLabel)].join(" ").toLowerCase();
     const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
-    const matchesGoal = goal === "all" || item.goals?.includes(goal) || item.strategy === goal;
+    const matchesStyle = matchesStyleFilter(item, styleFilter);
     const matchesRisk = riskLevel === "all" || item.riskLevel === riskLevel;
     const matchesType = type === "all" || item.type === type;
-    const matchesBeginner = !beginnerOnly || item.beginnerFit;
-    return matchesQuery && matchesGoal && matchesRisk && matchesType && matchesBeginner;
+    return matchesQuery && matchesStyle && matchesRisk && matchesType;
   });
 }
 
@@ -136,25 +152,16 @@ function MarketTabs({ activeMarket, onChange }) {
 
 function CandidateScreenerPanel({ market, candidates, assets, addAssetFromTickerCandidate }) {
   const [query, setQuery] = useState("");
-  const [goal, setGoal] = useState("all");
+  const [styleFilter, setStyleFilter] = useState("all");
   const [riskLevel, setRiskLevel] = useState("all");
   const [type, setType] = useState("all");
-  const [beginnerOnly, setBeginnerOnly] = useState(false);
-  const [activePresetKey, setActivePresetKey] = useState(null);
   const [statusText, setStatusText] = useState(`${market === "KR" ? "한국" : "미국"} CSV 후보 ${candidates.length}개를 불러왔습니다.`);
   const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
-  const results = useMemo(() => filterCandidates({ candidates, query, goal, riskLevel, type, beginnerOnly }), [candidates, query, goal, riskLevel, type, beginnerOnly]);
+  const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type }), [candidates, query, styleFilter, riskLevel, type]);
   const canAdd = market === "US";
 
-  function applyPreset(preset) { setActivePresetKey(preset.key); setQuery(""); setGoal(preset.goal); setRiskLevel(preset.riskLevel); setType(preset.type); setBeginnerOnly(preset.beginnerOnly); setStatusText(`${preset.label} 조건을 적용했습니다.`); }
-  function applyTypeFilter(option) {
-    setActivePresetKey(null);
-    setType(option.value);
-    setGoal("all");
-    setRiskLevel("all");
-    setBeginnerOnly(false);
-    setStatusText(`${option.label} 기준으로 모든 후보를 표시합니다.`);
-  }
+  function applyStyle(value) { setStyleFilter(value); setStatusText(`${getStyleLabel(value)} 스타일 후보를 표시합니다.`); }
+  function applyTypeFilter(value) { setType(value); setStatusText(`${getTypeLabel(value)} 자산군 기준으로 후보를 표시합니다.`); }
   function handleAdd(item) {
     if (!canAdd) { setStatusText("한국 후보의 포트폴리오 추가 기능은 다음 단계에서 연결할 예정입니다."); return; }
     const ticker = normalizeTicker(item?.ticker); if (addedTickerSet.has(ticker)) { setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`); return; } const result = addAssetFromTickerCandidate(item); if (result?.status === "duplicate") { setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`); return; } setStatusText(`${ticker} 후보 자산을 포트폴리오에 추가했습니다. 시뮬레이터에서 비중을 조정하세요.`);
@@ -163,19 +170,20 @@ function CandidateScreenerPanel({ market, candidates, assets, addAssetFromTicker
   return (
     <section className="assetFinderPanel">
       <div className="assetFinderHeader"><div><p className="sectionLabel">{market === "KR" ? "KR Asset Finder Beta" : "US Asset Finder"}</p><h4>{market === "KR" ? "한국 ETF / 개별주 후보 탐색" : "미국 ETF / 개별주 후보 탐색"}</h4><p>ETF는 지수·섹터를 묶어 노출하고, 개별주는 특정 기업 비중을 직접 확대합니다. 포트폴리오 방향이 달라지므로 먼저 구분해서 선택하세요.</p></div><div className="assetFinderStatusGroup"><span className="tickerMasterCount">{market === "KR" ? "한국" : "미국"} CSV 후보 {candidates.length}개</span><span className="assetFinderStatus">{statusText}</span></div></div>
-      <div className="assetFinderPresetBar" aria-label="추천 프리셋">{PRESET_OPTIONS.map((preset) => <button key={preset.key} type="button" className={activePresetKey === preset.key ? "assetFinderPresetButton active" : "assetFinderPresetButton"} onClick={() => applyPreset(preset)}><strong>{preset.label}</strong><span>{preset.description}</span></button>)}</div>
-      <div className="assetTypeFilterBar" aria-label="ETF와 개별주 구분 필터">{TYPE_OPTIONS.map((option) => <button key={option.value} type="button" className={type === option.value && goal === "all" && riskLevel === "all" && !beginnerOnly ? "assetTypeFilterButton active" : "assetTypeFilterButton"} onClick={() => applyTypeFilter(option)}><strong>{option.label}</strong><span>{option.description}</span></button>)}</div>
-      <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => { setQuery(event.target.value); setActivePresetKey(null); }} placeholder="예: QQQ, ETF, 개별주, 배당, 나스닥, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
-      <div className="screenerControls"><select value={goal} onChange={(event) => { setGoal(event.target.value); setActivePresetKey(null); }}>{GOAL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><select value={riskLevel} onChange={(event) => { setRiskLevel(event.target.value); setActivePresetKey(null); }}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><label className="beginnerOnlyToggle"><input type="checkbox" checked={beginnerOnly} onChange={(event) => { setBeginnerOnly(event.target.checked); setActivePresetKey(null); }} />초보자 적합 우선</label></div>
-      {market === "KR" ? <div className="screenerStatusBox"><strong>한국 Beta 안내</strong><p>현재는 CSV 후보 표시 단계입니다. 포트폴리오 추가와 한국 시뮬레이터 계산 로직은 다음 단계에서 연결합니다.</p></div> : null}
-      <div className="assetFinderResultToolbar"><span>{results.length > 0 ? `${results.length}개 후보 표시` : "후보 자산 없음"}</span><small>ETF와 개별주는 포트폴리오 집중도와 해석 방식이 다릅니다.</small></div>
+      <div className="screenerFilterGrid" aria-label="스크리너 필터">
+        <label className="screenerFilterSelectLabel"><span>1차 자산군</span><select value={type} onChange={(event) => applyTypeFilter(event.target.value)}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>2차 스타일</span><select value={styleFilter} onChange={(event) => applyStyle(event.target.value)}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>3차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+      </div>
+      <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, ETF, 개별주, 배당, 나스닥, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
+      <div className="assetFinderResultToolbar"><span>{results.length > 0 ? `${results.length}개 후보 표시` : "후보 자산 없음"}</span><small>현재 조합: {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div>
       <div className="tickerResultGrid compact">{results.length > 0 ? results.map((item) => <ScreenerCandidateCard key={`${market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd={canAdd} />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
     </section>
   );
 }
 
 function ScreenerPage({ onBack, onOpenSimulator }) {
-  const { portfolioList, activePortfolioId, activePortfolio, assets, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, formatNumber, isEmptyAssetRow } = usePortfolioSimulator();
+  const { portfolioList, activePortfolioId, activePortfolio, assets, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate, isEmptyAssetRow } = usePortfolioSimulator();
   const [activeMarket, setActiveMarket] = useState("US");
   const activeAssetCount = assets.filter((asset) => !isEmptyAssetRow(asset)).length;
   const activeCandidates = activeMarket === "KR" ? KR_SCREENER_CANDIDATES : US_SCREENER_CANDIDATES;
