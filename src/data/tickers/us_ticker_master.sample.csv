@@ -1,0 +1,6 @@
+ticker,providerSymbol,nameKr,nameEn,market,exchange,currency,quoteCurrency,assetType,sector,isEtf,isActive,notes
+VOO,VOO,미국 S&P500 대표 ETF,Vanguard S&P 500 ETF,US,NYSEARCA,KRW,USD,ETF,대표지수,true,true,core ETF
+QQQ,QQQ,나스닥100 성장 ETF,Invesco QQQ Trust,US,NASDAQ,KRW,USD,ETF,성장,false,true,growth ETF
+SCHD,SCHD,배당성장 대표 ETF,Schwab US Dividend Equity ETF,US,NYSEARCA,KRW,USD,ETF,배당,true,true,dividend ETF
+AAPL,AAPL,애플,Apple Inc,US,NASDAQ,KRW,USD,stock,테크,false,true,large cap stock
+MSFT,MSFT,마이크로소프트,Microsoft Corp,US,NASDAQ,KRW,USD,stock,테크,false,true,large cap stock
