@@ -107,6 +107,9 @@ export const SCREENER_METRICS_POLICY_NOTE =
 export function normalizeScreenerCandidate(row = {}) {
   const market = normalizeMarket(row.market || "US");
   const assetType = normalizeAssetType(row.assetType);
+  const marketCap = toNullableNumber(row.marketCap);
+  const aum = toNullableNumber(row.aum);
+  const sizeMetric = assetType === "ETF" ? aum ?? marketCap : marketCap ?? aum;
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
@@ -129,6 +132,10 @@ export function normalizeScreenerCandidate(row = {}) {
     displayDividendYield: row.displayDividendYield || "",
     dividendPolicy: row.dividendPolicy || "",
     dividendSource: row.dividendSource || "",
+    marketCap,
+    aum,
+    sizeMetric,
+    sizeSource: row.sizeSource || "",
     dataStatus: row.dataStatus || "",
     reviewTag: row.reviewTag || "",
     reviewReason: row.reviewReason || "",
@@ -213,6 +220,10 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     displayDividendYield: candidate.displayDividendYield,
     dividendPolicy: candidate.dividendPolicy,
     dividendSource: candidate.dividendSource,
+    marketCap: candidate.marketCap,
+    aum: candidate.aum,
+    sizeMetric: candidate.sizeMetric,
+    sizeSource: candidate.sizeSource,
     reviewTag: candidate.reviewTag,
     reviewReason: candidate.reviewReason,
     metricMode: candidate.metricMode || "final_csv_v1_price_close",
@@ -239,6 +250,10 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     displayDividendYield: patch.displayDividendYield || asset.displayDividendYield || "",
     dividendPolicy: patch.dividendPolicy || asset.dividendPolicy || "",
     dividendSource: patch.dividendSource || asset.dividendSource || "",
+    marketCap: patch.marketCap ?? asset.marketCap ?? null,
+    aum: patch.aum ?? asset.aum ?? null,
+    sizeMetric: patch.sizeMetric ?? asset.sizeMetric ?? null,
+    sizeSource: patch.sizeSource || asset.sizeSource || "",
     reviewTag: patch.reviewTag || asset.reviewTag || "",
     reviewReason: patch.reviewReason || asset.reviewReason || "",
   };
