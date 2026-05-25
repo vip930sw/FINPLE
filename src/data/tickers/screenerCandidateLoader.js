@@ -212,6 +212,9 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     dividendYield: candidate.dividendYield,
     displayDividendYield: candidate.displayDividendYield,
     dividendPolicy: candidate.dividendPolicy,
+    dividendSource: candidate.dividendSource,
+    reviewTag: candidate.reviewTag,
+    reviewReason: candidate.reviewReason,
     metricMode: candidate.metricMode || "final_csv_v1_price_close",
     dataSource: candidate.dataSource || "finple_app_candidates_1000_final_v1",
   };
@@ -233,6 +236,11 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     beta: patch.beta ?? asset.beta ?? 0,
     mdd: patch.mdd ?? asset.mdd ?? 0,
     dividendYield: patch.dividendYield ?? asset.dividendYield ?? null,
+    displayDividendYield: patch.displayDividendYield || asset.displayDividendYield || "",
+    dividendPolicy: patch.dividendPolicy || asset.dividendPolicy || "",
+    dividendSource: patch.dividendSource || asset.dividendSource || "",
+    reviewTag: patch.reviewTag || asset.reviewTag || "",
+    reviewReason: patch.reviewReason || asset.reviewReason || "",
   };
 }
 
