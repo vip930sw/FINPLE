@@ -5,6 +5,10 @@ import {
   normalizeMarketCode,
   normalizeTickerForMarket,
 } from "../config/marketConfig";
+import {
+  createAssetPatchFromScreenerCandidate,
+  findScreenerCandidateByTicker,
+} from "../../../data/tickers/screenerCandidateLoader";
 
 const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
@@ -90,7 +94,65 @@ function isKrTickerLike(ticker = "", market = "US") {
 }
 
 function getUnsupportedKrLookupMessage(ticker = "") {
-  return `${ticker}는 한국 자산 후보입니다. 한국 현재가 API는 아직 연결 전이므로 현재가·CAGR·BETA·MDD·배당률을 수동값으로 확인해 주세요.`;
+  return `${ticker}는 한국 자산 후보입니다. 한국 현재가 API는 아직 연결 전이므로 현재가만 수동으로 확인해 주세요. CSV에 있는 CAGR·BETA·MDD는 먼저 적용됩니다.`;
+}
+
+function getLocalCsvCandidate(ticker, market = "") {
+  return findScreenerCandidateByTicker(ticker, market);
+}
+
+function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
+  const patch = createAssetPatchFromScreenerCandidate(candidate || {});
+  const marketMetadata = createAssetMarketMetadata({ ...patch, ticker: patch.ticker || ticker }, patch.market || fallbackMarket);
+  const normalizedTicker = normalizeTicker(patch.ticker || ticker, marketMetadata.market);
+
+  return {
+    ticker: normalizedTicker,
+    displayTicker: patch.displayTicker || normalizedTicker,
+    providerSymbol: patch.providerSymbol || marketMetadata.providerSymbol || normalizedTicker,
+    name: patch.name || normalizedTicker,
+    market: marketMetadata.market,
+    exchange: patch.exchange || marketMetadata.exchange,
+    currency: patch.currency || marketMetadata.currency,
+    quoteCurrency: patch.quoteCurrency || marketMetadata.quoteCurrency,
+    displayCurrency: patch.displayCurrency || marketMetadata.displayCurrency,
+    assetType: patch.assetType || marketMetadata.assetType,
+    price: null,
+    cagr: normalizeNullableNumber(patch.cagr),
+    beta: normalizeNullableNumber(patch.beta),
+    mdd: normalizeNullableNumber(patch.mdd),
+    dividendYield: normalizeNullableNumber(patch.dividendYield),
+    priceMode: "lookup-required",
+    metricMode: "csv",
+    dataSource: "csv",
+    cacheMode: null,
+    rawPrice: null,
+    rawCurrency: patch.quoteCurrency || patch.currency || marketMetadata.rawCurrency || null,
+    exchangeRate: null,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
+  const candidate = getLocalCsvCandidate(assetData.ticker || ticker, assetData.market || fallbackMarket);
+  if (!candidate) return assetData;
+
+  const csvData = createLocalCsvAssetData(assetData.ticker || ticker, candidate, assetData.market || fallbackMarket || candidate.market);
+
+  return {
+    ...assetData,
+    name: assetData.name && assetData.name !== (assetData.ticker || ticker) ? assetData.name : csvData.name,
+    market: assetData.market || csvData.market,
+    currency: assetData.currency || csvData.currency,
+    quoteCurrency: assetData.quoteCurrency || csvData.quoteCurrency,
+    assetType: assetData.assetType || csvData.assetType,
+    cagr: csvData.cagr ?? assetData.cagr,
+    beta: csvData.beta ?? assetData.beta,
+    mdd: csvData.mdd ?? assetData.mdd,
+    dividendYield: csvData.dividendYield ?? assetData.dividendYield,
+    metricMode: "csv",
+    dataSource: assetData.dataSource ? `${assetData.dataSource}+csv` : "csv",
+  };
 }
 
 function getRateLimitUntil() {
@@ -132,20 +194,23 @@ export async function fetchAssetDataByTicker(ticker, options = {}) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
 
+  const csvCandidate = getLocalCsvCandidate(normalizedTicker, config.market);
+
   if (isKrTickerLike(normalizedTicker, config.market)) {
+    if (csvCandidate) return createLocalCsvAssetData(normalizedTicker, csvCandidate, "KR");
     throw new Error(getUnsupportedKrLookupMessage(normalizedTicker));
   }
 
   if (config.provider === "backend") {
     assertNotInRateLimitCooldown();
-    return fetchBackendAssetDataByTicker(normalizedTicker, config);
+    return mergeCsvMetrics(await fetchBackendAssetDataByTicker(normalizedTicker, config), normalizedTicker, config.market);
   }
 
   if (config.provider === "mock") {
-    return fetchMockAssetDataByTicker(normalizedTicker, config);
+    return mergeCsvMetrics(await fetchMockAssetDataByTicker(normalizedTicker, config), normalizedTicker, config.market);
   }
 
-  return fetchAutoAssetDataByTicker(normalizedTicker, config);
+  return mergeCsvMetrics(await fetchAutoAssetDataByTicker(normalizedTicker, config), normalizedTicker, config.market);
 }
 
 export async function fetchAssetDataBatch(tickers, options = {}) {
@@ -161,8 +226,22 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
   // 티커별 진행 상태를 호출부로 전달합니다.
   for (let tickerIndex = 0; tickerIndex < uniqueTickers.length; tickerIndex += 1) {
     const ticker = uniqueTickers[tickerIndex];
+    const csvCandidate = getLocalCsvCandidate(ticker, config.market);
 
     if (isKrTickerLike(ticker, config.market)) {
+      if (csvCandidate) {
+        const data = createLocalCsvAssetData(ticker, csvCandidate, "KR");
+        lookupResults.push({ ticker, status: "success", data, cacheMode: "csv" });
+        onProgress?.({
+          ticker,
+          index: tickerIndex,
+          total: uniqueTickers.length,
+          status: "success",
+          message: `${ticker} CSV 지표 적용`,
+        });
+        continue;
+      }
+
       const message = getUnsupportedKrLookupMessage(ticker);
       lookupResults.push({
         ticker,
@@ -212,7 +291,7 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
         index: tickerIndex,
         total: uniqueTickers.length,
         status: "success",
-        message: `${ticker} 조회 완료`,
+        message: data?.metricMode === "csv" ? `${ticker} 조회 완료 + CSV 지표 적용` : `${ticker} 조회 완료`,
       });
     } catch (error) {
       const errorMessage = error?.message || "자산 데이터를 조회하지 못했습니다.";
@@ -385,6 +464,9 @@ export async function fetchTickerCandidateByTicker(ticker, options = {}) {
   if (!normalizedTicker) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
+
+  const localCandidate = getLocalCsvCandidate(normalizedTicker, market);
+  if (localCandidate) return localCandidate;
 
   const config = getRuntimeAssetConfig({ market });
   const url = `${config.apiBaseUrl}/tickers/${encodeURIComponent(normalizedTicker)}?market=${encodeURIComponent(getMarketQueryValue(market))}`;
