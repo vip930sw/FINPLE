@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { hydrateAssetFromScreenerCandidate } from "../data/tickers/screenerCandidateLoader";
 import "./InvestmentMbtiPage.css";
 
 const PORTFOLIO_STORAGE_KEY = "finple-portfolio-list";
@@ -18,13 +19,13 @@ const ASSET_LABELS = {
 };
 
 const ASSET_TEMPLATES = {
-  growthStock: { ticker: "QQQ", name: "성장주 / 나스닥100 대표 ETF", price: 430000, cagr: 9.5, beta: 1.18, mdd: -35, dividendYield: 0.7 },
-  valueStock: { ticker: "SCHD", name: "가치·배당 / 배당성장 대표 ETF", price: 110000, cagr: 7.0, beta: 0.85, mdd: -25, dividendYield: 3.5 },
-  bond: { ticker: "TLT", name: "채권 / 미국 장기채 대표 ETF", price: 125000, cagr: 4.0, beta: 0.25, mdd: -20, dividendYield: 3.8 },
-  reit: { ticker: "VNQ", name: "리츠 / 부동산 인컴 대표 ETF", price: 120000, cagr: 5.5, beta: 0.75, mdd: -30, dividendYield: 4.0 },
-  gold: { ticker: "GLD", name: "금 / 금 ETF", price: 300000, cagr: 5.0, beta: 0.15, mdd: -18, dividendYield: 0 },
-  crypto: { ticker: "BTC", name: "코인 / 고변동성 위성자산", price: 1000000, cagr: 12.0, beta: 2.2, mdd: -75, dividendYield: 0 },
-  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  growthStock: { ticker: "QQQ", name: "성장주 / 나스닥100 대표 ETF", price: 430000, market: "US" },
+  valueStock: { ticker: "SCHD", name: "가치·배당 / 배당성장 대표 ETF", price: 110000, market: "US" },
+  bond: { ticker: "TLT", name: "채권 / 미국 장기채 대표 ETF", price: 125000, market: "US" },
+  reit: { ticker: "VNQ", name: "리츠 / 부동산 인컴 대표 ETF", price: 120000, market: "US" },
+  gold: { ticker: "GLD", name: "금 / 금 ETF", price: 300000, market: "US" },
+  crypto: { ticker: "BTC", name: "코인 / 고변동성 위성자산", price: 1000000, market: "CRYPTO", cagr: 12.0, beta: 2.2, mdd: -75, dividendYield: 0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
 
 const QUESTIONS = [
@@ -215,23 +216,27 @@ function formatWon(value) {
 function buildAssetsFromPreset(preset = {}, initialAmount = 50000000) {
   return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).map(([assetKey, weight], index) => {
     const template = ASSET_TEMPLATES[assetKey] || ASSET_TEMPLATES.cash;
-    const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
-    const quantity = Number((assetValue / Number(template.price || 1)).toFixed(2));
-    return {
-      id: `mbti-asset-${assetKey}-${Date.now()}-${index}`,
-      ticker: template.ticker,
-      name: template.name,
-      market: assetKey === "crypto" ? "CRYPTO" : "US",
+    const baseAsset = hydrateAssetFromScreenerCandidate({
+      ...template,
+      quantity: 0,
       currency: "KRW",
-      quantity,
-      price: template.price,
-      cagr: template.cagr,
-      beta: template.beta,
-      mdd: template.mdd,
-      dividendYield: template.dividendYield,
+      quoteCurrency: template.market === "KR" ? "KRW" : "USD",
       priceMode: "manual",
-      metricMode: "manual",
-      dataSource: "investment-mbti",
+      metricMode: template.market === "US" ? "final_csv_v1_price_close" : "manual",
+      dataSource: template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti",
+    });
+    const price = Number(baseAsset.price || template.price || 1);
+    const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
+    const quantity = Number((assetValue / price).toFixed(4));
+    return {
+      ...baseAsset,
+      id: `mbti-asset-${assetKey}-${Date.now()}-${index}`,
+      quantity,
+      price,
+      targetEvaluationAmount: Number(assetValue.toFixed(0)),
+      priceMode: "manual",
+      metricMode: baseAsset.metricMode || (template.market === "US" ? "final_csv_v1_price_close" : "manual"),
+      dataSource: baseAsset.dataSource || (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"),
     };
   });
 }
