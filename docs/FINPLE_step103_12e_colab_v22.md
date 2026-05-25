@@ -4,6 +4,14 @@
 
 Colab v1에서 한국 ETF CAGR이 과도하게 높게 산출되는 문제가 확인되었습니다. 특히 KODEX 200 등 국내 대표지수 ETF는 상장 기간이 충분한데도 20%대 CAGR이 나오므로, 단순히 `short_history` 문제로 처리하지 않고 상장일·유효 데이터 시작일·벤치마크·동종 ETF 비교를 함께 검토합니다.
 
+중요한 전제는 다음입니다.
+
+```text
+한국 ETF 상당수는 2000년대에 상장되어 10년치 데이터가 존재할 수 있습니다.
+따라서 한국 CAGR 20%대 문제를 무조건 10년치 데이터 누락 때문이라고 판단하지 않습니다.
+상장일과 실제 유효 가격 데이터 시작일을 함께 비교해야 합니다.
+```
+
 ## 핵심 원칙
 
 ```text
@@ -12,6 +20,39 @@ Colab v1에서 한국 ETF CAGR이 과도하게 높게 산출되는 문제가 확
 3. 한국 CAGR은 벤치마크/동종 ETF 검증을 통과한 값만 앱에 반영
 4. 배당률은 값이 있으면 표시, 없으면 확인 중, 0.00은 실제 무배당일 때만 사용
 5. review_required는 앱 반영 보류가 아니라 대체 기준을 선택하기 위한 상태값
+6. 상장일은 충분한데 dataYears가 짧으면 상장기간 부족이 아니라 데이터 소스/티커 매핑 문제로 분류
+```
+
+## 상장일 기준 점검
+
+v2.2는 후보 CSV에 아래 컬럼 중 하나가 있으면 상장일로 인식합니다.
+
+```text
+listingDate
+listedDate
+listDate
+상장일
+상장일자
+ipoDate
+IPO Date
+```
+
+상장일이 10년 이상 전인데 Colab이 가져온 `dataYears`가 10년에 못 미치면 다음처럼 처리합니다.
+
+```text
+dataStatus = source_history_gap_old_listing
+cagrStatus = review_required
+expectedCagr = 공란 유지
+```
+
+이 경우 원인은 보통 아래 중 하나로 봅니다.
+
+```text
+1. FinanceDataReader / yfinance 데이터 원천의 과거 구간 누락
+2. ETF 티커 매핑 오류
+3. 상장폐지·종목명 변경·ETF 명칭 변경 이력
+4. 수정주가/분배금 조정 방식 차이
+5. 액면분할 또는 병합 반영 오류
 ```
 
 ## review_required 발생 시 해결 기준
@@ -22,14 +63,30 @@ Colab v1에서 한국 ETF CAGR이 과도하게 높게 산출되는 문제가 확
 
 ```text
 판단:
-- 상장일은 충분히 오래되었으므로 단순 데이터 부족으로 보지 않음
+- 상장일은 충분히 오래되었을 수 있으므로 단순 데이터 부족으로 보지 않음
 - Colab에서 불러온 유효 시작일과 종료일을 확인
 - benchmarkCagr10y와 peerMedianCagr10y를 비교
+- priceCagr10y와 totalReturnCagr10y 괴리를 확인
 
 대안:
-1순위: 동일 기간 KOSPI200 벤치마크 CAGR로 대체
-2순위: KOSPI200 ETF peer median CAGR로 대체
+1순위: 동일 기간 KOSPI200 벤치마크 CAGR로 대체 검토
+2순위: KOSPI200 ETF peer median CAGR로 대체 검토
 3순위: 둘 다 불안정하면 expectedCagr 공란 유지 + review_required
+```
+
+v2.2 출력에는 아래 컬럼이 함께 나옵니다.
+
+```text
+cagrAlternativeValue
+- review_required 발생 시 대체 후보 CAGR
+
+cagrAlternativeSource
+- benchmarkCagr10y
+- peerMedianCagr10y
+- manual_review
+
+reviewAction
+- 사람이 어떤 순서로 확인해야 하는지 적은 조치 문구
 ```
 
 ### 2. 한국 상장 해외지수 ETF CAGR이 미국 원 ETF와 크게 다른 경우
@@ -56,6 +113,8 @@ Colab v1에서 한국 ETF CAGR이 과도하게 높게 산출되는 문제가 확
 10년 미만: sinceInceptionCagr는 보관, expectedCagr는 검토 후 제한 반영
 ```
 
+단, 상장일이 10년 이상 전이면 위 기준이 아니라 `source_history_gap_old_listing`으로 분리합니다.
+
 ## 산출 컬럼
 
 ```text
@@ -74,6 +133,12 @@ beta10y
 - 미국: SPY 기준
 - 한국: KS200 기준
 
+listingDate
+- 후보 CSV에서 가져온 상장일
+
+oldListingFor10y
+- 상장일 기준 10년 이상 데이터가 있어야 하는지 여부
+
 dataYears
 - 실제 계산에 사용된 유효 가격 데이터 기간
 
@@ -85,6 +150,12 @@ cagrStatus
 - pending
 - hold
 - review_required
+
+cagrAlternativeValue / cagrAlternativeSource
+- review_required 발생 시 대체 후보값과 출처
+
+reviewAction
+- 검토자가 취할 해결/대안 문구
 
 yieldStatus
 - ok
@@ -114,6 +185,7 @@ ticker,dividendYield,yieldStatus,yieldSource
 1. v1 417개 후보를 v2.2 스크립트로 재산출
 2. review_required.csv 확인
 3. KOSPI200 / S&P500 / NASDAQ100 계열 ETF부터 대체 기준 선택
-4. 배당형 후보부터 dividendYield 수동 보강
-5. 검수 통과 항목만 앱 CSV 반영
+4. 상장일은 충분한데 dataYears가 짧은 종목은 데이터 소스/티커 매핑 재확인
+5. 배당형 후보부터 dividendYield 수동 보강
+6. 검수 통과 항목만 앱 CSV 반영
 ```
