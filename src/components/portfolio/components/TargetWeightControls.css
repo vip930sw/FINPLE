@@ -1,0 +1,82 @@
+.calculationControlPanel.compact {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(220px, 360px);
+  gap: 16px;
+  align-items: stretch;
+  margin: 20px 0 18px;
+}
+
+.calculationControlPanel.compact .startValueControlBlock,
+.calculationControlPanel.compact .targetMetricCard {
+  min-height: 112px;
+}
+
+.calculationControlPanel.compact .targetMetricCard.compact {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.alignedAssetTable tfoot td {
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  border-bottom: none;
+  color: #0f172a;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.assetTableSummaryRow td:first-child {
+  text-align: left;
+  color: #334155;
+}
+
+.assetTableSummaryRow .numberCell {
+  text-align: right;
+}
+
+.simulatorTableActionRow {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 12px;
+}
+
+.tableActionLeftGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.tableActionLeftGroup .addButton {
+  margin-top: 0;
+}
+
+.tableCalculateButton {
+  min-width: 180px;
+  padding-inline: 28px;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .calculationControlPanel.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .simulatorTableActionRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tableActionLeftGroup {
+    width: 100%;
+  }
+
+  .tableActionLeftGroup > button,
+  .tableCalculateButton {
+    width: 100%;
+  }
+}
