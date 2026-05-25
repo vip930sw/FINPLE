@@ -122,7 +122,7 @@ export default function AssetInputTable({
   resolveTickerCandidate,
   removeAsset,
 }) {
-  const renderTickerControl = (asset, index, emptyRow) => (
+  const renderTickerControl = (asset, index) => (
     <div className="tickerCellStack">
       <input
         value={asset.ticker}
@@ -136,9 +136,7 @@ export default function AssetInputTable({
         }}
         disabled={isBulkAssetLookupLoading}
       />
-      {!emptyRow && (
-        <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
-      )}
+      <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
     </div>
   );
 
@@ -243,7 +241,7 @@ export default function AssetInputTable({
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
-                <td className="tickerCell">{renderTickerControl(asset, index, emptyRow)}</td>
+                <td className="tickerCell">{renderTickerControl(asset, index)}</td>
                 <td className="assetNameCell">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
                 <td className="numberCell tableNumberCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}</td>
                 <td className="numberCell tableNumberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
