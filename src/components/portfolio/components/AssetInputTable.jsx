@@ -111,6 +111,9 @@ export default function AssetInputTable({
   totalAssetValue,
   simulationStartValue,
   targetWeightSummary,
+  startValueInput,
+  handleStartValueInputChange,
+  commitStartValue,
   isEmptyAssetRow,
   isAutoAsset,
   formatDecimal,
@@ -190,11 +193,14 @@ export default function AssetInputTable({
     );
   };
 
-  const summary = targetWeightSummary || { total: 0 };
+  const summary = targetWeightSummary || { total: 0, remaining: 0, overAmount: 0 };
   const tableTotalValue = assets.reduce((sum, asset) => {
     if (isEmptyAssetRow(asset)) return sum;
     return sum + getAssetWeightValue(asset);
   }, 0);
+  const summaryNotice = summary.overAmount > 0
+    ? `초과 비중 ${formatDecimal(summary.overAmount, 2)}`
+    : `남은 비중 ${formatDecimal(summary.remaining || 0, 2)}`;
 
   return (
     <div className="calculatorTableWrap">
@@ -268,9 +274,23 @@ export default function AssetInputTable({
         <tfoot>
           <tr className="assetTableSummaryRow">
             <td colSpan="4">합계</td>
-            <td className="numberCell tableNumberCell">{formatEvaluationAmount(tableTotalValue)}</td>
-            <td className="numberCell tableNumberCell">{formatDecimal(summary.total || 0, 2)}%</td>
-            <td colSpan="4" />
+            <td className="summaryInputCell">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={startValueInput || formatEvaluationAmount(tableTotalValue)}
+                onChange={(e) => handleStartValueInputChange?.(e.target.value)}
+                onBlur={commitStartValue}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                aria-label="시작 평가금액 합계 입력"
+              />
+            </td>
+            <td className="numberCell tableNumberCell summaryWeightCell">{formatDecimal(summary.total || 0, 2)}</td>
+            <td className={summary.overAmount > 0 ? "summaryNoticeCell overWeightLabel" : "summaryNoticeCell remainingWeightLabel"} colSpan="4">
+              {summaryNotice}
+            </td>
           </tr>
         </tfoot>
       </table>
