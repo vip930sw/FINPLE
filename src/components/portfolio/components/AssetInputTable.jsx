@@ -93,7 +93,17 @@ function PriceTextValue({ asset, formatDecimal }) {
   return formatDecimal(asset.price, 2);
 }
 
+function isZeroOrEmptyMetric(value) {
+  if (value === null || value === undefined || value === "") return true;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue === 0;
+}
+
 function MetricTextValue({ value, formatDecimal }) {
+  if (isZeroOrEmptyMetric(value)) {
+    return <span className="assetTextValue numberTextValue">-</span>;
+  }
+
   return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
 }
 
@@ -102,7 +112,7 @@ function DividendYieldTextValue({ asset, formatDecimal }) {
   const policy = String(asset?.dividendPolicy || "").trim();
 
   if (displayValue) {
-    const normalizedDisplayValue = displayValue === "0.00%" && policy === "no_dividend" ? "-" : displayValue;
+    const normalizedDisplayValue = displayValue === "0.00%" || policy === "no_dividend" ? "-" : displayValue;
     return <span className="assetTextValue numberTextValue">{normalizedDisplayValue}</span>;
   }
 
@@ -116,6 +126,10 @@ function DividendYieldTextValue({ asset, formatDecimal }) {
 
   if (asset?.dividendYield === null || asset?.dividendYield === undefined || asset?.dividendYield === "") {
     return <span className="assetTextValue numberTextValue pendingMetricText">확인 중</span>;
+  }
+
+  if (Number(asset?.dividendYield) === 0) {
+    return <span className="assetTextValue numberTextValue">-</span>;
   }
 
   return <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />;
