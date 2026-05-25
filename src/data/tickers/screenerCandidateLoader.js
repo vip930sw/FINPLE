@@ -111,7 +111,7 @@ export function normalizeScreenerCandidate(row = {}) {
     assetType,
     strategy: row.strategy || "core",
     riskLevel: row.riskLevel || "medium",
-    expectedCagr: market === "KR" ? null : toNullableNumber(row.expectedCagr),
+    expectedCagr: toNullableNumber(row.expectedCagr),
     beta: toNullableNumber(row.beta),
     mdd: toNullableNumber(row.mdd),
     dividendYield: toNullableNumber(row.dividendYield),
