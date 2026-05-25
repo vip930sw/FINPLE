@@ -9,39 +9,10 @@ import {
 import "./ScreenerPage.css";
 
 const MARKET_OPTIONS = [
-  { key: "ALL", label: "전체 시장", description: "미국·한국 후보를 함께 봅니다." },
-  { key: "US", label: "미국 시장", description: "미국주식·미국 ETF 후보" },
-  { key: "KR", label: "한국 시장", description: "한국주식·국내 ETF 후보" },
+  { key: "ALL", label: "전체 시장" },
+  { key: "US", label: "미국 시장" },
+  { key: "KR", label: "한국 시장" },
 ];
-
-const GOAL_OPTIONS = [
-  { value: "all", label: "전체" },
-  { value: "core", label: "초보자/핵심" },
-  { value: "growth", label: "성장" },
-  { value: "dividend", label: "배당" },
-  { value: "defensive", label: "방어/헤지" },
-  { value: "aggressive", label: "공격형" },
-  { value: "cyclical", label: "경기민감" },
-];
-const RISK_OPTIONS = [
-  { value: "all", label: "전체 위험" },
-  { value: "low-medium", label: "낮음~중간" },
-  { value: "medium", label: "중간" },
-  { value: "medium-high", label: "중간~높음" },
-  { value: "high", label: "높음" },
-  { value: "very-high", label: "매우 높음" },
-];
-const TAG_LABEL_MAP = {
-  core: "핵심",
-  growth: "성장",
-  dividend: "배당",
-  defensive: "방어",
-  aggressive: "공격형",
-  cyclical: "경기민감",
-  stock: "개별주",
-  ETF: "ETF",
-  분산: "핵심",
-};
 const TYPE_OPTIONS = [
   { value: "all", label: "전체 자산군" },
   { value: "ETF", label: "ETF" },
@@ -60,8 +31,56 @@ const STYLE_OPTIONS = [
   { key: "reit", label: "부동산/리츠" },
   { key: "crypto", label: "가상화폐" },
 ];
+const RISK_OPTIONS = [
+  { value: "all", label: "전체 위험" },
+  { value: "low-medium", label: "낮음~중간" },
+  { value: "medium", label: "중간" },
+  { value: "medium-high", label: "중간~높음" },
+  { value: "high", label: "높음" },
+  { value: "very-high", label: "매우 높음" },
+];
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
+const TAG_LABEL_MAP = {
+  core: "핵심",
+  growth: "성장",
+  dividend: "배당",
+  defensive: "방어",
+  aggressive: "공격형",
+  cyclical: "경기민감",
+  stock: "개별주",
+  ETF: "ETF",
+  분산: "핵심",
+};
 
+const REPRESENTATIVE_TICKERS = {
+  US: ["SPY", "VOO", "IVV", "VTI", "QQQ", "QQQM", "SCHD", "DIA", "IWM", "TLT", "IEF", "BND", "GLD", "VNQ", "O", "T", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "BRK.B", "JPM"],
+  KR: ["069500", "102110", "148020", "105190", "152100", "278530", "005930", "000660", "373220", "207940", "005380", "035420", "035720", "051910", "006400", "005490", "068270", "055550"],
+};
+const REPRESENTATIVE_RANK = Object.entries(REPRESENTATIVE_TICKERS).reduce((map, [market, tickers]) => {
+  tickers.forEach((ticker, index) => {
+    map[`${market}:${ticker}`] = index + 1;
+  });
+  return map;
+}, {});
+
+function getMarketLabel(market) {
+  return MARKET_OPTIONS.find((item) => item.key === market)?.label || "전체 시장";
+}
+function getTypeLabel(type) {
+  return TYPE_OPTIONS.find((item) => item.value === type)?.label || "전체 자산군";
+}
+function getStyleLabel(style) {
+  return STYLE_OPTIONS.find((item) => item.key === style)?.label || "전체 투자 스타일";
+}
+function getRiskLabel(value) {
+  return RISK_OPTIONS.find((item) => item.value === value)?.label || value || "-";
+}
+function getTagLabel(value) {
+  return TAG_LABEL_MAP[value] || value;
+}
+function getGoalLabel(value) {
+  return TAG_LABEL_MAP[value] || value || "-";
+}
 function formatPercentValue(value, pendingText = "확인 중") {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue)) return pendingText;
@@ -73,18 +92,33 @@ function formatDividendYieldValue(value, item = {}) {
   if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
   return formatPercentValue(value, "확인 중");
 }
-function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value === value)?.label || TAG_LABEL_MAP[value] || value || "-"; }
-function getTagLabel(value) { return TAG_LABEL_MAP[value] || value; }
-function getRiskLabel(value) { return RISK_OPTIONS.find((item) => item.value === value)?.label || value || "-"; }
-function getTypeLabel(type) { return TYPE_OPTIONS.find((item) => item.value === type)?.label || "전체 자산군"; }
-function getStyleLabel(style) { return STYLE_OPTIONS.find((item) => item.key === style)?.label || "전체 투자 스타일"; }
-function getMarketLabel(market) { return MARKET_OPTIONS.find((item) => item.key === market)?.label || "전체 시장"; }
-function getCandidateTags(item = {}) {
-  return item.tags || [];
+function getSearchQuery(query = "") {
+  return normalizeTicker(query).toLowerCase();
 }
-function hasTag(item, candidates = []) {
-  const tags = getCandidateTags(item);
-  return candidates.some((tag) => tags.includes(tag));
+function getCandidateTicker(item = {}) {
+  return normalizeTicker(item.ticker || "").toLowerCase();
+}
+function getRepresentativeRank(item = {}) {
+  return REPRESENTATIVE_RANK[`${item.market}:${normalizeTicker(item.ticker)}`] || 9999;
+}
+function getTierRank(item = {}) {
+  if (item.tier === "core") return 0;
+  if (item.tier === "standard") return 1;
+  return 2;
+}
+function getAssetTypeRank(item = {}) {
+  return item.type === "ETF" ? 0 : 1;
+}
+function getStatusRank(item = {}) {
+  if (item.reviewTag === "ready_with_metrics" || item.dataStatus === "ready_with_metrics") return 0;
+  if (item.reviewTag === "review_required" || item.dataStatus === "review_required") return 2;
+  return 1;
+}
+function compareText(a = "", b = "") {
+  return String(a || "").localeCompare(String(b || ""), "ko-KR", { numeric: true, sensitivity: "base" });
+}
+function hasAnyTag(item = {}, tags = []) {
+  return tags.some((tag) => (item.tags || []).includes(tag));
 }
 function getTagText(item = {}) {
   return [item.koreanName, item.strategy, ...(item.tags || [])].join(" ");
@@ -92,19 +126,16 @@ function getTagText(item = {}) {
 function inferExposureType(item = {}) {
   const tagText = getTagText(item);
   const name = item.koreanName || "";
-
   if (item.type === "stock") return "single_stock";
   if (/레버리지|인버스|3배|2배/.test(tagText)) return "leveraged_inverse";
-  if (hasTag(item, ["채권", "국고채", "미국채", "회사채", "통안채", "초단기채", "종합채권", "하이일드"]) || /채권|국고채|미국채|회사채|통안채|하이일드/.test(name)) return "bond";
-  if (hasTag(item, ["원자재", "금", "원유", "구리", "은", "종합원자재"]) || /금현물|골드|원유|구리|은선물|종합원자재/.test(name)) return "commodity";
-  if (hasTag(item, ["가상화폐", "코인", "비트코인", "이더리움", "암호화폐"]) || /비트코인|이더리움|가상화폐|암호화폐|코인/.test(name)) return "crypto";
+  if (hasAnyTag(item, ["채권", "국고채", "미국채", "회사채", "통안채", "초단기채", "종합채권", "하이일드"]) || /채권|국고채|미국채|회사채|통안채|하이일드/.test(name)) return "bond";
+  if (hasAnyTag(item, ["원자재", "금", "원유", "구리", "은", "종합원자재"]) || /금현물|골드|원유|구리|은선물|종합원자재/.test(name)) return "commodity";
   if (/리츠|부동산/.test(tagText + name)) return "reit";
   if (/배당|현금흐름|인컴/.test(tagText)) return "dividend";
   if (/섹터|헬스케어|반도체|테크/.test(tagText + name)) return "sector";
   return "broad_index";
 }
-function getExposureLabel(item) {
-  const exposureType = inferExposureType(item);
+function getExposureLabel(item = {}) {
   return {
     broad_index: "대표지수/분산",
     sector: "섹터 ETF",
@@ -112,68 +143,78 @@ function getExposureLabel(item) {
     dividend: "배당/인컴",
     bond: "채권형",
     commodity: "원자재/헤지",
-    crypto: "가상화폐",
     reit: "리츠",
     leveraged_inverse: "레버리지/인버스",
-  }[exposureType] || "기타";
+  }[inferExposureType(item)] || "기타";
 }
-function getCandidateDescription(item) {
+function getCandidateDescription(item = {}) {
   if (item.type === "stock") return `${item.koreanName} 개별주 후보입니다. 특정 기업 비중이 직접 커질 수 있으므로 집중도를 함께 확인하세요.`;
   return `${item.koreanName} ETF 후보입니다. 여러 종목·섹터를 묶어 노출하는 자산으로, 기초 노출과 중복 비중을 함께 확인하세요.`;
 }
 function matchesStyleFilter(item, styleFilter) {
   if (styleFilter === "all") return true;
   if (styleFilter === "beginner") return item.beginnerFit;
-
   const exposureType = inferExposureType(item);
-
-  if (styleFilter === "leveraged_inverse") return exposureType === "leveraged_inverse";
-  if (styleFilter === "bond") return exposureType === "bond";
-  if (styleFilter === "commodity") return exposureType === "commodity";
-  if (styleFilter === "reit") return exposureType === "reit";
-  if (styleFilter === "crypto") return exposureType === "crypto";
-
+  if (["leveraged_inverse", "bond", "commodity", "reit"].includes(styleFilter)) return exposureType === styleFilter;
   return item.goals?.includes(styleFilter) || item.strategy === styleFilter;
 }
-
+function sortCandidates(candidates = [], normalizedQuery = "") {
+  return [...candidates].sort((a, b) => {
+    const exactDiff = Number(getCandidateTicker(b) === normalizedQuery) - Number(getCandidateTicker(a) === normalizedQuery);
+    if (exactDiff) return exactDiff;
+    const representativeDiff = getRepresentativeRank(a) - getRepresentativeRank(b);
+    if (representativeDiff) return representativeDiff;
+    const tierDiff = getTierRank(a) - getTierRank(b);
+    if (tierDiff) return tierDiff;
+    const typeDiff = getAssetTypeRank(a) - getAssetTypeRank(b);
+    if (typeDiff) return typeDiff;
+    const statusDiff = getStatusRank(a) - getStatusRank(b);
+    if (statusDiff) return statusDiff;
+    return compareText(a.ticker, b.ticker);
+  });
+}
 function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
-  const normalizedQuery = normalizeTicker(query).toLowerCase();
-  return candidates.filter((item) => {
-    const searchable = [item.ticker, item.koreanName, item.market, getMarketLabel(item.market), item.type, getTypeLabel(item.type), item.strategy, getGoalLabel(item.strategy), getExposureLabel(item), ...(item.tags || []), ...(item.tags || []).map(getTagLabel)].join(" ").toLowerCase();
+  const normalizedQuery = getSearchQuery(query);
+  const filtered = candidates.filter((item) => {
+    const searchable = [
+      item.ticker,
+      item.koreanName,
+      item.market,
+      getMarketLabel(item.market),
+      item.type,
+      getTypeLabel(item.type),
+      item.strategy,
+      getGoalLabel(item.strategy),
+      getExposureLabel(item),
+      ...(item.tags || []),
+      ...(item.tags || []).map(getTagLabel),
+    ].join(" ").toLowerCase();
     const matchesQuery = !normalizedQuery || searchable.includes(normalizedQuery);
     const matchesStyle = matchesStyleFilter(item, styleFilter);
     const matchesRisk = riskLevel === "all" || item.riskLevel === riskLevel;
     const matchesType = type === "all" || item.type === type;
     return matchesQuery && matchesStyle && matchesRisk && matchesType;
   });
+  return sortCandidates(filtered, normalizedQuery);
 }
-
 function getPageNumbers(currentPage, totalPages) {
   if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
-  const pageSet = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
-  return Array.from(pageSet)
+  return Array.from(new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]))
     .filter((page) => page >= 1 && page <= totalPages)
     .sort((a, b) => a - b);
 }
 
 function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
-  const isKrCandidate = item.market === "KR";
-  const cardClassName = ["tickerResultCard", isAdded ? "added" : "", isKrCandidate ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
-
+  const cardClassName = ["tickerResultCard", isAdded ? "added" : "", item.market === "KR" ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
   return (
     <article className={cardClassName}>
       <div className="tickerResultMain">
-        <div className="tickerResultTitleBlock">
-          <strong className="tickerResultTicker">{item.ticker}</strong>
-          <span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span>
-        </div>
+        <div className="tickerResultTitleBlock"><strong className="tickerResultTicker">{item.ticker}</strong><span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span></div>
         <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
       </div>
       <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span></div>
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact">
-        <span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr)}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd)}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span>
-      </div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr)}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd)}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
@@ -195,57 +236,29 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
   const endIndex = Math.min(startIndex + pageSize, results.length);
   const pagedResults = useMemo(() => results.slice(startIndex, endIndex), [results, startIndex, endIndex]);
   const pageNumbers = useMemo(() => getPageNumbers(safeCurrentPage, totalPages), [safeCurrentPage, totalPages]);
+  useEffect(() => { setCurrentPage(1); }, [market, query, styleFilter, riskLevel, type, pageSize]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [market, query, styleFilter, riskLevel, type, pageSize]);
-
-  function applyMarket(value) { onMarketChange(value); }
-  function applyStyle(value) { setStyleFilter(value); setStatusText(`${getStyleLabel(value)} 후보를 표시합니다.`); }
-  function applyTypeFilter(value) { setType(value); setStatusText(`${getTypeLabel(value)} 기준으로 후보를 표시합니다.`); }
-  function applyPageSize(value) { setPageSize(Number(value)); setStatusText(`${value}개씩 후보를 표시합니다.`); }
   function handleAdd(item) {
     const ticker = normalizeTicker(item?.ticker);
     if (addedTickerSet.has(ticker)) { setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`); return; }
     const result = addAssetFromTickerCandidate(item);
-    if (result?.status === "duplicate") { setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`); return; }
     if (result?.status !== "success") { setStatusText(result?.message || `${ticker} 후보 자산을 추가하지 못했습니다.`); return; }
-    const marketNotice = item.market === "KR" ? " 한국 후보는 현재가와 지표를 수동값으로 먼저 점검해 주세요." : " 시뮬레이터에서 비중을 조정하세요.";
-    setStatusText(`${ticker} 후보 자산을 포트폴리오에 추가했습니다.${marketNotice}`);
+    setStatusText(`${ticker} 후보 자산을 포트폴리오에 추가했습니다.${item.market === "KR" ? " 한국 후보는 현재가와 지표를 수동값으로 먼저 점검해 주세요." : " 시뮬레이터에서 비중을 조정하세요."}`);
   }
 
   return (
     <section className="assetFinderPanel">
       <div className="assetFinderHeader"><div><p className="sectionLabel">Asset Finder</p><h4>{getMarketLabel(market)} ETF / 개별주 후보 탐색</h4><p>ETF는 지수·섹터를 묶어 노출하고, 개별주는 특정 기업 비중을 직접 확대합니다. 포트폴리오 방향이 달라지므로 시장과 자산군을 먼저 구분해서 선택하세요.</p></div><div className="assetFinderStatusGroup"><span className="tickerMasterCount">{getMarketLabel(market)} CSV 후보 {candidates.length}개</span><span className="assetFinderStatus">{statusText}</span></div></div>
       <div className="screenerFilterGrid" aria-label="스크리너 필터">
-        <label className="screenerFilterSelectLabel"><span>1차 시장</span><select value={market} onChange={(event) => applyMarket(event.target.value)}>{MARKET_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
-        <label className="screenerFilterSelectLabel"><span>2차 자산군</span><select value={type} onChange={(event) => applyTypeFilter(event.target.value)}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label className="screenerFilterSelectLabel"><span>3차 투자 스타일</span><select value={styleFilter} onChange={(event) => applyStyle(event.target.value)}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>1차 시장</span><select value={market} onChange={(event) => onMarketChange(event.target.value)}>{MARKET_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>2차 자산군</span><select value={type} onChange={(event) => { setType(event.target.value); setStatusText(`${getTypeLabel(event.target.value)} 기준으로 후보를 표시합니다.`); }}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>3차 투자 스타일</span><select value={styleFilter} onChange={(event) => { setStyleFilter(event.target.value); setStatusText(`${getStyleLabel(event.target.value)} 후보를 표시합니다.`); }}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>4차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       </div>
-      <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, ETF, 개별주, 배당, 나스닥, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
-      <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${results.length}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => applyPageSize(event.target.value)}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
+      <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, O, T, ETF, 배당, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
+      <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${results.length}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setStatusText(`${event.target.value}개씩 후보를 표시합니다.`); }}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
       <div className="tickerResultGrid compact">{pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
-      {results.length > pageSize ? (
-        <nav className="screenerPagination" aria-label="스크리너 페이지 이동">
-          <button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button>
-          <div className="screenerPageNumbers">
-            {pageNumbers.map((page, index) => {
-              const previousPage = pageNumbers[index - 1];
-              const showEllipsis = previousPage && page - previousPage > 1;
-              return (
-                <span key={page} className="pageNumberWrap">
-                  {showEllipsis ? <i>...</i> : null}
-                  <button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button>
-                </span>
-              );
-            })}
-          </div>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button>
-          <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button>
-        </nav>
-      ) : null}
+      {results.length > pageSize ? <nav className="screenerPagination" aria-label="스크리너 페이지 이동"><button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button><button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button><div className="screenerPageNumbers">{pageNumbers.map((page, index) => { const previousPage = pageNumbers[index - 1]; const showEllipsis = previousPage && page - previousPage > 1; return <span key={page} className="pageNumberWrap">{showEllipsis ? <i>...</i> : null}<button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button></span>; })}</div><button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button><button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button></nav> : null}
     </section>
   );
 }
