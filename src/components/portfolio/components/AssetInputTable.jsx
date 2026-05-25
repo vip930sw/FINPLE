@@ -97,12 +97,28 @@ function MetricTextValue({ value, formatDecimal }) {
   return <span className="assetTextValue numberTextValue">{formatDecimal(value, 2)}</span>;
 }
 
-function DividendYieldTextValue({ value, formatDecimal }) {
-  if (value === null || value === undefined || value === "") {
+function DividendYieldTextValue({ asset, formatDecimal }) {
+  const displayValue = String(asset?.displayDividendYield || "").trim();
+  const policy = String(asset?.dividendPolicy || "").trim();
+
+  if (displayValue) {
+    const normalizedDisplayValue = displayValue === "0.00%" && policy === "no_dividend" ? "-" : displayValue;
+    return <span className="assetTextValue numberTextValue">{normalizedDisplayValue}</span>;
+  }
+
+  if (policy === "no_dividend") {
+    return <span className="assetTextValue numberTextValue">-</span>;
+  }
+
+  if (policy === "review_required") {
+    return <span className="assetTextValue numberTextValue pendingMetricText">확인 필요</span>;
+  }
+
+  if (asset?.dividendYield === null || asset?.dividendYield === undefined || asset?.dividendYield === "") {
     return <span className="assetTextValue numberTextValue pendingMetricText">확인 중</span>;
   }
 
-  return <MetricTextValue value={value} formatDecimal={formatDecimal} />;
+  return <MetricTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />;
 }
 
 export default function AssetInputTable({
@@ -250,7 +266,7 @@ export default function AssetInputTable({
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.cagr} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.beta} formatDecimal={formatDecimal} />}</td>
                 <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <MetricTextValue value={asset.mdd} formatDecimal={formatDecimal} />}</td>
-                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue value={asset.dividendYield} formatDecimal={formatDecimal} />}</td>
+                <td className="numberCell tableNumberCell metricCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : <DividendYieldTextValue asset={asset} formatDecimal={formatDecimal} />}</td>
               </tr>
             );
           })}
