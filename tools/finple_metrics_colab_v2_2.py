@@ -7,14 +7,20 @@ Purpose
 - Do not blindly import KR CAGR when the value conflicts with benchmark/peer checks.
 - Treat old-listed KR ETFs with short fetched history as data-source or ticker-mapping issues, not as simple listing-age issues.
 - Attach a concrete fallback candidate and review action whenever cagrStatus becomes review_required.
-- Prepare manual override hooks for KR dividend yield.
+- Add KR-specific CAGR alternatives for KR-listed US index ETFs using USD proxy + USD/KRW FX.
+- Prepare manual and semi-automated fallback hooks for KR dividend/distribution yield.
 
 Recommended Colab install cell
-    !pip -q install yfinance finance-datareader pandas numpy openpyxl tqdm
+    !pip -q install yfinance finance-datareader pykrx pandas numpy openpyxl tqdm
 
 Input files
 - finple_candidates_v1.csv or .xlsx
 - Optional: kr_dividend_yield_override.csv
+
+KR dividend/distribution override columns
+- Direct yield mode: ticker,dividendYield,yieldStatus,yieldSource
+- Cash distribution mode: ticker,ttmDistributionAmount,basisPrice,yieldStatus,yieldSource
+- Single distribution mode: ticker,distributionAmount,basisPrice,yieldStatus,yieldSource
 
 Expected candidate columns
 - ticker, nameKr, market, quoteCurrency, assetType, strategy, riskLevel, tags
@@ -48,6 +54,11 @@ try:
 except Exception:  # pragma: no cover - Colab dependency
     fdr = None
 
+try:
+    from pykrx import stock as pykrx_stock
+except Exception:  # pragma: no cover - Colab dependency
+    pykrx_stock = None
+
 AS_OF_DATE = pd.Timestamp.today().normalize()
 LOOKBACK_YEARS = 10
 MIN_DATA_YEARS_FOR_CAGR = 7.0
@@ -56,10 +67,12 @@ SHORT_HISTORY_YEARS = 5.0
 OLD_LISTING_BUFFER_DAYS = 180
 PEER_GAP_LIMIT_PP = 6.0
 BENCHMARK_GAP_LIMIT_PP = 7.5
+KRW_PROXY_GAP_LIMIT_PP = 7.5
 KOSPI200_CAGR_SOFT_CAP = 15.0
 
 US_BETA_BENCHMARK = "SPY"
 KR_BETA_BENCHMARK = "KS200"
+USD_KRW_TICKER = "KRW=X"
 
 KR_MARKET_SUFFIX_RE = re.compile(r"^\d{6}[A-Z]?$")
 LISTING_DATE_COLUMNS = ["listingDate", "listedDate", "listDate", "상장일", "상장일자", "ipoDate", "IPO Date"]
@@ -81,6 +94,9 @@ BENCHMARK_TICKERS = {
     "NASDAQ100_USD": ["QQQ"],
 }
 
+KR_LISTED_US_INDEX_KEYS = {"S&P500_USD", "NASDAQ100_USD"}
+HEDGE_HINTS = ["환헤지", "헤지", "hedge", "hedged", "(h)", "-h", " h "]
+
 
 def norm_str(value) -> str:
     if value is None or (isinstance(value, float) and math.isnan(value)):
@@ -94,6 +110,19 @@ def norm_ticker(value) -> str:
 
 def is_kr_ticker(ticker: str, market: str = "") -> bool:
     return norm_str(market).upper() == "KR" or bool(KR_MARKET_SUFFIX_RE.match(norm_ticker(ticker)))
+
+
+def is_etf_asset(row: pd.Series) -> bool:
+    text = split_tags(row)
+    asset_type = norm_str(row.get("assetType")).lower()
+    return "etf" in asset_type or "etf" in text or "상장지수" in text
+
+
+def is_hedged_kr_etf(row: pd.Series) -> bool:
+    if not is_kr_ticker(row.get("ticker"), row.get("market")):
+        return False
+    text = f" {split_tags(row)} "
+    return any(hint.lower().replace(" ", "") in text.replace(" ", "") for hint in HEDGE_HINTS)
 
 
 def parse_listing_date(row: pd.Series) -> pd.Timestamp:
@@ -115,7 +144,7 @@ def is_old_listing(listing_date: pd.Timestamp, as_of: pd.Timestamp = AS_OF_DATE)
 
 def split_tags(row: pd.Series) -> str:
     values = []
-    for col in ["tags", "goals", "strategy", "nameKr"]:
+    for col in ["tags", "goals", "strategy", "nameKr", "name", "assetType"]:
         values.append(norm_str(row.get(col)))
     return "|".join(values).lower().replace(" ", "")
 
@@ -146,12 +175,20 @@ def clean_price_frame(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=["date", "close", "adjustedClose"])
     out = df.copy()
     if isinstance(out.index, pd.DatetimeIndex):
-        out = out.reset_index().rename(columns={"Date": "date", "index": "date"})
+        out = out.reset_index().rename(columns={"Date": "date", "날짜": "date", "index": "date"})
     out.columns = [str(c).strip() for c in out.columns]
-    date_col = "date" if "date" in out.columns else out.columns[0]
+    date_col = "date" if "date" in out.columns else "날짜" if "날짜" in out.columns else out.columns[0]
     out["date"] = pd.to_datetime(out[date_col], errors="coerce")
-    close_col = "Close" if "Close" in out.columns else "close" if "close" in out.columns else None
-    adj_col = "Adj Close" if "Adj Close" in out.columns else "adjustedClose" if "adjustedClose" in out.columns else None
+    close_col = None
+    for candidate in ["Close", "close", "종가", "종가 "]:
+        if candidate in out.columns:
+            close_col = candidate
+            break
+    adj_col = None
+    for candidate in ["Adj Close", "adjustedClose", "수정종가", "수정 종가"]:
+        if candidate in out.columns:
+            adj_col = candidate
+            break
     if close_col is None:
         return pd.DataFrame(columns=["date", "close", "adjustedClose"])
     out["close"] = pd.to_numeric(out[close_col], errors="coerce")
@@ -176,11 +213,43 @@ def download_us_history(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> 
     return clean_price_frame(raw)
 
 
+def download_kr_history_pykrx(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    if pykrx_stock is None:
+        raise RuntimeError("pykrx is not installed")
+    start_s = start.strftime("%Y%m%d")
+    end_s = end.strftime("%Y%m%d")
+    last_error: Optional[Exception] = None
+    for fn_name in ["get_etf_ohlcv_by_date", "get_market_ohlcv_by_date"]:
+        try:
+            fn = getattr(pykrx_stock, fn_name)
+            raw = fn(start_s, end_s, norm_ticker(ticker))
+            df = clean_price_frame(raw)
+            if len(df) > 0:
+                return df
+        except Exception as exc:  # pykrx changes signatures occasionally.
+            last_error = exc
+            continue
+    if last_error:
+        raise last_error
+    return pd.DataFrame(columns=["date", "close", "adjustedClose"])
+
+
 def download_kr_history(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
-    if fdr is None:
-        raise RuntimeError("finance-datareader is not installed")
-    raw = fdr.DataReader(norm_ticker(ticker), start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
-    return clean_price_frame(raw)
+    errors = []
+    if fdr is not None:
+        try:
+            raw = fdr.DataReader(norm_ticker(ticker), start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
+            df = clean_price_frame(raw)
+            if len(df) > 0:
+                return df
+        except Exception as exc:
+            errors.append(f"fdr:{exc}")
+    if pykrx_stock is not None:
+        try:
+            return download_kr_history_pykrx(ticker, start, end)
+        except Exception as exc:
+            errors.append(f"pykrx:{exc}")
+    raise RuntimeError("KR history download failed: " + " | ".join(errors))
 
 
 def download_history(row: pd.Series, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -189,6 +258,15 @@ def download_history(row: pd.Series, start: pd.Timestamp, end: pd.Timestamp) -> 
     if is_kr_ticker(ticker, market):
         return download_kr_history(ticker, start, end)
     return download_us_history(ticker, start, end)
+
+
+def download_fx_history(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+    if yf is None:
+        return pd.DataFrame(columns=["date", "close", "adjustedClose"])
+    try:
+        return download_us_history(USD_KRW_TICKER, start, end)
+    except Exception:
+        return pd.DataFrame(columns=["date", "close", "adjustedClose"])
 
 
 def closest_window(df: pd.DataFrame, years: int = LOOKBACK_YEARS, as_of: pd.Timestamp = AS_OF_DATE) -> pd.DataFrame:
@@ -265,6 +343,26 @@ def download_benchmark(key: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.D
     return pd.DataFrame(columns=["date", "close", "adjustedClose"])
 
 
+def calc_krw_proxy_cagr(
+    benchmark_key: str,
+    us_proxy_df: pd.DataFrame,
+    fx_df: pd.DataFrame,
+    hedged: bool,
+) -> Tuple[Optional[float], str, Optional[float], Optional[float]]:
+    if benchmark_key not in KR_LISTED_US_INDEX_KEYS or us_proxy_df.empty:
+        return None, "", None, None
+    us_proxy_cagr = calc_cagr(us_proxy_df["close"], us_proxy_df["date"])
+    fx_cagr = None if fx_df.empty else calc_cagr(fx_df["close"], fx_df["date"])
+    if us_proxy_cagr is None:
+        return None, "", None, fx_cagr
+    if hedged:
+        return round(us_proxy_cagr, 2), "us_proxy_price_cagr_hedged", round(us_proxy_cagr, 2), fx_cagr
+    if fx_cagr is None:
+        return round(us_proxy_cagr, 2), "us_proxy_price_cagr_fx_missing", round(us_proxy_cagr, 2), fx_cagr
+    combined = ((1 + us_proxy_cagr / 100) * (1 + fx_cagr / 100) - 1) * 100
+    return round(combined, 2), "us_proxy_price_cagr_plus_usdkrw", round(us_proxy_cagr, 2), round(fx_cagr, 2)
+
+
 def classify_history_status(data_years: float, old_listing: bool = False) -> str:
     if data_years < 3:
         return "insufficient_history"
@@ -284,10 +382,15 @@ def build_peer_groups(metrics: pd.DataFrame) -> pd.DataFrame:
 
 
 def pick_cagr_alternative(row: pd.Series) -> Tuple[Optional[float], str, str]:
+    market = norm_str(row.get("market")).upper()
+    benchmark_key = norm_str(row.get("benchmarkKey"))
+    krw_proxy_cagr = row.get("krwProxyCagr10y")
     benchmark_cagr = row.get("benchmarkCagr10y")
     peer_median = row.get("peerMedianCagr10y")
-    benchmark_key = norm_str(row.get("benchmarkKey"))
 
+    if market == "KR" and benchmark_key in KR_LISTED_US_INDEX_KEYS and pd.notna(krw_proxy_cagr):
+        basis = norm_str(row.get("proxyCagrBasis")) or "krw_proxy_cagr"
+        return round(float(krw_proxy_cagr), 2), basis, "국내상장 해외지수 ETF는 미국 원 ETF CAGR과 USD/KRW 환율을 반영한 원화 프록시 CAGR 대체 검토"
     if pd.notna(benchmark_cagr):
         return round(float(benchmark_cagr), 2), "benchmarkCagr10y", f"동일 기간 {benchmark_key} 벤치마크 CAGR 대체 검토"
     if pd.notna(peer_median):
@@ -304,12 +407,14 @@ def build_review_action(row: pd.Series, reasons: list[str], alternative_source: 
         actions.append("상장일은 10년 이상으로 보이므로 상장기간 부족이 아니라 데이터 소스/티커 매핑 오류 가능성을 먼저 확인")
     if "kospi200_cagr_soft_cap_exceeded" in reasons:
         actions.append("KOSPI200 계열 ETF는 20%대 CAGR을 그대로 쓰지 말고 동일 기간 KOSPI200 벤치마크 CAGR 또는 peer median으로 대체 검토")
+    if "krw_proxy_gap_exceeded" in reasons:
+        actions.append("국내상장 해외지수 ETF는 미국 원 ETF + USD/KRW 원화 프록시 CAGR과 비교해 괴리 원인을 확인")
     if "benchmark_gap_exceeded" in reasons:
         actions.append("벤치마크 대비 괴리가 커서 가격 기준, 수정주가, 분배금 조정, 액면분할 반영 여부 확인")
     if "peer_gap_exceeded" in reasons:
         actions.append("동종 ETF 중앙값과 괴리가 커서 동일지수 추종 ETF와 비교 검증")
-    if benchmark_key in ["S&P500_USD", "NASDAQ100_USD"] and norm_str(row.get("market")).upper() == "KR":
-        actions.append("국내상장 해외지수 ETF는 원화 기준/달러 기준/환헤지 여부를 분리하고 원화환산 벤치마크와 비교")
+    if benchmark_key in KR_LISTED_US_INDEX_KEYS and norm_str(row.get("market")).upper() == "KR":
+        actions.append("원화 기준/달러 기준/환헤지 여부를 분리하고 원화환산 벤치마크와 비교")
 
     if alternative_source == "manual_review":
         actions.append("대체값도 불안정하므로 expectedCagr 공란 유지")
@@ -326,6 +431,7 @@ def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str, Optio
     benchmark_key = norm_str(row.get("benchmarkKey"))
     peer_median = row.get("peerMedianCagr10y")
     benchmark_cagr = row.get("benchmarkCagr10y")
+    krw_proxy_cagr = row.get("krwProxyCagr10y")
     old_listing = bool(row.get("oldListingFor10y"))
 
     if pd.isna(cagr):
@@ -347,11 +453,18 @@ def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str, Optio
     if market == "KR" and benchmark_key == "KOSPI200" and final_cagr > KOSPI200_CAGR_SOFT_CAP:
         reasons.append("kospi200_cagr_soft_cap_exceeded")
 
+    if market == "KR" and benchmark_key in KR_LISTED_US_INDEX_KEYS and pd.notna(krw_proxy_cagr):
+        if abs(final_cagr - float(krw_proxy_cagr)) > KRW_PROXY_GAP_LIMIT_PP:
+            reasons.append("krw_proxy_gap_exceeded")
+
     if pd.notna(peer_median) and abs(final_cagr - float(peer_median)) > PEER_GAP_LIMIT_PP:
         reasons.append("peer_gap_exceeded")
 
-    if pd.notna(benchmark_cagr) and abs(final_cagr - float(benchmark_cagr)) > BENCHMARK_GAP_LIMIT_PP:
-        reasons.append("benchmark_gap_exceeded")
+    # For KR-listed US index ETFs, benchmarkCagr10y is usually USD proxy CAGR.
+    # The more relevant comparison is krwProxyCagr10y, so do not double-flag benchmark_gap there.
+    if not (market == "KR" and benchmark_key in KR_LISTED_US_INDEX_KEYS):
+        if pd.notna(benchmark_cagr) and abs(final_cagr - float(benchmark_cagr)) > BENCHMARK_GAP_LIMIT_PP:
+            reasons.append("benchmark_gap_exceeded")
 
     if reasons:
         alternative_cagr, alternative_source, _ = pick_cagr_alternative(row)
@@ -361,6 +474,31 @@ def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str, Optio
     return final_cagr, "ok", "", None, "", ""
 
 
+def normalize_yield_override(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame(columns=["ticker", "dividendYield", "yieldStatus", "yieldSource"])
+    out = df.copy()
+    out.columns = [norm_str(c).replace("\ufeff", "") for c in out.columns]
+    out["ticker"] = out["ticker"].map(norm_ticker)
+    if "dividendYield" not in out.columns:
+        out["dividendYield"] = np.nan
+    if "yieldStatus" not in out.columns:
+        out["yieldStatus"] = "manual"
+    if "yieldSource" not in out.columns:
+        out["yieldSource"] = "manual_override"
+
+    basis_col = "basisPrice" if "basisPrice" in out.columns else "latestClose" if "latestClose" in out.columns else None
+    amount_col = "ttmDistributionAmount" if "ttmDistributionAmount" in out.columns else "distributionAmount" if "distributionAmount" in out.columns else "cashDividend" if "cashDividend" in out.columns else None
+    if basis_col and amount_col:
+        basis = pd.to_numeric(out[basis_col], errors="coerce")
+        amount = pd.to_numeric(out[amount_col], errors="coerce")
+        calculated = amount / basis * 100
+        out["dividendYield"] = pd.to_numeric(out["dividendYield"], errors="coerce").fillna(calculated)
+        out.loc[calculated.notna() & basis.gt(0), "yieldSource"] = out.loc[calculated.notna() & basis.gt(0), "yieldSource"].replace("", "manual_distribution_amount")
+
+    return out[["ticker", "dividendYield", "yieldStatus", "yieldSource"]]
+
+
 def load_dividend_override(path: Optional[str | Path]) -> pd.DataFrame:
     if not path:
         return pd.DataFrame(columns=["ticker", "dividendYield", "yieldStatus", "yieldSource"])
@@ -368,12 +506,7 @@ def load_dividend_override(path: Optional[str | Path]) -> pd.DataFrame:
     if not p.exists():
         return pd.DataFrame(columns=["ticker", "dividendYield", "yieldStatus", "yieldSource"])
     df = pd.read_csv(p, dtype={"ticker": str}, encoding="utf-8-sig")
-    df["ticker"] = df["ticker"].map(norm_ticker)
-    if "yieldStatus" not in df.columns:
-        df["yieldStatus"] = "manual"
-    if "yieldSource" not in df.columns:
-        df["yieldSource"] = "manual_override"
-    return df[["ticker", "dividendYield", "yieldStatus", "yieldSource"]]
+    return normalize_yield_override(df)
 
 
 def fetch_us_ttm_dividend_yield(ticker: str, latest_close: Optional[float]) -> Optional[float]:
@@ -391,11 +524,40 @@ def fetch_us_ttm_dividend_yield(ticker: str, latest_close: Optional[float]) -> O
         return None
 
 
+def fetch_kr_stock_dividend_yield_pykrx(ticker: str, as_of: pd.Timestamp = AS_OF_DATE) -> Optional[float]:
+    """Best-effort KR stock dividend yield via pykrx fundamentals.
+
+    pykrx generally covers listed stocks better than ETFs for DIV/DPS.
+    ETF distributions should normally be supplied through verified override CSV.
+    """
+    if pykrx_stock is None:
+        return None
+    for offset in range(0, 30):
+        date_s = (as_of - pd.Timedelta(days=offset)).strftime("%Y%m%d")
+        for market in ["KOSPI", "KOSDAQ", "KONEX"]:
+            try:
+                df = pykrx_stock.get_market_fundamental_by_ticker(date_s, market=market)
+                if df is None or len(df) == 0 or norm_ticker(ticker) not in df.index:
+                    continue
+                row = df.loc[norm_ticker(ticker)]
+                for col in ["DIV", "배당수익률", "DPS"]:
+                    if col in row.index and pd.notna(row[col]):
+                        value = float(row[col])
+                        if col == "DPS":
+                            continue
+                        return value
+            except Exception:
+                continue
+    return None
+
+
 def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional[str | Path] = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     start = AS_OF_DATE - pd.DateOffset(years=LOOKBACK_YEARS + 1)
     end = AS_OF_DATE
     histories: Dict[str, pd.DataFrame] = {}
     benchmark_histories: Dict[str, pd.DataFrame] = {}
+    us_proxy_histories: Dict[str, pd.DataFrame] = {}
+    fx_history = closest_window(download_fx_history(start, end), LOOKBACK_YEARS, end)
     rows = []
 
     for _, row in candidates.iterrows():
@@ -404,6 +566,7 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
         benchmark_key = infer_benchmark_key(row)
         listing_date = parse_listing_date(row)
         old_listing = is_old_listing(listing_date, end)
+        hedged = is_hedged_kr_etf(row)
         try:
             hist = download_history(row, start, end)
             win = closest_window(hist, LOOKBACK_YEARS, end)
@@ -437,6 +600,17 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
         beta = calc_beta(win, benchmark_df) if not win.empty and not benchmark_df.empty else None
         benchmark_cagr = calc_cagr(benchmark_df["close"], benchmark_df["date"]) if not benchmark_df.empty else None
 
+        krw_proxy_cagr = None
+        proxy_cagr_basis = ""
+        us_proxy_cagr = None
+        fx_cagr = None
+        if market == "KR" and benchmark_key in KR_LISTED_US_INDEX_KEYS:
+            proxy_ticker = BENCHMARK_TICKERS.get(benchmark_key, [""])[0]
+            if proxy_ticker and proxy_ticker not in us_proxy_histories:
+                us_proxy_histories[proxy_ticker] = closest_window(download_us_history(proxy_ticker, start, end), LOOKBACK_YEARS, end)
+            proxy_df = us_proxy_histories.get(proxy_ticker, pd.DataFrame(columns=["date", "close", "adjustedClose"]))
+            krw_proxy_cagr, proxy_cagr_basis, us_proxy_cagr, fx_cagr = calc_krw_proxy_cagr(benchmark_key, proxy_df, fx_history, hedged)
+
         dividend_yield = None
         yield_status = "pending"
         yield_source = ""
@@ -444,6 +618,10 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             dividend_yield = fetch_us_ttm_dividend_yield(ticker, latest_close)
             yield_status = "ok" if dividend_yield is not None else "pending"
             yield_source = "yfinance_ttm" if dividend_yield is not None else ""
+        elif market == "KR" and not is_etf_asset(row):
+            dividend_yield = fetch_kr_stock_dividend_yield_pykrx(ticker, end)
+            yield_status = "ok" if dividend_yield is not None else "pending"
+            yield_source = "pykrx_fundamental_div" if dividend_yield is not None else ""
 
         rows.append({
             **row.to_dict(),
@@ -452,12 +630,17 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             "benchmarkKey": benchmark_key,
             "listingDate": listing_date.date().isoformat() if pd.notna(listing_date) else "",
             "oldListingFor10y": old_listing,
+            "hedged": hedged,
             "effectiveStartDate": first_date.date().isoformat() if pd.notna(first_date) else "",
             "effectiveEndDate": last_date.date().isoformat() if pd.notna(last_date) else "",
             "dataYears": round(data_years, 2),
             "priceCagr10y": None if price_cagr is None else round(price_cagr, 2),
             "totalReturnCagr10y": None if total_return_cagr is None else round(total_return_cagr, 2),
             "benchmarkCagr10y": None if benchmark_cagr is None else round(benchmark_cagr, 2),
+            "krwProxyCagr10y": krw_proxy_cagr,
+            "proxyCagrBasis": proxy_cagr_basis,
+            "usProxyCagr10y": us_proxy_cagr,
+            "fxCagr10y": fx_cagr,
             "mdd10y": None if mdd is None else round(mdd, 2),
             "beta10y": None if beta is None else round(beta, 3),
             "dividendYield": None if dividend_yield is None else round(dividend_yield, 2),
@@ -503,6 +686,7 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             f"dataYears {r.get('dataYears')}",
             f"cagrStatus {r.get('cagrStatus')}",
             f"yieldStatus {r.get('yieldStatus')}",
+            f"krwProxyCagr {r.get('krwProxyCagr10y')} basis {r.get('proxyCagrBasis')}" if pd.notna(r.get("krwProxyCagr10y")) else "",
             f"altCagr {r.get('cagrAlternativeValue')} from {r.get('cagrAlternativeSource')}" if pd.notna(r.get("cagrAlternativeValue")) else "",
             f"review {r.get('reviewReason')}" if norm_str(r.get("reviewReason")) else "",
         ])),
@@ -536,7 +720,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("candidates", help="candidate csv/xlsx path")
-    parser.add_argument("--dividend-override", default=None, help="optional KR dividend yield override csv")
+    parser.add_argument("--dividend-override", default=None, help="optional KR dividend/distribution yield override csv")
     parser.add_argument("--output-dir", default=".")
     args = parser.parse_args()
 
