@@ -164,33 +164,6 @@ export default function SettingsPanel({
         </div>
       </div>
 
-      <div className={summary.overAmount > 0 ? "calculationControlPanel warning compact" : "calculationControlPanel compact"}>
-        <div className="startValueControlBlock">
-          <p>시작 평가금액 (원)</p>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={startValueInput}
-            onChange={(e) => handleStartValueInputChange(e.target.value)}
-            onBlur={commitStartValue}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-            aria-label="시작 평가금액 입력"
-          />
-        </div>
-
-        <div className="targetMetricCard currentWeightCard compact">
-          <p>표 하단 합계</p>
-          <strong>{formatDecimal(summary.total, 2)}%</strong>
-          <small className={summary.overAmount > 0 ? "overWeightLabel" : "remainingWeightLabel"}>
-            {summary.overAmount > 0
-              ? `초과 비중 ${formatDecimal(summary.overAmount, 2)}%`
-              : `남은 비중 ${formatDecimal(summary.remaining, 2)}%`}
-          </small>
-        </div>
-      </div>
-
       {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
 
       <div className="mobileDesktopNotice">
@@ -203,6 +176,9 @@ export default function SettingsPanel({
         totalAssetValue={totalAssetValue}
         simulationStartValue={simulationStartValue}
         targetWeightSummary={targetWeightSummary}
+        startValueInput={startValueInput}
+        handleStartValueInputChange={handleStartValueInputChange}
+        commitStartValue={commitStartValue}
         isEmptyAssetRow={isEmptyAssetRow}
         isAutoAsset={isAutoAsset}
         isAutoPriceAsset={isAutoPriceAsset}
