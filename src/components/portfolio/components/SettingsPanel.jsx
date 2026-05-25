@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AssetInputTable from "./AssetInputTable";
+import "./TargetWeightControls.css";
 
 export default function SettingsPanel({
   settings,
