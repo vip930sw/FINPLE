@@ -41,6 +41,7 @@ export function normalizeAsset(asset, index = 0) {
 
       quantity: Number(asset.quantity || 0),
       price: Number(asset.price || 0),
+      targetEvaluationAmount: normalizeNullableNumber(asset.targetEvaluationAmount, null),
       cagr: Number(asset.cagr || 0),
       beta: Number(asset.beta || 0),
       mdd: Number(asset.mdd || 0),

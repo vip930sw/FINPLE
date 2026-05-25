@@ -49,6 +49,20 @@ function getPlannedEvaluationAmount(startValue, targetWeightValue) {
   return startAmount * (targetWeight / 100);
 }
 
+function getAssetActualValue(asset = {}) {
+  const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAssetPlannedValue(asset = {}) {
+  const value = Number(asset.targetEvaluationAmount || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAssetWeightValue(asset = {}) {
+  return getAssetActualValue(asset) || getAssetPlannedValue(asset);
+}
+
 function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoading, onClick }) {
   return (
     <button
@@ -108,7 +122,7 @@ export default function AssetInputTable({
   resolveTickerCandidate,
   removeAsset,
 }) {
-  const renderTickerControl = (asset, index, emptyRow) => (
+  const renderTickerControl = (asset, index) => (
     <div className="tickerCellStack">
       <input
         value={asset.ticker}
@@ -122,9 +136,7 @@ export default function AssetInputTable({
         }}
         disabled={isBulkAssetLookupLoading}
       />
-      {!emptyRow && (
-        <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
-      )}
+      <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
     </div>
   );
 
@@ -207,8 +219,8 @@ export default function AssetInputTable({
 
         <tbody>
           {assets.map((asset, index) => {
-            const value = Number(asset.quantity || 0) * Number(asset.price || 0);
-            const weight = totalAssetValue > 0 ? (value / totalAssetValue) * 100 : 0;
+            const value = getAssetActualValue(asset);
+            const weight = totalAssetValue > 0 ? (getAssetWeightValue(asset) / totalAssetValue) * 100 : 0;
             const emptyRow = isEmptyAssetRow(asset);
             const lookupKey = asset.id || String(index);
             const lookupStatus = assetLookupStatus?.[lookupKey];
@@ -218,7 +230,8 @@ export default function AssetInputTable({
             const isNewlyAdded = recentlyAddedAssetId && asset.id === recentlyAddedAssetId;
             const targetWeightValue = getDisplayedTargetWeight(asset, index, weight, targetWeightDrafts);
             const plannedValue = getPlannedEvaluationAmount(simulationStartValue, targetWeightValue);
-            const displayedValue = value > 0 ? value : plannedValue;
+            const savedPlannedValue = getAssetPlannedValue(asset);
+            const displayedValue = value > 0 ? value : savedPlannedValue || plannedValue;
             const rowClassName = [
               isNewlyAdded ? "newAssetRow" : "",
               lookupRequired ? "lookupRequiredRow" : "",
@@ -228,7 +241,7 @@ export default function AssetInputTable({
 
             return (
               <tr key={asset.id || index} className={rowClassName}>
-                <td className="tickerCell">{renderTickerControl(asset, index, emptyRow)}</td>
+                <td className="tickerCell">{renderTickerControl(asset, index)}</td>
                 <td className="assetNameCell">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
                 <td className="numberCell tableNumberCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}</td>
                 <td className="numberCell tableNumberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>

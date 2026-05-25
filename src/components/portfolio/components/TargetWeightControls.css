@@ -1,0 +1,116 @@
+.fiveCardControls {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.belowTableSummary {
+  margin-top: 14px;
+}
+
+.simulatorTableActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 18px;
+  padding-top: 8px;
+}
+
+.tableActionLeftGroup {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.tableActionLeftGroup .addButton {
+  margin-top: 0;
+}
+
+.targetWeightInlineSummary {
+  min-width: 220px;
+  min-height: 56px;
+  margin-left: auto;
+  padding: 9px 18px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: right;
+  color: #0f172a;
+  line-height: 1.1;
+  background: #ffffff;
+  border: 2px solid #94a3b8;
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  flex: 0 0 auto;
+}
+
+.targetWeightInlineSummary strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.targetWeightInlineSummary small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+}
+
+.targetWeightInlineSummary.warning {
+  border-color: #dc2626;
+}
+
+.targetWeightInlineSummary.warning small {
+  color: #dc2626;
+}
+
+.tableCalculateButton {
+  min-width: 180px;
+  max-width: 220px;
+  height: 62px;
+  padding: 0 38px;
+  margin-left: 0;
+  border-radius: 16px;
+  flex: 0 0 180px;
+}
+
+@media (max-width: 1100px) {
+  .fiveCardControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .fiveCardControls {
+    grid-template-columns: 1fr;
+  }
+
+  .simulatorTableActionRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tableActionLeftGroup {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tableActionLeftGroup > button,
+  .tableCalculateButton {
+    width: 100%;
+    max-width: none;
+  }
+
+  .targetWeightInlineSummary {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    padding: 10px 16px;
+  }
+}

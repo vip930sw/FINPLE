@@ -150,6 +150,20 @@ function preserveNullableNumber(value, fallback = null) {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+function getAssetActualValue(asset = {}) {
+  const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAssetPlannedValue(asset = {}) {
+  const value = Number(asset.targetEvaluationAmount || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAssetWeightValue(asset = {}) {
+  return getAssetActualValue(asset) || getAssetPlannedValue(asset);
+}
+
 export default function usePortfolioSimulator() {
   const [initialPortfolioState] = useState(() => applyPortfolioPlanLimitToState(loadPortfolioState()));
   const [portfolioList, setPortfolioList] = useState(initialPortfolioState.portfolioList);
@@ -192,7 +206,7 @@ export default function usePortfolioSimulator() {
 
   function getActualAssetWeight(asset) {
     if (!asset || totalAssetValue <= 0) return 0;
-    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const value = getAssetWeightValue(asset);
     if (!Number.isFinite(value) || value <= 0) return 0;
     return (value / totalAssetValue) * 100;
   }
@@ -226,7 +240,7 @@ export default function usePortfolioSimulator() {
     hasCash: false,
     unsupportedCount: targetWeightUnsupportedCount,
     isOver: targetWeightTotal > 100.01,
-    isApplyDisabled: targetWeightRows.length === 0 || simulationStartValue <= 0 || !targetWeightIsBalanced || targetWeightUnsupportedCount > 0,
+    isApplyDisabled: targetWeightRows.length === 0 || simulationStartValue <= 0 || !targetWeightIsBalanced,
   };
 
   function showPlanLimitNotice(type) {
@@ -255,9 +269,9 @@ export default function usePortfolioSimulator() {
   }
 
   function equalizeTargetWeights() {
-    const rows = targetWeightRows.filter((row) => row.price > 0);
+    const rows = targetWeightRows;
     if (rows.length === 0) {
-      window.alert("균등분배할 수 있는 자산이 없습니다. 현재가가 있는 자산을 먼저 조회해 주세요.");
+      window.alert("균등분배할 수 있는 자산이 없습니다. 자산을 먼저 추가해 주세요.");
       return;
     }
 
@@ -268,7 +282,7 @@ export default function usePortfolioSimulator() {
       nextDrafts[row.key] = String(value);
     });
     setTargetWeightDrafts(nextDrafts);
-    setAssetLookupSummary("전체 자산 목표비중을 균등분배했습니다. 적용 버튼을 누르면 수량이 반영됩니다.");
+    setAssetLookupSummary("전체 자산 목표비중을 균등분배했습니다. 계산 버튼을 누르면 평가금액이 반영됩니다.");
   }
 
   function applyTargetWeights() {
@@ -284,12 +298,6 @@ export default function usePortfolioSimulator() {
       return;
     }
 
-    const unsupportedRows = rows.filter((row) => row.targetWeight > 0 && row.price <= 0);
-    if (unsupportedRows.length > 0) {
-      window.alert("현재가가 없는 자산에는 목표비중을 적용할 수 없습니다. 먼저 조회를 진행해 주세요.");
-      return;
-    }
-
     const nextTotal = rows.reduce((sum, row) => sum + row.targetWeight, 0);
     if (Math.abs(nextTotal - 100) > 0.01) {
       window.alert("목표비중 합계를 100%로 맞춘 뒤 적용해 주세요.");
@@ -297,16 +305,18 @@ export default function usePortfolioSimulator() {
     }
 
     const targetMap = new Map(rows.map((row) => [row.index, row.targetWeight]));
+    let missingPriceCount = 0;
     setAssets((previousAssets) => previousAssets.map((asset, index) => {
       if (!targetMap.has(index)) return asset;
       const price = Number(asset.price || 0);
       const targetWeight = Number(targetMap.get(index) || 0);
       const targetValue = startValue * (targetWeight / 100);
       const quantity = price > 0 ? Number((targetValue / price).toFixed(6)) : 0;
-      return { ...asset, quantity };
+      if (price <= 0 && targetWeight > 0) missingPriceCount += 1;
+      return { ...asset, quantity, targetEvaluationAmount: Number(targetValue.toFixed(0)) };
     }));
     setTargetWeightDrafts({});
-    setAssetLookupSummary("목표비중을 적용했습니다. 시작 평가금액 기준으로 수량과 평가금액이 재계산되었습니다.");
+    setAssetLookupSummary(missingPriceCount > 0 ? `목표비중을 적용했습니다. 현재가 없는 자산 ${missingPriceCount}개는 평가금액 기준으로 계산하고, 수량은 현재가 조회 후 보정됩니다.` : "목표비중을 적용했습니다. 시작 평가금액 기준으로 수량과 평가금액이 재계산되었습니다.");
   }
 
   function updateAsset(index, field, value) {
@@ -341,6 +351,7 @@ export default function usePortfolioSimulator() {
         ticker: nextTicker,
         name: tickerChanged ? "" : currentAsset.name,
         price: tickerChanged ? 0 : currentAsset.price,
+        targetEvaluationAmount: tickerChanged ? null : currentAsset.targetEvaluationAmount,
         cagr: tickerChanged ? 0 : currentAsset.cagr,
         beta: tickerChanged ? 0 : currentAsset.beta,
         mdd: tickerChanged ? 0 : currentAsset.mdd,
@@ -369,7 +380,7 @@ export default function usePortfolioSimulator() {
     const ticker = normalizeTicker(candidate.ticker || currentAsset.ticker);
     const currentPrice = Number(currentAsset.price || 0);
     const currentQuantity = Number(currentAsset.quantity || 0);
-    return normalizeAsset({ ...currentAsset, ticker, name: candidate.koreanName || candidate.name || currentAsset.name || ticker, market: candidate.market || currentAsset.market || "US", currency: currentAsset.currency || "KRW", quantity: currentQuantity, price: currentPrice, cagr: candidate.expectedCagr ?? candidate.cagr ?? currentAsset.cagr ?? 0, beta: candidate.beta ?? currentAsset.beta ?? 0, mdd: candidate.mdd ?? currentAsset.mdd ?? 0, dividendYield: candidate.dividendYield ?? currentAsset.dividendYield ?? null, priceMode: currentPrice > 0 ? currentAsset.priceMode : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: currentAsset.rawPrice || null, rawCurrency: candidate.currency || currentAsset.rawCurrency || null, exchangeRate: currentAsset.exchangeRate || null, lastUpdatedAt: currentAsset.lastUpdatedAt || null }, index);
+    return normalizeAsset({ ...currentAsset, ticker, name: candidate.koreanName || candidate.name || currentAsset.name || ticker, market: candidate.market || currentAsset.market || "US", currency: currentAsset.currency || "KRW", quantity: currentQuantity, price: currentPrice, targetEvaluationAmount: currentAsset.targetEvaluationAmount ?? null, cagr: candidate.expectedCagr ?? candidate.cagr ?? currentAsset.cagr ?? 0, beta: candidate.beta ?? currentAsset.beta ?? 0, mdd: candidate.mdd ?? currentAsset.mdd ?? 0, dividendYield: candidate.dividendYield ?? currentAsset.dividendYield ?? null, priceMode: currentPrice > 0 ? currentAsset.priceMode : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: currentAsset.rawPrice || null, rawCurrency: candidate.currency || currentAsset.rawCurrency || null, exchangeRate: currentAsset.exchangeRate || null, lastUpdatedAt: currentAsset.lastUpdatedAt || null }, index);
   }
 
   async function resolveTickerCandidate(index, options = {}) {
@@ -385,7 +396,7 @@ export default function usePortfolioSimulator() {
         nextAssets[index] = applyTickerCandidateToAsset(currentAsset, candidate, index);
         return nextAssets;
       });
-      if (!options.silent) setAssetLookupSummary(`${ticker} 티커 마스터 정보 적용. 비중을 입력하고 목표비중 적용을 누르면 수량이 계산됩니다.`);
+      if (!options.silent) setAssetLookupSummary(`${ticker} 티커 마스터 정보 적용. 비중을 입력하고 계산 버튼을 누르면 평가금액이 반영됩니다.`);
       return candidate;
     } catch (error) {
       if (!options.silent) setAssetLookupSummary(`${ticker}는 티커 마스터에서 찾지 못했습니다. 직접 입력값으로 유지합니다.`);
@@ -401,7 +412,10 @@ export default function usePortfolioSimulator() {
     const fetchedNameIsTickerOnly = normalizeTicker(fetchedName) === normalizedTicker;
     const currentNameIsTickerOnly = normalizeTicker(currentName) === normalizeTicker(currentAsset.ticker);
     const nextName = fetchedName && (!fetchedNameIsTickerOnly || !currentName || currentNameIsTickerOnly) ? fetchedName : currentName;
-    return normalizeAsset({ ...currentAsset, ticker: nextTicker, name: nextName, market: assetData.market || currentAsset.market, currency: assetData.currency || currentAsset.currency, price: assetData.price !== null && assetData.price !== undefined ? assetData.price : currentAsset.price, cagr: assetData.cagr !== null && assetData.cagr !== undefined ? assetData.cagr : currentAsset.cagr, beta: assetData.beta !== null && assetData.beta !== undefined ? assetData.beta : currentAsset.beta, mdd: assetData.mdd !== null && assetData.mdd !== undefined ? assetData.mdd : currentAsset.mdd, dividendYield: preserveNullableNumber(assetData.dividendYield, currentAsset.dividendYield), priceMode: assetData.priceMode || currentAsset.priceMode, metricMode: assetData.metricMode || currentAsset.metricMode, dataSource: assetData.dataSource || currentAsset.dataSource, cacheMode: assetData.cacheMode || currentAsset.cacheMode || null, rawPrice: assetData.rawPrice !== null && assetData.rawPrice !== undefined ? assetData.rawPrice : currentAsset.rawPrice, rawCurrency: assetData.rawCurrency || currentAsset.rawCurrency || null, exchangeRate: assetData.exchangeRate !== null && assetData.exchangeRate !== undefined ? assetData.exchangeRate : currentAsset.exchangeRate, lastUpdatedAt: assetData.fetchedAt || currentAsset.lastUpdatedAt }, index);
+    const nextPrice = assetData.price !== null && assetData.price !== undefined ? Number(assetData.price) : Number(currentAsset.price || 0);
+    const plannedValue = getAssetPlannedValue(currentAsset);
+    const nextQuantity = plannedValue > 0 && nextPrice > 0 ? Number((plannedValue / nextPrice).toFixed(6)) : currentAsset.quantity;
+    return normalizeAsset({ ...currentAsset, ticker: nextTicker, name: nextName, market: assetData.market || currentAsset.market, currency: assetData.currency || currentAsset.currency, quantity: nextQuantity, price: assetData.price !== null && assetData.price !== undefined ? assetData.price : currentAsset.price, targetEvaluationAmount: plannedValue > 0 ? plannedValue : currentAsset.targetEvaluationAmount, cagr: assetData.cagr !== null && assetData.cagr !== undefined ? assetData.cagr : currentAsset.cagr, beta: assetData.beta !== null && assetData.beta !== undefined ? assetData.beta : currentAsset.beta, mdd: assetData.mdd !== null && assetData.mdd !== undefined ? assetData.mdd : currentAsset.mdd, dividendYield: preserveNullableNumber(assetData.dividendYield, currentAsset.dividendYield), priceMode: assetData.priceMode || currentAsset.priceMode, metricMode: assetData.metricMode || currentAsset.metricMode, dataSource: assetData.dataSource || currentAsset.dataSource, cacheMode: assetData.cacheMode || currentAsset.cacheMode || null, rawPrice: assetData.rawPrice !== null && assetData.rawPrice !== undefined ? assetData.rawPrice : currentAsset.rawPrice, rawCurrency: assetData.rawCurrency || currentAsset.rawCurrency || null, exchangeRate: assetData.exchangeRate !== null && assetData.exchangeRate !== undefined ? assetData.exchangeRate : currentAsset.exchangeRate, lastUpdatedAt: assetData.fetchedAt || currentAsset.lastUpdatedAt }, index);
   }
 
   async function fetchAssetData(index) {
@@ -488,7 +502,7 @@ export default function usePortfolioSimulator() {
 
   function createAssetFromTickerCandidate(candidate = {}, index = assets.length) {
     const market = candidate.market || "US";
-    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market, exchange: candidate.exchange, currency: candidate.currency || "KRW", quoteCurrency: candidate.quoteCurrency || (market === "KR" ? "KRW" : "USD"), assetType: candidate.assetType || candidate.type || "ETF", quantity: 0, price: 0, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: preserveNullableNumber(candidate.dividendYield, null), priceMode: market === "KR" ? "manual" : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.quoteCurrency || candidate.currency || (market === "KR" ? "KRW" : "USD"), exchangeRate: null, lastUpdatedAt: null }, index);
+    return normalizeAsset({ ticker: candidate.ticker || "", name: candidate.koreanName || candidate.name || candidate.ticker || "", market, exchange: candidate.exchange, currency: candidate.currency || "KRW", quoteCurrency: candidate.quoteCurrency || (market === "KR" ? "KRW" : "USD"), assetType: candidate.assetType || candidate.type || "ETF", quantity: 0, price: 0, targetEvaluationAmount: null, cagr: candidate.expectedCagr ?? candidate.cagr ?? 0, beta: candidate.beta ?? 0, mdd: candidate.mdd ?? 0, dividendYield: preserveNullableNumber(candidate.dividendYield, null), priceMode: market === "KR" ? "manual" : "lookup-required", metricMode: "manual", dataSource: "ticker-master", cacheMode: null, rawPrice: null, rawCurrency: candidate.quoteCurrency || candidate.currency || (market === "KR" ? "KRW" : "USD"), exchangeRate: null, lastUpdatedAt: null }, index);
   }
 
   function addAssetFromTickerCandidate(candidate) {
@@ -509,7 +523,7 @@ export default function usePortfolioSimulator() {
     setRecentlyAddedAssetId(nextAsset.id);
     window.setTimeout(() => setRecentlyAddedAssetId(null), 4200);
     const marketLabel = nextAsset.market === "KR" ? "한국" : "미국";
-    const message = `${ticker} ${marketLabel} 후보 자산을 현재 포트폴리오에 추가했습니다. 비중을 입력하고 목표비중 적용을 누르세요.`;
+    const message = `${ticker} ${marketLabel} 후보 자산을 현재 포트폴리오에 추가했습니다. 비중을 입력하고 계산 버튼을 누르세요.`;
     setAssetLookupSummary(message);
     return { status: "success", ticker, asset: nextAsset, message };
   }

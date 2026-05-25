@@ -1,8 +1,24 @@
+function getAssetActualValue(asset = {}) {
+  const quantity = Number(asset.quantity || 0);
+  const price = Number(asset.price || 0);
+  const value = quantity * price;
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function getAssetPlannedValue(asset = {}) {
+  const plannedValue = Number(asset.targetEvaluationAmount || 0);
+  return Number.isFinite(plannedValue) && plannedValue > 0 ? plannedValue : 0;
+}
+
+function getAssetWeightValue(asset = {}) {
+  return getAssetActualValue(asset) || getAssetPlannedValue(asset);
+}
+
 export function calculatePortfolioResult(settings, assets) {
   const yearlyContribution = Number(settings.monthlyCashFlow || 0) * 12;
 
   const totalAssetValue = assets.reduce((sum, asset) => {
-    return sum + Number(asset.quantity || 0) * Number(asset.price || 0);
+    return sum + getAssetWeightValue(asset);
   }, 0);
 
   const configuredStartValue = Number(settings.startValue || 0);
@@ -10,25 +26,25 @@ export function calculatePortfolioResult(settings, assets) {
   const weightBaseValue = totalAssetValue > 0 ? totalAssetValue : simulationStartValue;
 
   const expectedCagr = assets.reduce((sum, asset) => {
-    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const value = getAssetWeightValue(asset);
     const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
     return sum + weight * Number(asset.cagr || 0);
   }, 0);
 
   const expectedDividendYield = assets.reduce((sum, asset) => {
-    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const value = getAssetWeightValue(asset);
     const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
     return sum + weight * Number(asset.dividendYield || 0);
   }, 0);
 
   const expectedBeta = assets.reduce((sum, asset) => {
-    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const value = getAssetWeightValue(asset);
     const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
     return sum + weight * Number(asset.beta || 0);
   }, 0);
 
   const simpleMdd = assets.reduce((sum, asset) => {
-    const value = Number(asset.quantity || 0) * Number(asset.price || 0);
+    const value = getAssetWeightValue(asset);
     const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
     return sum + weight * Number(asset.mdd || 0);
   }, 0);

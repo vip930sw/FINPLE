@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AssetInputTable from "./AssetInputTable";
+import "./TargetWeightControls.css";
 
 export default function SettingsPanel({
   settings,
@@ -90,6 +91,10 @@ export default function SettingsPanel({
     setInflationInput(formatDecimal(normalized, 1));
   };
 
+  const targetWeightNotice = summary.overAmount > 0
+    ? `초과 비중 ${formatDecimal(summary.overAmount, 2)}`
+    : `남은 비중 ${formatDecimal(summary.remaining, 2)}`;
+
   const TooltipLabel = ({ children, tooltip, label }) => (
     <div className="fieldLabelWithTooltip">
       <p>{children}</p>
@@ -106,7 +111,26 @@ export default function SettingsPanel({
         <p>선택한 자산의 목표비중과 투자 조건을 입력해 장기 성과를 계산합니다.</p>
       </div>
 
-      <div className="simulatorControls">
+      <div className="simulatorControls fiveCardControls">
+        <div className="summaryCard">
+          <TooltipLabel
+            label="시작 평가금액"
+            tooltip="목표비중을 적용할 기준 금액입니다. 현재가가 없는 자산도 이 금액과 목표비중을 기준으로 평가금액을 먼저 계산할 수 있습니다."
+          >
+            시작 평가금액 (원)
+          </TooltipLabel>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={startValueInput}
+            onChange={(e) => handleStartValueInputChange(e.target.value)}
+            onBlur={commitStartValue}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+          />
+        </div>
+
         <div className="summaryCard">
           <TooltipLabel
             label="월 투자금"
@@ -163,40 +187,6 @@ export default function SettingsPanel({
         </div>
       </div>
 
-      <div className={summary.overAmount > 0 ? "calculationControlPanel warning" : "calculationControlPanel"}>
-        <div className="startValueControlBlock">
-          <p>시작 평가금액 (원)</p>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={startValueInput}
-            onChange={(e) => handleStartValueInputChange(e.target.value)}
-            onBlur={commitStartValue}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-            aria-label="시작 평가금액 입력"
-          />
-        </div>
-
-        <div className="targetMetricCard currentWeightCard">
-          <p>목표비중 합계</p>
-          <strong>{formatDecimal(summary.total, 2)}%</strong>
-          <small className={summary.overAmount > 0 ? "overWeightLabel" : "remainingWeightLabel"}>
-            {summary.overAmount > 0
-              ? `초과 비중 ${formatDecimal(summary.overAmount, 2)}%`
-              : `남은 비중 ${formatDecimal(summary.remaining, 2)}%`}
-          </small>
-          {summary.unsupportedCount > 0 && (
-            <small className="warningText">현재가 없는 자산 {summary.unsupportedCount}개는 평가금액만 먼저 계산됩니다.</small>
-          )}
-        </div>
-
-        <button className="calculateWeightButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
-      </div>
-
-      {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
-
       <div className="mobileDesktopNotice">
         모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 먼저 목표비중을 입력하면 시작 평가금액 기준 평가금액을 계산하고, 현재가는 필요할 때 선택적으로 조회합니다.
       </div>
@@ -206,6 +196,7 @@ export default function SettingsPanel({
         targetWeightDrafts={targetWeightDrafts}
         totalAssetValue={totalAssetValue}
         simulationStartValue={simulationStartValue}
+        targetWeightSummary={targetWeightSummary}
         isEmptyAssetRow={isEmptyAssetRow}
         isAutoAsset={isAutoAsset}
         isAutoPriceAsset={isAutoPriceAsset}
@@ -221,12 +212,20 @@ export default function SettingsPanel({
         removeAsset={removeAsset}
       />
 
-      <div className="tableActionRow">
-        <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
-        <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows} disabled={isBulkAssetLookupLoading}>빈 행 정리</button>
-        <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
-        <button className="resetPortfolioButton" onClick={resetActivePortfolioAssets} disabled={isBulkAssetLookupLoading}>자산 초기화</button>
+      {assetLookupSummary && <div className="assetLookupSummary belowTableSummary" role="status">{assetLookupSummary}</div>}
+
+      <div className="tableActionRow simulatorTableActionRow">
+        <div className="tableActionLeftGroup">
+          <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
+          <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
+          <button className="resetPortfolioButton" onClick={resetActivePortfolioAssets} disabled={isBulkAssetLookupLoading}>자산 초기화</button>
+          <div className={summary.overAmount > 0 ? "targetWeightInlineSummary warning" : "targetWeightInlineSummary"}>
+            <strong>{formatDecimal(summary.total, 2)}%</strong>
+            <small>{targetWeightNotice}</small>
+          </div>
+        </div>
+        <button className="calculateWeightButton tableCalculateButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
       </div>
     </div>
   );
-}
+} 

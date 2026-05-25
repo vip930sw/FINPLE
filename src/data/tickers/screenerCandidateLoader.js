@@ -1,5 +1,6 @@
 import usScreenerCandidatesCsv from "./us_screener_candidates.csv?raw";
 import usScreenerCandidatesExtraCsv from "./us_screener_candidates_extra.csv?raw";
+import usScreenerCandidatesExpansionCsv from "./us_screener_candidates_expansion.csv?raw";
 import krScreenerCandidatesCsv from "./kr_screener_candidates.csv?raw";
 import krStockCandidatesCsv from "./kr_stock_candidates.csv?raw";
 import {
@@ -207,7 +208,12 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
 
 export const US_CORE_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesCsv);
 export const US_EXTRA_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesExtraCsv);
-export const US_SCREENER_CANDIDATES = uniqueByTicker([...US_CORE_CANDIDATES, ...US_EXTRA_CANDIDATES]);
+export const US_EXPANSION_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesExpansionCsv);
+export const US_SCREENER_CANDIDATES = uniqueByTicker([
+  ...US_CORE_CANDIDATES,
+  ...US_EXTRA_CANDIDATES,
+  ...US_EXPANSION_CANDIDATES,
+]);
 export const KR_ETF_CANDIDATES = loadScreenerCandidatesFromCsv(krScreenerCandidatesCsv);
 export const KR_STOCK_CANDIDATES = loadScreenerCandidatesFromCsv(krStockCandidatesCsv);
 export const KR_SCREENER_CANDIDATES = [...KR_ETF_CANDIDATES, ...KR_STOCK_CANDIDATES];
@@ -276,6 +282,7 @@ export const SCREENER_CANDIDATE_COUNTS = {
   US: US_SCREENER_CANDIDATES.length,
   US_CORE: US_CORE_CANDIDATES.length,
   US_EXTRA: US_EXTRA_CANDIDATES.length,
+  US_EXPANSION: US_EXPANSION_CANDIDATES.length,
   KR: KR_SCREENER_CANDIDATES.length,
   KR_ETF: KR_ETF_CANDIDATES.length,
   KR_STOCK: KR_STOCK_CANDIDATES.length,
