@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import { normalizeTicker } from "./portfolio/services/assetDataService";
@@ -60,6 +60,7 @@ const STYLE_OPTIONS = [
   { key: "reit", label: "부동산/리츠" },
   { key: "crypto", label: "가상화폐" },
 ];
+const PAGE_SIZE_OPTIONS = [20, 50, 100];
 
 function formatPercentValue(value, pendingText = "확인 중") {
   const numberValue = Number(value);
@@ -144,6 +145,14 @@ function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
   });
 }
 
+function getPageNumbers(currentPage, totalPages) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pageSet = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+  return Array.from(pageSet)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+}
+
 function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
   const isKrCandidate = item.market === "KR";
   const cardClassName = ["tickerResultCard", isAdded ? "added" : "", isKrCandidate ? "krTickerResultCard" : ""].filter(Boolean).join(" ");
@@ -172,13 +181,26 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
   const [styleFilter, setStyleFilter] = useState("all");
   const [riskLevel, setRiskLevel] = useState("all");
   const [type, setType] = useState("all");
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const [statusText, setStatusText] = useState(`${getMarketLabel(market)} CSV 후보 ${candidates.length}개를 불러왔습니다.`);
   const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
   const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type }), [candidates, query, styleFilter, riskLevel, type]);
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = results.length > 0 ? (safeCurrentPage - 1) * pageSize : 0;
+  const endIndex = Math.min(startIndex + pageSize, results.length);
+  const pagedResults = useMemo(() => results.slice(startIndex, endIndex), [results, startIndex, endIndex]);
+  const pageNumbers = useMemo(() => getPageNumbers(safeCurrentPage, totalPages), [safeCurrentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [market, query, styleFilter, riskLevel, type, pageSize]);
 
   function applyMarket(value) { onMarketChange(value); }
   function applyStyle(value) { setStyleFilter(value); setStatusText(`${getStyleLabel(value)} 후보를 표시합니다.`); }
   function applyTypeFilter(value) { setType(value); setStatusText(`${getTypeLabel(value)} 기준으로 후보를 표시합니다.`); }
+  function applyPageSize(value) { setPageSize(Number(value)); setStatusText(`${value}개씩 후보를 표시합니다.`); }
   function handleAdd(item) {
     const ticker = normalizeTicker(item?.ticker);
     if (addedTickerSet.has(ticker)) { setStatusText(`${ticker}는 이미 현재 포트폴리오에 추가되어 있습니다.`); return; }
@@ -199,8 +221,28 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
         <label className="screenerFilterSelectLabel"><span>4차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       </div>
       <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, ETF, 개별주, 배당, 나스닥, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
-      <div className="assetFinderResultToolbar"><span>{results.length > 0 ? `${results.length}개 후보 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div>
-      <div className="tickerResultGrid compact">{results.length > 0 ? results.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
+      <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${results.length}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => applyPageSize(event.target.value)}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
+      <div className="tickerResultGrid compact">{pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
+      {results.length > pageSize ? (
+        <nav className="screenerPagination" aria-label="스크리너 페이지 이동">
+          <button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button>
+          <div className="screenerPageNumbers">
+            {pageNumbers.map((page, index) => {
+              const previousPage = pageNumbers[index - 1];
+              const showEllipsis = previousPage && page - previousPage > 1;
+              return (
+                <span key={page} className="pageNumberWrap">
+                  {showEllipsis ? <i>...</i> : null}
+                  <button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button>
+                </span>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button>
+          <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button>
+        </nav>
+      ) : null}
     </section>
   );
 }
