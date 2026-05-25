@@ -1,4 +1,4 @@
-import finpleAppCandidates1000Csv from "./finple_app_candidates_1000_final_v1.csv?raw";
+import finpleAppCandidates2000Csv from "./finple_app_candidates_2000_final_v1.csv?raw";
 
 function stripBom(value = "") {
   return String(value || "").replace(/^\uFEFF/, "");
@@ -138,7 +138,7 @@ export function normalizeScreenerCandidate(row = {}) {
     tags: splitPipe(row.tags),
     notes: row.notes || "",
     metricMode: "final_csv_v1_price_close",
-    dataSource: "finple_app_candidates_1000_final_v1",
+    dataSource: "finple_app_candidates_2000_final_v1",
   };
 }
 
@@ -150,7 +150,7 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
   );
 }
 
-export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates1000Csv);
+export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates2000Csv);
 
 export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
   (candidate) => candidate.market === "US"
@@ -216,7 +216,7 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     reviewTag: candidate.reviewTag,
     reviewReason: candidate.reviewReason,
     metricMode: candidate.metricMode || "final_csv_v1_price_close",
-    dataSource: candidate.dataSource || "finple_app_candidates_1000_final_v1",
+    dataSource: candidate.dataSource || "finple_app_candidates_2000_final_v1",
   };
 }
 
