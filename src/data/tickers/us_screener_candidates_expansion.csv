@@ -1,0 +1,9 @@
+ticker,nameKr,market,currency,quoteCurrency,assetType,strategy,riskLevel,expectedCagr,beta,mdd,dividendYield,goals,beginnerFit,tags,notes
+JEPI,미국 프리미엄 인컴 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|defensive,true,배당|인컴|커버드콜|월배당,expanded US income candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+JEPQ,나스닥100 프리미엄 인컴 ETF,US,KRW,USD,ETF,dividend,medium-high,,,,,dividend|growth,false,배당|인컴|커버드콜|나스닥100|월배당,expanded US income candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+DIVO,미국 배당 인컴 ETF,US,KRW,USD,ETF,dividend,medium,,,,,dividend|core,true,배당|인컴|커버드콜,expanded US income candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+SNOW,스노우플레이크,US,KRW,USD,stock,growth,high,,,,,growth|aggressive,false,소프트웨어|클라우드|성장|고변동,expanded US growth stock candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+NOW,서비스나우,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,소프트웨어|클라우드|AI|성장,expanded US growth stock candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+PANW,팔로알토 네트웍스,US,KRW,USD,stock,growth,medium-high,,,,,growth|core,false,사이버보안|소프트웨어|성장,expanded US growth stock candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+CRWD,크라우드스트라이크,US,KRW,USD,stock,growth,high,,,,,growth,false,사이버보안|소프트웨어|고변동|성장,expanded US growth stock candidate; metrics v2.2.3 override; source snapshot 2026-05-25
+NET,클라우드플레어,US,KRW,USD,stock,growth,high,,,,,growth|aggressive,false,클라우드|네트워크|고변동|성장,expanded US growth stock candidate; metrics v2.2.3 override; source snapshot 2026-05-25
