@@ -1,0 +1,3 @@
+market,ticker,providerSymbol,nameKr,assetType,sourceUniverse,tier,strategy,riskLevel,goals,beginnerFit,tags,dataStatus,expectedCagr,beta,mdd,dividendYield,notes
+US,VOO,VOO,미국 S&P500 대표 ETF,ETF,manual_expansion_seed,core,core,medium,core,true,대표지수|S&P500|핵심,pending_metrics,,,,,sample row; replace or append expansion candidates
+KR,069500,069500,KODEX 200,ETF,manual_expansion_seed,core,core,medium,core,true,대표지수|KOSPI200|핵심,pending_metrics,,,,,sample row; replace or append expansion candidates
