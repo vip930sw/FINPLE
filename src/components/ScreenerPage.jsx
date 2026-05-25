@@ -61,14 +61,13 @@ const STYLE_OPTIONS = [
   { key: "crypto", label: "가상화폐" },
 ];
 
-function formatPercentValue(value) {
+function formatPercentValue(value, pendingText = "확인 중") {
   const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) return "-";
+  if (!Number.isFinite(numberValue)) return pendingText;
   return `${numberValue.toFixed(2)}%`;
 }
 function formatDividendYieldValue(value) {
-  if (value === null || value === undefined || value === "") return "확인 중";
-  return formatPercentValue(value);
+  return formatPercentValue(value, "확인 중");
 }
 function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value === value)?.label || TAG_LABEL_MAP[value] || value || "-"; }
 function getTagLabel(value) { return TAG_LABEL_MAP[value] || value; }
