@@ -98,19 +98,20 @@ function uniqueByTicker(candidates = []) {
 
 export function normalizeScreenerCandidate(row = {}) {
   const assetType = normalizeAssetType(row.assetType);
+  const market = row.market || "US";
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
     koreanName: row.nameKr || row.koreanName || row.name || "",
     nameKr: row.nameKr || row.koreanName || row.name || "",
-    market: row.market || "US",
+    market,
     currency: row.currency || "KRW",
-    quoteCurrency: row.quoteCurrency || (row.market === "KR" ? "KRW" : "USD"),
+    quoteCurrency: row.quoteCurrency || (market === "KR" ? "KRW" : "USD"),
     type: assetType,
     assetType,
     strategy: row.strategy || "core",
     riskLevel: row.riskLevel || "medium",
-    expectedCagr: toNullableNumber(row.expectedCagr),
+    expectedCagr: market === "KR" ? null : toNullableNumber(row.expectedCagr),
     beta: toNullableNumber(row.beta),
     mdd: toNullableNumber(row.mdd),
     dividendYield: toNullableNumber(row.dividendYield),
