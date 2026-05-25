@@ -1,3 +1,5 @@
+import { hydrateAssetFromScreenerCandidate } from "../../data/tickers/screenerCandidateLoader";
+
 export const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 export const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 export const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
@@ -9,7 +11,12 @@ export const DEFAULT_SETTINGS = {
     inflationRate: 2.5,
     startValue: 0,
   };
-export const DEFAULT_ASSETS = [
+
+function hydratePresetAssets(assets = []) {
+  return assets.map((asset) => hydrateAssetFromScreenerCandidate(asset));
+}
+
+export const DEFAULT_ASSETS = hydratePresetAssets([
     {
       ticker: "QQQ",
       name: "나스닥100 ETF",
@@ -50,8 +57,8 @@ export const DEFAULT_ASSETS = [
       mdd: -18,
       dividendYield: 0,
     },
-  ];
-export const DIVIDEND_ASSETS = [
+  ]);
+export const DIVIDEND_ASSETS = hydratePresetAssets([
     {
       ticker: "SCHD",
       name: "배당성장 ETF",
@@ -92,8 +99,8 @@ export const DIVIDEND_ASSETS = [
       mdd: -18,
       dividendYield: 0,
     },
-  ];
-export const STABLE_ASSETS = [
+  ]);
+export const STABLE_ASSETS = hydratePresetAssets([
     {
       ticker: "TLT",
       name: "미국 장기채",
@@ -134,8 +141,8 @@ export const STABLE_ASSETS = [
       mdd: -35,
       dividendYield: 0.7,
     },
-  ];
-export const GROWTH_ASSETS = [
+  ]);
+export const GROWTH_ASSETS = hydratePresetAssets([
     {
       ticker: "QQQ",
       name: "나스닥100 ETF",
@@ -166,7 +173,7 @@ export const GROWTH_ASSETS = [
       mdd: -18,
       dividendYield: 0,
     },
-  ];
+  ]);
 export const EMPTY_ASSETS = [
     {
       ticker: "",
@@ -176,7 +183,7 @@ export const EMPTY_ASSETS = [
       cagr: 0,
       beta: 0,
       mdd: 0,
-      dividendYield: 0,
+      dividendYield: null,
     },
   ];
 export const MOCK_ASSET_DATA = {
@@ -185,39 +192,39 @@ export const MOCK_ASSET_DATA = {
       market: "US",
       currency: "KRW",
       price: 430000,
-      cagr: 12,
-      beta: 1.2,
-      mdd: -35,
-      dividendYield: 0.7,
+      cagr: 20.81,
+      beta: 1.121,
+      mdd: -35.62,
+      dividendYield: 0.39,
     },
     SCHD: {
       name: "배당성장 ETF",
       market: "US",
       currency: "KRW",
       price: 110000,
-      cagr: 8,
-      beta: 0.85,
-      mdd: -25,
-      dividendYield: 3.5,
+      cagr: 9.37,
+      beta: 0.834,
+      mdd: -33.37,
+      dividendYield: 3.21,
     },
     TLT: {
       name: "미국 장기채",
       market: "US",
       currency: "KRW",
       price: 125000,
-      cagr: 4,
-      beta: 0.25,
-      mdd: -20,
-      dividendYield: 3.8,
+      cagr: -4.19,
+      beta: 0.153,
+      mdd: -51.76,
+      dividendYield: 4.60,
     },
     GLD: {
       name: "금 ETF",
       market: "US",
       currency: "KRW",
       price: 300000,
-      cagr: 6,
-      beta: 0.15,
-      mdd: -18,
+      cagr: 13.45,
+      beta: 0.115,
+      mdd: -22.00,
       dividendYield: 0,
     },
     BTC: {

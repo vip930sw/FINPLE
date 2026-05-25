@@ -82,10 +82,14 @@ function normalizeAssetType(assetType = "") {
   return "ETF";
 }
 
+function normalizeCandidateTicker(ticker = "") {
+  return stripBom(ticker).trim().toUpperCase();
+}
+
 function uniqueByTicker(candidates = []) {
   const seen = new Set();
   return candidates.filter((candidate) => {
-    const ticker = stripBom(candidate?.ticker || "").trim().toUpperCase();
+    const ticker = normalizeCandidateTicker(candidate?.ticker || "");
     if (!ticker || seen.has(ticker)) return false;
     seen.add(ticker);
     return true;
@@ -94,19 +98,20 @@ function uniqueByTicker(candidates = []) {
 
 export function normalizeScreenerCandidate(row = {}) {
   const assetType = normalizeAssetType(row.assetType);
+  const market = row.market || "US";
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
     koreanName: row.nameKr || row.koreanName || row.name || "",
     nameKr: row.nameKr || row.koreanName || row.name || "",
-    market: row.market || "US",
+    market,
     currency: row.currency || "KRW",
-    quoteCurrency: row.quoteCurrency || (row.market === "KR" ? "KRW" : "USD"),
+    quoteCurrency: row.quoteCurrency || (market === "KR" ? "KRW" : "USD"),
     type: assetType,
     assetType,
     strategy: row.strategy || "core",
     riskLevel: row.riskLevel || "medium",
-    expectedCagr: toNullableNumber(row.expectedCagr),
+    expectedCagr: market === "KR" ? null : toNullableNumber(row.expectedCagr),
     beta: toNullableNumber(row.beta),
     mdd: toNullableNumber(row.mdd),
     dividendYield: toNullableNumber(row.dividendYield),
@@ -130,6 +135,66 @@ export const US_SCREENER_CANDIDATES = uniqueByTicker([...US_CORE_CANDIDATES, ...
 export const KR_ETF_CANDIDATES = loadScreenerCandidatesFromCsv(krScreenerCandidatesCsv);
 export const KR_STOCK_CANDIDATES = loadScreenerCandidatesFromCsv(krStockCandidatesCsv);
 export const KR_SCREENER_CANDIDATES = [...KR_ETF_CANDIDATES, ...KR_STOCK_CANDIDATES];
+export const ALL_SCREENER_CANDIDATES = uniqueByTicker([
+  ...US_SCREENER_CANDIDATES,
+  ...KR_SCREENER_CANDIDATES,
+]);
+
+export function findScreenerCandidateByTicker(ticker, market = "") {
+  const normalizedTicker = normalizeCandidateTicker(ticker);
+  const normalizedMarket = String(market || "").trim().toUpperCase();
+  if (!normalizedTicker) return null;
+
+  return (
+    ALL_SCREENER_CANDIDATES.find((candidate) => {
+      const candidateTicker = normalizeCandidateTicker(candidate?.ticker);
+      const candidateMarket = String(candidate?.market || "").trim().toUpperCase();
+      return candidateTicker === normalizedTicker && (!normalizedMarket || candidateMarket === normalizedMarket);
+    }) ||
+    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeCandidateTicker(candidate?.ticker) === normalizedTicker) ||
+    null
+  );
+}
+
+export function createAssetPatchFromScreenerCandidate(candidate = {}) {
+  if (!candidate?.ticker) return {};
+
+  return {
+    ticker: candidate.ticker,
+    displayTicker: candidate.ticker,
+    providerSymbol: candidate.ticker,
+    name: candidate.koreanName || candidate.nameKr || candidate.ticker,
+    market: candidate.market,
+    currency: candidate.currency || "KRW",
+    quoteCurrency: candidate.quoteCurrency || (candidate.market === "KR" ? "KRW" : "USD"),
+    assetType: candidate.assetType || candidate.type || "ETF",
+    cagr: candidate.expectedCagr,
+    beta: candidate.beta,
+    mdd: candidate.mdd,
+    dividendYield: candidate.dividendYield,
+    metricMode: "csv",
+    dataSource: "csv",
+  };
+}
+
+export function hydrateAssetFromScreenerCandidate(asset = {}) {
+  const candidate = findScreenerCandidateByTicker(asset?.ticker, asset?.market);
+  if (!candidate) return asset;
+  const patch = createAssetPatchFromScreenerCandidate(candidate);
+
+  return {
+    ...asset,
+    ...patch,
+    name: asset.name || patch.name,
+    quantity: asset.quantity ?? 0,
+    price: asset.price ?? 0,
+    priceMode: asset.priceMode || "manual",
+    cagr: patch.cagr ?? asset.cagr ?? 0,
+    beta: patch.beta ?? asset.beta ?? 0,
+    mdd: patch.mdd ?? asset.mdd ?? 0,
+    dividendYield: patch.dividendYield ?? asset.dividendYield ?? null,
+  };
+}
 
 export const SCREENER_CANDIDATE_COUNTS = {
   US: US_SCREENER_CANDIDATES.length,

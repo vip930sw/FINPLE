@@ -180,7 +180,7 @@ export default function SettingsPanel({
         </div>
 
         <div className="targetMetricCard currentWeightCard">
-          <p>현재 비중</p>
+          <p>목표비중 합계</p>
           <strong>{formatDecimal(summary.total, 2)}%</strong>
           <small className={summary.overAmount > 0 ? "overWeightLabel" : "remainingWeightLabel"}>
             {summary.overAmount > 0
@@ -188,7 +188,7 @@ export default function SettingsPanel({
               : `남은 비중 ${formatDecimal(summary.remaining, 2)}%`}
           </small>
           {summary.unsupportedCount > 0 && (
-            <small className="warningText">현재가 없는 자산 {summary.unsupportedCount}개</small>
+            <small className="warningText">현재가 없는 자산 {summary.unsupportedCount}개는 평가금액만 먼저 계산됩니다.</small>
           )}
         </div>
 
@@ -198,13 +198,14 @@ export default function SettingsPanel({
       {assetLookupSummary && <div className="assetLookupSummary" role="status">{assetLookupSummary}</div>}
 
       <div className="mobileDesktopNotice">
-        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 현재가·CAGR·MDD·배당률은 조회값 또는 기준값을 사용하고, 사용자는 목표비중을 조정합니다.
+        모바일에서는 자산 입력 표를 좌우로 밀어 확인할 수 있습니다. 먼저 목표비중을 입력하면 시작 평가금액 기준 평가금액을 계산하고, 현재가는 필요할 때 선택적으로 조회합니다.
       </div>
 
       <AssetInputTable
         assets={assets}
         targetWeightDrafts={targetWeightDrafts}
         totalAssetValue={totalAssetValue}
+        simulationStartValue={simulationStartValue}
         isEmptyAssetRow={isEmptyAssetRow}
         isAutoAsset={isAutoAsset}
         isAutoPriceAsset={isAutoPriceAsset}
