@@ -67,7 +67,10 @@ function formatPercentValue(value, pendingText = "확인 중") {
   if (!Number.isFinite(numberValue)) return pendingText;
   return `${numberValue.toFixed(2)}%`;
 }
-function formatDividendYieldValue(value) {
+function formatDividendYieldValue(value, item = {}) {
+  if (item.displayDividendYield) return item.displayDividendYield;
+  if (item.dividendPolicy === "no_dividend") return "-";
+  if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
   return formatPercentValue(value, "확인 중");
 }
 function getGoalLabel(value) { return GOAL_OPTIONS.find((item) => item.value === value)?.label || TAG_LABEL_MAP[value] || value || "-"; }
@@ -169,7 +172,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span></div>
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
       <div className="tickerResultMetaGrid compact">
-        <span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr)}</span><span>배당 {formatDividendYieldValue(item.dividendYield)}</span><span>MDD {formatPercentValue(item.mdd)}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span>
+        <span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr)}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd)}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span>
       </div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
