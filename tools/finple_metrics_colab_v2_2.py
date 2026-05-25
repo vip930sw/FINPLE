@@ -5,6 +5,8 @@ Purpose
 - Recalculate candidate metrics with safer validation.
 - Keep price CAGR separate from total-return CAGR.
 - Do not blindly import KR CAGR when the value conflicts with benchmark/peer checks.
+- Treat old-listed KR ETFs with short fetched history as data-source or ticker-mapping issues, not as simple listing-age issues.
+- Attach a concrete fallback candidate and review action whenever cagrStatus becomes review_required.
 - Prepare manual override hooks for KR dividend yield.
 
 Recommended Colab install cell
@@ -16,6 +18,7 @@ Input files
 
 Expected candidate columns
 - ticker, nameKr, market, quoteCurrency, assetType, strategy, riskLevel, tags
+- Optional listing date columns: listingDate, listedDate, 상장일, 상장일자, ipoDate
 
 Main output files
 - finple_metrics_output_v2_2.csv
@@ -28,10 +31,9 @@ from __future__ import annotations
 import math
 import re
 import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -51,6 +53,7 @@ LOOKBACK_YEARS = 10
 MIN_DATA_YEARS_FOR_CAGR = 7.0
 MIN_DATA_YEARS_FOR_APP_CAGR = 9.5
 SHORT_HISTORY_YEARS = 5.0
+OLD_LISTING_BUFFER_DAYS = 180
 PEER_GAP_LIMIT_PP = 6.0
 BENCHMARK_GAP_LIMIT_PP = 7.5
 KOSPI200_CAGR_SOFT_CAP = 15.0
@@ -59,6 +62,7 @@ US_BETA_BENCHMARK = "SPY"
 KR_BETA_BENCHMARK = "KS200"
 
 KR_MARKET_SUFFIX_RE = re.compile(r"^\d{6}[A-Z]?$")
+LISTING_DATE_COLUMNS = ["listingDate", "listedDate", "listDate", "상장일", "상장일자", "ipoDate", "IPO Date"]
 
 BENCHMARK_ALIASES = {
     "KOSPI200": ["KOSPI200", "KS200", "코스피200", "국내지수", "코스피"],
@@ -92,7 +96,24 @@ def is_kr_ticker(ticker: str, market: str = "") -> bool:
     return norm_str(market).upper() == "KR" or bool(KR_MARKET_SUFFIX_RE.match(norm_ticker(ticker)))
 
 
-def split_tags(row: pd.Series) -> list[str]:
+def parse_listing_date(row: pd.Series) -> pd.Timestamp:
+    for col in LISTING_DATE_COLUMNS:
+        if col in row.index and norm_str(row.get(col)):
+            value = norm_str(row.get(col))
+            parsed = pd.to_datetime(value, errors="coerce")
+            if pd.notna(parsed):
+                return parsed.normalize()
+    return pd.NaT
+
+
+def is_old_listing(listing_date: pd.Timestamp, as_of: pd.Timestamp = AS_OF_DATE) -> bool:
+    if pd.isna(listing_date):
+        return False
+    cutoff = as_of - pd.DateOffset(years=LOOKBACK_YEARS) - pd.Timedelta(days=OLD_LISTING_BUFFER_DAYS)
+    return listing_date <= cutoff
+
+
+def split_tags(row: pd.Series) -> str:
     values = []
     for col in ["tags", "goals", "strategy", "nameKr"]:
         values.append(norm_str(row.get(col)))
@@ -143,7 +164,15 @@ def clean_price_frame(df: pd.DataFrame) -> pd.DataFrame:
 def download_us_history(ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     if yf is None:
         raise RuntimeError("yfinance is not installed")
-    raw = yf.download(ticker, start=start.strftime("%Y-%m-%d"), end=(end + timedelta(days=1)).strftime("%Y-%m-%d"), auto_adjust=False, actions=True, progress=False, threads=True)
+    raw = yf.download(
+        ticker,
+        start=start.strftime("%Y-%m-%d"),
+        end=(end + timedelta(days=1)).strftime("%Y-%m-%d"),
+        auto_adjust=False,
+        actions=True,
+        progress=False,
+        threads=True,
+    )
     return clean_price_frame(raw)
 
 
@@ -236,13 +265,13 @@ def download_benchmark(key: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.D
     return pd.DataFrame(columns=["date", "close", "adjustedClose"])
 
 
-def classify_history_status(data_years: float) -> str:
+def classify_history_status(data_years: float, old_listing: bool = False) -> str:
     if data_years < 3:
         return "insufficient_history"
     if data_years < SHORT_HISTORY_YEARS:
-        return "short_history_under_5y"
+        return "source_history_gap_old_listing" if old_listing else "short_history_under_5y"
     if data_years < MIN_DATA_YEARS_FOR_APP_CAGR:
-        return "short_history_under_10y"
+        return "source_history_gap_old_listing" if old_listing else "short_history_under_10y"
     return "ok"
 
 
@@ -254,21 +283,66 @@ def build_peer_groups(metrics: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str]:
+def pick_cagr_alternative(row: pd.Series) -> Tuple[Optional[float], str, str]:
+    benchmark_cagr = row.get("benchmarkCagr10y")
+    peer_median = row.get("peerMedianCagr10y")
+    benchmark_key = norm_str(row.get("benchmarkKey"))
+
+    if pd.notna(benchmark_cagr):
+        return round(float(benchmark_cagr), 2), "benchmarkCagr10y", f"동일 기간 {benchmark_key} 벤치마크 CAGR 대체 검토"
+    if pd.notna(peer_median):
+        return round(float(peer_median), 2), "peerMedianCagr10y", "동종 ETF peer median CAGR 대체 검토"
+    return None, "manual_review", "가격 데이터 원천, 티커 매핑, 상장일, 액면분할/분배금 조정 여부 수동 확인"
+
+
+def build_review_action(row: pd.Series, reasons: list[str], alternative_source: str) -> str:
+    benchmark_key = norm_str(row.get("benchmarkKey"))
+    old_listing = bool(row.get("oldListingFor10y"))
+    actions: list[str] = []
+
+    if old_listing and "source_history_gap_despite_old_listing" in reasons:
+        actions.append("상장일은 10년 이상으로 보이므로 상장기간 부족이 아니라 데이터 소스/티커 매핑 오류 가능성을 먼저 확인")
+    if "kospi200_cagr_soft_cap_exceeded" in reasons:
+        actions.append("KOSPI200 계열 ETF는 20%대 CAGR을 그대로 쓰지 말고 동일 기간 KOSPI200 벤치마크 CAGR 또는 peer median으로 대체 검토")
+    if "benchmark_gap_exceeded" in reasons:
+        actions.append("벤치마크 대비 괴리가 커서 가격 기준, 수정주가, 분배금 조정, 액면분할 반영 여부 확인")
+    if "peer_gap_exceeded" in reasons:
+        actions.append("동종 ETF 중앙값과 괴리가 커서 동일지수 추종 ETF와 비교 검증")
+    if benchmark_key in ["S&P500_USD", "NASDAQ100_USD"] and norm_str(row.get("market")).upper() == "KR":
+        actions.append("국내상장 해외지수 ETF는 원화 기준/달러 기준/환헤지 여부를 분리하고 원화환산 벤치마크와 비교")
+
+    if alternative_source == "manual_review":
+        actions.append("대체값도 불안정하므로 expectedCagr 공란 유지")
+    else:
+        actions.append(f"대체 후보: {alternative_source} 사용 여부 검토")
+
+    return " / ".join(dict.fromkeys(actions))
+
+
+def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str, Optional[float], str, str]:
     cagr = row.get("priceCagr10y")
     data_years = row.get("dataYears", 0)
     market = norm_str(row.get("market")).upper()
     benchmark_key = norm_str(row.get("benchmarkKey"))
     peer_median = row.get("peerMedianCagr10y")
     benchmark_cagr = row.get("benchmarkCagr10y")
+    old_listing = bool(row.get("oldListingFor10y"))
 
     if pd.isna(cagr):
-        return None, "pending", "cagr_missing"
-    if data_years < MIN_DATA_YEARS_FOR_CAGR:
-        return None, "hold", "insufficient_history_for_10y_cagr"
+        return None, "pending", "cagr_missing", None, "", "가격 데이터 확보 후 재계산"
 
-    reasons = []
+    reasons: list[str] = []
     final_cagr = float(cagr)
+
+    if data_years < MIN_DATA_YEARS_FOR_CAGR:
+        if old_listing:
+            alt, alt_source, alt_action = pick_cagr_alternative(row)
+            reasons.append("source_history_gap_despite_old_listing")
+            return None, "review_required", ";".join(reasons), alt, alt_source, alt_action
+        return None, "hold", "insufficient_history_for_10y_cagr", None, "", "상장/가격 데이터 기간이 짧아 since-inception CAGR로 별도 관리"
+
+    if old_listing and data_years < MIN_DATA_YEARS_FOR_APP_CAGR:
+        reasons.append("source_history_gap_despite_old_listing")
 
     if market == "KR" and benchmark_key == "KOSPI200" and final_cagr > KOSPI200_CAGR_SOFT_CAP:
         reasons.append("kospi200_cagr_soft_cap_exceeded")
@@ -280,11 +354,11 @@ def decide_cagr_status(row: pd.Series) -> Tuple[Optional[float], str, str]:
         reasons.append("benchmark_gap_exceeded")
 
     if reasons:
-        # Alternative: do not import the suspicious value into expectedCagr.
-        # Keep raw value in priceCagr10y and require benchmark/peer review.
-        return None, "review_required", ";".join(reasons)
+        alternative_cagr, alternative_source, _ = pick_cagr_alternative(row)
+        review_action = build_review_action(row, reasons, alternative_source)
+        return None, "review_required", ";".join(reasons), alternative_cagr, alternative_source, review_action
 
-    return final_cagr, "ok", ""
+    return final_cagr, "ok", "", None, "", ""
 
 
 def load_dividend_override(path: Optional[str | Path]) -> pd.DataFrame:
@@ -328,11 +402,23 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
         ticker = norm_ticker(row.get("ticker"))
         market = norm_str(row.get("market")).upper() or ("KR" if is_kr_ticker(ticker) else "US")
         benchmark_key = infer_benchmark_key(row)
+        listing_date = parse_listing_date(row)
+        old_listing = is_old_listing(listing_date, end)
         try:
             hist = download_history(row, start, end)
             win = closest_window(hist, LOOKBACK_YEARS, end)
         except Exception as exc:
-            rows.append({**row.to_dict(), "ticker": ticker, "market": market, "benchmarkKey": benchmark_key, "dataStatus": "download_error", "reviewReason": str(exc)})
+            rows.append({
+                **row.to_dict(),
+                "ticker": ticker,
+                "market": market,
+                "benchmarkKey": benchmark_key,
+                "listingDate": listing_date.date().isoformat() if pd.notna(listing_date) else "",
+                "oldListingFor10y": old_listing,
+                "dataStatus": "download_error",
+                "reviewReason": str(exc),
+                "reviewAction": "가격 데이터 다운로드 실패: 데이터 소스, 티커 매핑, 거래소 구분 확인",
+            })
             continue
 
         histories[ticker] = win
@@ -364,6 +450,8 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             "ticker": ticker,
             "market": market,
             "benchmarkKey": benchmark_key,
+            "listingDate": listing_date.date().isoformat() if pd.notna(listing_date) else "",
+            "oldListingFor10y": old_listing,
             "effectiveStartDate": first_date.date().isoformat() if pd.notna(first_date) else "",
             "effectiveEndDate": last_date.date().isoformat() if pd.notna(last_date) else "",
             "dataYears": round(data_years, 2),
@@ -375,8 +463,11 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             "dividendYield": None if dividend_yield is None else round(dividend_yield, 2),
             "yieldStatus": yield_status,
             "yieldSource": yield_source,
-            "dataStatus": classify_history_status(data_years),
+            "dataStatus": classify_history_status(data_years, old_listing),
             "reviewReason": "",
+            "reviewAction": "",
+            "cagrAlternativeValue": None,
+            "cagrAlternativeSource": "",
         })
         time.sleep(0.05)
 
@@ -388,6 +479,9 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
     metrics["cagrStatus"] = decisions[1]
     metrics["reviewReason"] = metrics["reviewReason"].fillna("") + decisions[2].fillna("").map(lambda x: f";{x}" if x else "")
     metrics["reviewReason"] = metrics["reviewReason"].str.strip(";")
+    metrics["cagrAlternativeValue"] = decisions[3]
+    metrics["cagrAlternativeSource"] = decisions[4]
+    metrics["reviewAction"] = decisions[5]
 
     override = load_dividend_override(dividend_override_path)
     if not override.empty:
@@ -405,9 +499,11 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
     app["notes"] = app.apply(
         lambda r: "; ".join(filter(None, [
             norm_str(r.get("notes")),
+            f"listingDate {r.get('listingDate')}" if norm_str(r.get("listingDate")) else "",
             f"dataYears {r.get('dataYears')}",
             f"cagrStatus {r.get('cagrStatus')}",
             f"yieldStatus {r.get('yieldStatus')}",
+            f"altCagr {r.get('cagrAlternativeValue')} from {r.get('cagrAlternativeSource')}" if pd.notna(r.get("cagrAlternativeValue")) else "",
             f"review {r.get('reviewReason')}" if norm_str(r.get("reviewReason")) else "",
         ])),
         axis=1,
@@ -419,7 +515,11 @@ def calculate_metrics(candidates: pd.DataFrame, dividend_override_path: Optional
             app[col] = ""
     app_export = app[base_cols]
 
-    review = metrics[(metrics["cagrStatus"] == "review_required") | (metrics["dataStatus"].isin(["download_error", "insufficient_history"])) | (metrics["yieldStatus"] == "pending")].copy()
+    review = metrics[
+        (metrics["cagrStatus"] == "review_required")
+        | (metrics["dataStatus"].isin(["download_error", "insufficient_history", "source_history_gap_old_listing"]))
+        | (metrics["yieldStatus"] == "pending")
+    ].copy()
     return metrics, app_export, review
 
 
