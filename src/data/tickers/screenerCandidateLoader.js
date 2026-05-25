@@ -2,6 +2,10 @@ import usScreenerCandidatesCsv from "./us_screener_candidates.csv?raw";
 import usScreenerCandidatesExtraCsv from "./us_screener_candidates_extra.csv?raw";
 import krScreenerCandidatesCsv from "./kr_screener_candidates.csv?raw";
 import krStockCandidatesCsv from "./kr_stock_candidates.csv?raw";
+import {
+  METRICS_POLICY_NOTE_V2_2_3,
+  METRICS_ROWS_V2_2_3,
+} from "./metricsOverridesV223";
 
 function stripBom(value = "") {
   return String(value || "").replace(/^\uFEFF/, "");
@@ -86,6 +90,76 @@ function normalizeCandidateTicker(ticker = "") {
   return stripBom(ticker).trim().toUpperCase();
 }
 
+function normalizeMarket(market = "") {
+  return String(market || "US").trim().toUpperCase();
+}
+
+function makeMetricKey(market = "", ticker = "") {
+  const normalizedMarket = normalizeMarket(market);
+  const normalizedTicker = normalizeCandidateTicker(ticker);
+  return normalizedMarket && normalizedTicker ? `${normalizedMarket}:${normalizedTicker}` : "";
+}
+
+function buildMetricsOverrideMap(rowsText = "") {
+  const overrideMap = new Map();
+
+  String(rowsText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      const [market, ticker, expectedCagr, beta, mdd, dividendYield] = line.split("\t");
+      const key = makeMetricKey(market, ticker);
+      if (!key) return;
+
+      const override = {
+        expectedCagr: toNullableNumber(expectedCagr),
+        beta: toNullableNumber(beta),
+        mdd: toNullableNumber(mdd),
+        dividendYield: toNullableNumber(dividendYield),
+      };
+
+      overrideMap.set(key, override);
+    });
+
+  return overrideMap;
+}
+
+const METRICS_OVERRIDES_V2_2_3 = buildMetricsOverrideMap(METRICS_ROWS_V2_2_3);
+
+export const SCREENER_METRICS_POLICY_NOTE = METRICS_POLICY_NOTE_V2_2_3;
+
+function getMetricsOverride(candidate = {}) {
+  return METRICS_OVERRIDES_V2_2_3.get(makeMetricKey(candidate.market, candidate.ticker)) || null;
+}
+
+function appendMetricNote(notes = "", extraNote = "") {
+  const current = String(notes || "").trim();
+  const extra = String(extraNote || "").trim();
+  if (!extra) return current;
+  if (current.includes(extra)) return current;
+  return [current, extra].filter(Boolean).join("; ");
+}
+
+function applyMetricsOverride(candidate = {}) {
+  const override = getMetricsOverride(candidate);
+  if (!override) return candidate;
+
+  return {
+    ...candidate,
+    expectedCagr: override.expectedCagr ?? candidate.expectedCagr,
+    beta: override.beta ?? candidate.beta,
+    mdd: override.mdd ?? candidate.mdd,
+    dividendYield: override.dividendYield ?? candidate.dividendYield,
+    metricMode: "v2_2_3_price_close",
+    dataSource: "csv_v2_2_3",
+    notes: appendMetricNote(
+      candidate.notes,
+      "metrics v2.2.3 price-close calibrated; dividendYield separate; KR representative index may use rolling median"
+    ),
+  };
+}
+
 function uniqueByTicker(candidates = []) {
   const seen = new Set();
   return candidates.filter((candidate) => {
@@ -119,6 +193,7 @@ export function normalizeScreenerCandidate(row = {}) {
     beginnerFit: toBoolean(row.beginnerFit),
     tags: splitPipe(row.tags),
     notes: row.notes || "",
+    metricMode: "csv",
     dataSource: "csv",
   };
 }
@@ -126,6 +201,7 @@ export function normalizeScreenerCandidate(row = {}) {
 export function loadScreenerCandidatesFromCsv(csvText = "") {
   return parseCsv(csvText)
     .map(normalizeScreenerCandidate)
+    .map(applyMetricsOverride)
     .filter((candidate) => candidate.ticker && candidate.koreanName);
 }
 
@@ -172,8 +248,8 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     beta: candidate.beta,
     mdd: candidate.mdd,
     dividendYield: candidate.dividendYield,
-    metricMode: "csv",
-    dataSource: "csv",
+    metricMode: candidate.metricMode || "csv",
+    dataSource: candidate.dataSource || "csv",
   };
 }
 
