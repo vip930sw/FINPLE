@@ -46,6 +46,11 @@ export function normalizeAsset(asset, index = 0) {
       beta: Number(asset.beta || 0),
       mdd: Number(asset.mdd || 0),
       dividendYield: normalizeNullableNumber(asset.dividendYield, null),
+      displayDividendYield: asset.displayDividendYield || "",
+      dividendPolicy: asset.dividendPolicy || "",
+      dividendSource: asset.dividendSource || "",
+      reviewTag: asset.reviewTag || "",
+      reviewReason: asset.reviewReason || "",
 
       priceMode: asset.priceMode || "manual",
       metricMode: asset.metricMode || "manual",
