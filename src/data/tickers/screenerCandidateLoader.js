@@ -1,12 +1,4 @@
-import usScreenerCandidatesCsv from "./us_screener_candidates.csv?raw";
-import usScreenerCandidatesExtraCsv from "./us_screener_candidates_extra.csv?raw";
-import usScreenerCandidatesExpansionCsv from "./us_screener_candidates_expansion.csv?raw";
-import krScreenerCandidatesCsv from "./kr_screener_candidates.csv?raw";
-import krStockCandidatesCsv from "./kr_stock_candidates.csv?raw";
-import {
-  METRICS_POLICY_NOTE_V2_2_3,
-  METRICS_ROWS_V2_2_3,
-} from "./metricsOverridesV223";
+import finpleAppCandidates1000Csv from "./finple_app_candidates_1000_final_v1.csv?raw";
 
 function stripBom(value = "") {
   return String(value || "").replace(/^\uFEFF/, "");
@@ -95,88 +87,30 @@ function normalizeMarket(market = "") {
   return String(market || "US").trim().toUpperCase();
 }
 
-function makeMetricKey(market = "", ticker = "") {
-  const normalizedMarket = normalizeMarket(market);
-  const normalizedTicker = normalizeCandidateTicker(ticker);
-  return normalizedMarket && normalizedTicker ? `${normalizedMarket}:${normalizedTicker}` : "";
-}
-
-function buildMetricsOverrideMap(rowsText = "") {
-  const overrideMap = new Map();
-
-  String(rowsText || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((line) => {
-      const [market, ticker, expectedCagr, beta, mdd, dividendYield] = line.split("\t");
-      const key = makeMetricKey(market, ticker);
-      if (!key) return;
-
-      const override = {
-        expectedCagr: toNullableNumber(expectedCagr),
-        beta: toNullableNumber(beta),
-        mdd: toNullableNumber(mdd),
-        dividendYield: toNullableNumber(dividendYield),
-      };
-
-      overrideMap.set(key, override);
-    });
-
-  return overrideMap;
-}
-
-const METRICS_OVERRIDES_V2_2_3 = buildMetricsOverrideMap(METRICS_ROWS_V2_2_3);
-
-export const SCREENER_METRICS_POLICY_NOTE = METRICS_POLICY_NOTE_V2_2_3;
-
-function getMetricsOverride(candidate = {}) {
-  return METRICS_OVERRIDES_V2_2_3.get(makeMetricKey(candidate.market, candidate.ticker)) || null;
-}
-
-function appendMetricNote(notes = "", extraNote = "") {
-  const current = String(notes || "").trim();
-  const extra = String(extraNote || "").trim();
-  if (!extra) return current;
-  if (current.includes(extra)) return current;
-  return [current, extra].filter(Boolean).join("; ");
-}
-
-function applyMetricsOverride(candidate = {}) {
-  const override = getMetricsOverride(candidate);
-  if (!override) return candidate;
-
-  return {
-    ...candidate,
-    expectedCagr: override.expectedCagr ?? candidate.expectedCagr,
-    beta: override.beta ?? candidate.beta,
-    mdd: override.mdd ?? candidate.mdd,
-    dividendYield: override.dividendYield ?? candidate.dividendYield,
-    metricMode: "v2_2_3_price_close",
-    dataSource: "csv_v2_2_3",
-    notes: appendMetricNote(
-      candidate.notes,
-      "metrics v2.2.3 price-close calibrated; dividendYield separate; KR representative index may use rolling median"
-    ),
-  };
-}
-
-function uniqueByTicker(candidates = []) {
+function uniqueByMarketTicker(candidates = []) {
   const seen = new Set();
+
   return candidates.filter((candidate) => {
+    const market = normalizeMarket(candidate?.market);
     const ticker = normalizeCandidateTicker(candidate?.ticker || "");
-    if (!ticker || seen.has(ticker)) return false;
-    seen.add(ticker);
+    const key = `${market}:${ticker}`;
+    if (!ticker || seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }
 
+export const SCREENER_METRICS_POLICY_NOTE =
+  "FINPLE final candidate CSV v1: CAGR/BETA/MDD are price-close based. " +
+  "dividendYield is stored as a numeric calculation value; displayDividendYield separates confirmed dividend, no-dividend '-', and review-required states.";
+
 export function normalizeScreenerCandidate(row = {}) {
+  const market = normalizeMarket(row.market || "US");
   const assetType = normalizeAssetType(row.assetType);
-  const market = row.market || "US";
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
+    providerSymbol: row.providerSymbol || row.ticker || "",
     koreanName: row.nameKr || row.koreanName || row.name || "",
     nameKr: row.nameKr || row.koreanName || row.name || "",
     market,
@@ -184,43 +118,65 @@ export function normalizeScreenerCandidate(row = {}) {
     quoteCurrency: row.quoteCurrency || (market === "KR" ? "KRW" : "USD"),
     type: assetType,
     assetType,
+    sourceUniverse: row.sourceUniverse || "",
+    tier: row.tier || "",
     strategy: row.strategy || "core",
     riskLevel: row.riskLevel || "medium",
     expectedCagr: toNullableNumber(row.expectedCagr),
     beta: toNullableNumber(row.beta),
     mdd: toNullableNumber(row.mdd),
     dividendYield: toNullableNumber(row.dividendYield),
+    displayDividendYield: row.displayDividendYield || "",
+    dividendPolicy: row.dividendPolicy || "",
+    dividendSource: row.dividendSource || "",
+    dataStatus: row.dataStatus || "",
+    reviewTag: row.reviewTag || "",
+    reviewReason: row.reviewReason || "",
+    metricsSource: row.metricsSource || "",
     goals: splitPipe(row.goals),
     beginnerFit: toBoolean(row.beginnerFit),
     tags: splitPipe(row.tags),
     notes: row.notes || "",
-    metricMode: "csv",
-    dataSource: "csv",
+    metricMode: "final_csv_v1_price_close",
+    dataSource: "finple_app_candidates_1000_final_v1",
   };
 }
 
 export function loadScreenerCandidatesFromCsv(csvText = "") {
-  return parseCsv(csvText)
-    .map(normalizeScreenerCandidate)
-    .map(applyMetricsOverride)
-    .filter((candidate) => candidate.ticker && candidate.koreanName);
+  return uniqueByMarketTicker(
+    parseCsv(csvText)
+      .map(normalizeScreenerCandidate)
+      .filter((candidate) => candidate.ticker && candidate.koreanName)
+  );
 }
 
-export const US_CORE_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesCsv);
-export const US_EXTRA_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesExtraCsv);
-export const US_EXPANSION_CANDIDATES = loadScreenerCandidatesFromCsv(usScreenerCandidatesExpansionCsv);
-export const US_SCREENER_CANDIDATES = uniqueByTicker([
-  ...US_CORE_CANDIDATES,
-  ...US_EXTRA_CANDIDATES,
-  ...US_EXPANSION_CANDIDATES,
-]);
-export const KR_ETF_CANDIDATES = loadScreenerCandidatesFromCsv(krScreenerCandidatesCsv);
-export const KR_STOCK_CANDIDATES = loadScreenerCandidatesFromCsv(krStockCandidatesCsv);
-export const KR_SCREENER_CANDIDATES = [...KR_ETF_CANDIDATES, ...KR_STOCK_CANDIDATES];
-export const ALL_SCREENER_CANDIDATES = uniqueByTicker([
-  ...US_SCREENER_CANDIDATES,
-  ...KR_SCREENER_CANDIDATES,
-]);
+export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates1000Csv);
+
+export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.market === "US"
+);
+
+export const KR_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.market === "KR"
+);
+
+export const US_CORE_CANDIDATES = US_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.tier === "core"
+);
+
+export const US_EXTRA_CANDIDATES = US_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.tier !== "core"
+);
+
+export const US_EXPANSION_CANDIDATES = US_EXTRA_CANDIDATES;
+
+export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.type === "ETF"
+);
+
+export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter(
+  (candidate) => candidate.type === "stock"
+);
 
 export function findScreenerCandidateByTicker(ticker, market = "") {
   const normalizedTicker = normalizeCandidateTicker(ticker);
@@ -244,7 +200,7 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
   return {
     ticker: candidate.ticker,
     displayTicker: candidate.ticker,
-    providerSymbol: candidate.ticker,
+    providerSymbol: candidate.providerSymbol || candidate.ticker,
     name: candidate.koreanName || candidate.nameKr || candidate.ticker,
     market: candidate.market,
     currency: candidate.currency || "KRW",
@@ -254,8 +210,10 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     beta: candidate.beta,
     mdd: candidate.mdd,
     dividendYield: candidate.dividendYield,
-    metricMode: candidate.metricMode || "csv",
-    dataSource: candidate.dataSource || "csv",
+    displayDividendYield: candidate.displayDividendYield,
+    dividendPolicy: candidate.dividendPolicy,
+    metricMode: candidate.metricMode || "final_csv_v1_price_close",
+    dataSource: candidate.dataSource || "finple_app_candidates_1000_final_v1",
   };
 }
 
@@ -286,4 +244,5 @@ export const SCREENER_CANDIDATE_COUNTS = {
   KR: KR_SCREENER_CANDIDATES.length,
   KR_ETF: KR_ETF_CANDIDATES.length,
   KR_STOCK: KR_STOCK_CANDIDATES.length,
+  ALL: ALL_SCREENER_CANDIDATES.length,
 };
