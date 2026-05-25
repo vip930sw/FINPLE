@@ -12,6 +12,7 @@ import {
 
 const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+const DEFAULT_KR_PRICE_API_BASE_URL = "/api/kr/price";
 const DEFAULT_BACKEND_TIMEOUT_MS = 12000;
 const DEFAULT_BULK_LOOKUP_DELAY_MS = 1200;
 
@@ -47,6 +48,11 @@ function getRuntimeAssetConfig(options = {}) {
       runtimeConfig.apiBaseUrl ||
       buildEnv.VITE_FINPLE_API_BASE_URL ||
       DEFAULT_API_BASE_URL,
+    krPriceApiBaseUrl:
+      options.krPriceApiBaseUrl ||
+      runtimeConfig.krPriceApiBaseUrl ||
+      buildEnv.VITE_FINPLE_KR_PRICE_API_BASE_URL ||
+      DEFAULT_KR_PRICE_API_BASE_URL,
     backendTimeoutMs: readNumber(
       options.backendTimeoutMs ||
         runtimeConfig.backendTimeoutMs ||
@@ -165,6 +171,35 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
   };
 }
 
+async function fetchKrPriceAssetData(ticker, config, csvCandidate) {
+  const requestUrl = `${config.krPriceApiBaseUrl}/${encodeURIComponent(ticker)}`;
+  const response = await fetchWithTimeout(requestUrl, {
+    timeoutMs: config.backendTimeoutMs,
+  });
+
+  const payload = await readJsonSafely(response);
+
+  if (!response.ok) {
+    const message = payload?.message || getUnsupportedKrLookupMessage(ticker);
+    const error = new Error(message);
+    error.code = payload?.code || "KR_PRICE_LOOKUP_FAILED";
+    throw error;
+  }
+
+  const apiData = payload?.data || payload;
+  const priceData = normalizeBackendAssetData(ticker, apiData, "KR");
+  const merged = mergeCsvMetrics(priceData, ticker, "KR");
+
+  return {
+    ...(csvCandidate ? mergeCsvMetrics(createLocalCsvAssetData(ticker, csvCandidate, "KR"), ticker, "KR") : {}),
+    ...merged,
+    price: normalizeNullableNumber(apiData.price) ?? merged.price,
+    priceMode: "auto",
+    metricMode: "csv",
+    dataSource: merged.dataSource?.includes("csv") ? merged.dataSource : "kr-price-api+csv",
+  };
+}
+
 function getRateLimitUntil() {
   if (typeof window === "undefined") return 0;
   return Number(window.localStorage.getItem(RATE_LIMIT_STORAGE_KEY) || 0);
@@ -207,7 +242,16 @@ export async function fetchAssetDataByTicker(ticker, options = {}) {
   const csvCandidate = getLocalCsvCandidate(normalizedTicker, config.market);
 
   if (isKrTickerLike(normalizedTicker, config.market)) {
-    if (csvCandidate) return createLocalCsvAssetData(normalizedTicker, csvCandidate, "KR");
+    if (csvCandidate) {
+      try {
+        return await fetchKrPriceAssetData(normalizedTicker, config, csvCandidate);
+      } catch (error) {
+        return {
+          ...createLocalCsvAssetData(normalizedTicker, csvCandidate, "KR"),
+          lookupError: error?.message || getUnsupportedKrLookupMessage(normalizedTicker),
+        };
+      }
+    }
     throw new Error(getUnsupportedKrLookupMessage(normalizedTicker));
   }
 
@@ -240,15 +284,30 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
 
     if (isKrTickerLike(ticker, config.market)) {
       if (csvCandidate) {
-        const data = createLocalCsvAssetData(ticker, csvCandidate, "KR");
-        lookupResults.push({ ticker, status: "success", data, cacheMode: "csv" });
-        onProgress?.({
-          ticker,
-          index: tickerIndex,
-          total: uniqueTickers.length,
-          status: "success",
-          message: `${ticker} CSV 지표 적용`,
-        });
+        try {
+          const data = await fetchKrPriceAssetData(ticker, config, csvCandidate);
+          lookupResults.push({ ticker, status: "success", data, cacheMode: "kr-price-api+csv" });
+          onProgress?.({
+            ticker,
+            index: tickerIndex,
+            total: uniqueTickers.length,
+            status: "success",
+            message: `${ticker} 현재가 조회 완료 + CSV 지표 적용`,
+          });
+        } catch (error) {
+          const data = {
+            ...createLocalCsvAssetData(ticker, csvCandidate, "KR"),
+            lookupError: error?.message || getUnsupportedKrLookupMessage(ticker),
+          };
+          lookupResults.push({ ticker, status: "success", data, cacheMode: "csv" });
+          onProgress?.({
+            ticker,
+            index: tickerIndex,
+            total: uniqueTickers.length,
+            status: "success",
+            message: `${ticker} CSV 지표 적용, 현재가는 기존 평가금액 기준 유지`,
+          });
+        }
         continue;
       }
 
