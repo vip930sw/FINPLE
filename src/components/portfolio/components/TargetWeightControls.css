@@ -1,22 +1,3 @@
-.calculationControlPanel.compact {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(220px, 360px);
-  gap: 16px;
-  align-items: stretch;
-  margin: 20px 0 18px;
-}
-
-.calculationControlPanel.compact .startValueControlBlock,
-.calculationControlPanel.compact .targetMetricCard {
-  min-height: 112px;
-}
-
-.calculationControlPanel.compact .targetMetricCard.compact {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .alignedAssetTable tfoot td {
   background: #f8fafc;
   border-top: 1px solid #cbd5e1;
@@ -24,10 +5,11 @@
   color: #0f172a;
   font-weight: 900;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .assetTableSummaryRow td:first-child {
-  text-align: left;
+  text-align: center;
   color: #334155;
 }
 
@@ -35,20 +17,52 @@
   text-align: right;
 }
 
+.assetTableSummaryRow .summaryInputCell {
+  text-align: right;
+}
+
+.assetTableSummaryRow .summaryInputCell input {
+  width: 100%;
+  max-width: 180px;
+  margin-left: auto;
+  display: block;
+  text-align: right;
+  font-weight: 900;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.assetTableSummaryRow .summaryWeightCell {
+  padding-right: 16px;
+  text-align: right;
+}
+
+.assetTableSummaryRow .summaryNoticeCell {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 900;
+  color: #94a3b8;
+}
+
+.assetTableSummaryRow .summaryNoticeCell.overWeightLabel {
+  color: #dc2626;
+}
+
 .simulatorTableActionRow {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-top: 22px;
   padding-top: 12px;
 }
 
 .tableActionLeftGroup {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .tableActionLeftGroup .addButton {
@@ -56,16 +70,16 @@
 }
 
 .tableCalculateButton {
-  min-width: 180px;
-  padding-inline: 28px;
+  min-width: 140px;
+  max-width: 180px;
+  height: 48px;
+  padding: 0 28px;
   margin-left: auto;
+  border-radius: 16px;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 900px) {
-  .calculationControlPanel.compact {
-    grid-template-columns: 1fr;
-  }
-
   .simulatorTableActionRow {
     flex-direction: column;
     align-items: stretch;
@@ -73,10 +87,12 @@
 
   .tableActionLeftGroup {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .tableActionLeftGroup > button,
   .tableCalculateButton {
     width: 100%;
+    max-width: none;
   }
 }
