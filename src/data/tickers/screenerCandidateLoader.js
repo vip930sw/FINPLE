@@ -1,4 +1,4 @@
-import finpleAppCandidates2000Csv from "./finple_app_candidates_2000_final_v1.csv?raw";
+import finpleAppCandidates6000Csv from "./finple_app_candidates_6000_balanced_v1.csv?raw";
 
 function stripBom(value = "") {
   return String(value || "").replace(/^\uFEFF/, "");
@@ -101,8 +101,7 @@ function uniqueByMarketTicker(candidates = []) {
 }
 
 export const SCREENER_METRICS_POLICY_NOTE =
-  "FINPLE final candidate CSV v1: CAGR/BETA/MDD are price-close based. " +
-  "dividendYield is stored as a numeric calculation value; displayDividendYield separates confirmed dividend, no-dividend '-', and review-required states.";
+  "FINPLE 6,000 balanced candidate CSV v1: expanded universe. Metrics may remain pending until separately verified.";
 
 export function normalizeScreenerCandidate(row = {}) {
   const market = normalizeMarket(row.market || "US");
@@ -144,8 +143,8 @@ export function normalizeScreenerCandidate(row = {}) {
     beginnerFit: toBoolean(row.beginnerFit),
     tags: splitPipe(row.tags),
     notes: row.notes || "",
-    metricMode: "final_csv_v1_price_close",
-    dataSource: "finple_app_candidates_2000_final_v1",
+    metricMode: "candidate_6000_balanced_v1",
+    dataSource: "finple_app_candidates_6000_balanced_v1",
   };
 }
 
@@ -157,7 +156,7 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
   );
 }
 
-export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates2000Csv);
+export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv);
 
 export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
   (candidate) => candidate.market === "US"
@@ -226,8 +225,8 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     sizeSource: candidate.sizeSource,
     reviewTag: candidate.reviewTag,
     reviewReason: candidate.reviewReason,
-    metricMode: candidate.metricMode || "final_csv_v1_price_close",
-    dataSource: candidate.dataSource || "finple_app_candidates_2000_final_v1",
+    metricMode: candidate.metricMode || "candidate_6000_balanced_v1",
+    dataSource: candidate.dataSource || "finple_app_candidates_6000_balanced_v1",
   };
 }
 
@@ -258,14 +257,3 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     reviewReason: patch.reviewReason || asset.reviewReason || "",
   };
 }
-
-export const SCREENER_CANDIDATE_COUNTS = {
-  US: US_SCREENER_CANDIDATES.length,
-  US_CORE: US_CORE_CANDIDATES.length,
-  US_EXTRA: US_EXTRA_CANDIDATES.length,
-  US_EXPANSION: US_EXPANSION_CANDIDATES.length,
-  KR: KR_SCREENER_CANDIDATES.length,
-  KR_ETF: KR_ETF_CANDIDATES.length,
-  KR_STOCK: KR_STOCK_CANDIDATES.length,
-  ALL: ALL_SCREENER_CANDIDATES.length,
-};
