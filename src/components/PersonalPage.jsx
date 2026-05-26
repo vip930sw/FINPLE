@@ -180,7 +180,7 @@ function PersonalPage({ onBack }) {
 
         <nav className="headerNav">
           <button type="button" onClick={() => moveToSimulatorTab("settings")}>
-            미국 시뮬레이터
+            시뮬레이터
           </button>
 
           <button type="button" onClick={() => moveToSimulatorTab("compare")}>
