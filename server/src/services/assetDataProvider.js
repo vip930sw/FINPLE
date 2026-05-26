@@ -13,7 +13,14 @@ const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
 const DEFAULT_USD_KRW_RATE = Number(process.env.DEFAULT_USD_KRW_RATE || 1350);
 const DEFAULT_CACHE_TTL_MS = Number(process.env.ASSET_CACHE_TTL_MS || 24 * 60 * 60 * 1000);
 const ALPHA_VANTAGE_TIMEOUT_MS = Number(process.env.ALPHA_VANTAGE_TIMEOUT_MS || 10000);
+const FX_RATE_CACHE_TTL_MS = Number(process.env.FX_RATE_CACHE_TTL_MS || 10 * 60 * 1000);
+const FX_RATE_TIMEOUT_MS = Number(process.env.FX_RATE_TIMEOUT_MS || 7000);
 const assetDataCache = new Map();
+let usdKrwRateCache = {
+  rate: null,
+  cachedAt: 0,
+  source: "",
+};
 
 export function normalizeTicker(ticker) {
   return String(ticker || "").trim().toUpperCase();
@@ -129,8 +136,10 @@ async function getKisOverseasAssetData(ticker) {
     exchange: masterItem?.exchange || masterItem?.market || "",
   });
   const targetCurrency = process.env.ASSET_PRICE_CURRENCY || "KRW";
-  const usdKrwRate = targetCurrency === "KRW" ? await getUsdKrwRate() : 1;
-  const convertedPrice = targetCurrency === "KRW" ? Math.round(Number(kisPriceData.rawPrice || kisPriceData.price || 0) * usdKrwRate) : Number(kisPriceData.rawPrice || kisPriceData.price || 0);
+  const usdKrwRateInfo = targetCurrency === "KRW" ? await getUsdKrwRateInfo() : { rate: 1, source: "none" };
+  const usdKrwRate = usdKrwRateInfo.rate;
+  const rawUsdPrice = Number(kisPriceData.rawPrice || kisPriceData.price || 0);
+  const convertedPrice = targetCurrency === "KRW" ? Math.round(rawUsdPrice * usdKrwRate) : rawUsdPrice;
 
   return normalizeAssetData({
     ...kisPriceData,
@@ -143,9 +152,10 @@ async function getKisOverseasAssetData(ticker) {
     priceMode: "auto",
     metricMode: "price-only",
     dataSource: kisPriceData.dataSource || "kis-overseas-price",
-    rawPrice: kisPriceData.rawPrice || kisPriceData.price,
+    rawPrice: rawUsdPrice,
     rawCurrency: "USD",
     exchangeRate: usdKrwRate,
+    exchangeRateSource: usdKrwRateInfo.source,
     fetchedAt: kisPriceData.fetchedAt || new Date().toISOString(),
   });
 }
@@ -242,9 +252,10 @@ async function getAlphaVantageAssetData(ticker) {
     });
   }
 
-  const usdKrwRate = targetCurrency === "KRW"
-    ? await getUsdKrwRate(apiKey)
-    : 1;
+  const usdKrwRateInfo = targetCurrency === "KRW"
+    ? await getUsdKrwRateInfo(apiKey)
+    : { rate: 1, source: "none" };
+  const usdKrwRate = usdKrwRateInfo.rate;
   const convertedPrice = targetCurrency === "KRW"
     ? rawUsdPrice * usdKrwRate
     : rawUsdPrice;
@@ -267,6 +278,7 @@ async function getAlphaVantageAssetData(ticker) {
     rawPrice: rawUsdPrice,
     rawCurrency: "USD",
     exchangeRate: usdKrwRate,
+    exchangeRateSource: usdKrwRateInfo.source,
     fetchedAt: new Date().toISOString(),
   });
 
@@ -275,38 +287,91 @@ async function getAlphaVantageAssetData(ticker) {
   return normalizedData;
 }
 
-async function getUsdKrwRate(apiKey = process.env.ALPHA_VANTAGE_API_KEY) {
-  if (process.env.USD_KRW_RATE) {
-    return Number(process.env.USD_KRW_RATE);
+async function getUsdKrwRateInfo(apiKey = process.env.ALPHA_VANTAGE_API_KEY) {
+  const envRate = normalizeNullableNumber(process.env.USD_KRW_RATE);
+  if (envRate && envRate > 0) {
+    return { rate: envRate, source: "env-USD_KRW_RATE" };
   }
 
-  if (String(process.env.ALPHA_VANTAGE_FETCH_FX || "false") !== "true") {
-    return DEFAULT_USD_KRW_RATE;
+  if (usdKrwRateCache.rate && Date.now() - usdKrwRateCache.cachedAt < FX_RATE_CACHE_TTL_MS) {
+    return { rate: usdKrwRateCache.rate, source: `${usdKrwRateCache.source}-cache` };
   }
 
-  if (!apiKey) {
-    return DEFAULT_USD_KRW_RATE;
+  if (String(process.env.FX_RATE_PROVIDER || "live").toLowerCase() !== "live") {
+    return { rate: DEFAULT_USD_KRW_RATE, source: "default" };
   }
 
   try {
-    const fxPayload = await requestAlphaVantage({
-      function: "CURRENCY_EXCHANGE_RATE",
-      from_currency: "USD",
-      to_currency: "KRW",
-      apikey: apiKey,
-    });
-
-    const fx = fxPayload?.["Realtime Currency Exchange Rate"] || {};
-    const exchangeRate = Number(fx?.["5. Exchange Rate"] || 0);
-
-    if (Number.isFinite(exchangeRate) && exchangeRate > 0) {
-      return exchangeRate;
-    }
+    const liveRate = await fetchOpenExchangeUsdKrwRate();
+    usdKrwRateCache = {
+      rate: liveRate,
+      cachedAt: Date.now(),
+      source: "open-er-api",
+    };
+    return { rate: liveRate, source: "open-er-api" };
   } catch (error) {
-    console.warn("USD/KRW 환율 조회 실패. 기본 환율을 사용합니다.", error.message);
+    console.warn("실시간 USD/KRW 환율 조회 실패. 보조 환율 조회를 시도합니다.", error.message);
   }
 
-  return DEFAULT_USD_KRW_RATE;
+  if (apiKey && String(process.env.ALPHA_VANTAGE_FETCH_FX || "false") === "true") {
+    try {
+      const fxPayload = await requestAlphaVantage({
+        function: "CURRENCY_EXCHANGE_RATE",
+        from_currency: "USD",
+        to_currency: "KRW",
+        apikey: apiKey,
+      });
+
+      const fx = fxPayload?.["Realtime Currency Exchange Rate"] || {};
+      const exchangeRate = Number(fx?.["5. Exchange Rate"] || 0);
+
+      if (Number.isFinite(exchangeRate) && exchangeRate > 0) {
+        usdKrwRateCache = {
+          rate: exchangeRate,
+          cachedAt: Date.now(),
+          source: "alpha-vantage-fx",
+        };
+        return { rate: exchangeRate, source: "alpha-vantage-fx" };
+      }
+    } catch (error) {
+      console.warn("Alpha Vantage USD/KRW 환율 조회 실패. 기본 환율을 사용합니다.", error.message);
+    }
+  }
+
+  return { rate: DEFAULT_USD_KRW_RATE, source: "default" };
+}
+
+async function fetchOpenExchangeUsdKrwRate() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FX_RATE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("https://open.er-api.com/v6/latest/USD", {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`환율 API 요청 실패: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const rate = Number(payload?.rates?.KRW || 0);
+
+    if (!Number.isFinite(rate) || rate <= 0) {
+      throw new Error("환율 API에서 USD/KRW 값을 찾지 못했습니다.");
+    }
+
+    return rate;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function getUsdKrwRate(apiKey = process.env.ALPHA_VANTAGE_API_KEY) {
+  return (await getUsdKrwRateInfo(apiKey)).rate;
 }
 
 async function requestAlphaVantage(params) {
@@ -385,6 +450,7 @@ function normalizeAssetData(data = {}) {
     rawPrice: data.rawPrice ?? null,
     rawCurrency: data.rawCurrency || null,
     exchangeRate: data.exchangeRate ?? null,
+    exchangeRateSource: data.exchangeRateSource || null,
     fetchedAt: data.fetchedAt || new Date().toISOString(),
   };
 }
