@@ -1,0 +1,17 @@
+{
+  "step": "108-9",
+  "file": "src/data/tickers/kr_etf_dividend_overlay_20260525.csv",
+  "source_file": "k-etf_rank_dividend_yield.csv / data_5447_20260525 배당.xlsx",
+  "row_count": 922,
+  "market_counts": {
+    "KR": 922
+  },
+  "asset_type_counts": {
+    "ETF": 922
+  },
+  "dividend_policy": "dividend_confirmed",
+  "min_dividend_yield": 0.0,
+  "max_dividend_yield": 26.28,
+  "sha256": "3b1ac408908b31a35e56359a80b81c5f5a1784f276e14ba2a447d65bc9c922be",
+  "notes": "Applied after final 2000 metrics overlay. This updates only KR ETF dividend fields and preserves price metrics such as CAGR, BETA and MDD."
+}
