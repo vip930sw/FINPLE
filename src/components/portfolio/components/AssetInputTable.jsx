@@ -9,7 +9,7 @@ function isLookupRequiredAsset(asset, emptyRow) {
   );
 }
 
-const CANONICAL_ASSET_NAME_MAP = {
+const CANONICAL_ETF_NAME_MAP = {
   QQQ: "Invesco QQQ Trust ETF",
   SCHD: "Schwab U.S. Dividend Equity ETF",
   TLT: "iShares 20+ Year Treasury Bond ETF",
@@ -24,14 +24,26 @@ const CANONICAL_ASSET_NAME_MAP = {
   BND: "Vanguard Total Bond Market ETF",
 };
 
+const CANONICAL_STOCK_NAME_MAP = {
+  "005930": "삼성전자",
+  AAPL: "Apple Inc.",
+  NVDA: "NVIDIA Corporation",
+  TSLA: "Tesla, Inc.",
+  MSFT: "Microsoft Corporation",
+  GOOGL: "Alphabet Inc.",
+  GOOG: "Alphabet Inc.",
+  AMZN: "Amazon.com, Inc.",
+  META: "Meta Platforms, Inc.",
+  O: "Realty Income Corporation",
+  T: "AT&T Inc.",
+};
+
 function isCashAsset(asset = {}) {
   return String(asset?.ticker || "").trim().toUpperCase() === "CASH";
 }
 
-function isEtfAsset(asset = {}) {
-  const type = String(asset?.assetType || asset?.type || "").trim().toUpperCase();
-  const name = String(asset?.name || "").trim().toUpperCase();
-  return type === "ETF" || name.includes("ETF");
+function isKnownEtfTicker(ticker = "") {
+  return Boolean(CANONICAL_ETF_NAME_MAP[String(ticker || "").trim().toUpperCase()]);
 }
 
 function getDisplayAssetName(asset = {}) {
@@ -39,8 +51,9 @@ function getDisplayAssetName(asset = {}) {
   const name = String(asset?.name || "").trim();
 
   if (isCashAsset(asset) && name === "현금 / 대기자금") return "현금 / 대기자금(예적금)";
-  if (CANONICAL_ASSET_NAME_MAP[ticker]) return CANONICAL_ASSET_NAME_MAP[ticker];
-  if (name && isEtfAsset(asset) && !/ETF/i.test(name)) return `${name} ETF`;
+  if (CANONICAL_STOCK_NAME_MAP[ticker]) return CANONICAL_STOCK_NAME_MAP[ticker];
+  if (CANONICAL_ETF_NAME_MAP[ticker]) return CANONICAL_ETF_NAME_MAP[ticker];
+  if (name && isKnownEtfTicker(ticker) && !/ETF/i.test(name)) return `${name} ETF`;
   return name || "-";
 }
 
@@ -106,9 +119,28 @@ function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoad
   );
 }
 
-function RowMoveButton({ children, disabled, onClick, label }) {
+function RowMoveIconButton({ children, disabled, onClick, label }) {
   return (
-    <button type="button" className="inlineLookupTextButton rowMoveTextButton" onClick={onClick} disabled={disabled} aria-label={label}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      style={{
+        width: 18,
+        height: 18,
+        border: "none",
+        background: "transparent",
+        color: disabled ? "#cbd5e1" : "#64748b",
+        padding: 0,
+        margin: 0,
+        lineHeight: "16px",
+        fontSize: 13,
+        fontWeight: 900,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
       {children}
     </button>
   );
@@ -187,31 +219,38 @@ export default function AssetInputTable({
     window.setTimeout(() => fetchAssetData(index), 0);
   };
 
-  const renderTickerControl = (asset, index) => (
-    <div className="tickerCellStack">
-      <input
-        value={asset.ticker}
-        onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
-        onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
-        onKeyDown={(e) => handleTickerEnter(e, index)}
-        disabled={isBulkAssetLookupLoading}
-      />
-      <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
-    </div>
-  );
+  const renderTickerControl = (asset, index) => {
+    const isFirstRow = index <= 0;
+    const isLastRow = index >= assets.length - 1;
+
+    return (
+      <div className="tickerCellStack">
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, flex: "0 0 18px" }}>
+            <RowMoveIconButton disabled={isBulkAssetLookupLoading || isFirstRow} onClick={() => moveAssetRow(index, -1)} label={`${asset.ticker || "자산"} 위로 이동`}>▲</RowMoveIconButton>
+            <RowMoveIconButton disabled={isBulkAssetLookupLoading || isLastRow} onClick={() => moveAssetRow(index, 1)} label={`${asset.ticker || "자산"} 아래로 이동`}>▼</RowMoveIconButton>
+          </div>
+          <input
+            value={asset.ticker}
+            onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
+            onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
+            onKeyDown={(e) => handleTickerEnter(e, index)}
+            disabled={isBulkAssetLookupLoading}
+          />
+        </div>
+        <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
+      </div>
+    );
+  };
 
   const renderAssetNameWithLookup = (asset, index, emptyRow, isLookingUp, lookupRequired) => {
     if (emptyRow) return <span className="emptyTextValue">-</span>;
     const displayName = getDisplayAssetName(asset);
-    const isFirstRow = index <= 0;
-    const isLastRow = index >= assets.length - 1;
     return (
       <div className="assetNameLookupStack">
         {isAutoAsset(asset) ? <span className="assetTextValue">{displayName}</span> : <input value={displayName} onChange={(e) => updateAsset(index, "name", e.target.value)} disabled={isBulkAssetLookupLoading} />}
-        <div className="assetRowActionGroup">
+        <div className="assetRowActionGroup" style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <InlineLookupButton isLookingUp={isLookingUp} lookupRequired={lookupRequired} isBulkAssetLookupLoading={isBulkAssetLookupLoading} onClick={() => fetchAssetData(index)} />
-          <RowMoveButton disabled={isBulkAssetLookupLoading || isFirstRow} onClick={() => moveAssetRow(index, -1)} label={`${asset.ticker || "자산"} 위로 이동`}>위로</RowMoveButton>
-          <RowMoveButton disabled={isBulkAssetLookupLoading || isLastRow} onClick={() => moveAssetRow(index, 1)} label={`${asset.ticker || "자산"} 아래로 이동`}>아래로</RowMoveButton>
         </div>
       </div>
     );
