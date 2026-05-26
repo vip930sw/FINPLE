@@ -9,13 +9,38 @@ function isLookupRequiredAsset(asset, emptyRow) {
   );
 }
 
+const CANONICAL_ASSET_NAME_MAP = {
+  QQQ: "Invesco QQQ Trust ETF",
+  SCHD: "Schwab U.S. Dividend Equity ETF",
+  TLT: "iShares 20+ Year Treasury Bond ETF",
+  VNQ: "Vanguard Real Estate ETF",
+  GLD: "SPDR Gold Shares ETF",
+  SPY: "SPDR S&P 500 ETF Trust",
+  VOO: "Vanguard S&P 500 ETF",
+  IVV: "iShares Core S&P 500 ETF",
+  VTI: "Vanguard Total Stock Market ETF",
+  DIA: "SPDR Dow Jones Industrial Average ETF Trust",
+  IWM: "iShares Russell 2000 ETF",
+  BND: "Vanguard Total Bond Market ETF",
+};
+
 function isCashAsset(asset = {}) {
   return String(asset?.ticker || "").trim().toUpperCase() === "CASH";
 }
 
+function isEtfAsset(asset = {}) {
+  const type = String(asset?.assetType || asset?.type || "").trim().toUpperCase();
+  const name = String(asset?.name || "").trim().toUpperCase();
+  return type === "ETF" || name.includes("ETF");
+}
+
 function getDisplayAssetName(asset = {}) {
+  const ticker = String(asset?.ticker || "").trim().toUpperCase();
   const name = String(asset?.name || "").trim();
+
   if (isCashAsset(asset) && name === "현금 / 대기자금") return "현금 / 대기자금(예적금)";
+  if (CANONICAL_ASSET_NAME_MAP[ticker]) return CANONICAL_ASSET_NAME_MAP[ticker];
+  if (name && isEtfAsset(asset) && !/ETF/i.test(name)) return `${name} ETF`;
   return name || "-";
 }
 
@@ -81,6 +106,14 @@ function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoad
   );
 }
 
+function RowMoveButton({ children, disabled, onClick, label }) {
+  return (
+    <button type="button" className="inlineLookupTextButton rowMoveTextButton" onClick={onClick} disabled={disabled} aria-label={label}>
+      {children}
+    </button>
+  );
+}
+
 function LookupRequiredValue({ quantity }) {
   const quantityMissing = Number(quantity || 0) <= 0;
   return <div className="assetInfoStack alignRight lookupRequiredStack"><span className="lookupRequiredText">조회 필요</span><small className="lookupRequiredHint">{quantityMissing ? "선택 사항" : "현재가 반영 필요"}</small></div>;
@@ -133,9 +166,36 @@ export default function AssetInputTable({
   resolveTickerCandidate,
   removeAsset,
 }) {
+  const triggerAssetTableRerender = (index) => {
+    const asset = assets[index];
+    if (!asset) return;
+    updateAsset(index, "name", asset.name || "");
+  };
+
+  const moveAssetRow = (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= assets.length || isBulkAssetLookupLoading) return;
+    const nextAssets = assets;
+    [nextAssets[index], nextAssets[targetIndex]] = [nextAssets[targetIndex], nextAssets[index]];
+    triggerAssetTableRerender(targetIndex);
+  };
+
+  const handleTickerEnter = (event, index) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.currentTarget.blur();
+    window.setTimeout(() => fetchAssetData(index), 0);
+  };
+
   const renderTickerControl = (asset, index) => (
     <div className="tickerCellStack">
-      <input value={asset.ticker} onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())} onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }} disabled={isBulkAssetLookupLoading} />
+      <input
+        value={asset.ticker}
+        onChange={(e) => updateAsset(index, "ticker", e.target.value.toUpperCase())}
+        onBlur={(e) => resolveTickerCandidate?.(index, { ticker: e.currentTarget.value })}
+        onKeyDown={(e) => handleTickerEnter(e, index)}
+        disabled={isBulkAssetLookupLoading}
+      />
       <button type="button" className="removeTextButton" onClick={() => removeAsset(index)} disabled={isBulkAssetLookupLoading}>삭제</button>
     </div>
   );
@@ -143,10 +203,16 @@ export default function AssetInputTable({
   const renderAssetNameWithLookup = (asset, index, emptyRow, isLookingUp, lookupRequired) => {
     if (emptyRow) return <span className="emptyTextValue">-</span>;
     const displayName = getDisplayAssetName(asset);
+    const isFirstRow = index <= 0;
+    const isLastRow = index >= assets.length - 1;
     return (
       <div className="assetNameLookupStack">
         {isAutoAsset(asset) ? <span className="assetTextValue">{displayName}</span> : <input value={displayName} onChange={(e) => updateAsset(index, "name", e.target.value)} disabled={isBulkAssetLookupLoading} />}
-        <InlineLookupButton isLookingUp={isLookingUp} lookupRequired={lookupRequired} isBulkAssetLookupLoading={isBulkAssetLookupLoading} onClick={() => fetchAssetData(index)} />
+        <div className="assetRowActionGroup">
+          <InlineLookupButton isLookingUp={isLookingUp} lookupRequired={lookupRequired} isBulkAssetLookupLoading={isBulkAssetLookupLoading} onClick={() => fetchAssetData(index)} />
+          <RowMoveButton disabled={isBulkAssetLookupLoading || isFirstRow} onClick={() => moveAssetRow(index, -1)} label={`${asset.ticker || "자산"} 위로 이동`}>위로</RowMoveButton>
+          <RowMoveButton disabled={isBulkAssetLookupLoading || isLastRow} onClick={() => moveAssetRow(index, 1)} label={`${asset.ticker || "자산"} 아래로 이동`}>아래로</RowMoveButton>
+        </div>
       </div>
     );
   };
