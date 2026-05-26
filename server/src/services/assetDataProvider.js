@@ -1,6 +1,13 @@
 import { MOCK_ASSET_DATA } from "../constants/mockAssetData.js";
 import { getTickerMasterItem } from "./tickerMasterService.js";
-import { getKisDomesticPrice, hasKisConfig, normalizeKrTicker } from "./kisPriceService.js";
+import {
+  getKisDomesticPrice,
+  getKisOverseasPrice,
+  hasKisConfig,
+  isKisOverseasEnabled,
+  normalizeKrTicker,
+  normalizeUsTicker,
+} from "./kisPriceService.js";
 
 const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
 const DEFAULT_USD_KRW_RATE = Number(process.env.DEFAULT_USD_KRW_RATE || 1350);
@@ -14,6 +21,10 @@ export function normalizeTicker(ticker) {
 
 function isKrTickerLike(ticker = "") {
   return /^A?\d{6}[A-Z]?$/.test(String(ticker || "").trim().toUpperCase());
+}
+
+function isUsTickerLike(ticker = "") {
+  return /^[A-Z][A-Z0-9.-]{0,9}$/.test(String(ticker || "").trim().toUpperCase());
 }
 
 export function getSelectedProvider() {
@@ -37,6 +48,17 @@ export async function getAssetDataByTicker(ticker) {
 
   if (isKrTickerLike(normalizedTicker) && hasKisConfig()) {
     return getKisAssetData(normalizedTicker);
+  }
+
+  if (isUsTickerLike(normalizedTicker) && hasKisConfig() && isKisOverseasEnabled()) {
+    try {
+      return await getKisOverseasAssetData(normalizedTicker);
+    } catch (error) {
+      if (String(process.env.KIS_OVERSEAS_FALLBACK_TO_ALPHA || "true").toLowerCase() === "false") {
+        throw error;
+      }
+      console.warn(`KIS 해외 현재가 조회 실패. Alpha Vantage fallback을 시도합니다: ${normalizedTicker}`, error.message);
+    }
   }
 
   const provider = getSelectedProvider();
@@ -96,6 +118,34 @@ async function getKisAssetData(ticker) {
     priceMode: "auto",
     metricMode: "price-only",
     dataSource: kisPriceData.dataSource || "kis-domestic-price",
+    fetchedAt: kisPriceData.fetchedAt || new Date().toISOString(),
+  });
+}
+
+async function getKisOverseasAssetData(ticker) {
+  const normalizedTicker = normalizeUsTicker(ticker);
+  const masterItem = getTickerMasterItem(normalizedTicker);
+  const kisPriceData = await getKisOverseasPrice(normalizedTicker, {
+    exchange: masterItem?.exchange || masterItem?.market || "",
+  });
+  const targetCurrency = process.env.ASSET_PRICE_CURRENCY || "KRW";
+  const usdKrwRate = targetCurrency === "KRW" ? await getUsdKrwRate() : 1;
+  const convertedPrice = targetCurrency === "KRW" ? Math.round(Number(kisPriceData.rawPrice || kisPriceData.price || 0) * usdKrwRate) : Number(kisPriceData.rawPrice || kisPriceData.price || 0);
+
+  return normalizeAssetData({
+    ...kisPriceData,
+    ticker: normalizedTicker,
+    name: masterItem?.koreanName || masterItem?.name || kisPriceData.name || normalizedTicker,
+    market: "US",
+    currency: targetCurrency,
+    quoteCurrency: "USD",
+    price: convertedPrice,
+    priceMode: "auto",
+    metricMode: "price-only",
+    dataSource: kisPriceData.dataSource || "kis-overseas-price",
+    rawPrice: kisPriceData.rawPrice || kisPriceData.price,
+    rawCurrency: "USD",
+    exchangeRate: usdKrwRate,
     fetchedAt: kisPriceData.fetchedAt || new Date().toISOString(),
   });
 }
@@ -225,12 +275,16 @@ async function getAlphaVantageAssetData(ticker) {
   return normalizedData;
 }
 
-async function getUsdKrwRate(apiKey) {
+async function getUsdKrwRate(apiKey = process.env.ALPHA_VANTAGE_API_KEY) {
   if (process.env.USD_KRW_RATE) {
     return Number(process.env.USD_KRW_RATE);
   }
 
   if (String(process.env.ALPHA_VANTAGE_FETCH_FX || "false") !== "true") {
+    return DEFAULT_USD_KRW_RATE;
+  }
+
+  if (!apiKey) {
     return DEFAULT_USD_KRW_RATE;
   }
 
