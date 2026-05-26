@@ -89,35 +89,11 @@ function formatPercentValue(value, pendingText = "확인 중") {
   if (!Number.isFinite(numberValue) || numberValue === 0) return pendingText;
   return `${numberValue.toFixed(2)}%`;
 }
-function formatMetricNumber(value, pendingText = "-") {
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue) || numberValue === 0) return pendingText;
-  return numberValue.toFixed(2);
-}
 function formatDividendYieldValue(value, item = {}) {
   if (item.displayDividendYield) return item.displayDividendYield === "0.00%" ? "-" : item.displayDividendYield;
   if (item.dividendPolicy === "no_dividend") return "-";
   if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
   return formatPercentValue(value, "확인 중");
-}
-function formatCompactCurrency(value, market = "US") {
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue) || numberValue <= 0) return "확인 중";
-
-  if (market === "KR") {
-    if (numberValue >= 1_0000_0000_0000) return `${(numberValue / 1_0000_0000_0000).toFixed(1)}조`;
-    if (numberValue >= 1_0000_0000) return `${Math.round(numberValue / 1_0000_0000).toLocaleString()}억`;
-    return `${Math.round(numberValue).toLocaleString()}원`;
-  }
-
-  if (numberValue >= 1_000_000_000_000) return `$${(numberValue / 1_000_000_000_000).toFixed(1)}T`;
-  if (numberValue >= 1_000_000_000) return `$${(numberValue / 1_000_000_000).toFixed(1)}B`;
-  if (numberValue >= 1_000_000) return `$${(numberValue / 1_000_000).toFixed(1)}M`;
-  return `$${Math.round(numberValue).toLocaleString()}`;
-}
-function formatSizeMetricValue(item = {}) {
-  const label = item.type === "ETF" ? "규모" : "시총";
-  return `${label} ${formatCompactCurrency(item.sizeMetric, item.market)}`;
 }
 function getSearchQuery(query = "") {
   return normalizeTicker(query).toLowerCase();
@@ -140,10 +116,6 @@ function getStatusRank(item = {}) {
   if (item.reviewTag === "ready_with_metrics" || item.dataStatus === "ready_with_metrics") return 0;
   if (item.reviewTag === "review_required" || item.dataStatus === "review_required") return 2;
   return 1;
-}
-function getSizeRank(item = {}) {
-  const value = Number(item.sizeMetric || 0);
-  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 function compareText(a = "", b = "") {
   return String(a || "").localeCompare(String(b || ""), "ko-KR", { numeric: true, sensitivity: "base" });
@@ -195,8 +167,6 @@ function sortCandidates(candidates = [], normalizedQuery = "") {
     if (exactDiff) return exactDiff;
     const representativeDiff = getRepresentativeRank(a) - getRepresentativeRank(b);
     if (representativeDiff) return representativeDiff;
-    const sizeDiff = getSizeRank(b) - getSizeRank(a);
-    if (sizeDiff) return sizeDiff;
     const tierDiff = getTierRank(a) - getTierRank(b);
     if (tierDiff) return tierDiff;
     const typeDiff = getAssetTypeRank(a) - getAssetTypeRank(b);
@@ -247,7 +217,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
       </div>
       <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span></div>
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span><span>BETA {formatMetricNumber(item.beta)}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>{formatSizeMetricValue(item)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
