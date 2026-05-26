@@ -27,7 +27,13 @@ function getKisBaseUrl() {
 }
 
 function getKisMarketDivCode() {
-  return process.env.KIS_MARKET_DIV_CODE || DEFAULT_KIS_MARKET_DIV_CODE;
+  const rawCode = String(process.env.KIS_MARKET_DIV_CODE || DEFAULT_KIS_MARKET_DIV_CODE)
+    .trim()
+    .replace(/^['\"]|['\"]$/g, "")
+    .toUpperCase();
+
+  if (["J", "W"].includes(rawCode)) return rawCode;
+  return DEFAULT_KIS_MARKET_DIV_CODE;
 }
 
 function getKisErrorSummary(payload = {}) {
