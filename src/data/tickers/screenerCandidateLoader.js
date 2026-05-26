@@ -1,8 +1,20 @@
 import finpleAppCandidates6000Csv from "./finple_app_candidates_6000_balanced_v1.csv?raw";
+import { applyScreenerCandidateOverlays } from "./screenerCandidateOverlay";
 
-function stripBom(value = "") {
-  return String(value || "").replace(/^\uFEFF/, "");
-}
+const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
+const toNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const numberValue = Number(String(value).replace(/,/g, ""));
+  return Number.isFinite(numberValue) ? numberValue : null;
+};
+const toBoolean = (value) => String(value || "").trim().toLowerCase() === "true";
+const splitPipe = (value) => String(value || "").split("|").map((item) => item.trim()).filter(Boolean);
+const normalizeTicker = (ticker = "") => stripBom(ticker).trim().toUpperCase();
+const normalizeMarket = (market = "") => String(market || "US").trim().toUpperCase();
+const normalizeAssetType = (assetType = "") => {
+  const value = String(assetType || "").trim().toLowerCase();
+  return value === "stock" || value === "single_stock" ? "stock" : "ETF";
+};
 
 function parseCsvLine(line = "") {
   const cells = [];
@@ -12,25 +24,17 @@ function parseCsvLine(line = "") {
   for (let index = 0; index < line.length; index += 1) {
     const char = line[index];
     const nextChar = line[index + 1];
-
     if (char === '"' && insideQuotes && nextChar === '"') {
       current += '"';
       index += 1;
-      continue;
-    }
-
-    if (char === '"') {
+    } else if (char === '"') {
       insideQuotes = !insideQuotes;
-      continue;
-    }
-
-    if (char === "," && !insideQuotes) {
+    } else if (char === "," && !insideQuotes) {
       cells.push(current);
       current = "";
-      continue;
+    } else {
+      current += char;
     }
-
-    current += char;
   }
 
   cells.push(current);
@@ -38,63 +42,20 @@ function parseCsvLine(line = "") {
 }
 
 function parseCsv(csvText = "") {
-  const lines = String(csvText || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
+  const lines = String(csvText || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.length < 2) return [];
-
   const headers = parseCsvLine(lines[0]);
-
   return lines.slice(1).map((line) => {
     const cells = parseCsvLine(line);
-    return headers.reduce((row, header, index) => {
-      row[header] = cells[index] || "";
-      return row;
-    }, {});
+    return headers.reduce((row, header, index) => ({ ...row, [header]: cells[index] || "" }), {});
   });
-}
-
-function toNullableNumber(value) {
-  if (value === null || value === undefined || value === "") return null;
-  const numberValue = Number(String(value).replace(/,/g, ""));
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
-
-function toBoolean(value) {
-  return String(value || "").trim().toLowerCase() === "true";
-}
-
-function splitPipe(value) {
-  return String(value || "")
-    .split("|")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeAssetType(assetType = "") {
-  const value = String(assetType || "").trim().toLowerCase();
-  if (value === "stock" || value === "single_stock") return "stock";
-  return "ETF";
-}
-
-function normalizeCandidateTicker(ticker = "") {
-  return stripBom(ticker).trim().toUpperCase();
-}
-
-function normalizeMarket(market = "") {
-  return String(market || "US").trim().toUpperCase();
 }
 
 function uniqueByMarketTicker(candidates = []) {
   const seen = new Set();
-
   return candidates.filter((candidate) => {
-    const market = normalizeMarket(candidate?.market);
-    const ticker = normalizeCandidateTicker(candidate?.ticker || "");
-    const key = `${market}:${ticker}`;
-    if (!ticker || seen.has(key)) return false;
+    const key = `${normalizeMarket(candidate?.market)}:${normalizeTicker(candidate?.ticker)}`;
+    if (!candidate?.ticker || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -106,15 +67,16 @@ export const SCREENER_METRICS_POLICY_NOTE =
 export function normalizeScreenerCandidate(row = {}) {
   const market = normalizeMarket(row.market || "US");
   const assetType = normalizeAssetType(row.assetType);
-  const marketCap = toNullableNumber(row.marketCap);
-  const aum = toNullableNumber(row.aum);
+  const marketCap = toNumber(row.marketCap);
+  const aum = toNumber(row.aum);
   const sizeMetric = assetType === "ETF" ? aum ?? marketCap : marketCap ?? aum;
+  const nameKr = row.nameKr || row.koreanName || row.name || "";
 
   return {
     ticker: stripBom(row.ticker || "").trim(),
     providerSymbol: row.providerSymbol || row.ticker || "",
-    koreanName: row.nameKr || row.koreanName || row.name || "",
-    nameKr: row.nameKr || row.koreanName || row.name || "",
+    koreanName: nameKr,
+    nameKr,
     market,
     currency: row.currency || "KRW",
     quoteCurrency: row.quoteCurrency || (market === "KR" ? "KRW" : "USD"),
@@ -124,10 +86,10 @@ export function normalizeScreenerCandidate(row = {}) {
     tier: row.tier || "",
     strategy: row.strategy || "core",
     riskLevel: row.riskLevel || "medium",
-    expectedCagr: toNullableNumber(row.expectedCagr),
-    beta: toNullableNumber(row.beta),
-    mdd: toNullableNumber(row.mdd),
-    dividendYield: toNullableNumber(row.dividendYield),
+    expectedCagr: toNumber(row.expectedCagr),
+    beta: toNumber(row.beta),
+    mdd: toNumber(row.mdd),
+    dividendYield: toNumber(row.dividendYield),
     displayDividendYield: row.displayDividendYield || "",
     dividendPolicy: row.dividendPolicy || "",
     dividendSource: row.dividendSource || "",
@@ -150,59 +112,34 @@ export function normalizeScreenerCandidate(row = {}) {
 
 export function loadScreenerCandidatesFromCsv(csvText = "") {
   return uniqueByMarketTicker(
-    parseCsv(csvText)
-      .map(normalizeScreenerCandidate)
-      .filter((candidate) => candidate.ticker && candidate.koreanName)
+    parseCsv(csvText).map(normalizeScreenerCandidate).filter((candidate) => candidate.ticker && candidate.koreanName)
   );
 }
 
-export const ALL_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv);
-
-export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.market === "US"
+export const ALL_SCREENER_CANDIDATES = applyScreenerCandidateOverlays(
+  loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv)
 );
-
-export const KR_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.market === "KR"
-);
-
-export const US_CORE_CANDIDATES = US_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.tier === "core"
-);
-
-export const US_EXTRA_CANDIDATES = US_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.tier !== "core"
-);
-
+export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter((candidate) => candidate.market === "US");
+export const KR_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter((candidate) => candidate.market === "KR");
+export const US_CORE_CANDIDATES = US_SCREENER_CANDIDATES.filter((candidate) => candidate.tier === "core");
+export const US_EXTRA_CANDIDATES = US_SCREENER_CANDIDATES.filter((candidate) => candidate.tier !== "core");
 export const US_EXPANSION_CANDIDATES = US_EXTRA_CANDIDATES;
-
-export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.type === "ETF"
-);
-
-export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter(
-  (candidate) => candidate.type === "stock"
-);
+export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "ETF");
+export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "stock");
 
 export function findScreenerCandidateByTicker(ticker, market = "") {
-  const normalizedTicker = normalizeCandidateTicker(ticker);
+  const normalizedTicker = normalizeTicker(ticker);
   const normalizedMarket = String(market || "").trim().toUpperCase();
   if (!normalizedTicker) return null;
-
   return (
-    ALL_SCREENER_CANDIDATES.find((candidate) => {
-      const candidateTicker = normalizeCandidateTicker(candidate?.ticker);
-      const candidateMarket = String(candidate?.market || "").trim().toUpperCase();
-      return candidateTicker === normalizedTicker && (!normalizedMarket || candidateMarket === normalizedMarket);
-    }) ||
-    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeCandidateTicker(candidate?.ticker) === normalizedTicker) ||
+    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker && (!normalizedMarket || normalizeMarket(candidate?.market) === normalizedMarket)) ||
+    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker) ||
     null
   );
 }
 
 export function createAssetPatchFromScreenerCandidate(candidate = {}) {
   if (!candidate?.ticker) return {};
-
   return {
     ticker: candidate.ticker,
     displayTicker: candidate.ticker,
@@ -234,7 +171,6 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
   const candidate = findScreenerCandidateByTicker(asset?.ticker, asset?.market);
   if (!candidate) return asset;
   const patch = createAssetPatchFromScreenerCandidate(candidate);
-
   return {
     ...asset,
     ...patch,
@@ -257,3 +193,14 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     reviewReason: patch.reviewReason || asset.reviewReason || "",
   };
 }
+
+export const SCREENER_CANDIDATE_COUNTS = {
+  US: US_SCREENER_CANDIDATES.length,
+  US_CORE: US_CORE_CANDIDATES.length,
+  US_EXTRA: US_EXTRA_CANDIDATES.length,
+  US_EXPANSION: US_EXPANSION_CANDIDATES.length,
+  KR: KR_SCREENER_CANDIDATES.length,
+  KR_ETF: KR_ETF_CANDIDATES.length,
+  KR_STOCK: KR_STOCK_CANDIDATES.length,
+  ALL: ALL_SCREENER_CANDIDATES.length,
+};
