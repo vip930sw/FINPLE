@@ -1,5 +1,6 @@
 import { MOCK_ASSET_DATA } from "../constants/mockAssetData.js";
 import { getTickerMasterItem } from "./tickerMasterService.js";
+import { getKisDomesticPrice, hasKisConfig, normalizeKrTicker } from "./kisPriceService.js";
 
 const ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query";
 const DEFAULT_USD_KRW_RATE = Number(process.env.DEFAULT_USD_KRW_RATE || 1350);
@@ -9,6 +10,10 @@ const assetDataCache = new Map();
 
 export function normalizeTicker(ticker) {
   return String(ticker || "").trim().toUpperCase();
+}
+
+function isKrTickerLike(ticker = "") {
+  return /^A?\d{6}[A-Z]?$/.test(String(ticker || "").trim().toUpperCase());
 }
 
 export function getSelectedProvider() {
@@ -28,6 +33,10 @@ export async function getAssetDataByTicker(ticker) {
     const error = new Error("티커를 입력해주세요.");
     error.statusCode = 400;
     throw error;
+  }
+
+  if (isKrTickerLike(normalizedTicker) && hasKisConfig()) {
+    return getKisAssetData(normalizedTicker);
   }
 
   const provider = getSelectedProvider();
@@ -70,6 +79,25 @@ export async function getAssetDataBatch(tickers = []) {
   );
 
   return results;
+}
+
+async function getKisAssetData(ticker) {
+  const normalizedTicker = normalizeKrTicker(ticker);
+  const masterItem = getTickerMasterItem(normalizedTicker);
+  const kisPriceData = await getKisDomesticPrice(normalizedTicker);
+
+  return normalizeAssetData({
+    ...kisPriceData,
+    ticker: normalizedTicker,
+    name: masterItem?.koreanName || masterItem?.name || kisPriceData.name || normalizedTicker,
+    market: "KR",
+    currency: "KRW",
+    quoteCurrency: "KRW",
+    priceMode: "auto",
+    metricMode: "price-only",
+    dataSource: kisPriceData.dataSource || "kis-domestic-price",
+    fetchedAt: kisPriceData.fetchedAt || new Date().toISOString(),
+  });
 }
 
 function getMockAssetData(ticker) {
@@ -286,9 +314,12 @@ async function requestAlphaVantage(params) {
 function normalizeAssetData(data = {}) {
   return {
     ticker: normalizeTicker(data.ticker),
+    displayTicker: data.displayTicker || normalizeTicker(data.ticker),
+    providerSymbol: data.providerSymbol || normalizeTicker(data.ticker),
     name: data.name || data.ticker,
     market: data.market || "US",
     currency: data.currency || "KRW",
+    quoteCurrency: data.quoteCurrency || data.currency || "KRW",
     price: normalizeNullableNumber(data.price) ?? 0,
     cagr: normalizeNullableNumber(data.cagr),
     beta: normalizeNullableNumber(data.beta),
