@@ -1,4 +1,0 @@
-market,ticker,nameKr,assetType,dividendYield,displayDividendYield,dividendPolicy,dividendSource,reviewTag,reviewReason,notes
-KR,0040Y0,SOL 팔란티어커버드콜OTM채권혼합,ETF,26.28,26.28%,dividend_confirmed,k_etf_rank_dividend_yield_20260525,dividend_yield_confirmed,K-ETF dividend yield table uploaded 2026-05-25,issuer=신한자산운용; category=혼합자산-자산배분-채권혼합; rank=1
-KR,489030,PLUS 고배당주위클리커버드콜,ETF,23.31,23.31%,dividend_confirmed,k_etf_rank_dividend_yield_20260525,dividend_yield_confirmed,K-ETF dividend yield table uploaded 2026-05-25,issuer=한화자산운용; category=주식-주식파생-커버드콜; rank=2
-KR,0040X0,SOL 팔란티어미국채커버드콜혼합,ETF,21.36,21.36%,dividend_confirmed,k_etf_rank_dividend_yield_20260525,dividend_yield_confirmed,K-ETF dividend yield table uploaded 2026-05-25,issuer=신한자산운용; category=혼합자산-자산배분-채권혼합; rank=3
