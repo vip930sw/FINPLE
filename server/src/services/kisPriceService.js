@@ -1,5 +1,6 @@
 const DEFAULT_KIS_BASE_URL = "https://openapi.koreainvestment.com:9443";
 const DEFAULT_KIS_MARKET_DIV_CODE = "J";
+const DEFAULT_OVERSEAS_EXCHANGE = "NAS";
 const KIS_TOKEN_CACHE_SAFETY_MS = 60 * 1000;
 const KIS_PRICE_CACHE_TTL_MS = Number(process.env.KIS_PRICE_CACHE_TTL_MS || 30 * 1000);
 const KIS_TIMEOUT_MS = Number(process.env.KIS_TIMEOUT_MS || 10000);
@@ -18,8 +19,16 @@ export function normalizeKrTicker(ticker = "") {
   return digits.padStart(6, "0").slice(-6);
 }
 
+export function normalizeUsTicker(ticker = "") {
+  return String(ticker || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
 export function hasKisConfig() {
   return Boolean(process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET);
+}
+
+export function isKisOverseasEnabled() {
+  return String(process.env.KIS_OVERSEAS_PRICE_ENABLED || "true").toLowerCase() !== "false";
 }
 
 function getKisBaseUrl() {
@@ -34,6 +43,47 @@ function getKisMarketDivCode() {
 
   if (["J", "W"].includes(rawCode)) return rawCode;
   return DEFAULT_KIS_MARKET_DIV_CODE;
+}
+
+function normalizeKisExchangeCode(exchange = "") {
+  const raw = String(exchange || "")
+    .trim()
+    .replace(/^['\"]|['\"]$/g, "")
+    .toUpperCase();
+
+  const exchangeMap = {
+    NASDAQ: "NAS",
+    NASD: "NAS",
+    NAS: "NAS",
+    NYSE: "NYS",
+    NYS: "NYS",
+    AMEX: "AMS",
+    AMERICAN: "AMS",
+    ARCA: "AMS",
+    NYSEARCA: "AMS",
+    NYSE_ARCA: "AMS",
+    BATS: "AMS",
+    CBOE: "AMS",
+    AMS: "AMS",
+  };
+
+  return exchangeMap[raw] || raw || DEFAULT_OVERSEAS_EXCHANGE;
+}
+
+function getKisOverseasExchangeCandidates(exchange = "", ticker = "") {
+  const primary = normalizeKisExchangeCode(exchange || process.env.KIS_OVERSEAS_EXCHANGE_DEFAULT || "");
+  const normalizedTicker = normalizeUsTicker(ticker);
+  const candidates = [primary];
+
+  // 미국 ETF는 KIS에서 AMEX/ARCA 계열(AMS)로 잡히는 경우가 많고,
+  // 개별주는 NAS/NYS가 많으므로 후보 거래소를 순차 시도합니다.
+  if (["SPY", "VOO", "IVV", "SCHD", "TLT", "GLD", "VNQ", "DIA", "IWM", "BND"].includes(normalizedTicker)) {
+    candidates.push("AMS", "NAS", "NYS");
+  } else {
+    candidates.push("NAS", "NYS", "AMS");
+  }
+
+  return Array.from(new Set(candidates.filter(Boolean)));
 }
 
 function getKisErrorSummary(payload = {}) {
@@ -145,7 +195,7 @@ export async function getKisAccessToken() {
   return accessToken;
 }
 
-function normalizeKisPricePayload(ticker, payload = {}) {
+function normalizeKisDomesticPricePayload(ticker, payload = {}) {
   const output = payload?.output || payload?.output1 || {};
   const rawPrice = Number(String(output?.stck_prpr || output?.stck_prdy_clpr || "0").replace(/,/g, ""));
 
@@ -191,6 +241,58 @@ function normalizeKisPricePayload(ticker, payload = {}) {
   };
 }
 
+function normalizeKisOverseasPricePayload(ticker, exchangeCode, payload = {}) {
+  const output = payload?.output || payload?.output1 || {};
+  const rawPrice = Number(String(
+    output?.last ||
+    output?.ovrs_nmix_prpr ||
+    output?.stck_prpr ||
+    output?.base ||
+    "0"
+  ).replace(/,/g, ""));
+
+  if (!Number.isFinite(rawPrice) || rawPrice <= 0) {
+    const summary = getKisErrorSummary(payload);
+    const error = new Error(
+      summary
+        ? `한국투자증권 해외 API에서 ${ticker} 현재가를 찾지 못했습니다. (${summary})`
+        : `한국투자증권 해외 API에서 ${ticker} 현재가를 찾지 못했습니다.`
+    );
+    error.statusCode = 404;
+    error.payload = payload;
+    throw error;
+  }
+
+  return {
+    ticker,
+    displayTicker: ticker,
+    providerSymbol: ticker,
+    name: output?.name || output?.hts_kor_isnm || ticker,
+    market: "US",
+    exchange: exchangeCode,
+    currency: "KRW",
+    quoteCurrency: "USD",
+    price: rawPrice,
+    cagr: null,
+    beta: null,
+    mdd: null,
+    dividendYield: null,
+    priceMode: "auto",
+    metricMode: "price-only",
+    dataSource: "kis-overseas-price",
+    rawPrice,
+    rawCurrency: "USD",
+    exchangeRate: null,
+    fetchedAt: new Date().toISOString(),
+    kis: {
+      exchangeCode,
+      priceChange: output?.diff || output?.prdy_vrss || null,
+      priceChangeRate: output?.rate || output?.prdy_ctrt || null,
+      tradeVolume: output?.tvol || output?.acml_vol || null,
+    },
+  };
+}
+
 export async function getKisDomesticPrice(ticker) {
   const normalizedTicker = normalizeKrTicker(ticker);
 
@@ -222,7 +324,57 @@ export async function getKisDomesticPrice(ticker) {
     },
   });
 
-  const data = normalizeKisPricePayload(normalizedTicker, payload);
+  const data = normalizeKisDomesticPricePayload(normalizedTicker, payload);
   setCachedPrice(cacheKey, data);
   return data;
+}
+
+export async function getKisOverseasPrice(ticker, { exchange = "" } = {}) {
+  const normalizedTicker = normalizeUsTicker(ticker);
+
+  if (!normalizedTicker) {
+    const error = new Error("해외주식 티커를 입력해주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const exchangeCandidates = getKisOverseasExchangeCandidates(exchange, normalizedTicker);
+  const accessToken = await getKisAccessToken();
+  const errors = [];
+
+  for (const exchangeCode of exchangeCandidates) {
+    const cacheKey = `US:${exchangeCode}:${normalizedTicker}`;
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
+
+    const query = new URLSearchParams({
+      AUTH: "",
+      EXCD: exchangeCode,
+      SYMB: normalizedTicker,
+    });
+
+    try {
+      const payload = await requestKisJson(`/uapi/overseas-price/v1/quotations/price-detail?${query.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Accept: "application/json",
+          authorization: `Bearer ${accessToken}`,
+          appkey: process.env.KIS_APP_KEY,
+          appsecret: process.env.KIS_APP_SECRET,
+          tr_id: process.env.KIS_OVERSEAS_PRICE_TR_ID || "HHDFS76200200",
+        },
+      });
+
+      const data = normalizeKisOverseasPricePayload(normalizedTicker, exchangeCode, payload);
+      setCachedPrice(cacheKey, data);
+      return data;
+    } catch (error) {
+      errors.push(`${exchangeCode}: ${error?.message || "조회 실패"}`);
+    }
+  }
+
+  const error = new Error(`한국투자증권 해외 API에서 ${normalizedTicker} 현재가를 찾지 못했습니다. (${errors.join(" / ")})`);
+  error.statusCode = 404;
+  throw error;
 }
