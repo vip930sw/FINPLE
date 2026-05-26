@@ -136,10 +136,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   return (
     <section id="simulator" className="section calculatorSection simulatorSection">
       <p className="sectionLabel">Portfolio Simulator</p>
-      <h2>CAGR 기반 포트폴리오 시뮬레이터</h2>
+      <h2>FINPLE 포트폴리오 시뮬레이터</h2>
       <p className="simulatorIntroText">
-        보유 자산의 평가금액을 시작점으로 삼고, 월 투자금과 자산별 CAGR,
-        MDD, 배당률을 반영해 장기 포트폴리오 성과와 실질가치를 계산합니다.
+        국내·해외 자산의 현재가를 조회하고, CSV 기반 CAGR, BETA, MDD,
+        배당률을 결합해 장기 포트폴리오 성과와 실질가치를 계산합니다.
       </p>
 
       <SimulatorTabNav
@@ -260,10 +260,11 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
           backupFileInputRef={backupFileInputRef}
           restorePortfolioBackup={restorePortfolioBackup}
           dataManagementSummary={dataManagementSummary}
+          scrollToPortfolioTop={scrollToPortfolioTop}
         />
       </div>
 
-      {shouldShowFloatingPortfolioDropdown && (
+      {shouldShowFloatingPortfolioDropdown ? (
         <FloatingPortfolioDropdown
           activePortfolio={activePortfolio}
           portfolioList={portfolioList}
@@ -273,12 +274,12 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
           selectPortfolioFromFloating={selectPortfolioFromFloating}
           contextLabel={floatingPortfolioContextLabel}
         />
-      )}
+      ) : null}
 
       <button
         className="floatingTopButton"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        aria-label="포트폴리오 상단으로 이동"
+        aria-label="시뮬레이터 상단으로 이동"
       >
         ↑ TOP
       </button>
