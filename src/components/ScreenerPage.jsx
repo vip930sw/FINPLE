@@ -29,7 +29,7 @@ const STYLE_OPTIONS = [
   { key: "bond", label: "채권" },
   { key: "commodity", label: "원자재" },
   { key: "reit", label: "부동산/리츠" },
-  { key: "crypto", label: "가상화폐" },
+  { key: "crypto", label: "가상화폐/블록체인" },
 ];
 const RISK_OPTIONS = [
   { value: "all", label: "전체 위험" },
@@ -47,6 +47,8 @@ const TAG_LABEL_MAP = {
   defensive: "방어",
   aggressive: "공격형",
   cyclical: "경기민감",
+  crypto: "가상화폐/블록체인",
+  blockchain: "블록체인",
   stock: "개별주",
   ETF: "ETF",
   분산: "핵심",
@@ -124,12 +126,17 @@ function hasAnyTag(item = {}, tags = []) {
   return tags.some((tag) => (item.tags || []).includes(tag));
 }
 function getTagText(item = {}) {
-  return [item.koreanName, item.strategy, ...(item.tags || [])].join(" ");
+  return [item.koreanName, item.strategy, ...(item.goals || []), ...(item.tags || [])].join(" ");
+}
+function isCryptoBlockchainCandidate(item = {}) {
+  const text = `${getTagText(item)} ${item.koreanName || ""}`;
+  return /가상화폐|블록체인|비트코인|이더리움|crypto|bitcoin|ethereum|ether|blockchain|digital assets?/i.test(text);
 }
 function inferExposureType(item = {}) {
   const tagText = getTagText(item);
   const name = item.koreanName || "";
   if (item.type === "stock") return "single_stock";
+  if (isCryptoBlockchainCandidate(item)) return "crypto_blockchain";
   if (/레버리지|인버스|3배|2배/.test(tagText)) return "leveraged_inverse";
   if (hasAnyTag(item, ["채권", "국고채", "미국채", "회사채", "통안채", "초단기채", "종합채권", "하이일드"]) || /채권|국고채|미국채|회사채|통안채|하이일드/.test(name)) return "bond";
   if (hasAnyTag(item, ["원자재", "금", "원유", "구리", "은", "종합원자재"]) || /금현물|골드|원유|구리|은선물|종합원자재/.test(name)) return "commodity";
@@ -147,6 +154,7 @@ function getExposureLabel(item = {}) {
     bond: "채권형",
     commodity: "원자재/헤지",
     reit: "리츠",
+    crypto_blockchain: "가상화폐/블록체인",
     leveraged_inverse: "레버리지/인버스",
   }[inferExposureType(item)] || "기타";
 }
@@ -157,6 +165,7 @@ function getCandidateDescription(item = {}) {
 function matchesStyleFilter(item, styleFilter) {
   if (styleFilter === "all") return true;
   if (styleFilter === "beginner") return item.beginnerFit;
+  if (styleFilter === "crypto") return inferExposureType(item) === "crypto_blockchain" || item.goals?.includes("crypto");
   const exposureType = inferExposureType(item);
   if (["leveraged_inverse", "bond", "commodity", "reit"].includes(styleFilter)) return exposureType === styleFilter;
   return item.goals?.includes(styleFilter) || item.strategy === styleFilter;
@@ -189,6 +198,7 @@ function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
       item.strategy,
       getGoalLabel(item.strategy),
       getExposureLabel(item),
+      ...(item.goals || []),
       ...(item.tags || []),
       ...(item.tags || []).map(getTagLabel),
     ].join(" ").toLowerCase();
