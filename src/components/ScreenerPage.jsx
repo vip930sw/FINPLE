@@ -53,7 +53,10 @@ const TAG_LABEL_MAP = {
 };
 
 const REPRESENTATIVE_TICKERS = {
-  US: ["SPY", "VOO", "IVV", "VTI", "QQQ", "QQQM", "SCHD", "DIA", "IWM", "TLT", "IEF", "BND", "GLD", "VNQ", "O", "T", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "BRK.B", "JPM"],
+  US: [
+    "SPY", "VOO", "IVV", "VTI", "QQQ", "QQQM", "SCHD", "DIA", "IWM", "TLT", "IEF", "BND", "GLD", "VNQ",
+    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "BRK.B", "JPM", "UNH", "V", "MA", "XOM", "LLY", "AVGO", "COST", "WMT", "PG", "JNJ", "HD", "KO", "PEP", "O", "T",
+  ],
   KR: ["069500", "102110", "148020", "105190", "152100", "278530", "005930", "000660", "373220", "207940", "005380", "035420", "035720", "051910", "006400", "005490", "068270", "055550"],
 };
 const REPRESENTATIVE_RANK = Object.entries(REPRESENTATIVE_TICKERS).reduce((map, [market, tickers]) => {
