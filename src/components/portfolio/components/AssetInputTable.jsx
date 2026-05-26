@@ -269,9 +269,20 @@ export default function AssetInputTable({
 
   return (
     <div className="calculatorTableWrap">
-      <table className="calculatorTable alignedAssetTable">
-        <colgroup><col className="tickerColumn" /><col className="assetNameColumn" /><col className="quantityColumn" /><col className="priceColumn" /><col className="valueColumn" /><col className="targetWeightColumn" /><col className="metricColumn" /><col className="metricColumn" /><col className="metricColumn" /><col className="metricColumn" /></colgroup>
-        <thead><tr><th>티커</th><th>자산명</th><th className="numberHeader">수량</th><th className="numberHeader">현재가 (원, KRW)</th><th className="numberHeader">평가금액 (원, KRW)</th><th className="numberHeader">목표비중 (%)</th><th className="numberHeader">CAGR (%)</th><th className="numberHeader">BETA</th><th className="numberHeader">MDD (%)</th><th className="numberHeader">배당률 (%)</th></tr></thead>
+      <table className="calculatorTable alignedAssetTable" style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          <col className="tickerColumn" style={{ width: "96px" }} />
+          <col className="assetNameColumn" style={{ width: "245px" }} />
+          <col className="quantityColumn" style={{ width: "112px" }} />
+          <col className="priceColumn" style={{ width: "132px" }} />
+          <col className="valueColumn" style={{ width: "142px" }} />
+          <col className="targetWeightColumn" style={{ width: "122px" }} />
+          <col className="metricColumn" style={{ width: "82px" }} />
+          <col className="metricColumn" style={{ width: "74px" }} />
+          <col className="metricColumn" style={{ width: "82px" }} />
+          <col className="metricColumn" style={{ width: "78px" }} />
+        </colgroup>
+        <thead><tr><th>티커</th><th style={{ paddingLeft: 22 }}>자산명</th><th className="numberHeader">수량</th><th className="numberHeader">현재가 (원, KRW)</th><th className="numberHeader">평가금액 (원, KRW)</th><th className="numberHeader">목표비중 (%)</th><th className="numberHeader">CAGR (%)</th><th className="numberHeader">BETA</th><th className="numberHeader">MDD (%)</th><th className="numberHeader">배당률 (%)</th></tr></thead>
         <tbody>
           {assets.map((asset, index) => {
             const value = getAssetActualValue(asset);
@@ -294,7 +305,7 @@ export default function AssetInputTable({
             return (
               <tr key={asset.id || index} className={rowClassName}>
                 <td className="tickerCell">{renderTickerControl(asset, index)}</td>
-                <td className="assetNameCell">{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
+                <td className="assetNameCell" style={{ paddingLeft: 22 }}>{renderAssetNameWithLookup(asset, index, emptyRow, isLookingUp, lookupRequired)}</td>
                 <td className="numberCell tableNumberCell">{emptyRow ? <span className="emptyTextValue numberTextValue">-</span> : formatDecimal(asset.quantity, 4)}</td>
                 <td className="numberCell tableNumberCell priceCell">{renderPrice(asset, emptyRow, lookupRequired)}</td>
                 <td className={valueCellClassName}>{formatEvaluationAmount(displayedValue)}</td>
