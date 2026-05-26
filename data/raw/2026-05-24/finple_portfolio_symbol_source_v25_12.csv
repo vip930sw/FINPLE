@@ -1,0 +1,1228 @@
+,,,,,,,,,,,,,,,
+,🔠 포트폴리오 종목 리스트,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,No.,Symbol,Company Name,Sector,Industry,,No.,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,
+,1,MSFT,Microsoft Corporation,Technology,Software - Infrastructure,,1,SPY,SPDR S&P 500 ETF Trust,Equity,Large Blend,S&P 500,,MSFT,SPY
+,2,AAPL,Apple Inc,Technology,Consumer Electronics,,2,IVV,iShares Core S&P 500 ETF,Equity,Large Blend,S&P 500,,AAPL,IVV
+,3,NVDA,NVIDIA Corporation,Technology,Semiconductors,,3,VOO,Vanguard S&P 500 ETF,Equity,Large Blend,S&P 500,,NVDA,VOO
+,4,GOOG,Alphabet Inc.,Communication Services,Internet Content & Information,,4,VTI,Vanguard Total Stock Market ETF,Equity,Large Blend,CRSP US Total Market,,GOOG,VTI
+,5,GOOGL,Alphabet Inc.,Communication Services,Internet Content & Information,,5,QQQ,Invesco QQQ Trust Series I,Equity,Large Growth,NASDAQ-100 Index,,GOOGL,QQQ
+,6,AMZN,"Amazon.com, Inc.",Consumer Discretionary,Internet Retail,,6,VUG,Vanguard Growth ETF,Equity,Large Growth,CRSP US Large Growth,,AMZN,VUG
+,7,META,"Meta Platforms, Inc.",Communication Services,Internet Content & Information,,7,VEA,Vanguard FTSE Developed Markets ETF,Equity,Foreign Large Blend,FTSE Developed ex US All Cap Net Tax (US RIC) Index,,META,VEA
+,8,BRK.B,Berkshire Hathaway Inc.,Financials,Insurance - Diversified,,8,IEFA,iShares Core MSCI EAFE ETF,Equity,Foreign Large Blend,MSCI EAFE IMI,,BRK.B,IEFA
+,9,BRK.A,Berkshire Hathaway Inc.,Financials,Insurance - Diversified,,9,VTV,Vanguard Value ETF,Equity,Large Value,CRSP US Large Value,,BRK.A,VTV
+,10,LLY,Eli Lilly and Company,Healthcare,Drug Manufacturers - General,,10,AGG,iShares Core U.S. Aggregate Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate,,LLY,AGG
+,11,AVGO,Broadcom Inc.,Technology,Semiconductors,,11,BND,Vanguard Total Bond Market ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate - Float Adjusted,,AVGO,BND
+,12,TSM,Taiwan Semiconductor Manufacturing Company Limited,Technology,Semiconductors,,12,IWF,iShares Russell 1000 Growth ETF,Equity,Large Growth,Russell 1000 Growth,,TSM,IWF
+,13,TSLA,"Tesla, Inc.",Consumer Discretionary,Auto Manufacturers,,13,IJH,iShares Core S&P Mid-Cap ETF,Equity,Mid-Cap Blend,S&P Mid Cap 400,,TSLA,IJH
+,14,NVO,Novo Nordisk A/S,Healthcare,Biotechnology,,14,VIG,Vanguard Dividend Appreciation ETF,Equity,Large Blend,S&P U.S. Dividend Growers Index,,NVO,VIG
+,15,JPM,JPMorgan Chase & Co.,Financials,Banks - Diversified,,15,IEMG,iShares Core MSCI Emerging Markets ETF,Equity,Diversified Emerging Mkts,MSCI Emerging Markets IMI,,JPM,IEMG
+,16,WMT,Walmart Inc.,Consumer Staples,Discount Stores,,16,VWO,Vanguard FTSE Emerging Markets ETF,Equity,Diversified Emerging Mkts,FTSE Custom Emerging Markets All Cap China A Inclusion Net Tax (US RIC) Index,,WMT,VWO
+,17,V,Visa Inc.,Financials,Credit Services,,17,IJR,iShares Core S&P Small Cap ETF,Equity,Small Blend,S&P Small Cap 600,,V,IJR
+,18,XOM,Exxon Mobil Corporation,Energy,Oil & Gas Integrated,,18,VGT,Vanguard Information Technology ETF,Equity,Technology,MSCI US IMI 25/50 Information Technology,,XOM,VGT
+,19,UNH,UnitedHealth Group Incorporated,Healthcare,Healthcare Plans,,19,XLK,Technology Select Sector SPDR Fund,Equity,Technology,Technology Select Sector,,UNH,XLK
+,20,ASML,ASML Holding N.V.,Technology,Semiconductor Equipment & Materials,,20,VXUS,Vanguard Total International Stock ETF,Equity,Foreign Large Blend,FTSE Global All Cap ex US Index,,ASML,VXUS
+,21,MA,Mastercard Incorporated,Financials,Credit Services,,21,VO,Vanguard Mid-Cap ETF,Equity,Mid-Cap Blend,CRSP US Mid Cap,,MA,VO
+,22,ORCL,Oracle Corporation,Technology,Software - Infrastructure,,22,GLD,SPDR Gold Shares,Commodity,Commodities Focused,LBMA Gold Price,,ORCL,GLD
+,23,PG,The Procter & Gamble Company,Consumer Staples,Household & Personal Products,,23,IWM,iShares Russell 2000 ETF,Equity,Small Blend,Russell 2000,,PG,IWM
+,24,COST,Costco Wholesale Corporation,Consumer Staples,Discount Stores,,24,ITOT,iShares Core S&P Total U.S. Stock Market ETF,Equity,Large Blend,S&P TMI,,COST,ITOT
+,25,JNJ,Johnson & Johnson,Healthcare,Drug Manufacturers - General,,25,BNDX,Vanguard Total International Bond ETF,Fixed Income,Global Bond-USD Hedged,Bloomberg Global Aggregate x USD Float Adjusted RIC Capped,,JNJ,BNDX
+,26,HD,"The Home Depot, Inc.",Consumer Discretionary,Home Improvement Retail,,26,VB,Vanguard Small-Cap ETF,Equity,Small Blend,CRSP US Small Cap,,HD,VB
+,27,BAC,Bank of America Corporation,Financials,Banks - Diversified,,27,IWD,iShares Russell 1000 Value ETF,Equity,Large Value,Russell 1000 Value,,BAC,IWD
+,28,MRK,"Merck & Co., Inc.",Healthcare,Drug Manufacturers - General,,28,SCHD,Schwab US Dividend Equity ETF,Equity,Large Value,Dow Jones U.S. Dividend 100,,MRK,SCHD
+,29,NFLX,"Netflix, Inc.",Communication Services,Entertainment,,29,VYM,Vanguard High Dividend Yield Index ETF,Equity,Large Value,FTSE Custom High Dividend Yield,,NFLX,VYM
+,30,ABBV,AbbVie Inc.,Healthcare,Drug Manufacturers - General,,30,RSP,Invesco S&P 500 Equal Weight ETF,Equity,Large Blend,S&P 500 Equal Weighted,,ABBV,RSP
+,31,CVX,Chevron Corporation,Energy,Oil & Gas Integrated,,31,EFA,iShares MSCI EAFE ETF,Equity,Foreign Large Blend,MSCI EAFE,,CVX,EFA
+,32,TM,Toyota Motor Corporation,Consumer Discretionary,Auto Manufacturers,,32,IVW,iShares S&P 500 Growth ETF,Equity,Large Growth,S&P 500 Growth,,TM,IVW
+,33,KO,The Coca-Cola Company,Consumer Staples,Beverages - Non-Alcoholic,,33,TLT,iShares 20+ Year Treasury Bond ETF,Fixed Income,Long Government,U.S. Treasury 20+ Year Index,,KO,TLT
+,34,AMD,"Advanced Micro Devices, Inc.",Technology,Semiconductors,,34,QUAL,iShares MSCI USA Quality Factor ETF,Equity,Large Blend,MSCI USA Sector Neutral Quality,,AMD,QUAL
+,35,CRM,"Salesforce, Inc.",Technology,Software - Application,,35,VCIT,Vanguard Intermediate-Term Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Aggregate Credit - Corporate (5-10 Y),,CRM,VCIT
+,36,ADBE,Adobe Inc.,Technology,Software - Infrastructure,,36,SCHX,Schwab U.S. Large-Cap ETF,Equity,Large Blend,Dow Jones US Total Stock Market Large-Cap,,ADBE,SCHX
+,37,AZN,AstraZeneca PLC,Healthcare,Drug Manufacturers - General,,37,XLV,Health Care Select Sector SPDR Fund,Equity,Health,Health Care Select Sector,,AZN,XLV
+,38,SAP,SAP SE,Technology,Software - Application,,38,SPLG,SPDR Portfolio S&P 500 ETF,Equity,Large Blend,S&P 500,,SAP,SPLG
+,39,SHEL,Shell plc,Energy,Oil & Gas Integrated,,39,VEU,Vanguard FTSE All-World ex-US Index Fund,Equity,Foreign Large Blend,FTSE All-World x US,,SHEL,VEU
+,40,QCOM,QUALCOMM Incorporated,Technology,Semiconductors,,40,XLF,Financial Select Sector SPDR Fund,Equity,Financial,Financial Select Sector,,QCOM,XLF
+,41,PEP,"PepsiCo, Inc.",Consumer Staples,Beverages - Non-Alcoholic,,41,MUB,iShares National Muni Bond ETF,Fixed Income,Muni National Interm,ICE AMT-Free US National Municipal,,PEP,MUB
+,42,WFC,Wells Fargo & Company,Financials,Banks - Diversified,,42,SCHF,Schwab International Equity ETF,Equity,Foreign Large Blend,FTSE All-World Developed x US,,WFC,SCHF
+,43,TMUS,"T-Mobile US, Inc.",Communication Services,Telecom Services,,43,VT,Vanguard Total World Stock ETF,Equity,Global Large-Stock Blend,FTSE Global All Cap Index,,TMUS,VT
+,44,NVS,Novartis AG,Healthcare,Drug Manufacturers - General,,44,IXUS,iShares Core MSCI Total International Stock ETF,Equity,Foreign Large Blend,MSCI AC World ex USA IMI,,NVS,IXUS
+,45,LIN,Linde plc,Materials,Specialty Chemicals,,45,IWB,iShares Russell 1000 ETF,Equity,Large Blend,Russell 1000,,LIN,IWB
+,46,TMO,Thermo Fisher Scientific Inc.,Healthcare,Diagnostics & Research,,46,VV,Vanguard Large-Cap ETF,Equity,Large Blend,CRSP US Large Cap,,TMO,VV
+,47,AMAT,"Applied Materials, Inc.",Technology,Semiconductor Equipment & Materials,,47,XLE,Energy Select Sector SPDR Fund,Equity,Equity Energy,Energy Select Sector,,AMAT,XLE
+,48,ACN,Accenture plc,Technology,Information Technology Services,,48,VCSH,Vanguard Short-Term Corporate Bond ETF,Fixed Income,Short-Term Bond,Bloomberg US Corporate (1-5 Y),,ACN,VCSH
+,49,CSCO,"Cisco Systems, Inc.",Technology,Communication Equipment,,49,JEPI,JPMorgan Equity Premium Income ETF,Equity,Derivative Income,-,,CSCO,JEPI
+,50,INTU,Intuit Inc.,Technology,Software - Application,,50,IWR,iShares Russell Midcap ETF,Equity,Mid-Cap Blend,Russell Midcap,,INTU,IWR
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,51,PDD,PDD Holdings Inc.,Consumer Discretionary,Internet Retail,,51,VTEB,Vanguard Tax-Exempt Bond ETF,Fixed Income,Muni National Interm,S&P National AMT-Free Municipal Bond,,PDD,VTEB
+,52,TXN,Texas Instruments Incorporated,Technology,Semiconductors,,52,IVE,iShares S&P 500 Value ETF,Equity,Large Value,S&P 500 Value,,TXN,IVE
+,53,MCD,McDonald's Corporation,Consumer Discretionary,Restaurants,,53,BIL,SPDR Bloomberg 1-3 Month T-Bill ETF,Fixed Income,Ultrashort Bond,Bloomberg US Treasury - Bills (1-3 M),,MCD,BIL
+,54,DIS,The Walt Disney Company,Communication Services,Entertainment,,54,BSV,Vanguard Short-Term Bond ETF,Fixed Income,Short-Term Bond,Bloomberg US Government/Credit - Float Adjusted (1-5 Y),,DIS,BSV
+,55,GE,GE Aerospace,Industrials,Aerospace & Defense,,55,VNQ,Vanguard Real Estate ETF,Equity,Real Estate,MSCI US IMI/Real Estate 25-50,,GE,VNQ
+,56,ABT,Abbott Laboratories,Healthcare,Medical Devices,,56,DIA,SPDR Dow Jones Industrial Average ETF Trust,Equity,Large Value,Dow Jones Industrial Average,,ABT,DIA
+,57,DHR,Danaher Corporation,Healthcare,Diagnostics & Research,,57,MBB,iShares MBS ETF,Fixed Income,Intermediate Government,Bloomberg US Aggregate Securitized - MBS,,DHR,MBB
+,58,ARM,Arm Holdings plc,Technology,Semiconductors,,58,SCHG,Schwab U.S. Large-Cap Growth ETF,Equity,Large Growth,Dow Jones US Total Stock Market Large-Cap Growth,,ARM,SCHG
+,59,VZ,Verizon Communications Inc.,Communication Services,Telecom Services,,59,IEF,iShares 7-10 Year Treasury Bond ETF,Fixed Income,Long Government,ICE BofA US Treasury (7-10 Y),,VZ,IEF
+,60,BABA,Alibaba Group Holding Limited,Consumer Discretionary,Internet Retail,,60,SPYG,SPDR Portfolio S&P 500 Growth ETF,Equity,Large Growth,S&P 500 Growth,,BABA,SPYG
+,61,AXP,American Express Company,Financials,Credit Services,,61,SCHB,Schwab U.S. Broad Market ETF,Equity,Large Blend,Dow Jones US Broad Stock Market,,AXP,SCHB
+,62,AMGN,Amgen Inc.,Healthcare,Drug Manufacturers - General,,62,LQD,iShares iBoxx $ Investment Grade Corporate Bond ETF,Fixed Income,Corporate Bond,iBoxx USD Liquid Investment Grade Index,,AMGN,LQD
+,63,TTE,TotalEnergies SE,Energy,Oil & Gas Integrated,,63,QQQM,Invesco NASDAQ 100 ETF,Equity,Large Growth,NASDAQ-100 Index,,TTE,QQQM
+,64,HSBC,HSBC Holdings plc,Financials,Banks - Diversified,,64,IUSB,iShares Core Total USD Bond Market ETF,Fixed Income,Intermediate Core-Plus Bond,Bloomberg US Universal,,HSBC,IUSB
+,65,MS,Morgan Stanley,Financials,Capital Markets,,65,VGIT,Vanguard Intermediate-Term Treasury ETF,Fixed Income,Intermediate Government,Bloomberg US Treasury (3-10 Y),,MS,VGIT
+,66,CAT,Caterpillar Inc.,Industrials,Farm & Heavy Construction Machinery,,66,IAU,iShares Gold Trust,Commodity,Commodities Focused,LBMA Gold Price,,CAT,IAU
+,67,NOW,"ServiceNow, Inc.",Technology,Software - Application,,67,DFAC,Dimensional U.S. Core Equity 2 ETF,Equity,Large Blend,-,,NOW,DFAC
+,68,IBM,International Business Machines Corporation,Technology,Information Technology Services,,68,VBR,Vanguard Small Cap Value ETF,Equity,Small Value,CRSP US Small Value,,IBM,VBR
+,69,PM,Philip Morris International Inc.,Consumer Staples,Tobacco,,69,DGRO,iShares Core Dividend Growth ETF,Equity,Large Value,Morningstar US Dividend Growth Index,,PM,DGRO
+,70,PFE,Pfizer Inc.,Healthcare,Drug Manufacturers - General,,70,GOVT,iShares U.S. Treasury Bond ETF,Fixed Income,Intermediate Government,ICE U.S. Treasury Core Bond Index,,PFE,GOVT
+,71,HDB,HDFC Bank Limited,Financials,Banks - Regional,,71,SHY,iShares 1-3 Year Treasury Bond ETF,Fixed Income,Short Government,ICE BofA US Treasury Bond (1-3 Y),,HDB,SHY
+,72,ISRG,"Intuitive Surgical, Inc.",Healthcare,Medical Instruments & Supplies,,72,USMV,iShares MSCI USA Min Vol Factor ETF,Equity,Large Blend,MSCI USA Minimum Volatility,,ISRG,USMV
+,73,RY,Royal Bank of Canada,Financials,Banks - Diversified,,73,JPST,JPMorgan Ultra-Short Income ETF,Fixed Income,Ultrashort Bond,-,,RY,JPST
+,74,MU,"Micron Technology, Inc.",Technology,Semiconductors,,74,SMH,VanEck Semiconductor ETF,Equity,Technology,MVIS US Listed Semiconductor 25,,MU,SMH
+,75,BHP,BHP Group Limited,Materials,Other Industrial Metals & Mining,,75,SGOV,iShares 0-3 Month Treasury Bond ETF,Fixed Income,Ultrashort Bond,ICE 0-3 Month US Treasury Securities Index,,BHP,SGOV
+,76,GS,"The Goldman Sachs Group, Inc.",Financials,Capital Markets,,76,COWZ,Pacer US Cash Cows 100 ETF,Equity,Mid-Cap Value,Pacer US Cash Cows 100 Index,,GS,COWZ
+,77,BX,Blackstone Inc.,Financials,Asset Management,,77,MGK,Vanguard Mega Cap Growth ETF,Equity,Large Growth,CRSP US Mega Growth,,BX,MGK
+,78,CMCSA,Comcast Corporation,Communication Services,Telecom Services,,78,TQQQ,ProShares UltraPro QQQ,Equity,Trading--Leveraged Equity,NASDAQ-100 Index,,CMCSA,TQQQ
+,79,UBER,"Uber Technologies, Inc.",Technology,Software - Application,,79,SPYV,SPDR Portfolio S&P 500 Value ETF,Equity,Large Value,S&P 500 Value,,UBER,SPYV
+,80,NEE,"NextEra Energy, Inc.",Utilities,Utilities - Regulated Electric,,80,MDY,SPDR S&P Midcap 400 ETF Trust,Equity,Mid-Cap Blend,S&P Mid Cap 400,,NEE,MDY
+,81,LRCX,Lam Research Corporation,Technology,Semiconductor Equipment & Materials,,81,VONG,Vanguard Russell 1000 Growth ETF,Equity,Large Growth,Russell 1000 Growth,,LRCX,VONG
+,82,SPGI,S&P Global Inc.,Financials,Financial Data & Stock Exchanges,,82,IGSB,iShares 1-5 Year Investment Grade Corporate Bond ETF,Fixed Income,Short-Term Bond,ICE BofA US Corporate (1-5 Y),,SPGI,IGSB
+,83,HON,Honeywell International Inc.,Industrials,Conglomerates,,83,IBIT,IShares Bitcoin Trust Registered,Currency,-,CME CF Bitcoin Reference Rate - New York Variant - Benchmark Price Return,,HON,IBIT
+,84,UNP,Union Pacific Corporation,Industrials,Railroads,,84,SPDW,SPDR Portfolio Developed World ex-US ETF,Equity,Foreign Large Blend,S&P Developed x United States BMI,,UNP,SPDW
+,85,UL,Unilever PLC,Consumer Staples,Household & Personal Products,,85,SDY,SPDR S&P Dividend ETF,Equity,Mid-Cap Value,S&P High Yield Dividend Aristocrats,,UL,SDY
+,86,T,AT&T Inc.,Communication Services,Telecom Services,,86,VGK,Vanguard FTSE Europe ETF,Equity,Europe Stock,FTSE Developed Europe All Cap,,T,VGK
+,87,RTX,RTX Corp,Industrials,Aerospace & Defense,,87,VGSH,Vanguard Short-Term Treasury ETF,Fixed Income,Short Government,Bloomberg US Treasury (1-3 Y) (Inception 4/30/1996),,RTX,VGSH
+,88,COP,Conoco Phillips,Energy,Oil & Gas Exploration & Production,,88,XLY,Consumer Discretionary Select Sector SPDR Fund,Equity,Consumer Cyclical,Consumer Discretionary Select Sector,,COP,XLY
+,89,INTC,Intel Corporation,Technology,Semiconductors,,89,SHV,iShares Short Treasury Bond ETF,Fixed Income,Ultrashort Bond,ICE BofA Short US Treasury Securities,,INTC,SHV
+,90,BKNG,Booking Holdings Inc.,Consumer Discretionary,Travel Services,,90,IUSG,iShares Core S&P U.S. Growth ETF,Equity,Large Growth,S&P 900 Growth,,BKNG,IUSG
+,91,SCHW,The Charles Schwab Corporation,Financials,Capital Markets,,91,EEM,iShares MSCI Emerging Markets ETF,Equity,Diversified Emerging Mkts,MSCI Emerging Markets,,SCHW,EEM
+,92,MUFG,"Mitsubishi UFJ Financial Group, Inc.",Financials,Banks - Diversified,,92,IYW,iShares U.S. Technology ETF,Equity,Technology,Russell 1000 Technology RIC 22.5/45 Capped Index,,MUFG,IYW
+,93,ETN,Eaton Corporation plc,Industrials,Specialty Industrial Machinery,,93,ACWI,iShares MSCI ACWI ETF,Equity,Global Large-Stock Blend,MSCI AC World,,ETN,ACWI
+,94,SYK,Stryker Corporation,Healthcare,Medical Devices,,94,GBTC,Grayscale Bitcoin Trust,Currency,-,CoinDesk Bitcoin Price Index - Benchmark Price Return,,SYK,GBTC
+,95,TJX,"The TJX Companies, Inc.",Consumer Discretionary,Apparel Retail,,95,XLC,Communication Services Select Sector SPDR Fund,Equity,Communications,S&P Communication Services Select Sector Index,,TJX,XLC
+,96,ELV,Elevance Health Inc.,Healthcare,Healthcare Plans,,96,TIP,iShares TIPS Bond ETF,Fixed Income,Inflation-Protected Bond,ICE US Treasury Inflation Linked Bond Index,,ELV,TIP
+,97,PGR,The Progressive Corporation,Financials,Insurance - Property & Casualty,,97,VXF,Vanguard Extended Market ETF,Equity,Mid-Cap Blend,S&P Completion,,PGR,VXF
+,98,C,Citigroup Inc.,Financials,Banks - Diversified,,98,BIV,Vanguard Intermediate-Term Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Government/Credit - Float Adjusted (5-10 Y),,C,BIV
+,99,SNY,Sanofi,Healthcare,Drug Manufacturers - General,,99,DVY,iShares Select Dividend ETF,Equity,Large Value,DJ US Select Dividend,,SNY,DVY
+,100,BUD,Anheuser-Busch InBev SA/NV,Consumer Staples,Beverages - Brewers,,100,USFR,WisdomTree Floating Rate Treasury Fund,Fixed Income,Ultrashort Bond,Bloomberg US Treasury Floating Rate Bond,,BUD,USFR
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,101,LOW,"Lowe's Companies, Inc.",Consumer Discretionary,Home Improvement Retail,,101,VHT,Vanguard Health Care ETF,Equity,Health,MSCI US IMI 25/50 Health Care,,LOW,VHT
+,102,VRTX,Vertex Pharmaceuticals Incorporated,Healthcare,Biotechnology,,102,VMBS,Vanguard Mortgage-Backed Securities ETF,Fixed Income,Intermediate Government,Bloomberg US MBS - Float Adjusted,,VRTX,VMBS
+,103,BLK,"BlackRock, Inc.",Financials,Asset Management,,103,VBK,Vanguard Small-Cap Growth ETF,Equity,Small Growth,CRSP US Small Growth,,BLK,VBK
+,104,UPS,"United Parcel Service, Inc.",Industrials,Integrated Freight & Logistics,,104,XLI,Industrial Select Sector SPDR Fund,Equity,Industrials,S&P Industrial Select Sector,,UPS,XLI
+,105,RIO,Rio Tinto Group,Materials,Other Industrial Metals & Mining,,105,IUSV,iShares Core S&P US Value ETF,Equity,Large Value,S&P 900 Value,,RIO,IUSV
+,106,KLAC,KLA Corporation,Technology,Semiconductor Equipment & Materials,,106,HYG,iShares iBoxx $ High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,iBoxx USD Liquid High Yield Index,,KLAC,HYG
+,107,ADI,"Analog Devices, Inc.",Technology,Semiconductors,,107,VOE,Vanguard Mid-Cap Value ETF,Equity,Mid-Cap Value,CRSP US Mid Value,,ADI,VOE
+,108,ANET,"Arista Networks, Inc.",Technology,Computer Hardware,,108,SCHA,Schwab U.S. Small-Cap ETF,Equity,Small Blend,Dow Jones US Total Stock Market Small-Cap,,ANET,SCHA
+,109,NKE,"NIKE, Inc.",Consumer Discretionary,Footwear & Accessories,,109,SOXX,iShares Semiconductor ETF,Equity,Technology,NYSE Semiconductor Index,,NKE,SOXX
+,110,BA,The Boeing Company,Industrials,Aerospace & Defense,,110,XLP,Consumer Staples Select Sector SPDR Fund,Equity,Consumer Defensive,Consumer Staples Select Sector,,BA,XLP
+,111,BSX,Boston Scientific Corporation,Healthcare,Medical Devices,,111,EWJ,iShares MSCI Japan ETF,Equity,Japan Stock,MSCI Japan,,BSX,EWJ
+,112,LMT,Lockheed Martin Corporation,Industrials,Aerospace & Defense,,112,FNDX,Schwab Fundamental US Large Co. Index ETF,Equity,Large Value,Russell RAFI Large Company US,,LMT,FNDX
+,113,REGN,"Regeneron Pharmaceuticals, Inc.",Healthcare,Biotechnology,,113,EMB,iShares JP Morgan USD Emerging Markets Bond ETF,Fixed Income,Emerging Markets Bond,J.P. Morgan EMBI Global Core Index,,REGN,EMB
+,114,PANW,"Palo Alto Networks, Inc.",Technology,Software - Infrastructure,,114,EFV,iShares MSCI EAFE Value ETF,Equity,Foreign Large Value,MSCI EAFE Value,,PANW,EFV
+,115,MMC,"Marsh & McLennan Companies, Inc.",Financials,Insurance Brokers,,115,JEPQ,JPMorgan NASDAQ Equity Premium Income ETF,Equity,Derivative Income,-,,MMC,JEPQ
+,116,PLD,"Prologis, Inc.",Real Estate,REIT - Industrial,,116,EFG,iShares MSCI EAFE Growth ETF,Equity,Foreign Large Growth,MSCI EAFE Growth,,PLD,EFG
+,117,SONY,Sony Group Corporation,Technology,Consumer Electronics,,117,MOAT,VanEck Morningstar Wide Moat ETF,Equity,Large Blend,Morningstar Wide Moat Focus Index,,SONY,MOAT
+,118,CB,Chubb Limited,Financials,Insurance - Property & Casualty,,118,XLU,Utilities Select Sector SPDR Fund,Equity,Utilities,S&P Utilities Select Sector,,CB,XLU
+,119,BP,BP p.l.c.,Energy,Oil & Gas Integrated,,119,PFF,iShares Preferred & Income Securities ETF,Fixed Income,Preferred Stock,ICE Exchange-Listed Preferred & Hybrid Securities Index,,BP,PFF
+,120,IBN,ICICI Bank Limited,Financials,Banks - Regional,,120,IWV,iShares Russell 3000 ETF,Equity,Large Blend,Russell 3000,,IBN,IWV
+,121,DELL,Dell Technologies Inc.,Technology,Computer Hardware,,121,IWP,iShares Russell Mid-Cap Growth ETF,Equity,Mid-Cap Growth,Russell Midcap Growth,,DELL,IWP
+,122,DE,Deere & Company,Industrials,Farm & Heavy Construction Machinery,,122,VOT,Vanguard Mid-Cap Growth ETF,Equity,Mid-Cap Growth,CRSP US Mid Growth,,DE,VOT
+,123,MDT,Medtronic plc,Healthcare,Medical Devices,,123,EMXC,iShares MSCI Emerging Markets ex China ETF,Equity,Diversified Emerging Mkts,MSCI Emerging Markets ex China,,MDT,EMXC
+,124,ABNB,"Airbnb, Inc.",Consumer Discretionary,Travel Services,,124,IEI,iShares 3-7 Year Treasury Bond ETF,Fixed Income,Intermediate Government,ICE BofA US Treasury (3-7 Y),,ABNB,IEI
+,125,TD,The Toronto-Dominion Bank,Financials,Banks - Diversified,,125,IGIB,iShares 5-10 Year Investment Grade Corporate Bond ETF,Fixed Income,Corporate Bond,ICE BofA US Corporate (5-10 Y),,TD,IGIB
+,126,UBS,UBS Group AG,Financials,Banks - Diversified,,126,IDEV,iShares Core MSCI International Developed Markets ETF,Equity,Foreign Large Blend,MSCI World ex USA IMI,,UBS,IDEV
+,127,ADP,"Automatic Data Processing, Inc.",Industrials,Staffing & Employment Services,,127,DGRW,WisdomTree US Quality Dividend Growth Fund,Equity,Large Blend,WisdomTree U.S. Quality Dividend Growth Index,,ADP,DGRW
+,128,CRWD,"CrowdStrike Holdings, Inc.",Technology,Software - Infrastructure,,128,USHY,iShares Broad USD High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,ICE BofA US High Yield Constrained,,CRWD,USHY
+,129,KKR,KKR & Co. Inc.,Financials,Asset Management,,129,VGLT,Vanguard Long-Term Treasury ETF,Fixed Income,Long Government,Bloomberg US Aggregate Government - Treasury - Long,,KKR,VGLT
+,130,SNPS,"Synopsys, Inc.",Technology,Software - Infrastructure,,130,OEF,iShares S&P 100 ETF,Equity,Large Blend,S&P 100,,SNPS,OEF
+,131,CI,Cigna Corporation,Healthcare,Healthcare Plans,,131,GDX,VanEck Gold Miners ETF,Equity,Equity Precious Metals,NYSE Arca Gold Miners,,CI,GDX
+,132,PBR.A,Petróleo Brasileiro S.A. - Petrobras,Energy,Oil & Gas Integrated,,132,FNDF,Schwab Fundamental International Large Co. Index ETF,Equity,Foreign Large Value,Russell RAFI Developed ex-U.S. Large Company Index,,PBR.A,FNDF
+,133,PBR,Petróleo Brasileiro S.A. - Petrobras,Energy,Oil & Gas Integrated,,133,ESGU,iShares ESG Aware MSCI USA ETF,Equity,Large Blend,MSCI USA Extended ESG Focus Index,,PBR,ESGU
+,134,AMT,American Tower Corporation,Real Estate,REIT - Specialty,,134,SLV,iShares Silver Trust,Commodity,Commodities Focused,LBMA Silver Price,,AMT,SLV
+,135,SCCO,Southern Copper Corporation,Materials,Copper,,135,IWS,iShares Russell Mid-Cap Value ETF,Equity,Mid-Cap Value,Russell Midcap Value,,SCCO,IWS
+,136,MDLZ,"Mondelez International, Inc.",Consumer Staples,Confectioners,,136,GSLC,Goldman Sachs ActiveBeta U.S. Large Cap Equity ETF,Equity,Large Blend,Stuttgart Goldman Sachs ActiveBeta US Large Cap,,MDLZ,GSLC
+,137,SMFG,"Sumitomo Mitsui Financial Group, Inc.",Financials,Banks - Diversified,,137,IWY,iShares Russell Top 200 Growth ETF,Equity,Large Growth,Russell Top 200 Growth,,SMFG,IWY
+,138,FI,"Fiserv, Inc.",Technology,Information Technology Services,,138,MINT,PIMCO Enhanced Short Maturity Active Exchange-Traded Fund,Fixed Income,Ultrashort Bond,-,,FI,MINT
+,139,SBUX,Starbucks Corporation,Consumer Discretionary,Restaurants,,139,VOOG,Vanguard S&P 500 Growth ETF,Equity,Large Growth,S&P 500 Growth,,SBUX,VOOG
+,140,SHOP,Shopify Inc.,Technology,Software - Application,,140,NOBL,ProShares S&P 500 Dividend Aristocrats ETF,Equity,Large Value,S&P 500 Dividend Aristocrats,,SHOP,NOBL
+,141,EQNR,Equinor ASA,Energy,Oil & Gas Integrated,,141,BBJP,JPMorgan BetaBuilders Japan ETF,Equity,Japan Stock,Morningstar Japan Target Market Exposure Index,,EQNR,BBJP
+,142,CDNS,"Cadence Design Systems, Inc.",Technology,Software - Application,,142,SOXL,Direxion Daily Semiconductor Bull 3x Shares,Equity,Trading--Leveraged Equity,NYSE Semiconductor Index,,CDNS,SOXL
+,143,HCA,"HCA Healthcare, Inc.",Healthcare,Medical Care Facilities,,143,FBTC,Fidelity Wise Origin Bitcoin Fund,Currency,-,Fidelity Bitcoin Reference Rate - Benchmark Price Return,,HCA,FBTC
+,144,RELX,RELX PLC,Industrials,Specialty Business Services,,144,INDA,iShares MSCI India ETF,Equity,India Equity,MSCI India,,RELX,INDA
+,145,SO,The Southern Company,Utilities,Utilities - Regulated Electric,,145,USIG,iShares Broad USD Investment Grade Corporate Bond ETF,Fixed Income,Corporate Bond,ICE BofA US Corporate,,SO,USIG
+,146,CMG,"Chipotle Mexican Grill, Inc.",Consumer Discretionary,Restaurants,,146,SCHM,Schwab U.S. Mid-Cap ETF,Equity,Mid-Cap Blend,Dow Jones US Total Stock Market Mid-Cap,,CMG,SCHM
+,147,WM,"Waste Management, Inc.",Industrials,Waste Management,,147,AVUV,Avantis U.S. Small Cap Value ETF,Equity,Small Value,-,,WM,AVUV
+,148,GILD,"Gilead Sciences, Inc.",Healthcare,Drug Manufacturers - General,,148,SCHP,Schwab US TIPS ETF,Fixed Income,Inflation-Protected Bond,Bloomberg US Treasury Inflation Protected Notes (TIPS),,GILD,SCHP
+,149,APH,Amphenol Corporation,Technology,Electronic Components,,149,IWN,iShares Russell 2000 Value ETF,Equity,Small Value,Russell 2000 Value,,APH,IWN
+,150,BMY,Bristol-Myers Squibb Company,Healthcare,Drug Manufacturers - General,,150,VTIP,Vanguard Short-Term Inflation-Protected Securities ETF,Fixed Income,Short-Term Inflation Protected Bond,Bloomberg US Treasury TIPS (0-5 Y),,BMY,VTIP
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,151,ICE,"Intercontinental Exchange, Inc.",Financials,Financial Data & Stock Exchanges,,151,FTEC,Fidelity MSCI Information Technology Index ETF,Equity,Technology,MSCI USA IMI Information Technology 25/50 Index,,ICE,FTEC
+,152,MELI,"MercadoLibre, Inc.",Consumer Discretionary,Internet Retail,,152,IWO,iShares Russell 2000 Growth ETF,Equity,Small Growth,Russell 2000 Growth,,MELI,IWO
+,153,ZTS,Zoetis Inc.,Healthcare,Drug Manufacturers - Specialty & Generic,,153,SCHV,Schwab U.S. Large-Cap Value ETF,Equity,Large Value,Dow Jones US Total Stock Market Large-Cap Value,,ZTS,SCHV
+,154,INFY,Infosys Limited,Technology,Information Technology Services,,154,MTUM,iShares MSCI USA Momentum Factor ETF,Equity,Large Growth,MSCI USA Momentum SR Variant Index,,INFY,MTUM
+,155,MO,"Altria Group, Inc.",Consumer Staples,Tobacco,,155,SCHO,Schwab Short-Term US Treasury ETF,Fixed Income,Short Government,Bloomberg US Treasury (1-3 Y) (Inception 4/30/1996),,MO,SCHO
+,156,CL,Colgate-Palmolive Company,Consumer Staples,Household & Personal Products,,156,RDVY,First Trust Rising Dividend Achievers ETF,Equity,Large Value,NASDAQ US Rising Dividend Achievers,,CL,RDVY
+,157,GSK,GSK plc,Healthcare,Drug Manufacturers - General,,157,JAAA,Janus Detroit Street Trust Janus Henderson AAA CLO ETF,Fixed Income,Ultrashort Bond,-,,GSK,JAAA
+,158,GD,General Dynamics Corporation,Industrials,Aerospace & Defense,,158,DFUV,Dimensional US Marketwide Value ETF,Equity,Large Value,-,,GD,DFUV
+,159,MCO,Moody's Corporation,Financials,Financial Data & Stock Exchanges,,159,SPSM,SPDR Portfolio S&P 600 Small Cap ETF,Equity,Small Blend,S&P Small Cap 600,,MCO,SPSM
+,160,CNQ,Canadian Natural Resources Limited,Energy,Oil & Gas Exploration & Production,,160,SPMD,SPDR Portfolio S&P 400 Mid Cap ETF,Equity,Mid-Cap Blend,S&P Mid Cap 400,,CNQ,SPMD
+,161,DUK,Duke Energy Corporation,Utilities,Utilities - Regulated Electric,,161,HDV,iShares Core High Dividend ETF,Equity,Large Value,Morningstar Dividend Yield Focus Index,,DUK,HDV
+,162,ENB,Enbridge Inc.,Energy,Oil & Gas Midstream,,162,SPHQ,Invesco S&P 500 Quality ETF,Equity,Large Blend,S&P 500 Quality,,ENB,SPHQ
+,163,TRI,Thomson Reuters Corporation,Industrials,Specialty Business Services,,163,SPTL,SPDR Portfolio Long Term Treasury ETF,Fixed Income,Long Government,Bloomberg US Aggregate Government - Treasury - Long,,TRI,SPTL
+,164,RACE,Ferrari N.V.,Consumer Discretionary,Auto Manufacturers,,164,FBND,Fidelity Total Bond ETF,Fixed Income,Intermediate Core-Plus Bond,-,,RACE,FBND
+,165,CNI,Canadian National Railway Company,Industrials,Railroads,,165,DFAT,Dimensional U.S. Targeted Value ETF,Equity,Small Value,-,,CNI,DFAT
+,166,MCK,McKesson Corporation,Healthcare,Medical Distribution,,166,DFUS,Dimensional U.S. Equity ETF,Equity,Large Blend,-,,MCK,DFUS
+,167,CP,Canadian Pacific Railway Limited,Industrials,Railroads,,167,DYNF,BlackRock U.S. Equity Factor Rotation ETF,Equity,Large Blend,-,,CP,DYNF
+,168,SHW,The Sherwin-Williams Company,Materials,Specialty Chemicals,,168,VCLT,Vanguard Long-Term Corporate Bond ETF,Fixed Income,Long-Term Bond,Bloomberg US Corporate (10+ Y),,SHW,VCLT
+,169,TT,Trane Technologies plc,Industrials,Building Products & Equipment,,169,IJK,iShares S&P Mid-Cap 400 Growth ETF,Equity,Mid-Cap Growth,S&P Mid Cap 400 Growth,,TT,IJK
+,170,SAN,"Banco Santander, S.A.",Financials,Banks - Diversified,,170,FVD,First Trust Value Line Dividend Index Fund,Equity,Large Value,Value Line Dividend,,SAN,FVD
+,171,EOG,"EOG Resources, Inc.",Energy,Oil & Gas Exploration & Production,,171,SCZ,iShares MSCI EAFE Small-Cap ETF,Equity,Foreign Small/Mid Blend,MSCI EAFE Small Cap,,EOG,SCZ
+,172,FCX,Freeport-McMoRan Inc.,Materials,Copper,,172,VFH,Vanguard Financials ETF,Equity,Financial,MSCI US IMI 25/50 Financials,,FCX,VFH
+,173,FDX,FedEx Corporation,Industrials,Integrated Freight & Logistics,,173,CALF,Pacer US Small Cap Cash Cows 100 ETF,Equity,Small Value,Pacer US Small Cap Cash Cows Index,,FDX,CALF
+,174,TDG,TransDigm Group Incorporated,Industrials,Aerospace & Defense,,174,SPEM,SPDR Portfolio Emerging Markets ETF,Equity,Diversified Emerging Mkts,S&P Emerging Markets BMI,,TDG,SPEM
+,175,CTAS,Cintas Corporation,Industrials,Specialty Business Services,,175,VTWO,Vanguard Russell 2000 ETF,Equity,Small Blend,Russell 2000,,CTAS,VTWO
+,176,DEO,Diageo plc,Consumer Staples,Beverages - Wineries & Distilleries,,176,SCHE,Schwab Emerging Markets Equity ETF,Equity,Diversified Emerging Mkts,FTSE Emerging Index,,DEO,SCHE
+,177,CVS,CVS Health Corporation,Healthcare,Healthcare Plans,,177,ESGV,Vanguard ESG U.S. Stock ETF,Equity,Large Blend,FTSE USA All Cap Choice Index,,CVS,ESGV
+,178,EQIX,"Equinix, Inc.",Real Estate,REIT - Specialty,,178,FTCS,First Trust Capital Strength ETF,Equity,Large Blend,NASDAQ Capital Strength Index,,EQIX,FTCS
+,179,BN,Brookfield Corporation,Financials,Asset Management,,179,SUB,iShares Short-Term National Muni Bond ETF,Fixed Income,Muni National Short,ICE Short Maturity AMT-Free US National Municipal,,BN,SUB
+,180,CME,CME Group Inc.,Financials,Financial Data & Stock Exchanges,,180,CGDV,Capital Group Dividend Value ETF,Equity,Large Value,-,,CME,CGDV
+,181,ITW,Illinois Tool Works Inc.,Industrials,Specialty Industrial Machinery,,181,SPTM,SPDR Portfolio S&P 1500 Composite Stock Market ETF,Equity,Large Blend,S&P Composite 1500,,ITW,SPTM
+,182,NXPI,NXP Semiconductors N.V.,Technology,Semiconductors,,182,JNK,SPDR Bloomberg High Yield Bond ETF,Fixed Income,High Yield Bond,Bloomberg High Yield Very Liquid,,NXPI,JNK
+,183,BTI,British American Tobacco p.l.c.,Consumer Staples,Tobacco,,183,AMLP,Alerian MLP ETF,Equity,Energy Limited Partnership,Alerian MLP Infrastructure Index,,BTI,AMLP
+,184,MAR,"Marriott International, Inc.",Consumer Discretionary,Lodging,,184,VSS,Vanguard FTSE All-World ex-US Small-Cap ETF,Equity,Foreign Small/Mid Blend,FTSE Global ex US Small Cap Net Tax (US RIC) Index,,MAR,VSS
+,185,APO,"Apollo Global Management, Inc.",Financials,Asset Management,,185,VONV,Vanguard Russell 1000 Value ETF,Equity,Large Value,Russell 1000 Value,,APO,VONV
+,186,SLB,Schlumberger Limited,Energy,Oil & Gas Equipment & Services,,186,VDE,Vanguard Energy ETF,Equity,Equity Energy,MSCI US IMI 25/50 Energy,,SLB,VDE
+,187,ECL,Ecolab Inc.,Materials,Specialty Chemicals,,187,BKLN,Invesco Senior Loan ETF,Fixed Income,Bank Loan,Morningstar LSTA US Leveraged Loan 100,,ECL,BKLN
+,188,TGT,Target Corporation,Consumer Staples,Discount Stores,,188,QYLD,Global X NASDAQ 100 Covered Call ETF,Equity,Derivative Income,Cboe NASDAQ-100 BuyWrite V2 Index,,TGT,QYLD
+,189,CEG,Constellation Energy Corporation,Utilities,Utilities - Renewable,,189,SPIB,SPDR Portfolio Intermediate Term Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Aggregate Credit - Corporate - Investment Grade - Intermediate,,CEG,SPIB
+,190,BDX,"Becton, Dickinson and Company",Healthcare,Medical Instruments & Supplies,,190,FNDA,Schwab Fundamental US Small Co. Index ETF,Equity,Small Blend,Russell RAFI Small Company US,,BDX,FNDA
+,191,PH,Parker-Hannifin Corporation,Industrials,Specialty Industrial Machinery,,191,SCHR,Schwab Intermediate-Term US Treasury ETF,Fixed Income,Intermediate Government,Bloomberg US Treasury (3-10 Y),,PH,SCHR
+,192,CSX,CSX Corporation,Industrials,Railroads,,192,BBEU,JPMorgan BetaBuilders Europe ETF,Equity,Europe Stock,Morningstar Developed Europe Target Market Exposure Index,,CSX,BBEU
+,193,NOC,Northrop Grumman Corporation,Industrials,Aerospace & Defense,,193,IQLT,iShares MSCI Intl Quality Factor ETF,Equity,Foreign Large Blend,World ex USA Sector Neutral Quality,,NOC,IQLT
+,194,MSI,"Motorola Solutions, Inc.",Technology,Communication Equipment,,194,ESGD,iShares ESG Aware MSCI EAFE ETF,Equity,Foreign Large Blend,MSCI EAFE Extended ESG Focus Index,,MSI,ESGD
+,195,AON,Aon plc,Financials,Insurance Brokers,,195,DFAS,Dimensional U.S. Small Cap ETF,Equity,Small Blend,-,,AON,DFAS
+,196,EPD,Enterprise Products Partners L.P.,Energy,Oil & Gas Midstream,,196,STIP,iShares 0-5 Year TIPS Bond ETF,Fixed Income,Short-Term Inflation Protected Bond,ICE US Treasury 05 Year Inflation Linked Bond Index,,EPD,STIP
+,197,PNC,"The PNC Financial Services Group, Inc.",Financials,Banks - Regional,,197,SPAB,SPDR Portfolio Aggregate Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate,,PNC,SPAB
+,198,WELL,Welltower Inc.,Real Estate,REIT - Healthcare Facilities,,198,TLH,iShares 10-20 Year Treasury Bond ETF,Fixed Income,Long Government,ICE US Treasury 10-20 Year Bond Index,,WELL,TLH
+,199,EMR,Emerson Electric Co.,Industrials,Specialty Industrial Machinery,,199,SPSB,SPDR Portfolio Short Term Corporate Bond ETF,Fixed Income,Short-Term Bond,Bloomberg US Corporate (1-3 Y) (Inception 11/28/2003),,EMR,SPSB
+,200,MRVL,"Marvell Technology, Inc.",Technology,Semiconductors,,200,SCHZ,Schwab US Aggregate Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate,,MRVL,SCHZ
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,201,PYPL,"PayPal Holdings, Inc.",Financials,Credit Services,,201,EZU,iShares MSCI Eurozone ETF,Equity,Europe Stock,MSCI EMU,,PYPL,EZU
+,202,USB,U.S. Bancorp,Financials,Banks - Regional,,202,MGV,Vanguard Mega Cap Value ETF,Equity,Large Value,CRSP US Mega Value,,USB,MGV
+,203,BMO,Bank of Montreal,Financials,Banks - Diversified,,203,IBB,iShares Biotechnology ETF,Equity,Health,NYSE Biotechnology,,BMO,IBB
+,204,MPC,Marathon Petroleum Corporation,Energy,Oil & Gas Refining & Marketing,,204,FLOT,iShares Floating Rate Bond ETF,Fixed Income,Ultrashort Bond,Bloomberg US Floating Rate Notes (<5 Y),,MPC,FLOT
+,205,SPOT,Spotify Technology S.A.,Communication Services,Internet Content & Information,,205,DFIV,Dimensional International Value ETF,Equity,Foreign Large Value,-,,SPOT,DFIV
+,206,RSG,"Republic Services, Inc.",Industrials,Waste Management,,206,PAVE,Global X U.S. Infrastructure Development ETF,Equity,Infrastructure,Indxx U.S. Infrastructure Development Index,,RSG,PAVE
+,207,ORLY,"O'Reilly Automotive, Inc.",Consumer Discretionary,Specialty Retail,,207,VYMI,Vanguard International High Dividend Yield ETF,Equity,Foreign Large Value,FTSE Custom All-World ex US High Dividend Yield Net Tax (US RIC) Index,,ORLY,VYMI
+,208,ROP,"Roper Technologies, Inc.",Technology,Software - Application,,208,GLDM,SPDR Gold MiniShares Trust,Commodity,Commodities Focused,LBMA Gold Price,,ROP,GLDM
+,209,STLA,Stellantis N.V.,Consumer Discretionary,Auto Manufacturers,,209,IJJ,iShares S&P Mid-Cap 400 Value ETF,Equity,Mid-Cap Value,S&P Mid Cap 400 Value,,STLA,IJJ
+,210,WDAY,"Workday, Inc.",Technology,Software - Application,,210,PHYS,Sprott Physical Gold Trust,Commodity,-,-,,WDAY,PHYS
+,211,NTES,"NetEase, Inc.",Communication Services,Electronic Gaming & Multimedia,,211,SOXS,Direxion Daily Semiconductor Bear 3x Shares,Equity,Trading--Inverse Equity,NYSE Semiconductor Index,,NTES,SOXS
+,212,BBVA,"Banco Bilbao Vizcaya Argentaria, S.A.",Financials,Banks - Diversified,,212,VPL,Vanguard FTSE Pacific ETF,Equity,Diversified Pacific/Asia,FTSE Developed Asia Pacific Index All Cap Net Tax (US RIC) Index,,BBVA,VPL
+,213,PSX,Phillips 66,Energy,Oil & Gas Refining & Marketing,,213,XBI,SPDR S&P BIOTECH ETF,Equity,Health,S&P Biotechnology Select Industry,,PSX,XBI
+,214,NU,Nu Holdings Ltd.,Financials,Banks - Regional,,214,TFLO,iShares Treasury Floating Rate Bond ETF,Fixed Income,Ultrashort Bond,Markit iBoxx USD Liquid High Yield 0-5 Index,,NU,TFLO
+,215,ITUB,Itaú Unibanco Holding S.A.,Financials,Banks - Regional,,215,PULS,PGIM Ultra Short Bond ETF,Fixed Income,Ultrashort Bond,-,,ITUB,PULS
+,216,ING,ING Groep N.V.,Financials,Banks - Diversified,,216,BBCA,JPMorgan BetaBuilders Canada ETF,Equity,Miscellaneous Region,Morningstar Canada Target Market Exposure Index,,ING,BBCA
+,217,AJG,Arthur J. Gallagher & Co.,Financials,Insurance Brokers,,217,DFAX,Dimensional World ex U.S. Core Equity 2 ETF,Equity,Foreign Large Blend,-,,AJG,DFAX
+,218,CARR,Carrier Global Corporation,Industrials,Building Products & Equipment,,218,VLUE,iShares MSCI USA Value Factor ETF,Equity,Large Value,MSCI USA Enhanced Value,,CARR,VLUE
+,219,NGG,National Grid plc,Utilities,Utilities - Regulated Electric,,219,SPLV,Invesco S&P 500 Low Volatility ETF,Equity,Large Value,S&P 500 Low Volatility,,NGG,SPLV
+,220,MMM,3M Company,Industrials,Conglomerates,,220,PRF,Invesco FTSE RAFI US 1000 ETF,Equity,Large Value,FTSE RAFI US 1000,,MMM,PRF
+,221,APD,"Air Products and Chemicals, Inc.",Materials,Specialty Chemicals,,221,QLD,ProShares Ultra QQQ,Equity,Trading--Leveraged Equity,NASDAQ-100 Index,,APD,QLD
+,222,BNS,The Bank of Nova Scotia,Financials,Banks - Diversified,,222,ONEQ,Fidelity Nasdaq Composite Index ETF,Equity,Large Growth,NASDAQ Composite Index,,BNS,ONEQ
+,223,COIN,"Coinbase Global, Inc.",Financials,Financial Data & Stock Exchanges,,223,AVUS,Avantis U.S. Equity ETF,Equity,Large Blend,-,,COIN,AVUS
+,224,OXY,Occidental Petroleum Corporation,Energy,Oil & Gas Exploration & Production,,224,VIGI,Vanguard International Dividend Appreciation ETF,Equity,Foreign Large Growth,S&P Global Ex-U.S. Dividend Growers Index,,OXY,VIGI
+,225,ET,Energy Transfer LP,Energy,Oil & Gas Midstream,,225,SCHI,Schwab 5-10 Year Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Aggregate Credit - Corporate (5-10 Y),,ET,SCHI
+,226,PLTR,Palantir Technologies Inc.,Technology,Software - Infrastructure,,226,VDC,Vanguard Consumer Staples ETF,Equity,Consumer Defensive,MSCI US IMI 25/50 Consumer Staples,,PLTR,VDC
+,227,EW,Edwards Lifesciences Corporation,Healthcare,Medical Devices,,227,IGV,iShares Expanded Tech-Software Sector ETF,Equity,Technology,S&P North American Expanded Technology Software Index,,EW,IGV
+,228,MFG,"Mizuho Financial Group, Inc.",Financials,Banks - Regional,,228,HEFA,iShares Currency Hedged MSCI EAFE ETF,Equity,Foreign Large Blend,MSCI EAFE 100% Hedged to USD Net Variant,,MFG,HEFA
+,229,HLT,Hilton Worldwide Holdings Inc.,Consumer Discretionary,Lodging,,229,EFAV,iShares MSCI EAFE Min Vol Factor ETF,Equity,Foreign Large Blend,MSCI EAFE Minimum Volatility,,HLT,EFAV
+,230,AMX,"América Móvil, SAB de CV",Communication Services,Telecom Services,,230,CIBR,First Trust NASDAQ Cybersecurity ETF,Equity,Technology,Nasdaq CTA Cybersecurity Index,,AMX,CIBR
+,231,PCAR,PACCAR Inc,Industrials,Farm & Heavy Construction Machinery,,231,SCHH,Schwab U.S. REIT ETF,Equity,Real Estate,Dow Jones Equity All REIT Capped,,PCAR,SCHH
+,232,GM,General Motors Company,Consumer Discretionary,Auto Manufacturers,,232,IJS,iShares S&P Small-Cap 600 Value ETF,Equity,Small Value,S&P Small Cap 600 Value,,GM,IJS
+,233,ADSK,"Autodesk, Inc.",Technology,Software - Application,,233,JIRE,JPMorgan International Research Enhanced Equity ETF,Equity,-,-,,ADSK,JIRE
+,234,COF,Capital One Financial Corporation,Financials,Credit Services,,234,FTSM,First Trust Enhanced Short Maturity ETF,Fixed Income,Ultrashort Bond,-,,COF,FTSM
+,235,WMB,"The Williams Companies, Inc.",Energy,Oil & Gas Midstream,,235,SRLN,SPDR Blackstone Senior Loan ETF,Fixed Income,Bank Loan,-,,WMB,SRLN
+,236,HMC,"Honda Motor Co., Ltd.",Consumer Discretionary,Auto Manufacturers,,236,ITA,iShares U.S. Aerospace & Defense ETF,Equity,Industrials,DJ US Select / Aerospace & Defense,,HMC,ITA
+,237,TFC,Truist Financial Corporation,Financials,Banks - Regional,,237,DFAI,Dimensional International Core Equity Market ETF,Equity,Foreign Large Blend,-,,TFC,DFAI
+,238,CPRT,"Copart, Inc.",Industrials,Specialty Business Services,,238,ARKK,ARK Innovation ETF,Equity,Mid-Cap Growth,-,,CPRT,ARKK
+,239,VLO,Valero Energy Corporation,Energy,Oil & Gas Refining & Marketing,,239,DFIC,Dimensional International Core Equity 2 ETF,Equity,Foreign Large Blend,-,,VLO,DFIC
+,240,MNST,Monster Beverage Corporation,Consumer Staples,Beverages - Non-Alcoholic,,240,SHYG,iShares 0-5 Year High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,Markit iBoxx USD Liquid High Yield 0-5 Index,,MNST,SHYG
+,241,AFL,Aflac Incorporated,Financials,Insurance - Life,,241,OMFL,Invesco Russell 1000 Dynamic Multifactor ETF,Equity,Large Blend,Russell 1000 Invesco Dynamic Multifactor Index,,AFL,OMFL
+,242,F,Ford Motor Company,Consumer Discretionary,Auto Manufacturers,,242,IAGG,iShares Core International Aggregate Bond ETF,Fixed Income,Global Bond-USD Hedged,Bloomberg Global Aggregate x USD 10% Issuer Cap,,F,IAGG
+,243,PSA,Public Storage,Real Estate,REIT - Industrial,,243,CGGR,Capital Group Growth ETF,Equity,Large Growth,-,,PSA,CGGR
+,244,MCHP,Microchip Technology Incorporated,Technology,Semiconductors,,244,XLRE,Real Estate Select Sector SPDR Fund,Equity,Real Estate,S&P Real Estate Select Sector,,MCHP,XLRE
+,245,NEM,Newmont Corporation,Materials,Gold,,245,DBEF,Xtrackers MSCI EAFE Hedged Equity ETF,Equity,Foreign Large Blend,MSCI EAFE 100% Hedged to USD Net Variant,,NEM,DBEF
+,246,CRH,CRH plc,Materials,Building Materials,,246,SPYD,SPDR Portfolio S&P 500 High Dividend ETF,Equity,Large Value,S&P 500 High Dividend Index,,CRH,SPYD
+,247,MET,"MetLife, Inc.",Financials,Insurance - Life,,247,FNDE,Schwab Fundamental Emerging Markets Large Co. Index ETF,Equity,Diversified Emerging Mkts,Russell RAFI Large Company Emerging Markets,,MET,FNDE
+,248,SU,Suncor Energy Inc.,Energy,Oil & Gas Integrated,,248,DFAU,Dimensional US Core Equity Market ETF,Equity,Large Blend,-,,SU,DFAU
+,249,AIG,"American International Group, Inc.",Financials,Insurance - Diversified,,249,KWEB,KraneShares CSI China Internet ETF,Equity,China Region,CSI Overseas China Internet,,AIG,KWEB
+,250,VALE,Vale S.A.,Materials,Other Industrial Metals & Mining,,250,IOO,iShares Global 100 ETF,Equity,Global Large-Stock Blend,S&P Global 100,,VALE,IOO
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,251,SMCI,"Super Micro Computer, Inc.",Technology,Computer Hardware,,251,FDN,First Trust Dow Jones Internet Index Fund,Equity,Technology,DJ Internet Composite,,SMCI,FDN
+,252,DLR,"Digital Realty Trust, Inc.",Real Estate,REIT - Specialty,,252,DUHP,Dimensional US High Profitability ETF,Equity,Large Blend,-,,DLR,DUHP
+,253,NSC,Norfolk Southern Corporation,Industrials,Railroads,,253,AVDV,Avantis International Small Cap Value ETF,Equity,Foreign Small/Mid Value,-,,NSC,AVDV
+,254,E,Eni S.p.A.,Energy,Oil & Gas Integrated,,254,GUNR,FlexShares Morningstar Global Upstream Natural Resources Index Fund,Equity,Natural Resources,Morningstar Global Upstream Natural Resources Index,,E,GUNR
+,255,TTD,"The Trade Desk, Inc.",Technology,Software - Application,,255,IJT,iShares S&P Small-Cap 600 Growth ETF,Equity,Small Growth,S&P Small Cap 600 Growth,,TTD,IJT
+,256,OKE,"ONEOK, Inc.",Energy,Oil & Gas Midstream,,256,MGC,Vanguard Mega Cap ETF,Equity,Large Blend,CRSP US Mega Cap,,OKE,MGC
+,257,AZO,"AutoZone, Inc.",Consumer Discretionary,Specialty Retail,,257,SPTI,SPDR Portfolio Intermediate Term Treasury ETF,Fixed Income,Intermediate Government,Bloomberg US Treasury (3-10 Y),,AZO,SPTI
+,258,MFC,Manulife Financial Corporation,Financials,Insurance - Life,,258,AVEM,Avantis Emerging Markets Equity ETF,Equity,Diversified Emerging Mkts,-,,MFC,AVEM
+,259,SPG,"Simon Property Group, Inc.",Real Estate,REIT - Retail,,259,FNGU,MicroSectors FANG+ Index 3X Leveraged ETN,Equity,Trading--Leveraged Equity,NYSE FANG+ index,,SPG,FNGU
+,260,ROST,"Ross Stores, Inc.",Consumer Discretionary,Apparel Retail,,260,MCHI,iShares MSCI China ETF,Equity,China Region,MSCI China,,ROST,MCHI
+,261,SRE,Sempra,Utilities,Utilities - Diversified,,261,VPU,Vanguard Utilities ETF,Equity,Utilities,MSCI US IMI 25/50 Utilities,,SRE,VPU
+,262,SNOW,Snowflake Inc.,Technology,Software - Application,,262,BLV,Vanguard Long-Term Bond ETF,Fixed Income,Long-Term Bond,Bloomberg US Government/Credit - Float Adjusted Long,,SNOW,BLV
+,263,TEAM,Atlassian Corporation,Technology,Software - Application,,263,ICSH,BlackRock Ultra Short-Term Bond ETF,Fixed Income,Ultrashort Bond,-,,TEAM,ICSH
+,264,GEV,GE Vernova Inc.,Utilities,Utilities - Renewable,,264,EWY,iShares MSCI South Korea ETF,Equity,Miscellaneous Region,MSCI Korea 25-50,,GEV,EWY
+,265,TRV,"The Travelers Companies, Inc.",Financials,Insurance - Property & Casualty,,265,TMF,Direxion Daily 20+ Year Treasury Bull 3X Shares,Fixed Income,Trading--Leveraged Debt,U.S. Treasury 20+ Year Index,,TRV,TMF
+,266,FTNT,"Fortinet, Inc.",Technology,Software - Infrastructure,,266,SSO,ProShares Ultra S&P 500,Equity,Trading--Leveraged Equity,S&P 500,,FTNT,SSO
+,267,KMB,Kimberly-Clark Corporation,Consumer Staples,Household & Personal Products,,267,VCR,Vanguard Consumer Discretionary ETF,Equity,Consumer Cyclical,MSCI US IMI 25/50 Consumer Discretionary,,KMB,VCR
+,268,AEP,"American Electric Power Company, Inc.",Utilities,Utilities - Regulated Electric,,268,XLB,Materials Select Sector SPDR Fund,Equity,Natural Resources,Materials Select Sector,,AEP,XLB
+,269,HES,Hess Corporation,Energy,Oil & Gas Exploration & Production,,269,GBIL,Goldman Sachs Access Treasury 0-1 Year ETF,Fixed Income,Ultrashort Bond,FTSE US Treasury 0-1 Year Composite Select Index,,HES,GBIL
+,270,WCN,"Waste Connections, Inc.",Industrials,Waste Management,,270,FPE,First Trust Preferred Securities & Income ETF,Fixed Income,Preferred Stock,-,,WCN,FPE
+,271,O,Realty Income Corporation,Real Estate,REIT - Retail,,271,EWT,iShares MSCI Taiwan ETF,Equity,China Region,MSCI Taiwan 25-50,,O,EWT
+,272,TEL,TE Connectivity Ltd.,Technology,Electronic Components,,272,IHI,iShares U.S. Medical Devices ETF,Equity,Health,DJ US Select / Medical Equipment,,TEL,IHI
+,273,STZ,"Constellation Brands, Inc.",Consumer Staples,Beverages - Wineries & Distilleries,,273,SPMB,SPDR Portfolio Mortgage Backed Bond ETF,Fixed Income,Intermediate Government,Bloomberg US Aggregate Securitized - MBS,,STZ,SPMB
+,274,CM,Canadian Imperial Bank of Commerce,Financials,Banks - Diversified,,274,VIS,Vanguard Industrials ETF,Equity,Industrials,MSCI US IMI 25/50 Industrials,,CM,VIS
+,275,BK,The Bank of New York Mellon Corporation,Financials,Asset Management,,275,IXN,iShares Global Tech ETF,Equity,Technology,S&P Global 1200 Information Technology 4.5/22.5/45 Capped Index,,BK,IXN
+,276,JCI,Johnson Controls International plc,Industrials,Building Products & Equipment,,276,PDBC,Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF,Commodity,Commodities Broad Basket,-,,JCI,PDBC
+,277,GWW,"W.W. Grainger, Inc.",Industrials,Industrial Distribution,,277,DFCF,Dimensional Core Fixed Income ETF,Fixed Income,Intermediate Core Bond,-,,GWW,DFCF
+,278,DHI,"D.R. Horton, Inc.",Consumer Discretionary,Residential Construction,,278,DXJ,WisdomTree Japan Hedged Equity Fund,Equity,Japan Stock,WisdomTree Japan Hedged Equity Index,,DHI,DXJ
+,279,MRNA,"Moderna, Inc.",Healthcare,Biotechnology,,279,FIXD,First Trust TCW Opportunistic Fixed Income ETF,Fixed Income,Intermediate Core-Plus Bond,-,,MRNA,FIXD
+,280,COR,Cencora,Healthcare,Medical Distribution,,280,SPHY,SPDR Portfolio High Yield Bond ETF,Fixed Income,High Yield Bond,ICE BofA US High Yield,,COR,SPHY
+,281,KDP,Keurig Dr Pepper Inc.,Consumer Staples,Beverages - Non-Alcoholic,,281,VWOB,Vanguard Emerging Markets Government Bond ETF,Fixed Income,Emerging Markets Bond,Bloomberg USD Emerging Markets Government RIC Capped Bond,,KDP,VWOB
+,282,KMI,"Kinder Morgan, Inc.",Energy,Oil & Gas Midstream,,282,XLG,Invesco S&P 500 Top 50 ETF,Equity,Large Blend,S&P 500 Top 50,,KMI,XLG
+,283,LYG,Lloyds Banking Group plc,Financials,Banks - Regional,,283,IGM,iShares Expanded Tech Sector ETF,Equity,Technology,S&P North American Expanded Technology Sector Index,,LYG,IGM
+,284,DXCM,"DexCom, Inc.",Healthcare,Medical Devices,,284,IEUR,iShares Core MSCI Europe ETF,Equity,Europe Stock,MSCI Europe IMI,,DXCM,IEUR
+,285,DASH,"DoorDash, Inc.",Communication Services,Internet Content & Information,,285,VONE,Vanguard Russell 1000 ETF,Equity,Large Blend,Russell 1000,,DASH,VONE
+,286,DDOG,"Datadog, Inc.",Technology,Software - Application,,286,GDXJ,VanEck Junior Gold Miners ETF,Equity,Equity Precious Metals,MVIS Global Junior Gold Miners,,DDOG,GDXJ
+,287,HUM,Humana Inc.,Healthcare,Healthcare Plans,,287,SPGP,Invesco S&P 500 GARP ETF,Equity,Large Blend,S&P 500 GARP Index,,HUM,SPGP
+,288,MPLX,MPLX LP,Energy,Oil & Gas Midstream,,288,PBUS,Invesco MSCI USA ETF,Equity,Large Blend,MSCI USA,,MPLX,PBUS
+,289,URI,"United Rentals, Inc.",Industrials,Rental & Leasing Services,,289,XMHQ,Invesco S&P MidCap Quality ETF,Equity,Mid-Cap Blend,S&P MidCap 400 Quality Index,,URI,XMHQ
+,290,ALC,Alcon Inc.,Healthcare,Medical Instruments & Supplies,,290,FXI,iShares China Large-Cap ETF,Equity,China Region,FTSE China 50 Net Tax USD Index,,ALC,FXI
+,291,CHTR,"Charter Communications, Inc.",Communication Services,Telecom Services,,291,SPXL,Direxion Daily S&P 500 Bull 3x Shares,Equity,Trading--Leveraged Equity,S&P 500,,CHTR,SPXL
+,292,AMP,"Ameriprise Financial, Inc.",Financials,Asset Management,,292,BBAX,JPMorgan BetaBuilders Developed Asia Pacific ex-Japan ETF,Equity,Pacific/Asia ex-Japan Stk,Morningstar Developed Asia Pacific ex-Japan Target Market Exposure Index,,AMP,BBAX
+,293,PRU,"Prudential Financial, Inc.",Financials,Insurance - Life,,293,SJNK,SPDR Bloomberg Short Term High Yield Bond ETF,Fixed Income,High Yield Bond,Bloomberg US High Yield 350mn Cash Pay 2% Capped (0-5 Y),,PRU,SJNK
+,294,LHX,"L3Harris Technologies, Inc.",Industrials,Aerospace & Defense,,294,VOOV,Vanguard S&P 500 Value ETF,Equity,Large Value,S&P 500 Value,,LHX,VOOV
+,295,PAYX,"Paychex, Inc.",Industrials,Staffing & Employment Services,,295,DSI,iShares MSCI KLD 400 Social ETF,Equity,Large Blend,MSCI KLD 400 Social,,PAYX,DSI
+,296,FIS,"Fidelity National Information Services, Inc.",Technology,Information Technology Services,,296,SDVY,First Trust SMID Cap Rising Dividend Achievers ETF,Equity,Small Value,Nasdaq US Small Mid Cap Rising Dividend Achievers Index,,FIS,SDVY
+,297,ALL,The Allstate Corporation,Financials,Insurance - Property & Casualty,,297,SPTS,SPDR Portfolio Short Term Treasury ETF,Fixed Income,Short Government,Bloomberg US Treasury (1-3 Y) (Inception 4/30/1996),,ALL,SPTS
+,298,CCI,Crown Castle Inc.,Real Estate,REIT - Specialty,,298,AVDE,Avantis International Equity ETF,Equity,Foreign Large Blend,-,,CCI,AVDE
+,299,BCS,Barclays PLC,Financials,Banks - Diversified,,299,ACWX,iShares MSCI ACWI ex U.S. ETF,Equity,Foreign Large Blend,MSCI AC World ex USA,,BCS,ACWX
+,300,D,"Dominion Energy, Inc.",Utilities,Utilities - Regulated Electric,,300,BUFR,FT Vest Laddered Buffer ETF,Equity,Options Trading,-,,D,BUFR
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,301,TAK,Takeda Pharmaceutical Company Limited,Healthcare,Drug Manufacturers - Specialty & Generic,,301,EEMV,iShares MSCI Emerging Markets Min Vol Factor ETF,Equity,Diversified Emerging Mkts,MSCI EM Minimum Volatility,,TAK,EEMV
+,302,SE,Sea Limited,Consumer Discretionary,Internet Retail,,302,JQUA,JPMorgan U.S. Quality Factor ETF,Equity,Large Blend,JP Morgan US Quality Factor Index,,SE,JQUA
+,303,MPWR,"Monolithic Power Systems, Inc.",Technology,Semiconductors,,303,VUSB,Vanguard Ultra-Short Bond ETF,Fixed Income,Ultrashort Bond,-,,MPWR,VUSB
+,304,RCL,Royal Caribbean Cruises Ltd.,Consumer Discretionary,Travel Services,,304,BOND,PIMCO Active Bond Exchange-Traded Fund,Fixed Income,Intermediate Core-Plus Bond,-,,RCL,BOND
+,305,SQ,"Block, Inc.",Technology,Software - Infrastructure,,305,EWZ,iShares MSCI Brazil ETF,Equity,Latin America Stock,MSCI Brazil 25-50,,SQ,EWZ
+,306,LNG,"Cheniere Energy, Inc.",Energy,Oil & Gas Midstream,,306,PGX,Invesco Preferred ETF,Fixed Income,Preferred Stock,ICE BofA Core Plus Fixed Rate Preferred Securities,,LNG,PGX
+,307,ODFL,"Old Dominion Freight Line, Inc.",Industrials,Trucking,,307,ESGE,iShares ESG Aware MSCI EM ETF,Equity,Diversified Emerging Mkts,MSCI EM Extended ESG Focus Index,,ODFL,ESGE
+,308,TRP,TC Energy Corporation,Energy,Oil & Gas Midstream,,308,DFAE,Dimensional Emerging Core Equity Market ETF,Equity,Diversified Emerging Mkts,-,,TRP,DFAE
+,309,IDXX,"IDEXX Laboratories, Inc.",Healthcare,Diagnostics & Research,,309,ACWV,iShares MSCI Global Min Vol Factor ETF,Equity,Global Large-Stock Blend,MSCI AC World Minimum Volatility,,IDXX,ACWV
+,310,LEN.B,Lennar Corporation,Consumer Discretionary,Residential Construction,,310,JMBS,Janus Henderson Mortgage-Backed Securities ETF,Fixed Income,Intermediate Core Bond,-,,LEN.B,JMBS
+,311,MSCI,MSCI Inc.,Financials,Financial Data & Stock Exchanges,,311,QTEC,First Trust NASDAQ-100 Technology Sector Index Fund,Equity,Technology,NASDAQ-100 Technology Sector Index,,MSCI,QTEC
+,312,OTIS,Otis Worldwide Corporation,Industrials,Specialty Industrial Machinery,,312,VOX,Vanguard Communication Services ETF,Equity,Communications,MSCI US IMI 25/50 Communication Services,,OTIS,VOX
+,313,VRSK,"Verisk Analytics, Inc.",Industrials,Consulting Services,,313,RSPT,Invesco S&P 500 Equal Weight Technology ETF,Equity,-,S&P 500 Equal Weighted / Information Technology,,VRSK,RSPT
+,314,LEN,Lennar Corporation,Consumer Discretionary,Residential Construction,,314,NVDL,GraniteShares 2x Long NVDA Daily ETF,Equity,-,-,,LEN,NVDL
+,315,KHC,The Kraft Heinz Company,Consumer Staples,Packaged Foods,,315,BBIN,JPMorgan BetaBuilders International Equity ETF,Equity,Foreign Large Blend,Morningstar Developed Markets ex-North America Target Market Exposure Index,,KHC,BBIN
+,316,HLN,Haleon plc,Healthcare,Drug Manufacturers - Specialty & Generic,,316,LMBS,First Trust Low Duration Opportunities ETF,Fixed Income,Short Government,-,,HLN,LMBS
+,317,AME,"AMETEK, Inc.",Industrials,Specialty Industrial Machinery,,317,ISTB,iShares Core 1-5 Year USD Bond ETF,Fixed Income,Short-Term Bond,Bloomberg US Universal (1-5 Y),,AME,ISTB
+,318,FERG,Ferguson plc,Industrials,Industrial Distribution,,318,SCHC,Schwab International Small-Cap Equity ETF,Equity,Foreign Small/Mid Blend,FTSE Custom Developed Small Cap ex-US Liquid Net of Tax (Lux),,FERG,SCHC
+,319,EL,The Estée Lauder Companies Inc.,Consumer Staples,Household & Personal Products,,319,DLN,WisdomTree U.S. LargeCap Dividend Fund,Equity,Large Value,WisdomTree U.S. LargeCap Dividend Index,,EL,DLN
+,320,FICO,Fair Isaac Corporation,Technology,Software - Application,,320,IXJ,iShares Global Healthcare ETF,Equity,Health,S&P Global 1200 / Health Care,,FICO,IXJ
+,321,IQV,IQVIA Holdings Inc.,Healthcare,Diagnostics & Research,,321,IDV,iShares International Select Dividend ETF,Equity,Foreign Large Value,Dow Jones EPAC Select Dividend Index,,IQV,IDV
+,322,NUE,Nucor Corporation,Materials,Steel,,322,BSCP,Invesco Bulletshares 2025 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2025 Index,,NUE,BSCP
+,323,CVE,Cenovus Energy Inc.,Energy,Oil & Gas Integrated,,323,DFEM,Dimensional Emerging Markets Core Equity 2 ETF,Equity,Diversified Emerging Mkts,-,,CVE,DFEM
+,324,CPNG,"Coupang, Inc.",Consumer Discretionary,Internet Retail,,324,FEZ,SPDR EURO STOXX 50 ETF,Equity,Europe Stock,Euro STOXX 50,,CPNG,FEZ
+,325,IMO,Imperial Oil Limited,Energy,Oil & Gas Integrated,,325,FDL,First Trust Morningstar Dividend Leaders Index Fund,Equity,Large Value,Morningstar Dividend Leaders Index,,IMO,FDL
+,326,PWR,"Quanta Services, Inc.",Industrials,Engineering & Construction,,326,TECL,Direxion Daily Technology Bull 3x Shares,Equity,Trading--Leveraged Equity,Technology Select Sector,,PWR,TECL
+,327,CMI,Cummins Inc.,Industrials,Specialty Industrial Machinery,,327,VSGX,Vanguard ESG International Stock ETF,Equity,Foreign Large Blend,FTSE Global All Cap ex USA Choice Index,,CMI,VSGX
+,328,WDS,Woodside Energy Group Ltd,Energy,Oil & Gas Exploration & Production,,328,SHM,SPDR Nuveen Bloomberg Short Term Municipal Bond ETF,Fixed Income,Muni National Short,Bloomberg Municipal Managed Money Short,,WDS,SHM
+,329,DOW,Dow Inc.,Materials,Chemicals,,329,FV,First Trust Dorsey Wright Focus 5 ETF,Equity,Mid-Cap Blend,Dorsey Wright Focus Five Total Return Index,,DOW,FV
+,330,HSY,The Hershey Company,Consumer Staples,Confectioners,,330,CGGO,Capital Group Global Growth Equity ETF,Equity,Global Large-Stock Growth,-,,HSY,CGGO
+,331,BSBR,Banco Santander (Brasil) S.A.,Financials,Banks - Regional,,331,TBIL,US Treasury 3 Month Bill ETF,Fixed Income,-,ICE BofA US Treasury Bill 3 Month Index,,BSBR,TBIL
+,332,A,"Agilent Technologies, Inc.",Healthcare,Diagnostics & Research,,332,EAGG,iShares ESG Aware US Aggregate Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg MSCI US Aggregate ESG Focus,,A,EAGG
+,333,FANG,"Diamondback Energy, Inc.",Energy,Oil & Gas Exploration & Production,,333,JHMM,John Hancock Multifactor Mid Cap ETF,Equity,Mid-Cap Blend,John Hancock Dimensional Mid Cap Index,,FANG,JHMM
+,334,EA,Electronic Arts Inc.,Communication Services,Electronic Gaming & Multimedia,,334,AVLV,Avantis U.S. Large Cap Value ETF,Equity,Large Value,-,,EA,AVLV
+,335,PEG,Public Service Enterprise Group Incorporated,Utilities,Utilities - Regulated Electric,,335,SLYV,SPDR S&P 600 Small Cap Value ETF,Equity,Small Value,S&P Small Cap 600 Value,,PEG,SLYV
+,336,PCG,PG&E Corporation,Utilities,Utilities - Regulated Electric,,336,SCHK,Schwab 1000 Index ETF,Equity,Large Blend,S&P Schwab 1000 Index,,PCG,SCHK
+,337,JD,"JD.com, Inc.",Consumer Discretionary,Internet Retail,,337,GSIE,Goldman Sachs ActiveBeta International Equity ETF,Equity,Foreign Large Blend,Stuttgart Goldman Sachs ActiveBeta Intl.Equity,,JD,GSIE
+,338,KR,The Kroger Co.,Consumer Staples,Grocery Stores,,338,IGF,iShares Global Infrastructure ETF,Equity,Infrastructure,S&P Global Infrastructure,,KR,IGF
+,339,IR,Ingersoll Rand Inc.,Industrials,Specialty Industrial Machinery,,339,TFI,SPDR Nuveen Bloomberg Municipal Bond ETF,Fixed Income,Muni National Long,Bloomberg US Municipal Managed Money (1-25 Y),,IR,TFI
+,340,ACGL,Arch Capital Group Ltd.,Financials,Insurance - Diversified,,340,SUSA,iShares MSCI USA ESG Select ETF,Equity,Large Blend,MSCI USA Extended ESG Select Index,,ACGL,SUSA
+,341,CTVA,"Corteva, Inc.",Materials,Agricultural Inputs,,341,REET,iShares Global REIT ETF,Equity,Global Real Estate,FTSE EPRA Nareit Global REITs,,CTVA,REET
+,342,STM,ST Microelectronics,Technology,Semiconductors,,342,EPI,WisdomTree India Earnings Fund,Equity,India Equity,WisdomTree India Earnings Index,,STM,EPI
+,343,YUM,"Yum! Brands, Inc.",Consumer Discretionary,Restaurants,,343,XOP,SPDR S&P Oil & Gas Exploration & Production ETF,Equity,Equity Energy,S&P Oil & Gas Exploration & Production Select Industry,,YUM,XOP
+,344,LULU,Lululemon Athletica Inc.,Consumer Discretionary,Apparel Retail,,344,URTH,iShares MSCI World ETF,Equity,Global Large-Stock Blend,MSCI World Index,,LULU,URTH
+,345,FAST,Fastenal Company,Industrials,Industrial Distribution,,345,CWB,SPDR Bloomberg Convertible Securities ETF,Fixed Income,Convertibles,Bloomberg US Convertibles Liquid Bond,,FAST,CWB
+,346,CNC,Centene Corporation,Healthcare,Healthcare Plans,,346,DON,WisdomTree U.S. MidCap Dividend Fund,Equity,Mid-Cap Value,WisdomTree US MidCap Dividend Index,,CNC,DON
+,347,GEHC,GE HealthCare Technologies Inc.,Healthcare,Health Information Services,,347,UPRO,ProShares UltraPro S&P500,Equity,Trading--Leveraged Equity,S&P 500,,GEHC,UPRO
+,348,GIS,"General Mills, Inc.",Consumer Staples,Packaged Foods,,348,BBUS,JPMorgan BetaBuilders U.S. Equity ETF,Equity,Large Blend,Morningstar US Target Market Exposure Index,,GIS,BBUS
+,349,KVUE,Kenvue Inc.,Consumer Staples,Household & Personal Products,,349,XT,iShares Exponential Technologies ETF,Equity,Miscellaneous Sector,Morningstar Exponential Technologies Index,,KVUE,XT
+,350,SYY,Sysco Corporation,Consumer Staples,Food Distribution,,350,VNQI,Vanguard Global ex-U.S. Real Estate ETF,Equity,Global Real Estate,S&P Global x United States Property,,SYY,VNQI
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,351,IT,"Gartner, Inc.",Technology,Information Technology Services,,351,EDV,Vanguard Extended Duration Treasury ETF,Fixed Income,Long Government,Bloomberg 20-30 Year Treasury Strips,,IT,EDV
+,352,EXC,Exelon Corporation,Utilities,Utilities - Regulated Electric,,352,URA,Global X Uranium ETF,Equity,Natural Resources,Solactive Global Uranium & Nuclear Components Index,,EXC,URA
+,353,NDAQ,"Nasdaq, Inc.",Financials,Financial Data & Stock Exchanges,,353,HYLB,Xtrackers USD High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,Solactive USD High Yield Corporates Total Market Index,,NDAQ,HYLB
+,354,VRT,Vertiv Holdings Co,Industrials,Electrical Equipment & Parts,,354,FNDC,Schwab Fundamental International Small Co. Index ETF,Equity,Foreign Small/Mid Value,Russell RAFI Small Company Developed x US,,VRT,FNDC
+,355,FLUT,Flutter Entertainment plc,Consumer Discretionary,Gambling,,355,IYH,iShares U.S. Healthcare ETF,Equity,Health,Russell 1000 Health Care RIC 22.5/45 Capped Index,,FLUT,IYH
+,356,BKR,Baker Hughes Company,Energy,Oil & Gas Equipment & Services,,356,BINC,BlackRock Flexible Income ETF,Fixed Income,-,-,,BKR,BINC
+,357,HPQ,HP Inc.,Technology,Computer Hardware,,357,PPA,Invesco Aerospace & Defense ETF,Equity,Industrials,SPADE Defense Index,,HPQ,PPA
+,358,AEM,Agnico Eagle Mines Limited,Materials,Gold,,358,RWL,Invesco S&P 500 Revenue ETF,Equity,Large Value,S&P 500 Revenue-Weighted Index,,AEM,RWL
+,359,CTSH,Cognizant Technology Solutions Corporation,Technology,Information Technology Services,,359,JCPB,JPMorgan Core Plus Bond ETF,Fixed Income,Intermediate Core-Plus Bond,-,,CTSH,JCPB
+,360,CCEP,Coca-Cola Europacific Partners PLC,Consumer Staples,Beverages - Non-Alcoholic,,360,BSCQ,Invesco BulletShares 2026 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2026 Index,,CCEP,BSCQ
+,361,DB,Deutsche Bank Aktiengesellschaft,Financials,Banks - Regional,,361,JGLO,JPMorgan Global Select Equity ETF Global Select Equity ETF,Equity,-,-,,DB,JGLO
+,362,NWG,NatWest Group plc,Financials,Banks - Regional,,362,DIVO,Amplify CWP Enhanced Dividend Income ETF,Equity,Derivative Income,-,,NWG,DIVO
+,363,WIT,Wipro Limited,Technology,Information Technology Services,,363,GVI,iShares Intermediate Government/Credit Bond ETF,Fixed Income,Short-Term Bond,Bloomberg US Intermediate Government/Credit,,WIT,GVI
+,364,DD,"DuPont de Nemours, Inc.",Materials,Specialty Chemicals,,364,BOXX,Alpha Architect 1-3 Month Box ETF,Fixed Income,-,-,,DD,BOXX
+,365,DFS,Discover Financial Services,Financials,Credit Services,,365,NUGO,Nuveen Growth Opportunities ETF,Equity,Large Growth,-,,DFS,NUGO
+,366,GLW,Corning Incorporated,Technology,Electronic Components,,366,SLYG,SPDR S&P 600 Small Cap Growth ETF,Equity,Small Growth,S&P Small Cap 600 Growth,,GLW,SLYG
+,367,MLM,"Martin Marietta Materials, Inc.",Materials,Building Materials,,367,BSCO,Invesco BulletShares 2024 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2024 Index,,MLM,BSCO
+,368,BIIB,Biogen Inc.,Healthcare,Drug Manufacturers - General,,368,SGOL,abrdn Physical Gold Shares ETF,Commodity,Commodities Focused,LBMA Gold Price,,BIIB,SGOL
+,369,EXR,Extra Space Storage Inc.,Real Estate,REIT - Industrial,,369,GNR,SPDR S&P Global Natural Resources ETF,Equity,Natural Resources,S&P Global Natural Resources,,EXR,GNR
+,370,ABEV,Ambev S.A.,Consumer Staples,Beverages - Brewers,,370,IYR,iShares U.S. Real Estate ETF,Equity,Real Estate,Dow Jones U.S. Real Estate Capped Index,,ABEV,IYR
+,371,HWM,Howmet Aerospace Inc.,Industrials,Aerospace & Defense,,371,HYD,VanEck High Yield Muni ETF,Fixed Income,High Yield Muni,ICE Broad High Yield Crossover Municipal,,HWM,HYD
+,372,BIDU,"Baidu, Inc.",Communication Services,Internet Content & Information,,372,ARKB,ARK 21Shares Bitcoin ETF Ben of Int,Currency,-,CME CF Bitcoin Reference Rate - New York Variant - Benchmark Price Return,,BIDU,ARKB
+,373,VMC,Vulcan Materials Company,Materials,Building Materials,,373,CGUS,Capital Group Core Equity ETF,Equity,Large Blend,-,,VMC,CGUS
+,374,XYL,Xylem Inc.,Industrials,Specialty Industrial Machinery,,374,FHLC,Fidelity MSCI Health Care Index ETF,Equity,Health,MSCI US IMI 25/50 Health Care,,XYL,FHLC
+,375,TCOM,Trip.com Group Limited,Consumer Discretionary,Travel Services,,375,ANGL,VanEck Fallen Angel High Yield Bond ETF,Fixed Income,High Yield Bond,ICE BofA US Fallen Angel High Yield 10% Constrained,,TCOM,ANGL
+,376,LVS,Las Vegas Sands Corp.,Consumer Discretionary,Resorts & Casinos,,376,DFSV,Dimensional US Small Cap Value ETF,Equity,Small Value,-,,LVS,DFSV
+,377,VST,Vistra Corp.,Utilities,Utilities - Independent Power Producers,,377,DFSD,Dimensional Short-Duration Fixed Income ETF,Fixed Income,Short-Term Bond,-,,VST,DFSD
+,378,ALNY,"Alnylam Pharmaceuticals, Inc.",Healthcare,Biotechnology,,378,NEAR,BlackRock Short Duration Bond ETF,Fixed Income,Short-Term Bond,-,,ALNY,NEAR
+,379,ON,ON Semiconductor Corporation,Technology,Semiconductors,,379,SPHD,Invesco S&P 500 High Dividend Low Volatility ETF,Equity,Large Value,S&P 500 Low Volatility High Dividend Index,,ON,SPHD
+,380,LYB,LyondellBasell Industries N.V.,Materials,Specialty Chemicals,,380,TOTL,SPDR DoubleLine Total Return Tactical ETF,Fixed Income,Intermediate Core-Plus Bond,-,,LYB,TOTL
+,381,GRMN,Garmin Ltd.,Technology,Scientific & Technical Instruments,,381,SQQQ,ProShares UltraPro Short QQQ,Equity,Trading--Inverse Equity,NASDAQ-100 Index,,GRMN,SQQQ
+,382,ADM,Archer-Daniels-Midland Company,Consumer Staples,Farm Products,,382,SKYY,First Trust Cloud Computing ETF,Equity,Technology,ISE Cloud Computing Index,,ADM,SKYY
+,383,ED,"Consolidated Edison, Inc.",Utilities,Utilities - Regulated Electric,,383,VAW,Vanguard Materials ETF,Equity,Natural Resources,MSCI US IMI 25/50 Materials,,ED,VAW
+,384,DAL,"Delta Air Lines, Inc.",Industrials,Airlines,,384,XYLD,Global X S&P 500 Covered Call ETF,Equity,Derivative Income,Cboe S&P 500 BuyWrite Index,,DAL,XYLD
+,385,ROK,"Rockwell Automation, Inc.",Industrials,Specialty Industrial Machinery,,385,DEM,WisdomTree Emerging Markets High Dividend Fund,Equity,Diversified Emerging Mkts,WisdomTree Emerging Markets High Dividend Index,,ROK,DEM
+,386,DVN,Devon Energy Corporation,Energy,Oil & Gas Exploration & Production,,386,FDVV,Fidelity High Dividend ETF,Equity,Large Value,Fidelity High Dividend Index,,DVN,FDVV
+,387,GOLD,Barrick Gold Corporation,Materials,Gold,,387,PTLC,Pacer Trendpilot US Large Cap ETF,Equity,Large Blend,Pacer Trendpilot US Large Cap Index,,GOLD,PTLC
+,388,HUBS,"HubSpot, Inc.",Technology,Software - Application,,388,PZA,Invesco National AMT-Free Municipal Bond ETF,Fixed Income,Muni National Long,ICE BofA National Long-Term Core Plus Municipal,,HUBS,PZA
+,389,CSGP,"CoStar Group, Inc.",Real Estate,Real Estate Services,,389,BILS,SPDR Bloomberg 3-12 Month T-Bill ETF,Fixed Income,Ultrashort Bond,Bloomberg 3-12 Month U.S. Treasury Bill Index,,CSGP,BILS
+,390,ZS,"Zscaler, Inc.",Technology,Software - Infrastructure,,390,CMF,iShares California Muni Bond ETF,Fixed Income,Muni California Long,ICE AMT-Free California Municipal,,ZS,CMF
+,391,HAL,Halliburton Company,Energy,Oil & Gas Equipment & Services,,391,ITB,iShares U.S. Home Construction ETF,Equity,Consumer Cyclical,DJ US Select / Home Construction,,HAL,ITB
+,392,CHT,"Chunghwa Telecom Co., Ltd.",Communication Services,Telecom Services,,392,FELC,Fidelity Enhanced Large Cap Core ETF,Equity,-,-,,CHT,FELC
+,393,EFX,Equifax Inc.,Industrials,Consulting Services,,393,KNG,FT Vest S&P 500 Dividend Aristocrats Target Income ETF,Equity,Derivative Income,Cboe S&P 500 Dividend Aristocrats Target Income Monthly Series,,EFX,KNG
+,394,TRGP,Targa Resources Corp.,Energy,Oil & Gas Midstream,,394,IBTE,iShares iBonds Dec 2024 Term Treasury ETF,Fixed Income,Target Maturity,ICE 2024 Maturity US Treasury Index,,TRGP,IBTE
+,395,HIG,"The Hartford Financial Services Group, Inc.",Financials,Insurance - Property & Casualty,,395,EWU,iShares MSCI United Kingdom ETF,Equity,Miscellaneous Region,MSCI United Kingdom,,HIG,EWU
+,396,VEEV,Veeva Systems Inc.,Healthcare,Health Information Services,,396,BOTZ,Global X Robotics & Artificial Intelligence ETF,Equity,Miscellaneous Sector,Indxx Global Robotics & Artificial Intelligence Thematic Index,,VEEV,BOTZ
+,397,PINS,"Pinterest, Inc.",Communication Services,Internet Content & Information,,397,EMLC,VanEck J. P. Morgan EM Local Currency Bond ETF,Fixed Income,Emerging-Markets Local-Currency Bond,J.P. Morgan Government Bond Index Emerging Markets Global Core Index,,PINS,EMLC
+,398,FER,Ferrovial SE,Industrials,Infrastructure Operations,,398,IBDR,iShares iBonds Dec 2026 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2026 Maturity Corporate,,FER,IBDR
+,399,PPG,"PPG Industries, Inc.",Materials,Specialty Chemicals,,399,HYMB,SPDR Nuveen Bloomberg High Yield Municipal Bond ETF,Fixed Income,High Yield Muni,Bloomberg Municipal Yield,,PPG,HYMB
+,400,CDW,CDW Corporation,Technology,Information Technology Services,,400,IBDQ,iShares iBonds Dec 2025 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2025 Maturity Corporate,,CDW,IBDQ
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,401,XEL,Xcel Energy Inc.,Utilities,Utilities - Regulated Electric,,401,TDIV,First Trust NASDAQ Technology Dividend Index Fund,Equity,Technology,NASDAQ Technology Dividend Index,,XEL,TDIV
+,402,MTD,Mettler-Toledo International Inc.,Healthcare,Diagnostics & Research,,402,JMST,JPMorgan Ultra-Short Municipal Income ETF,Fixed Income,Muni National Short,-,,MTD,JMST
+,403,VICI,VICI Properties Inc.,Real Estate,REIT - Diversified,,403,FELG,Fidelity Enhanced Large Cap Growth ETF,Equity,-,-,,VICI,FELG
+,404,NET,"Cloudflare, Inc.",Technology,Software - Infrastructure,,404,IHDG,WisdomTree International Hedged Quality Dividend Growth Fund,Equity,Foreign Large Growth,WisdomTree International Hedged Quality Dividend Growth Index,,NET,IHDG
+,405,SLF,Sun Life Financial Inc.,Financials,Insurance - Diversified,,405,CGXU,Capital Group International Focus Equity ETF,Equity,Foreign Large Growth,-,,SLF,CGXU
+,406,BCE,BCE Inc.,Communication Services,Telecom Services,,406,IBDP,iShares iBonds Dec 2024 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2024 Maturity Corporate Index,,BCE,IBDP
+,407,AVB,"AvalonBay Communities, Inc.",Real Estate,REIT - Residential,,407,IYF,iShares U.S. Financials ETF,Equity,Financial,Russell 1000 Financials 40 Act 15/22.5 Daily Capped Index,,AVB,IYF
+,408,APP,AppLovin Corporation,Technology,Software - Application,,408,VIOO,Vanguard S&P Small-Cap 600 ETF,Equity,Small Blend,S&P Small Cap 600,,APP,VIOO
+,409,ANSS,"ANSYS, Inc.",Technology,Software - Application,,409,BITB,Bitwise Bitcoin ETF Trust,Currency,Digital Assets,CME CF Bitcoin Reference Rate - New York Variant - Benchmark Price Return,,ANSS,BITB
+,410,TSCO,Tractor Supply Company,Consumer Discretionary,Specialty Retail,,410,COPX,Global X Copper Miners ETF,Equity,Natural Resources,Stuttgart Solactive AG Global Copper Miners,,TSCO,COPX
+,411,GFS,GLOBALFOUNDRIES Inc.,Technology,Semiconductors,,411,UCON,First Trust TCW Unconstrained Plus Bond ETF,Fixed Income,Nontraditional Bond,-,,GFS,UCON
+,412,FWONK,Formula One Group - Series C,Communication Services,Entertainment,,412,FLRN,SPDR Bloomberg Investment Grade Floating Rate ETF,Fixed Income,Ultrashort Bond,Bloomberg US Floating Rate Notes (<5 Y),,FWONK,FLRN
+,413,WAB,Westinghouse Air Brake Technologies Corporation,Industrials,Railroads,,413,BKLC,BNY Mellon US Large Cap Core Equity ETF,Equity,Large Blend,Solactive GBS United States 500 Index,,WAB,BKLC
+,414,RMD,ResMed Inc.,Healthcare,Medical Instruments & Supplies,,414,EMLP,First Trust North American Energy Infrastructure Fund,Equity,Energy Limited Partnership,-,,RMD,EMLP
+,415,FWONA,Formula One Group - Series A,Communication Services,Entertainment,,415,VTHR,Vanguard Russell 3000 ETF,Equity,Large Blend,Russell 3000,,FWONA,VTHR
+,416,EIX,Edison International,Utilities,Utilities - Regulated Electric,,416,AAXJ,iShares MSCI All Country Asia ex Japan ETF,Equity,Pacific/Asia ex-Japan Stk,MSCI AC Asia ex JP,,EIX,AAXJ
+,417,HEI,HEICO Corporation,Industrials,Aerospace & Defense,,417,MDYG,SPDR S&P 400 Mid Cap Growth ETF,Equity,Mid-Cap Growth,S&P Mid Cap 400 Growth,,HEI,MDYG
+,418,DG,Dollar General Corporation,Consumer Staples,Discount Stores,,418,USMC,Principal U.S. Mega-Cap ETF,Equity,Large Blend,-,,DG,USMC
+,419,HEI.A,HEICO Corporation,Industrials,Aerospace & Defense,,419,IBDS,iShares iBonds Dec 2027 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2027 Maturity Corporate,,HEI.A,IBDS
+,420,RKT,"Rocket Companies, Inc.",Financials,Mortgage Finance,,420,DGS,WisdomTree Emerging Markets SmallCap Dividend Fund,Equity,Diversified Emerging Mkts,WisdomTree Emerging Markets Smallcap Dividend Index,,RKT,DGS
+,421,ORAN,Orange S.A.,Communication Services,Telecom Services,,421,CGCP,Capital Group Core Plus Income ETF,Fixed Income,Intermediate Core-Plus Bond,-,,ORAN,CGCP
+,422,ARES,Ares Management Corporation,Financials,Asset Management,,422,FTGC,First Trust Global Tactical Commodity Strategy Fund,Commodity,Commodities Broad Basket,-,,ARES,FTGC
+,423,IRM,Iron Mountain Incorporated,Real Estate,REIT - Specialty,,423,USRT,iShares Core U.S. REIT ETF,Equity,Real Estate,FTSE Nareit / Equity REITs - INV,,IRM,USRT
+,424,HPE,Hewlett Packard Enterprise Company,Technology,Communication Equipment,,424,EWC,iShares MSCI Canada ETF,Equity,Miscellaneous Region,MSCI Canada Custom Capped,,HPE,EWC
+,425,TTWO,"Take-Two Interactive Software, Inc.",Communication Services,Electronic Gaming & Multimedia,,425,MDYV,SPDR S&P 400 Mid Cap Value ETF,Equity,Mid-Cap Value,S&P Mid Cap 400 Value,,TTWO,MDYV
+,426,CBRE,"CBRE Group, Inc.",Real Estate,Real Estate Services,,426,ICLN,iShares Global Clean Energy ETF,Equity,Miscellaneous Sector,S&P Global Clean Energy,,CBRE,ICLN
+,427,NTAP,"NetApp, Inc.",Technology,Computer Hardware,,427,IFRA,iShares U.S. Infrastructure ETF,Equity,Infrastructure,NYSE FactSet U.S. Infrastructure Index,,NTAP,IFRA
+,428,WTW,Willis Towers Watson PLC,Financials,Insurance Brokers,,428,ILCG,iShares Morningstar Growth ETF,Equity,Large Growth,Morningstar US Large-Mid Cap Broad Growth Index Gross,,WTW,ILCG
+,429,EBAY,eBay Inc.,Consumer Discretionary,Internet Retail,,429,IGLB,iShares 10+ Year Investment Grade Corporate Bond ETF,Fixed Income,Long-Term Bond,ICE BofA US Corporate (10+ Y),,EBAY,IGLB
+,430,ICLR,ICON PLC,Healthcare,Diagnostics & Research,,430,KRE,SPDR S&P Regional Banking ETF,Equity,Financial,S&P Regional Banks Select Industry,,ICLR,KRE
+,431,ARGX,argenx SE,Healthcare,Biotechnology,,431,IXC,iShares Global Energy ETF,Equity,Equity Energy,S&P Global 1200 Energy 4.5/22.5/45 Capped Index,,ARGX,IXC
+,432,SNAP,Snap Inc.,Communication Services,Internet Content & Information,,432,IBTF,iShares iBonds Dec 2025 Term Treasury ETF,Fixed Income,Target Maturity,ICE 2025 Maturity U.S. Treasury Index,,SNAP,IBTF
+,433,TROW,"T. Rowe Price Group, Inc.",Financials,Asset Management,,433,PRFZ,Invesco FTSE RAFI US 1500 Small-Mid ETF,Equity,Small Blend,FTSE RAFI US 1500 Small-Mid Index,,TROW,PRFZ
+,434,CHD,"Church & Dwight Co., Inc.",Consumer Staples,Household & Personal Products,,434,PFFD,Global X U.S. Preferred ETF,Fixed Income,Preferred Stock,ICE BofA Diversified Core US Preferred Securities,,CHD,PFFD
+,435,BRO,"Brown & Brown, Inc.",Financials,Insurance Brokers,,435,FTSL,First Trust Senior Loan Fund,Fixed Income,Bank Loan,-,,BRO,FTSL
+,436,PUK,Prudential plc,Financials,Insurance - Life,,436,VNLA,Janus Henderson Short Duration Income ETF,Fixed Income,Ultrashort Bond,-,,PUK,VNLA
+,437,TECK,Teck Resources Limited,Materials,Other Industrial Metals & Mining,,437,DIHP,Dimensional International High Profitability ETF,Equity,Foreign Large Blend,-,,TECK,DIHP
+,438,EQR,Equity Residential,Real Estate,REIT - Residential,,438,GSUS,Goldman Sachs MarketBeta U.S. Equity ETF,Equity,Large Blend,Solactive GBS United States Large & Mid Cap Index NTR,,EQR,GSUS
+,439,KSPI,Kaspi.kz JSC,Technology,Software - Infrastructure,,439,NFRA,FlexShares STOXX Global Broad Infrastructure Index Fund,Equity,Infrastructure,STOXX Global Broad Infrastructure Index,,KSPI,NFRA
+,440,FTV,Fortive Corporation,Technology,Scientific & Technical Instruments,,440,IWX,iShares Russell Top 200 Value ETF,Equity,Large Value,Russell Top 200 Value,,FTV,IWX
+,441,IX,ORIX Corporation,Financials,Financial Conglomerates,,441,PHO,Invesco Water Resources ETF,Equity,Natural Resources,NASDAQ OMX US Water,,IX,PHO
+,442,WDC,Western Digital Corporation,Technology,Computer Hardware,,442,XMMO,Invesco S&P MidCap Momentum ETF,Equity,Mid-Cap Blend,S&P MidCap 400 Momentum Index,,WDC,XMMO
+,443,OWL,Blue Owl Capital Inc.,Financials,Asset Management,,443,SLQD,iShares 0-5 Year Investment Grade Corporate Bond ETF,Fixed Income,Short-Term Bond,Markit iBoxx USD Liquid Investment Grade 0-5 Year Index,,OWL,SLQD
+,444,NTR,Nutrien Ltd.,Materials,Agricultural Inputs,,444,XAR,SPDR S&P Aerospace & Defense ETF,Equity,Industrials,S&P Aerospace & Defense Select Industry,,NTR,XAR
+,445,TW,Tradeweb Markets Inc.,Financials,Capital Markets,,445,UITB,VictoryShares Core Intermediate Bond ETF,Fixed Income,Intermediate Core Bond,-,,TW,UITB
+,446,FITB,Fifth Third Bancorp,Financials,Banks - Regional,,446,FLJP,Franklin FTSE Japan ETF,Equity,Japan Stock,FTSE Japan RIC Capped Index,,FITB,FLJP
+,447,RJF,"Raymond James Financial, Inc.",Financials,Capital Markets,,447,USCA,Xtrackers MSCI USA Climate Action Equity ETF,Equity,-,MSCI USA Climate Action Index,,RJF,USCA
+,448,AWK,"American Water Works Company, Inc.",Utilities,Utilities - Regulated Water,,448,IMTM,iShares MSCI Intl Momentum Factor ETF,Equity,Foreign Large Growth,MSCI World ex USA Momentum,,AWK,IMTM
+,449,MTB,M&T Bank Corporation,Financials,Banks - Regional,,449,QQEW,First Trust Nasdaq-100 Equal Weighted Index Fund,Equity,Large Growth,NASDAQ-100 Equally Weighted Index,,MTB,QQEW
+,450,WPM,Wheaton Precious Metals Corp.,Materials,Gold,,450,GSY,Invesco Ultra Short Duration ETF,Fixed Income,Ultrashort Bond,-,,WPM,GSY
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,451,FCNCA,"First Citizens BancShares, Inc.",Financials,Banks - Regional,,451,FAS,Direxion Daily Financial Bull 3x Shares,Equity,Trading--Leveraged Equity,Financial Select Sector,,FCNCA,FAS
+,452,FCNCO,"First Citizens BancShares, Inc.",Financials,Banks - Regional,,452,AOR,iShares Core Growth Allocation ETF,Asset Allocation,Moderate Allocation,S&P Target Risk Growth,,FCNCO,AOR
+,453,FSLR,"First Solar, Inc.",Technology,Solar,,453,USCL,iShares Climate Conscious & Transition MSCI USA ETF,Equity,-,MSCI USA Extended Climate Action Index,,FSLR,USCL
+,454,GPN,Global Payments Inc.,Industrials,Specialty Business Services,,454,AIQ,Global X Artificial Intelligence & Technology ETF,Equity,Technology,Indxx Artificial Intelligence and Big Data Index,,GPN,AIQ
+,455,WEC,"WEC Energy Group, Inc.",Utilities,Utilities - Regulated Electric,,455,BITO,ProShares Bitcoin Strategy ETF,Currency,Digital Assets,-,,WEC,BITO
+,456,DOV,Dover Corporation,Industrials,Specialty Industrial Machinery,,456,ICF,iShares Cohen & Steers REIT ETF,Equity,Real Estate,S&P Cohen & Steers US Realty Majors Portfolio Index,,DOV,ICF
+,457,ROL,"Rollins, Inc.",Consumer Discretionary,Personal Services,,457,XSOE,WisdomTree Emerging Markets ex-State-Owned Enterprises Fund,Equity,Diversified Emerging Mkts,WisdomTree Emerging Markets ex State Owned Enterprises Index,,ROL,XSOE
+,458,IFF,International Flavors & Fragrances Inc.,Materials,Specialty Chemicals,,458,XME,SPDR S&P Metals & Mining ETF,Equity,Natural Resources,S&P Metals and Mining Select Industry,,IFF,XME
+,459,PHG,Koninklijke Philips N.V.,Healthcare,Medical Devices,,459,DFLV,Dimensional US Large Cap Value ETF,Equity,-,-,,PHG,DFLV
+,460,RBLX,Roblox Corporation,Communication Services,Electronic Gaming & Multimedia,,460,LRGF,iShares U.S. Equity Factor ETF,Equity,Large Blend,STOXX U.S. Equity Factor,,RBLX,LRGF
+,461,ASX,"ASE Technology Holding Co., Ltd.",Technology,Semiconductors,,461,FMB,First Trust Managed Municipal ETF,Fixed Income,Muni National Interm,-,,ASX,FMB
+,462,CQP,"Cheniere Energy Partners, L.P.",Energy,Oil & Gas Midstream,,462,IVOO,Vanguard S&P Mid-Cap 400 ETF,Equity,Mid-Cap Blend,S&P Mid Cap 400,,CQP,IVOO
+,463,TME,Tencent Music Entertainment Group,Communication Services,Internet Content & Information,,463,IMCG,iShares Morningstar Mid-Cap Growth ETF,Equity,Mid-Cap Growth,Morningstar US Mid Cap Broad Growth PR USD,,TME,IMCG
+,464,DECK,Deckers Outdoor Corporation,Consumer Discretionary,Footwear & Accessories,,464,JGRO,JPMorgan Active Growth ETF,Equity,-,-,,DECK,JGRO
+,465,TER,"Teradyne, Inc.",Technology,Semiconductor Equipment & Materials,,465,RPV,Invesco S&P 500 Pure Value ETF,Equity,Large Value,S&P 500/Citigroup Pure Value,,TER,RPV
+,466,TEF,"Telefónica, S.A.",Communication Services,Telecom Services,,466,IYY,iShares Dow Jones U.S. ETF,Equity,Large Blend,DJ Global United States (All),,TEF,IYY
+,467,KEYS,"Keysight Technologies, Inc.",Technology,Scientific & Technical Instruments,,467,TNA,Direxion Daily Small Cap Bull 3x Shares,Equity,Trading--Leveraged Equity,Russell 2000,,KEYS,TNA
+,468,VOD,Vodafone Group PLC,Communication Services,Telecom Services,,468,ICVT,iShares Convertible Bond ETF,Fixed Income,Convertibles,Bloomberg U.S. Convertible Cash Pay Bond > $250MM Index,,VOD,ICVT
+,469,FNV,Franco-Nevada Corporation,Materials,Gold,,469,AOA,iShares Core Aggressive Allocation ETF,Asset Allocation,Global Allocation,S&P Target Risk Aggressive,,FNV,AOA
+,470,BR,"Broadridge Financial Solutions, Inc.",Technology,Information Technology Services,,470,EAGL,Eagle Capital Select Equity ETF,Equity,-,-,,BR,EAGL
+,471,WST,"West Pharmaceutical Services, Inc.",Healthcare,Medical Instruments & Supplies,,471,FLCB,Franklin U.S Core Bond ETF,Fixed Income,Intermediate Core Bond,-,,WST,FLCB
+,472,VLTO,Veralto Corporation,Industrials,Pollution & Treatment Controls,,472,EBND,SPDR Bloomberg Emerging Markets Local Bond ETF,Fixed Income,Emerging-Markets Local-Currency Bond,Bloomberg Emerging Market Local Currency Government Diversified,,VLTO,EBND
+,473,GIB,CGI Inc.,Technology,Information Technology Services,,473,DISV,Dimensional International Small Cap Value ETF,Equity,Foreign Small/Mid Value,-,,GIB,DISV
+,474,NVR,"NVR, Inc.",Consumer Discretionary,Residential Construction,,474,IBDT,iShares iBonds Dec 2028 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2028 Maturity Corporate Index,,NVR,IBDT
+,475,CAH,"Cardinal Health, Inc.",Healthcare,Medical Distribution,,475,GCOW,Pacer Global Cash Cows Dividend ETF,Equity,Global Large-Stock Value,Pacer Global Cash Cows High Dividend 100 Index,,CAH,GCOW
+,476,EC,Ecopetrol S.A.,Energy,Oil & Gas Integrated,,476,BSCR,Invesco BulletShares 2027 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2027 Index,,EC,BSCR
+,477,KB,KB Financial Group Inc.,Financials,Banks - Regional,,477,KOMP,SPDR S&P Kensho New Economies Composite ETF,Equity,Mid-Cap Growth,S&P Kensho New Economies Composite Index,,KB,KOMP
+,478,MSTR,MicroStrategy Incorporated,Technology,Software - Application,,478,EPP,iShares MSCI Pacific ex-Japan ETF,Equity,Pacific/Asia ex-Japan Stk,MSCI Pacific ex JP,,MSTR,EPP
+,479,DLTR,"Dollar Tree, Inc.",Consumer Staples,Discount Stores,,479,ASHR,Xtrackers Harvest CSI 300 China A-Shares ETF,Equity,China Region,China Shenzhen SE / CSI 300 Index,,DLTR,ASHR
+,480,FMX,"Fomento Económico Mexicano, SAB de CV",Consumer Staples,Beverages - Brewers,,480,SPMO,Invesco S&P 500 Momentum ETF,Equity,Large Growth,S&P 500 Momentum Index,,FMX,SPMO
+,481,DTE,DTE Energy Company,Utilities,Utilities - Regulated Electric,,481,IPAC,iShares Core MSCI Pacific ETF,Equity,Diversified Pacific/Asia,MSCI Pacific IMI,,DTE,IPAC
+,482,ETR,Entergy Corporation,Utilities,Utilities - Regulated Electric,,482,FBCG,Fidelity Blue Chip Growth ETF,Equity,Large Growth,Russell 1000 Growth,,ETR,FBCG
+,483,BBD,Banco Bradesco S.A.,Financials,Banks - Regional,,483,FXR,First Trust Industrials/Producer Durables AlphaDEX Fund,Equity,Industrials,StrataQuant Industrials Index,,BBD,FXR
+,484,AXON,"Axon Enterprise, Inc.",Industrials,Aerospace & Defense,,484,PABU,iShares Paris-Aligned Climate MSCI USA ETF,Equity,Large Growth,MSCI USA Climate Paris Aligned Benchmark Extended Select Index,,AXON,PABU
+,485,STT,State Street Corporation,Financials,Asset Management,,485,SPYX,SPDR S&P 500 Fossil Fuel Reserves Free ETF,Equity,Large Blend,S&P 500 Fossil Fuel Free Index,,STT,SPYX
+,486,TU,TELUS Corporation,Communication Services,Telecom Services,,486,OIH,VanEck Oil Services ETF,Equity,Equity Energy,MVIS US Listed Oil Services 25,,TU,OIH
+,487,QSR,Restaurant Brands International Inc.,Consumer Discretionary,Restaurants,,487,DES,WisdomTree U.S. SmallCap Dividend Fund,Equity,Small Value,WisdomTree U.S. Small Cap Dividend Index,,QSR,DES
+,488,FE,FirstEnergy Corp.,Utilities,Utilities - Regulated Electric,,488,ITM,VanEck Intermediate Muni ETF,Fixed Income,Muni National Interm,ICE Intermediate AMT-Free Broad National Municipal,,FE,ITM
+,489,MBLY,Mobileye Global Inc.,Consumer Discretionary,Auto Parts,,489,HEDJ,WisdomTree Europe Hedged Equity Fund,Equity,Europe Stock,WisdomTree Europe Hedged Equity Index,,MBLY,HEDJ
+,490,PHM,"PulteGroup, Inc.",Consumer Discretionary,Residential Construction,,490,BKAG,BNY Mellon Core Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate,,PHM,BKAG
+,491,INVH,Invitation Homes Inc.,Real Estate,REIT - Residential,,491,FELV,Fidelity Enhanced Large Cap Value ETF,Equity,-,-,,INVH,FELV
+,492,PTC,PTC Inc.,Technology,Software - Application,,492,XHB,SPDR S&P Homebuilders ETF,Equity,Consumer Cyclical,S&P Homebuilders Select Industry,,PTC,XHB
+,493,CCJ,Cameco Corporation,Energy,Uranium,,493,DSTL,Distillate US Fundamental Stability & Value ETF,Equity,Large Blend,Distillate U.S. Fundamental Stability & Value Index,,CCJ,DSTL
+,494,ZBH,"Zimmer Biomet Holdings, Inc.",Healthcare,Medical Devices,,494,EWW,iShares MSCI Mexico ETF,Equity,Miscellaneous Region,MSCI Mexico IMI 25-50,,ZBH,EWW
+,495,CUK,Carnival Corporation & plc,Consumer Discretionary,Leisure,,495,QDF,FlexShares Quality Dividend Index Fund,Equity,Large Value,Northern Trust Quality Dividend,,CUK,QDF
+,496,CCL,Carnival Corporation & plc,Consumer Discretionary,Travel Services,,496,FENY,Fidelity MSCI Energy Index ETF,Equity,Equity Energy,MSCI USA IMI Energy 25/50 Index,,CCL,FENY
+,497,PBA,Pembina Pipeline Corporation,Energy,Oil & Gas Midstream,,497,DBC,Invesco DB Commodity Index Tracking Fund,Commodity,Commodities Broad Basket,DBIQ Optimum Yield Diversified Commodity Index,,PBA,DBC
+,498,LYV,"Live Nation Entertainment, Inc.",Communication Services,Entertainment,,498,TDTT,FlexShares iBoxx 3 Year Target Duration TIPS Index Fund,Fixed Income,Short-Term Inflation Protected Bond,iBoxx 3-Year Target Duration TIPS,,LYV,TDTT
+,499,TYL,"Tyler Technologies, Inc.",Technology,Software - Application,,499,TBLL,Invesco Short Term Treasury ETF,Fixed Income,-,ICE US Treasury Short Bond Index,,TYL,TBLL
+,500,STE,STERIS plc,Healthcare,Medical Devices,,500,DFGR,Dimensional Global Real Estate ETF,Equity,-,-,,STE,DFGR
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,501,STX,Seagate Technology Holdings plc,Technology,Computer Hardware,,501,BKAG,BNY Mellon Core Bond ETF,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate,,STX,BKAG
+,502,BBDO,Banco Bradesco S.A.,Financials,Banks - Regional,,502,SECT,Main Sector Rotation ETF,Equity,Large Blend,-,,BBDO,SECT
+,503,NOK,Nokia Oyj,Technology,Communication Equipment,,503,IVLU,iShares MSCI Intl Value Factor ETF,Equity,Foreign Large Value,MSCI World ex USA Enhanced Value,,NOK,IVLU
+,504,ENTG,"Entegris, Inc.",Technology,Semiconductor Equipment & Materials,,504,TBLL,Invesco Short Term Treasury ETF,Fixed Income,-,ICE US Treasury Short Bond Index,,ENTG,TBLL
+,505,VTR,"Ventas, Inc.",Real Estate,REIT - Healthcare Facilities,,505,VRP,Invesco Variable Rate Preferred ETF,Fixed Income,Preferred Stock,ICE BofA Variable Rate Preferred & Hybrid Securities,,VTR,VRP
+,506,ERIC,Telefonaktiebolaget LM Ericsson (publ),Technology,Communication Equipment,,506,FIW,First Trust Water ETF,Equity,Natural Resources,ISE Clean Edge Water Index,,ERIC,FIW
+,507,LPLA,LPL Financial Holdings Inc.,Financials,Capital Markets,,507,DBC,Invesco DB Commodity Index Tracking Fund,Commodity,Commodities Broad Basket,DBIQ Optimum Yield Diversified Commodity Index,,LPLA,DBC
+,508,UMC,United Microelectronics Corporation,Technology,Semiconductors,,508,BSCS,Invesco BulletShares 2028 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2028 Index,,UMC,BSCS
+,509,SBAC,SBA Communications Corporation,Real Estate,REIT - Specialty,,509,TDTT,FlexShares iBoxx 3 Year Target Duration TIPS Index Fund,Fixed Income,Short-Term Inflation Protected Bond,iBoxx 3-Year Target Duration TIPS,,SBAC,TDTT
+,510,RYAAY,Ryanair Holdings plc,Industrials,Airlines,,510,ESML,iShares ESG Aware MSCI USA Small-Cap ETF,Equity,Small Blend,MSCI USA Small Cap Extended ESG Focus Index,,RYAAY,ESML
+,511,PSTG,"Pure Storage, Inc.",Technology,Computer Hardware,,511,IEV,iShares Europe ETF,Equity,Europe Stock,S&P Europe 350,,PSTG,IEV
+,512,PKX,POSCO Holdings Inc.,Materials,Steel,,512,PFXF,VanEck Preferred Securities ex Financials ETF,Fixed Income,Preferred Stock,ICE Exchange-Listed Fixed & Adjustable Rate Non-Financial Preferred Securities Index,,PKX,PFXF
+,513,ARE,"Alexandria Real Estate Equities, Inc.",Real Estate,REIT - Office,,513,SPYI,NEOS S&P 500 High Income ETF,Equity,-,-,,ARE,SPYI
+,514,PPL,PPL Corporation,Utilities,Utilities - Regulated Electric,,514,HEDJ,WisdomTree Europe Hedged Equity Fund,Equity,Europe Stock,WisdomTree Europe Hedged Equity Index,,PPL,HEDJ
+,515,GDDY,GoDaddy Inc.,Technology,Software - Infrastructure,,515,HACK,Amplify Cybersecurity ETF,Equity,Technology,Nasdaq ISE Cyber Security Select Index,,GDDY,HACK
+,516,WRB,W. R. Berkley Corporation,Financials,Insurance - Property & Casualty,,516,GUSA,Goldman Sachs MarketBeta U.S. 1000 Equity ETF,Equity,Large Blend,Solactive GBS United States 1000 Index,,WRB,GUSA
+,517,ES,Eversource Energy,Utilities,Utilities - Regulated Electric,,517,PXF,Invesco FTSE RAFI Developed Markets ex-U.S. ETF,Equity,Foreign Large Value,FTSE RAFI Developed x US 1000,,ES,PXF
+,518,MKL,Markel Corporation,Financials,Insurance - Property & Casualty,,518,MLPX,Global X MLP & Energy Infrastructure ETF,Equity,Energy Limited Partnership,Stuttgart Solactive MLP & Energy Infrastructure,,MKL,MLPX
+,519,HOOD,"Robinhood Markets, Inc.",Financials,Capital Markets,,519,FMDE,Fidelity Enhanced Mid Cap ETF,Equity,-,-,,HOOD,FMDE
+,520,BF.A,Brown-Forman Corporation,Consumer Staples,Beverages - Wineries & Distilleries,,520,BITX,2x Bitcoin Strategy ETF,Currency,-,S&P CME Bitcoin Futures Daily Roll Index,,BF.A,BITX
+,521,CTRA,Coterra Energy Inc.,Energy,Oil & Gas Exploration & Production,,521,FLTR,VanEck IG Floating Rate ETF,Fixed Income,Ultrashort Bond,MVIS US Investment Grade Floating Rate,,CTRA,FLTR
+,522,STLD,"Steel Dynamics, Inc.",Materials,Steel,,522,FNCL,Fidelity MSCI Financials Index ETF,Equity,Financial,MSCI USA IMI Financials 25/50 Index,,STLD,FNCL
+,523,BAH,Booz Allen Hamilton Holding Corporation,Industrials,Consulting Services,,523,FALN,iShares Fallen Angels USD Bond ETF,Fixed Income,High Yield Bond,US High Yield Fallen Angel 3% Capped,,BAH,FALN
+,524,HUBB,Hubbell Incorporated,Industrials,Electrical Equipment & Parts,,524,KBWB,Invesco KBW Bank ETF,Equity,Financial,KBW Nasdaq Bank Index,,HUBB,KBWB
+,525,LDOS,"Leidos Holdings, Inc.",Technology,Information Technology Services,,525,EWW,iShares MSCI Mexico ETF,Equity,Miscellaneous Region,MSCI Mexico IMI 25-50,,LDOS,EWW
+,526,RCI,Rogers Communications Inc.,Communication Services,Telecom Services,,526,TILT,FlexShares Morningstar US Market Factor Tilt Index Fund,Equity,Large Blend,Morningstar US Market Factor Tilt Index,,RCI,TILT
+,527,BF.B,Brown-Forman Corporation,Consumer Staples,Beverages - Wineries & Distilleries,,527,FENI,Fidelity Enhanced International ETF,Equity,-,-,,BF.B,FENI
+,528,TSN,"Tyson Foods, Inc.",Consumer Staples,Farm Products,,528,KLMT,Invesco MSCI Global Climate 500 ETF,Equity,-,MSCI ACWI Select Climate 500 Index,,TSN,KLMT
+,529,WY,Weyerhaeuser Company,Real Estate,REIT - Specialty,,529,NULV,Nuveen ESG Large-Cap Value ETF,Equity,Large Value,MSCI Nuveen ESG USA Large Cap Value,,WY,NULV
+,530,AER,AerCap Holdings N.V.,Industrials,Rental & Leasing Services,,530,CWI,SPDR MSCI ACWI ex-US ETF,Equity,Foreign Large Blend,MSCI AC World ex USA,,AER,CWI
+,531,IOT,Samsara Inc.,Technology,Software - Infrastructure,,531,HTRB,Hartford Total Return Bond ETF,Fixed Income,Intermediate Core-Plus Bond,-,,IOT,HTRB
+,532,CSL,Carlisle Companies Incorporated,Industrials,Building Products & Equipment,,532,MLPA,Global X MLP ETF,Equity,Energy Limited Partnership,Solactive MLP Infrastructure Index,,CSL,MLPA
+,533,MDB,"MongoDB, Inc.",Technology,Software - Infrastructure,,533,AIA,iShares Asia 50 ETF,Equity,Pacific/Asia ex-Japan Stk,S&P Asia 50,,MDB,AIA
+,534,WSO,"Watsco, Inc.",Industrials,Industrial Distribution,,534,FLIN,Franklin FTSE India ETF,Equity,India Equity,FTSE India RIC Capped Index,,WSO,FLIN
+,535,CNP,"CenterPoint Energy, Inc.",Utilities,Utilities - Regulated Electric,,535,FTXL,First Trust Nasdaq Semiconductor ETF,Equity,Technology,Nasdaq US Smart Semiconductor Index,,CNP,FTXL
+,536,LI,Li Auto Inc.,Consumer Discretionary,Auto Manufacturers,,536,RPG,Invesco S&P 500 Pure Growth ETF,Equity,Large Growth,S&P 500 Pure Growth,,LI,RPG
+,537,LII,Lennox International Inc.,Industrials,Building Products & Equipment,,537,XSD,SPDR S&P Semiconductor ETF,Equity,Technology,S&P Semiconductors Select Industry,,LII,XSD
+,538,K,Kellanova Co,Consumer Staples,Packaged Foods,,538,URNM,Sprott Uranium Miners ETF,Equity,Natural Resources,North Shore Global Uranium Mining Index,,K,URNM
+,539,FTS,Fortis Inc.,Utilities,Utilities - Regulated Electric,,539,CGMU,Capital Group Municipal Income ETF,Fixed Income,-,-,,FTS,CGMU
+,540,SYF,Synchrony Financial,Financials,Credit Services,,540,JPIE,JPMorgan Income ETF,Fixed Income,Multisector Bond,-,,SYF,JPIE
+,541,CHKP,Check Point Software Technologies Ltd.,Technology,Software - Infrastructure,,541,APUE,ActivePassive U.S. Equity ETF,Equity,-,-,,CHKP,APUE
+,542,MT,ArcelorMittal S.A.,Materials,Steel,,542,REGL,ProShares S&P MidCap 400 Dividend Aristocrats ETF,Equity,Mid-Cap Blend,S&P MidCap 400 Dividend Aristocrats,,MT,REGL
+,543,BNTX,BioNTech SE,Healthcare,Biotechnology,,543,HDEF,Xtrackers MSCI EAFE High Dividend Yield Equity ETF,Equity,Foreign Large Value,MSCI EAFE High Dividend Yield,,BNTX,HDEF
+,544,TEVA,Teva Pharmaceutical Industries Limited,Healthcare,Drug Manufacturers - Specialty & Generic,,544,MUNI,PIMCO Intermediate Municipal Bond Active Exchange-Traded Fund,Fixed Income,Muni National Interm,-,,TEVA,MUNI
+,545,APTV,Aptiv PLC,Consumer Discretionary,Auto Parts,,545,IBDU,iShares iBonds Dec 2029 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2029 Maturity Corporate Index,,APTV,IBDU
+,546,SHG,"Shinhan Financial Group Co., Ltd.",Financials,Banks - Regional,,546,RSSL,Global X Russell 2000 ETF,Equity,-,Russell 2000 RIC Capped Index,,SHG,RSSL
+,547,HBAN,Huntington Bancshares Incorporated,Financials,Banks - Regional,,547,ASHR,Xtrackers Harvest CSI 300 China A-Shares ETF,Equity,China Region,China Shenzhen SE / CSI 300 Index,,HBAN,ASHR
+,548,AEE,Ameren Corporation,Utilities,Utilities - Regulated Electric,,548,JMUB,JPMorgan Municipal ETF,Fixed Income,Muni National Interm,-,,AEE,JMUB
+,549,CPAY,"Corpay, Inc.",Technology,Software - Infrastructure,,549,GRID,First Trust Nasdaq Clean Edge Smart GRID Infrastructure Index,Equity,Infrastructure,NASDAQ OMX Clean Edge Smart Grid Infrastr,,CPAY,GRID
+,550,MKC,"McCormick & Company, Incorporated",Consumer Staples,Packaged Foods,,550,RWJ,Invesco S&P SmallCap 600 Revenue ETF,Equity,Small Value,S&P SmallCap 600 Revenue-Weighted Index,,MKC,RWJ
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,551,MKC.V,"McCormick & Company, Incorporated",Consumer Staples,Packaged Foods,,551,EWA,iShares MSCI Australia ETF,Equity,Miscellaneous Region,MSCI Australia,,MKC.V,EWA
+,552,BALL,Ball Corporation,Consumer Discretionary,Packaging & Containers,,552,BBAG,JPMorgan BetaBuilders U.S. Aggregate Bond ETF,Fixed Income,-,Bloomberg U.S. Aggregate Bond Index,,BALL,BBAG
+,553,ULTA,"Ulta Beauty, Inc.",Consumer Discretionary,Specialty Retail,,553,IWL,iShares Russell Top 200 ETF,Equity,Large Blend,Russell Top 200,,ULTA,IWL
+,554,GPC,Genuine Parts Company,Consumer Discretionary,Auto Parts,,554,IYJ,iShares U.S. Industrials ETF,Equity,Industrials,Russell 1000 Industrials 40 Act 15/22.5 Daily Capped Index,,GPC,IYJ
+,555,PFG,"Principal Financial Group, Inc.",Financials,Asset Management,,555,SPBO,SPDR Portfolio Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Corporate Investment Grade,,PFG,SPBO
+,556,BEKE,KE Holdings Inc.,Real Estate,Real Estate Services,,556,RWR,SPDR Dow Jones REIT ETF,Equity,Real Estate,Dow Jones US Select REIT,,BEKE,RWR
+,557,WLK,Westlake Corporation,Materials,Specialty Chemicals,,557,NULG,Nuveen ESG Large-Cap Growth ETF,Equity,Large Growth,MSCI Nuveen ESG USA Large Cap Growth,,WLK,NULG
+,558,TDY,Teledyne Technologies Incorporated,Technology,Scientific & Technical Instruments,,558,ZROZ,PIMCO 25+ Year Zero Coupon US Treasury Index Exchange-Traded Fund,Fixed Income,Long Government,ICE BofA Long US Treasury Principal STRIPS,,TDY,ZROZ
+,559,ALGN,"Align Technology, Inc.",Healthcare,Medical Devices,,559,FXD,First Trust Consumer Discretionary AlphaDEX Fund,Equity,Consumer Cyclical,StrataQuant Consumer Discretionary Index,,ALGN,FXD
+,560,RF,Regions Financial Corporation,Financials,Banks - Regional,,560,HYLS,First Trust Tactical High Yield ETF,Fixed Income,High Yield Bond,ICE BoFA US High Yield Constrained Index,,RF,HYLS
+,561,CINF,Cincinnati Financial Corporation,Financials,Insurance - Property & Casualty,,561,ARKW,ARK Next Generation Internet ETF,Equity,Technology,-,,CINF,ARKW
+,562,TLK,Telkom Indonesia (Persero) Tbk PT,Communication Services,Telecom Services,,562,FDIS,Fidelity MSCI Consumer Discretionary Index ETF,Equity,Consumer Cyclical,MSCI USA IMI Consumer Discretionary 25/50 Index,,TLK,FDIS
+,563,DKNG,DraftKings Inc.,Consumer Discretionary,Gambling,,563,PCY,Invesco Emerging Markets Sovereign Debt ETF,Fixed Income,Emerging Markets Bond,DBIQ Emerging Markets Liquid Balanced Index,,DKNG,PCY
+,564,ZM,"Zoom Video Communications, Inc.",Technology,Software - Application,,564,FTLS,First Trust Long/Short Equity ETF,Alternatives,Long-Short Equity,-,,ZM,FTLS
+,565,WSM,"Williams-Sonoma, Inc.",Consumer Discretionary,Specialty Retail,,565,ILF,iShares Latin America 40 ETF,Equity,Latin America Stock,S&P Latin America 40,,WSM,ILF
+,566,CBOE,"Cboe Global Markets, Inc.",Financials,Financial Data & Stock Exchanges,,566,ICOW,Pacer Developed Markets International Cash Cows 100 ETF,Equity,Foreign Large Value,Pacer Developed Markets International Cash Cows 100 Index,,CBOE,ICOW
+,567,TS,Tenaris S.A.,Energy,Oil & Gas Equipment & Services,,567,HYGV,FlexShares High Yield Value-Scored Bond Index Fund,Fixed Income,High Yield Bond,Northern Trust High Yield Value-Scored US Corporate Bond Total Return,,TS,HYGV
+,568,NMR,"Nomura Holdings, Inc.",Financials,Capital Markets,,568,GTO,Invesco Total Return Bond ETF,Fixed Income,Intermediate Core-Plus Bond,-,,NMR,GTO
+,569,CRBG,"Corebridge Financial, Inc.",Financials,Asset Management,,569,JAVA,JPMorgan Active Value ETF,Equity,Large Value,-,,CRBG,JAVA
+,570,WSO.B,"Watsco, Inc.",Industrials,Industrial Distribution,,570,RYLD,Global X Russell 2000 Covered Call ETF,Equity,Derivative Income,CBOE Russell 2000 BuyWrite Index,,WSO.B,RYLD
+,571,BBY,"Best Buy Co., Inc.",Consumer Discretionary,Specialty Retail,,571,EFIV,SPDR S&P 500 ESG ETF,Equity,Large Blend,S&P 500 ESG Index,,BBY,EFIV
+,572,WBD,"Warner Bros. Discovery, Inc.",Communication Services,Entertainment,,572,BSVO,EA Bridgeway Omni Small-Cap Value ETF,Equity,-,-,,WBD,BSVO
+,573,CMS,CMS Energy Corporation,Utilities,Utilities - Regulated Electric,,573,IYG,iShares US Financial Services ETF,Equity,Financial,Dow Jones U.S. Financial Services Index,,CMS,IYG
+,574,EXPD,"Expeditors International of Washington, Inc.",Industrials,Integrated Freight & Logistics,,574,IGEB,iShares Investment Grade Systematic Bond ETF,Fixed Income,Corporate Bond,BlackRock Investment Grade Systematic Bond Index,,EXPD,IGEB
+,575,VRSN,"VeriSign, Inc.",Technology,Software - Infrastructure,,575,SIVR,abrdn Physical Silver Shares ETF,Commodity,Commodities Focused,LBMA Silver Price,,VRSN,SIVR
+,576,OMC,Omnicom Group Inc.,Communication Services,Advertising Agencies,,576,ARKG,ARK Genomic Revolution ETF,Equity,Health,-,,OMC,ARKG
+,577,EME,"EMCOR Group, Inc.",Industrials,Engineering & Construction,,577,AOM,iShares Core Moderate Allocation ETF,Asset Allocation,Moderately Conservative Allocation,S&P Target Risk Moderate,,EME,AOM
+,578,ATO,Atmos Energy Corporation,Utilities,Utilities - Regulated Gas,,578,QQQE,Direxion NASDAQ-100 Equal Weighted Index Shares,Equity,Large Growth,NASDAQ-100 Equally Weighted Index,,ATO,QQQE
+,579,AVY,Avery Dennison Corporation,Consumer Discretionary,Packaging & Containers,,579,VIOV,Vanguard S&P Small-Cap 600 Value ETF,Equity,Small Value,S&P Small Cap 600 Value,,AVY,VIOV
+,580,DRI,"Darden Restaurants, Inc.",Consumer Discretionary,Restaurants,,580,FXL,First Trust Technology AlphaDEX Fund,Equity,Technology,StrataQuant Technology Index,,DRI,FXL
+,581,DPZ,"Domino's Pizza, Inc.",Consumer Discretionary,Restaurants,,581,TIPX,SPDR Bloomberg 1-10 Year TIPS ETF,Fixed Income,Short-Term Inflation Protected Bond,Bloomberg US Govt Inflation-Linked (1-10 Y),,DPZ,TIPX
+,582,J,Jacobs Engineering Group Inc.,Industrials,Engineering & Construction,,582,BULZ,MicroSectors Solactive FANG & Innovation 3X Leveraged ETN,Equity,Trading--Leveraged Equity,Solactive FANG Innovation Index,,J,BULZ
+,583,MOH,"Molina Healthcare, Inc.",Healthcare,Healthcare Plans,,583,QUS,SPDR MSCI USA StrategicFactors ETF,Equity,Large Blend,MSCI USA Factor Mix A-Series Capped,,MOH,QUS
+,584,ESS,"Essex Property Trust, Inc.",Real Estate,REIT - Residential,,584,AIRR,First Trust RBA American Industrial Renaissance ETF,Equity,Industrials,Richard Bernstein Advisors American Industrial Renaissance,,ESS,AIRR
+,585,NTRS,Northern Trust Corporation,Financials,Asset Management,,585,SNPE,Xtrackers S&P 500 ESG ETF,Equity,Large Blend,S&P 500 ESG Index,,NTRS,SNPE
+,586,TPL,Texas Pacific Land Corporation,Energy,Oil & Gas Exploration & Production,,586,IYE,iShares U.S. Energy ETF,Equity,Equity Energy,Russell 1000 Energy RIC 22.5/45 Capped Index,,TPL,IYE
+,587,LUV,Southwest Airlines Co.,Industrials,Airlines,,587,FLQL,Franklin U.S. Large Cap Multifactor Index ETF,Equity,Large Blend,LibertyQ US Large Cap Equity Index,,LUV,FLQL
+,588,LH,Labcorp Holdings Inc.,Healthcare,Diagnostics & Research,,588,DFNM,Dimensional National Municipal Bond ETF,Fixed Income,Muni National Short,-,,LH,DFNM
+,589,HOLX,"Hologic, Inc.",Healthcare,Medical Instruments & Supplies,,589,FPEI,First Trust Institutional Preferred Securities & Income ETF,Fixed Income,Preferred Stock,-,,HOLX,FPEI
+,590,WAT,Waters Corporation,Healthcare,Diagnostics & Research,,590,UNIY,WisdomTree Voya Yield Enhanced USD Universal Bond Fund ETF,Fixed Income,-,Bloomberg US Universal Enhanced Yield Index,,WAT,UNIY
+,591,COO,"The Cooper Companies, Inc.",Healthcare,Medical Instruments & Supplies,,591,LIT,Global X Lithium & Battery Tech ETF,Equity,Natural Resources,Stuttgart Solactive AG Global Lithium,,COO,LIT
+,592,IHG,InterContinental Hotels Group PLC,Consumer Discretionary,Lodging,,592,IAUM,iShares Gold Trust Micro ETF of Benef Interest,Commodity,Commodities Focused,LBMA Gold Price,,IHG,IAUM
+,593,BAX,Baxter International Inc.,Healthcare,Medical Instruments & Supplies,,593,PTNQ,Pacer Trendpilot 100 ETF,Equity,Large Growth,Pacer NASDAQ-100 Trendpilot Index,,BAX,PTNQ
+,594,ERIE,Erie Indemnity Company,Financials,Insurance Brokers,,594,DTD,WisdomTree U.S. Total Dividend Fund,Equity,Large Value,WisdomTree Dividend Index,,ERIE,DTD
+,595,SWKS,"Skyworks Solutions, Inc.",Technology,Semiconductors,,595,SYLD,Cambria Shareholder Yield ETF,Equity,Mid-Cap Value,-,,SWKS,SYLD
+,596,ILMN,"Illumina, Inc.",Healthcare,Diagnostics & Research,,596,LCTU,BlackRock U.S. Carbon Transition Readiness ETF,Equity,Large Blend,-,,ILMN,LCTU
+,597,ZTO,ZTO Express (Cayman) Inc.,Industrials,Integrated Freight & Logistics,,597,USO,United States Oil Fund LP,Commodity,Commodities Focused,Front Month Light Sweet Crude Oil,,ZTO,USO
+,598,HRL,Hormel Foods Corporation,Consumer Staples,Packaged Foods,,598,IYK,iShares U.S. Consumer Staples ETF,Equity,Consumer Defensive,Russell 1000 Consumer Staples RIC 22.5/45 Capped Index,,HRL,IYK
+,599,ELPC,Cia Paranaense De Energia Copel,Utilities,Utilities - Diversified,,599,PDP,Invesco Dorsey Wright Momentum ETF,Equity,Large Growth,Dorsey Wright Tech Leaders TR,,ELPC,PDP
+,600,L,Loews Corporation,Financials,Insurance - Property & Casualty,,600,HYS,PIMCO 0-5 Year High Yield Corporate Bond Index Exchange-Traded Fund,Fixed Income,High Yield Bond,ICE BofA US High Yield Constrained (0-5 Y),,L,HYS
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,601,NRG,"NRG Energy, Inc.",Utilities,Utilities - Independent Power Producers,,601,FXH,First Trust Health Care AlphaDEX Fund,Equity,Health,StrataQuant Health Care Index,,NRG,FXH
+,602,CLX,The Clorox Company,Consumer Staples,Household & Personal Products,,602,IDU,iShares U.S. Utilities ETF,Equity,Utilities,Russell 1000 Utilities RIC 22.5/45 Capped Index,,CLX,IDU
+,603,CFG,"Citizens Financial Group, Inc.",Financials,Banks - Regional,,603,EWL,iShares MSCI Switzerland ETF,Equity,Miscellaneous Region,MSCI Switzerland 25-50,,CFG,EWL
+,604,BLDR,"Builders FirstSource, Inc.",Industrials,Building Products & Equipment,,604,FEX,First Trust Large Cap Core AlphaDEX Fund,Equity,Large Blend,NASDAQ AlphaDEX Large Cap Core Index,,BLDR,FEX
+,605,TXT,Textron Inc.,Industrials,Aerospace & Defense,,605,RWO,SPDR Dow Jones Global Real Estate ETF,Equity,Global Real Estate,DJ Global Select Real Estate Securities Index (RESI),,TXT,RWO
+,606,GMAB,Genmab A/S,Healthcare,Biotechnology,,606,PXH,Invesco FTSE RAFI Emerging Markets ETF,Equity,Diversified Emerging Mkts,FTSE RAFI Emerging,,GMAB,PXH
+,607,JBHT,"J.B. Hunt Transport Services, Inc.",Industrials,Integrated Freight & Logistics,,607,SIL,Global X Silver Miners ETF,Equity,Equity Precious Metals,Stuttgart Solactive AG Global Silver Miners,,JBHT,SIL
+,608,EQT,EQT Corporation,Energy,Oil & Gas Exploration & Production,,608,FIDU,Fidelity MSCI Industrial Index ETF,Equity,Industrials,MSCI USA IMI Industrials 25/25 Index,,EQT,FIDU
+,609,DKS,"DICK'S Sporting Goods, Inc.",Consumer Discretionary,Specialty Retail,,609,USD,ProShares Ultra Semiconductors,Equity,Trading--Leveraged Equity,DJ Global United States (All) / Semiconductors -SUB,,DKS,USD
+,610,RS,Reliance Steel & Aluminum Co.,Materials,Steel,,610,BBHY,JPMorgan BetaBuilders USD High Yield Corporate Bond ETF,Fixed Income,-,ICE BofA US High Yield Index,,RS,BBHY
+,611,MAA,"Mid-America Apartment Communities, Inc.",Real Estate,REIT - Residential,,611,FTA,First Trust Large Cap Value AlphaDEX Fund,Equity,Large Value,NASDAQ AlphaDEX Large Cap Value Index,,MAA,FTA
+,612,MRO,Marathon Oil Corporation,Energy,Oil & Gas Exploration & Production,,612,PEY,Invesco High Yield Equity Dividend Achievers ETF,Equity,Mid-Cap Value,NASDAQ US Dividend Achievers 50 Index TR,,MRO,PEY
+,613,PKG,Packaging Corporation of America,Consumer Discretionary,Packaging & Containers,,613,JMEE,JPMorgan Market Expansion Enhanced Equity ETF,Equity,-,-,,PKG,JMEE
+,614,ZBRA,Zebra Technologies Corporation,Technology,Communication Equipment,,614,IBTG,iShares iBonds Dec 2026 Term Treasury ETF,Fixed Income,Target Maturity,ICE 2026 Maturity US Treasury Index,,ZBRA,IBTG
+,615,BGNE,"BeiGene, Ltd.",Healthcare,Biotechnology,,615,ROBO,ROBO Global Robotics & Automation Index ETF,Equity,Global Small/Mid Stock,ROBO Global Robotics and Automation TR Index,,BGNE,ROBO
+,616,UAL,"United Airlines Holdings, Inc.",Industrials,Airlines,,616,FUTY,Fidelity MSCI Utilities Index ETF,Equity,Utilities,MSCI USA IMI Utilities 25/50 Index,,UAL,FUTY
+,617,FDS,FactSet Research Systems Inc.,Financials,Financial Data & Stock Exchanges,,617,FNX,First Trust Mid Cap Core AlphaDEX Fund,Equity,Mid-Cap Blend,NASDAQ AlphaDEX Mid Cap Core Index,,FDS,FNX
+,618,WMG,Warner Music Group Corp.,Communication Services,Entertainment,,618,RDVI,FT Vest Rising Dividend Achievers Target Income ETF,Equity,-,NASDAQ US Rising Dividend Achievers,,WMG,RDVI
+,619,EG,"Everest Group, Ltd.",Financials,Insurance - Reinsurance,,619,AVSC,Avantis U.S Small Cap Equity ETF,Equity,Small Value,Russell 2000,,EG,AVSC
+,620,EXPE,"Expedia Group, Inc.",Consumer Discretionary,Travel Services,,620,CORP,PIMCO Investment Grade Corporate Bond Index ETF,Fixed Income,Corporate Bond,ICE BofA US Corporate,,EXPE,CORP
+,621,FOXA,Fox Corporation,Communication Services,Entertainment,,621,PICK,iShares MSCI Global Metals & Mining Producers ETF,Equity,Natural Resources,MSCI ACWI Select Metals & Mining Producers ex Gold & Silver IMI,,FOXA,PICK
+,622,WES,"Western Midstream Partners, LP",Energy,Oil & Gas Midstream,,622,BAB,Invesco Taxable Municipal Bond ETF,Fixed Income,Long-Term Bond,ICE BofA US Taxable Municipal Securities Plus,,WES,BAB
+,623,DGX,Quest Diagnostics Incorporated,Healthcare,Diagnostics & Research,,623,NUSC,Nuveen ESG Small-Cap ETF,Equity,Small Blend,MSCI Nuveen ESG USA Small Cap,,DGX,NUSC
+,624,FOX,Fox Corporation,Communication Services,Entertainment,,624,BIZD,VanEck BDC Income ETF,Equity,Financial,MarketVector US Business Development Companies Liquid Index,,FOX,BIZD
+,625,BG,Bunge Limited,Consumer Staples,Farm Products,,625,SDOG,ALPS Sector Dividend Dogs ETF,Equity,Large Value,S-Network Sector Dividend Dogs Index,,BG,SDOG
+,626,SSNC,"SS&C Technologies Holdings, Inc.",Technology,Software - Application,,626,SMLF,iShares U.S. SmallCap Equity Factor ETF,Equity,Small Blend,STOXX US Small Cap Equity Factor Index,,SSNC,SMLF
+,627,GEN,Gen Digital Inc.,Technology,Software - Infrastructure,,627,FCOM,Fidelity MSCI Communication Services Index ETF,Equity,Communications,MSCI USA IMI Communication Services 25/50 Index,,GEN,FCOM
+,628,BMRN,BioMarin Pharmaceutical Inc.,Healthcare,Biotechnology,,628,IAI,iShares U.S. Broker-Dealers & Securities Exchanges ETF,Equity,Financial,DJ US Select / Investment Services,,BMRN,IAI
+,629,BAM,Brookfield Asset Management Inc.,Financials,Asset Management,,629,XHLF,BondBloxx Bloomberg Six Month Target Duration US Treasury ETF,Fixed Income,-,Bloomberg US Treasury 6 Month Target Duration Index,,BAM,XHLF
+,630,MANH,"Manhattan Associates, Inc.",Technology,Software - Application,,630,XCEM,Columbia EM Core ex-China ETF,Equity,Diversified Emerging Mkts,Beta Thematic Emerging Markets ex-China Index,,MANH,XCEM
+,631,EBR,Centrais Elétricas Brasileiras S.A. - Eletrobrás,Utilities,Utilities - Renewable,,631,FBT,First Trust NYSE Arca Biotechnology Index Fund,Equity,Health,NYSE Arca Biotechnology Index,,EBR,FBT
+,632,IP,International Paper Company,Consumer Discretionary,Packaging & Containers,,632,FDLO,Fidelity Low Volatility Factor ETF,Equity,Large Blend,Fidelity U.S. Low Volatility Factor Index,,IP,FDLO
+,633,H,Hyatt Hotels Corporation,Consumer Discretionary,Lodging,,633,USPX,Franklin U.S. Equity Index ETF,Equity,-,Morningstar US Target Market Exposure Index,,H,USPX
+,634,OKTA,"Okta, Inc.",Technology,Software - Infrastructure,,634,RAVI,FlexShares Ultra-Short Income Fund,Fixed Income,Ultrashort Bond,-,,OKTA,RAVI
+,635,RTO,Rentokil Initial plc,Industrials,Specialty Business Services,,635,ACIO,Aptus Collared Investment Opportunity ETF,Equity,Options Trading,-,,RTO,ACIO
+,636,NWSA,News Corporation,Communication Services,Entertainment,,636,PKW,Invesco Buyback Achievers ETF,Equity,Large Value,NASDAQ US Buyback Achievers Index,,NWSA,PKW
+,637,TPG,TPG Inc.,Financials,Asset Management,,637,RODM,Hartford Multifactor Developed Markets (ex-US) ETF,Equity,Foreign Large Value,Hartford Risk-Optimized Multi Developed Markets Ex-US Index,,TPG,RODM
+,638,NWS,News Corporation,Communication Services,Entertainment,,638,FSIG,First Trust Limited Duration Investment Grade Corporate ETF,Fixed Income,Short-Term Bond,-,,NWS,FSIG
+,639,CVNA,Carvana Co.,Consumer Discretionary,Auto & Truck Dealerships,,639,DHS,WisdomTree U.S. High Dividend Fund,Equity,Large Value,WisdomTree U.S. High Dividend Index,,CVNA,DHS
+,640,BURL,"Burlington Stores, Inc.",Consumer Discretionary,Apparel Retail,,640,USXF,iShares ESG Advanced MSCI USA ETF,Equity,Large Growth,MSCI USA Choice ESG Screened Index,,BURL,USXF
+,641,BSY,"Bentley Systems, Incorporated",Technology,Software - Application,,641,INTF,iShares International Equity Factor ETF,Equity,Foreign Large Blend,STOXX International Equity Factor,,BSY,INTF
+,642,IEX,IDEX Corporation,Industrials,Specialty Industrial Machinery,,642,LABU,Direxion Daily S&P Biotech Bull 3X Shares,Equity,Trading--Leveraged Equity,S&P Biotechnology Select Industry,,IEX,LABU
+,643,CE,Celanese Corporation,Materials,Chemicals,,643,SUSC,iShares ESG Aware USD Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg MSCI US Corporate ESG Focus,,CE,SUSC
+,644,SUI,"Sun Communities, Inc.",Real Estate,REIT - Residential,,644,DBMF,iMGP DBi Managed Futures Strategy ETF,Alternatives,Systematic Trend,-,,SUI,DBMF
+,645,TRU,TransUnion,Industrials,Consulting Services,,645,DFAR,Dimensional US Real Estate ETF,Equity,Real Estate,-,,TRU,DFAR
+,646,LOGI,Logitech International S.A.,Technology,Computer Hardware,,646,FSTA,Fidelity MSCI Consumer Staples Index ETF,Equity,Consumer Defensive,MSCI USA IMI Consumer Staples 25/50 Index,,LOGI,FSTA
+,647,CG,The Carlyle Group Inc.,Financials,Asset Management,,647,NTSX,WisdomTree U.S. Efficient Core Fund,Asset Allocation,Aggressive Allocation,-,,CG,NTSX
+,648,VIK,Viking Holdings Ltd.,Consumer Discretionary,Travel Services,,648,IYC,iShares U.S. Consumer Discretionary ETF,Equity,Consumer Cyclical,Russell 1000 Consumer Discretionary 40 Act 15/22.5 Daily Capped Index,,VIK,IYC
+,649,OC,Owens Corning,Industrials,Building Products & Equipment,,649,PYLD,PIMCO Multisector Bond Active Exchange-Traded Fund,Fixed Income,-,-,,OC,PYLD
+,650,SRPT,"Sarepta Therapeutics, Inc.",Healthcare,Biotechnology,,650,LVHI,Franklin International Low Volatility High Dividend Index ETF,Equity,Foreign Large Value,QS International Low Volatility High Dividend Hedged Index,,SRPT,LVHI
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,651,RIVN,"Rivian Automotive, Inc.",Consumer Discretionary,Auto Manufacturers,,651,FTC,First Trust Large Cap Growth AlphaDEX Fund,Equity,Large Growth,NASDAQ AlphaDEX Large Cap Growth Index,,RIVN,FTC
+,652,NTNX,"Nutanix, Inc.",Technology,Software - Infrastructure,,652,QLTA,iShares Aaa-A Rated Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Corporate Capped Index (Aaa - A),,NTNX,QLTA
+,653,GFL,GFL Environmental Inc.,Industrials,Waste Management,,653,JETS,U.S. Global Jets ETF,Equity,Industrials,Stuttgart US Global Jets,,GFL,JETS
+,654,AVTR,"Avantor, Inc.",Materials,Specialty Chemicals,,654,GSG,iShares S&P GSCI Commodity Indexed Trust,Commodity,Commodities Broad Basket,S&P GSCI,,AVTR,GSG
+,655,MAS,Masco Corporation,Industrials,Building Products & Equipment,,655,JEMA,JPMorgan ActiveBuilders Emerging Markets Equity ETF,Equity,Diversified Emerging Mkts,-,,MAS,JEMA
+,656,RBA,RB Global Inc,Industrials,Specialty Business Services,,656,EQTY,Kovitz Core Equity ETF,Equity,-,-,,RBA,EQTY
+,657,JHX,James Hardie Industries plc,Materials,Building Materials,,657,VRIG,Invesco Variable Rate Investment Grade ETF,Fixed Income,Ultrashort Bond,-,,JHX,VRIG
+,658,TOST,"Toast, Inc.",Technology,Software - Infrastructure,,658,BSCT,Invesco BulletShares 2029 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Corporate Bond 2029 Index,,TOST,BSCT
+,659,NBIX,"Neurocrine Biosciences, Inc.",Healthcare,Drug Manufacturers - Specialty & Generic,,659,DFSU,Dimensional US Sustainability Core 1 ETF,Equity,-,-,,NBIX,DFSU
+,660,AMCR,Amcor plc,Consumer Discretionary,Packaging & Containers,,660,YEAR,AB Ultra Short Income ETF,Fixed Income,-,-,,AMCR,YEAR
+,661,RPM,RPM International Inc.,Materials,Specialty Chemicals,,661,JBBB,Janus Henderson B-BBB CLO ETF,Fixed Income,Bank Loan,-,,RPM,JBBB
+,662,UTHR,United Therapeutics Corporation,Healthcare,Biotechnology,,662,PJAN,Innovator U.S. Equity Power Buffer ETF - January,Equity,Options Trading,-,,UTHR,PJAN
+,663,PODD,Insulet Corporation,Healthcare,Medical Devices,,663,IVOG,Vanguard S&P Mid-Cap 400 Growth ETF,Equity,Mid-Cap Growth,S&P Mid Cap 400 Growth,,PODD,IVOG
+,664,AKAM,"Akamai Technologies, Inc.",Technology,Software - Infrastructure,,664,SVOL,Simplify Volatility Premium ETF,Alternatives,Large Blend,-,,AKAM,SVOL
+,665,CASY,"Casey's General Stores, Inc.",Consumer Discretionary,Specialty Retail,,665,SUSL,iShares ESG MSCI USA Leaders ETF,Equity,Large Blend,MSCI USA Extended ESG Leaders,,CASY,SUSL
+,666,NTRA,"Natera, Inc.",Healthcare,Diagnostics & Research,,666,DLS,WisdomTree International SmallCap Dividend Fund,Equity,Foreign Small/Mid Value,WisdomTree International SmallCap Dividend Index,,NTRA,DLS
+,667,DOC,"Healthpeak Properties, Inc.",Real Estate,REIT - Healthcare Facilities,,667,PFFA,Virtus InfraCap U.S. Preferred Stock ETF,Fixed Income,Preferred Stock,-,,DOC,PFFA
+,668,VIV,Telefônica Brasil S.A.,Communication Services,Telecom Services,,668,IBDV,iShares iBonds Dec 2030 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2030 Maturity Corporate Index,,VIV,IBDV
+,669,GFI,Gold Fields Limited,Materials,Gold,,669,USSG,Xtrackers MSCI USA ESG Leaders Equity ETF,Equity,Large Blend,MSCI USA ESG Leaders,,GFI,USSG
+,670,AMH,American Homes 4 Rent,Real Estate,REIT - Residential,,670,EWP,iShares MSCI Spain ETF,Equity,Miscellaneous Region,MSCI Spain 25-50,,AMH,EWP
+,671,AGR,"Avangrid, Inc.",Utilities,Utilities - Regulated Electric,,671,GLTR,abrdn Physical Precious Metals Basket Shares ETF,Commodity,Commodities Focused,LBMA & LPPM Precious Metals Price PM - Benchmark Price Return,,AGR,GLTR
+,672,EDU,New Oriental Education & Technology Group Inc.,Consumer Staples,Education & Training Services,,672,FQAL,Fidelity Quality Factor ETF,Equity,Large Blend,Fidelity U.S. Quality Factor Index,,EDU,FQAL
+,673,MGM,MGM Resorts International,Consumer Discretionary,Resorts & Casinos,,673,JMOM,JPMorgan U.S. Momentum Factor ETF,Equity,Large Growth,JP Morgan US Momentum Factor Index,,MGM,JMOM
+,674,GRAB,Grab Holdings Limited,Technology,Software - Application,,674,HELO,JPMorgan Hedged Equity Laddered Overlay ETF,Equity,-,-,,GRAB,HELO
+,675,SIRI,Sirius XM Holdings Inc.,Communication Services,Entertainment,,675,SILJ,Amplify Junior Silver Miners ETF,Equity,Equity Precious Metals,Nasdaq Junior Silver Miners Index,,SIRI,SILJ
+,676,TRMB,Trimble Inc.,Technology,Scientific & Technical Instruments,,676,VTC,Vanguard Total Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg US Corporate Investment Grade,,TRMB,VTC
+,677,SNA,Snap-on Incorporated,Industrials,Tools & Accessories,,677,OUNZ,VanEck Merk Gold Trust,Commodity,Commodities Focused,LBMA Gold Price,,SNA,OUNZ
+,678,ENPH,"Enphase Energy, Inc.",Technology,Solar,,678,QVML,Invesco S&P 500 QVM Multi-factor ETF,Equity,Large Blend,"S&P 500 Quality, Value & Momentum Top 90% Multi-Factor Index",,ENPH,QVML
+,679,RGA,"Reinsurance Group of America, Incorporated",Financials,Insurance - Reinsurance,,679,PPLT,abrdn Physical Platinum Shares ETF,Commodity,Commodities Focused,Platinum London PM Fix,,RGA,PPLT
+,680,KEY,KeyCorp,Financials,Banks - Regional,,680,BCI,abrdn Bloomberg All Commodity Strategy K-1 Free ETF,Commodity,Commodities Broad Basket,Bloomberg Commodity Index,,KEY,BCI
+,681,CAG,"Conagra Brands, Inc.",Consumer Staples,Packaged Foods,,681,SPIP,SPDR Portfolio TIPS ETF,Fixed Income,Inflation-Protected Bond,Bloomberg US Govt Inflation-Linked,,CAG,SPIP
+,682,IBKR,"Interactive Brokers Group, Inc.",Financials,Capital Markets,,682,MTBA,Simplify MBS ETF,Fixed Income,-,-,,IBKR,MTBA
+,683,CPB,Campbell Soup Company,Consumer Staples,Packaged Foods,,683,CGW,Invesco S&P Global Water Index ETF,Equity,Natural Resources,S&P Global Water,,CPB,CGW
+,684,CELH,"Celsius Holdings, Inc.",Consumer Staples,Beverages - Non-Alcoholic,,684,GEM,Goldman Sachs ActiveBeta Emerging Markets Equity ETF,Equity,Diversified Emerging Mkts,Stuttgart Goldman Sachs ActiveBeta EM Equity,,CELH,GEM
+,685,DT,"Dynatrace, Inc.",Technology,Software - Application,,685,DWAS,Invesco Dorsey Wright SmallCap Momentum ETF,Equity,Small Growth,Dorsey Wright SmallCap Tech Leaders Index,,DT,DWAS
+,686,GGG,Graco Inc.,Industrials,Specialty Industrial Machinery,,686,TAN,Invesco Solar ETF,Equity,Miscellaneous Sector,MAC Global Solar Energy Index,,GGG,TAN
+,687,UDR,"UDR, Inc.",Real Estate,REIT - Residential,,687,COMT,iShares U.S. ETF Trust iShares GSCI Commodity Dynamic Roll Strategy ETF,Commodity,Commodities Broad Basket,S&P GSCI Dynamic Roll Index,,UDR,COMT
+,688,EQH,"Equitable Holdings, Inc.",Financials,Insurance - Diversified,,688,BSJP,Invesco BulletShares 2025 High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,Invesco BulletShares High Yield Corporate Bond 2025 Index,,EQH,BSJP
+,689,FNF,"Fidelity National Financial, Inc.",Financials,Insurance - Specialty,,689,FREL,Fidelity MSCI Real Estate Index ETF,Equity,Real Estate,MSCI US IMI/Real Estate 25-25,,FNF,FREL
+,690,BIP,Brookfield Infrastructure Partners L.P.,Utilities,Utilities - Diversified,,690,EIPI,FT Energy Income Partners Enhanced Income ETF,Equity,-,-,,BIP,EIPI
+,691,THC,Tenet Healthcare Corporation,Healthcare,Medical Care Facilities,,691,CRBN,iShares MSCI ACWI Low Carbon Target ETF,Equity,Global Large-Stock Blend,MSCI ACWI Low Carbon Target,,THC,CRBN
+,692,JBL,Jabil Inc.,Technology,Electronic Components,,692,SMIN,iShares MSCI India Small Cap ETF,Equity,India Equity,MSCI India Small Cap,,JBL,SMIN
+,693,PAA,"Plains All American Pipeline, L.P.",Energy,Oil & Gas Midstream,,693,INDY,iShares India 50 ETF,Equity,India Equity,Nifty 50,,PAA,INDY
+,694,SUZ,Suzano S.A.,Materials,Paper & Paper Products,,694,QEFA,SPDR MSCI EAFE StrategicFactors ETF,Equity,Foreign Large Blend,MSCI EAFE Factor Mix A-Series,,SUZ,QEFA
+,695,USFD,US Foods Holding Corp.,Consumer Staples,Food Distribution,,695,CGMS,Capital Group U.S. Multi-Sector Income ETF,Fixed Income,-,-,,USFD,CGMS
+,696,NDSN,Nordson Corporation,Industrials,Specialty Industrial Machinery,,696,MSOS,AdvisorShares Pure US Cannabis ETF,Equity,Miscellaneous Sector,-,,NDSN,MSOS
+,697,LNT,Alliant Energy Corporation,Utilities,Utilities - Regulated Electric,,697,VTWG,Vanguard Russell 2000 Growth ETF,Equity,Small Growth,Russell 2000 Growth,,LNT,VTWG
+,698,KIM,Kimco Realty Corporation,Real Estate,REIT - Retail,,698,PWV,Invesco Large Cap Value ETF,Equity,Large Value,Dynamic Large Cap Value Intellidex Index (AMEX),,KIM,PWV
+,699,INCY,Incyte Corporation,Healthcare,Biotechnology,,699,ILCV,iShares Morningstar Value ETF,Equity,Large Value,Morningstar US Large-Mid Cap Broad Value Index,,INCY,ILCV
+,700,MORN,"Morningstar, Inc.",Financials,Financial Data & Stock Exchanges,,700,QLTY,GMO U.S. Quality ETF,Equity,-,-,,MORN,QLTY
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,701,ARCC,Ares Capital Corporation,Financials,Asset Management,,701,BUFD,FT Vest Laddered Deep Buffer ETF,Equity,Options Trading,-,,ARCC,BUFD
+,702,BAP,Credicorp Ltd.,Financials,Banks - Regional,,702,EPS,WisdomTree U.S. LargeCap Fund,Equity,Large Blend,WisdomTree U.S. LargeCap Index,,BAP,EPS
+,703,NI,NiSource Inc.,Utilities,Utilities - Regulated Gas,,703,SMMD,iShares Russell 2500 ETF,Equity,Small Blend,Russell 2500,,NI,SMMD
+,704,NVT,nVent Electric plc,Industrials,Electrical Equipment & Parts,,704,PJUL,Innovator U.S. Equity Power Buffer ETF - July,Equity,Options Trading,S&P 500,,NVT,PJUL
+,705,PR,Permian Resources Corporation,Energy,Oil & Gas Exploration & Production,,705,TLTW,iShares 20+ Year Treasury Bond BuyWrite Strategy ETF,Fixed Income,-,CBOE TLT 2% OTM Buywrite Index,,PR,TLTW
+,706,CF,"CF Industries Holdings, Inc.",Materials,Agricultural Inputs,,706,ILCB,iShares Morningstar U.S. Equity ETF,Equity,Large Blend,Morningstar US Large-Mid Cap Index,,CF,ILCB
+,707,WRK,WestRock Company,Consumer Discretionary,Packaging & Containers,,707,RSPH,Invesco S&P 500 Equal Weight Health Care ETF,Equity,-,S&P 500 Equal Weighted / Health Care,,WRK,RSPH
+,708,OVV,Ovintiv Inc.,Energy,Oil & Gas Exploration & Production,,708,IQDG,WisdomTree International Quality Dividend Growth Fund,Equity,Foreign Large Growth,WisdomTree International Quality Dividend Growth Index,,OVV,IQDG
+,709,AES,The AES Corporation,Utilities,Utilities - Diversified,,709,GLOV,Goldman Sachs ActiveBeta World Low Vol Plus Equity ETF,Equity,Global Large-Stock Blend,Goldman Sachs ActiveBeta World Low Vol Plus Equity Index,,AES,GLOV
+,710,RDY,Dr. Reddy's Laboratories Limited,Healthcare,Drug Manufacturers - Specialty & Generic,,710,VIOG,Vanguard S&P Small-Cap 600 Growth ETF,Equity,Small Growth,S&P Small Cap 600 Growth,,RDY,VIOG
+,711,AZPN,"Aspen Technology, Inc.",Technology,Software - Application,,711,EWG,iShares MSCI Germany ETF,Equity,Miscellaneous Region,MSCI Germany,,AZPN,EWG
+,712,RVTY,"Revvity, Inc.",Healthcare,Diagnostics & Research,,712,AGGY,WisdomTree Yield Enhanced U.S. Aggregate Bond Fund,Fixed Income,Intermediate Core Bond,Bloomberg US Aggregate Yield Enhanced,,RVTY,AGGY
+,713,SAIA,"Saia, Inc.",Industrials,Trucking,,713,IBDW,iShares iBonds Dec 2031 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2031 Maturity Corporate Index,,SAIA,IBDW
+,714,TFII,TFI International Inc.,Industrials,Trucking,,714,PAPR,Innovator U.S. Equity Power Buffer ETF - April,Equity,Options Trading,-,,TFII,PAPR
+,715,MEDP,"Medpace Holdings, Inc.",Healthcare,Diagnostics & Research,,715,PGF,Invesco Financial Preferred ETF,Fixed Income,Preferred Stock,ICE Bofa Exchange-Listed Fixed Rate Financial Preferred Securities,,MEDP,PGF
+,716,CNH,CNH Industrial NV,Industrials,Farm & Heavy Construction Machinery,,716,IBTH,iShares iBonds Dec 2027 Term Treasury ETF,Fixed Income,Target Maturity,ICE 2027 Maturity US Treasury Index,,CNH,IBTH
+,717,HST,"Host Hotels & Resorts, Inc.",Real Estate,REIT - Hotel & Motel,,717,JHML,John Hancock Multifactor Large Cap ETF,Equity,Large Blend,John Hancock Dimensional Large Cap Index,,HST,JHML
+,718,XPO,"XPO Logistics, Inc.",Industrials,Trucking,,718,PREF,Principal Spectrum Preferred Secs Active ETF,Fixed Income,Preferred Stock,-,,XPO,PREF
+,719,YPF,YPF SA,Energy,Oil & Gas Integrated,,719,SH,ProShares Short S&P500,Equity,Trading--Inverse Equity,S&P 500,,YPF,SH
+,720,PNR,Pentair plc,Industrials,Specialty Industrial Machinery,,720,NVDY,YieldMax NVDA Option Income Strategy ETF,Equity,Derivative Income,-,,PNR,NVDY
+,721,VTRS,Viatris Inc.,Healthcare,Drug Manufacturers - Specialty & Generic,,721,IMCB,iShares Morningstar Mid-Cap ETF,Equity,Mid-Cap Blend,Morningstar US Mid Cap Index,,VTRS,IMCB
+,722,ALLY,Ally Financial Inc.,Financials,Credit Services,,722,FYX,First Trust Small Cap Core AlphaDEX Fund,Equity,Small Blend,Nasdaq AlphaDEX Small Cap Core Index,,ALLY,FYX
+,723,WING,Wingstop Inc.,Consumer Discretionary,Restaurants,,723,PSI,Invesco Semiconductors ETF,Equity,Technology,Dynamic Semiconductor Intellidex Index (AMEX),,WING,PSI
+,724,CNA,CNA Financial Corporation,Financials,Insurance - Property & Casualty,,724,CCMG,CCM Global Equity ETF,Equity,-,-,,CNA,CCMG
+,725,SWK,"Stanley Black & Decker, Inc.",Industrials,Tools & Accessories,,725,CATH,Global X S&P 500 Catholic Values Custom ETF,Equity,Large Blend,S&P 500 Catholic Values Index,,SWK,CATH
+,726,MGA,Magna International Inc.,Consumer Discretionary,Auto Parts,,726,DIVI,Franklin International Core Dividend Tilt Index Fund,Equity,-,Morningstar Developed Markets ex-North America Dividend Enhanced Select,,MGA,DIVI
+,727,YUMC,"Yum China Holdings, Inc.",Consumer Discretionary,Restaurants,,727,IVOV,Vanguard S&P Mid-Cap 400 Value ETF,Equity,Mid-Cap Value,S&P Mid Cap 400 Value,,YUMC,IVOV
+,728,LAMR,Lamar Advertising Company,Real Estate,REIT - Specialty,,728,BWX,SPDR Bloomberg International Treasury Bond ETF,Fixed Income,Global Bond,Bloomberg Global Treasury x US Capped (Inception 8/31/2007),,LAMR,BWX
+,729,MNDY,monday.com Ltd.,Technology,Software - Application,,729,TMFC,Motley Fool 100 Index ETF,Equity,Large Growth,Motley Fool 100 Index,,MNDY,TMFC
+,730,DVA,DaVita Inc.,Healthcare,Medical Care Facilities,,730,IWC,iShares Micro-Cap ETF,Equity,Small Blend,Russell Microcap,,DVA,IWC
+,731,CLH,"Clean Harbors, Inc.",Industrials,Waste Management,,731,PWB,Invesco Large Cap Growth ETF,Equity,Large Growth,Dynamic Large Cap Growth Intellidex Index (AMEX),,CLH,PWB
+,732,WMS,"Advanced Drainage Systems, Inc.",Industrials,Building Products & Equipment,,732,ARKF,ARK Fintech Innovation ETF,Equity,Technology,-,,WMS,ARKF
+,733,EVRG,"Evergy, Inc.",Utilities,Utilities - Regulated Electric,,733,SUSB,iShares ESG Aware 1-5 Year USD Corporate Bond ETF,Fixed Income,Short-Term Bond,Bloomberg MSCI US Corporate ESG Focus (1-5 Y),,EVRG,SUSB
+,734,BLD,TopBuild Corp.,Industrials,Engineering & Construction,,734,PWZ,Invesco California AMT-Free Municipal Bond ETF,Fixed Income,Muni California Long,ICE BofA California Long-Term Core Plus Muni,,BLD,PWZ
+,735,UHAL,U-Haul Holding Company,Industrials,Rental & Leasing Services,,735,DPST,Direxion Daily Regional Banks Bull 3X Shares,Equity,Trading--Leveraged Equity,S&P Regional Banks Select Industry,,UHAL,DPST
+,736,WPC,W. P. Carey Inc.,Real Estate,REIT - Diversified,,736,FXO,First Trust Financials AlphaDEX Fund,Equity,Financial,StrataQuant Financials Index,,WPC,FXO
+,737,FLEX,Flex Ltd.,Technology,Electronic Components,,737,YINN,Direxion Daily FTSE China Bull 3X Shares,Equity,Trading--Leveraged Equity,FTSE China 50 Net Tax USD Index,,FLEX,YINN
+,738,GLPI,"Gaming and Leisure Properties, Inc.",Real Estate,REIT - Specialty,,738,KXI,iShares Global Consumer Staples ETF,Equity,Consumer Defensive,S&P Global 1200 Consumer Staples (Sector) Capped Index,,GLPI,KXI
+,739,LW,"Lamb Weston Holdings, Inc.",Consumer Staples,Packaged Foods,,739,BBRE,JPMorgan BetaBuilders MSCI US REIT ETF,Equity,Real Estate,MSCI US REIT Custom Capped Index,,LW,BBRE
+,740,JKHY,"Jack Henry & Associates, Inc.",Technology,Information Technology Services,,740,GSID,Goldman Sachs MarketBeta International Equity ETF,Equity,Foreign Large Blend,Solactive GBS Developed Markets ex North America Large & Mid Cap USD Index NTR,,JKHY,GSID
+,741,RDDT,"Reddit, Inc.",Communication Services,Internet Content & Information,,741,PID,Invesco International Dividend Achievers ETF,Equity,Foreign Large Value,NASDAQ International Dividend Achiever Index,,RDDT,PID
+,742,AOS,A. O. Smith Corporation,Industrials,Specialty Industrial Machinery,,742,SPLB,SPDR Portfolio Long Term Corporate Bond ETF,Fixed Income,Long-Term Bond,Bloomberg US Corporate - Long,,AOS,SPLB
+,743,SQM,Sociedad Química y Minera de Chile S.A.,Materials,Specialty Chemicals,,743,LDUR,PIMCO Enhanced Low Duration Active ETF,Fixed Income,Short-Term Bond,-,,SQM,LDUR
+,744,ELS,"Equity LifeStyle Properties, Inc.",Real Estate,REIT - Residential,,744,FFEB,FT Vest U.S. Equity Buffer Fund - February,Equity,Options Trading,-,,ELS,FFEB
+,745,BEN,"Franklin Resources, Inc.",Financials,Asset Management,,745,EVLN,Eaton Vance Floating-Rate ETF,Fixed Income,-,-,,BEN,EVLN
+,746,JNPR,"Juniper Networks, Inc.",Technology,Communication Equipment,,746,SPGM,SPDR Portfolio MSCI Global Stock Market ETF,Equity,Global Large-Stock Blend,MSCI AC World IMI,,JNPR,SPGM
+,747,ALB,Albemarle Corporation,Materials,Specialty Chemicals,,747,QGRO,American Century U.S. Quality Growth ETF,Equity,Large Growth,American Century U.S. Quality Growth Index,,ALB,QGRO
+,748,ACM,AECOM,Industrials,Engineering & Construction,,748,FMAR,FT Vest US Equity Buffer ETF - March,Equity,Options Trading,-,,ACM,FMAR
+,749,ESTC,Elastic N.V.,Technology,Software - Application,,749,BAR,GraniteShares Gold Shares,Commodity,Commodities Focused,LBMA Gold Price,,ESTC,BAR
+,750,BCH,Banco de Chile,Financials,Banks - Regional,,750,XNTK,SPDR NYSE Technology ETF,Equity,Technology,NYSE Technology Index,,BCH,XNTK
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,751,UHAL.B,U-Haul Holding Company,Industrials,Rental & Leasing Services,,751,SFY,SoFi Select 500 ETF,Equity,Large Growth,Solactive SoFi US 500 Growth Index,,UHAL.B,SFY
+,752,ONON,On Holding AG,Consumer Discretionary,Footwear & Accessories,,752,CDC,VictoryShares US EQ Income Enhanced Volatility Wtd ETF,Equity,Large Value,Nasdaq Victory U.S. Large Cap High Dividend 100 Long/Cash Volatility Weighted Index,,ONON,CDC
+,753,RPRX,Royalty Pharma plc,Healthcare,Biotechnology,,753,FRDM,Freedom 100 Emerging Markets ETF,Equity,Diversified Emerging Mkts,Life + Liberty Freedom 100 Emerging Markets Index,,RPRX,FRDM
+,754,CYBR,CyberArk Software Ltd.,Technology,Software - Infrastructure,,754,RWK,Invesco S&P MidCap 400 Revenue ETF,Equity,Mid-Cap Value,S&P MidCap 400 Revenue-Weighted Index,,CYBR,RWK
+,755,SJM,The J. M. Smucker Company,Consumer Staples,Packaged Foods,,755,FVAL,Fidelity Value Factor ETF,Equity,Large Value,Fidelity U.S. Value Factor Index,,SJM,FVAL
+,756,ACI,"Albertsons Companies, Inc.",Consumer Staples,Grocery Stores,,756,ONEY,SPDR Russell 1000 Yield Focus ETF,Equity,Mid-Cap Value,Russell 1000 Yield Focused Factor Index,,ACI,ONEY
+,757,POOL,Pool Corporation,Industrials,Industrial Distribution,,757,IHAK,iShares Cybersecurity & Tech ETF,Equity,Technology,NYSE FactSet Global Cyber Security Index,,POOL,IHAK
+,758,GWRE,"Guidewire Software, Inc.",Technology,Software - Application,,758,PSK,SPDR ICE Preferred Securities ETF,Fixed Income,Preferred Stock,ICE Exchange-Listed Fixed& Adjustable Rate Preferred Securities Index,,GWRE,PSK
+,759,TOL,"Toll Brothers, Inc.",Consumer Discretionary,Residential Construction,,759,XSVM,Invesco S&P SmallCap Value with Momentum ETF,Equity,Small Value,S&P SmallCap 600 High Momentum Value,,TOL,XSVM
+,760,CPT,Camden Property Trust,Real Estate,REIT - Residential,,760,ARKQ,ARK Autonomous Technology & Robotics ETF,Equity,Technology,-,,CPT,ARKQ
+,761,BJ,"BJ's Wholesale Club Holdings, Inc.",Consumer Staples,Discount Stores,,761,BNDW,Vanguard Total World Bond ETF,Fixed Income,Global Bond-USD Hedged,Bloomberg Global Aggregate Float Adjusted,,BJ,BNDW
+,762,ELF,"e.l.f. Beauty, Inc.",Consumer Staples,Household & Personal Products,,762,HNDL,Strategy Shares Nasdaq 7HANDL Index ETF,Asset Allocation,Moderately Conservative Allocation,Nasdaq 7HANDL Base Index,,ELF,HNDL
+,763,REG,Regency Centers Corporation,Real Estate,REIT - Retail,,763,FLQM,Franklin U.S. Mid Cap Multifactor Index ETF,Equity,Mid-Cap Blend,LibertyQ US Mid Cap Equity Index,,REG,FLQM
+,764,KMX,"CarMax, Inc.",Consumer Discretionary,Auto & Truck Dealerships,,764,FJUN,FT Vest U.S. Equity Buffer ETF - June,Equity,Options Trading,-,,KMX,FJUN
+,765,FTI,TechnipFMC plc,Energy,Oil & Gas Equipment & Services,,765,AMJB,"ALERIAN MLP INDEX ETNS DUE JANUARY 28, 2044",Equity,-,Alerian MLP Index,,FTI,AMJB
+,766,FMS,Fresenius Medical Care AG & Co. KGaA,Healthcare,Medical Care Facilities,,766,KIE,SPDR S&P Insurance ETF,Equity,Financial,S&P Insurance Select Industry,,FMS,KIE
+,767,EMN,Eastman Chemical Company,Materials,Specialty Chemicals,,767,TSLY,YieldMax TSLA Option Income Strategy ETF,Equity,-,-,,EMN,TSLY
+,768,COHR,"Coherent, Inc.",Technology,Scientific & Technical Instruments,,768,INFL,Horizon Kinetics Inflation Beneficiaries ETF,Equity,Global Small/Mid Stock,-,,COHR,INFL
+,769,TECH,Bio-Techne Corporation,Healthcare,Biotechnology,,769,SMMV,iShares MSCI USA Small-Cap Min Vol Factor ETF,Equity,Small Blend,MSCI USA Small Cap Minimum Volatility,,TECH,SMMV
+,770,RNR,RenaissanceRe Holdings Ltd.,Financials,Insurance - Reinsurance,,770,XMLV,Invesco S&P MidCap Low Volatility ETF,Equity,Mid-Cap Blend,S&P MidCap 400 Low Volatility Index,,RNR,XMLV
+,771,ONTO,Onto Innovation Inc.,Technology,Semiconductor Equipment & Materials,,771,SMTH,ALPS/SMITH Core Plus Bond ETF,Fixed Income,-,-,,ONTO,SMTH
+,772,FIX,"Comfort Systems USA, Inc.",Industrials,Engineering & Construction,,772,EUSA,iShares MSCI USA Equal Weighted ETF,Equity,Large Blend,MSCI USA Equal Weighted,,FIX,EUSA
+,773,QRVO,"Qorvo, Inc.",Technology,Semiconductors,,773,DFGP,Dimensional Global Core Plus Fixed Income ETF,Fixed Income,-,-,,QRVO,DFGP
+,774,TXRH,"Texas Roadhouse, Inc.",Consumer Discretionary,Restaurants,,774,FMAY,FT Vest U.S. Equity Buffer Fund - May,Equity,Options Trading,-,,TXRH,FMAY
+,775,LKQ,LKQ Corporation,Consumer Discretionary,Auto Parts,,775,RDIV,Invesco S&P Ultra Dividend Revenue ETF,Equity,Large Value,S&P 900 Dividend Revenue-Weighted Index,,LKQ,RDIV
+,776,DOCU,"DocuSign, Inc.",Technology,Software - Application,,776,SDIV,Global X Superdividend ETF,Equity,Global Small/Mid Stock,Stuttgart Solactive AG Global SuperDividend,,DOCU,SDIV
+,777,UHS,"Universal Health Services, Inc.",Healthcare,Medical Care Facilities,,777,FDEC,FT Vest US Equity Buffer ETF - December,Equity,Options Trading,-,,UHS,FDEC
+,778,AEG,Aegon N.V.,Financials,Insurance - Diversified,,778,GIGB,Goldman Sachs Access Investment Grade Corporate Bond ETF,Fixed Income,Corporate Bond,FTSE Goldman Sachs Investment Grade Corporate Bond Index,,AEG,GIGB
+,779,AU,AngloGold Ashanti Limited,Materials,Gold,,779,FNDB,Schwab Fundamental U.S. Broad Market ETF,Equity,Large Value,RAFI Fundamental High Liquidity US All Index,,AU,FNDB
+,780,HTHT,H World Group Limited,Consumer Discretionary,Lodging,,780,EZM,WisdomTree U.S. MidCap Fund,Equity,Mid-Cap Value,WisdomTree U.S. MidCap Index,,HTHT,EZM
+,781,CHK,Chesapeake Energy Corporation,Energy,Oil & Gas Exploration & Production,,781,BUG,Global X Cybersecurity ETF,Equity,Technology,Indxx Cybersecurity Index,,CHK,BUG
+,782,SNN,Smith & Nephew plc,Healthcare,Medical Devices,,782,BSCU,Invesco BulletShares 2030 Corporate Bond ETF,Fixed Income,Target Maturity,Invesco BulletShares Investment Grade Corporate Bond 2030 Index,,SNN,BSCU
+,783,APA,APA Corporation,Energy,Oil & Gas Exploration & Production,,783,PDEC,Innovator U.S. Equity Power Buffer ETF - December,Equity,Options Trading,-,,APA,PDEC
+,784,TTEK,"Tetra Tech, Inc.",Industrials,Engineering & Construction,,784,FTHI,First Trust BuyWrite Income ETF,Equity,Derivative Income,-,,TTEK,FTHI
+,785,IPG,"The Interpublic Group of Companies, Inc.",Communication Services,Advertising Agencies,,785,VTWV,Vanguard Russell 2000 Value ETF,Equity,Small Value,Russell 2000 Value,,IPG,VTWV
+,786,CHRD,Chord Energy Corporation,Energy,Oil & Gas Exploration & Production,,786,FLGV,Franklin U.S. Treasury Bond ETF,Fixed Income,Intermediate Government,-,,CHRD,FLGV
+,787,JEF,Jefferies Financial Group Inc.,Financials,Capital Markets,,787,OUSA,ALPS O'Shares U.S. Quality Dividend ETF,Equity,Large Value,O'Shares US Quality Dividend Index,,JEF,OUSA
+,788,CAVA,"CAVA Group, Inc.",Consumer Discretionary,Restaurants,,788,FESM,Fidelity Enhanced Small Cap ETF,Equity,-,Russell 2000,,CAVA,FESM
+,789,NICE,NICE Ltd.,Technology,Software - Application,,789,IHF,iShares U.S. Healthcare Providers ETF,Equity,Health,DJ US Select / Health Care Providers,,NICE,IHF
+,790,EPAM,"EPAM Systems, Inc.",Technology,Information Technology Services,,790,PCEF,Invesco CEF Income Composite ETF,Asset Allocation,Global Allocation,SNET Composite Closed-End Fund Index,,EPAM,PCEF
+,791,ZG,"Zillow Group, Inc.",Communication Services,Internet Content & Information,,791,PNQI,Invesco NASDAQ Internet ETF,Equity,Technology,NASDAQ Internet,,ZG,PNQI
+,792,TAP,Molson Coors Beverage Company,Consumer Staples,Beverages - Brewers,,792,SCHY,Schwab International Dividend Equity ETF,Equity,Foreign Large Value,Dow Jones International Dividend 100 Index,,TAP,SCHY
+,793,TAP.A,Molson Coors Beverage Company,Consumer Staples,Beverages - Brewers,,793,GOVI,Invesco Equal Weight 0-30 Year Treasury ETF,Fixed Income,-,ICE BofA Laddered Maturity US Treasury (1-30 Y),,TAP.A,GOVI
+,794,Z,"Zillow Group, Inc.",Communication Services,Internet Content & Information,,794,AAAU,Goldman Sachs Physical Gold ETF,Commodity,Commodities Focused,LBMA Gold Price,,Z,AAAU
+,795,FTAI,FTAI Aviation Ltd.,Industrials,Rental & Leasing Services,,795,UNG,United States Natural Gas Fund LP,Commodity,Commodities Focused,Front Month Natural Gas,,FTAI,UNG
+,796,WWD,"Woodward, Inc.",Industrials,Aerospace & Defense,,796,PVAL,Putnam Focused Large Cap Value ETF,Equity,Large Value,-,,WWD,PVAL
+,797,SN,"SharkNinja, Inc.",Consumer Discretionary,"Furnishings, Fixtures & Appliances",,797,FJAN,FT Vest US Equity Buffer ETF - January,Equity,Options Trading,-,,SN,FJAN
+,798,BIRK,Birkenstock Holding plc,Consumer Discretionary,Footwear & Accessories,,798,IYT,iShares US Transportation ETF,Equity,Industrials,S&P Transportation Select Industry FMC Capped Index,,BIRK,IYT
+,799,LECO,"Lincoln Electric Holdings, Inc.",Industrials,Tools & Accessories,,799,EWX,SPDR S&P Emerging Markets Small Cap ETF,Equity,Diversified Emerging Mkts,S&P Emerging Markets <2B,,LECO,EWX
+,800,RL,Ralph Lauren Corporation,Consumer Discretionary,Apparel Manufacturing,,800,TSPA,T. Rowe Price U.S. Equity Research ETF,Equity,Large Blend,-,,RL,TSPA
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,801,ITT,ITT Inc.,Industrials,Specialty Industrial Machinery,,801,MOO,VanEck Agribusiness ETF,Equity,Natural Resources,MVIS Global Agribusiness,,ITT,MOO
+,802,CHWY,"Chewy, Inc.",Consumer Discretionary,Internet Retail,,802,RECS,Columbia Research Enhanced Core ETF,Equity,Large Blend,Beta Advantage Research Enhanced US Equity Index,,CHWY,RECS
+,803,INFA,Informatica Inc.,Technology,Software - Infrastructure,,803,AVIG,Avantis Core Fixed Income ETF,Fixed Income,Intermediate Core Bond,-,,INFA,AVIG
+,804,CW,Curtiss-Wright Corporation,Industrials,Aerospace & Defense,,804,DCOR,Dimensional US Core Equity 1 ETF,Equity,-,-,,CW,DCOR
+,805,GME,GameStop Corp.,Consumer Discretionary,Specialty Retail,,805,ROM,ProShares Ultra Technology,Equity,Trading--Leveraged Equity,S&P Technology Select Sector Index,,GME,ROM
+,806,FND,"Floor & Decor Holdings, Inc.",Consumer Discretionary,Home Improvement Retail,,806,QCLN,First Trust Nasdaq Clean Edge Green Energy Index Fund,Equity,Miscellaneous Sector,NASDAQ Clean Edge Green Energy,,FND,QCLN
+,807,CRL,"Charles River Laboratories International, Inc.",Healthcare,Diagnostics & Research,,807,BLOK,Amplify Transformational Data Sharing ETF,Equity,Digital Assets,-,,CRL,BLOK
+,808,OLED,Universal Display Corporation,Technology,Electronic Components,,808,GSEW,Goldman Sachs Equal Weight U.S. Large Cap Equity ETF,Equity,Large Blend,Solactive US Large Cap Equal Weight Index (GTR),,OLED,GSEW
+,809,AR,Antero Resources Corporation,Energy,Oil & Gas Exploration & Production,,809,NYF,iShares New York Muni Bond ETF,Fixed Income,Muni New York Long,ICE AMT-Free New York Municipal,,AR,NYF
+,810,CHDN,Churchill Downs Incorporated,Consumer Discretionary,Gambling,,810,LTPZ,PIMCO 15+ Year US TIPS Index Exchange-Traded Fund,Fixed Income,Inflation-Protected Bond,ICE BofA US Inflation-Linked Treasury (15+ Y),,CHDN,LTPZ
+,811,APG,APi Group Corporation,Industrials,Engineering & Construction,,811,DFIP,Dimensional Inflation-Protected Securities ETF,Fixed Income,Inflation-Protected Bond,-,,APG,DFIP
+,812,SKX,"Skechers U.S.A., Inc.",Consumer Discretionary,Footwear & Accessories,,812,VFVA,Vanguard U.S. Value Factor ETF,Equity,Mid-Cap Value,-,,SKX,VFVA
+,813,CHRW,"C.H. Robinson Worldwide, Inc.",Industrials,Integrated Freight & Logistics,,813,APIE,ActivePassive International Equity ETF,Equity,-,-,,CHRW,APIE
+,814,COKE,"Coca-Cola Consolidated, Inc.",Consumer Staples,Beverages - Non-Alcoholic,,814,JPLD,JPMorgan Limited Duration Bond ETF,Fixed Income,-,-,,COKE,JPLD
+,815,CTLT,"Catalent, Inc.",Healthcare,Drug Manufacturers - Specialty & Generic,,815,JPEF,JPMorgan Equity Focus ETF,Equity,-,-,,CTLT,JPEF
+,816,SCI,Service Corporation International,Consumer Discretionary,Personal Services,,816,IEO,iShares U.S. Oil & Gas Exploration & Production ETF,Equity,Equity Energy,DJ US Select / Oil & Gas Exploration & Production,,SCI,IEO
+,817,AFG,"American Financial Group, Inc.",Financials,Insurance - Property & Casualty,,817,UDOW,ProShares UltraPro Dow30,Equity,Trading--Leveraged Equity,Dow Jones Industrial Average,,AFG,UDOW
+,818,KGC,Kinross Gold Corporation,Materials,Gold,,818,HAUZ,Xtrackers International Real Estate ETF,Equity,Global Real Estate,iSTOXX Developed and Emerging Markets ex USA PK VN Real Estate,,KGC,HAUZ
+,819,DINO,HF Sinclair Corporation,Energy,Oil & Gas Refining & Marketing,,819,UYG,ProShares Ultra Financials,Equity,Trading--Leveraged Equity,Financial Select Sector,,DINO,UYG
+,820,ALLE,Allegion plc,Industrials,Security & Protection Services,,820,IGRO,iShares International Dividend Growth ETF,Equity,Foreign Large Blend,Morningstar Global ex-US Dividend Growth Index,,ALLE,IGRO
+,821,EWBC,"East West Bancorp, Inc.",Financials,Banks - Regional,,821,JHMD,John Hancock Multifactor Developed International ETF,Equity,Foreign Large Blend,John Hancock Dimensional Developed International Index,,EWBC,JHMD
+,822,WTRG,"Essential Utilities, Inc.",Utilities,Utilities - Regulated Water,,822,APCB,ActivePassive Core Bond ETF,Fixed Income,-,Bloomberg US Aggregate,,WTRG,APCB
+,823,PCOR,"Procore Technologies, Inc.",Technology,Software - Application,,823,LGLV,SPDR SSGA US Large Cap Low Volatility Index ETF,Equity,Large Blend,SSGA US Large Cap Low Volatility,,PCOR,LGLV
+,824,TFX,Teleflex Incorporated,Healthcare,Medical Instruments & Supplies,,824,TCHP,T. Rowe Price Blue Chip Growth ETF,Equity,Large Growth,-,,TFX,TCHP
+,825,INSM,Insmed Incorporated,Healthcare,Biotechnology,,825,JVAL,JPMorgan U.S. Value Factor ETF US Value Factor Fund,Equity,Large Value,JP Morgan US Value Factor Index,,INSM,JVAL
+,826,FFIV,"F5, Inc.",Technology,Software - Infrastructure,,826,PJUN,Innovator U.S. Equity Power Buffer ETF - June,Equity,Options Trading,-,,FFIV,PJUN
+,827,PFGC,Performance Food Group Company,Consumer Staples,Food Distribution,,827,EQWL,Invesco S&P 100 Equal Weight ETF,Equity,Large Value,S&P 100 Equal Weighted,,PFGC,EQWL
+,828,CUBE,CubeSmart,Real Estate,REIT - Industrial,,828,SMDV,ProShares Russell 2000 Dividend Growers ETF,Equity,Small Blend,Russell 2000 Dividend Growth Index,,CUBE,SMDV
+,829,AMKR,"Amkor Technology, Inc.",Technology,Semiconductor Equipment & Materials,,829,IVOL,Quadratic Interest Rate Volatility & Inflation Hedge ETF,Fixed Income,Inflation-Protected Bond,-,,AMKR,IVOL
+,830,SNX,TD SYNNEX Corporation,Technology,Electronics & Computer Distribution,,830,FPX,First Trust US Equity Opportunities ETF,Equity,Mid-Cap Growth,IPOX-100 U.S. Index,,SNX,FPX
+,831,REXR,"Rexford Industrial Realty, Inc.",Real Estate,REIT - Industrial,,831,DFEV,Dimensional Emerging Markets Value ETF,Equity,Diversified Emerging Mkts,-,,REXR,DFEV
+,832,JLL,Jones Lang LaSalle Incorporated,Real Estate,Real Estate Services,,832,MAGS,Roundhill Magnificent Seven ETF,Equity,Technology,-,,JLL,MAGS
+,833,TWLO,Twilio Inc.,Communication Services,Internet Content & Information,,833,HODL,VanEck Bitcoin Trust,Currency,-,MarketVector Bitcoin Benchmark Rate,,TWLO,HODL
+,834,PAG,"Penske Automotive Group, Inc.",Consumer Discretionary,Auto & Truck Dealerships,,834,SCHQ,Schwab Long-Term U.S. Treasury ETF,Fixed Income,Long Government,Bloomberg US Aggregate Government - Treasury - Long,,PAG,SCHQ
+,835,WYNN,"Wynn Resorts, Limited",Consumer Discretionary,Resorts & Casinos,,835,CGCB,Capital Group Core Bond ETF,Fixed Income,-,-,,WYNN,CGCB
+,836,SBS,Companhia de Saneamento Básico do Estado de São Paulo - SABESP,Utilities,Utilities - Regulated Water,,836,DBA,Invesco DB Agriculture Fund,Commodity,Commodities Focused,DBIQ Diversified Agriculture Index TR,,SBS,DBA
+,837,WPP,WPP plc,Communication Services,Advertising Agencies,,837,PNOV,Innovator U.S. Equity Power Buffer ETF - November,Equity,Options Trading,-,,WPP,PNOV
+,838,STN,Stantec Inc.,Industrials,Engineering & Construction,,838,IBDX,iShares iBonds Dec 2032 Term Corporate ETF,Fixed Income,Target Maturity,Bloomberg December 2032 Maturity Corporate Index,,STN,IBDX
+,839,HII,"Huntington Ingalls Industries, Inc.",Industrials,Aerospace & Defense,,839,FLGB,Franklin FTSE United Kingdom ETF,Equity,Miscellaneous Region,FTSE UK RIC Capped Index,,HII,FLGB
+,840,MMYT,MakeMyTrip Limited,Consumer Discretionary,Travel Services,,840,CGDG,Capital Group Dividend Growers ETF,Equity,-,-,,MMYT,CGDG
+,841,VFS,VinFast Auto Ltd.,Consumer Discretionary,Auto Manufacturers,,841,JHEM,John Hancock Multifactor Emerging Markets ETF,Equity,Diversified Emerging Mkts,John Hancock Dimensional Emerging Markets,,VFS,JHEM
+,842,BXP,"Boston Properties, Inc.",Real Estate,REIT - Office,,842,MEAR,BlackRock Short Maturity Municipal Bond ETF,Fixed Income,Muni National Short,-,,BXP,MEAR
+,843,WBA,"Walgreens Boots Alliance, Inc.",Healthcare,Pharmaceutical Retailers,,843,MMIT,IQ MacKay Municipal Intermediate ETF,Fixed Income,Muni National Interm,-,,WBA,MMIT
+,844,UNM,Unum Group,Financials,Insurance - Life,,844,CONY,YieldMax COIN Option Income Strategy ETF,Equity,Derivative Income,-,,UNM,CONY
+,845,CACI,CACI International Inc,Technology,Information Technology Services,,845,TDTF,FlexShares iBoxx 5 Year Target Duration TIPS Index Fund,Fixed Income,Inflation-Protected Bond,iBoxx 5-Year Target Duration TIPS,,CACI,TDTF
+,846,NLY,"Annaly Capital Management, Inc.",Real Estate,REIT - Mortgage,,846,BUFQ,FT Vest Laddered Nasdaq Buffer ETF,Equity,Options Trading,-,,NLY,BUFQ
+,847,CNM,"Core & Main, Inc.",Industrials,Industrial Distribution,,847,HFXI,IQ FTSE International Equity Currency Neutral ETF,Equity,Foreign Large Blend,FTSE Developed ex North America 50% Hedged to USD Index,,CNM,HFXI
+,848,MUSA,Murphy USA Inc.,Consumer Discretionary,Specialty Retail,,848,DVYE,iShares Emerging Markets Dividend ETF,Equity,Diversified Emerging Mkts,Dow Jones Emerging Markets Select Dividend,,MUSA,DVYE
+,849,LNW,"Light & Wonder, Inc.",Consumer Discretionary,Gambling,,849,QQQJ,Invesco NASDAQ Next Gen 100 ETF,Equity,Mid-Cap Growth,Nasdaq Next Generation 100 Index,,LNW,QQQJ
+,850,TTC,The Toro Company,Industrials,Tools & Accessories,,850,GWX,SPDR S&P International Small Cap ETF,Equity,Foreign Small/Mid Blend,S&P Developed x United States <2B,,TTC,GWX
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,851,BRKR,Bruker Corporation,Healthcare,Medical Devices,,851,FNOV,FT Vest U.S. Equity Buffer ETF - November,Equity,Options Trading,-,,BRKR,FNOV
+,852,ATR,"AptarGroup, Inc.",Healthcare,Medical Instruments & Supplies,,852,DMXF,iShares ESG Advanced MSCI EAFE ETF,Equity,Foreign Large Blend,MSCI EAFE Choice ESG Screened Index,,ATR,DMXF
+,853,CX,"CEMEX, SAB de CV",Materials,Building Materials,,853,PFEB,Innovator U.S. Equity Power Buffer ETF - February,Equity,Options Trading,-,,CX,PFEB
+,854,APPF,"AppFolio, Inc.",Technology,Software - Application,,854,FJUL,FT Vest U.S. Equity Buffer ETF - July,Equity,Options Trading,-,,APPF,FJUL
+,855,GMED,"Globus Medical, Inc.",Healthcare,Medical Devices,,855,PSEP,Innovator U.S. Equity Power Buffer ETF - September,Equity,Options Trading,-,,GMED,PSEP
+,856,TPR,"Tapestry, Inc.",Consumer Discretionary,Luxury Goods,,856,BKIE,BNY Mellon International Equity ETF,Equity,Foreign Large Blend,Solactive GBS Developed Markets ex United States Large & Mid Cap USD Index,,TPR,BKIE
+,857,HLI,"Houlihan Lokey, Inc.",Financials,Capital Markets,,857,PFM,Invesco Dividend Achievers ETF,Equity,Large Value,NASDAQ US Broad Dividend Achievers Index,,HLI,PFM
+,858,XP,XP Inc.,Financials,Capital Markets,,858,NVDX,T-Rex 2X Long NVIDIA Daily Target ETF,Equity,-,-,,XP,NVDX
+,859,ALAB,"Astera Labs, Inc.",Technology,Semiconductors,,859,EMGF,iShares Emerging Markets Equity Factor ETF,Equity,Diversified Emerging Mkts,STOXX Emerging Markets Equity Factor,,ALAB,EMGF
+,860,WFRD,Weatherford International plc,Energy,Oil & Gas Equipment & Services,,860,VOTE,TCW Transform 500 ETF,Equity,Large Blend,Morningstar US Large Cap Select,,WFRD,VOTE
+,861,PPC,Pilgrim's Pride Corporation,Consumer Staples,Packaged Foods,,861,JCPI,JPMorgan Inflation Managed Bond ETF,Fixed Income,Inflation-Protected Bond,-,,PPC,JCPI
+,862,ANF,Abercrombie & Fitch Co.,Consumer Discretionary,Apparel Retail,,862,FAPR,FT Vest U.S. Equity Buffer ETF - April,Equity,Options Trading,-,,ANF,FAPR
+,863,ASR,"Grupo Aeroportuario del Sureste, S. A. B. de C. V.",Industrials,Airports & Air Services,,863,KRMA,Global X Conscious Companies ETF,Equity,Large Blend,Concinnity Conscious Companies Index GTR Index,,ASR,KRMA
+,864,CFLT,"Confluent, Inc.",Technology,Software - Infrastructure,,864,SPUS,SP Funds S&P 500 Sharia Industry Exclusions ETF,Equity,Large Growth,S&P 500 Shariah Industry Exclusions Index,,CFLT,SPUS
+,865,MKSI,"MKS Instruments, Inc.",Technology,Scientific & Technical Instruments,,865,IRBO,iShares Robotics and Artificial Intelligence Multisector ETF,Equity,Technology,NYSE FactSet Global Robotics and Artificial Intelligence Index,,MKSI,IRBO
+,866,TKO,"TKO Group Holdings, Inc.",Communication Services,Entertainment,,866,IHE,iShares U.S. Pharmaceuticals ETF,Equity,Health,DJ US Select / Pharmaceutical,,TKO,IHE
+,867,DOX,Amdocs Limited,Technology,Software - Infrastructure,,867,OUSM,ALPS O'Shares US Small-Cap Quality Dividend ETF,Equity,Small Blend,O'Shares US Small-Cap Quality Dividend Index,,DOX,OUSM
+,868,KEP,Korea Electric Power Corporation,Utilities,Utilities - Regulated Electric,,868,BHYB,Xtrackers USD High Yield BB-B ex Financials ETF,Fixed Income,-,ICE BofA BB-B Non-FNCL Non-Distressed US HY Constrained Index,,KEP,BHYB
+,869,CART,Maplebear Inc.,Consumer Discretionary,Internet Retail,,869,BALT,Innovator Defined Wealth Shield ETF,Equity,Options Trading,S&P 500,,CART,BALT
+,870,RRX,Regal Rexnord Corporation,Industrials,Specialty Industrial Machinery,,870,XSMO,Invesco S&P SmallCap Momentum ETF,Equity,Small Growth,S&P SmallCap 600 Momentum Index,,RRX,XSMO
+,871,QGEN,Qiagen N.V.,Healthcare,Diagnostics & Research,,871,ONEV,SPDR Russell 1000 Low Volatility Focus ETF,Equity,Mid-Cap Value,Russell 1000 Low Volatility Focused Factor Index,,QGEN,ONEV
+,872,ROKU,"Roku, Inc.",Communication Services,Entertainment,,872,REZ,iShares Residential and Multisector Real Estate ETF,Equity,Real Estate,FTSE Nareit All Residential Capped Index,,ROKU,REZ
+,873,CROX,"Crocs, Inc.",Consumer Discretionary,Footwear & Accessories,,873,DNL,WisdomTree Global ex-US Quality Dividend Growth Fund,Equity,Foreign Large Growth,WisdomTree Global ex-U.S. Quality Dividend Growth Index,,CROX,DNL
+,874,AFRM,"Affirm Holdings, Inc.",Technology,Software - Infrastructure,,874,EWQ,iShares MSCI France ETF,Equity,Miscellaneous Region,MSCI France,,AFRM,EWQ
+,875,GPS,"The Gap, Inc.",Consumer Discretionary,Apparel Retail,,875,PAUG,Innovator U.S. Equity Power Buffer ETF - August,Equity,Options Trading,-,,GPS,PAUG
+,876,UI,Ubiquiti Inc.,Technology,Communication Equipment,,876,EUSB,iShares ESG Advanced Total USD Bond Market ETF,Fixed Income,Intermediate Core-Plus Bond,Bloomberg MSCI US Universal Choice ESG Screened Index,,UI,EUSB
+,877,KNSL,"Kinsale Capital Group, Inc.",Financials,Insurance - Property & Casualty,,877,CQQQ,Invesco China Technology ETF,Equity,China Region,FTSE China Incl A 25% Technology Capped Index,,KNSL,CQQQ
+,878,MOS,The Mosaic Company,Materials,Agricultural Inputs,,878,AGZ,iShares Agency Bond ETF,Fixed Income,Short Government,Bloomberg US Aggregate Government - Agency,,MOS,AGZ
+,879,BSAC,Banco Santander-Chile,Financials,Banks - Regional,,879,FMHI,First Trust Municipal High Income ETF,Fixed Income,High Yield Muni,-,,BSAC,FMHI
+,880,X,United States Steel Corporation,Materials,Steel,,880,USTB,VictoryShares Short-Term Bond ETF,Fixed Income,Short-Term Bond,-,,X,USTB
+,881,ALV,"Autoliv, Inc.",Consumer Discretionary,Auto Parts,,881,CGBL,Capital Group Core Balanced ETF,Asset Allocation,-,-,,ALV,CGBL
+,882,SOLV,Solventum Corporation,Healthcare,Health Information Services,,882,IAT,iShares U.S. Regional Banks ETF,Equity,Financial,DJ US Select / Regional Banks,,SOLV,IAT
+,883,CCK,"Crown Holdings, Inc.",Consumer Discretionary,Packaging & Containers,,883,REM,iShares Mortgage Real Estate ETF,Equity,Real Estate,FTSE Nareit All Mortgage Capped Index,,CCK,REM
+,884,ARMK,Aramark,Industrials,Specialty Business Services,,884,HYDB,iShares High Yield Systematic Bond ETF,Fixed Income,High Yield Bond,BlackRock High Yield Systematic Bond Index,,ARMK,HYDB
+,885,YMM,Full Truck Alliance Co. Ltd.,Technology,Software - Application,,885,SYFI,AB Short Duration High Yield ETF,Fixed Income,Multisector Bond,-,,YMM,SYFI
+,886,BWXT,"BWX Technologies, Inc.",Industrials,Aerospace & Defense,,886,DIV,Global X SuperDividend US ETF,Equity,Mid-Cap Value,Indxx SuperDividend U.S. Low Volatility Index,,BWXT,DIV
+,887,FN,Fabrinet,Technology,Electronic Components,,887,EES,WisdomTree U.S. SmallCap Fund,Equity,Small Value,WisdomTree U.S. SmallCap Index,,FN,EES
+,888,WIX,Wix.com Ltd.,Technology,Software - Infrastructure,,888,TDVG,T. Rowe Price Dividend Growth ETF,Equity,Large Blend,-,,WIX,TDVG
+,889,EHC,Encompass Health Corporation,Healthcare,Medical Care Facilities,,889,XBIL,US Treasury 6 Month Bill ETF,Fixed Income,-,ICE BofA US 6-Month Treasury Bill Index,,EHC,XBIL
+,890,KBR,"KBR, Inc.",Industrials,Engineering & Construction,,890,BBEM,JPMorgan BetaBuilders Emerging Markets Equity ETF,Equity,-,Morningstar Emerging Markets Target Market Exposure Index,,KBR,BBEM
+,891,SEIC,SEI Investments Company,Financials,Asset Management,,891,DRSK,Aptus Defined Risk ETF,Asset Allocation,Short-Term Bond,-,,SEIC,DRSK
+,892,ULS,UL Solutions Inc.,Industrials,Specialty Business Services,,892,ILTB,iShares Core 10+ Year USD Bond ETF,Fixed Income,Long-Term Bond,Bloomberg US Universal (10+ Y),,ULS,ILTB
+,893,LSCC,Lattice Semiconductor Corporation,Technology,Semiconductors,,893,PMAR,Innovator U.S. Equity Power Buffer ETF - March,Equity,Options Trading,-,,LSCC,PMAR
+,894,PNW,Pinnacle West Capital Corporation,Utilities,Utilities - Regulated Electric,,894,SPXU,ProShares UltraPro Short S&P500,Equity,Trading--Inverse Equity,S&P 500,,PNW,SPXU
+,895,DCI,"Donaldson Company, Inc.",Industrials,Specialty Industrial Machinery,,895,FAUG,FT Vest U.S. Equity Buffer ETF - August,Equity,Options Trading,-,,DCI,FAUG
+,896,NYT,The New York Times Company,Communication Services,Publishing,,896,BOIL,ProShares Ultra Bloomberg Natural Gas,Commodity,Trading--Leveraged Commodities,Bloomberg Natural Gas,,NYT,BOIL
+,897,SF,Stifel Financial Corp.,Financials,Capital Markets,,897,SPHB,Invesco S&P 500 High Beta ETF,Equity,Mid-Cap Blend,S&P 500 High Beta Index,,SF,SPHB
+,898,PSN,Parsons Corporation,Technology,Information Technology Services,,898,IMCV,iShares Morningstar Mid-Cap Value ETF,Equity,Mid-Cap Value,Morningstar US Mid Cap Broad Value Index,,PSN,IMCV
+,899,AIZ,"Assurant, Inc.",Financials,Insurance - Specialty,,899,IYM,iShares U.S. Basic Materials ETF,Equity,Natural Resources,Russell 1000 Basic Materials RIC 22.5/45 Capped Index,,AIZ,IYM
+,900,SUN,Sunoco LP,Energy,Oil & Gas Refining & Marketing,,900,PSC,Principal U.S. Small-Cap ETF,Equity,Small Blend,Russell 2000 Index,,SUN,PSC
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,901,RGLD,"Royal Gold, Inc.",Materials,Gold,,901,VFMO,Vanguard U.S. Momentum Factor ETF,Equity,Mid-Cap Growth,-,,RGLD,VFMO
+,902,PSO,Pearson plc,Communication Services,Publishing,,902,SSUS,Day Hagan/Ned Davis Research Smart Sector ETF,Equity,Large Blend,-,,PSO,SSUS
+,903,FHN,First Horizon Corporation,Financials,Banks - Regional,,903,RPAR,RPAR Risk Parity ETF,Alternatives,Moderately Conservative Allocation,-,,FHN,RPAR
+,904,OTEX,Open Text Corporation,Technology,Software - Application,,904,RSPN,Invesco S&P 500 Equal Weight Industrials ETF,Equity,-,S&P 500 Equal Weighted / Industrials,,OTEX,RSPN
+,905,BZ,Kanzhun Limited,Communication Services,Internet Content & Information,,905,VCEB,Vanguard ESG U.S. Corporate Bond ETF,Fixed Income,Corporate Bond,Bloomberg MSCI US Corporate SRI Select Index,,BZ,VCEB
+,906,DSGX,The Descartes Systems Group Inc.,Technology,Software - Application,,906,AGQ,ProShares Ultra Silver,Commodity,Trading--Leveraged Commodities,Bloomberg Silver,,DSGX,AGQ
+,907,GTLB,GitLab Inc.,Technology,Software - Infrastructure,,907,GSST,Goldman Sachs Access Ultra Short Bond ETF,Fixed Income,Ultrashort Bond,-,,GTLB,GSST
+,908,COTY,Coty Inc.,Consumer Staples,Household & Personal Products,,908,KSA,iShares MSCI Saudi Arabia ETF,Equity,Miscellaneous Region,MSCI Saudi Arabia IMI 25-50,,COTY,KSA
+,909,BBWI,"Bath & Body Works, Inc.",Consumer Discretionary,Specialty Retail,,909,SMMU,PIMCO Short Term Municipal Bond Active ETF,Fixed Income,Muni National Short,-,,BBWI,SMMU
+,910,LEGN,Legend Biotech Corporation,Healthcare,Biotechnology,,910,IAK,iShares U.S. Insurance ETF,Equity,Financial,DJ US Select / Insurance,,LEGN,IAK
+,911,GNRC,Generac Holdings Inc.,Industrials,Specialty Industrial Machinery,,911,PCRB,Putnam ESG Core Bond ETF,Fixed Income,-,-,,GNRC,PCRB
+,912,DUOL,"Duolingo, Inc.",Technology,Software - Application,,912,JPMB,JPMorgan USD Emerging Markets Sovereign Bond ETF,Fixed Income,Emerging Markets Bond,J.P. Morgan Emerging Markets Risk-Aware Bond Index,,DUOL,JPMB
+,913,OHI,"Omega Healthcare Investors, Inc.",Real Estate,REIT - Healthcare Facilities,,913,TPYP,Tortoise North American Pipeline Fund,Equity,Energy Limited Partnership,Tortoise North American Pipeline Index,,OHI,TPYP
+,914,FRT,Federal Realty Investment Trust,Real Estate,REIT - Retail,,914,PPH,VanEck Pharmaceutical ETF,Equity,Health,MVIS US Listed Pharmaceutical 25,,FRT,PPH
+,915,PAYC,"Paycom Software, Inc.",Technology,Software - Application,,915,BSJO,Invesco BulletShares 2024 High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,Invesco BulletShares High Yield Corporate Bond 2024 Index,,PAYC,BSJO
+,916,RRC,Range Resources Corporation,Energy,Oil & Gas Exploration & Production,,916,AOK,iShares Core Conservative Allocation ETF,Asset Allocation,Moderately Conservative Allocation,S&P Target Risk Conservative,,RRC,AOK
+,917,HESM,Hess Midstream LP,Energy,Oil & Gas Midstream,,917,STRV,Strive 500 ETF,Equity,-,Solactive GBS United States 500 Index,,HESM,STRV
+,918,SFM,"Sprouts Farmers Market, Inc.",Consumer Staples,Grocery Stores,,918,FIVG,Defiance Next Gen Connectivity ETF,Equity,Technology,MVIS Bluestar 5G Communications Index,,SFM,FIVG
+,919,PCVX,"Vaxcyte, Inc.",Healthcare,Biotechnology,,919,DUSB,Dimensional Ultrashort Fixed Income ETF,Fixed Income,-,-,,PCVX,DUSB
+,920,HSIC,"Henry Schein, Inc.",Healthcare,Medical Distribution,,920,LVHD,Franklin U.S. Low Volatility High Dividend Index ETF,Equity,Large Value,Franklin Low Volatility High Dividend Index (NTR),,HSIC,LVHD
+,921,EGP,"EastGroup Properties, Inc.",Real Estate,REIT - Industrial,,921,EQAL,Invesco Russell 1000 Equal Weight ETF,Equity,Mid-Cap Blend,Russell 1000 Equal Weight,,EGP,EQAL
+,922,ORI,Old Republic International Corporation,Financials,Insurance - Diversified,,922,KOKU,Xtrackers MSCI Kokusai Equity ETF,Equity,Global Large-Stock Blend,MSCI Kokusai Index (World ex Japan),,ORI,KOKU
+,923,CR,Crane Company,Industrials,Specialty Industrial Machinery,,923,PMAY,Innovator U.S. Equity Power Buffer ETF - May,Equity,Options Trading,-,,CR,PMAY
+,924,EDR,"Endeavor Group Holdings, Inc.",Communication Services,Entertainment,,924,IQDF,FlexShares International Quality Dividend Index Fund,Equity,Foreign Large Value,Northern Trust International Quality Dividend Net,,EDR,IQDF
+,925,NIO,NIO Inc.,Consumer Discretionary,Auto Manufacturers,,925,RSPG,Invesco S&P 500 Equal Weight Energy ETF,Equity,-,S&P 500 Equal Weight Energy Plus Index,,NIO,RSPG
+,926,MTZ,"MasTec, Inc.",Industrials,Engineering & Construction,,926,TUA,Simplify Short Term Treasury Futures Strategy ETF,Fixed Income,-,-,,MTZ,TUA
+,927,ESLT,Elbit Systems Ltd.,Industrials,Aerospace & Defense,,927,POCT,Innovator U.S. Equity Power Buffer ETF - October,Equity,Options Trading,-,,ESLT,POCT
+,928,CHE,Chemed Corporation,Healthcare,Medical Care Facilities,,928,BUFC,AB Conservative Buffer ETF,Equity,-,-,,CHE,BUFC
+,929,CZR,"Caesars Entertainment, Inc.",Consumer Discretionary,Resorts & Casinos,,929,FOCT,FT Vest U.S. Equity Buffer ETF - October,Equity,Options Trading,-,,CZR,FOCT
+,930,ALTR,Altair Engineering Inc.,Technology,Software - Infrastructure,,930,EXI,iShares Global Industrials ETF,Equity,Industrials,S&P Global 1200 / Industrials,,ALTR,EXI
+,931,PRI,"Primerica, Inc.",Financials,Insurance - Life,,931,IBTI,iShares iBonds Dec 2028 Term Treasury ETF,Fixed Income,Target Maturity,ICE 2028 Maturity US Treasury Index,,PRI,IBTI
+,932,EVR,Evercore Inc.,Financials,Capital Markets,,932,CGSD,Capital Group Short Duration Income ETF,Fixed Income,-,-,,EVR,CGSD
+,933,TPX,"Tempur Sealy International, Inc.",Consumer Discretionary,"Furnishings, Fixtures & Appliances",,933,DBEU,Xtrackers MSCI Europe Hedged Equity ETF,Equity,Europe Stock,MSCI Europe 100% Hedged to USD Net Variant,,TPX,DBEU
+,934,CGNX,Cognex Corporation,Technology,Scientific & Technical Instruments,,934,NUGT,Direxion Daily Gold Miners Index Bull 2x Shares,Equity,Trading--Leveraged Equity,NYSE Arca Gold Miners,,CGNX,NUGT
+,935,DAY,Dayforce Inc,Technology,Software - Application,,935,BSJQ,Invesco BulletShares 2026 High Yield Corp Bond ETF,Fixed Income,High Yield Bond,Invesco BulletShares High Yield Corporate Bond 2026 Index,,DAY,BSJQ
+,936,WCC,"WESCO International, Inc.",Industrials,Industrial Distribution,,936,IBHE,iShares iBonds 2025 Term High Yield & Income ETF,Fixed Income,High Yield Bond,Bloomberg 2025 Term High Yield and Income Index,,WCC,IBHE
+,937,KNX,Knight-Swift Transportation Holdings Inc.,Industrials,Trucking,,937,ULST,SPDR SSgA Ultra Short Term Bond ETF,Fixed Income,Ultrashort Bond,-,,KNX,ULST
+,938,MTSI,"MACOM Technology Solutions Holdings, Inc.",Technology,Semiconductors,,938,ISCG,iShares Morningstar Small-Cap Growth ETF,Equity,Small Growth,Morningstar US Small Cap Broad Growth Extended Index,,MTSI,ISCG
+,939,BIO.B,"Bio-Rad Laboratories, Inc.",Healthcare,Medical Devices,,939,QAI,IQ Hedge Multi-Strategy Tracker ETF,Alternatives,Multistrategy,IQ Hedge Multi-Strategy Index,,BIO.B,QAI
+,940,PARA,Paramount Global,Communication Services,Entertainment,,940,VUSE,Vident U.S. Equity Strategy ETF,Equity,Mid-Cap Value,Vident Core U.S. Stock Index,,PARA,VUSE
+,941,CIB,Bancolombia S.A.,Financials,Banks - Regional,,941,FSEP,FT Vest U.S. Equity Buffer ETF - September,Equity,Options Trading,-,,CIB,FSEP
+,942,WF,Woori Financial Group Inc.,Financials,Banks - Regional,,942,FXN,First Trust Energy AlphaDEX Fund,Equity,Equity Energy,StrataQuant Energy Index,,WF,FXN
+,943,EXAS,Exact Sciences Corporation,Healthcare,Diagnostics & Research,,943,NANR,SPDR S&P North American Natural Resources ETF,Equity,Natural Resources,S&P BMI North American Natural Resources Index,,EXAS,NANR
+,944,SKM,"SK Telecom Co.,Ltd",Communication Services,Telecom Services,,944,XLSR,SPDR SSGA U.S. Sector Rotation ETF,Equity,Large Blend,-,,SKM,XLSR
+,945,RBC,RBC Bearings Incorporated,Industrials,Tools & Accessories,,945,PHB,Invesco Fundamental High Yield Corporate Bond ETF,Fixed Income,High Yield Bond,RAFI Bonds US High Yield 1-10 Index,,RBC,PHB
+,946,PAC,"Grupo Aeroportuario del Pacífico, SAB de CV",Industrials,Airports & Air Services,,946,RING,iShares MSCI Global Gold Miners ETF,Equity,Equity Precious Metals,MSCI ACWI Select Gold Miners IMI,,PAC,RING
+,947,HAS,"Hasbro, Inc.",Consumer Discretionary,Leisure,,947,DWM,WisdomTree International Equity Fund,Equity,Foreign Large Value,WisdomTree International Equity Index,,HAS,DWM
+,948,FBIN,"Fortune Brands Innovations, Inc.",Industrials,Building Products & Equipment,,948,BRRR,Valkyrie Bitcoin Fund,Currency,-,CME CF Bitcoin Reference Rate - New York Variant - Benchmark Price Return,,FBIN,BRRR
+,949,GPK,Graphic Packaging Holding Company,Consumer Discretionary,Packaging & Containers,,949,FTGS,First Trust Growth Strength ETF,Equity,-,The Growth Strength Index,,GPK,FTGS
+,950,MTCH,"Match Group, Inc.",Communication Services,Internet Content & Information,,950,JTEK,JPMorgan U.S. Tech Leaders ETF,Equity,-,-,,MTCH,JTEK
+,,Symbol,Company Name,Sector,Industry,,,Symbol,Fund Name,Asset Class,Category,Index,,Symbol,Symbol
+,951,HRB,"H&R Block, Inc.",Consumer Discretionary,Personal Services,,951,FDRR,Fidelity Dividend ETF for Rising Rates,Equity,Large Value,Fidelity Dividend Index for Rising Rates,,HRB,FDRR
+,952,GNTX,Gentex Corporation,Consumer Discretionary,Auto Parts,,952,ISCF,iShares International SmallCap Equity Factor ETF,Equity,Foreign Small/Mid Blend,STOXX International Small Cap Equity Factor,,GNTX,ISCF
+,953,PARAA,Paramount Global,Communication Services,Entertainment,,953,FLIA,Franklin International Aggregate Bond ETF,Fixed Income,Global Bond-USD Hedged,-,,PARAA,FLIA
+,954,LBRDK,Liberty Broadband Corporation,Communication Services,Telecom Services,,954,PSQ,ProShares Short QQQ,Equity,Trading--Inverse Equity,NASDAQ-100 Index,,LBRDK,PSQ
+,955,FCN,"FTI Consulting, Inc.",Industrials,Consulting Services,,955,CONL,GraniteShares 2x Long COIN Daily ETF,Equity,-,Coinbase Global Inc - Benchmark Price Return,,FCN,CONL
+,956,LBRDA,Liberty Broadband Corporation,Communication Services,Telecom Services,,956,ECH,iShares MSCI Chile ETF,Equity,Miscellaneous Region,MSCI Chile IMI 25-50,,LBRDA,ECH
+,957,NNN,NNN REIT Inc,Real Estate,REIT - Retail,,957,FLBL,Franklin Senior Loan ETF Franklin Liberty Senior Loan Fund,Fixed Income,Bank Loan,-,,NNN,FLBL
+,958,ROIV,Roivant Sciences Ltd.,Healthcare,Biotechnology,,958,PLDR,Putnam Sustainable Leaders ETF,Equity,Large Growth,-,,ROIV,PLDR
+,959,TREX,"Trex Company, Inc.",Industrials,Building Products & Equipment,,959,VFLO,VictoryShares Free Cash Flow ETF,Equity,-,Victory US Large Cap Free Cash Flow Index,,TREX,VFLO
+,960,BRBR,"BellRing Brands, Inc.",Consumer Staples,Packaged Foods,,960,BBSC,JPMorgan BetaBuilders U.S. Small Cap Equity Fund,Equity,Small Blend,Morningstar US Small Cap Target Market Exposure Extended Index,,BRBR,BBSC
+,961,BIO,"Bio-Rad Laboratories, Inc.",Healthcare,Medical Devices,,961,FGD,First Trust Dow Jones Global Select Dividend Index Fund,Equity,Foreign Large Value,Dow Jones Global Select Dividend Index,,BIO,FGD
+,962,DLB,"Dolby Laboratories, Inc.",Industrials,Specialty Business Services,,962,IGE,iShares North American Natural Resources ETF,Equity,Natural Resources,S&P North American Natural Resources Sector,,DLB,IGE
+,963,GLOB,Globant S.A.,Technology,Information Technology Services,,963,SDS,ProShares UltraShort S&P500,Equity,Trading--Inverse Equity,S&P 500,,GLOB,SDS
+,964,MKTX,MarketAxess Holdings Inc.,Financials,Capital Markets,,964,IGOV,iShares International Treasury Bond ETF,Fixed Income,Global Bond,FTSE World Government Bond Index Developed Markets Capped Select Index,,MKTX,IGOV
+,965,SWN,Southwestern Energy Company,Energy,Oil & Gas Exploration & Production,,965,FMAT,Fidelity MSCI Materials Index ETF,Equity,Natural Resources,MSCI USA IMI Materials 25/50 Index,,SWN,FMAT
+,966,PAAS,Pan American Silver Corp.,Materials,Gold,,966,DUSA,Davis Select U.S. Equity ETF,Equity,Large Blend,-,,PAAS,DUSA
+,967,GL,Globe Life Inc.,Financials,Insurance - Life,,967,CFA,VictoryShares US 500 Volatility Wtd ETF,Equity,Large Blend,Nasdaq Victory U.S. Large Cap 500 Volatility Weighted Index,,GL,CFA
+,968,ASND,Ascendis Pharma A/S,Healthcare,Biotechnology,,968,DOL,WisdomTree International LargeCap Dividend Fund,Equity,Foreign Large Value,WisdomTree International LargeCap Dividend Index,,ASND,DOL
+,969,AA,Alcoa Corporation,Materials,Aluminum,,969,TAFI,AB Tax-Aware Short Duration Municipal ETF,Fixed Income,-,-,,AA,TAFI
+,970,CLF,Cleveland-Cliffs Inc.,Materials,Steel,,970,CSHI,NEOS Enhanced Income 1-3 Month T-Bill ETF,Fixed Income,-,-,,CLF,CSHI
+,971,LEVI,Levi Strauss & Co.,Consumer Discretionary,Apparel Manufacturing,,971,DRIV,Global X Autonomous & Electric Vehicles ETF,Equity,Miscellaneous Sector,Solactive Autonomous & Electric Vehicles Index,,LEVI,DRIV
+,972,FLR,Fluor Corporation,Industrials,Engineering & Construction,,972,IUS,Invesco RAFI Strategic US ETF,Equity,Large Value,Invesco Strategic US Index,,FLR,IUS
+,973,MTDR,Matador Resources Company,Energy,Oil & Gas Exploration & Production,,973,GSSC,Goldman Sachs Activebeta U.S. Small Cap Equity ETF,Equity,Small Blend,Goldman Sachs ActiveBeta US Small Cap Equity,,MTDR,GSSC
+,974,NCLH,Norwegian Cruise Line Holdings Ltd.,Consumer Discretionary,Travel Services,,974,RLY,SPDR SSgA Multi-Asset Real Return ETF,Alternatives,Global Allocation,-,,NCLH,RLY
+,975,IEP,Icahn Enterprises L.P.,Energy,Oil & Gas Refining & Marketing,,975,ROBT,First Trust Nasdaq Artificial Intelligence & Robotics ETF,Equity,Technology,Nasdaq CTA Artificial Intelligence & Robotics,,IEP,ROBT
+,976,AXTA,Axalta Coating Systems Ltd.,Materials,Specialty Chemicals,,976,EWS,iShares MSCI Singapore ETF,Equity,Miscellaneous Region,MSCI Singapore 25-50,,AXTA,EWS
+,977,AYI,"Acuity Brands, Inc.",Industrials,Electrical Equipment & Parts,,977,AVRE,Avantis Real Estate ETF,Equity,Global Real Estate,S&P Global REIT Index,,AYI,AVRE
+,978,WBS,Webster Financial Corporation,Financials,Banks - Regional,,978,UCO,ProShares Ultra Bloomberg Crude Oil,Commodity,Trading--Leveraged Commodities,Bloomberg Commodity Balanced WTI Crude Oil Index,,WBS,UCO
+,979,DBX,"Dropbox, Inc.",Technology,Software - Infrastructure,,979,BSCV,Invesco BulletShares 2031 Corporate Bond ETF,Fixed Income,Target Maturity,NASDAQ BulletShares USD Corporate Bond 2031,,DBX,BSCV
+,980,COLD,"Americold Realty Trust, Inc.",Real Estate,REIT - Industrial,,980,IBDY,iShares iBonds Dec 2033 Term Corporate ETF,Fixed Income,-,Bloomberg December 2033 Maturity Corporate Index,,COLD,IBDY
+,981,LSXMK,Liberty SiriusXM Group - Series C,Communication Services,Broadcasting,,981,SOXQ,Invesco PHLX Semiconductor ETF,Equity,Technology,PHLX / Semiconductor,,LSXMK,SOXQ
+,982,PCTY,Paylocity Holding Corporation,Technology,Software - Application,,982,SMIG,Bahl & Gaynor Small/Mid Cap Income Growth ETF,Equity,Small Value,-,,PCTY,SMIG
+,983,PATH,UiPath Inc.,Technology,Software - Infrastructure,,983,QQH,HCM Defender 100 Index ETF,Equity,Large Growth,HCM Defender 100 Index,,PATH,QQH
+,984,LSXMA,Liberty SiriusXM Group - Series A,Communication Services,Broadcasting,,984,IBMN,iShares iBonds Dec 2025 Term Muni Bond ETF,Fixed Income,Muni Target Maturity,S&P AMT-Free Municipal Series Dec 2025 Index,,LSXMA,IBMN
+,985,TX,Ternium S.A.,Materials,Steel,,985,PDN,Invesco FTSE RAFI Developed Markets ex-US Small-Mid ETF,Equity,Foreign Small/Mid Value,FTSE RAFI Developed x US Mid/Small,,TX,PDN
+,986,INGR,Ingredion Incorporated,Consumer Staples,Packaged Foods,,986,STPZ,PIMCO 1-5 Year US TIPS Index Exchange-Traded Fund,Fixed Income,Short-Term Inflation Protected Bond,ICE BofA US Inflation-Linked Treasury (1-5 Y),,INGR,STPZ
+,987,WEX,WEX Inc.,Technology,Software - Infrastructure,,987,WINN,Harbor Long-Term Growers ETF,Equity,Large Growth,-,,WEX,WINN
+,988,AIT,"Applied Industrial Technologies, Inc.",Industrials,Industrial Distribution,,988,FLDR,Fidelity Low Duration Bond Factor ETF,Fixed Income,Ultrashort Bond,Fidelity Low Duration Investment Grade Factor Index,,AIT,FLDR
+,989,EXP,Eagle Materials Inc.,Materials,Building Materials,,989,GJUN,FT Vest U.S. Equity Moderate Buffer ETF - June,Equity,-,S&P 500,,EXP,GJUN
+,990,CERE,"Cerevel Therapeutics Holdings, Inc.",Healthcare,Biotechnology,,990,GVUS,Goldman Sachs MarketBeta Russell 1000 Value Equity ETF,Equity,-,Russell 1000 Value 40 Act Daily Capped Index,,CERE,GVUS
+,991,BEP,Brookfield Renewable Partners L.P.,Utilities,Utilities - Renewable,,991,BSCW,Invesco BulletShares 2032 Corporate Bond ETF,Fixed Income,-,Nasdaq BulletShares USD Corporate Bond 2032 Index,,BEP,BSCW
+,992,NOV,NOV Inc.,Energy,Oil & Gas Equipment & Services,,992,HLAL,Wahed FTSE USA Shariah ETF,Equity,Large Blend,FTSE USA Shariah Index,,NOV,HLAL
+,993,VIPS,Vipshop Holdings Limited,Consumer Discretionary,Internet Retail,,993,TLTD,FlexShares Morningstar Developed Markets ex-US Factor Tilt Index Fund,Equity,Foreign Large Value,Morningstar Developed Markets ex-US Factor Tilt Index,,VIPS,TLTD
+,994,AAL,American Airlines Group Inc.,Industrials,Airlines,,994,VNM,VanEck Vietnam ETF,Equity,Miscellaneous Region,MarketVector Vietnam Local Index,,AAL,VNM
+,995,MSA,MSA Safety Incorporated,Industrials,Security & Protection Services,,995,EWH,iShares MSCI Hong Kong ETF,Equity,China Region,MSCI Hong Kong 25/50 Index,,MSA,EWH
+,996,ITCI,"Intra-Cellular Therapies, Inc.",Healthcare,Drug Manufacturers - Specialty & Generic,,996,LGOV,First Trust Long Duration Opportunities ETF,Fixed Income,Long Government,-,,ITCI,LGOV
+,997,HQY,"HealthEquity, Inc.",Healthcare,Health Information Services,,997,GRPM,Invesco S&P MidCap 400 GARP ETF,Equity,-,S&P MidCap 400 GARP Index,,HQY,GRPM
+,998,BWA,BorgWarner Inc.,Consumer Discretionary,Auto Parts,,998,GXC,SPDR S&P China ETF,Equity,China Region,S&P China BMI,,BWA,GXC
+,999,XPEV,XPeng Inc.,Consumer Discretionary,Auto Manufacturers,,999,BTCO,Invesco Galaxy Bitcoin ETF,Currency,Digital Assets,Lukka Prime Bitcoin Reference Rate - Benchmark Price Return,,XPEV,BTCO
+,1000,VOYA,"Voya Financial, Inc.",Financials,Financial Conglomerates,,1000,JPSE,JPMorgan Diversified Return U.S. Small Cap Equity ETF,Equity,Small Blend,JPMorgan Diversified Factor US Small Cap Equity Index,,VOYA,JPSE
+,,Symbol,Company Name,Sector,Industry,,,,,,,,,Symbol,
+,1001,AGCO,AGCO Corporation,Industrials,Farm & Heavy Construction Machinery,,,,,,,,,AGCO,
+,1002,ENSG,"The Ensign Group, Inc.",Healthcare,Medical Care Facilities,,,,,,,,,ENSG,
+,1003,CBSH,"Commerce Bancshares, Inc.",Financials,Banks - Regional,,,,,,,,,CBSH,
+,1004,ATI,ATI Inc.,Industrials,Metal Fabrication,,,,,,,,,ATI,
+,1005,AGNC,AGNC Investment Corp.,Real Estate,REIT - Mortgage,,,,,,,,,AGNC,
+,1006,OGE,OGE Energy Corp.,Utilities,Utilities - Regulated Electric,,,,,,,,,OGE,
+,1007,AM,Antero Midstream Corporation,Energy,Oil & Gas Midstream,,,,,,,,,AM,
+,1008,LSXMB,Liberty SiriusXM Group - Series B,Communication Services,Broadcasting,,,,,,,,,LSXMB,
+,1009,WSC,WillScot Mobile Mini Holdings Corp.,Industrials,Rental & Leasing Services,,,,,,,,,WSC,
+,1010,KEX,Kirby Corporation,Industrials,Marine Shipping,,,,,,,,,KEX,
+,1011,SPSC,"SPS Commerce, Inc.",Technology,Software - Infrastructure,,,,,,,,,SPSC,
+,1012,HCP,"HashiCorp, Inc.",Technology,Software - Infrastructure,,,,,,,,,HCP,
+,1013,WAL,Western Alliance Bancorporation,Financials,Banks - Regional,,,,,,,,,WAL,
+,1014,CIVI,"Civitas Resources, Inc.",Energy,Oil & Gas Exploration & Production,,,,,,,,,CIVI,
+,1015,MHK,"Mohawk Industries, Inc.",Consumer Discretionary,"Furnishings, Fixtures & Appliances",,,,,,,,,MHK,
+,1016,FSV,FirstService Corporation,Real Estate,Real Estate Services,,,,,,,,,FSV,
+,1017,DDS,"Dillard's, Inc.",Consumer Discretionary,Department Stores,,,,,,,,,DDS,
+,1018,VNOM,Viper Energy Partners LP,Energy,Oil & Gas Midstream,,,,,,,,,VNOM,
+,1019,ELAN,Elanco Animal Health Incorporated,Healthcare,Drug Manufacturers - Specialty & Generic,,,,,,,,,ELAN,
+,1020,AAON,"AAON, Inc.",Industrials,Building Products & Equipment,,,,,,,,,AAON,
+,1021,CLS,Celestica Inc.,Technology,Electronic Components,,,,,,,,,CLS,
+,1022,FMC,FMC Corporation,Materials,Agricultural Inputs,,,,,,,,,FMC,
+,1023,TIMB,TIM S.A.,Communication Services,Telecom Services,,,,,,,,,TIMB,
+,1024,OSK,Oshkosh Corporation,Industrials,Farm & Heavy Construction Machinery,,,,,,,,,OSK,
+,1025,LAD,"Lithia Motors, Inc.",Consumer Discretionary,Auto & Truck Dealerships,,,,,,,,,LAD,
+,1026,NVMI,Nova Ltd.,Technology,Semiconductor Equipment & Materials,,,,,,,,,NVMI,
+,1027,SSD,"Simpson Manufacturing Co., Inc.",Materials,Lumber & Wood Production,,,,,,,,,SSD,
+,1028,RYAN,"Ryan Specialty Holdings, Inc.",Financials,Insurance - Specialty,,,,,,,,,RYAN,
+,1029,CCCS,CCC Intelligent Solutions Holdings Inc.,Technology,Software - Infrastructure,,,,,,,,,CCCS,
+,1030,SOFI,"SoFi Technologies, Inc.",Financials,Credit Services,,,,,,,,,SOFI,
+,1031,BRFS,BRF S.A.,Consumer Staples,Packaged Foods,,,,,,,,,BRFS,
+,1032,CRUS,"Cirrus Logic, Inc.",Technology,Semiconductors,,,,,,,,,CRUS,
+,1033,PEN,"Penumbra, Inc.",Healthcare,Medical Devices,,,,,,,,,PEN,
+,1034,TKC,Turkcell Iletisim Hizmetleri A.S.,Communication Services,Telecom Services,,,,,,,,,TKC,
+,1035,GGB,Gerdau S.A.,Materials,Steel,,,,,,,,,GGB,
+,1036,BRX,Brixmor Property Group Inc.,Real Estate,REIT - Retail,,,,,,,,,BRX,
+,1037,HLNE,Hamilton Lane Incorporated,Financials,Asset Management,,,,,,,,,HLNE,
+,1038,BPMC,Blueprint Medicines Corporation,Healthcare,Biotechnology,,,,,,,,,BPMC,
+,1039,DTM,"DT Midstream, Inc.",Energy,Oil & Gas Midstream,,,,,,,,,DTM,
+,1040,ETSY,"Etsy, Inc.",Consumer Discretionary,Internet Retail,,,,,,,,,ETSY,
+,1041,LCID,"Lucid Group, Inc.",Consumer Discretionary,Auto Manufacturers,,,,,,,,,LCID,
+,1042,NXT,Nextracker Inc.,Technology,Solar,,,,,,,,,NXT,
+,1043,IVZ,Invesco Ltd.,Financials,Asset Management,,,,,,,,,IVZ,
+,1044,DRS,"Leonardo DRS, Inc.",Industrials,Aerospace & Defense,,,,,,,,,DRS,
+,1045,BERY,"Berry Global Group, Inc.",Consumer Discretionary,Packaging & Containers,,,,,,,,,BERY,
+,1046,UFPI,"UFP Industries, Inc.",Materials,Lumber & Wood Production,,,,,,,,,UFPI,
+,1047,RGEN,Repligen Corporation,Healthcare,Medical Instruments & Supplies,,,,,,,,,RGEN,
+,1048,CIEN,Ciena Corporation,Technology,Communication Equipment,,,,,,,,,CIEN,
+,1049,LBTYB,Liberty Global plc,Communication Services,Telecom Services,,,,,,,,,LBTYB,
+,1050,LBTYA,Liberty Global plc,Communication Services,Telecom Services,,,,,,,,,LBTYA,
+,,Symbol,Company Name,Sector,Industry,,,,,,,,,Symbol,
+,1051,RHI,Robert Half International Inc.,Industrials,Staffing & Employment Services,,,,,,,,,RHI,
+,1052,CMA,Comerica Incorporated,Financials,Banks - Regional,,,,,,,,,CMA,
+,1053,LBTYK,Liberty Global plc,Communication Services,Telecom Services,,,,,,,,,LBTYK,
+,1054,IONS,"Ionis Pharmaceuticals, Inc.",Healthcare,Biotechnology,,,,,,,,,IONS,
+,1055,ALSN,"Allison Transmission Holdings, Inc.",Consumer Discretionary,Auto Parts,,,,,,,,,ALSN,
+,1056,BILI,Bilibili Inc.,Communication Services,Electronic Gaming & Multimedia,,,,,,,,,BILI,
+,1057,HALO,"Halozyme Therapeutics, Inc.",Healthcare,Biotechnology,,,,,,,,,HALO,
+,1058,SPXC,"SPX Technologies, Inc.",Industrials,Building Products & Equipment,,,,,,,,,SPXC,
+,1059,LSTR,"Landstar System, Inc.",Industrials,Integrated Freight & Logistics,,,,,,,,,LSTR,
+,1060,STAG,"STAG Industrial, Inc.",Real Estate,REIT - Industrial,,,,,,,,,STAG,
+,1061,LEA,Lear Corporation,Consumer Discretionary,Auto Parts,,,,,,,,,LEA,
+,1062,JAZZ,Jazz Pharmaceuticals plc,Healthcare,Biotechnology,,,,,,,,,JAZZ,
+,1063,RMBS,Rambus Inc.,Technology,Semiconductors,,,,,,,,,RMBS,
+,1064,MIDD,The Middleby Corporation,Industrials,Specialty Industrial Machinery,,,,,,,,,MIDD,
+,1065,ESI,Element Solutions Inc,Materials,Specialty Chemicals,,,,,,,,,ESI,
+,1066,GGAL,Grupo Financiero Galicia S.A.,Financials,Banks - Regional,,,,,,,,,GGAL,
+,1067,NSIT,"Insight Enterprises, Inc.",Technology,Electronics & Computer Distribution,,,,,,,,,NSIT,
+,1068,GIL,Gildan Activewear Inc.,Consumer Discretionary,Apparel Manufacturing,,,,,,,,,GIL,
+,1069,MTN,"Vail Resorts, Inc.",Consumer Discretionary,Resorts & Casinos,,,,,,,,,MTN,
+,1070,FYBR,"Frontier Communications Parent, Inc.",Communication Services,Telecom Services,,,,,,,,,FYBR,
+,1071,PLNT,"Planet Fitness, Inc.",Consumer Discretionary,Leisure,,,,,,,,,PLNT,
+,1072,KVYO,"Klaviyo, Inc.",Technology,Software - Infrastructure,,,,,,,,,KVYO,
+,1073,MLI,"Mueller Industries, Inc.",Industrials,Metal Fabrication,,,,,,,,,MLI,
+,1074,TAL,TAL Education Group,Consumer Staples,Education & Training Services,,,,,,,,,TAL,
+,1075,KT,KT Corporation,Communication Services,Telecom Services,,,,,,,,,KT,
+,1076,ZION,"Zions Bancorporation,NA",Financials,Banks - Regional,,,,,,,,,ZION,
+,1077,AGI,Alamos Gold Inc.,Materials,Gold,,,,,,,,,AGI,
+,1078,FRPT,"Freshpet, Inc.",Consumer Staples,Packaged Foods,,,,,,,,,FRPT,
+,1079,AN,"AutoNation, Inc.",Consumer Discretionary,Auto & Truck Dealerships,,,,,,,,,AN,
+,1080,EXEL,"Exelixis, Inc.",Healthcare,Biotechnology,,,,,,,,,EXEL,
+,1081,BFAM,Bright Horizons Family Solutions Inc.,Consumer Discretionary,Personal Services,,,,,,,,,BFAM,
+,1082,BROS,Dutch Bros Inc.,Consumer Discretionary,Restaurants,,,,,,,,,BROS,
+,1083,ADT,ADT Inc.,Industrials,Security & Protection Services,,,,,,,,,ADT,
+,1084,CHX,ChampionX Corporation,Energy,Oil & Gas Equipment & Services,,,,,,,,,CHX,
+,1085,ARW,"Arrow Electronics, Inc.",Technology,Electronics & Computer Distribution,,,,,,,,,ARW,
+,1086,SUM,"Summit Materials, Inc.",Materials,Building Materials,,,,,,,,,SUM,
+,1087,HR,Healthcare Realty Trust Incorporated,Real Estate,REIT - Healthcare Facilities,,,,,,,,,HR,
+,1088,CFR,Cullen Frost Bankers Inc.,Financials,Banks - Regional,,,,,,,,,CFR,
+,1089,POST,"Post Holdings, Inc.",Consumer Staples,Packaged Foods,,,,,,,,,POST,
+,1090,ENLC,"EnLink Midstream, LLC",Energy,Oil & Gas Midstream,,,,,,,,,ENLC,
+,1091,NE,Noble Corporation,Energy,Oil & Gas Drilling,,,,,,,,,NE,
+,1092,BPOP,"Popular, Inc.",Financials,Banks - Regional,,,,,,,,,BPOP,
+,1093,RLI,RLI Corp.,Financials,Insurance - Property & Casualty,,,,,,,,,RLI,
+,1094,S,"SentinelOne, Inc.",Technology,Software - Infrastructure,,,,,,,,,S,
+,1095,FR,"First Industrial Realty Trust, Inc.",Real Estate,REIT - Industrial,,,,,,,,,FR,
+,1096,MUR,Murphy Oil Corporation,Energy,Oil & Gas Exploration & Production,,,,,,,,,MUR,
+,1097,AS,"Amer Sports, Inc.",Consumer Discretionary,Leisure,,,,,,,,,AS,
+,1098,CACC,Credit Acceptance Corporation,Financials,Credit Services,,,,,,,,,CACC,
+,1099,W,Wayfair Inc.,Consumer Discretionary,Internet Retail,,,,,,,,,W,
+,1100,LFUS,"Littelfuse, Inc.",Technology,Electronic Components,,,,,,,,,LFUS,
+,,Symbol,Company Name,Sector,Industry,,,,,,,,,Symbol,
+,1101,FLS,Flowserve Corporation,Industrials,Specialty Industrial Machinery,,,,,,,,,FLS,
+,1102,BNRE,Brookfield Reinsurance Ltd.,Financials,Insurance - Reinsurance,,,,,,,,,BNRE,
+,1103,CYTK,"Cytokinetics, Incorporated",Healthcare,Biotechnology,,,,,,,,,CYTK,
+,1104,ADC,Agree Realty Corporation,Real Estate,REIT - Retail,,,,,,,,,ADC,
+,1105,GTLS,"Chart Industries, Inc.",Industrials,Specialty Industrial Machinery,,,,,,,,,GTLS,
+,1106,ACHC,"Acadia Healthcare Company, Inc.",Healthcare,Medical Care Facilities,,,,,,,,,ACHC,
+,1107,U,Unity Software Inc.,Technology,Software - Application,,,,,,,,,U,
+,1108,MNSO,MINISO Group Holding Limited,Consumer Discretionary,Specialty Retail,,,,,,,,,MNSO,
+,1109,KD,"Kyndryl Holdings, Inc.",Technology,Information Technology Services,,,,,,,,,KD,
+,1110,CAE,CAE Inc.,Industrials,Aerospace & Defense,,,,,,,,,CAE,
+,1111,CMC,Commercial Metals Company,Materials,Steel,,,,,,,,,CMC,
+,1112,RVMD,"Revolution Medicines, Inc.",Healthcare,Biotechnology,,,,,,,,,RVMD,
+,1113,MASI,Masimo Corporation,Healthcare,Medical Devices,,,,,,,,,MASI,
+,1114,OBDC,Blue Owl Capital Corporation,Financials,Credit Services,,,,,,,,,OBDC,
+,1115,WTFC,Wintrust Financial Corporation,Financials,Banks - Regional,,,,,,,,,WTFC,
+,1116,WFG,West Fraser Timber Co. Ltd.,Materials,Lumber & Wood Production,,,,,,,,,WFG,
+,1117,PNFP,"Pinnacle Financial Partners, Inc.",Financials,Banks - Regional,,,,,,,,,PNFP,
+,1118,WTS,"Watts Water Technologies, Inc.",Industrials,Specialty Industrial Machinery,,,,,,,,,WTS,
+,1119,SQSP,"Squarespace, Inc.",Technology,Software - Infrastructure,,,,,,,,,SQSP,
+,1120,SMAR,Smartsheet Inc.,Technology,Software - Application,,,,,,,,,SMAR,
+,1121,GKOS,Glaukos Corporation,Healthcare,Medical Devices,,,,,,,,,GKOS,
+,1122,GLBE,Global-e Online Ltd.,Consumer Discretionary,Internet Retail,,,,,,,,,GLBE,
+,1123,STWD,"Starwood Property Trust, Inc.",Real Estate,REIT - Mortgage,,,,,,,,,STWD,
+,1124,FIVE,"Five Below, Inc.",Consumer Discretionary,Specialty Retail,,,,,,,,,FIVE,
+,1125,ESNT,Essent Group Ltd.,Financials,Insurance - Specialty,,,,,,,,,ESNT,
+,1126,SAIC,Science Applications International Corporation,Technology,Information Technology Services,,,,,,,,,SAIC,
+,1127,LPX,Louisiana-Pacific Corporation,Industrials,Building Products & Equipment,,,,,,,,,LPX,
+,1128,ALGM,"Allegro MicroSystems, Inc.",Technology,Semiconductors,,,,,,,,,ALGM,
+,1129,OLLI,"Ollie's Bargain Outlet Holdings, Inc.",Consumer Staples,Discount Stores,,,,,,,,,OLLI,
+,1130,RHP,"Ryman Hospitality Properties, Inc.",Real Estate,REIT - Hotel & Motel,,,,,,,,,RHP,
+,1131,HMY,Harmony Gold Mining Company Limited,Materials,Gold,,,,,,,,,HMY,
+,1132,SNV,Synovus Financial Corp.,Financials,Banks - Regional,,,,,,,,,SNV,
+,1133,AZEK,The AZEK Company Inc.,Industrials,Building Products & Equipment,,,,,,,,,AZEK,
+,1134,DAR,Darling Ingredients Inc.,Consumer Staples,Packaged Foods,,,,,,,,,DAR,
+,1135,VNT,Vontier Corporation,Technology,Scientific & Technical Instruments,,,,,,,,,VNT,
+,1136,GXO,"GXO Logistics, Inc.",Industrials,Integrated Freight & Logistics,,,,,,,,,GXO,
+,1137,AXS,AXIS Capital Holdings Limited,Financials,Insurance - Specialty,,,,,,,,,AXS,
+,1138,WH,"Wyndham Hotels & Resorts, Inc.",Consumer Discretionary,Lodging,,,,,,,,,WH,
+,1139,CAMT,Camtek Ltd.,Technology,Semiconductor Equipment & Materials,,,,,,,,,CAMT,
+,1140,OMF,"OneMain Holdings, Inc.",Financials,Credit Services,,,,,,,,,OMF,
+,1141,PVH,PVH Corp.,Consumer Discretionary,Apparel Manufacturing,,,,,,,,,PVH,
+,1142,BOKF,BOK Financial Corporation,Financials,Banks - Regional,,,,,,,,,BOKF,
+,1143,CIG,Cia Energetica DE Minas Gerais - Cemig,Utilities,Utilities - Diversified,,,,,,,,,CIG,
+,1144,TRNO,Terreno Realty Corporation,Real Estate,REIT - Industrial,,,,,,,,,TRNO,
+,1145,SSB,SouthState Corporation,Financials,Banks - Regional,,,,,,,,,SSB,
+,1146,PB,"Prosperity Bancshares, Inc.",Financials,Banks - Regional,,,,,,,,,PB,
+,1147,MDGL,"Madrigal Pharmaceuticals, Inc.",Healthcare,Biotechnology,,,,,,,,,MDGL,
+,1148,REYN,Reynolds Consumer Products Inc.,Consumer Discretionary,Packaging & Containers,,,,,,,,,REYN,
+,1149,MTG,MGIC Investment Corporation,Financials,Insurance - Specialty,,,,,,,,,MTG,
+,1150,NOVT,Novanta Inc.,Technology,Scientific & Technical Instruments,,,,,,,,,NOVT,
+,,Symbol,Company Name,Sector,Industry,,,,,,,,,Symbol,
+,1151,JXN,Jackson Financial Inc.,Financials,Insurance - Life,,,,,,,,,JXN,
+,1152,G,Genpact Limited,Technology,Information Technology Services,,,,,,,,,G,
+,1153,MARA,"Marathon Digital Holdings, Inc.",Financials,Capital Markets,,,,,,,,,MARA,
+,1154,ST,Sensata Technologies Holding plc,Technology,Scientific & Technical Instruments,,,,,,,,,ST,
+,1155,TMHC,Taylor Morrison Home Corporation,Consumer Discretionary,Residential Construction,,,,,,,,,TMHC,
+,1156,FUN,"Cedar Fair, L.P.",Consumer Discretionary,Leisure,,,,,,,,,FUN,
+,1157,BILL,BILL Holdings Inc,Technology,Software - Application,,,,,,,,,BILL,
+,1158,TEM,"Tempus AI, Inc.",Healthcare,Diagnostics & Research,,,,,,,,,TEM,
+,1159,ETRN,Equitrans Midstream Corporation,Energy,Oil & Gas Midstream,,,,,,,,,ETRN,
+,1160,CHH,"Choice Hotels International, Inc.",Consumer Discretionary,Lodging,,,,,,,,,CHH,
+,1161,IBP,"Installed Building Products, Inc.",Consumer Discretionary,Residential Construction,,,,,,,,,IBP,
+,1162,MTH,Meritage Homes Corporation,Consumer Discretionary,Residential Construction,,,,,,,,,MTH,
+,1163,MAT,"Mattel, Inc.",Consumer Discretionary,Leisure,,,,,,,,,MAT,
+,1164,ESAB,ESAB Corporation,Industrials,Metal Fabrication,,,,,,,,,ESAB,
+,1165,FSK,FS KKR Capital Corp.,Financials,Asset Management,,,,,,,,,FSK,
+,1166,TKR,The Timken Company,Industrials,Tools & Accessories,,,,,,,,,TKR,
+,1167,FRO,Frontline Ltd.,Energy,Oil & Gas Midstream,,,,,,,,,FRO,
+,1168,BECN,"Beacon Roofing Supply, Inc.",Industrials,Industrial Distribution,,,,,,,,,BECN,
+,1169,CWST,"Casella Waste Systems, Inc.",Industrials,Waste Management,,,,,,,,,CWST,
+,1170,MOD,Modine Manufacturing Company,Consumer Discretionary,Auto Parts,,,,,,,,,MOD,
+,1171,VERX,"Vertex, Inc.",Technology,Software - Application,,,,,,,,,VERX,
+,1172,SIGI,"Selective Insurance Group, Inc.",Financials,Insurance - Property & Casualty,,,,,,,,,SIGI,
+,1173,VKTX,"Viking Therapeutics, Inc.",Healthcare,Biotechnology,,,,,,,,,VKTX,
+,1174,WHR,Whirlpool Corporation,Consumer Discretionary,"Furnishings, Fixtures & Appliances",,,,,,,,,WHR,
+,1175,OLN,Olin Corporation,Materials,Specialty Chemicals,,,,,,,,,OLN,
+,1176,FAF,First American Financial Corporation,Financials,Insurance - Specialty,,,,,,,,,FAF,
+,1177,VVV,Valvoline Inc.,Consumer Discretionary,Auto & Truck Dealerships,,,,,,,,,VVV,
+,1178,JHG,Janus Henderson Group plc,Financials,Asset Management,,,,,,,,,JHG,
+,1179,BMI,"Badger Meter, Inc.",Technology,Scientific & Technical Instruments,,,,,,,,,BMI,
+,1180,CIGI,Colliers International Group Inc.,Real Estate,Real Estate Services,,,,,,,,,CIGI,
+,1181,LNTH,"Lantheus Holdings, Inc.",Healthcare,Drug Manufacturers - Specialty & Generic,,,,,,,,,LNTH,
+,1182,ICL,ICL Group Ltd,Materials,Agricultural Inputs,,,,,,,,,ICL,
+,1183,NXST,"Nexstar Media Group, Inc.",Communication Services,Entertainment,,,,,,,,,NXST,
+,1184,DJT,Trump Media & Technology Group Corp.,Communication Services,Internet Content & Information,,,,,,,,,DJT,
+,1185,CVLT,"Commvault Systems, Inc.",Technology,Software - Application,,,,,,,,,CVLT,
+,1186,RBRK,"Rubrik, Inc.",Technology,Software - Infrastructure,,,,,,,,,RBRK,
+,1187,MOG.A,Moog Inc.,Industrials,Aerospace & Defense,,,,,,,,,MOG.A,
+,1188,SRCL,"Stericycle, Inc.",Industrials,Waste Management,,,,,,,,,SRCL,
+,1189,ONB,Old National Bancorp,Financials,Banks - Regional,,,,,,,,,ONB,
+,1190,PBF,PBF Energy Inc.,Energy,Oil & Gas Refining & Marketing,,,,,,,,,PBF,
+,1191,R,"Ryder System, Inc.",Industrials,Rental & Leasing Services,,,,,,,,,R,
+,1192,HXL,Hexcel Corporation,Industrials,Aerospace & Defense,,,,,,,,,HXL,
+,1193,PHI,PLDT Inc.,Communication Services,Telecom Services,,,,,,,,,PHI,
+,1194,VMI,"Valmont Industries, Inc.",Industrials,Conglomerates,,,,,,,,,VMI,
+,1195,LNC,Lincoln National Corporation,Financials,Insurance - Life,,,,,,,,,LNC,
+,1196,VRNS,"Varonis Systems, Inc.",Technology,Software - Infrastructure,,,,,,,,,VRNS,
+,1197,VAL,Valaris Limited,Energy,Oil & Gas Equipment & Services,,,,,,,,,VAL,
+,1198,SITE,"SiteOne Landscape Supply, Inc.",Industrials,Industrial Distribution,,,,,,,,,SITE,
+,1199,AL,Air Lease Corporation,Industrials,Rental & Leasing Services,,,,,,,,,AL,
+,1200,QLYS,"Qualys, Inc.",Technology,Software - Infrastructure,,,,,,,,,QLYS,
