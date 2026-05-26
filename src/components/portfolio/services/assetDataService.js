@@ -12,7 +12,6 @@ import {
 
 const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
-const DEFAULT_KR_PRICE_API_BASE_URL = "/api/kr/price";
 const DEFAULT_BACKEND_TIMEOUT_MS = 12000;
 const DEFAULT_BULK_LOOKUP_DELAY_MS = 1200;
 
@@ -48,11 +47,6 @@ function getRuntimeAssetConfig(options = {}) {
       runtimeConfig.apiBaseUrl ||
       buildEnv.VITE_FINPLE_API_BASE_URL ||
       DEFAULT_API_BASE_URL,
-    krPriceApiBaseUrl:
-      options.krPriceApiBaseUrl ||
-      runtimeConfig.krPriceApiBaseUrl ||
-      buildEnv.VITE_FINPLE_KR_PRICE_API_BASE_URL ||
-      DEFAULT_KR_PRICE_API_BASE_URL,
     backendTimeoutMs: readNumber(
       options.backendTimeoutMs ||
         runtimeConfig.backendTimeoutMs ||
@@ -172,7 +166,7 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
 }
 
 async function fetchKrPriceAssetData(ticker, config, csvCandidate) {
-  const requestUrl = `${config.krPriceApiBaseUrl}/${encodeURIComponent(ticker)}`;
+  const requestUrl = `${config.apiBaseUrl}/assets/${encodeURIComponent(ticker)}?market=KR`;
   const response = await fetchWithTimeout(requestUrl, {
     timeoutMs: config.backendTimeoutMs,
   });
@@ -196,7 +190,7 @@ async function fetchKrPriceAssetData(ticker, config, csvCandidate) {
     price: normalizeNullableNumber(apiData.price) ?? merged.price,
     priceMode: "auto",
     metricMode: "csv",
-    dataSource: merged.dataSource?.includes("csv") ? merged.dataSource : "kr-price-api+csv",
+    dataSource: merged.dataSource?.includes("csv") ? merged.dataSource : "backend-kis+csv",
   };
 }
 
@@ -286,7 +280,7 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
       if (csvCandidate) {
         try {
           const data = await fetchKrPriceAssetData(ticker, config, csvCandidate);
-          lookupResults.push({ ticker, status: "success", data, cacheMode: "kr-price-api+csv" });
+          lookupResults.push({ ticker, status: "success", data, cacheMode: "backend-kis+csv" });
           onProgress?.({
             ticker,
             index: tickerIndex,
@@ -619,7 +613,7 @@ export async function screenTickerCandidates({
 
   if (!response.ok) {
     const errorPayload = await readJsonSafely(response);
-    throw new Error(errorPayload?.message || "스크리닝 결과를 불러오지 못했습니다.");
+    throw new Error(errorPayload?.message || "스크리너 결과를 불러오지 못했습니다.");
   }
 
   return response.json();
