@@ -1,0 +1,68 @@
+{
+  "source_archive": "csv-20260526T181908Z-3-001.zip",
+  "analysis_date": "2026-05-27 Asia/Seoul",
+  "recommended_reference_package": "old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/",
+  "key_files": [
+    {
+      "repository_path": "data/processed/kr_dividend_yield_override_v2_2_3.csv",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/kr_dividend_yield_override_v2_2_3.csv",
+      "purpose": "Integrated KR ETF + KR stock dividend override",
+      "rows": 2168,
+      "kr_etf_rows": 922,
+      "kr_stock_rows": 1246,
+      "size_bytes": 233047,
+      "sha256": "9fa78c0c5a9a35ecbd69f66e3a6c07ad86eee16e48b1a847ec3d66fd2dac489f",
+      "upload_status": "manifested; upload full CSV manually or through a large-file-safe workflow"
+    },
+    {
+      "repository_path": "data/processed/finple_specific_ticker_seed_v2_2_3.csv",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_specific_ticker_seed_v2_2_3.csv",
+      "purpose": "417-candidate metrics seed",
+      "rows": 417,
+      "size_bytes": 158339,
+      "sha256": "5f20863073b2537040a3bae42e6883062e871a5d2ccdd78e9a3e8b6f80cc6762",
+      "upload_status": "manifested; upload full CSV manually or through a large-file-safe workflow"
+    },
+    {
+      "repository_path": "scripts/finple_metrics_colab_v2_2_3.py",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_metrics_colab_v2_2_3.py",
+      "purpose": "Colab-compatible price, MDD, beta and dividend metrics runner",
+      "size_bytes": 26846,
+      "sha256": "8f56634eb4eefd6299ac144fa80e515e05b39443621319252f920ba0df60a70d",
+      "upload_status": "manifested; script may be uploaded as text in a follow-up commit"
+    },
+    {
+      "repository_path": "notebooks/FINPLE_metrics_colab_v2_2_3_price_rolling.ipynb",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/FINPLE_metrics_colab_v2_2_3_price_rolling.ipynb",
+      "purpose": "Original Colab notebook wrapper",
+      "size_bytes": 13112,
+      "sha256": "1f357497b6e4d47a88494dbd651486392f945128241a5b0479d2aa026637db87",
+      "upload_status": "lightweight archived reference notebook committed"
+    },
+    {
+      "repository_path": "data/raw/2026-05-25/source_k-etf_rank_dividend_yield.csv",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/source_k-etf_rank_dividend_yield.csv",
+      "purpose": "Raw K-ETF dividend ranking source",
+      "rows": 922,
+      "size_bytes": 98517,
+      "sha256": "aa7576f550eef5890874eaef79132fcda5635d9522ee7203314256be0998c591",
+      "upload_status": "manifested; upload full CSV manually or through a large-file-safe workflow"
+    },
+    {
+      "repository_path": "data/raw/2026-05-25/source_data_5456_20260525.xlsx",
+      "source_archive_path": "csv/old/finple_colab_metrics_pack_v2_2_3_price_rolling/finple_colab_metrics_pack_v2_2_3_price_rolling/source_data_5456_20260525.xlsx",
+      "purpose": "Raw XLSX source found in archive",
+      "size_bytes": 241925,
+      "sha256": "eb948f909534889f6fa55d6ecf3e339307307d98b4b24a299d4a2d556b9eff2a",
+      "upload_status": "manifested only; binary XLSX should be uploaded manually via GitHub UI or git CLI"
+    }
+  ],
+  "policy_decisions": {
+    "kr_dividend_first_source": "kr_dividend_yield_override_v2_2_3.csv",
+    "kr_dividend_rows": 2168,
+    "kis_api_role": "missing-data and verification only",
+    "price_metrics_reference": "v2.2.3 price/rolling workflow",
+    "expectedCagr_policy": "price-close or normalized price CAGR, not totalReturnCagr",
+    "kr_representative_etf_policy": "use rollingCagr10yMedian when raw 10Y CAGR is overheated"
+  }
+}
