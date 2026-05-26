@@ -1,0 +1,47 @@
+[
+  {
+    "path": "finple_app_candidates_6000_balanced_v1.csv",
+    "size": 1958333,
+    "sha256": "79c7a504d6769c2829b7f6d3e689f327585234a6ce7a294abbe06dce00a44faf"
+  },
+  {
+    "path": "finple_step108_3_6000_category_counts.csv",
+    "size": 392,
+    "sha256": "4e2b2e0199053e816506bfbf2fc0e1a0b39320d6956b9eb105de4731774f6695"
+  },
+  {
+    "path": "finple_step108_6_6000_summary.json",
+    "size": 3099,
+    "sha256": "0d3dc29869f9059e8f3d4ea722af519d4287c1359a7d0e1a3f635f801c9b5493"
+  },
+  {
+    "path": "raw/finple_portfolio_symbol_source_v25_12.csv",
+    "size": 195914,
+    "sha256": "786b830429e59cc1c3e91b3388283fdefd1fa4be42f53da1bfd30b123467034f"
+  },
+  {
+    "path": "raw/kr_etf_market_snapshot_20260524.xlsx",
+    "size": 159674,
+    "sha256": "e1a17c942f34bbb0c04424cca00bfa0ff21ab9dc418b16019b0a50891b024332"
+  },
+  {
+    "path": "raw/kr_stock_market_snapshot_20260524.xlsx",
+    "size": 287109,
+    "sha256": "5b80b23ec6b83971f9d2862a4f7e475bf15be203070a291d41816e93167e6708"
+  },
+  {
+    "path": "raw/us_nasdaq_etf_screener_20260524.csv",
+    "size": 440145,
+    "sha256": "c13f2bfbaf439f488017e14b8626e8b5a4b372662bddc4ba62833eb3d63e8f40"
+  },
+  {
+    "path": "raw/us_nasdaq_stock_screener_20260524.csv",
+    "size": 1005985,
+    "sha256": "5c4ed3cb9634fac57fce447ff3fa4fc9dd318538f4ab569c53c4fa9d3cef1c7a"
+  },
+  {
+    "path": "src_data_tickers_finple_app_candidates_6000_balanced_v1.csv",
+    "size": 1958333,
+    "sha256": "79c7a504d6769c2829b7f6d3e689f327585234a6ce7a294abbe06dce00a44faf"
+  }
+]
