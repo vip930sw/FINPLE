@@ -1,0 +1,15 @@
+market,category,count,previous_step108_3_target
+US,crypto_blockchain,112,112
+US,leveraged_inverse,258,147
+US,bond,701,213
+US,commodity,171,152
+US,reit,421,421
+US,dividend_income,1217,223
+US,aggressive_growth,787,670
+KR,crypto_blockchain,0,
+KR,leveraged_inverse,96,41
+KR,bond,192,87
+KR,commodity,278,318
+KR,reit,43,10
+KR,dividend_income,184,1808
+KR,aggressive_growth,702,392

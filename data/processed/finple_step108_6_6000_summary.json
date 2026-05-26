@@ -1,0 +1,60 @@
+{
+  "build": "step108_6_rebuild_from_reuploaded_sources",
+  "created_at": "2026-05-27 Asia/Seoul",
+  "row_count": 6000,
+  "market_counts": {
+    "US": 3000,
+    "KR": 3000
+  },
+  "asset_type_counts": {
+    "ETF": 2450,
+    "stock": 3550
+  },
+  "by_market_asset_type": {
+    "US": {
+      "ETF": 1593,
+      "stock": 1407
+    },
+    "KR": {
+      "ETF": 857,
+      "stock": 2143
+    }
+  },
+  "tier_counts": {
+    "core": 2103,
+    "standard": 3897
+  },
+  "data_status_counts": {
+    "review_required": 6000
+  },
+  "metric_missing": {
+    "expectedCagr": 6000,
+    "beta": 6000,
+    "mdd": 6000,
+    "dividendYield": 6000
+  },
+  "category_counts": [
+    {"market": "US", "category": "crypto_blockchain", "count": 112, "previous_step108_3_target": 112},
+    {"market": "US", "category": "leveraged_inverse", "count": 258, "previous_step108_3_target": 147},
+    {"market": "US", "category": "bond", "count": 701, "previous_step108_3_target": 213},
+    {"market": "US", "category": "commodity", "count": 171, "previous_step108_3_target": 152},
+    {"market": "US", "category": "reit", "count": 421, "previous_step108_3_target": 421},
+    {"market": "US", "category": "dividend_income", "count": 1217, "previous_step108_3_target": 223},
+    {"market": "US", "category": "aggressive_growth", "count": 787, "previous_step108_3_target": 670},
+    {"market": "KR", "category": "crypto_blockchain", "count": 0, "previous_step108_3_target": ""},
+    {"market": "KR", "category": "leveraged_inverse", "count": 96, "previous_step108_3_target": 41},
+    {"market": "KR", "category": "bond", "count": 192, "previous_step108_3_target": 87},
+    {"market": "KR", "category": "commodity", "count": 278, "previous_step108_3_target": 318},
+    {"market": "KR", "category": "reit", "count": 43, "previous_step108_3_target": 10},
+    {"market": "KR", "category": "dividend_income", "count": 184, "previous_step108_3_target": 1808},
+    {"market": "KR", "category": "aggressive_growth", "count": 702, "previous_step108_3_target": 392}
+  ],
+  "source_files": {
+    "us_nasdaq_stock_screener_20260524.csv": "nasdaq_screener_1779598386546.csv",
+    "us_nasdaq_etf_screener_20260524.csv": "nasdaq_etf_screener_1779598693262.csv",
+    "kr_etf_market_snapshot_20260524.xlsx": "data_0338_20260524.xlsx",
+    "kr_stock_market_snapshot_20260524.xlsx": "data_0432_20260524.xlsx",
+    "finple_portfolio_symbol_source_v25_12.csv": "Finple__Portfolio Simulator v25.12 - 🔠 포트폴리오 종목 리스트.csv"
+  },
+  "note": "Metrics are intentionally left pending/review_required for rebuilt rows because raw screener/source files do not include 10Y price history, beta, MDD, or dividend distribution history."
+}
