@@ -30,6 +30,15 @@ function getKisMarketDivCode() {
   return process.env.KIS_MARKET_DIV_CODE || DEFAULT_KIS_MARKET_DIV_CODE;
 }
 
+function getKisErrorSummary(payload = {}) {
+  const rtCd = payload?.rt_cd ?? payload?.rtCd ?? "";
+  const msgCd = payload?.msg_cd ?? payload?.msgCd ?? "";
+  const msg = payload?.msg1 ?? payload?.message ?? payload?.msg ?? "";
+  return [rtCd ? `rt_cd=${rtCd}` : "", msgCd ? `msg_cd=${msgCd}` : "", msg ? `msg=${msg}` : ""]
+    .filter(Boolean)
+    .join(", ");
+}
+
 function getCachedPrice(cacheKey) {
   const cached = kisPriceCache.get(cacheKey);
   if (!cached) return null;
@@ -64,7 +73,12 @@ async function requestKisJson(path, options = {}) {
     const payload = await response.json().catch(() => null);
 
     if (!response.ok) {
-      const error = new Error(payload?.msg1 || payload?.message || `한국투자증권 API 요청 실패: ${response.status}`);
+      const summary = getKisErrorSummary(payload);
+      const error = new Error(
+        payload?.msg1 ||
+        payload?.message ||
+        (summary ? `한국투자증권 API 요청 실패: ${summary}` : `한국투자증권 API 요청 실패: ${response.status}`)
+      );
       error.statusCode = response.status;
       error.payload = payload;
       throw error;
@@ -109,7 +123,8 @@ export async function getKisAccessToken() {
 
   const accessToken = payload?.access_token;
   if (!accessToken) {
-    const error = new Error("한국투자증권 접근토큰을 발급받지 못했습니다.");
+    const summary = getKisErrorSummary(payload);
+    const error = new Error(summary ? `한국투자증권 접근토큰 발급 실패: ${summary}` : "한국투자증권 접근토큰을 발급받지 못했습니다.");
     error.statusCode = 502;
     error.payload = payload;
     throw error;
@@ -125,11 +140,16 @@ export async function getKisAccessToken() {
 }
 
 function normalizeKisPricePayload(ticker, payload = {}) {
-  const output = payload?.output || {};
-  const rawPrice = Number(String(output?.stck_prpr || "0").replace(/,/g, ""));
+  const output = payload?.output || payload?.output1 || {};
+  const rawPrice = Number(String(output?.stck_prpr || output?.stck_prdy_clpr || "0").replace(/,/g, ""));
 
   if (!Number.isFinite(rawPrice) || rawPrice <= 0) {
-    const error = new Error(`한국투자증권 API에서 ${ticker} 현재가를 찾지 못했습니다.`);
+    const summary = getKisErrorSummary(payload);
+    const error = new Error(
+      summary
+        ? `한국투자증권 API에서 ${ticker} 현재가를 찾지 못했습니다. (${summary})`
+        : `한국투자증권 API에서 ${ticker} 현재가를 찾지 못했습니다.`
+    );
     error.statusCode = 404;
     error.payload = payload;
     throw error;
