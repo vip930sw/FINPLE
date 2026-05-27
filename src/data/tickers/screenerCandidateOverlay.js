@@ -1,5 +1,6 @@
 import finpleAppCandidates2000Csv from "./finple_app_candidates_2000_final_v1.csv?raw";
 import krEtfDividendOverlayCsv from "./kr_etf_dividend_overlay_20260525.csv?raw";
+import krStockDividendOverlayCsv from "./kr_stock_dividend_overlay_20260525.csv?raw";
 
 const NUMERIC_FIELDS = new Set([
   "expectedCagr",
@@ -167,7 +168,7 @@ function createFinal2000Overlay(row = {}) {
   return overlay;
 }
 
-function createKrEtfDividendOverlay(row = {}) {
+function createKrDividendOverlay(row = {}, sourceName = "kr_dividend_overlay_20260525") {
   const dividendYield = toNullableNumber(row.dividendYield);
   if (dividendYield === null) return null;
 
@@ -175,8 +176,8 @@ function createKrEtfDividendOverlay(row = {}) {
     dividendYield,
     displayDividendYield: row.displayDividendYield || formatDividendYield(row.dividendYield),
     dividendPolicy: row.dividendPolicy || "dividend_confirmed",
-    dividendSource: row.dividendSource || "k_etf_rank_dividend_yield_20260525",
-    dataSource: "finple_app_candidates_6000_balanced_v1+final_2000_overlay+kr_etf_dividend_overlay_20260525",
+    dividendSource: row.dividendSource || sourceName,
+    dataSource: `finple_app_candidates_6000_balanced_v1+final_2000_overlay+${sourceName}`,
   };
 }
 
@@ -194,20 +195,27 @@ function buildOverlayMap(csvText = "", createOverlay = createFinal2000Overlay) {
 }
 
 const final2000OverlayMap = buildOverlayMap(finpleAppCandidates2000Csv, createFinal2000Overlay);
-const krEtfDividendOverlayMap = buildOverlayMap(krEtfDividendOverlayCsv, createKrEtfDividendOverlay);
+const krEtfDividendOverlayMap = buildOverlayMap(krEtfDividendOverlayCsv, (row) =>
+  createKrDividendOverlay(row, "k_etf_rank_dividend_yield_20260525")
+);
+const krStockDividendOverlayMap = buildOverlayMap(krStockDividendOverlayCsv, (row) =>
+  createKrDividendOverlay(row, "kr_stock_dividend_yield_20260525")
+);
 
 export function applyScreenerCandidateOverlays(candidates = []) {
   return candidates.map((candidate) => {
     const key = overlayKey(candidate);
     const final2000Overlay = final2000OverlayMap.get(key);
     const krEtfDividendOverlay = krEtfDividendOverlayMap.get(key);
+    const krStockDividendOverlay = krStockDividendOverlayMap.get(key);
 
-    if (!final2000Overlay && !krEtfDividendOverlay) return candidate;
+    if (!final2000Overlay && !krEtfDividendOverlay && !krStockDividendOverlay) return candidate;
 
     const mergedCandidate = {
       ...candidate,
       ...(final2000Overlay || {}),
       ...(krEtfDividendOverlay || {}),
+      ...(krStockDividendOverlay || {}),
     };
 
     return {
@@ -223,4 +231,7 @@ export function applyScreenerCandidateOverlays(candidates = []) {
 export const SCREENER_CANDIDATE_OVERLAY_COUNTS = {
   FINAL_2000: final2000OverlayMap.size,
   KR_ETF_DIVIDEND_20260525: krEtfDividendOverlayMap.size,
+  KR_STOCK_DIVIDEND_20260525: krStockDividendOverlayMap.size,
+  KR_DIVIDEND_20260525:
+    krEtfDividendOverlayMap.size + krStockDividendOverlayMap.size,
 };
