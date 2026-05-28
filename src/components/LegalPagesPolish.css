@@ -1,15 +1,21 @@
-.legalPage .accountHero,
-.accountPage.legalPage .accountHero {
-  padding-top: 118px;
+.accountPage.legalPage > .accountHero,
+.legalPage.standaloneLegalPage > .accountHero,
+.standaloneLegalPage > .accountHero {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 72px 32px 42px !important;
 }
 
-.legalPage .legalDocumentCard {
+.accountPage.legalPage > .legalDocumentCard,
+.legalPage.standaloneLegalPage > .legalDocumentCard,
+.standaloneLegalPage > .legalDocumentCard {
   margin-top: 8px;
 }
 
 @media (max-width: 900px) {
-  .legalPage .accountHero,
-  .accountPage.legalPage .accountHero {
-    padding-top: 96px;
+  .accountPage.legalPage > .accountHero,
+  .legalPage.standaloneLegalPage > .accountHero,
+  .standaloneLegalPage > .accountHero {
+    padding: 56px 24px 34px !important;
   }
 }
