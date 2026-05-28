@@ -2,11 +2,14 @@ import finpleAppCandidates2000Csv from "./finple_app_candidates_2000_final_v1.cs
 import krEtfDividendOverlayCsv from "./kr_etf_dividend_overlay_20260525.csv?raw";
 import krStockDividendOverlayCsv from "./kr_stock_dividend_overlay_20260525.csv?raw";
 import usDividendOverlayCsv from "./us_dividend_overlay_20260527.csv?raw";
+import usPriceMetricsOverlayCsv from "./us_price_metrics_overlay_20260528_app_ready.csv?raw";
 
 const NUMERIC_FIELDS = new Set([
   "expectedCagr",
+  "priceCagr10y",
   "beta",
   "mdd",
+  "dataYears",
   "dividendYield",
   "marketCap",
   "aum",
@@ -39,6 +42,17 @@ const OVERLAY_FIELDS = [
   "beginnerFit",
   "tags",
   "notes",
+];
+
+const PRICE_METRICS_FIELDS = [
+  "expectedCagr",
+  "priceCagr10y",
+  "mdd",
+  "beta",
+  "dataYears",
+  "benchmarkTicker",
+  "metricsSource",
+  "reviewReason",
 ];
 
 function stripBom(value = "") {
@@ -200,6 +214,29 @@ function createUsDividendOverlay(row = {}, sourceName = "us_dividend_overlay_202
   };
 }
 
+function createUsPriceMetricsOverlay(row = {}, sourceName = "us_price_metrics_overlay_20260528_app_ready") {
+  const overlay = {};
+
+  PRICE_METRICS_FIELDS.forEach((field) => {
+    const value = coerceOverlayValue(field, row[field]);
+    if (hasValue(value)) overlay[field] = value;
+  });
+
+  if (!Object.keys(overlay).length) return null;
+
+  const metricsStatus = String(row.metricsStatus || "").trim();
+  if (hasValue(metricsStatus)) {
+    overlay.dataStatus = metricsStatus;
+    overlay.reviewTag = metricsStatus === "ready" ? "" : metricsStatus;
+  }
+
+  overlay.metricMode = "us_price_metrics_overlay_price_close";
+  overlay.metricsSource = overlay.metricsSource || sourceName;
+  overlay.dataSource = `finple_app_candidates_6000_balanced_v1+final_2000_overlay+${sourceName}`;
+
+  return overlay;
+}
+
 function buildOverlayMap(csvText = "", createOverlay = createFinal2000Overlay) {
   return parseCsv(csvText).reduce((map, row) => {
     const key = overlayKey(row);
@@ -223,6 +260,9 @@ const krStockDividendOverlayMap = buildOverlayMap(krStockDividendOverlayCsv, (ro
 const usDividendOverlayMap = buildOverlayMap(usDividendOverlayCsv, (row) =>
   createUsDividendOverlay(row, "us_dividend_overlay_20260527")
 );
+const usPriceMetricsOverlayMap = buildOverlayMap(usPriceMetricsOverlayCsv, (row) =>
+  createUsPriceMetricsOverlay(row, "us_price_metrics_overlay_20260528_app_ready")
+);
 
 export function applyScreenerCandidateOverlays(candidates = []) {
   return candidates.map((candidate) => {
@@ -231,8 +271,15 @@ export function applyScreenerCandidateOverlays(candidates = []) {
     const krEtfDividendOverlay = krEtfDividendOverlayMap.get(key);
     const krStockDividendOverlay = krStockDividendOverlayMap.get(key);
     const usDividendOverlay = usDividendOverlayMap.get(key);
+    const usPriceMetricsOverlay = usPriceMetricsOverlayMap.get(key);
 
-    if (!final2000Overlay && !krEtfDividendOverlay && !krStockDividendOverlay && !usDividendOverlay) return candidate;
+    if (
+      !final2000Overlay &&
+      !krEtfDividendOverlay &&
+      !krStockDividendOverlay &&
+      !usDividendOverlay &&
+      !usPriceMetricsOverlay
+    ) return candidate;
 
     const mergedCandidate = {
       ...candidate,
@@ -240,6 +287,7 @@ export function applyScreenerCandidateOverlays(candidates = []) {
       ...(krEtfDividendOverlay || {}),
       ...(krStockDividendOverlay || {}),
       ...(usDividendOverlay || {}),
+      ...(usPriceMetricsOverlay || {}),
     };
 
     return {
@@ -259,4 +307,5 @@ export const SCREENER_CANDIDATE_OVERLAY_COUNTS = {
   KR_DIVIDEND_20260525:
     krEtfDividendOverlayMap.size + krStockDividendOverlayMap.size,
   US_DIVIDEND_20260527: usDividendOverlayMap.size,
+  US_PRICE_METRICS_20260528: usPriceMetricsOverlayMap.size,
 };
