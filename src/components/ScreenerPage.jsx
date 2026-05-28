@@ -4,6 +4,7 @@ import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import { normalizeTicker } from "./portfolio/services/assetDataService";
 import {
   KR_SCREENER_CANDIDATES,
+  SCREENER_CANDIDATE_COUNTS,
   US_SCREENER_CANDIDATES,
 } from "../data/tickers/screenerCandidateLoader";
 import "./ScreenerPage.css";
@@ -86,6 +87,9 @@ function getTagLabel(value) {
 function getGoalLabel(value) {
   return TAG_LABEL_MAP[value] || value || "-";
 }
+function formatCount(value) {
+  return Number(value || 0).toLocaleString("ko-KR");
+}
 function formatPercentValue(value, pendingText = "확인 중") {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue) || numberValue === 0) return pendingText;
@@ -115,9 +119,10 @@ function getAssetTypeRank(item = {}) {
   return item.type === "ETF" ? 0 : 1;
 }
 function getStatusRank(item = {}) {
-  if (item.reviewTag === "ready_with_metrics" || item.dataStatus === "ready_with_metrics") return 0;
-  if (item.reviewTag === "review_required" || item.dataStatus === "review_required") return 2;
-  return 1;
+  if (item.reviewTag === "ready_with_metrics" || item.dataStatus === "ready_with_metrics" || item.dataStatus === "ready") return 0;
+  if (item.reviewTag === "short_history" || item.dataStatus === "short_history") return 1;
+  if (item.reviewTag === "review_required" || item.dataStatus === "review_required") return 3;
+  return 2;
 }
 function compareText(a = "", b = "") {
   return String(a || "").localeCompare(String(b || ""), "ko-KR", { numeric: true, sensitivity: "base" });
@@ -240,7 +245,7 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
   const [type, setType] = useState("all");
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const [statusText, setStatusText] = useState(`${getMarketLabel(market)} CSV 후보 ${candidates.length}개를 불러왔습니다.`);
+  const [statusText, setStatusText] = useState(`${getMarketLabel(market)} 검증 후보 ${candidates.length}개를 불러왔습니다.`);
   const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
   const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type }), [candidates, query, styleFilter, riskLevel, type]);
   const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
@@ -250,6 +255,7 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
   const pagedResults = useMemo(() => results.slice(startIndex, endIndex), [results, startIndex, endIndex]);
   const pageNumbers = useMemo(() => getPageNumbers(safeCurrentPage, totalPages), [safeCurrentPage, totalPages]);
   useEffect(() => { setCurrentPage(1); }, [market, query, styleFilter, riskLevel, type, pageSize]);
+  useEffect(() => { setStatusText(`${getMarketLabel(market)} 검증 후보 ${candidates.length}개를 불러왔습니다.`); }, [market, candidates.length]);
 
   function handleAdd(item) {
     const ticker = normalizeTicker(item?.ticker);
@@ -261,17 +267,23 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
 
   return (
     <section className="assetFinderPanel">
-      <div className="assetFinderHeader"><div><p className="sectionLabel">Asset Finder</p><h4>{getMarketLabel(market)} ETF / 개별주 후보 탐색</h4><p>ETF는 지수·섹터를 묶어 노출하고, 개별주는 특정 기업 비중을 직접 확대합니다. 포트폴리오 방향이 달라지므로 시장과 자산군을 먼저 구분해서 선택하세요.</p></div><div className="assetFinderStatusGroup"><span className="tickerMasterCount">{getMarketLabel(market)} CSV 후보 {candidates.length}개</span><span className="assetFinderStatus">{statusText}</span></div></div>
-      <div className="screenerFilterGrid" aria-label="스크리너 필터">
+      <div className="assetFinderHeader compact">
+        <div>
+          <h4>{getMarketLabel(market)} 검증 후보 탐색</h4>
+          <p>가격지표가 확인된 자산만 표시합니다. 시장, 자산군, 투자 스타일, 위험도를 순서대로 좁혀 보세요.</p>
+        </div>
+        <div className="assetFinderStatusGroup"><span className="tickerMasterCount">{getMarketLabel(market)} 검증 후보 {formatCount(candidates.length)}개</span><span className="assetFinderStatus">{statusText}</span></div>
+      </div>
+      <div className="screenerFilterGrid" aria-label="자산 파인더 필터">
         <label className="screenerFilterSelectLabel"><span>1차 시장</span><select value={market} onChange={(event) => onMarketChange(event.target.value)}>{MARKET_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>2차 자산군</span><select value={type} onChange={(event) => { setType(event.target.value); setStatusText(`${getTypeLabel(event.target.value)} 기준으로 후보를 표시합니다.`); }}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>3차 투자 스타일</span><select value={styleFilter} onChange={(event) => { setStyleFilter(event.target.value); setStatusText(`${getStyleLabel(event.target.value)} 후보를 표시합니다.`); }}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>4차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       </div>
       <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, O, T, ETF, 배당, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
-      <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${results.length}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setStatusText(`${event.target.value}개씩 후보를 표시합니다.`); }}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
+      <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${formatCount(results.length)}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setStatusText(`${event.target.value}개씩 후보를 표시합니다.`); }}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
       <div className="tickerResultGrid compact">{pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
-      {results.length > pageSize ? <nav className="screenerPagination" aria-label="스크리너 페이지 이동"><button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button><button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button><div className="screenerPageNumbers">{pageNumbers.map((page, index) => { const previousPage = pageNumbers[index - 1]; const showEllipsis = previousPage && page - previousPage > 1; return <span key={page} className="pageNumberWrap">{showEllipsis ? <i>...</i> : null}<button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button></span>; })}</div><button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button><button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button></nav> : null}
+      {results.length > pageSize ? <nav className="screenerPagination" aria-label="자산 파인더 페이지 이동"><button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button><button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button><div className="screenerPageNumbers">{pageNumbers.map((page, index) => { const previousPage = pageNumbers[index - 1]; const showEllipsis = previousPage && page - previousPage > 1; return <span key={page} className="pageNumberWrap">{showEllipsis ? <i>...</i> : null}<button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button></span>; })}</div><button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button><button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button></nav> : null}
     </section>
   );
 }
@@ -285,10 +297,21 @@ function ScreenerPage({ onBack, onOpenSimulator }) {
   return (
     <main className="page screenerPage">
       <header className="header"><button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button></header>
-      <section className="screenerHero"><p className="badge">Asset Screener</p><h1>자산 후보를 먼저 탐색하세요.</h1><p>ETF와 개별주를 구분해 후보를 살펴보고, 필요한 항목만 현재 포트폴리오에 담은 뒤 시뮬레이터에서 비중을 정리할 수 있습니다.</p><div className="screenerSummaryGrid"><article><span>현재 추가 대상</span><strong>{activePortfolio?.name || "포트폴리오"}</strong></article><article><span>현재 자산</span><strong>{activeAssetCount}개</strong></article><button type="button" className="screenerSummaryActionCard" onClick={onOpenSimulator}><span>포트폴리오로 이동</span><strong>비중 정리</strong><i aria-hidden="true">▶</i></button></div>{hasMixedMarketAssets ? <p className="screenerMetricNotice">미국 자산은 달러 기준, 한국 자산은 원화 기준 지표일 수 있습니다. 혼합 포트폴리오의 BETA는 시장별 기준 차이를 감안해 해석해 주세요.</p> : null}</section>
-      <section className="section calculatorSection screenerStandaloneSection"><div className="tabSectionHeader"><p className="sectionLabel">Asset Screener</p><h2>후보 자산을 탐색하고 포트폴리오에 담습니다.</h2><p>QQQ 같은 ETF와 NVDA 같은 개별주는 같은 기술주 노출이라도 분산도와 집중도가 다릅니다. 먼저 시장과 자산 유형을 구분해 확인하세요.</p></div><CandidateScreenerPanel key={activeMarket} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} /></section>
+      <section className="section calculatorSection screenerStandaloneSection screenerUnifiedSection">
+        <p className="sectionLabel">Asset Finder</p>
+        <h2>FINPLE 자산 파인더</h2>
+        <p className="screenerIntroText">검증된 가격지표를 가진 국내·해외 ETF와 개별주 후보를 탐색하고, 필요한 자산만 현재 포트폴리오에 담을 수 있습니다.</p>
+        <div className="screenerSummaryGrid compact">
+          <article><span>검증 후보</span><strong>{formatCount(SCREENER_CANDIDATE_COUNTS.ALL)}개</strong></article>
+          <article><span>현재 추가 대상</span><strong>{activePortfolio?.name || "포트폴리오"}</strong></article>
+          <article><span>현재 자산</span><strong>{activeAssetCount}개</strong></article>
+          <button type="button" className="screenerSummaryActionCard" onClick={onOpenSimulator}><span>포트폴리오로 이동</span><strong>비중 정리</strong><i aria-hidden="true">▶</i></button>
+        </div>
+        {hasMixedMarketAssets ? <p className="screenerMetricNotice">미국 자산은 달러 기준, 한국 자산은 원화 기준 지표일 수 있습니다. 혼합 포트폴리오의 BETA는 시장별 기준 차이를 감안해 해석해 주세요.</p> : null}
+        <CandidateScreenerPanel key={activeMarket} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} />
+      </section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />
-      <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="스크리너 상단으로 이동">↑ TOP</button>
+      <button className="floatingTopButton" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="자산 파인더 상단으로 이동">↑ TOP</button>
     </main>
   );
 }
