@@ -3,6 +3,7 @@ import krEtfDividendOverlayCsv from "./kr_etf_dividend_overlay_20260525.csv?raw"
 import krStockDividendOverlayCsv from "./kr_stock_dividend_overlay_20260525.csv?raw";
 import usDividendOverlayCsv from "./us_dividend_overlay_20260527.csv?raw";
 import usPriceMetricsOverlayCsv from "./us_price_metrics_overlay_20260528_app_ready.csv?raw";
+import krPriceMetricsOverlayCsv from "./kr_price_metrics_overlay_20260528_app_ready.csv?raw";
 
 const NUMERIC_FIELDS = new Set([
   "expectedCagr",
@@ -214,7 +215,11 @@ function createUsDividendOverlay(row = {}, sourceName = "us_dividend_overlay_202
   };
 }
 
-function createUsPriceMetricsOverlay(row = {}, sourceName = "us_price_metrics_overlay_20260528_app_ready") {
+function createPriceMetricsOverlay(
+  row = {},
+  sourceName = "price_metrics_overlay",
+  metricMode = "price_metrics_overlay_price_close"
+) {
   const overlay = {};
 
   PRICE_METRICS_FIELDS.forEach((field) => {
@@ -230,7 +235,7 @@ function createUsPriceMetricsOverlay(row = {}, sourceName = "us_price_metrics_ov
     overlay.reviewTag = metricsStatus === "ready" ? "" : metricsStatus;
   }
 
-  overlay.metricMode = "us_price_metrics_overlay_price_close";
+  overlay.metricMode = metricMode;
   overlay.metricsSource = overlay.metricsSource || sourceName;
   overlay.dataSource = `finple_app_candidates_6000_balanced_v1+final_2000_overlay+${sourceName}`;
 
@@ -261,7 +266,18 @@ const usDividendOverlayMap = buildOverlayMap(usDividendOverlayCsv, (row) =>
   createUsDividendOverlay(row, "us_dividend_overlay_20260527")
 );
 const usPriceMetricsOverlayMap = buildOverlayMap(usPriceMetricsOverlayCsv, (row) =>
-  createUsPriceMetricsOverlay(row, "us_price_metrics_overlay_20260528_app_ready")
+  createPriceMetricsOverlay(
+    row,
+    "us_price_metrics_overlay_20260528_app_ready",
+    "us_price_metrics_overlay_price_close"
+  )
+);
+const krPriceMetricsOverlayMap = buildOverlayMap(krPriceMetricsOverlayCsv, (row) =>
+  createPriceMetricsOverlay(
+    row,
+    "kr_price_metrics_overlay_20260528_app_ready",
+    "kr_price_metrics_overlay_price_close"
+  )
 );
 
 export function applyScreenerCandidateOverlays(candidates = []) {
@@ -272,13 +288,15 @@ export function applyScreenerCandidateOverlays(candidates = []) {
     const krStockDividendOverlay = krStockDividendOverlayMap.get(key);
     const usDividendOverlay = usDividendOverlayMap.get(key);
     const usPriceMetricsOverlay = usPriceMetricsOverlayMap.get(key);
+    const krPriceMetricsOverlay = krPriceMetricsOverlayMap.get(key);
 
     if (
       !final2000Overlay &&
       !krEtfDividendOverlay &&
       !krStockDividendOverlay &&
       !usDividendOverlay &&
-      !usPriceMetricsOverlay
+      !usPriceMetricsOverlay &&
+      !krPriceMetricsOverlay
     ) return candidate;
 
     const mergedCandidate = {
@@ -288,6 +306,7 @@ export function applyScreenerCandidateOverlays(candidates = []) {
       ...(krStockDividendOverlay || {}),
       ...(usDividendOverlay || {}),
       ...(usPriceMetricsOverlay || {}),
+      ...(krPriceMetricsOverlay || {}),
     };
 
     return {
@@ -308,4 +327,5 @@ export const SCREENER_CANDIDATE_OVERLAY_COUNTS = {
     krEtfDividendOverlayMap.size + krStockDividendOverlayMap.size,
   US_DIVIDEND_20260527: usDividendOverlayMap.size,
   US_PRICE_METRICS_20260528: usPriceMetricsOverlayMap.size,
+  KR_PRICE_METRICS_20260528: krPriceMetricsOverlayMap.size,
 };
