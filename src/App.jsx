@@ -18,10 +18,12 @@ import {
   MyPage,
   PricingPage,
   SupportPage,
+} from "./components/AccountPages";
+import {
   PrivacyPage,
   TermsPage,
   InvestmentDisclaimerPage,
-} from "./components/AccountPages";
+} from "./components/LegalPolicyPages";
 
 const ROUTE_PATHS = {
   home: "/",
