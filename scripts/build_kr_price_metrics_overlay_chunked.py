@@ -19,7 +19,9 @@ python build_kr_price_metrics_overlay_chunked.py \
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
+import io
 import json
 import math
 import re
@@ -39,7 +41,6 @@ except Exception:  # pragma: no cover
 
 
 VALID_KR_TICKER_RE = re.compile(r"^\d{6}$")
-VALID_YF_SYMBOL_RE = re.compile(r"^[A-Z0-9.\-^=]+$")
 MIN_READY_YEARS = 3.0
 MIN_SHORT_HISTORY_YEARS = 1.0
 ABNORMAL_CAGR_THRESHOLD = 100.0
@@ -48,6 +49,8 @@ BENCHMARKS = {
     "KS": ["^KS11", "069500.KS"],
     "KQ": ["^KQ11", "229200.KS"],
 }
+
+_DOWNLOAD_CACHE: dict[tuple[str, str, str], object] = {}
 
 
 @dataclass
@@ -130,18 +133,30 @@ def unique_kr_candidates(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]
     return output
 
 
+def append_kr_suffixes(symbols: list[str], raw_ticker: str) -> None:
+    ticker = normalize_ticker(raw_ticker)
+    if VALID_KR_TICKER_RE.match(ticker):
+        symbols.extend([f"{ticker}.KS", f"{ticker}.KQ"])
+
+
 def candidate_symbols(row: dict[str, str]) -> list[str]:
+    """Return Yahoo Finance symbols to try.
+
+    Important: do not try plain numeric symbols such as 005930. Yahoo Finance
+    needs 005930.KS or 005930.KQ, and trying the plain value creates noisy 404
+    logs in Colab even when the later .KS/.KQ lookup succeeds.
+    """
+
     ticker = normalize_ticker(row.get("ticker"))
     provider = clean(row.get("providerSymbol")).upper()
     symbols: list[str] = []
 
     if provider.endswith(".KS") or provider.endswith(".KQ"):
         symbols.append(provider)
-    elif provider and VALID_YF_SYMBOL_RE.match(provider):
-        symbols.append(provider)
+    else:
+        append_kr_suffixes(symbols, provider)
 
-    if VALID_KR_TICKER_RE.match(ticker):
-        symbols.extend([f"{ticker}.KS", f"{ticker}.KQ"])
+    append_kr_suffixes(symbols, ticker)
 
     seen: set[str] = set()
     unique: list[str] = []
@@ -158,7 +173,7 @@ def market_suffix(symbol: str) -> str:
     return "KS"
 
 
-def blank_result(candidate: dict[str, str], source_tag: str, reason: str, symbol: str = "") -> PriceMetricsResult:
+def blank_result(candidate: dict[str, str], source_tag: str, reason: str, symbol: str = "", resolution: str = "") -> PriceMetricsResult:
     return PriceMetricsResult(
         market="KR",
         ticker=normalize_ticker(candidate.get("ticker")),
@@ -173,28 +188,54 @@ def blank_result(candidate: dict[str, str], source_tag: str, reason: str, symbol
         metricsStatus="review_required",
         metricsSource=source_tag,
         reviewReason=reason,
-        symbolResolution="unresolved",
+        symbolResolution=resolution or "unresolved",
     )
 
 
 def download_close(symbol: str, start: str, end: str) -> "pd.Series | None":
     if yf is None or pd is None:
         return None
-    data = yf.download(symbol, start=start, end=end, auto_adjust=False, progress=False, threads=False)
-    if data is None or data.empty:
+
+    cache_key = (symbol, start, end)
+    if cache_key in _DOWNLOAD_CACHE:
+        cached = _DOWNLOAD_CACHE[cache_key]
+        return cached if cached is not False else None
+
+    try:
+        # yfinance can print noisy HTTP/YFTzMissingError messages for missing
+        # Korean suffix candidates. Silence them and record failure as None.
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            data = yf.download(symbol, start=start, end=end, auto_adjust=False, progress=False, threads=False)
+    except Exception:
+        _DOWNLOAD_CACHE[cache_key] = False
         return None
+
+    if data is None or data.empty:
+        _DOWNLOAD_CACHE[cache_key] = False
+        return None
+
     close = data.get("Close")
     if close is None:
+        _DOWNLOAD_CACHE[cache_key] = False
         return None
     if hasattr(close, "columns"):
         close = close.iloc[:, 0]
     close = close.dropna()
-    return close if not close.empty else None
+    if close.empty:
+        _DOWNLOAD_CACHE[cache_key] = False
+        return None
+
+    _DOWNLOAD_CACHE[cache_key] = close
+    return close
 
 
 def resolve_symbol(candidate: dict[str, str], start: str, end: str) -> tuple[str, "pd.Series | None", str]:
+    symbols = candidate_symbols(candidate)
+    if not symbols:
+        return "", None, "no_valid_kr_yfinance_symbol"
+
     tried: list[str] = []
-    for symbol in candidate_symbols(candidate):
+    for symbol in symbols:
         tried.append(symbol)
         close = download_close(symbol, start, end)
         if close is not None and not close.empty and len(close) >= 2:
@@ -273,7 +314,7 @@ def build_result(candidate: dict[str, str], source_tag: str, start: str, end: st
     if sleep_seconds > 0:
         time.sleep(sleep_seconds)
     if close is None or close.empty:
-        return blank_result(candidate, source_tag, "missing close price data", symbol=symbol)
+        return blank_result(candidate, source_tag, "missing close price data", symbol=symbol, resolution=resolution)
 
     benchmark_ticker, benchmark_close = resolve_benchmark(symbol, start, end)
     cagr, data_years, start_date, end_date, first_close, latest_close = calculate_cagr(close)
@@ -383,7 +424,7 @@ def main() -> None:
         results.append(result)
         if args.checkpoint_every and offset % args.checkpoint_every == 0:
             summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
-            save_outputs(results, out_runtime, out_audit, out_summary, summary)
+            save_outputs(results, out_runtime, out_audit, out_summary)
             print(f"Checkpoint saved: {offset} rows", flush=True)
 
     summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
