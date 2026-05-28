@@ -202,8 +202,6 @@ def download_close(symbol: str, start: str, end: str) -> "pd.Series | None":
         return cached if cached is not False else None
 
     try:
-        # yfinance can print noisy HTTP/YFTzMissingError messages for missing
-        # Korean suffix candidates. Silence them and record failure as None.
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             data = yf.download(symbol, start=start, end=end, auto_adjust=False, progress=False, threads=False)
     except Exception:
@@ -424,7 +422,7 @@ def main() -> None:
         results.append(result)
         if args.checkpoint_every and offset % args.checkpoint_every == 0:
             summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
-            save_outputs(results, out_runtime, out_audit, out_summary)
+            save_outputs(results, out_runtime, out_audit, out_summary, summary)
             print(f"Checkpoint saved: {offset} rows", flush=True)
 
     summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
