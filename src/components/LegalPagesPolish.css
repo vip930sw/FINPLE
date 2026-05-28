@@ -1,15 +1,15 @@
 .accountPage.legalPage,
 .legalPage.standaloneLegalPage,
 .standaloneLegalPage {
-  padding-top: 48px !important;
+  padding-top: 0 !important;
 }
 
 .accountPage.legalPage > .accountHero,
 .legalPage.standaloneLegalPage > .accountHero,
 .standaloneLegalPage > .accountHero {
   max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 32px 42px !important;
+  margin: 0 auto !important;
+  padding: 90px 32px 42px !important;
 }
 
 .accountPage.legalPage > .legalDocumentCard,
@@ -22,12 +22,12 @@
   .accountPage.legalPage,
   .legalPage.standaloneLegalPage,
   .standaloneLegalPage {
-    padding-top: 48px !important;
+    padding-top: 0 !important;
   }
 
   .accountPage.legalPage > .accountHero,
   .legalPage.standaloneLegalPage > .accountHero,
   .standaloneLegalPage > .accountHero {
-    padding: 0 24px 34px !important;
+    padding: 70px 24px 34px !important;
   }
 }
