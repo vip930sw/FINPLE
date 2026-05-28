@@ -20,7 +20,7 @@ const UPDATE_ITEMS = [
     impact: "회원가입, MY PAGE, 구독 상태, 결제 운영 전 DB 구조를 정리했습니다.",
     details: [
       "이메일 로그인·회원가입 운영 테이블을 점검했습니다.",
-      "사용자 권한과 요금제 entitlement 구조를 정리했습니다.",
+      "사용자 권한과 요금제별 이용 가능 기능 구조를 정리했습니다.",
       "Toss 심사 후 운영 검증에 필요한 결제 이벤트 저장 구조를 보강했습니다.",
     ],
   },
@@ -52,9 +52,9 @@ const UPDATE_ITEMS = [
 
 const UPCOMING_ITEMS = [
   "가격·배당 데이터 정기 갱신 절차 정리",
-  "Toss 심사 승인 후 운영 결제·Webhook 실수신 검증",
+  "Toss 심사 승인 후 운영 결제·웹훅 실수신 검증",
   "공지사항 관리자 작성 기능",
-  "Sharpe, 표준편차, 상관계수 등 고급 위험지표 검토",
+  "표준편차, 상관계수 등 고급 위험지표 검토",
 ];
 
 function UpdatesHeader({ onNavigate }) {
