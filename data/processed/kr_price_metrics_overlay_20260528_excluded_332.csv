@@ -1,0 +1,333 @@
+﻿market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason
+KR,0086C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0019K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0182S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0104H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0162Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0177N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0040Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0040X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0138Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0132K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0183V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0000D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0013R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0049K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0192S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0184E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0184N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0186S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0073X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0111P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0178H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0089B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0001P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0043B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0048J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0007F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,494310,492.85,492.85,-44.69,2.45,1.59,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0016X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0046A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0122W0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0094K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0052S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0119H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0092C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0091C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0099L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0000Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0135Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0091M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0192Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0184L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0085P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0052T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0017Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0057H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0080X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0113P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0191W0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0141T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0085N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0015F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0015E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,488080,229.41,229.41,-64.02,2.65,1.84,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0089D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0022T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0100K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0104G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0028X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,491630,-83.34,-83.34,-52.2,,0.41,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0177R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0144L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0190G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0107F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0097L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0176P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0094L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0128D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0174J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,487240,133.21,133.21,-36.71,1.22,1.88,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0167A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0072R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0117L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0139F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0061Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0064K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0080Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0162M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,304780,217.5,217.5,-43.88,2.14,1.94,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0131W0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0066W0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,306950,192.49,192.49,-44.96,2.03,1.94,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0172V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0123S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0189B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0154F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0137W0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0013P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,475720,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0117V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0183J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,469150,110.88,110.88,-43.71,1.36,2.61,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0105E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0167B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0052D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0101N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,491010,105.06,105.06,-42.12,0.72,1.71,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0148J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0104N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0008S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0153K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0127P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0131V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0005A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0094M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0015B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0167Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0111J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0018C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0098N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0049M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0089C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0173Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0139P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0086B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0080G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0046Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0036D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0152E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0138T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0104P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0115C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0153X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0153P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0127V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0127T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0004G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0053L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,474590,100.32,100.32,-39.94,1.26,2.36,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0038A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0043Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0190C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0047A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0048K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0180V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0151S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0093A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0182R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0123G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0069M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0005G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0176E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0168K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0177X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,490480,129.63,129.63,-25.63,0.73,1.65,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0035T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0036R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0142D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0115E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0181L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0000Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,487130,100.13,100.13,-34.11,1.17,1.88,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0118Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0102A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0174B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0040S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0118S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0041D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0181B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0162L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,487750,120.46,120.46,-35.92,1.31,1.84,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0083S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0090B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0047R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0065G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0190M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0103T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0164G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0047P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0186L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0067Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0127R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0113G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0093B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0105D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0087F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0185L0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0047N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0174R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0084D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0184V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0082F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0102X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0154H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0114X0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0050E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,310970,2.07,2.07,-2.89,,0.05,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,494890,132.11,132.11,-20.98,1.05,1.57,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,495050,140.89,140.89,-20.37,1.03,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0091P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495850,139.21,139.21,-20.17,1.02,1.56,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,494670,106.76,106.76,-21.56,0.75,1.59,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0163Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0025N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,496080,139.85,139.85,-20.61,1.04,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0023A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0162Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0098F0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0060H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,310960,-3.76,-3.76,-2.51,,0.05,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,495230,167.92,167.92,-20.53,1.03,1.46,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0026S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0151P0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495060,133.75,133.75,-21.93,1.12,1.56,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,491820,177.22,177.22,-34.29,1.19,1.67,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0051G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0115D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,494220,198.63,198.63,-28.16,1.38,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0005D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0000J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495550,144.09,144.09,-20.37,1.03,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0092B0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0074K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0082V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495330,139.92,139.92,-20.49,1.03,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0127M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,496090,139.77,139.77,-20.04,1.03,1.56,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0041E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,494330,105.58,105.58,-19.79,0.88,1.61,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0007N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495040,139.63,139.63,-20.06,1.02,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0132H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0113D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,491700,121.99,121.99,-20.79,1.04,1.71,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0190Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0166S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,495750,140.16,140.16,-20.14,1.03,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,491220,142.28,142.28,-20.67,1.06,1.55,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0141S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0008T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0098Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0021E0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0068M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0067V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0007G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0020H0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0137V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0150K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0166N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0126Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,278470,123.17,123.17,-49.07,0.51,2.25,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,062040,151.25,151.25,-46.58,1.18,1.83,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,00680K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0009K0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,456160,150.63,150.63,-52.19,1.14,0.78,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,493280,-99.63,-99.63,-66.01,,0.19,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0120G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0030R0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,35320K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,347850,216.58,216.58,-46.55,0.82,2.07,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0088D0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0004Y0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,332190,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,100790,166.9,166.9,-44.41,1.19,2.49,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,439260,-31.86,-31.86,-46.92,0.38,0.82,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,279570,-83.52,-83.52,-36.49,,0.23,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,476830,55.27,55.27,-46.19,,0.44,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,491000,67.82,67.82,-39.1,,0.42,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,475830,236.6,236.6,-56.23,1.15,1.03,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,439960,57293.86,57293.86,-29.03,,0.04,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,458870,138.8,138.8,-53.62,0.54,1.94,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,295310,198.82,198.82,-50.26,0.91,1.9,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,490470,165.81,165.81,-32.01,,0.41,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,388210,-22.26,-22.26,-43.54,1.18,0.51,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,466100,143.4,143.4,-48.28,1.3,1.58,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,496320,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,00088K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,477850,-100.0,-100.0,-50.51,,0.02,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,476060,188.75,188.75,-39.02,0.88,1.43,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,376900,263.05,263.05,-64.77,0.85,1.04,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,317450,-70.98,-70.98,-55.7,0.36,0.63,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,00104K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,448900,146.31,146.31,-65.39,0.98,2.74,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,217590,149.07,149.07,-50.11,,0.45,^KS11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0011T0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,486990,-52.31,-52.31,-52.75,0.95,0.56,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,475960,128.95,128.95,-38.47,0.91,1.55,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,125490,260.16,260.16,-45.58,1.26,0.77,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,468530,205.6,205.6,-62.61,1.24,0.83,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,488900,35.57,35.57,-50.54,1.27,0.51,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,484590,-52.21,-52.21,-56.33,0.66,0.77,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,376270,114.16,114.16,-42.98,0.8,1.56,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,0082N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0001A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,478340,15.68,15.68,-57.54,,0.44,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0008Z0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,02826K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,494120,-76.73,-76.73,-55.23,1.3,0.53,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0015G0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,394420,1522.26,1522.26,-25.22,,0.16,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,318060,193.07,193.07,-60.47,0.83,0.75,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,474650,133.45,133.45,-44.09,1.11,0.96,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0088M0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,488280,14.9,14.9,-63.56,0.97,0.68,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,309710,-38.58,-38.58,-57.75,1.11,0.8,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,061090,-71.6,-71.6,-57.67,0.97,0.53,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0007C0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,03473K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,484120,-63.7,-63.7,-59.37,0.9,0.84,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,380550,-22.59,-22.59,-56.89,1.12,0.84,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0011A0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,474610,145.54,145.54,-40.09,0.96,1.41,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,288180,-100.0,-100.0,-53.59,,0.02,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,403850,-87.3,-87.3,-67.53,0.68,0.52,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,469610,-85.78,-85.78,-77.03,1.29,0.55,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,487580,-100.0,-100.0,-69.25,,0.04,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,101970,342.52,342.52,-54.19,-0.81,1.17,^KQ11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,000300,118.57,118.57,-92.0,0.72,9.99,^KS11,review_required,yfinance_kr_close_price_20260528,abnormal cagr
+KR,475230,-16.89,-16.89,-50.03,0.79,0.83,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0004V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,340450,-39.01,-39.01,-42.46,0.94,0.96,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,950250,-94.53,-94.53,-75.51,,0.46,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,33626K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,00279K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,234030,-34.35,-34.35,-61.18,1.15,0.89,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,493330,-32.39,-32.39,-39.45,,0.36,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,331740,-66.04,-66.04,-66.58,1.07,0.87,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0007J0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,464490,-72.28,-72.28,-59.92,,0.45,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0015S0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,408470,-99.68,-99.68,-62.87,,0.17,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,37550L,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,475430,-40.02,-40.02,-53.99,0.72,0.98,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,463020,-72.92,-72.92,-77.94,1.05,0.89,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0015N0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,014950,-43.75,-43.75,-67.32,0.65,0.58,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,0013V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,261520,-93.89,-93.89,-72.29,,0.46,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,458350,-99.94,-99.94,-81.26,,0.22,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
+KR,37550K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,28513K,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,0010V0,,,,,,,review_required,yfinance_kr_close_price_20260528,missing close price data
+KR,459550,-86.91,-86.91,-69.35,1.05,0.51,^KQ11,review_required,yfinance_kr_close_price_20260528,price history shorter than 1 year
