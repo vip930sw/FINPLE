@@ -6,32 +6,24 @@ const START_MENU_ITEMS = [
     icon: "🧭",
     label: "투자 MBTI",
     eyebrow: "처음 시작",
-    description: "질문을 통해 투자 성향을 확인하고, 미국 또는 한국 포트폴리오 적용 방향을 선택할 수 있습니다.",
+    description: "질문을 통해 투자 성향을 확인하고, 포트폴리오 적용 방향을 선택할 수 있습니다.",
     actionText: "성향 테스트 시작",
   },
   {
-    key: "us-simulator",
-    icon: "🇺🇸",
-    label: "미국주식 포트폴리오 시뮬레이터",
+    key: "simulator",
+    icon: "📊",
+    label: "포트폴리오 시뮬레이터",
     eyebrow: "분석 도구",
-    description: "미국주식과 미국 ETF 중심으로 장기 수익·위험·배당·실질가치를 점검합니다.",
-    actionText: "미국 시뮬레이터 열기",
-  },
-  {
-    key: "kr-simulator",
-    icon: "🇰🇷",
-    label: "한국주식 포트폴리오 시뮬레이터",
-    eyebrow: "Beta 준비 중",
-    description: "한국주식과 국내 ETF 분석을 위한 티커·시세·분배금 데이터 구조를 준비하고 있습니다.",
-    actionText: "한국 Beta 보기",
+    description: "미국·한국 주식과 ETF를 함께 담아 장기 수익·위험·배당·실질가치를 점검합니다.",
+    actionText: "시뮬레이터 열기",
   },
   {
     key: "screener",
     icon: "🔎",
-    label: "자산 스크리너",
+    label: "자산 파인더",
     eyebrow: "탐색 도구",
-    description: "ETF와 자산 후보를 먼저 찾아보고 싶을 때 별도 메뉴로 사용합니다.",
-    actionText: "스크리너 열기",
+    description: "검증된 ETF와 개별주 후보를 먼저 찾아보고, 필요한 자산만 포트폴리오에 추가합니다.",
+    actionText: "자산 찾기",
   },
   {
     key: "support",
@@ -64,7 +56,7 @@ function StartHubPage({ onBack, onNavigate }) {
         <p className="badge">FINPLE Beta v0.3 Flow</p>
         <h1>무엇부터 시작할까요?</h1>
         <p>
-          투자 MBTI로 성향을 먼저 확인하고, 보유 자산이 있다면 미국 또는 한국 포트폴리오 도구에서 점검할 수 있습니다.
+          투자 MBTI로 성향을 먼저 확인하고, 보유 자산이 있다면 포트폴리오 시뮬레이터에서 점검할 수 있습니다.
         </p>
       </section>
 
