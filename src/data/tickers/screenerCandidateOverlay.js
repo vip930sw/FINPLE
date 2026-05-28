@@ -280,6 +280,11 @@ const krPriceMetricsOverlayMap = buildOverlayMap(krPriceMetricsOverlayCsv, (row)
   )
 );
 
+export function isPriceMetricsAppReadyCandidate(candidate = {}) {
+  const key = overlayKey(candidate);
+  return usPriceMetricsOverlayMap.has(key) || krPriceMetricsOverlayMap.has(key);
+}
+
 export function applyScreenerCandidateOverlays(candidates = []) {
   return candidates.map((candidate) => {
     const key = overlayKey(candidate);
@@ -328,4 +333,6 @@ export const SCREENER_CANDIDATE_OVERLAY_COUNTS = {
   US_DIVIDEND_20260527: usDividendOverlayMap.size,
   US_PRICE_METRICS_20260528: usPriceMetricsOverlayMap.size,
   KR_PRICE_METRICS_20260528: krPriceMetricsOverlayMap.size,
+  PRICE_METRICS_APP_READY_20260528:
+    usPriceMetricsOverlayMap.size + krPriceMetricsOverlayMap.size,
 };
