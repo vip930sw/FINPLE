@@ -1,5 +1,8 @@
 import finpleAppCandidates6000Csv from "./finple_app_candidates_6000_balanced_v1.csv?raw";
-import { applyScreenerCandidateOverlays } from "./screenerCandidateOverlay";
+import {
+  applyScreenerCandidateOverlays,
+  isPriceMetricsAppReadyCandidate,
+} from "./screenerCandidateOverlay";
 
 const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
 const toNumber = (value) => {
@@ -62,7 +65,7 @@ function uniqueByMarketTicker(candidates = []) {
 }
 
 export const SCREENER_METRICS_POLICY_NOTE =
-  "FINPLE 6,000 balanced candidate CSV v1: expanded universe. Metrics may remain pending until separately verified.";
+  "FINPLE app-ready candidate universe: only assets with verified price metrics are exposed in screener and simulator.";
 
 export function normalizeScreenerCandidate(row = {}) {
   const market = normalizeMarket(row.market || "US");
@@ -116,8 +119,11 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
   );
 }
 
+export const RAW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv);
+export const RAW_SCREENER_CANDIDATE_COUNT = RAW_SCREENER_CANDIDATES.length;
+
 export const ALL_SCREENER_CANDIDATES = applyScreenerCandidateOverlays(
-  loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv)
+  RAW_SCREENER_CANDIDATES.filter(isPriceMetricsAppReadyCandidate)
 );
 export const US_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter((candidate) => candidate.market === "US");
 export const KR_SCREENER_CANDIDATES = ALL_SCREENER_CANDIDATES.filter((candidate) => candidate.market === "KR");
@@ -203,4 +209,7 @@ export const SCREENER_CANDIDATE_COUNTS = {
   KR_ETF: KR_ETF_CANDIDATES.length,
   KR_STOCK: KR_STOCK_CANDIDATES.length,
   ALL: ALL_SCREENER_CANDIDATES.length,
+  RAW_ALL: RAW_SCREENER_CANDIDATE_COUNT,
+  EXCLUDED_BY_PRICE_METRICS:
+    RAW_SCREENER_CANDIDATE_COUNT - ALL_SCREENER_CANDIDATES.length,
 };
