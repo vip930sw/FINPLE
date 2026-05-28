@@ -10,7 +10,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
   return (
     <div className="simulatorTabPanel comparePanel">
       <div className="tabSectionHeader">
-        <p className="sectionLabel">Step 3. Portfolio</p>
+        <p className="sectionLabel">Step 2. Portfolio</p>
         <h3>포트폴리오 비교</h3>
         <p>
           저장된 포트폴리오의 실질가치, 성장성, 안정성, 배당 매력을 비교합니다.
