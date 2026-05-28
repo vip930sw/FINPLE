@@ -106,7 +106,7 @@ export default function SettingsPanel({
   return (
     <div className="simulatorTabPanel settingsPanel">
       <div className="tabSectionHeader">
-        <p className="sectionLabel">Step 2. Simulator</p>
+        <p className="sectionLabel">Step 1. Simulator</p>
         <h3>시뮬레이터 설정</h3>
         <p>선택한 자산의 목표비중과 투자 조건을 입력해 장기 성과를 계산합니다.</p>
       </div>
@@ -218,14 +218,16 @@ export default function SettingsPanel({
         <div className="tableActionLeftGroup">
           <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
           <button className="resetPortfolioButton secondary" onClick={fetchAllAssetData} disabled={isBulkAssetLookupLoading}>{isBulkAssetLookupLoading ? "전체 조회 중" : "전체 조회"}</button>
-          <button className="resetPortfolioButton" onClick={resetActivePortfolioAssets} disabled={isBulkAssetLookupLoading}>자산 초기화</button>
-          <div className={summary.overAmount > 0 ? "targetWeightInlineSummary warning" : "targetWeightInlineSummary"}>
-            <strong>{formatDecimal(summary.total, 2)}%</strong>
-            <small>{targetWeightNotice}</small>
-          </div>
+          <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows}>빈 행 정리</button>
+          <button className="resetPortfolioButton danger" onClick={resetActivePortfolioAssets}>포트폴리오 초기화</button>
         </div>
-        <button className="calculateWeightButton tableCalculateButton" type="button" onClick={applyTargetWeights} disabled={isBulkAssetLookupLoading || summary.isApplyDisabled}>계산</button>
+        <div className="targetWeightControlGroup">
+          <span className={summary.isOver ? "targetWeightNotice over" : "targetWeightNotice"}>{targetWeightNotice}</span>
+          <button className="resetPortfolioButton secondary" onClick={resetTargetWeights}>목표비중 초기화</button>
+          <button className="resetPortfolioButton secondary" onClick={equalizeTargetWeights}>동일비중</button>
+          <button className="applyWeightButton" onClick={applyTargetWeights} disabled={summary.isApplyDisabled}>목표비중 적용</button>
+        </div>
       </div>
     </div>
   );
-} 
+}
