@@ -16,6 +16,8 @@ export default function SettingsPanel({
   updateAsset,
   updateTargetWeightDraft,
   applyTargetWeights,
+  resetTargetWeights,
+  equalizeTargetWeights,
   isEmptyAssetRow,
   isAutoAsset,
   isAutoPriceAsset,
