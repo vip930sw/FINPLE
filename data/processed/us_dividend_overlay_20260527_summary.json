@@ -1,0 +1,16 @@
+{
+  "as_of": "2026-05-27",
+  "combined_runtime_file": "us_dividend_work/us_dividend_overlay_20260527.csv",
+  "combined_audit_file": "us_dividend_work/us_dividend_overlay_20260527_audit.csv",
+  "chunk_runtime_files": 31,
+  "chunk_audit_files": 31,
+  "row_count": 3000,
+  "ready_count": 2289,
+  "review_required_count": 711,
+  "blank_yield_count": 579,
+  "min_dividend_yield": 0.0,
+  "max_dividend_yield": 622.08,
+  "audit_row_count_after_dedup": 3000,
+  "runtime_sha256": "f55423a107f7a61aab64c43aceedfbe45d866a2c1f495f2386935077c55f0bca",
+  "audit_sha256": "4918202a4af282616d313eef579987c255dbf6bd56afa1d1313a37ac6b2a03ae"
+}

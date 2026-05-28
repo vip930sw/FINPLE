@@ -1,0 +1,193 @@
+{
+  "source_uploaded_package": "us_dividend_overlay_20260527_package.zip",
+  "validated_at": "2026-05-27",
+  "runtime_file": "us_dividend_overlay_20260527.csv",
+  "audit_file": "us_dividend_overlay_20260527_audit.csv",
+  "summary_file": "us_dividend_overlay_20260527_summary.json",
+  "runtime_row_count": 3000,
+  "audit_row_count_after_dedup": 3000,
+  "market_counts": {
+    "US": 3000
+  },
+  "duplicate_market_ticker": 0,
+  "ready_count": 2289,
+  "review_required_count": 711,
+  "blank_yield_count": 579,
+  "numeric_yield_count": 2421,
+  "min_dividend_yield": 0.0,
+  "max_dividend_yield": 622.08,
+  "dividend_policy_counts": {
+    "dividend_confirmed": 2285,
+    "dividend_review_required": 711,
+    "no_dividend_confirmed": 4
+  },
+  "yield_status_counts": {
+    "ready": 2289,
+    "review_required": 711
+  },
+  "note": "Max yield is intentionally review_required. Do not treat all values as final investment-grade metrics without review flags.",
+  "sample_tickers": [
+    {
+      "market": "US",
+      "ticker": "AAPL",
+      "dividendYield": 0.34,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "AMZN",
+      "dividendYield": 0.0,
+      "dividendPolicy": "no_dividend_confirmed",
+      "dividendSource": "no_dividend_policy_manual_202605",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "BND",
+      "dividendYield": 3.94,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "JEPI",
+      "dividendYield": 8.4,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "JEPQ",
+      "dividendYield": 10.18,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "JNJ",
+      "dividendYield": 2.81,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "JPM",
+      "dividendYield": 1.97,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "KO",
+      "dividendYield": 2.51,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "MSFT",
+      "dividendYield": 0.86,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "QQQ",
+      "dividendYield": 0.39,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "SCHD",
+      "dividendYield": 3.23,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "SNOW",
+      "dividendYield": 0.0,
+      "dividendPolicy": "no_dividend_confirmed",
+      "dividendSource": "no_dividend_policy_manual_202605",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "SPY",
+      "dividendYield": 0.98,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "TLT",
+      "dividendYield": 4.56,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "TSLA",
+      "dividendYield": 0.0,
+      "dividendPolicy": "no_dividend_confirmed",
+      "dividendSource": "no_dividend_policy_manual_202605",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "VNQ",
+      "dividendYield": 3.58,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "VOO",
+      "dividendYield": 1.03,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    },
+    {
+      "market": "US",
+      "ticker": "XOM",
+      "dividendYield": 2.77,
+      "dividendPolicy": "dividend_confirmed",
+      "dividendSource": "yfinance_ttm_dividend_20260527",
+      "yieldStatus": "ready",
+      "reviewReason": NaN
+    }
+  ]
+}
