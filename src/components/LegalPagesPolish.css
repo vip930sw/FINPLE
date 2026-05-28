@@ -1,9 +1,15 @@
+.accountPage.legalPage,
+.legalPage.standaloneLegalPage,
+.standaloneLegalPage {
+  padding-top: 48px !important;
+}
+
 .accountPage.legalPage > .accountHero,
 .legalPage.standaloneLegalPage > .accountHero,
 .standaloneLegalPage > .accountHero {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 48px 32px 42px !important;
+  padding: 0 32px 42px !important;
 }
 
 .accountPage.legalPage > .legalDocumentCard,
@@ -13,9 +19,15 @@
 }
 
 @media (max-width: 900px) {
+  .accountPage.legalPage,
+  .legalPage.standaloneLegalPage,
+  .standaloneLegalPage {
+    padding-top: 48px !important;
+  }
+
   .accountPage.legalPage > .accountHero,
   .legalPage.standaloneLegalPage > .accountHero,
   .standaloneLegalPage > .accountHero {
-    padding: 48px 24px 34px !important;
+    padding: 0 24px 34px !important;
   }
 }
