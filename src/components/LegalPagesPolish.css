@@ -1,0 +1,15 @@
+.legalPage .accountHero,
+.accountPage.legalPage .accountHero {
+  padding-top: 118px;
+}
+
+.legalPage .legalDocumentCard {
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .legalPage .accountHero,
+  .accountPage.legalPage .accountHero {
+    padding-top: 96px;
+  }
+}
