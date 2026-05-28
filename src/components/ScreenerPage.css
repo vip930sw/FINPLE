@@ -29,7 +29,8 @@
 
 .screenerUnifiedSection {
   max-width: 1180px;
-  margin-top: 28px;
+  margin-top: 0 !important;
+  padding-top: 42px !important;
 }
 
 .screenerUnifiedSection > .sectionLabel,
@@ -43,12 +44,13 @@
 }
 
 .screenerIntroText {
-  max-width: 960px;
+  max-width: none;
   margin: 0 0 28px;
   color: #475569;
   font-size: 17px;
   line-height: 1.7;
   font-weight: 700;
+  white-space: nowrap;
   word-break: keep-all;
 }
 
@@ -142,7 +144,7 @@
 
 .screenerStandaloneSection {
   max-width: 1180px;
-  margin-top: 20px;
+  margin-top: 0;
 }
 
 .screenerStandaloneSection .tabSectionHeader p:not(.sectionLabel) {
@@ -156,6 +158,10 @@
 .assetFinderHeader.compact {
   align-items: flex-start;
   margin-bottom: 22px;
+}
+
+.assetFinderHeader.compact.simple {
+  margin-bottom: 18px;
 }
 
 .assetFinderHeader.compact h4 {
@@ -462,6 +468,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .screenerIntroText {
+    white-space: normal;
+  }
+
   .screenerFilterGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -530,7 +540,8 @@
   }
 
   .screenerUnifiedSection {
-    margin-top: 10px;
+    margin-top: 0;
+    padding-top: 30px !important;
   }
 
   .screenerStandaloneSection {
