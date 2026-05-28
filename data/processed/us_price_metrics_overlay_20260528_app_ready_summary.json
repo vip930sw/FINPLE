@@ -1,0 +1,52 @@
+{
+  "price_input": "us_price_metrics_overlay_20260528_FULL_3000.csv",
+  "dividend_input": "us_dividend_overlay_20260527_full_from_zip.csv",
+  "input_price_rows": 3000,
+  "output_runtime_rows": 2973,
+  "excluded_rows": 27,
+  "missing_threshold": 2,
+  "missing_counts_by_metric": {
+    "CAGR": 3,
+    "BETA": 47,
+    "MDD": 3,
+    "YIELD": 579
+  },
+  "excluded_by_missing_combo": {
+    "BETA+YIELD": 24,
+    "CAGR+BETA+MDD": 2,
+    "CAGR+BETA+MDD+YIELD": 1
+  },
+  "all_four_missing_tickers": [
+    "ICR^A"
+  ],
+  "excluded_tickers": [
+    "LPLA",
+    "BHDG",
+    "BWZ",
+    "LVIG",
+    "GTOP",
+    "ALBG",
+    "AMZO",
+    "APLZ",
+    "AXPG",
+    "BEG",
+    "BEZ",
+    "BIDG",
+    "CIFG",
+    "ETHB",
+    "TKNS",
+    "AIB",
+    "OPENW",
+    "OPENL",
+    "OPENZ",
+    "GIPRW",
+    "ICR^A",
+    "JAN",
+    "BXDC",
+    "ELLA",
+    "BTMWW",
+    "BIXI",
+    "BIXIW"
+  ],
+  "policy": "Rows with two or more missing metrics among CAGR, BETA, MDD, and YIELD are excluded. Blank YIELD remains blank in the existing dividend overlay so the app can keep showing 배당 확인 중."
+}

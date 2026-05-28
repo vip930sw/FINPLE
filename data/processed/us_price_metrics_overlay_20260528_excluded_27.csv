@@ -1,0 +1,28 @@
+﻿market,ticker,missingCount,missingMetrics,expectedCagr,mdd,beta,dividendYield,metricsStatus,yieldStatus,reviewReason
+US,LPLA,3,CAGR+BETA+MDD,,,,0.55,review_required,ready,missing close price data
+US,BHDG,2,BETA+YIELD,-40.65,-15.07,,,review_required,review_required,price history shorter than 1 year
+US,BWZ,3,CAGR+BETA+MDD,,,,2.06,review_required,ready,missing close price data
+US,LVIG,2,BETA+YIELD,-6.01,-2.59,,,review_required,review_required,price history shorter than 1 year
+US,GTOP,2,BETA+YIELD,46.43,-14.48,,,review_required,review_required,price history shorter than 1 year
+US,ALBG,2,BETA+YIELD,-39.08,-41.25,,,review_required,review_required,price history shorter than 1 year
+US,AMZO,2,BETA+YIELD,-96.31,-48.84,,,review_required,review_required,price history shorter than 1 year
+US,APLZ,2,BETA+YIELD,-99.88,-91.6,,,review_required,review_required,price history shorter than 1 year
+US,AXPG,2,BETA+YIELD,-58.43,-30.57,,,review_required,review_required,price history shorter than 1 year
+US,BEG,2,BETA+YIELD,6748.56,-59.85,,,review_required,review_required,price history shorter than 1 year
+US,BEZ,2,BETA+YIELD,-99.99,-94.13,,,review_required,review_required,price history shorter than 1 year
+US,BIDG,2,BETA+YIELD,-0.88,-59.34,,,review_required,review_required,price history shorter than 1 year
+US,CIFG,2,BETA+YIELD,5.6,-71.71,,,review_required,review_required,price history shorter than 1 year
+US,ETHB,2,BETA+YIELD,-4.43,-15.54,,,review_required,review_required,price history shorter than 1 year
+US,TKNS,2,BETA+YIELD,-58.15,-5.37,,,review_required,review_required,price history shorter than 1 year
+US,AIB,2,BETA+YIELD,27.45,-70.48,,,review_required,review_required,price history shorter than 1 year
+US,OPENW,2,BETA+YIELD,-79.29,-70.56,,,review_required,review_required,price history shorter than 1 year
+US,OPENL,2,BETA+YIELD,-85.5,-74.76,,,review_required,review_required,price history shorter than 1 year
+US,OPENZ,2,BETA+YIELD,-64.93,-69.47,,,review_required,review_required,price history shorter than 1 year
+US,GIPRW,2,BETA+YIELD,112.62,-5.56,,,review_required,review_required,price history shorter than 1 year
+US,ICR^A,4,CAGR+BETA+MDD+YIELD,,,,,review_required,review_required,missing close price data
+US,JAN,2,BETA+YIELD,110.18,-7.61,,,review_required,review_required,price history shorter than 1 year
+US,BXDC,2,BETA+YIELD,1852.26,-2.69,,,review_required,review_required,price history shorter than 1 year
+US,ELLA,2,BETA+YIELD,25.73,-0.51,,,review_required,review_required,price history shorter than 1 year
+US,BTMWW,2,BETA+YIELD,-16.78,-10.04,,,review_required,review_required,price history shorter than 1 year
+US,BIXI,2,BETA+YIELD,3.05,-0.35,,,review_required,review_required,price history shorter than 1 year
+US,BIXIW,2,BETA+YIELD,108.96,-36.84,,,review_required,review_required,price history shorter than 1 year
