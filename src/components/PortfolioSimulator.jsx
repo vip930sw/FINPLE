@@ -4,10 +4,11 @@ import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel"
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
 import ComparePanel from "./portfolio/components/ComparePanel";
 import SettingsPanel from "./portfolio/components/SettingsPanel";
-import AssetFinderPanel from "./portfolio/components/AssetFinderPanel";
 import DetailPanel from "./portfolio/components/DetailPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
+
+const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail"];
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const {
@@ -55,7 +56,6 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     fetchAllAssetData,
     resolveTickerCandidate,
     addAsset,
-    addAssetFromTickerCandidate,
     removeAsset,
     cleanEmptyAssetRows,
     selectPortfolio,
@@ -86,9 +86,21 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     isEmptyAssetRow
   } = usePortfolioSimulator();
 
+  const effectiveActiveSimulatorTab = PORTFOLIO_SIMULATOR_TABS.includes(activeSimulatorTab)
+    ? activeSimulatorTab
+    : "settings";
+
+  function scrollToSimulatorTop() {
+    window.setTimeout(() => {
+      document.getElementById("simulator")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }
+
   function scrollToSimulatorTab(nextTab) {
     const anchorMap = {
-      screener: "screener",
       settings: "settings",
       compare: "compare",
       detail: "detail",
@@ -115,23 +127,22 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   useImperativeHandle(
     ref,
     () => ({
-      changeTab(nextTab) {
-        handleSimulatorTabChange(nextTab);
+      changeTab(nextTab, options = {}) {
+        handleSimulatorTabChange(nextTab, options);
+      },
+      scrollToTop() {
+        scrollToSimulatorTop();
       },
     }),
     [changeSimulatorTab]
   );
 
-  const shouldShowFloatingPortfolioDropdown = ["screener", "settings", "detail"].includes(
-    activeSimulatorTab
+  const shouldShowFloatingPortfolioDropdown = ["settings", "detail"].includes(
+    effectiveActiveSimulatorTab
   );
 
   const floatingPortfolioContextLabel =
-    activeSimulatorTab === "screener"
-      ? "현재 추가 대상"
-      : activeSimulatorTab === "settings"
-        ? "현재 편집 중"
-        : "현재 분석 중";
+    effectiveActiveSimulatorTab === "settings" ? "현재 편집 중" : "현재 분석 중";
 
   return (
     <section id="simulator" className="section calculatorSection simulatorSection">
@@ -143,28 +154,11 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       </p>
 
       <SimulatorTabNav
-        activeSimulatorTab={activeSimulatorTab}
+        activeSimulatorTab={effectiveActiveSimulatorTab}
         changeSimulatorTab={handleSimulatorTabChange}
       />
 
-      {activeSimulatorTab === "screener" && (
-        <div id="screener" className="simulatorTabPanel screenerPanel">
-          <div className="tabSectionHeader">
-            <p className="sectionLabel">Step 1. Screener</p>
-            <h3>자산 스크리너</h3>
-            <p>
-              티커를 몰라도 목표, 위험도, 유형으로 후보 자산을 찾고 현재 포트폴리오에 추가할 수 있습니다.
-            </p>
-          </div>
-          <AssetFinderPanel
-            assets={assets}
-            addAssetFromTickerCandidate={addAssetFromTickerCandidate}
-            isBulkAssetLookupLoading={isBulkAssetLookupLoading}
-          />
-        </div>
-      )}
-
-      {activeSimulatorTab === "compare" && (
+      {effectiveActiveSimulatorTab === "compare" && (
         <div id="compare" className="simulatorTabAnchor">
           <ComparePanel
             insightComparisonPortfolios={insightComparisonPortfolios}
@@ -173,7 +167,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {activeSimulatorTab === "settings" && (
+      {effectiveActiveSimulatorTab === "settings" && (
         <div id="settings" className="simulatorTabAnchor">
           <SettingsPanel
             settings={settings}
@@ -212,7 +206,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      {activeSimulatorTab === "detail" && (
+      {effectiveActiveSimulatorTab === "detail" && (
         <div id="detail" className="simulatorTabAnchor">
           <DetailPanel
             activePortfolio={activePortfolio}
