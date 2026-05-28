@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import "./components/SiteFooter.css";
 import "./components/HomeSimplify.css";
+import "./components/LegalPagesPolish.css";
 
 import TradingViewTicker from "./components/TradingViewTicker";
 import EconomicCalendarSection from "./components/EconomicCalendarSection";
