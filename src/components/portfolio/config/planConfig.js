@@ -1,4 +1,5 @@
 export const FINPLE_PLAN_STORAGE_KEY = "finple-selected-plan";
+const FINPLE_AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 export const FINPLE_PLAN_CONFIGS = {
   free: {
@@ -76,8 +77,24 @@ export function normalizeFinplePlan(planKey) {
   return FINPLE_PLAN_CONFIGS[planKey] ? planKey : "free";
 }
 
+function hasStoredFinpleAuthUser() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const storedUser = JSON.parse(window.localStorage.getItem(FINPLE_AUTH_USER_STORAGE_KEY) || "null");
+    return Boolean(storedUser?.id);
+  } catch (error) {
+    return false;
+  }
+}
+
 export function getStoredFinplePlan() {
   if (typeof window === "undefined") return "free";
+
+  if (!hasStoredFinpleAuthUser()) {
+    window.localStorage.removeItem(FINPLE_PLAN_STORAGE_KEY);
+    return "free";
+  }
 
   const storedPlan = window.localStorage.getItem(FINPLE_PLAN_STORAGE_KEY);
   return normalizeFinplePlan(storedPlan);
@@ -88,11 +105,16 @@ export function setStoredFinplePlan(planKey) {
   const plan = FINPLE_PLAN_CONFIGS[normalizedPlanKey];
 
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(FINPLE_PLAN_STORAGE_KEY, normalizedPlanKey);
+    if (hasStoredFinpleAuthUser()) {
+      window.localStorage.setItem(FINPLE_PLAN_STORAGE_KEY, normalizedPlanKey);
+    } else {
+      window.localStorage.removeItem(FINPLE_PLAN_STORAGE_KEY);
+    }
+
     window.dispatchEvent(new Event("finple-plan-updated"));
   }
 
-  return plan;
+  return hasStoredFinpleAuthUser() ? plan : FINPLE_PLAN_CONFIGS.free;
 }
 
 export function getPlanUsageStatus(planKey, snapshot = {}) {
