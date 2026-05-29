@@ -118,11 +118,20 @@ export async function checkEmailAvailability(email) {
   };
 }
 
-export async function signupWithEmailPassword({ email, password, name, privacyAccepted, termsAccepted, marketingAgreed }) {
+export async function signupWithEmailPassword({
+  email,
+  password,
+  name,
+  nickname,
+  privacyAccepted,
+  termsAccepted,
+  marketingAgreed,
+}) {
   const payload = await requestAuth("/auth/signup", {
     email,
     password,
     name,
+    nickname,
     privacyAccepted,
     termsAccepted,
     marketingAgreed,
