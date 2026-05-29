@@ -3,6 +3,7 @@ const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const ACCOUNT_PLAN_STORAGE_KEY = "finple-selected-plan";
 
 function getBuildTimeEnv() {
   return import.meta?.env || {};
@@ -62,7 +63,15 @@ export function setStoredFinpleAuthUser(user) {
 }
 
 export function clearStoredFinpleAuthUser() {
-  return setStoredFinpleAuthUser(null);
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    window.localStorage.removeItem(ACCOUNT_PLAN_STORAGE_KEY);
+    window.dispatchEvent(new Event("finple-auth-updated"));
+    window.dispatchEvent(new Event("finple-plan-updated"));
+    window.dispatchEvent(new Event("finple-local-storage-updated"));
+  }
+
+  return null;
 }
 
 export async function createOrLoadDemoUser() {
