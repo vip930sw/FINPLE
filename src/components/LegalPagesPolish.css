@@ -1,9 +1,11 @@
+.accountPage,
 .accountPage.legalPage,
 .legalPage.standaloneLegalPage,
 .standaloneLegalPage {
   padding-top: 0 !important;
 }
 
+.accountPage > .accountHero,
 .accountPage.legalPage > .accountHero,
 .legalPage.standaloneLegalPage > .accountHero,
 .standaloneLegalPage > .accountHero {
@@ -18,26 +20,28 @@
   margin-top: 8px;
 }
 
-.accountPage.legalPage .singleLoginCard,
-.accountPage.legalPage .accountFormCard {
+.accountPage .singleLoginCard,
+.accountPage .accountFormCard {
   margin-bottom: 88px;
 }
 
 @media (max-width: 900px) {
+  .accountPage,
   .accountPage.legalPage,
   .legalPage.standaloneLegalPage,
   .standaloneLegalPage {
     padding-top: 0 !important;
   }
 
+  .accountPage > .accountHero,
   .accountPage.legalPage > .accountHero,
   .legalPage.standaloneLegalPage > .accountHero,
   .standaloneLegalPage > .accountHero {
     padding: 76px 24px 34px !important;
   }
 
-  .accountPage.legalPage .singleLoginCard,
-  .accountPage.legalPage .accountFormCard {
+  .accountPage .singleLoginCard,
+  .accountPage .accountFormCard {
     margin-bottom: 72px;
   }
 }
