@@ -1,5 +1,7 @@
 export default function SiteHeader({
   isLoggedIn = false,
+  isAdminMode = false,
+  authLabel,
   onHome,
   onStart,
   onNavigate,
@@ -34,6 +36,20 @@ export default function SiteHeader({
     }, 80);
   }
 
+  function handleMyPageClick() {
+    if (isLoggedIn) {
+      onNavigate?.("mypage");
+      return;
+    }
+
+    if (isAdminMode) {
+      onNavigate?.("admin-inquiries");
+      return;
+    }
+
+    onNavigate?.("login");
+  }
+
   return (
     <header className="header homeHeader siteHeader">
       <button type="button" className="brandLogo resetButton" onClick={handleHomeClick}>
@@ -51,8 +67,8 @@ export default function SiteHeader({
         <button className="secondaryHeaderButton" onClick={handleHomeClick}>홈</button>
         <button className="headerButton" onClick={handleStartClick}>시작하기</button>
         <button className="secondaryHeaderButton supportHeaderButton" onClick={() => onNavigate?.("support")}>문의사항</button>
-        <button className="secondaryHeaderButton" onClick={() => onNavigate?.(isLoggedIn ? "mypage" : "login")}>MY PAGE</button>
-        <button className="secondaryHeaderButton" onClick={onLoginLogout}>{isLoggedIn ? "로그아웃" : "로그인"}</button>
+        <button className="secondaryHeaderButton" onClick={handleMyPageClick}>MY PAGE</button>
+        <button className="secondaryHeaderButton" onClick={onLoginLogout}>{authLabel || (isLoggedIn ? "로그오프" : "로그인")}</button>
       </div>
     </header>
   );
