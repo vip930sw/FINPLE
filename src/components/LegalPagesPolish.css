@@ -29,34 +29,164 @@
   display: none !important;
 }
 
-.accountSidebar a,
-.accountSidebar button,
-.accountSideNav a,
-.accountSideNav button,
-.accountSideMenu a,
-.accountSideMenu button,
-.accountMenu a,
-.accountMenu button,
-.accountTabList a,
-.accountTabList button,
-.myPageSidebar a,
-.myPageSidebar button,
-.myPageSidePanel a,
-.myPageSidePanel button,
-.myPageMenu a,
-.myPageMenu button,
-.myPageNav a,
-.myPageNav button,
-.mypageSidebar a,
-.mypageSidebar button,
-.mypageSideNav a,
-.mypageSideNav button,
-.mypageMenu a,
-.mypageMenu button,
-.mypageNav a,
-.mypageNav button {
-  pointer-events: none !important;
-  cursor: default !important;
+.adminInquiriesPage {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.adminInquiriesPage > .accountHero {
+  max-width: 1180px !important;
+  width: min(100% - 64px, 1180px) !important;
+  margin: 0 auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.adminInquiriesPage > .standaloneAdminInquiryPanel {
+  width: min(100% - 64px, 1120px) !important;
+  max-width: 1120px !important;
+  margin: 0 auto 96px !important;
+  padding: 30px 32px 34px !important;
+  overflow: hidden;
+}
+
+.standaloneAdminInquiryPanel .serverStorageHeader {
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.standaloneAdminInquiryPanel .serverStorageHeader > div {
+  min-width: 0;
+}
+
+.standaloneAdminInquiryPanel .serverStorageHeader h2 {
+  margin-top: 8px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 14px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryToolbar .primaryButton,
+.standaloneAdminInquiryPanel .adminInquiryToolbar .secondaryButton {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryToolbar select,
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader select,
+.standaloneAdminInquiryPanel .adminTokenInlineBox input {
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryToolbar select,
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader select {
+  min-width: 136px;
+  padding: 0 14px;
+}
+
+.standaloneAdminInquiryPanel .serverStorageMessage.compact {
+  margin: 12px 0 18px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 18px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryList,
+.standaloneAdminInquiryPanel .adminInquiryDetail {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryList {
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryItem {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryItem:last-child {
+  margin-bottom: 0;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryItem.active {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.standaloneAdminInquiryPanel .adminInquiryItem strong,
+.standaloneAdminInquiryPanel .adminInquiryItem em {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryDetail {
+  padding: 18px;
+  overflow: hidden;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader > div {
+  min-width: 0;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader h3,
+.standaloneAdminInquiryPanel .adminInquiryDetailHeader p {
+  overflow-wrap: anywhere;
+}
+
+.standaloneAdminInquiryPanel .adminInquiryMessage {
+  max-height: 390px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  margin-top: 16px;
+}
+
+.standaloneAdminInquiryPanel .accountActionRow {
+  margin-top: 22px;
 }
 
 @media (max-width: 900px) {
@@ -77,5 +207,33 @@
   .accountPage .singleLoginCard,
   .accountPage .accountFormCard {
     margin-bottom: 72px;
+  }
+
+  .adminInquiriesPage > .accountHero,
+  .adminInquiriesPage > .standaloneAdminInquiryPanel {
+    width: calc(100% - 32px) !important;
+  }
+
+  .adminInquiriesPage > .accountHero {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .adminInquiriesPage > .standaloneAdminInquiryPanel {
+    padding: 22px 18px 26px !important;
+  }
+
+  .standaloneAdminInquiryPanel .adminInquiryLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .standaloneAdminInquiryPanel .adminInquiryList {
+    max-height: 320px;
+  }
+
+  .standaloneAdminInquiryPanel .adminInquiryDetailHeader,
+  .standaloneAdminInquiryPanel .adminInquiryToolbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
