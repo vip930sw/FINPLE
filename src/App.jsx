@@ -145,6 +145,25 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (currentPage !== "mypage") return undefined;
+
+    function preventMyPageHashJump(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest("a[href^='#'], a[href^='/mypage#']");
+      if (!anchor) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      window.history.replaceState({ page: "mypage" }, "", "/mypage");
+    }
+
+    document.addEventListener("click", preventMyPageHashJump, true);
+    return () => document.removeEventListener("click", preventMyPageHashJump, true);
+  }, [currentPage]);
+
+  useEffect(() => {
     function isEditableTarget(target) {
       if (!(target instanceof Element)) return false;
       return Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true'], .allowTextSelection"));
