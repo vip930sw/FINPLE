@@ -178,22 +178,6 @@ function App() {
       "a[href^='/mypage#']",
     ].join(", ");
 
-    function freezeCurrentScrollPosition() {
-      const lockedX = window.scrollX;
-      const lockedY = window.scrollY;
-
-      function restoreScroll() {
-        window.scrollTo({ left: lockedX, top: lockedY, behavior: "auto" });
-      }
-
-      restoreScroll();
-      window.requestAnimationFrame(restoreScroll);
-      window.setTimeout(restoreScroll, 0);
-      window.setTimeout(restoreScroll, 80);
-      window.setTimeout(restoreScroll, 220);
-      window.setTimeout(restoreScroll, 420);
-    }
-
     function preventMyPageMenuScroll(event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -203,10 +187,9 @@ function App() {
 
       if (menuTarget.matches("a[href^='#'], a[href^='/mypage#']")) {
         event.preventDefault();
+        event.stopPropagation();
         window.history.replaceState({ page: "mypage" }, "", "/mypage");
       }
-
-      freezeCurrentScrollPosition();
     }
 
     document.addEventListener("click", preventMyPageMenuScroll, true);
