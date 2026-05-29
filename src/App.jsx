@@ -87,6 +87,16 @@ function getInitialPage() {
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
 
+  function isFinpleUserLoggedIn() {
+    return Boolean(getStoredFinpleAuthUser()?.id);
+  }
+
+  useEffect(() => {
+    if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
+      setCurrentPage("login");
+    }
+  }, [currentPage]);
+
   useEffect(() => {
     const nextPath = getPathForPage(currentPage);
     const currentPath = normalizePathname(window.location.pathname || "/");
@@ -159,10 +169,6 @@ function App() {
     if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start");
   }
 
-  function isFinpleUserLoggedIn() {
-    return Boolean(getStoredFinpleAuthUser()?.id);
-  }
-
   async function handleHeaderLoginLogout() {
     if (isFinpleUserLoggedIn()) {
       await logoutFinpleAuth();
@@ -201,6 +207,7 @@ function App() {
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
+  if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
   if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
   if (currentPage === "support") return renderShell(<SupportPage onNavigate={setCurrentPage} />);

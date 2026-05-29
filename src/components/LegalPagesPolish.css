@@ -9,13 +9,18 @@
 .standaloneLegalPage > .accountHero {
   max-width: 1180px;
   margin: 0 auto !important;
-  padding: 90px 32px 42px !important;
+  padding: 100px 32px 42px !important;
 }
 
 .accountPage.legalPage > .legalDocumentCard,
 .legalPage.standaloneLegalPage > .legalDocumentCard,
 .standaloneLegalPage > .legalDocumentCard {
   margin-top: 8px;
+}
+
+.accountPage.legalPage .singleLoginCard,
+.accountPage.legalPage .accountFormCard {
+  margin-bottom: 88px;
 }
 
 @media (max-width: 900px) {
@@ -28,6 +33,11 @@
   .accountPage.legalPage > .accountHero,
   .legalPage.standaloneLegalPage > .accountHero,
   .standaloneLegalPage > .accountHero {
-    padding: 70px 24px 34px !important;
+    padding: 76px 24px 34px !important;
+  }
+
+  .accountPage.legalPage .singleLoginCard,
+  .accountPage.legalPage .accountFormCard {
+    margin-bottom: 72px;
   }
 }
