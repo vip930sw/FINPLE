@@ -178,6 +178,19 @@ function App() {
       "a[href^='/mypage#']",
     ].join(", ");
 
+    function scheduleShortScrollRestore() {
+      const lockedX = window.scrollX;
+      const lockedY = window.scrollY;
+
+      function restoreScroll() {
+        window.scrollTo({ left: lockedX, top: lockedY, behavior: "auto" });
+      }
+
+      window.requestAnimationFrame(restoreScroll);
+      window.setTimeout(restoreScroll, 0);
+      window.setTimeout(restoreScroll, 80);
+    }
+
     function preventMyPageMenuScroll(event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -190,6 +203,8 @@ function App() {
         event.stopPropagation();
         window.history.replaceState({ page: "mypage" }, "", "/mypage");
       }
+
+      scheduleShortScrollRestore();
     }
 
     document.addEventListener("click", preventMyPageMenuScroll, true);
