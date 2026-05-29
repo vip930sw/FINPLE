@@ -106,6 +106,37 @@ function storeAuthResult(payload) {
   return user;
 }
 
+function decodeOAuthPayload(payloadText) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(window.atob(payloadText.replace(/-/g, "+").replace(/_/g, "/")))));
+  } catch (error) {
+    throw new Error("Google 로그인 결과를 확인하지 못했습니다.");
+  }
+}
+
+export function consumeGoogleOAuthRedirectResult() {
+  if (typeof window === "undefined") return null;
+
+  const hash = String(window.location.hash || "");
+  const match = hash.match(/finpleOAuth=([^&]+)/);
+  if (!match?.[1]) return null;
+
+  const payload = decodeOAuthPayload(match[1]);
+  const user = storeAuthResult(payload);
+  window.history.replaceState({ page: "login" }, "", "/login");
+
+  return user;
+}
+
+export function getGoogleOAuthStartUrl() {
+  return `${getFinpleApiBaseUrl()}/auth/google/start`;
+}
+
+export function startGoogleOAuthLogin() {
+  if (typeof window === "undefined") return;
+  window.location.href = getGoogleOAuthStartUrl();
+}
+
 export async function checkEmailAvailability(email) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!normalizedEmail || !normalizedEmail.includes("@")) {
