@@ -169,6 +169,7 @@ export function LoginPage({ onNavigate }) {
 
 export function SignupPage({ onNavigate }) {
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [emailLocal, setEmailLocal] = useState("");
   const [emailDomain, setEmailDomain] = useState("naver.com");
   const [customDomain, setCustomDomain] = useState("");
@@ -250,6 +251,14 @@ export function SignupPage({ onNavigate }) {
     event.preventDefault();
     setFormNotice("");
 
+    const trimmedName = name.trim();
+    const trimmedNickname = nickname.trim();
+
+    if (!trimmedName || !trimmedNickname) {
+      setFormNotice("이름과 닉네임/ID를 각각 입력해 주세요.");
+      return;
+    }
+
     if (!signupEmail || !password) {
       setFormNotice("이메일과 비밀번호를 입력해 주세요.");
       return;
@@ -274,7 +283,8 @@ export function SignupPage({ onNavigate }) {
       await signupWithEmailPassword({
         email: signupEmail,
         password,
-        name,
+        name: trimmedName,
+        nickname: trimmedNickname,
         privacyAccepted,
         termsAccepted,
         marketingAgreed,
@@ -313,8 +323,17 @@ export function SignupPage({ onNavigate }) {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="이름 또는 닉네임"
+              placeholder="실명 또는 이름"
               autoComplete="name"
+            />
+          </label>
+          <label>
+            닉네임 / ID
+            <input
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="서비스에서 표시할 닉네임 또는 ID"
+              autoComplete="nickname"
             />
           </label>
 
