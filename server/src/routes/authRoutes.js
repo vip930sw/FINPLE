@@ -6,7 +6,9 @@ import {
   getUserBySessionToken,
   loginWithEmail,
   logoutSession,
+  resendVerificationEmail,
   signupWithEmail,
+  verifyEmailToken,
 } from "../db/authRepository.js";
 
 const router = express.Router();
@@ -50,6 +52,31 @@ router.post("/signup", async (request, response, next) => {
     response.status(201).json({
       ok: true,
       authMode: "email-password",
+      requiresEmailVerification: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/verify-email", async (request, response, next) => {
+  try {
+    const result = await verifyEmailToken(request.body?.token || request.query?.token);
+    response.json({
+      ok: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/resend-verification", async (request, response, next) => {
+  try {
+    const result = await resendVerificationEmail(request.body, getRequestMeta(request));
+    response.json({
+      ok: true,
       ...result,
     });
   } catch (error) {
