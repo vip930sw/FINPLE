@@ -13,7 +13,7 @@ import SiteHeader from "./components/SiteHeader";
 import AdminInquiriesPage from "./components/AdminInquiriesPage";
 import { getFinpleAdminToken, getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
-import { LoginPage, SignupPage } from "./components/AuthPages";
+import { LoginPage, SignupPage, VerifyEmailPage } from "./components/AuthPages";
 import {
   AdminLoginPage,
   MyPage,
@@ -32,6 +32,7 @@ const ROUTE_PATHS = {
   personal: "/start",
   login: "/login",
   signup: "/signup",
+  "verify-email": "/verify-email",
   mypage: "/mypage",
   pricing: "/pricing",
   support: "/support",
@@ -69,6 +70,7 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/about" || normalizedHash === "about") return "about";
   if (normalizedPath === "/login" || normalizedHash === "login") return "login";
   if (normalizedPath === "/signup" || normalizedHash === "signup") return "signup";
+  if (normalizedPath === "/verify-email" || normalizedHash === "verify-email") return "verify-email";
   if (normalizedPath === "/mypage" || normalizedHash === "mypage") return "mypage";
   if (normalizedPath === "/pricing" || normalizedHash === "pricing") return "pricing";
   if (normalizedPath === "/support" || normalizedHash === "support") return "support";
@@ -127,6 +129,8 @@ function App() {
     const currentPath = normalizePathname(window.location.pathname || "/");
 
     if (currentPage === "personal" && PERSONAL_ROUTE_PATHS.includes(currentPath)) return;
+
+    if (currentPage === "verify-email" && currentPath === "/verify-email") return;
 
     if (currentPath !== nextPath) {
       window.history.pushState({ page: currentPage }, "", nextPath);
@@ -318,6 +322,7 @@ function App() {
   if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={setCurrentPage} />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
+  if (currentPage === "verify-email") return renderShell(<VerifyEmailPage onNavigate={setCurrentPage} />);
   if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
   if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
