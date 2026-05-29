@@ -10,6 +10,7 @@ import PersonalPage from "./components/PersonalPage";
 import UpdatesPage from "./components/UpdatesPage";
 import AboutPage from "./components/AboutPage";
 import SiteHeader from "./components/SiteHeader";
+import AdminInquiriesPage from "./components/AdminInquiriesPage";
 import { getFinpleAdminToken, getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage } from "./components/AuthPages";
@@ -36,6 +37,7 @@ const ROUTE_PATHS = {
   support: "/support",
   updates: "/updates",
   "admin-login": "/admin",
+  "admin-inquiries": "/admin/inquiries",
   privacy: "/privacy",
   terms: "/terms",
   "investment-disclaimer": "/disclaimer",
@@ -71,6 +73,7 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/pricing" || normalizedHash === "pricing") return "pricing";
   if (normalizedPath === "/support" || normalizedHash === "support") return "support";
   if (normalizedPath === "/updates" || normalizedHash === "updates" || normalizedHash === "notice" || normalizedHash === "changelog") return "updates";
+  if (normalizedPath === "/admin/inquiries" || normalizedHash === "admin-inquiries") return "admin-inquiries";
   if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
   if (normalizedPath === "/privacy" || normalizedHash === "privacy") return "privacy";
   if (normalizedPath === "/terms" || normalizedHash === "terms") return "terms";
@@ -86,6 +89,7 @@ function getInitialPage() {
 
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
+  const [adminTokenVersion, setAdminTokenVersion] = useState(0);
 
   function isFinpleUserLoggedIn() {
     return Boolean(getStoredFinpleAuthUser()?.id);
@@ -96,10 +100,27 @@ function App() {
   }
 
   useEffect(() => {
-    if (currentPage === "mypage" && !isFinpleUserLoggedIn() && !hasFinpleAdminToken()) {
+    function handleAdminTokenUpdate() {
+      setAdminTokenVersion((version) => version + 1);
+    }
+
+    window.addEventListener("finple-admin-token-updated", handleAdminTokenUpdate);
+    window.addEventListener("storage", handleAdminTokenUpdate);
+    return () => {
+      window.removeEventListener("finple-admin-token-updated", handleAdminTokenUpdate);
+      window.removeEventListener("storage", handleAdminTokenUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
       setCurrentPage("login");
     }
-  }, [currentPage]);
+
+    if (currentPage === "admin-inquiries" && !hasFinpleAdminToken()) {
+      setCurrentPage("admin-login");
+    }
+  }, [currentPage, adminTokenVersion]);
 
   useEffect(() => {
     const nextPath = getPathForPage(currentPage);
@@ -179,7 +200,19 @@ function App() {
       setCurrentPage("home");
       return;
     }
+
+    if (hasFinpleAdminToken()) {
+      setCurrentPage("admin-inquiries");
+      return;
+    }
+
     setCurrentPage("login");
+  }
+
+  function getHeaderAuthLabel() {
+    if (isFinpleUserLoggedIn()) return "로그오프";
+    if (hasFinpleAdminToken()) return "관리자";
+    return "로그인";
   }
 
   function scrollHomeToSection(sectionId) {
@@ -193,6 +226,8 @@ function App() {
         {includeHeader ? (
           <SiteHeader
             isLoggedIn={isFinpleUserLoggedIn()}
+            isAdminMode={hasFinpleAdminToken() && !isFinpleUserLoggedIn()}
+            authLabel={getHeaderAuthLabel()}
             onHome={goHome}
             onStart={goPersonal}
             onNavigate={setCurrentPage}
@@ -206,12 +241,17 @@ function App() {
     );
   }
 
+  function handleAdminNavigate(page) {
+    setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
+  }
+
   if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} />, { includeHeader: false });
   if (currentPage === "about") return renderShell(<AboutPage onNavigate={setCurrentPage} />);
-  if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={handleAdminNavigate} />);
+  if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={setCurrentPage} />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
-  if (currentPage === "mypage" && !isFinpleUserLoggedIn() && !hasFinpleAdminToken()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
   if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
   if (currentPage === "support") return renderShell(<SupportPage onNavigate={setCurrentPage} />);
@@ -224,6 +264,8 @@ function App() {
     <main className="page">
       <SiteHeader
         isLoggedIn={isFinpleUserLoggedIn()}
+        isAdminMode={hasFinpleAdminToken() && !isFinpleUserLoggedIn()}
+        authLabel={getHeaderAuthLabel()}
         onHome={goHome}
         onStart={goPersonal}
         onNavigate={setCurrentPage}
