@@ -10,7 +10,7 @@ import PersonalPage from "./components/PersonalPage";
 import UpdatesPage from "./components/UpdatesPage";
 import AboutPage from "./components/AboutPage";
 import SiteHeader from "./components/SiteHeader";
-import { getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
+import { getFinpleAdminToken, getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage } from "./components/AuthPages";
 import {
@@ -91,8 +91,12 @@ function App() {
     return Boolean(getStoredFinpleAuthUser()?.id);
   }
 
+  function hasFinpleAdminToken() {
+    return Boolean(getFinpleAdminToken());
+  }
+
   useEffect(() => {
-    if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
+    if (currentPage === "mypage" && !isFinpleUserLoggedIn() && !hasFinpleAdminToken()) {
       setCurrentPage("login");
     }
   }, [currentPage]);
@@ -207,7 +211,7 @@ function App() {
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
-  if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
+  if (currentPage === "mypage" && !isFinpleUserLoggedIn() && !hasFinpleAdminToken()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
   if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
   if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
   if (currentPage === "support") return renderShell(<SupportPage onNavigate={setCurrentPage} />);
