@@ -71,7 +71,10 @@ async function requestAuth(path, body) {
   }
 
   if (!response.ok || payload?.ok === false) {
-    throw new Error(payload?.message || "인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    const error = new Error(payload?.message || "인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    error.payload = payload;
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -127,7 +130,7 @@ export async function signupWithEmailPassword({
   termsAccepted,
   marketingAgreed,
 }) {
-  const payload = await requestAuth("/auth/signup", {
+  return requestAuth("/auth/signup", {
     email,
     password,
     name,
@@ -136,8 +139,14 @@ export async function signupWithEmailPassword({
     termsAccepted,
     marketingAgreed,
   });
+}
 
-  return storeAuthResult(payload);
+export async function verifyEmailToken(token) {
+  return requestAuth("/auth/verify-email", { token });
+}
+
+export async function resendVerificationEmail(email) {
+  return requestAuth("/auth/resend-verification", { email });
 }
 
 export async function loginWithEmailPassword({ email, password }) {

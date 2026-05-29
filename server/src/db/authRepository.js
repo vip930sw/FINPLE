@@ -2,12 +2,14 @@ import { createHash, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from "no
 import { promisify } from "node:util";
 
 import { query, withTransaction } from "./database.js";
+import { sendVerificationEmail } from "../services/emailService.js";
 
 const pbkdf2Async = promisify(pbkdf2);
 const PASSWORD_HASH_ITERATIONS = Number(process.env.FINPLE_PASSWORD_HASH_ITERATIONS || 210000);
 const PASSWORD_HASH_KEYLEN = 32;
 const PASSWORD_HASH_DIGEST = "sha256";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
+const EMAIL_VERIFICATION_HOURS = Number(process.env.FINPLE_EMAIL_VERIFICATION_HOURS || 24);
 
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -71,9 +73,23 @@ function hashSessionToken(token) {
   return createHash("sha256").update(String(token || "")).digest("hex");
 }
 
+function createEmailVerificationToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+function hashEmailVerificationToken(token) {
+  return createHash("sha256").update(String(token || "")).digest("hex");
+}
+
 function getSessionExpiry() {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + SESSION_DAYS);
+  return expiresAt;
+}
+
+function getEmailVerificationExpiry() {
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + EMAIL_VERIFICATION_HOURS);
   return expiresAt;
 }
 
@@ -87,6 +103,8 @@ function mapUser(row) {
     plan: row.plan || "free",
     authStatus: row.auth_status || "active",
     emailVerifiedAt: row.email_verified_at,
+    isEmailVerified: Boolean(row.email_verified_at),
+    emailVerificationRequired: row.auth_status === "pending_email_verification" || !row.email_verified_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
@@ -178,11 +196,66 @@ async function createSession(tx, userId, requestMeta = {}) {
   return { token, expiresAt: expiresAt.toISOString() };
 }
 
+function getVerificationBaseUrl() {
+  return (
+    process.env.FINPLE_APP_BASE_URL ||
+    process.env.FRONTEND_ORIGIN ||
+    String(process.env.CORS_ORIGIN || "").split(",")[0]?.trim() ||
+    "http://localhost:5173"
+  ).replace(/\/+$/, "");
+}
+
+function buildVerificationUrl(token) {
+  return `${getVerificationBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
+}
+
+async function createVerificationToken(tx, userId, email, requestMeta = {}) {
+  const token = createEmailVerificationToken();
+  const tokenHash = hashEmailVerificationToken(token);
+  const expiresAt = getEmailVerificationExpiry();
+
+  await tx(
+    `UPDATE auth_email_tokens
+     SET used_at = COALESCE(used_at, NOW())
+     WHERE user_id = $1 AND used_at IS NULL`,
+    [userId]
+  );
+
+  await tx(
+    `INSERT INTO auth_email_tokens (
+       id, user_id, email, token_hash, purpose, user_agent, ip_address, expires_at
+     )
+     VALUES ($1, $2, $3, $4, 'verify_email', $5, $6, $7)`,
+    [
+      randomUUID(),
+      userId,
+      email,
+      tokenHash,
+      requestMeta.userAgent || null,
+      requestMeta.ipAddress || null,
+      expiresAt,
+    ]
+  );
+
+  return {
+    token,
+    verificationUrl: buildVerificationUrl(token),
+    expiresAt: expiresAt.toISOString(),
+  };
+}
+
 export async function signupWithEmail(input = {}, requestMeta = {}) {
   const email = assertEmail(input.email);
   const password = assertPassword(input.password);
-  const name = String(input.name || input.nickname || "FINPLE 사용자").trim().slice(0, 80) || "FINPLE 사용자";
-  const nickname = String(input.nickname || name).trim().slice(0, 80) || name;
+  const name = String(input.name || "").trim().slice(0, 80);
+  const nickname = String(input.nickname || "").trim().slice(0, 80);
+
+  if (!name || !nickname) {
+    const error = new Error("이름과 닉네임/ID를 각각 입력해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const passwordHash = await hashPassword(password);
   const userId = randomUUID();
 
@@ -197,13 +270,12 @@ export async function signupWithEmail(input = {}, requestMeta = {}) {
     const userResult = await tx(
       `INSERT INTO users (
          id, email, name, nickname, plan, auth_status,
-         privacy_accepted_at, terms_accepted_at, marketing_agreed_at, last_login_at
+         privacy_accepted_at, terms_accepted_at, marketing_agreed_at
        )
-       VALUES ($1, $2, $3, $4, 'free', 'active',
+       VALUES ($1, $2, $3, $4, 'free', 'pending_email_verification',
          CASE WHEN $5 THEN NOW() ELSE NULL END,
          CASE WHEN $6 THEN NOW() ELSE NULL END,
-         CASE WHEN $7 THEN NOW() ELSE NULL END,
-         NOW()
+         CASE WHEN $7 THEN NOW() ELSE NULL END
        )
        RETURNING id, email, name, nickname, plan, auth_status, email_verified_at, created_at, updated_at, last_login_at`,
       [
@@ -224,9 +296,24 @@ export async function signupWithEmail(input = {}, requestMeta = {}) {
     );
 
     await ensureDefaultEntitlement(tx, userId, "free");
-    const session = await createSession(tx, userId, requestMeta);
+    const verification = await createVerificationToken(tx, userId, email, requestMeta);
+    const emailResult = await sendVerificationEmail({
+      to: email,
+      name,
+      verificationUrl: verification.verificationUrl,
+      expiresAt: verification.expiresAt,
+    });
 
-    return { user: mapUser(userResult.rows[0]), session };
+    return {
+      user: mapUser(userResult.rows[0]),
+      verification: {
+        email,
+        expiresAt: verification.expiresAt,
+        sent: Boolean(emailResult?.sent),
+        deliveryMode: emailResult?.mode || "development",
+        verificationUrl: emailResult?.includeDebugUrl ? verification.verificationUrl : undefined,
+      },
+    };
   });
 }
 
@@ -275,6 +362,13 @@ export async function loginWithEmail(input = {}, requestMeta = {}) {
       throw error;
     }
 
+    if (row.auth_status === "pending_email_verification" || !row.email_verified_at) {
+      const error = new Error("이메일 인증이 필요합니다. 가입 시 입력한 이메일의 인증 링크를 확인해 주세요.");
+      error.statusCode = 403;
+      error.code = "EMAIL_VERIFICATION_REQUIRED";
+      throw error;
+    }
+
     await tx(
       `UPDATE auth_credentials
        SET failed_login_count = 0, locked_until = NULL, updated_at = NOW()
@@ -286,6 +380,99 @@ export async function loginWithEmail(input = {}, requestMeta = {}) {
     const session = await createSession(tx, row.id, requestMeta);
 
     return { user: mapUser({ ...row, last_login_at: new Date().toISOString() }), session };
+  });
+}
+
+export async function verifyEmailToken(token) {
+  const rawToken = String(token || "").trim();
+  if (!rawToken) {
+    const error = new Error("이메일 인증 토큰이 없습니다.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const tokenHash = hashEmailVerificationToken(rawToken);
+
+  return withTransaction(async (tx) => {
+    const result = await tx(
+      `SELECT auth_email_tokens.id, auth_email_tokens.user_id, auth_email_tokens.email,
+              auth_email_tokens.expires_at, auth_email_tokens.used_at,
+              users.auth_status, users.email_verified_at
+       FROM auth_email_tokens
+       JOIN users ON users.id = auth_email_tokens.user_id
+       WHERE auth_email_tokens.token_hash = $1
+         AND auth_email_tokens.purpose = 'verify_email'
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      const error = new Error("유효하지 않은 이메일 인증 링크입니다.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (row.used_at || row.email_verified_at) {
+      return { ok: true, alreadyVerified: true, user: await getUserById(row.user_id) };
+    }
+
+    if (new Date(row.expires_at).getTime() < Date.now()) {
+      const error = new Error("이메일 인증 링크가 만료되었습니다. 인증 메일을 다시 요청해 주세요.");
+      error.statusCode = 410;
+      throw error;
+    }
+
+    await tx(
+      `UPDATE auth_email_tokens
+       SET used_at = NOW()
+       WHERE id = $1`,
+      [row.id]
+    );
+
+    const userResult = await tx(
+      `UPDATE users
+       SET email_verified_at = NOW(),
+           auth_status = 'active',
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, email, name, nickname, plan, auth_status, email_verified_at, created_at, updated_at, last_login_at`,
+      [row.user_id]
+    );
+
+    return { ok: true, alreadyVerified: false, user: mapUser(userResult.rows[0]) };
+  });
+}
+
+export async function resendVerificationEmail(input = {}, requestMeta = {}) {
+  const email = assertEmail(input.email);
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    return { ok: true, email, resent: false };
+  }
+
+  if (user.emailVerifiedAt || user.authStatus === "active") {
+    return { ok: true, email, alreadyVerified: true };
+  }
+
+  return withTransaction(async (tx) => {
+    const verification = await createVerificationToken(tx, user.id, email, requestMeta);
+    const emailResult = await sendVerificationEmail({
+      to: email,
+      name: user.name,
+      verificationUrl: verification.verificationUrl,
+      expiresAt: verification.expiresAt,
+    });
+
+    return {
+      ok: true,
+      email,
+      resent: true,
+      expiresAt: verification.expiresAt,
+      deliveryMode: emailResult?.mode || "development",
+      verificationUrl: emailResult?.includeDebugUrl ? verification.verificationUrl : undefined,
+    };
   });
 }
 
