@@ -10,6 +10,12 @@ import {
   signupWithEmail,
   verifyEmailToken,
 } from "../db/authRepository.js";
+import {
+  buildGoogleOAuthUrl,
+  buildOAuthFailureRedirect,
+  buildOAuthSuccessRedirect,
+  completeGoogleOAuthLogin,
+} from "../db/googleOAuthRepository.js";
 
 const router = express.Router();
 
@@ -43,6 +49,26 @@ router.get("/check-email", async (request, response, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.get("/google/start", async (request, response, next) => {
+  try {
+    response.redirect(buildGoogleOAuthUrl());
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/google/callback", async (request, response) => {
+  try {
+    const result = await completeGoogleOAuthLogin(
+      { code: request.query.code, state: request.query.state },
+      getRequestMeta(request)
+    );
+    response.redirect(buildOAuthSuccessRedirect(result));
+  } catch (error) {
+    response.redirect(buildOAuthFailureRedirect(error?.message || "Google 로그인에 실패했습니다."));
   }
 });
 

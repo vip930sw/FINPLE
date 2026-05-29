@@ -6,10 +6,12 @@ import {
 } from "./portfolio/services/serverPortfolioService";
 import {
   checkEmailAvailability,
+  consumeGoogleOAuthRedirectResult,
   loginWithEmailPassword,
   logoutFinpleAuth,
   resendVerificationEmail,
   signupWithEmailPassword,
+  startGoogleOAuthLogin,
   verifyEmailToken,
 } from "./authClientService";
 
@@ -44,33 +46,18 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
     <main className={["accountPage", pageClassName].filter(Boolean).join(" ")}>
       <header className="accountHeader">
         <button type="button" className="brandLogo resetButton" onClick={() => onNavigate("home")}>
-          <div className="brandIcon">
-            <span>F</span>
-            <i />
-          </div>
-          <div className="brandText">
-            <strong>FINPLE</strong>
-            <span>Portfolio Lab</span>
-          </div>
+          <div className="brandIcon"><span>F</span><i /></div>
+          <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
         </button>
-
         <nav className="accountNav standardTopNav">
           <button type="button" onClick={() => onNavigate("home")}>홈</button>
           <button type="button" onClick={() => onNavigate("personal")}>시작하기</button>
           <button type="button" onClick={() => onNavigate("support")}>문의사항</button>
           <button type="button" onClick={handleMyPageClick}>MY PAGE</button>
-          <button type="button" className="accountNavAuthButton" onClick={handleLoginLogoutClick}>
-            {isLoggedIn ? "로그아웃" : "로그인"}
-          </button>
+          <button type="button" className="accountNavAuthButton" onClick={handleLoginLogoutClick}>{isLoggedIn ? "로그아웃" : "로그인"}</button>
         </nav>
       </header>
-
-      <section className="accountHero">
-        <p className="sectionLabel">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </section>
-
+      <section className="accountHero"><p className="sectionLabel">{eyebrow}</p><h1>{title}</h1><p>{description}</p></section>
       {children}
     </main>
   );
@@ -83,14 +70,31 @@ export function LoginPage({ onNavigate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
 
+  useEffect(() => {
+    try {
+      const oauthUser = consumeGoogleOAuthRedirectResult();
+      if (oauthUser?.id) {
+        setStatusMessage(`${oauthUser.email || oauthUser.name || "Google 사용자"} 계정으로 로그인되었습니다.`);
+        window.setTimeout(() => onNavigate("mypage"), 80);
+        return;
+      }
+
+      const oauthError = new URLSearchParams(window.location.search).get("oauthError");
+      if (oauthError) {
+        setStatusMessage(oauthError);
+        window.history.replaceState({ page: "login" }, "", "/login");
+      }
+    } catch (error) {
+      setStatusMessage(error?.message || "Google 로그인 결과를 확인하지 못했습니다.");
+    }
+  }, [onNavigate]);
+
   async function handleEmailLogin(event) {
     event.preventDefault();
-
     if (!email.trim() || !password) {
       setStatusMessage("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
-
     setIsLoading(true);
     try {
       const user = await loginWithEmailPassword({ email, password });
@@ -117,52 +121,17 @@ export function LoginPage({ onNavigate }) {
   }
 
   return (
-    <AccountShell
-      eyebrow="Account"
-      title="로그인"
-      description="FINPLE 계정으로 포트폴리오 저장, MY PAGE, 요금제 상태를 관리할 수 있습니다."
-      onNavigate={onNavigate}
-      pageClassName="legalPage"
-    >
+    <AccountShell eyebrow="Account" title="로그인" description="FINPLE 계정으로 포트폴리오 저장, MY PAGE, 요금제 상태를 관리할 수 있습니다." onNavigate={onNavigate} pageClassName="legalPage">
       <section className="accountCard accountFormCard loginRoleCard singleLoginCard">
-        <div className="loginRoleHeader">
-          <p className="accountMiniLabel">User Login</p>
-          <h2>일반 사용자 로그인</h2>
-          <span>이메일 계정 또는 체험 계정으로 시작할 수 있습니다.</span>
-        </div>
-
+        <div className="loginRoleHeader"><p className="accountMiniLabel">User Login</p><h2>일반 사용자 로그인</h2><span>이메일 계정, Google 계정 또는 체험 계정으로 시작할 수 있습니다.</span></div>
+        <button type="button" className="secondaryButton" onClick={startGoogleOAuthLogin} disabled={isLoading || isDemoLoading}>Google로 계속하기</button>
         <form onSubmit={handleEmailLogin}>
-          <label>
-            이메일
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-          </label>
-          <label>
-            비밀번호
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="비밀번호"
-              autoComplete="current-password"
-            />
-          </label>
-
+          <label>이메일<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" /></label>
+          <label>비밀번호<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
           <p className="accountInlineStatus">{statusMessage}</p>
-
-          <button type="submit" className="primaryButton" disabled={isLoading || isDemoLoading}>
-            {isLoading ? "로그인 중..." : "로그인"}
-          </button>
+          <button type="submit" className="primaryButton" disabled={isLoading || isDemoLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
-
-        <button type="button" className="secondaryButton" onClick={handleDemoLogin} disabled={isLoading || isDemoLoading}>
-          {isDemoLoading ? "연결 중..." : "체험 계정으로 시작"}
-        </button>
+        <button type="button" className="secondaryButton" onClick={handleDemoLogin} disabled={isLoading || isDemoLoading}>{isDemoLoading ? "연결 중..." : "체험 계정으로 시작"}</button>
         <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입으로 이동</button>
       </section>
     </AccountShell>
@@ -220,11 +189,7 @@ export function SignupPage({ onNavigate }) {
 
   async function handleEmailCheck() {
     setFormNotice("");
-    if (!signupEmail || !signupEmail.includes("@")) {
-      setEmailCheck({ status: "error", email: signupEmail });
-      return;
-    }
-
+    if (!signupEmail || !signupEmail.includes("@")) { setEmailCheck({ status: "error", email: signupEmail }); return; }
     setIsEmailChecking(true);
     try {
       const result = await checkEmailAvailability(signupEmail);
@@ -240,39 +205,16 @@ export function SignupPage({ onNavigate }) {
     event.preventDefault();
     setFormNotice("");
     setVerificationInfo(null);
-
     const trimmedName = name.trim();
     const trimmedNickname = nickname.trim();
-
-    if (!trimmedName || !trimmedNickname) {
-      setFormNotice("이름과 닉네임/ID를 각각 입력해 주세요.");
-      return;
-    }
-    if (!signupEmail || !password) {
-      setFormNotice("이메일과 비밀번호를 입력해 주세요.");
-      return;
-    }
-    if (emailCheck.status !== "available" || emailCheck.email !== signupEmail) {
-      setFormNotice("회원가입 전 이메일 중복확인을 완료해 주세요.");
-      return;
-    }
+    if (!trimmedName || !trimmedNickname) { setFormNotice("이름과 닉네임/ID를 각각 입력해 주세요."); return; }
+    if (!signupEmail || !password) { setFormNotice("이메일과 비밀번호를 입력해 주세요."); return; }
+    if (emailCheck.status !== "available" || emailCheck.email !== signupEmail) { setFormNotice("회원가입 전 이메일 중복확인을 완료해 주세요."); return; }
     if (passwordStatus.status === "error" || password !== passwordConfirm) return;
-    if (!termsAccepted || !privacyAccepted) {
-      setFormNotice("이용약관과 개인정보처리방침에 동의해 주세요.");
-      return;
-    }
-
+    if (!termsAccepted || !privacyAccepted) { setFormNotice("이용약관과 개인정보처리방침에 동의해 주세요."); return; }
     setIsLoading(true);
     try {
-      const result = await signupWithEmailPassword({
-        email: signupEmail,
-        password,
-        name: trimmedName,
-        nickname: trimmedNickname,
-        privacyAccepted,
-        termsAccepted,
-        marketingAgreed,
-      });
+      const result = await signupWithEmailPassword({ email: signupEmail, password, name: trimmedName, nickname: trimmedNickname, privacyAccepted, termsAccepted, marketingAgreed });
       const verification = result?.verification || {};
       setVerificationInfo({ email: verification.email || signupEmail, ...verification });
       setFormNotice("회원가입 요청이 접수되었습니다. 이메일 인증을 완료한 뒤 로그인해 주세요.");
@@ -286,17 +228,10 @@ export function SignupPage({ onNavigate }) {
   async function handleResendVerification() {
     const targetEmail = verificationInfo?.email || signupEmail;
     if (!targetEmail) return;
-
     setIsResending(true);
     try {
       const result = await resendVerificationEmail(targetEmail);
-      setVerificationInfo((current) => ({
-        ...(current || {}),
-        email: targetEmail,
-        expiresAt: result?.expiresAt || current?.expiresAt,
-        deliveryMode: result?.deliveryMode || current?.deliveryMode,
-        verificationUrl: result?.verificationUrl || current?.verificationUrl,
-      }));
+      setVerificationInfo((current) => ({ ...(current || {}), email: targetEmail, expiresAt: result?.expiresAt || current?.expiresAt, deliveryMode: result?.deliveryMode || current?.deliveryMode, verificationUrl: result?.verificationUrl || current?.verificationUrl }));
       setFormNotice("인증 메일을 다시 요청했습니다. 메일함을 확인해 주세요.");
     } catch (error) {
       setFormNotice(error?.message || "인증 메일 재발송에 실패했습니다.");
@@ -307,37 +242,20 @@ export function SignupPage({ onNavigate }) {
 
   async function handleDemoSignup() {
     setIsDemoLoading(true);
-    try {
-      await createOrLoadDemoUser();
-      onNavigate("mypage");
-    } catch (error) {
-      setFormNotice(error?.message || "체험 계정 준비에 실패했습니다.");
-    } finally {
-      setIsDemoLoading(false);
-    }
+    try { await createOrLoadDemoUser(); onNavigate("mypage"); }
+    catch (error) { setFormNotice(error?.message || "체험 계정 준비에 실패했습니다."); }
+    finally { setIsDemoLoading(false); }
   }
 
   if (verificationInfo) {
     return (
-      <AccountShell
-        eyebrow="Email Verification"
-        title="이메일 인증이 필요합니다"
-        description="가입 완료 전 이메일 인증 링크를 확인해 주세요. 인증 완료 후 로그인할 수 있습니다."
-        onNavigate={onNavigate}
-      >
+      <AccountShell eyebrow="Email Verification" title="이메일 인증이 필요합니다" description="가입 완료 전 이메일 인증 링크를 확인해 주세요. 인증 완료 후 로그인할 수 있습니다." onNavigate={onNavigate}>
         <section className="accountCard accountFormCard">
-          <p className="accountMiniLabel">Verification Pending</p>
-          <h2>인증 메일을 확인해 주세요</h2>
+          <p className="accountMiniLabel">Verification Pending</p><h2>인증 메일을 확인해 주세요</h2>
           <p className="accountInlineStatus">{verificationInfo.email} 주소로 인증 안내를 보냈습니다. 스팸함도 함께 확인해 주세요.</p>
-          {verificationInfo.verificationUrl ? (
-            <p className="authFormNotice">
-              개발 확인용 인증 링크: <a href={verificationInfo.verificationUrl}>{verificationInfo.verificationUrl}</a>
-            </p>
-          ) : null}
+          {verificationInfo.verificationUrl ? <p className="authFormNotice">개발 확인용 인증 링크: <a href={verificationInfo.verificationUrl}>{verificationInfo.verificationUrl}</a></p> : null}
           <button type="button" className="primaryButton" onClick={() => onNavigate("login")}>로그인 화면으로 이동</button>
-          <button type="button" className="secondaryButton" onClick={handleResendVerification} disabled={isResending}>
-            {isResending ? "재발송 중..." : "인증 메일 다시 보내기"}
-          </button>
+          <button type="button" className="secondaryButton" onClick={handleResendVerification} disabled={isResending}>{isResending ? "재발송 중..." : "인증 메일 다시 보내기"}</button>
           <button type="button" className="secondaryButton" onClick={() => setVerificationInfo(null)}>회원가입 정보 수정</button>
           {formNotice ? <p className="authFormNotice">{formNotice}</p> : null}
         </section>
@@ -351,24 +269,11 @@ export function SignupPage({ onNavigate }) {
         <form onSubmit={handleEmailSignup}>
           <label>이름<input value={name} onChange={(event) => setName(event.target.value)} placeholder="실명 또는 이름" autoComplete="name" /></label>
           <label>닉네임 / ID<input value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="서비스에서 표시할 닉네임 또는 ID" autoComplete="nickname" /></label>
-          <div className="authEmailField">
-            <span className="authFieldLabel">이메일</span>
-            <div className="authEmailRow">
-              <input type="text" value={emailLocal} onChange={handleEmailFieldChange(setEmailLocal)} placeholder="이메일 아이디" autoComplete="email" />
-              <span className="authEmailAt">@</span>
-              <select value={emailDomain} onChange={handleEmailFieldChange(setEmailDomain)}>{EMAIL_DOMAIN_OPTIONS.map((domain) => <option key={domain} value={domain}>{domain}</option>)}</select>
-            </div>
-            {emailDomain === "직접입력" ? <input className="authCustomDomainInput" type="text" value={customDomain} onChange={handleEmailFieldChange(setCustomDomain)} placeholder="도메인 직접입력 예: company.com" autoComplete="off" /> : null}
-            <div className="authEmailCheckRow"><span className={["authEmailStatus", `authEmailStatus--${emailCheck.status}`].join(" ")}>{emailStatusText}</span><button type="button" className="secondaryButton authEmailCheckButton" onClick={handleEmailCheck} disabled={isEmailChecking || isLoading || isDemoLoading}>{isEmailChecking ? "확인 중..." : "중복확인"}</button></div>
-          </div>
+          <div className="authEmailField"><span className="authFieldLabel">이메일</span><div className="authEmailRow"><input type="text" value={emailLocal} onChange={handleEmailFieldChange(setEmailLocal)} placeholder="이메일 아이디" autoComplete="email" /><span className="authEmailAt">@</span><select value={emailDomain} onChange={handleEmailFieldChange(setEmailDomain)}>{EMAIL_DOMAIN_OPTIONS.map((domain) => <option key={domain} value={domain}>{domain}</option>)}</select></div>{emailDomain === "직접입력" ? <input className="authCustomDomainInput" type="text" value={customDomain} onChange={handleEmailFieldChange(setCustomDomain)} placeholder="도메인 직접입력 예: company.com" autoComplete="off" /> : null}<div className="authEmailCheckRow"><span className={["authEmailStatus", `authEmailStatus--${emailCheck.status}`].join(" ")}>{emailStatusText}</span><button type="button" className="secondaryButton authEmailCheckButton" onClick={handleEmailCheck} disabled={isEmailChecking || isLoading || isDemoLoading}>{isEmailChecking ? "확인 중..." : "중복확인"}</button></div></div>
           <label>비밀번호<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8자 이상" autoComplete="new-password" /></label>
           <label>비밀번호 확인<input type="password" value={passwordConfirm} onChange={(event) => setPasswordConfirm(event.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" /></label>
           {passwordStatus.text ? <p className={["authPasswordStatus", `authPasswordStatus--${passwordStatus.status}`].join(" ")}>{passwordStatus.text}</p> : null}
-          <div className="authConsentBox">
-            <label><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} /><span className="authConsentText">이용약관에 동의합니다.</span><em className="authConsentRequired">필수</em></label>
-            <label><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span className="authConsentText">개인정보처리방침에 동의합니다.</span><em className="authConsentRequired">필수</em></label>
-            <label><input type="checkbox" checked={marketingAgreed} onChange={(event) => setMarketingAgreed(event.target.checked)} /><span className="authConsentText">마케팅 안내 수신에 동의합니다.</span><em className="authConsentOptional">선택</em></label>
-          </div>
+          <div className="authConsentBox"><label><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} /><span className="authConsentText">이용약관에 동의합니다.</span><em className="authConsentRequired">필수</em></label><label><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span className="authConsentText">개인정보처리방침에 동의합니다.</span><em className="authConsentRequired">필수</em></label><label><input type="checkbox" checked={marketingAgreed} onChange={(event) => setMarketingAgreed(event.target.checked)} /><span className="authConsentText">마케팅 안내 수신에 동의합니다.</span><em className="authConsentOptional">선택</em></label></div>
           {formNotice ? <p className="authFormNotice">{formNotice}</p> : null}
           <button type="submit" className="primaryButton" disabled={isLoading || isDemoLoading}>{isLoading ? "가입 요청 중..." : "회원가입 후 이메일 인증"}</button>
         </form>
@@ -385,37 +290,15 @@ export function VerifyEmailPage({ onNavigate }) {
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token") || "";
-    if (!token) {
-      setStatus("error");
-      setMessage("이메일 인증 토큰이 없습니다. 인증 메일의 링크를 다시 확인해 주세요.");
-      return;
-    }
-
+    if (!token) { setStatus("error"); setMessage("이메일 인증 토큰이 없습니다. 인증 메일의 링크를 다시 확인해 주세요."); return; }
     let isMounted = true;
-    verifyEmailToken(token)
-      .then((result) => {
-        if (!isMounted) return;
-        setStatus("success");
-        setMessage(result?.alreadyVerified ? "이미 인증된 이메일입니다. 로그인해 주세요." : "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.");
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setStatus("error");
-        setMessage(error?.message || "이메일 인증에 실패했습니다.");
-      });
-
+    verifyEmailToken(token).then((result) => { if (!isMounted) return; setStatus("success"); setMessage(result?.alreadyVerified ? "이미 인증된 이메일입니다. 로그인해 주세요." : "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다."); }).catch((error) => { if (!isMounted) return; setStatus("error"); setMessage(error?.message || "이메일 인증에 실패했습니다."); });
     return () => { isMounted = false; };
   }, []);
 
   return (
     <AccountShell eyebrow="Verify Email" title="이메일 인증" description="회원가입 시 발송된 인증 링크를 확인합니다." onNavigate={onNavigate} pageClassName="legalPage">
-      <section className="accountCard accountFormCard singleLoginCard">
-        <p className="accountMiniLabel">{status === "success" ? "Verified" : status === "error" ? "Verification Error" : "Checking"}</p>
-        <h2>{status === "success" ? "인증 완료" : status === "error" ? "인증 실패" : "인증 확인 중"}</h2>
-        <p className="accountInlineStatus">{message}</p>
-        <button type="button" className="primaryButton" onClick={() => onNavigate("login")}>로그인 화면으로 이동</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입 화면으로 이동</button>
-      </section>
+      <section className="accountCard accountFormCard singleLoginCard"><p className="accountMiniLabel">{status === "success" ? "Verified" : status === "error" ? "Verification Error" : "Checking"}</p><h2>{status === "success" ? "인증 완료" : status === "error" ? "인증 실패" : "인증 확인 중"}</h2><p className="accountInlineStatus">{message}</p><button type="button" className="primaryButton" onClick={() => onNavigate("login")}>로그인 화면으로 이동</button><button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입 화면으로 이동</button></section>
     </AccountShell>
   );
 }
