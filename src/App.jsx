@@ -147,20 +147,70 @@ function App() {
   useEffect(() => {
     if (currentPage !== "mypage") return undefined;
 
-    function preventMyPageHashJump(event) {
+    const sideMenuSelector = [
+      ".accountSidebar a",
+      ".accountSidebar button",
+      ".accountSideNav a",
+      ".accountSideNav button",
+      ".accountSideMenu a",
+      ".accountSideMenu button",
+      ".accountMenu a",
+      ".accountMenu button",
+      ".accountTabList a",
+      ".accountTabList button",
+      ".myPageSidebar a",
+      ".myPageSidebar button",
+      ".myPageSidePanel a",
+      ".myPageSidePanel button",
+      ".myPageMenu a",
+      ".myPageMenu button",
+      ".myPageNav a",
+      ".myPageNav button",
+      ".mypageSidebar a",
+      ".mypageSidebar button",
+      ".mypageSideNav a",
+      ".mypageSideNav button",
+      ".mypageMenu a",
+      ".mypageMenu button",
+      ".mypageNav a",
+      ".mypageNav button",
+      "a[href^='#']",
+      "a[href^='/mypage#']",
+    ].join(", ");
+
+    function freezeCurrentScrollPosition() {
+      const lockedX = window.scrollX;
+      const lockedY = window.scrollY;
+
+      function restoreScroll() {
+        window.scrollTo({ left: lockedX, top: lockedY, behavior: "auto" });
+      }
+
+      restoreScroll();
+      window.requestAnimationFrame(restoreScroll);
+      window.setTimeout(restoreScroll, 0);
+      window.setTimeout(restoreScroll, 80);
+      window.setTimeout(restoreScroll, 220);
+      window.setTimeout(restoreScroll, 420);
+    }
+
+    function preventMyPageMenuScroll(event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      const anchor = target.closest("a[href^='#'], a[href^='/mypage#']");
-      if (!anchor) return;
+      const menuTarget = target.closest(sideMenuSelector);
+      if (!menuTarget) return;
 
-      event.preventDefault();
-      event.stopPropagation();
-      window.history.replaceState({ page: "mypage" }, "", "/mypage");
+      if (menuTarget.matches("a[href^='#'], a[href^='/mypage#']")) {
+        event.preventDefault();
+        window.history.replaceState({ page: "mypage" }, "", "/mypage");
+      }
+
+      freezeCurrentScrollPosition();
     }
 
-    document.addEventListener("click", preventMyPageHashJump, true);
-    return () => document.removeEventListener("click", preventMyPageHashJump, true);
+    document.addEventListener("click", preventMyPageMenuScroll, true);
+    return () => document.removeEventListener("click", preventMyPageMenuScroll, true);
   }, [currentPage]);
 
   useEffect(() => {
