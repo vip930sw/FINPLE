@@ -21,6 +21,26 @@ function safeFixed(value, digits = 2) {
   return safeNumber(value).toFixed(digits);
 }
 
+function getSafeReportFileName(reportPdfFileName, activePortfolio) {
+  if (typeof reportPdfFileName === "function") {
+    try {
+      return reportPdfFileName();
+    } catch (error) {
+      return "FINPLE-report.pdf";
+    }
+  }
+
+  if (typeof reportPdfFileName === "string" && reportPdfFileName.trim()) {
+    return reportPdfFileName;
+  }
+
+  const portfolioName = String(activePortfolio?.name || "FINPLE-report")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .trim();
+
+  return `${portfolioName || "FINPLE-report"}.pdf`;
+}
+
 export default function DetailPanel({
   activePortfolio,
   detailReport,
@@ -53,8 +73,14 @@ export default function DetailPanel({
   const safeReport = detailReport || null;
   const safeFormatNumber = typeof formatNumber === "function" ? formatNumber : (value) => Math.floor(safeNumber(value)).toLocaleString();
   const safeFormatPercent = typeof formatPercent === "function" ? formatPercent : (value) => `${safeFixed(value)}%`;
+  const safeReportFileName = getSafeReportFileName(reportPdfFileName, activePortfolio);
 
-  const portfolioAnalysis = analyzePortfolioProfile({ assets: safeAssets, result });
+  const rawPortfolioAnalysis = analyzePortfolioProfile({ assets: safeAssets, result }) || {};
+  const portfolioAnalysis = {
+    title: rawPortfolioAnalysis.title || "포트폴리오 분석",
+    description: rawPortfolioAnalysis.description || "계산 결과를 기준으로 포트폴리오 특성을 확인합니다.",
+    tags: Array.isArray(rawPortfolioAnalysis.tags) ? rawPortfolioAnalysis.tags : [],
+  };
   const monthlyDividend = Math.floor(safeNumber(expectedAnnualDividend) / 12);
   const investmentYears = safeNumber(safeSettings.years, 0);
   const cumulativeContribution = safeNumber(simulationStartValue) + safeNumber(yearlyContribution) * investmentYears;
@@ -110,7 +136,7 @@ export default function DetailPanel({
             <button type="button" onClick={copyReportSummary}>공유 문구 복사</button>
           </div>
 
-          <p className="pdfFileNameHint">저장 권장 파일명: {reportPdfFileName}</p>
+          <p className="pdfFileNameHint">저장 권장 파일명: {safeReportFileName}</p>
         </div>
       </div>
 
