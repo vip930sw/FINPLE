@@ -23,7 +23,11 @@ function safeFileName(reportPdfFileName, activePortfolio) {
   return `${String(activePortfolio?.name || "FINPLE-report").replace(/[\\/:*?"<>|]/g, "-")}.pdf`;
 }
 
-export default function SimulatorDetailStandalonePage({ onNavigate }) {
+function goTo(path) {
+  window.location.href = path;
+}
+
+export default function SimulatorDetailStandalonePage() {
   const {
     activePortfolio,
     settings,
@@ -37,7 +41,6 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
     expectedCalmar,
     expectedAnnualDividend,
     formatNumber,
-    formatDecimal,
     saveReportPdf,
     printReport,
     reportPdfFileName,
@@ -46,25 +49,31 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
 
   const safeAssets = Array.isArray(assets) ? assets : [];
   const fileName = safeFileName(reportPdfFileName, activePortfolio);
-  const validAssetCount = safeAssets.filter((asset) => String(asset?.ticker || "").trim()).length;
-
-  function goSimulator() {
-    if (typeof onNavigate === "function") {
-      onNavigate("personal");
-      window.setTimeout(() => {
-        if (window.location.pathname !== "/simulator") {
-          window.history.pushState({ page: "personal" }, "", "/simulator");
-        }
-      }, 0);
-      return;
-    }
-
-    window.location.href = "/simulator";
-  }
+  const validAssets = safeAssets.filter((asset) => String(asset?.ticker || "").trim());
+  const validAssetCount = validAssets.length;
 
   return (
     <main className="page personalPage">
-      <section id="detail" className="section calculatorSection simulatorSection detailPanel">
+      <header className="header">
+        <button className="brandLogo resetButton" onClick={() => goTo("/")}> 
+          <div className="brandIcon"><span>F</span><i /></div>
+          <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
+        </button>
+        <nav className="headerNav">
+          <button type="button" onClick={() => goTo("/simulator")}>시뮬레이터</button>
+          <button type="button" onClick={() => goTo("/simulator")}>포트폴리오</button>
+          <button type="button" className="active">상세분석</button>
+        </nav>
+        <nav className="headerNav">
+          <button type="button" onClick={() => goTo("/")}>홈</button>
+          <button type="button" className="primaryButton" onClick={() => goTo("/start")}>시작하기</button>
+          <button type="button" onClick={() => goTo("/pricing")}>요금제</button>
+          <button type="button" onClick={() => goTo("/support")}>문의사항</button>
+          <button type="button" onClick={() => goTo("/mypage")}>MY PAGE</button>
+        </nav>
+      </header>
+
+      <section id="detail" className="section calculatorSection simulatorSection detailPanel" style={{ maxWidth: 1280, margin: "0 auto" }}>
         <div className="tabSectionHeader tabSectionHeaderRow">
           <div>
             <p className="sectionLabel">Step 3. Detail</p>
@@ -88,6 +97,12 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
           </div>
         </div>
 
+        <div className="simulatorTabNav threeStepNav" style={{ marginBottom: 28 }}>
+          <button type="button" className="simulatorTabButton" onClick={() => goTo("/simulator")}><span>STEP 1</span><strong>시뮬레이터</strong></button>
+          <button type="button" className="simulatorTabButton" onClick={() => goTo("/simulator")}><span>STEP 2</span><strong>포트폴리오</strong></button>
+          <button type="button" className="simulatorTabButton active"><span>STEP 3</span><strong>상세분석</strong></button>
+        </div>
+
         <div className="detailHeroGrid">
           <article className="detailHeroMain">
             <p className="sectionLabel">Projection</p>
@@ -109,12 +124,7 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
         </div>
 
         <div className="detailMetricSection">
-          <div className="detailMetricHeader">
-            <div>
-              <p className="sectionLabel">Summary</p>
-              <h4>핵심 지표</h4>
-            </div>
-          </div>
+          <div className="detailMetricHeader"><div><p className="sectionLabel">Summary</p><h4>핵심 지표</h4></div></div>
           <div className="detailMetricGrid">
             <article><span>예상 CAGR</span><strong>{safeNumber(expectedCagr).toFixed(2)}%</strong><p>자산 비중 가중 평균</p></article>
             <article><span>예상 배당률</span><strong>{safeNumber(expectedDividendYield).toFixed(2)}%</strong><p>포트폴리오 기준</p></article>
@@ -126,25 +136,12 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
         </div>
 
         <div className="portfolioDetailReport">
-          <div className="portfolioDetailReportHeader">
-            <div>
-              <p className="sectionLabel">Assets</p>
-              <h4>자산 목록</h4>
-            </div>
-          </div>
+          <div className="portfolioDetailReportHeader"><div><p className="sectionLabel">Assets</p><h4>자산 목록</h4></div></div>
           <div className="calculatorTableWrap">
             <table className="calculatorTable alignedAssetTable">
-              <thead>
-                <tr>
-                  <th>티커</th>
-                  <th>자산명</th>
-                  <th className="numberHeader">수량</th>
-                  <th className="numberHeader">현재가</th>
-                  <th className="numberHeader">평가금액</th>
-                </tr>
-              </thead>
+              <thead><tr><th>티커</th><th>자산명</th><th className="numberHeader">수량</th><th className="numberHeader">현재가</th><th className="numberHeader">평가금액</th></tr></thead>
               <tbody>
-                {safeAssets.filter((asset) => String(asset?.ticker || "").trim()).map((asset, index) => {
+                {validAssets.map((asset, index) => {
                   const quantity = safeNumber(asset.quantity);
                   const price = safeNumber(asset.price);
                   const value = quantity * price;
@@ -164,10 +161,15 @@ export default function SimulatorDetailStandalonePage({ onNavigate }) {
         </div>
 
         <div className="detailReportActions" style={{ marginTop: 24 }}>
-          <button type="button" onClick={goSimulator}>시뮬레이터로 돌아가기</button>
+          <button type="button" onClick={() => goTo("/simulator")}>시뮬레이터로 돌아가기</button>
           <button type="button" className="primaryReportAction" onClick={saveReportPdf}>PDF 저장 다시 시도</button>
         </div>
       </section>
+
+      <footer className="footer siteFooter">
+        <div className="siteFooterBrandBlock"><strong>FINPLE Portfolio Lab</strong><span>© 2026 FINPLE. Beta service.</span></div>
+        <p className="siteFooterNotice">FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며, 특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.</p>
+      </footer>
     </main>
   );
 }
