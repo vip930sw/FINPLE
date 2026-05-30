@@ -3,8 +3,15 @@ import {
   getFinpleApiBaseUrl,
   setStoredFinpleAuthUser,
 } from "./portfolio/services/serverPortfolioService";
+import {
+  archiveVisiblePortfolioStorageForUser,
+  dispatchPortfolioStorageUpdated,
+  resetVisiblePortfolioStorageToGuest,
+  restoreVisiblePortfolioStorageForUser,
+} from "./portfolio/utils/portfolioStorageScope";
 
 const AUTH_SESSION_STORAGE_KEY = "finple-auth-session";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -101,6 +108,7 @@ function storeAuthResult(payload) {
   }
 
   setStoredFinpleAuthUser(user);
+  restoreVisiblePortfolioStorageForUser(user);
 
   if (payload?.session?.token) {
     setStoredFinpleAuthSession({
@@ -113,6 +121,7 @@ function storeAuthResult(payload) {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("finple-auth-updated"));
     window.dispatchEvent(new Event("finple-local-storage-updated"));
+    window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
   }
 
   return user;
@@ -217,6 +226,7 @@ export async function loginWithEmailPassword({ email, password }) {
 
 export async function logoutFinpleAuth() {
   const session = getStoredFinpleAuthSession();
+  const storedUser = readJson(AUTH_USER_STORAGE_KEY, null);
 
   try {
     if (session?.token) {
@@ -226,12 +236,21 @@ export async function logoutFinpleAuth() {
     // 로그아웃은 사용자 화면을 막지 않기 위해 로컬 정리를 우선합니다.
   }
 
+  if (storedUser?.id) archiveVisiblePortfolioStorageForUser(storedUser);
   clearStoredFinpleAuthSession();
   clearStoredFinpleAuthUser();
+  resetVisiblePortfolioStorageToGuest();
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("finple-auth-updated"));
     window.dispatchEvent(new Event("finple-local-storage-updated"));
+    window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
+    dispatchPortfolioStorageUpdated();
+
+    const pathname = String(window.location.pathname || "");
+    if (pathname.includes("/simulator")) {
+      window.setTimeout(() => window.location.reload(), 0);
+    }
   }
 
   return { ok: true };
