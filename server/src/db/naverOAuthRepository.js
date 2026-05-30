@@ -154,7 +154,7 @@ async function ensureDefaultEntitlement(tx, userId, plan = "free") {
        api_lookup_limit_per_day = EXCLUDED.api_lookup_limit_per_day,
        pdf_report_enabled = EXCLUDED.pdf_report_enabled,
        report_level = EXCLUDED.report_level,
-       screener_level = EXCLUDED.support_level,
+       screener_level = EXCLUDED.screener_level,
        support_level = EXCLUDED.support_level,
        updated_at = NOW()`,
     [userId, plan]
