@@ -1,0 +1,127 @@
+.loginSimplePage > .accountHero {
+  display: none !important;
+}
+
+.loginSimplePage .loginSimpleCard {
+  margin-top: 100px !important;
+}
+
+.loginSimpleHeader .accountMiniLabel {
+  display: none !important;
+}
+
+.loginSimpleHeader h2 {
+  margin-top: 0 !important;
+}
+
+.loginUtilityRow {
+  align-items: center !important;
+}
+
+.loginKeepLabel {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  line-height: 1 !important;
+}
+
+.loginKeepLabel input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  vertical-align: middle;
+  transform: translateY(0);
+}
+
+.loginKeepLabel span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 16px;
+  line-height: 16px;
+}
+
+.loginSocialButton {
+  width: 46px !important;
+  height: 46px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 999px !important;
+}
+
+.loginSocialIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.loginSocialButton.kakao {
+  background: #fee500 !important;
+  border-color: #fee500 !important;
+}
+
+.kakaoTalkIcon {
+  position: relative;
+  color: #fee500;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  z-index: 1;
+}
+
+.kakaoTalkIcon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 31px;
+  height: 23px;
+  border-radius: 50%;
+  background: #3c1e1e;
+  transform: translate(-50%, -52%);
+  z-index: -1;
+}
+
+.kakaoTalkIcon::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  width: 10px;
+  height: 10px;
+  background: #3c1e1e;
+  transform: rotate(28deg) skew(-10deg);
+  border-radius: 2px;
+  z-index: -2;
+}
+
+.loginSocialButton.naver {
+  background: #03c75a !important;
+  border-color: #03c75a !important;
+}
+
+.naverIcon {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.loginSocialButton.google {
+  background: #ffffff !important;
+  border: 1px solid #747775 !important;
+}
+
+.googleIcon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 900px) {
+  .loginSimplePage .loginSimpleCard {
+    margin-top: 100px !important;
+  }
+}
