@@ -5,6 +5,15 @@ const TAB_ITEMS = [
 ];
 
 export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab }) {
+  function handleTabClick(itemKey) {
+    if (itemKey === "detail") {
+      window.location.href = "/simulator/detail";
+      return;
+    }
+
+    changeSimulatorTab(itemKey);
+  }
+
   return (
     <div className="simulatorTabNav threeStepNav">
       {TAB_ITEMS.map((item) => (
@@ -15,7 +24,7 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
               ? "simulatorTabButton active"
               : "simulatorTabButton"
           }
-          onClick={() => changeSimulatorTab(item.key)}
+          onClick={() => handleTabClick(item.key)}
         >
           <span>{item.step}</span>
           <strong>{item.title}</strong>
