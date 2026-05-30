@@ -61,6 +61,29 @@ function getRouteFromPath(pathname) {
   return entry?.[0] || "home";
 }
 
+function AuthFooter({ onNavigate }) {
+  function handleFooterClick(event, nextRoute) {
+    event.preventDefault();
+    onNavigate(nextRoute);
+  }
+
+  return (
+    <footer className="siteFooter authPageFooter">
+      <div className="siteFooterBrandBlock">
+        <strong>FINPLE Portfolio Lab</strong>
+        <span>© 2026 FINPLE. Beta service.</span>
+      </div>
+      <p className="siteFooterNotice">FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며, 특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.</p>
+      <div className="siteFooterLinks">
+        <a href="/updates" onClick={(event) => handleFooterClick(event, "updates")}>업데이트</a>
+        <a href="/terms" onClick={(event) => handleFooterClick(event, "terms")}>이용약관</a>
+        <a href="/privacy" onClick={(event) => handleFooterClick(event, "privacy")}>개인정보처리방침</a>
+        <a href="/disclaimer" onClick={(event) => handleFooterClick(event, "investment-disclaimer")}>투자 유의사항</a>
+      </div>
+    </footer>
+  );
+}
+
 function App() {
   const [route, setRoute] = useState(() => getRouteFromPath(window.location.pathname));
   const [authTick, setAuthTick] = useState(0);
@@ -102,6 +125,7 @@ function App() {
   const authUser = getStoredFinpleAuthUser();
   const isLoggedIn = Boolean(authUser?.id);
   const isAdmin = Boolean(getFinpleAdminToken());
+  const authLabel = isAdmin ? "관리자" : isLoggedIn ? "로그오프" : "로그인";
 
   const pageProps = {
     onNavigate: navigate,
@@ -128,6 +152,22 @@ function App() {
   else if (route === "investment-disclaimer") content = <InvestmentDisclaimerPage {...pageProps} />;
   else if (route === "personal") content = <PersonalPage {...pageProps} />;
   else content = <PersonalPage {...pageProps} />;
+
+  if (["login", "signup", "verify-email"].includes(route)) {
+    return (
+      <>
+        <SiteHeader
+          isLoggedIn={isLoggedIn}
+          isAdminMode={isAdmin}
+          authLabel={authLabel}
+          onNavigate={navigate}
+          onLoginLogout={isLoggedIn ? handleLogout : () => navigate("login")}
+        />
+        {content}
+        <AuthFooter onNavigate={navigate} />
+      </>
+    );
+  }
 
   return content;
 }
