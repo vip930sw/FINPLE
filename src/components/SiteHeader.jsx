@@ -7,6 +7,7 @@ export default function SiteHeader({
   onNavigate,
   onLoginLogout,
   onHomeSection,
+  showHomeSectionNav = false,
 }) {
   function handleHomeClick() {
     if (typeof onHome === "function") {
@@ -57,11 +58,13 @@ export default function SiteHeader({
         <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
       </button>
 
-      <nav className="homeSectionNav siteHeaderSectionNav" aria-label="FINPLE 주요 섹션">
-        <button type="button" className="navTextButton" onClick={() => handleSectionClick("hero")}>소개</button>
-        <button type="button" className="navTextButton" onClick={() => handleSectionClick("index")}>인덱스</button>
-        <button type="button" className="navTextButton" onClick={() => handleSectionClick("pricing")}>요금제</button>
-      </nav>
+      {showHomeSectionNav ? (
+        <nav className="homeSectionNav siteHeaderSectionNav" aria-label="FINPLE 주요 섹션">
+          <button type="button" className="navTextButton" onClick={() => handleSectionClick("hero")}>소개</button>
+          <button type="button" className="navTextButton" onClick={() => handleSectionClick("index")}>인덱스</button>
+          <button type="button" className="navTextButton" onClick={() => handleSectionClick("pricing")}>요금제</button>
+        </nav>
+      ) : null}
 
       <div className="headerActions siteHeaderActions">
         <button className="secondaryHeaderButton" onClick={handleHomeClick}>홈</button>
