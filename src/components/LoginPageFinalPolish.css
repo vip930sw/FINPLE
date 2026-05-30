@@ -1,3 +1,5 @@
+@import "./LoginMobileFix.css";
+
 .loginSimplePage > .accountHero {
   display: none !important;
 }

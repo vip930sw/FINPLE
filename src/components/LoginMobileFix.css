@@ -1,0 +1,43 @@
+@media (max-width: 900px) {
+  .loginUtilityRow {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center !important;
+    column-gap: 16px !important;
+  }
+
+  .loginKeepLabel {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0, auto) !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 0;
+  }
+
+  .loginKeepLabel input[type="checkbox"] {
+    width: 28px !important;
+    height: 28px !important;
+    transform: none !important;
+  }
+
+  .loginKeepLabel span {
+    line-height: 1.25 !important;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .loginUtilityRow {
+    column-gap: 12px !important;
+  }
+
+  .loginKeepLabel {
+    grid-template-columns: 26px minmax(0, auto) !important;
+    gap: 8px !important;
+  }
+
+  .loginKeepLabel input[type="checkbox"] {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
