@@ -79,6 +79,14 @@ function saveLocalPendingInquiry(requestUrl, requestInit) {
   return inquiry;
 }
 
+if (typeof window !== "undefined") {
+  try {
+    window.localStorage.removeItem("FINPLE_ALPHA_VANTAGE_RATE_LIMIT_UNTIL");
+  } catch (error) {
+    // 레거시 Alpha Vantage 조회 제한 플래그 제거 실패 시에도 앱 실행은 계속합니다.
+  }
+}
+
 if (typeof window !== "undefined" && typeof window.fetch === "function" && !window.__finpleBetaNetworkFallbackApplied) {
   window.__finpleBetaNetworkFallbackApplied = true;
   const originalFetch = window.fetch.bind(window);
