@@ -48,6 +48,9 @@
   padding: 0 !important;
   overflow: hidden;
   border-radius: 999px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 46px 46px !important;
 }
 
 .loginSocialIcon {
@@ -59,60 +62,35 @@
 }
 
 .loginSocialButton.kakao {
-  background: #fee500 !important;
+  background-color: #fee500 !important;
+  background-image: url("../assets/social/kakao-talk.png") !important;
   border-color: #fee500 !important;
 }
 
-.kakaoTalkIcon {
-  position: relative;
-  color: #fee500;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: -0.8px;
-  z-index: 1;
-}
-
-.kakaoTalkIcon::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 31px;
-  height: 23px;
-  border-radius: 50%;
-  background: #3c1e1e;
-  transform: translate(-50%, -52%);
-  z-index: -1;
-}
-
-.kakaoTalkIcon::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  bottom: 8px;
-  width: 10px;
-  height: 10px;
-  background: #3c1e1e;
-  transform: rotate(28deg) skew(-10deg);
-  border-radius: 2px;
-  z-index: -2;
+.loginSocialButton.kakao .kakaoTalkIcon,
+.loginSocialButton.kakao .kakaoTalkIcon::before,
+.loginSocialButton.kakao .kakaoTalkIcon::after {
+  display: none !important;
 }
 
 .loginSocialButton.naver {
-  background: #03c75a !important;
+  background-color: #03c75a !important;
+  background-image: url("../assets/social/naver-login-icon-h48.png") !important;
   border-color: #03c75a !important;
 }
 
-.naverIcon {
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: -1px;
+.loginSocialButton.naver .naverIcon {
+  opacity: 0 !important;
 }
 
 .loginSocialButton.google {
-  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: url("../assets/social/google-web-light-rd-na.png") !important;
   border: 1px solid #747775 !important;
+}
+
+.loginSocialButton.google .googleIcon {
+  opacity: 0 !important;
 }
 
 .googleIcon {
