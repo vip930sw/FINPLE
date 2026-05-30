@@ -2,7 +2,9 @@ import { useState } from "react";
 
 import {
   FINPLE_PLAN_CONFIGS,
+  getPlanLimitMessage,
   getStoredFinplePlan,
+  getUpgradePromptText,
 } from "../config/planConfig";
 
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
@@ -129,6 +131,19 @@ function applyPortfolioLimit(portfolioList) {
   return portfolioList.slice(0, portfolioLimit);
 }
 
+function openPricingPage() {
+  if (typeof window === "undefined") return;
+  window.location.href = "/pricing";
+}
+
+function showPortfolioLimitNotice() {
+  const planKey = getStoredFinplePlan();
+  const message = getPlanLimitMessage(planKey, "portfolio");
+  const shouldMove = window.confirm(getUpgradePromptText(planKey, "portfolio"));
+  if (shouldMove) openPricingPage();
+  return message;
+}
+
 function getFriendlyServerSyncErrorMessage(error, actionLabel) {
   const rawMessage = String(error?.message || "").trim();
   const normalizedMessage = rawMessage.toLowerCase();
@@ -178,6 +193,39 @@ export default function PortfolioManagerPanel({
     "서버 저장 전입니다. 필요할 때 수동 저장하거나 서버 데이터를 불러오세요. 첫 요청은 서버 준비로 잠시 지연될 수 있습니다."
   );
   const [isServerSyncLoading, setIsServerSyncLoading] = useState(false);
+  const portfolioLimit = getCurrentPlanPortfolioLimit();
+  const isPortfolioLimitReached =
+    Number.isFinite(portfolioLimit) && Array.isArray(portfolioList) && portfolioList.length >= portfolioLimit;
+
+  function handleNewPortfolioButtonClick() {
+    if (isPortfolioLimitReached) {
+      setIsNewPortfolioMenuOpen(false);
+      showPortfolioLimitNotice();
+      return;
+    }
+
+    setIsNewPortfolioMenuOpen(!isNewPortfolioMenuOpen);
+  }
+
+  function handleCreatePortfolioFromTemplate(templateKey) {
+    if (isPortfolioLimitReached) {
+      setIsNewPortfolioMenuOpen(false);
+      showPortfolioLimitNotice();
+      return;
+    }
+
+    createPortfolioFromTemplate(templateKey);
+  }
+
+  function handleDuplicateActivePortfolio() {
+    if (isPortfolioLimitReached) {
+      setIsNewPortfolioMenuOpen(false);
+      showPortfolioLimitNotice();
+      return;
+    }
+
+    duplicateActivePortfolio();
+  }
 
   async function savePortfoliosToServer() {
     if (isServerSyncLoading) return;
@@ -305,39 +353,39 @@ export default function PortfolioManagerPanel({
         <div className="newPortfolioMenuWrap">
           <button
             className="newPortfolioButton"
-            onClick={() => setIsNewPortfolioMenuOpen(!isNewPortfolioMenuOpen)}
+            onClick={handleNewPortfolioButtonClick}
           >
             새 포트폴리오 ▾
           </button>
 
           {isNewPortfolioMenuOpen && (
             <div className="newPortfolioMenu">
-              <button onClick={() => createPortfolioFromTemplate("balanced")}>
+              <button onClick={() => handleCreatePortfolioFromTemplate("balanced")}>
                 <strong>균형형으로 시작</strong>
                 <span>성장·배당·안정 자산을 혼합</span>
               </button>
 
-              <button onClick={() => createPortfolioFromTemplate("growth")}>
+              <button onClick={() => handleCreatePortfolioFromTemplate("growth")}>
                 <strong>성장형으로 시작</strong>
                 <span>나스닥100 중심의 성장 구성</span>
               </button>
 
-              <button onClick={() => createPortfolioFromTemplate("dividend")}>
+              <button onClick={() => handleCreatePortfolioFromTemplate("dividend")}>
                 <strong>배당형으로 시작</strong>
                 <span>배당 현금흐름과 장기 보유 중심</span>
               </button>
 
-              <button onClick={() => createPortfolioFromTemplate("stable")}>
+              <button onClick={() => handleCreatePortfolioFromTemplate("stable")}>
                 <strong>안정형으로 시작</strong>
                 <span>채권·금 비중을 높인 방어 구성</span>
               </button>
 
-              <button onClick={() => createPortfolioFromTemplate("empty")}>
+              <button onClick={() => handleCreatePortfolioFromTemplate("empty")}>
                 <strong>빈 포트폴리오로 시작</strong>
                 <span>티커와 수량을 직접 입력</span>
               </button>
 
-              <button onClick={duplicateActivePortfolio}>
+              <button onClick={handleDuplicateActivePortfolio}>
                 <strong>현재 포트폴리오 복제</strong>
                 <span>현재 자산 구성을 그대로 복사</span>
               </button>
