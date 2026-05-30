@@ -17,6 +17,12 @@ import {
   completeGoogleOAuthLogin,
 } from "../db/googleOAuthRepository.js";
 import {
+  buildKakaoOAuthFailureRedirect,
+  buildKakaoOAuthSuccessRedirect,
+  buildKakaoOAuthUrl,
+  completeKakaoOAuthLogin,
+} from "../db/kakaoOAuthRepository.js";
+import {
   buildNaverOAuthFailureRedirect,
   buildNaverOAuthSuccessRedirect,
   buildNaverOAuthUrl,
@@ -81,6 +87,31 @@ router.get("/naver/callback", async (request, response) => {
     response.redirect(buildNaverOAuthSuccessRedirect(result));
   } catch (error) {
     response.redirect(buildNaverOAuthFailureRedirect(error?.message || "네이버 로그인에 실패했습니다."));
+  }
+});
+
+router.get("/kakao/start", async (request, response, next) => {
+  try {
+    response.redirect(buildKakaoOAuthUrl());
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/kakao/callback", async (request, response) => {
+  try {
+    const result = await completeKakaoOAuthLogin(
+      {
+        code: request.query.code,
+        state: request.query.state,
+        error: request.query.error,
+        error_description: request.query.error_description,
+      },
+      getRequestMeta(request)
+    );
+    response.redirect(buildKakaoOAuthSuccessRedirect(result));
+  } catch (error) {
+    response.redirect(buildKakaoOAuthFailureRedirect(error?.message || "카카오 로그인에 실패했습니다."));
   }
 });
 
