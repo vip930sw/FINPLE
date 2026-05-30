@@ -418,7 +418,7 @@ export default function usePortfolioSimulator() {
     return normalizeAsset({ ...currentAsset, ticker: nextTicker, name: nextName, market: assetData.market || currentAsset.market, currency: assetData.currency || currentAsset.currency, quantity: nextQuantity, price: assetData.price !== null && assetData.price !== undefined ? assetData.price : currentAsset.price, targetEvaluationAmount: plannedValue > 0 ? plannedValue : currentAsset.targetEvaluationAmount, cagr: assetData.cagr !== null && assetData.cagr !== undefined ? assetData.cagr : currentAsset.cagr, beta: assetData.beta !== null && assetData.beta !== undefined ? assetData.beta : currentAsset.beta, mdd: assetData.mdd !== null && assetData.mdd !== undefined ? assetData.mdd : currentAsset.mdd, dividendYield: preserveNullableNumber(assetData.dividendYield, currentAsset.dividendYield), priceMode: assetData.priceMode || currentAsset.priceMode, metricMode: assetData.metricMode || currentAsset.metricMode, dataSource: assetData.dataSource || currentAsset.dataSource, cacheMode: assetData.cacheMode || currentAsset.cacheMode || null, rawPrice: assetData.rawPrice !== null && assetData.rawPrice !== undefined ? assetData.rawPrice : currentAsset.rawPrice, rawCurrency: assetData.rawCurrency || currentAsset.rawCurrency || null, exchangeRate: assetData.exchangeRate !== null && assetData.exchangeRate !== undefined ? assetData.exchangeRate : currentAsset.exchangeRate, lastUpdatedAt: assetData.fetchedAt || currentAsset.lastUpdatedAt }, index);
   }
 
-  async function fetchAssetData(index) {
+  async function fetchAssetData(index, tickerOverride) {
     const targetAsset = assets[index];
     const ticker = normalizeTicker(targetAsset?.ticker);
     const statusKey = getAssetStatusKey(targetAsset, index);
