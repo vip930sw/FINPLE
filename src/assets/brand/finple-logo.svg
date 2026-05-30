@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="FINPLE logo mark">
-  <rect width="140" height="140" fill="#000000"/>
+  <circle cx="70" cy="70" r="70" fill="#000000"/>
   <text x="30" y="110" fill="#ffffff" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="92" font-weight="900" letter-spacing="-4">F</text>
   <text x="73" y="110" fill="#00aeea" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="92" font-weight="900" letter-spacing="-5">n</text>
 </svg>
