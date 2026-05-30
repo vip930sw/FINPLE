@@ -69,27 +69,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      window.addEventListener("keyup", function (event) {
-        if (event.key !== "Enter") return;
-        var input = event.target;
-        if (!input || input.tagName !== "INPUT") return;
-        var tickerCell = input.closest && input.closest("td.tickerCell");
-        if (!tickerCell) return;
-        var ticker = String(input.value || "").trim();
-        if (!ticker) return;
-        var row = input.closest("tr");
-        if (!row) return;
-        var now = Date.now();
-        var previous = Number(row.getAttribute("data-finple-enter-lookup-at") || 0);
-        if (now - previous < 1200) return;
-        row.setAttribute("data-finple-enter-lookup-at", String(now));
-        window.setTimeout(function () {
-          var button = row.querySelector(".inlineLookupTextButton");
-          if (button && !button.disabled) button.click();
-        }, 500);
-      }, true);
-    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
