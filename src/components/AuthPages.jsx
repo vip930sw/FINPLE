@@ -24,6 +24,7 @@ const EMAIL_DOMAIN_OPTIONS = [
   "hanmail.net",
   "직접입력",
 ];
+const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
 
 function GoogleGIcon() {
   return (
@@ -132,7 +133,7 @@ export function LoginPage({ onNavigate }) {
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
-    setStatusMessage("로그인 서버를 준비하는 중입니다.");
+    setStatusMessage(OAUTH_LOADING_MESSAGE);
     try {
       await startGoogleOAuthLogin();
     } finally {
@@ -142,7 +143,7 @@ export function LoginPage({ onNavigate }) {
 
   async function handleKakaoLogin() {
     setIsKakaoLoading(true);
-    setStatusMessage("로그인 서버를 준비하는 중입니다.");
+    setStatusMessage(OAUTH_LOADING_MESSAGE);
     try {
       await startKakaoOAuthLogin();
     } finally {
