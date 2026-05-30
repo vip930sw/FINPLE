@@ -344,6 +344,7 @@ function App() {
         onNavigate={setCurrentPage}
         onLoginLogout={handleHeaderLoginLogout}
         onHomeSection={scrollHomeToSection}
+        showHomeSectionNav
       />
 
       <div className="tickerArea"><TradingViewTicker symbols={[...stockIndexSymbols, ...currencyCryptoSymbols]} /></div>
