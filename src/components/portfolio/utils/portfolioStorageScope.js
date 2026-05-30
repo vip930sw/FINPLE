@@ -72,13 +72,20 @@ function writeRawStorage(key, value) {
 }
 
 export function readScopedPortfolioStorageItem(baseKey, fallback = null, scope = getPortfolioStorageScope()) {
-  const scopedValue = readRawStorage(getScopedPortfolioStorageKey(baseKey, scope));
-  if (scopedValue !== null && scopedValue !== undefined) return scopedValue;
-
   if (scope.type === "user") {
-    const legacyValue = readRawStorage(baseKey);
-    if (legacyValue !== null && legacyValue !== undefined) return legacyValue;
+    // During an authenticated session, the visible key is the freshest working copy.
+    const visibleValue = readRawStorage(baseKey);
+    if (visibleValue !== null && visibleValue !== undefined) return visibleValue;
+
+    const scopedValue = readRawStorage(getScopedPortfolioStorageKey(baseKey, scope));
+    if (scopedValue !== null && scopedValue !== undefined) return scopedValue;
+
+    return fallback;
   }
+
+  // Logged-out / guest views must not read a previous user's visible working copy.
+  const scopedGuestValue = readRawStorage(getScopedPortfolioStorageKey(baseKey, scope));
+  if (scopedGuestValue !== null && scopedGuestValue !== undefined) return scopedGuestValue;
 
   return fallback;
 }
