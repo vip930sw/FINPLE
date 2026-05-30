@@ -42,6 +42,10 @@
   padding-top: 0;
 }
 
+.loginSocialRow {
+  display: flex;
+}
+
 .loginSocialButton {
   width: 46px !important;
   height: 46px !important;
@@ -62,6 +66,7 @@
 }
 
 .loginSocialButton.kakao {
+  order: 3;
   background-color: #fee500 !important;
   background-image: url("../assets/social/kakao-talk.png") !important;
   border-color: #fee500 !important;
@@ -74,6 +79,7 @@
 }
 
 .loginSocialButton.naver {
+  order: 2;
   background-color: #03c75a !important;
   background-image: url("../assets/social/naver-login-icon-h48.png") !important;
   border-color: #03c75a !important;
@@ -84,6 +90,7 @@
 }
 
 .loginSocialButton.google {
+  order: 1;
   background-color: #ffffff !important;
   background-image: url("../assets/social/google-web-light-rd-na.png") !important;
   border: 1px solid #747775 !important;
@@ -96,6 +103,24 @@
 .googleIcon {
   width: 24px;
   height: 24px;
+}
+
+.brandIcon,
+.loginSimpleBrandIcon {
+  background-color: transparent !important;
+  background-image: url("../assets/brand/finple-logo.svg") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.brandIcon span,
+.brandIcon i,
+.loginSimpleBrandIcon span,
+.loginSimpleBrandIcon i {
+  display: none !important;
 }
 
 .authPageFooter {
