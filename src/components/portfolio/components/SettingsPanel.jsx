@@ -214,8 +214,6 @@ export default function SettingsPanel({
         removeAsset={removeAsset}
       />
 
-      {assetLookupSummary && <div className="assetLookupSummary belowTableSummary" role="status">{assetLookupSummary}</div>}
-
       <div className="tableActionRow simulatorTableActionRow">
         <div className="tableActionLeftGroup">
           <button className="addButton" onClick={addAsset} disabled={isBulkAssetLookupLoading}>자산 추가</button>
@@ -223,11 +221,12 @@ export default function SettingsPanel({
           <button className="resetPortfolioButton secondary" onClick={cleanEmptyAssetRows}>빈 행 정리</button>
           <button className="resetPortfolioButton danger" onClick={resetActivePortfolioAssets}>포트폴리오 초기화</button>
         </div>
-        <div className="targetWeightControlGroup">
-          <span className={summary.isOver ? "targetWeightNotice over" : "targetWeightNotice"}>{targetWeightNotice}</span>
-          <button className="resetPortfolioButton secondary" onClick={resetTargetWeights}>목표비중 초기화</button>
-          <button className="resetPortfolioButton secondary" onClick={equalizeTargetWeights}>동일비중</button>
-          <button className="applyWeightButton" onClick={applyTargetWeights} disabled={summary.isApplyDisabled}>목표비중 적용</button>
+        <div className="tableActionLeftGroup tableActionRightGroup">
+          <div className={summary.isOver ? "targetWeightInlineSummary warning" : "targetWeightInlineSummary"}>
+            <strong>{formatDecimal(summary.total, 2)}%</strong>
+            <small>{targetWeightNotice}</small>
+          </div>
+          <button className="primaryButton tableCalculateButton" onClick={applyTargetWeights} disabled={summary.isApplyDisabled}>계산</button>
         </div>
       </div>
     </div>
