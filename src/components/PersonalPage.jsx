@@ -5,11 +5,23 @@ import InvestmentMbtiPage from "./InvestmentMbtiPage";
 import InvestmentMbtiMarketChoiceBridge from "./InvestmentMbtiMarketChoiceBridge";
 import ScreenerPage from "./ScreenerPage";
 
+const SIMULATOR_TAB_PATHS = {
+  settings: "/simulator",
+  compare: "/simulator/portfolio",
+  detail: "/simulator/detail",
+};
+
 function replaceToolPath(path) {
   if (typeof window === "undefined") return;
   if (window.location.pathname === path) return;
   window.history.pushState({ page: "personal", path }, "", path);
   window.dispatchEvent(new CustomEvent("finple-route-changed", { detail: { page: "personal", path } }));
+}
+
+function getSimulatorTabFromPath(pathname = "") {
+  if (pathname === "/simulator/portfolio") return "compare";
+  if (pathname === "/simulator/detail") return "detail";
+  return "settings";
 }
 
 function getInitialPersonalView() {
@@ -21,6 +33,8 @@ function getInitialPersonalView() {
   if (path === "/simulator") return "simulator";
   if (path === "/simulator/us") return "simulator";
   if (path === "/simulator/kr") return "simulator";
+  if (path === "/simulator/portfolio") return "simulator";
+  if (path === "/simulator/detail") return "simulator";
 
   const tool = new URLSearchParams(window.location.search).get("tool");
   if (tool === "investment-mbti") return "investment-mbti";
@@ -30,16 +44,21 @@ function getInitialPersonalView() {
   return "hub";
 }
 
-function getPathForPersonalView(view) {
+function getInitialSimulatorTab() {
+  if (typeof window === "undefined") return "settings";
+  return getSimulatorTabFromPath(window.location.pathname);
+}
+
+function getPathForPersonalView(view, simulatorTab = "settings") {
   if (view === "investment-mbti") return "/mbti";
   if (view === "screener") return "/screener";
-  if (view === "simulator") return "/simulator";
+  if (view === "simulator") return SIMULATOR_TAB_PATHS[simulatorTab] || "/simulator";
   return "/start";
 }
 
 function PersonalPage({ onBack }) {
   const [personalView, setPersonalView] = useState(getInitialPersonalView);
-  const [initialTab, setInitialTab] = useState("settings");
+  const [initialTab, setInitialTab] = useState(getInitialSimulatorTab);
   const simulatorRef = useRef(null);
 
   function goStartHub() {
@@ -48,13 +67,17 @@ function PersonalPage({ onBack }) {
   }
 
   function moveToSimulatorTab(tabName, options = {}) {
-    simulatorRef.current?.changeTab(tabName, options);
+    const nextTab = tabName || "settings";
+    setInitialTab(nextTab);
+    replaceToolPath(SIMULATOR_TAB_PATHS[nextTab] || "/simulator");
+    simulatorRef.current?.changeTab(nextTab, options);
   }
 
   function openSimulator(tabName = "settings", options = {}) {
-    setInitialTab(tabName);
+    const nextTab = tabName || "settings";
+    setInitialTab(nextTab);
     setPersonalView("simulator");
-    replaceToolPath("/simulator");
+    replaceToolPath(SIMULATOR_TAB_PATHS[nextTab] || "/simulator");
 
     if (options.scrollTop !== false) {
       window.setTimeout(() => simulatorRef.current?.scrollToTop?.(), 160);
@@ -100,12 +123,13 @@ function PersonalPage({ onBack }) {
   useEffect(() => {
     const tool = new URLSearchParams(window.location.search).get("tool");
     if (!tool) return;
-    window.history.replaceState({ page: "personal" }, "", getPathForPersonalView(personalView));
+    window.history.replaceState({ page: "personal" }, "", getPathForPersonalView(personalView, initialTab));
   }, []);
 
   useEffect(() => {
     function handlePopState() {
       setPersonalView(getInitialPersonalView());
+      setInitialTab(getInitialSimulatorTab());
     }
 
     window.addEventListener("popstate", handlePopState);
@@ -175,7 +199,7 @@ function PersonalPage({ onBack }) {
         </nav>
       </header>
 
-      <PortfolioSimulator ref={simulatorRef} />
+      <PortfolioSimulator ref={simulatorRef} initialTab={initialTab} />
     </main>
   );
 }
