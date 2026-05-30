@@ -102,6 +102,16 @@ export function LoginPage({ onNavigate }) {
     }
   }, [onNavigate]);
 
+  useEffect(() => {
+    function handleOAuthWakeupStatus(event) {
+      const message = event?.detail?.message;
+      if (message) setStatusMessage(message);
+    }
+
+    window.addEventListener("finple-oauth-wakeup-status", handleOAuthWakeupStatus);
+    return () => window.removeEventListener("finple-oauth-wakeup-status", handleOAuthWakeupStatus);
+  }, []);
+
   async function handleEmailLogin(event) {
     event.preventDefault();
     if (!email.trim() || !password) {
@@ -120,14 +130,24 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
-  function handleGoogleLogin() {
+  async function handleGoogleLogin() {
     setIsGoogleLoading(true);
-    startGoogleOAuthLogin();
+    setStatusMessage("로그인 서버를 준비하는 중입니다.");
+    try {
+      await startGoogleOAuthLogin();
+    } finally {
+      setIsGoogleLoading(false);
+    }
   }
 
-  function handleKakaoLogin() {
+  async function handleKakaoLogin() {
     setIsKakaoLoading(true);
-    startKakaoOAuthLogin();
+    setStatusMessage("로그인 서버를 준비하는 중입니다.");
+    try {
+      await startKakaoOAuthLogin();
+    } finally {
+      setIsKakaoLoading(false);
+    }
   }
 
   function handleNaverPending() {
@@ -164,9 +184,9 @@ export function LoginPage({ onNavigate }) {
 
         <div className="loginDivider"><span>또는</span></div>
         <div className="loginSocialRow" aria-label="소셜 로그인">
-          <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
+          <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading || isGoogleLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
           <button type="button" className="loginSocialButton naver" onClick={handleNaverPending} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
-          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
+          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading || isKakaoLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
         </div>
         <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
       </section>
