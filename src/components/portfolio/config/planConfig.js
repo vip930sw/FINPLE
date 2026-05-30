@@ -7,45 +7,57 @@ export const FINPLE_PLAN_CONFIGS = {
     label: "Free",
     priceLabel: "0원",
     featured: false,
+    planRole: "기능 체험판",
     serverStorageLabel: "브라우저 저장 중심 · 서버 저장 제한",
+    upgradeHeadline: "Free는 체험판입니다",
+    upgradeDescription: "Personal 플랜부터 포트폴리오 저장 수, 자산 수, 서버 저장, PDF 리포트, API 조회량을 확장할 수 있습니다.",
     items: [
-      "기본 포트폴리오 시뮬레이션",
+      "포트폴리오 1개 저장",
+      "포트폴리오당 자산 5개",
       "브라우저 자동 저장",
-      "제한된 자산 조회",
-      "요약 리포트 확인",
+      "현재가·지표 조회 3회/일",
+      "PDF 리포트 제한",
     ],
     limits: {
       portfolios: 1,
       assetsPerPortfolio: 5,
       serverStorage: false,
-      apiLookupsPerDay: "체험 3회/일",
-      pdfLevel: "저장 불가",
+      apiLookupsPerDay: 3,
+      apiLookupsLabel: "3회/일",
+      pdfEnabled: false,
+      pdfLevel: "제한",
       reportLevel: "요약 미리보기",
       screenerLevel: "기본 검색",
-      supportLevel: "일반",
+      supportLevel: "일반 문의",
     },
   },
   personal: {
     key: "personal",
     label: "Personal",
     priceLabel: "월 9,900원",
-    featured: false,
-    serverStorageLabel: "서버 저장 지원",
+    featured: true,
+    planRole: "개인 투자자 실사용 플랜",
+    serverStorageLabel: "서버 저장 · 불러오기 지원",
+    upgradeHeadline: "Personal 플랜을 이용 중입니다",
+    upgradeDescription: "포트폴리오 30개, 포트폴리오당 자산 30개, 서버 저장, PDF 리포트, 확대된 API 조회량을 사용할 수 있습니다.",
     items: [
-      "서버 포트폴리오 저장",
-      "여러 포트폴리오 관리",
+      "포트폴리오 30개 저장",
+      "포트폴리오당 자산 30개",
+      "서버 저장 및 불러오기",
       "API 조회량 확대",
       "PDF 리포트 저장",
-      "문의 지원",
     ],
     limits: {
       portfolios: 30,
+      assetsPerPortfolio: 30,
       serverStorage: true,
       apiLookupsPerDay: "확대",
-      pdfLevel: "고급",
+      apiLookupsLabel: "확대",
+      pdfEnabled: true,
+      pdfLevel: "지원",
       reportLevel: "고급 리포트",
       screenerLevel: "전체 검색",
-      supportLevel: "우선",
+      supportLevel: "우선 검토",
     },
   },
   pro: {
@@ -53,7 +65,10 @@ export const FINPLE_PLAN_CONFIGS = {
     label: "Pro",
     priceLabel: "준비 중",
     featured: false,
+    planRole: "업무용 확장 준비",
     serverStorageLabel: "고급 분석 + 업무용 확장 준비",
+    upgradeHeadline: "Pro 플랜은 준비 중입니다",
+    upgradeDescription: "고급 백테스트, 리밸런싱 분석, 업무용 리포트 등은 정식 운영 단계에서 검토합니다.",
     items: [
       "고급 백테스트",
       "리밸런싱 분석",
@@ -63,8 +78,11 @@ export const FINPLE_PLAN_CONFIGS = {
     ],
     limits: {
       portfolios: Infinity,
+      assetsPerPortfolio: Infinity,
       serverStorage: true,
       apiLookupsPerDay: "대량",
+      apiLookupsLabel: "대량",
+      pdfEnabled: true,
       pdfLevel: "업무용",
       reportLevel: "업무용 리포트",
       screenerLevel: "전체 검색 + 고급 필터",
@@ -130,11 +148,11 @@ export function getPlanUsageStatus(planKey, snapshot = {}) {
       limit: portfolioLimit,
       isUnlimited: isPortfolioUnlimited,
       isOverLimit: !isPortfolioUnlimited && portfolioCount > portfolioLimit,
+      isAtLimit: !isPortfolioUnlimited && portfolioCount >= portfolioLimit,
       remaining: isPortfolioUnlimited ? Infinity : Math.max(0, portfolioLimit - portfolioCount),
     },
   };
 }
-
 
 const FREE_API_USAGE_STORAGE_KEY = "finple-free-api-usage";
 
@@ -170,7 +188,7 @@ function writeFreeApiUsage(usage) {
 
 export function getFreeApiUsageStatus() {
   const usage = readFreeApiUsage();
-  const limit = 3;
+  const limit = Number(FINPLE_PLAN_CONFIGS.free.limits.apiLookupsPerDay || 3);
 
   return {
     ...usage,
@@ -222,11 +240,11 @@ export const FINPLE_LIMIT_REASON_MAP = {
   asset: {
     title: "자산 개수 제한",
     blockedLabel: "자산 추가",
-    personalBenefit: "Personal 플랜에서는 더 많은 자산을 구성하고 서버 저장 기능을 사용할 수 있습니다.",
+    personalBenefit: "Personal 플랜에서는 포트폴리오당 자산을 30개까지 구성하고 서버 저장 기능을 사용할 수 있습니다.",
   },
   api: {
     title: "API 조회 한도",
-    blockedLabel: "현재가 조회",
+    blockedLabel: "현재가·지표 조회",
     personalBenefit: "Personal 플랜에서는 API 조회량을 확대하고 서버 저장/고급 리포트를 사용할 수 있습니다.",
   },
   pdf: {
