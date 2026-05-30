@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { Component, forwardRef, useEffect, useImperativeHandle } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -10,7 +10,64 @@ import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 
 const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail"];
 
+class DetailErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      message: error?.message || "상세분석 화면을 불러오지 못했습니다.",
+    };
+  }
+
+  componentDidCatch(error) {
+    console.error("FINPLE detail panel render error", error);
+  }
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, message: "" });
+    }
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div id="detail" className="simulatorTabPanel detailPanel">
+        <div className="tabSectionHeader">
+          <p className="sectionLabel">Step 3. Detail</p>
+          <h3>상세분석 화면을 준비 중입니다</h3>
+          <p>
+            현재 포트폴리오 계산값은 유지되고 있으나, 상세분석 하위 구성요소에서 렌더링 오류가 발생했습니다.
+            시뮬레이터와 포트폴리오 탭은 계속 사용할 수 있습니다.
+          </p>
+        </div>
+        <div className="portfolioDetailReport">
+          <div className="portfolioDetailReportHeader">
+            <div>
+              <p className="sectionLabel">Render Guard</p>
+              <h4>상세분석 보호 화면</h4>
+            </div>
+          </div>
+          <p>{this.state.message}</p>
+          <p>
+            PDF 검수는 상세분석 렌더링 오류를 제거한 뒤 다시 진행하는 것이 안전합니다.
+          </p>
+        </div>
+      </div>
+    );
+  }
+}
+
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
+  const {
+    initialTab = "settings",
+  } = props || {};
+
   const {
     portfolioList,
     activePortfolioId,
@@ -86,9 +143,19 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     isEmptyAssetRow
   } = usePortfolioSimulator();
 
+  const effectiveInitialTab = PORTFOLIO_SIMULATOR_TABS.includes(initialTab)
+    ? initialTab
+    : "settings";
+
   const effectiveActiveSimulatorTab = PORTFOLIO_SIMULATOR_TABS.includes(activeSimulatorTab)
     ? activeSimulatorTab
-    : "settings";
+    : effectiveInitialTab;
+
+  useEffect(() => {
+    if (effectiveInitialTab !== activeSimulatorTab) {
+      changeSimulatorTab(effectiveInitialTab);
+    }
+  }, [effectiveInitialTab]);
 
   function scrollToSimulatorTop() {
     window.setTimeout(() => {
@@ -208,32 +275,34 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
       {effectiveActiveSimulatorTab === "detail" && (
         <div id="detail" className="simulatorTabAnchor">
-          <DetailPanel
-            activePortfolio={activePortfolio}
-            detailReport={detailReport}
-            settings={settings}
-            result={result}
-            yearlyContribution={yearlyContribution}
-            simulationStartValue={simulationStartValue}
-            expectedCagr={expectedCagr}
-            expectedDividendYield={expectedDividendYield}
-            expectedBeta={expectedBeta}
-            simpleMdd={simpleMdd}
-            expectedCalmar={expectedCalmar}
-            expectedAnnualDividend={expectedAnnualDividend}
-            performanceRows={performanceRows}
-            futureValue={futureValue}
-            inflationAdjustedFutureValue={inflationAdjustedFutureValue}
-            assets={assets}
-            formatNumber={formatNumber}
-            formatPercent={formatPercent}
-            formatDecimal={formatDecimal}
-            downloadReportText={downloadReportText}
-            saveReportPdf={saveReportPdf}
-            printReport={printReport}
-            reportPdfFileName={reportPdfFileName}
-            copyReportSummary={copyReportSummary}
-          />
+          <DetailErrorBoundary resetKey={`${activePortfolioId}-${assets.length}-${futureValue}`}>
+            <DetailPanel
+              activePortfolio={activePortfolio}
+              detailReport={detailReport}
+              settings={settings}
+              result={result}
+              yearlyContribution={yearlyContribution}
+              simulationStartValue={simulationStartValue}
+              expectedCagr={expectedCagr}
+              expectedDividendYield={expectedDividendYield}
+              expectedBeta={expectedBeta}
+              simpleMdd={simpleMdd}
+              expectedCalmar={expectedCalmar}
+              expectedAnnualDividend={expectedAnnualDividend}
+              performanceRows={performanceRows}
+              futureValue={futureValue}
+              inflationAdjustedFutureValue={inflationAdjustedFutureValue}
+              assets={assets}
+              formatNumber={formatNumber}
+              formatPercent={formatPercent}
+              formatDecimal={formatDecimal}
+              downloadReportText={downloadReportText}
+              saveReportPdf={saveReportPdf}
+              printReport={printReport}
+              reportPdfFileName={reportPdfFileName}
+              copyReportSummary={copyReportSummary}
+            />
+          </DetailErrorBoundary>
         </div>
       )}
 
