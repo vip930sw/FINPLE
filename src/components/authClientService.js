@@ -11,6 +11,7 @@ import {
 } from "./portfolio/utils/portfolioStorageScope";
 
 const AUTH_SESSION_STORAGE_KEY = "finple-auth-session";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -225,14 +226,7 @@ export async function loginWithEmailPassword({ email, password }) {
 
 export async function logoutFinpleAuth() {
   const session = getStoredFinpleAuthSession();
-  const currentUser = setStoredFinpleAuthUser(null);
-  const storedUser = (() => {
-    try {
-      return JSON.parse(window.localStorage.getItem("finple-trial-auth-user") || "null");
-    } catch (error) {
-      return null;
-    }
-  })();
+  const storedUser = readJson(AUTH_USER_STORAGE_KEY, null);
 
   try {
     if (session?.token) {
@@ -252,6 +246,11 @@ export async function logoutFinpleAuth() {
     window.dispatchEvent(new Event("finple-local-storage-updated"));
     window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
     dispatchPortfolioStorageUpdated();
+
+    const pathname = String(window.location.pathname || "");
+    if (pathname.includes("/simulator")) {
+      window.setTimeout(() => window.location.reload(), 0);
+    }
   }
 
   return { ok: true };
