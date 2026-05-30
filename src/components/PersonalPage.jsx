@@ -61,6 +61,10 @@ function PersonalPage({ onBack }) {
     }
   }
 
+  function openStandaloneDetail() {
+    window.location.href = "/simulator/detail";
+  }
+
   function handleHubNavigate(nextTarget) {
     if (nextTarget === "investment-mbti") {
       setPersonalView("investment-mbti");
@@ -169,7 +173,7 @@ function PersonalPage({ onBack }) {
             포트폴리오
           </button>
 
-          <button type="button" onClick={() => moveToSimulatorTab("detail")}>
+          <button type="button" onClick={openStandaloneDetail}>
             상세분석
           </button>
         </nav>
