@@ -24,6 +24,11 @@
   min-width: 0;
 }
 
+.tableActionRightGroup {
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
 .tableActionLeftGroup .addButton {
   margin-top: 0;
 }
@@ -96,9 +101,11 @@
     align-items: stretch;
   }
 
-  .tableActionLeftGroup {
+  .tableActionLeftGroup,
+  .tableActionRightGroup {
     width: 100%;
     flex-wrap: wrap;
+    justify-content: stretch;
   }
 
   .tableActionLeftGroup > button,
