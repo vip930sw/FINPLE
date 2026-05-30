@@ -146,6 +146,15 @@ export function startNaverOAuthLogin() {
   window.location.href = getNaverOAuthStartUrl();
 }
 
+export function getKakaoOAuthStartUrl() {
+  return `${getFinpleApiBaseUrl()}/auth/kakao/start`;
+}
+
+export function startKakaoOAuthLogin() {
+  if (typeof window === "undefined") return;
+  window.location.href = getKakaoOAuthStartUrl();
+}
+
 export async function checkEmailAvailability(email) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!normalizedEmail || !normalizedEmail.includes("@")) {
