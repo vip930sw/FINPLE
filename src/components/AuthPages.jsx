@@ -135,7 +135,7 @@ export function LoginPage({ onNavigate }) {
           <strong>FINPLE</strong>
         </div>
         <div className="loginRoleHeader loginSimpleHeader">
-          <h2>로그인 하고 나만의 자산관리를 시작해보세요</h2>
+          <h2>로그인 하고 나만의 자산관리를 <br /> 시작해보세요</h2>
         </div>
 
         <form onSubmit={handleEmailLogin} className="loginSimpleForm">
