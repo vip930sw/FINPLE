@@ -10,20 +10,19 @@ export const FINPLE_PLAN_CONFIGS = {
     planRole: "기능 체험판",
     serverStorageLabel: "브라우저 저장 중심 · 서버 저장 제한",
     upgradeHeadline: "Free는 체험판입니다",
-    upgradeDescription: "Personal 플랜부터 포트폴리오 저장 수, 자산 수, 서버 저장, PDF 리포트, API 조회량을 확장할 수 있습니다.",
+    upgradeDescription: "Personal 플랜부터 포트폴리오 저장 수, 자산 수, 서버 저장, PDF 리포트 기능을 확장할 수 있습니다.",
     items: [
       "포트폴리오 1개 저장",
       "포트폴리오당 자산 5개",
       "브라우저 자동 저장",
-      "현재가·지표 조회 3회/일",
       "PDF 리포트 제한",
     ],
     limits: {
       portfolios: 1,
       assetsPerPortfolio: 5,
       serverStorage: false,
-      apiLookupsPerDay: 3,
-      apiLookupsLabel: "3회/일",
+      apiLookupsPerDay: Infinity,
+      apiLookupsLabel: "기본 제공",
       pdfEnabled: false,
       pdfLevel: "제한",
       reportLevel: "요약 미리보기",
@@ -39,20 +38,20 @@ export const FINPLE_PLAN_CONFIGS = {
     planRole: "개인 투자자 실사용 플랜",
     serverStorageLabel: "서버 저장 · 불러오기 지원",
     upgradeHeadline: "Personal 플랜을 이용 중입니다",
-    upgradeDescription: "포트폴리오 30개, 포트폴리오당 자산 30개, 서버 저장, PDF 리포트, 확대된 API 조회량을 사용할 수 있습니다.",
+    upgradeDescription: "포트폴리오 30개, 포트폴리오당 자산 30개, 서버 저장, PDF 리포트 기능을 사용할 수 있습니다.",
     items: [
       "포트폴리오 30개 저장",
       "포트폴리오당 자산 30개",
       "서버 저장 및 불러오기",
-      "API 조회량 확대",
       "PDF 리포트 저장",
+      "우선 검토 문의",
     ],
     limits: {
       portfolios: 30,
       assetsPerPortfolio: 30,
       serverStorage: true,
-      apiLookupsPerDay: "확대",
-      apiLookupsLabel: "확대",
+      apiLookupsPerDay: Infinity,
+      apiLookupsLabel: "기본 제공",
       pdfEnabled: true,
       pdfLevel: "지원",
       reportLevel: "고급 리포트",
@@ -80,8 +79,8 @@ export const FINPLE_PLAN_CONFIGS = {
       portfolios: Infinity,
       assetsPerPortfolio: Infinity,
       serverStorage: true,
-      apiLookupsPerDay: "대량",
-      apiLookupsLabel: "대량",
+      apiLookupsPerDay: Infinity,
+      apiLookupsLabel: "기본 제공",
       pdfEnabled: true,
       pdfLevel: "업무용",
       reportLevel: "업무용 리포트",
@@ -188,18 +187,19 @@ function writeFreeApiUsage(usage) {
 
 export function getFreeApiUsageStatus() {
   const usage = readFreeApiUsage();
-  const limit = Number(FINPLE_PLAN_CONFIGS.free.limits.apiLookupsPerDay || 3);
+  const limit = Number(FINPLE_PLAN_CONFIGS.free.limits.apiLookupsPerDay || Infinity);
 
   return {
     ...usage,
     limit,
-    remaining: Math.max(0, limit - usage.count),
-    isLimitReached: usage.count >= limit,
+    remaining: Number.isFinite(limit) ? Math.max(0, limit - usage.count) : Infinity,
+    isLimitReached: Number.isFinite(limit) ? usage.count >= limit : false,
   };
 }
 
 export function canUseFreeApiLookup(requestCount = 1) {
   const usage = getFreeApiUsageStatus();
+  if (!Number.isFinite(usage.limit)) return true;
   return usage.count + Number(requestCount || 1) <= usage.limit;
 }
 
@@ -207,9 +207,17 @@ export function consumeFreeApiLookup(requestCount = 1) {
   const countToAdd = Math.max(1, Number(requestCount || 1));
   const usage = getFreeApiUsageStatus();
 
-  if (usage.count + countToAdd > usage.limit) {
+  if (Number.isFinite(usage.limit) && usage.count + countToAdd > usage.limit) {
     return {
       ok: false,
+      ...usage,
+      requested: countToAdd,
+    };
+  }
+
+  if (!Number.isFinite(usage.limit)) {
+    return {
+      ok: true,
       ...usage,
       requested: countToAdd,
     };
@@ -243,9 +251,9 @@ export const FINPLE_LIMIT_REASON_MAP = {
     personalBenefit: "Personal 플랜에서는 포트폴리오당 자산을 30개까지 구성하고 서버 저장 기능을 사용할 수 있습니다.",
   },
   api: {
-    title: "API 조회 한도",
+    title: "현재가 조회 일시 제한",
     blockedLabel: "현재가·지표 조회",
-    personalBenefit: "Personal 플랜에서는 API 조회량을 확대하고 서버 저장/고급 리포트를 사용할 수 있습니다.",
+    personalBenefit: "잠시 후 다시 시도하거나 서버 상태를 확인해 주세요.",
   },
   pdf: {
     title: "PDF 저장 제한",
@@ -275,7 +283,7 @@ export function getPlanLimitMessage(planKey, type) {
   }
 
   if (type === "api") {
-    return `${plan.label} 플랜의 API 조회 체험 한도에 도달했습니다. Personal 플랜에서 조회량을 확대할 수 있습니다.`;
+    return "현재가·지표 조회가 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.";
   }
 
   if (type === "server") {
@@ -296,7 +304,7 @@ export function getPlanLimitUpgradeSummary(planKey, type) {
     title: reason.title,
     blockedLabel: reason.blockedLabel,
     message: getPlanLimitMessage(plan.key, type),
-    ctaLabel: "요금제 보기",
+    ctaLabel: type === "api" ? "확인" : "요금제 보기",
     targetPlan: FINPLE_UPGRADE_TARGET_PLAN,
     benefit: reason.personalBenefit,
   };
@@ -304,6 +312,9 @@ export function getPlanLimitUpgradeSummary(planKey, type) {
 
 export function getUpgradePromptText(planKey, type) {
   const summary = getPlanLimitUpgradeSummary(planKey, type);
+  if (type === "api") {
+    return `${summary.message}\n\n${summary.benefit}`;
+  }
   return `${summary.message}\n\n${summary.benefit}\n\n요금제 화면으로 이동할까요?`;
 }
 
