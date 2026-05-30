@@ -12,6 +12,8 @@ import {
 
 const AUTH_SESSION_STORAGE_KEY = "finple-auth-session";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const OAUTH_WAKEUP_TIMEOUT_MS = 12000;
+const OAUTH_WAKEUP_MAX_ATTEMPTS = 3;
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -34,6 +36,75 @@ function writeJson(key, value) {
   }
 
   return value;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = OAUTH_WAKEUP_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function dispatchOAuthWakeupStatus(message) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.dispatchEvent(new CustomEvent("finple-oauth-wakeup-status", { detail: { message } }));
+  } catch (error) {
+    // 상태 이벤트 전파 실패는 로그인 흐름을 막지 않습니다.
+  }
+}
+
+async function ensureFinpleApiReadyForOAuth() {
+  if (typeof window === "undefined") return;
+
+  const apiBaseUrl = getFinpleApiBaseUrl().replace(/\/+$/, "");
+  const healthUrl = `${apiBaseUrl}/health`;
+
+  for (let attempt = 1; attempt <= OAUTH_WAKEUP_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      dispatchOAuthWakeupStatus(attempt === 1 ? "로그인 서버를 준비하는 중입니다." : "로그인 서버를 다시 확인하고 있습니다.");
+      const response = await fetchWithTimeout(healthUrl, { headers: { Accept: "application/json" } });
+      const payload = await response.json().catch(() => null);
+
+      if (response.ok && payload?.ok !== false) {
+        dispatchOAuthWakeupStatus("로그인 서버가 준비되었습니다. 소셜 로그인으로 이동합니다.");
+        return;
+      }
+    } catch (error) {
+      if (attempt >= OAUTH_WAKEUP_MAX_ATTEMPTS) {
+        throw new Error("로그인 서버가 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+      }
+    }
+
+    await sleep(1200 * attempt);
+  }
+
+  throw new Error("로그인 서버가 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+}
+
+async function startOAuthLoginWithWakeup(startUrl) {
+  if (typeof window === "undefined") return;
+
+  try {
+    await ensureFinpleApiReadyForOAuth();
+    window.location.href = startUrl;
+  } catch (error) {
+    const message = error?.message || "로그인 서버가 준비 중입니다. 잠시 후 다시 시도해 주세요.";
+    dispatchOAuthWakeupStatus(message);
+    window.alert(message);
+  }
 }
 
 export function getStoredFinpleAuthSession() {
@@ -154,8 +225,7 @@ export function getGoogleOAuthStartUrl() {
 }
 
 export function startGoogleOAuthLogin() {
-  if (typeof window === "undefined") return;
-  window.location.href = getGoogleOAuthStartUrl();
+  return startOAuthLoginWithWakeup(getGoogleOAuthStartUrl());
 }
 
 export function getNaverOAuthStartUrl() {
@@ -163,8 +233,7 @@ export function getNaverOAuthStartUrl() {
 }
 
 export function startNaverOAuthLogin() {
-  if (typeof window === "undefined") return;
-  window.location.href = getNaverOAuthStartUrl();
+  return startOAuthLoginWithWakeup(getNaverOAuthStartUrl());
 }
 
 export function getKakaoOAuthStartUrl() {
@@ -172,8 +241,7 @@ export function getKakaoOAuthStartUrl() {
 }
 
 export function startKakaoOAuthLogin() {
-  if (typeof window === "undefined") return;
-  window.location.href = getKakaoOAuthStartUrl();
+  return startOAuthLoginWithWakeup(getKakaoOAuthStartUrl());
 }
 
 export async function checkEmailAvailability(email) {
