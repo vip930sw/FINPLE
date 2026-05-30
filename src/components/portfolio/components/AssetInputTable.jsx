@@ -146,9 +146,8 @@ function RowMoveIconButton({ children, disabled, onClick, label }) {
   );
 }
 
-function LookupRequiredValue({ quantity }) {
-  const quantityMissing = Number(quantity || 0) <= 0;
-  return <div className="assetInfoStack alignRight lookupRequiredStack"><span className="lookupRequiredText">조회 필요</span><small className="lookupRequiredHint">{quantityMissing ? "선택 사항" : "현재가 반영 필요"}</small></div>;
+function LookupRequiredValue() {
+  return <div className="assetInfoStack alignRight lookupRequiredStack"><span className="lookupRequiredText">조회 필요</span></div>;
 }
 
 function PriceTextValue({ asset, formatDecimal }) {
@@ -217,18 +216,30 @@ export default function AssetInputTable({
     const ticker = String(event.currentTarget.value || "").trim().toUpperCase();
     if (!ticker) return;
     event.preventDefault();
+
+    const currentAsset = assets[index];
+    if (currentAsset) {
+      currentAsset.ticker = ticker;
+      currentAsset.name = "";
+      currentAsset.price = 0;
+      currentAsset.targetEvaluationAmount = null;
+      currentAsset.cagr = 0;
+      currentAsset.beta = 0;
+      currentAsset.mdd = 0;
+      currentAsset.dividendYield = null;
+      currentAsset.priceMode = "manual";
+      currentAsset.metricMode = "manual";
+      currentAsset.dataSource = "manual";
+      currentAsset.cacheMode = null;
+      currentAsset.rawPrice = null;
+      currentAsset.rawCurrency = null;
+      currentAsset.exchangeRate = null;
+      currentAsset.lastUpdatedAt = null;
+    }
+
     updateAsset(index, "ticker", ticker);
     event.currentTarget.blur();
-
-    window.setTimeout(() => {
-      const row = event.currentTarget.closest("tr");
-      const lookupButton = row?.querySelector(".inlineLookupTextButton");
-      if (lookupButton && !lookupButton.disabled) {
-        lookupButton.click();
-        return;
-      }
-      fetchAssetData(index);
-    }, 300);
+    window.setTimeout(() => fetchAssetData(index), 160);
   };
 
   const renderTickerControl = (asset, index) => {
@@ -270,7 +281,7 @@ export default function AssetInputTable({
 
   const renderPrice = (asset, emptyRow, lookupRequired) => {
     if (emptyRow) return "-";
-    if (lookupRequired) return <LookupRequiredValue quantity={asset.quantity} />;
+    if (lookupRequired) return <LookupRequiredValue />;
     return <PriceTextValue asset={asset} formatDecimal={formatDecimal} />;
   };
 
