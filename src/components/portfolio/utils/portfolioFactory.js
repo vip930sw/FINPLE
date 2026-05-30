@@ -7,6 +7,7 @@ import {
   GLOBAL_SETTINGS_STORAGE_KEY,
 } from "../constants";
 import { createAssetMarketMetadata, normalizeTickerForMarket } from "../config/marketConfig";
+import { readScopedPortfolioStorageItem } from "./portfolioStorageScope";
 
 export function createId() {
     return `portfolio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -129,13 +130,13 @@ export function normalizeGlobalSettings(settings = {}) {
   }
 export function loadGlobalSettings() {
     try {
-      const savedGlobalSettings = localStorage.getItem(GLOBAL_SETTINGS_STORAGE_KEY);
+      const savedGlobalSettings = readScopedPortfolioStorageItem(GLOBAL_SETTINGS_STORAGE_KEY);
 
       if (savedGlobalSettings) {
         return normalizeGlobalSettings(JSON.parse(savedGlobalSettings));
       }
 
-      const legacySavedData = localStorage.getItem(LEGACY_STORAGE_KEY);
+      const legacySavedData = readScopedPortfolioStorageItem(LEGACY_STORAGE_KEY);
 
       if (legacySavedData) {
         const parsedLegacyData = JSON.parse(legacySavedData);
@@ -166,8 +167,8 @@ export function ensureMinimumPortfolios(portfolioList) {
   }
 export function loadPortfolioState() {
   try {
-    const savedList = localStorage.getItem(PORTFOLIO_LIST_STORAGE_KEY);
-    const savedActiveId = localStorage.getItem(ACTIVE_PORTFOLIO_STORAGE_KEY);
+    const savedList = readScopedPortfolioStorageItem(PORTFOLIO_LIST_STORAGE_KEY);
+    const savedActiveId = readScopedPortfolioStorageItem(ACTIVE_PORTFOLIO_STORAGE_KEY);
 
     if (savedList) {
       const parsedList = JSON.parse(savedList);
@@ -188,7 +189,7 @@ export function loadPortfolioState() {
       }
     }
 
-    const legacySavedData = localStorage.getItem(LEGACY_STORAGE_KEY);
+    const legacySavedData = readScopedPortfolioStorageItem(LEGACY_STORAGE_KEY);
 
     if (legacySavedData) {
       const parsedLegacyData = JSON.parse(legacySavedData);
