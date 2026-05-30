@@ -1,0 +1,27 @@
+.loginSocialButton.kakao {
+  background-color: #fee500 !important;
+  background-image: url("../assets/social/kakao-talk.svg") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 46px 46px !important;
+  border-color: #fee500 !important;
+}
+
+.loginSocialButton.kakao .kakaoTalkIcon,
+.loginSocialButton.kakao .kakaoTalkIcon::before,
+.loginSocialButton.kakao .kakaoTalkIcon::after {
+  display: none !important;
+}
+
+.loginSocialButton.naver {
+  background-color: #03c75a !important;
+  background-image: url("../assets/social/naver-login-icon.svg") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 46px 46px !important;
+  border-color: #03c75a !important;
+}
+
+.loginSocialButton.naver .naverIcon {
+  opacity: 0 !important;
+}
