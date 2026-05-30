@@ -41,12 +41,20 @@ function getSafeReportFileName(reportPdfFileName, activePortfolio) {
   return `${portfolioName || "FINPLE-report"}.pdf`;
 }
 
+function getAssetsTotalValue(assets = []) {
+  return assets.reduce((sum, asset) => {
+    const value = safeNumber(asset?.quantity) * safeNumber(asset?.price);
+    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+  }, 0);
+}
+
 export default function DetailPanel({
   activePortfolio,
   detailReport,
   settings,
   result,
   yearlyContribution,
+  totalAssetValue,
   simulationStartValue,
   expectedCagr,
   expectedDividendYield,
@@ -73,7 +81,9 @@ export default function DetailPanel({
   const safeReport = detailReport || null;
   const safeFormatNumber = typeof formatNumber === "function" ? formatNumber : (value) => Math.floor(safeNumber(value)).toLocaleString();
   const safeFormatPercent = typeof formatPercent === "function" ? formatPercent : (value) => `${safeFixed(value)}%`;
+  const safeFormatDecimal = typeof formatDecimal === "function" ? formatDecimal : (value, digits = 2) => safeFixed(value, digits);
   const safeReportFileName = getSafeReportFileName(reportPdfFileName, activePortfolio);
+  const safeTotalAssetValue = safeNumber(totalAssetValue, getAssetsTotalValue(safeAssets));
 
   const rawPortfolioAnalysis = analyzePortfolioProfile({ assets: safeAssets, result }) || {};
   const portfolioAnalysis = {
@@ -198,8 +208,8 @@ export default function DetailPanel({
         <div className="detailMetricGrid">{dividendMetrics.map((metric) => <article key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong><p>{metric.note}</p></article>)}</div>
       </div>
 
-      <div className="detailChartSection"><div className="detailMetricHeader"><div><p className="sectionLabel">Chart</p><h4>장기 예상 흐름</h4></div></div><PerformanceChart data={safePerformanceRows} /></div>
-      <DetailAssetTable assets={safeAssets} formatNumber={safeFormatNumber} formatPercent={safeFormatPercent} />
+      <div className="detailChartSection"><div className="detailMetricHeader"><div><p className="sectionLabel">Chart</p><h4>장기 예상 흐름</h4></div></div><PerformanceChart rows={safePerformanceRows} /></div>
+      <DetailAssetTable assets={safeAssets} totalAssetValue={safeTotalAssetValue} formatNumber={safeFormatNumber} formatPercent={safeFormatPercent} formatDecimal={safeFormatDecimal} />
     </div>
   );
 }
