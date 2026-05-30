@@ -24,6 +24,17 @@ const EMAIL_DOMAIN_OPTIONS = [
   "직접입력",
 ];
 
+function GoogleGIcon() {
+  return (
+    <svg className="loginSocialIcon googleIcon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.3 0 5.6 1.4 6.9 2.6l5.1-5C32.9 4.2 28.9 2.5 24 2.5 14.9 2.5 7.2 7.7 3.5 15.2l6.2 4.8C11.2 15.4 16.9 9.5 24 9.5Z" />
+      <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.1c-.2 1.9-1.6 4.9-4.6 6.8l6 4.6c3.6-3.3 7.6-8.1 7.6-15.1Z" />
+      <path fill="#FBBC05" d="M9.7 28.1c-.4-1.2-.6-2.6-.6-4.1s.2-2.8.6-4.1l-6.2-4.8C2.2 17.9 1.5 20.9 1.5 24s.7 6.1 2 8.8l6.2-4.7Z" />
+      <path fill="#34A853" d="M24 45.5c4.9 0 9-1.6 12-4.4l-6-4.6c-1.6 1.1-3.7 1.9-6 1.9-7.1 0-12.8-5.8-14.3-10.3l-6.2 4.8C7.2 40.3 14.9 45.5 24 45.5Z" />
+    </svg>
+  );
+}
+
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   const storedUser = getStoredFinpleAuthUser();
   const isLoggedIn = Boolean(storedUser?.id);
@@ -66,9 +77,9 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
 export function LoginPage({ onNavigate }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [statusMessage, setStatusMessage] = useState("이메일과 비밀번호로 로그인할 수 있습니다. 체험 계정 시작도 계속 사용할 수 있습니다.");
+  const [statusMessage, setStatusMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -107,32 +118,50 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
-  async function handleDemoLogin() {
-    setIsDemoLoading(true);
-    try {
-      const user = await createOrLoadDemoUser();
-      setStatusMessage((user.name || "FINPLE 체험 사용자") + " 계정으로 연결되었습니다.");
-      onNavigate("mypage");
-    } catch (error) {
-      setStatusMessage(error?.message || "체험 계정 연결에 실패했습니다.");
-    } finally {
-      setIsDemoLoading(false);
-    }
+  function handleGoogleLogin() {
+    setIsGoogleLoading(true);
+    startGoogleOAuthLogin();
+  }
+
+  function handlePendingFeature(label) {
+    setStatusMessage(`${label} 로그인은 다음 단계에서 연결할 예정입니다.`);
   }
 
   return (
-    <AccountShell eyebrow="Account" title="로그인" description="FINPLE 계정으로 포트폴리오 저장, MY PAGE, 요금제 상태를 관리할 수 있습니다." onNavigate={onNavigate} pageClassName="legalPage">
-      <section className="accountCard accountFormCard loginRoleCard singleLoginCard">
-        <div className="loginRoleHeader"><p className="accountMiniLabel">User Login</p><h2>일반 사용자 로그인</h2><span>이메일 계정, Google 계정 또는 체험 계정으로 시작할 수 있습니다.</span></div>
-        <button type="button" className="secondaryButton" onClick={startGoogleOAuthLogin} disabled={isLoading || isDemoLoading}>Google로 계속하기</button>
-        <form onSubmit={handleEmailLogin}>
-          <label>이메일<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" /></label>
-          <label>비밀번호<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
-          <p className="accountInlineStatus">{statusMessage}</p>
-          <button type="submit" className="primaryButton" disabled={isLoading || isDemoLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
+    <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
+      <section className="accountCard accountFormCard loginRoleCard singleLoginCard loginSimpleCard">
+        <div className="loginSimpleBrand" aria-hidden="true">
+          <div className="brandIcon loginSimpleBrandIcon"><span>F</span><i /></div>
+          <strong>FINPLE</strong>
+        </div>
+        <div className="loginRoleHeader loginSimpleHeader">
+          <h2>로그인 하고 나만의 자산관리를 시작해보세요</h2>
+        </div>
+
+        <form onSubmit={handleEmailLogin} className="loginSimpleForm">
+          <label>
+            이메일
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="example@finple.co.kr" autoComplete="email" />
+          </label>
+          <label>
+            비밀번호
+            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" autoComplete="current-password" />
+          </label>
+          <div className="loginUtilityRow">
+            <label className="loginKeepLabel"><input type="checkbox" /> <span>로그인 유지</span></label>
+            <button type="button" className="loginTextButton" onClick={() => setStatusMessage("아이디·비밀번호 찾기는 추후 연결 예정입니다.")}>아이디·비밀번호 찾기</button>
+          </div>
+          {statusMessage ? <p className="accountInlineStatus">{statusMessage}</p> : null}
+          <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isGoogleLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
-        <button type="button" className="secondaryButton" onClick={handleDemoLogin} disabled={isLoading || isDemoLoading}>{isDemoLoading ? "연결 중..." : "체험 계정으로 시작"}</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("signup")}>회원가입으로 이동</button>
+
+        <div className="loginDivider"><span>또는</span></div>
+        <div className="loginSocialRow" aria-label="소셜 로그인">
+          <button type="button" className="loginSocialButton kakao" onClick={() => handlePendingFeature("카카오")} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
+          <button type="button" className="loginSocialButton naver" onClick={() => handlePendingFeature("네이버")} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
+          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
+        </div>
+        <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
       </section>
     </AccountShell>
   );
