@@ -24,6 +24,17 @@ const EMAIL_DOMAIN_OPTIONS = [
   "직접입력",
 ];
 
+function GoogleGIcon() {
+  return (
+    <svg className="loginSocialIcon googleIcon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#EA4335" d="M24 9.5c3.3 0 5.6 1.4 6.9 2.6l5.1-5C32.9 4.2 28.9 2.5 24 2.5 14.9 2.5 7.2 7.7 3.5 15.2l6.2 4.8C11.2 15.4 16.9 9.5 24 9.5Z" />
+      <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.1c-.2 1.9-1.6 4.9-4.6 6.8l6 4.6c3.6-3.3 7.6-8.1 7.6-15.1Z" />
+      <path fill="#FBBC05" d="M9.7 28.1c-.4-1.2-.6-2.6-.6-4.1s.2-2.8.6-4.1l-6.2-4.8C2.2 17.9 1.5 20.9 1.5 24s.7 6.1 2 8.8l6.2-4.7Z" />
+      <path fill="#34A853" d="M24 45.5c4.9 0 9-1.6 12-4.4l-6-4.6c-1.6 1.1-3.7 1.9-6 1.9-7.1 0-12.8-5.8-14.3-10.3l-6.2 4.8C7.2 40.3 14.9 45.5 24 45.5Z" />
+    </svg>
+  );
+}
+
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   const storedUser = getStoredFinpleAuthUser();
   const isLoggedIn = Boolean(storedUser?.id);
@@ -117,14 +128,13 @@ export function LoginPage({ onNavigate }) {
   }
 
   return (
-    <AccountShell eyebrow="LOGIN" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
+    <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
       <section className="accountCard accountFormCard loginRoleCard singleLoginCard loginSimpleCard">
         <div className="loginSimpleBrand" aria-hidden="true">
           <div className="brandIcon loginSimpleBrandIcon"><span>F</span><i /></div>
           <strong>FINPLE</strong>
         </div>
         <div className="loginRoleHeader loginSimpleHeader">
-          <p className="accountMiniLabel">LOGIN</p>
           <h2>로그인 하고 나만의 자산관리를 시작해보세요</h2>
         </div>
 
@@ -147,9 +157,9 @@ export function LoginPage({ onNavigate }) {
 
         <div className="loginDivider"><span>또는</span></div>
         <div className="loginSocialRow" aria-label="소셜 로그인">
-          <button type="button" className="loginSocialButton kakao" onClick={() => handlePendingFeature("카카오")} aria-label="카카오로 계속하기">●</button>
-          <button type="button" className="loginSocialButton naver" onClick={() => handlePendingFeature("네이버")} aria-label="네이버로 계속하기">N</button>
-          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading} aria-label="Google로 계속하기">G</button>
+          <button type="button" className="loginSocialButton kakao" onClick={() => handlePendingFeature("카카오")} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
+          <button type="button" className="loginSocialButton naver" onClick={() => handlePendingFeature("네이버")} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
+          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
         </div>
         <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
       </section>
