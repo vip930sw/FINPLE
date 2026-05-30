@@ -114,7 +114,7 @@ function getAssetWeightValue(asset = {}) {
 function InlineLookupButton({ isLookingUp, lookupRequired, isBulkAssetLookupLoading, onClick }) {
   return (
     <button type="button" className={lookupRequired ? "inlineLookupTextButton needsLookup" : "inlineLookupTextButton"} onClick={onClick} disabled={isLookingUp || isBulkAssetLookupLoading}>
-      {isLookingUp ? "조회 중" : lookupRequired ? "현재가 조회" : "조회"}
+      {isLookingUp ? "조회 중" : "조회"}
     </button>
   );
 }
@@ -214,9 +214,11 @@ export default function AssetInputTable({
 
   const handleTickerEnter = (event, index) => {
     if (event.key !== "Enter") return;
+    const ticker = String(event.currentTarget.value || "").trim();
+    if (!ticker) return;
     event.preventDefault();
     event.currentTarget.blur();
-    window.setTimeout(() => fetchAssetData(index), 0);
+    window.setTimeout(() => fetchAssetData(index), 120);
   };
 
   const renderTickerControl = (asset, index) => {
