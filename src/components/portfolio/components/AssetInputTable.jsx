@@ -214,11 +214,21 @@ export default function AssetInputTable({
 
   const handleTickerEnter = (event, index) => {
     if (event.key !== "Enter") return;
-    const ticker = String(event.currentTarget.value || "").trim();
+    const ticker = String(event.currentTarget.value || "").trim().toUpperCase();
     if (!ticker) return;
     event.preventDefault();
+    updateAsset(index, "ticker", ticker);
     event.currentTarget.blur();
-    window.setTimeout(() => fetchAssetData(index), 120);
+
+    window.setTimeout(() => {
+      const row = event.currentTarget.closest("tr");
+      const lookupButton = row?.querySelector(".inlineLookupTextButton");
+      if (lookupButton && !lookupButton.disabled) {
+        lookupButton.click();
+        return;
+      }
+      fetchAssetData(index);
+    }, 300);
   };
 
   const renderTickerControl = (asset, index) => {
