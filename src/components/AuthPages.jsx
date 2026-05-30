@@ -12,6 +12,7 @@ import {
   resendVerificationEmail,
   signupWithEmailPassword,
   startGoogleOAuthLogin,
+  startNaverOAuthLogin,
   verifyEmailToken,
 } from "./authClientService";
 
@@ -80,12 +81,13 @@ export function LoginPage({ onNavigate }) {
   const [statusMessage, setStatusMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isNaverLoading, setIsNaverLoading] = useState(false);
 
   useEffect(() => {
     try {
       const oauthUser = consumeGoogleOAuthRedirectResult();
       if (oauthUser?.id) {
-        setStatusMessage(`${oauthUser.email || oauthUser.name || "Google 사용자"} 계정으로 로그인되었습니다.`);
+        setStatusMessage(`${oauthUser.email || oauthUser.name || "소셜 로그인 사용자"} 계정으로 로그인되었습니다.`);
         window.setTimeout(() => onNavigate("mypage"), 80);
         return;
       }
@@ -96,7 +98,7 @@ export function LoginPage({ onNavigate }) {
         window.history.replaceState({ page: "login" }, "", "/login");
       }
     } catch (error) {
-      setStatusMessage(error?.message || "Google 로그인 결과를 확인하지 못했습니다.");
+      setStatusMessage(error?.message || "소셜 로그인 결과를 확인하지 못했습니다.");
     }
   }, [onNavigate]);
 
@@ -121,6 +123,11 @@ export function LoginPage({ onNavigate }) {
   function handleGoogleLogin() {
     setIsGoogleLoading(true);
     startGoogleOAuthLogin();
+  }
+
+  function handleNaverLogin() {
+    setIsNaverLoading(true);
+    startNaverOAuthLogin();
   }
 
   function handlePendingFeature(label) {
@@ -152,13 +159,13 @@ export function LoginPage({ onNavigate }) {
             <button type="button" className="loginTextButton" onClick={() => setStatusMessage("아이디·비밀번호 찾기는 추후 연결 예정입니다.")}>아이디·비밀번호 찾기</button>
           </div>
           {statusMessage ? <p className="accountInlineStatus">{statusMessage}</p> : null}
-          <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isGoogleLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
+          <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isGoogleLoading || isNaverLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
 
         <div className="loginDivider"><span>또는</span></div>
         <div className="loginSocialRow" aria-label="소셜 로그인">
           <button type="button" className="loginSocialButton kakao" onClick={() => handlePendingFeature("카카오")} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
-          <button type="button" className="loginSocialButton naver" onClick={() => handlePendingFeature("네이버")} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
+          <button type="button" className="loginSocialButton naver" onClick={handleNaverLogin} disabled={isNaverLoading || isLoading} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
           <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
         </div>
         <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>

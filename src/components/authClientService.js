@@ -110,7 +110,7 @@ function decodeOAuthPayload(payloadText) {
   try {
     return JSON.parse(decodeURIComponent(escape(window.atob(payloadText.replace(/-/g, "+").replace(/_/g, "/")))));
   } catch (error) {
-    throw new Error("Google 로그인 결과를 확인하지 못했습니다.");
+    throw new Error("소셜 로그인 결과를 확인하지 못했습니다.");
   }
 }
 
@@ -135,6 +135,15 @@ export function getGoogleOAuthStartUrl() {
 export function startGoogleOAuthLogin() {
   if (typeof window === "undefined") return;
   window.location.href = getGoogleOAuthStartUrl();
+}
+
+export function getNaverOAuthStartUrl() {
+  return `${getFinpleApiBaseUrl()}/auth/naver/start`;
+}
+
+export function startNaverOAuthLogin() {
+  if (typeof window === "undefined") return;
+  window.location.href = getNaverOAuthStartUrl();
 }
 
 export async function checkEmailAvailability(email) {
