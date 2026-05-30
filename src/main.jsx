@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './BetaNetworkFallback.js'
+import './AuthPortfolioDataGuard.js'
 import './PaymentPrepFlowPatch.js'
 import './PaymentAlreadySubscribedPatch.js'
 import './TermsPaymentPolicyPatch.js'
