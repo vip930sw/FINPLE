@@ -11,6 +11,7 @@ import './MbtiResultUxPatch.js'
 import './GlobalNavigationPatch.js'
 import { isBillingResultPath, renderBillingResultPage } from './BillingResultRoutePatch.js'
 import { isPaymentMethodPath, renderPaymentMethodPage } from './PaymentMethodRoutePatch.js'
+import { isSimulatorDetailStandalonePath, renderSimulatorDetailStandalonePage } from './SimulatorDetailStandaloneRoutePatch.jsx'
 import './index.css'
 import './HomeResponsive.css'
 import './FooterDisclaimer.css'
@@ -35,6 +36,8 @@ if (isBillingResultPath()) {
   renderBillingResultPage()
 } else if (isPaymentMethodPath()) {
   renderPaymentMethodPage()
+} else if (isSimulatorDetailStandalonePath()) {
+  renderSimulatorDetailStandalonePage()
 } else {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
