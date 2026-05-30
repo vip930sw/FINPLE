@@ -52,8 +52,6 @@ const PERSONAL_ROUTE_PATHS = [
   "/simulator",
   "/simulator/us",
   "/simulator/kr",
-  "/simulator/portfolio",
-  "/simulator/detail",
   "/screener",
 ];
 
@@ -162,6 +160,7 @@ function App() {
       ".accountSideMenu a",
       ".accountSideMenu button",
       ".accountMenu a",
+      ".accountMenu button",
       ".accountTabList a",
       ".accountTabList button",
       ".myPageSidebar a",
@@ -169,6 +168,7 @@ function App() {
       ".myPageSidePanel a",
       ".myPageSidePanel button",
       ".myPageMenu a",
+      ".myPageMenu button",
       ".myPageNav a",
       ".myPageNav button",
       ".mypageSidebar a",
@@ -176,6 +176,7 @@ function App() {
       ".mypageSideNav a",
       ".mypageSideNav button",
       ".mypageMenu a",
+      ".mypageMenu button",
       ".mypageNav a",
       ".mypageNav button",
       "a[href^='#']",
@@ -379,8 +380,33 @@ function App() {
   );
 }
 
-function Metric({ label, value }) { return <div><span>{label}</span><strong>{value}</strong></div>; }
-function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><span>{value}%</span></div><div className="barTrack"><i style={{ width: `${value}%` }} /></div></div>; }
-function PriceCard({ name, price, items, featured }) { return <div className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></div>; }
+function Metric({ label, value }) { return <div className="metric"><p>{label}</p><strong>{value}</strong></div>; }
+function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
+function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
+function SiteFooter({ onNavigate }) {
+  function handleFooterLink(event, page) {
+    event.preventDefault();
+    onNavigate(page);
+  }
+
+  return (
+    <footer className="footer siteFooter">
+      <div className="siteFooterBrandBlock">
+        <strong>FINPLE Portfolio Lab</strong>
+        <span>© 2026 FINPLE. Beta service.</span>
+      </div>
+      <p className="siteFooterNotice">
+        FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,
+        특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
+      </p>
+      <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
+        <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
+        <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>
+        <a href="/privacy" onClick={(event) => handleFooterLink(event, "privacy")}>개인정보처리방침</a>
+        <a href="/disclaimer" onClick={(event) => handleFooterLink(event, "investment-disclaimer")}>투자 유의사항</a>
+      </nav>
+    </footer>
+  );
+}
 
 export default App;
