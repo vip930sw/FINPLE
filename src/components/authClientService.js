@@ -14,6 +14,9 @@ const AUTH_SESSION_STORAGE_KEY = "finple-auth-session";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const OAUTH_WAKEUP_TIMEOUT_MS = 12000;
 const OAUTH_WAKEUP_MAX_ATTEMPTS = 3;
+const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
+const OAUTH_READY_MESSAGE = "곧 이동합니다.";
+const OAUTH_RETRY_MESSAGE = "일시적으로 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -74,24 +77,24 @@ async function ensureFinpleApiReadyForOAuth() {
 
   for (let attempt = 1; attempt <= OAUTH_WAKEUP_MAX_ATTEMPTS; attempt += 1) {
     try {
-      dispatchOAuthWakeupStatus(attempt === 1 ? "로그인 서버를 준비하는 중입니다." : "로그인 서버를 다시 확인하고 있습니다.");
+      dispatchOAuthWakeupStatus(OAUTH_LOADING_MESSAGE);
       const response = await fetchWithTimeout(healthUrl, { headers: { Accept: "application/json" } });
       const payload = await response.json().catch(() => null);
 
       if (response.ok && payload?.ok !== false) {
-        dispatchOAuthWakeupStatus("로그인 서버가 준비되었습니다. 소셜 로그인으로 이동합니다.");
+        dispatchOAuthWakeupStatus(OAUTH_READY_MESSAGE);
         return;
       }
     } catch (error) {
       if (attempt >= OAUTH_WAKEUP_MAX_ATTEMPTS) {
-        throw new Error("로그인 서버가 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+        throw new Error(OAUTH_RETRY_MESSAGE);
       }
     }
 
     await sleep(1200 * attempt);
   }
 
-  throw new Error("로그인 서버가 아직 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+  throw new Error(OAUTH_RETRY_MESSAGE);
 }
 
 async function startOAuthLoginWithWakeup(startUrl) {
@@ -101,7 +104,7 @@ async function startOAuthLoginWithWakeup(startUrl) {
     await ensureFinpleApiReadyForOAuth();
     window.location.href = startUrl;
   } catch (error) {
-    const message = error?.message || "로그인 서버가 준비 중입니다. 잠시 후 다시 시도해 주세요.";
+    const message = error?.message || OAUTH_RETRY_MESSAGE;
     dispatchOAuthWakeupStatus(message);
     window.alert(message);
   }
