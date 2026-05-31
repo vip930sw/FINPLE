@@ -123,7 +123,6 @@
 .heroMbtiBars {
   gap: 12px;
   margin-top: 22px;
-  min-height: 214px;
 }
 
 .heroMbtiBars > div {
@@ -216,9 +215,5 @@
 
   .heroMbtiMetrics {
     grid-template-columns: 1fr;
-  }
-
-  .heroMbtiBars {
-    min-height: 214px;
   }
 }
