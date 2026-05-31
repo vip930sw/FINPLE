@@ -66,6 +66,14 @@
   animation: heroMbtiFadeOut 0.52s ease both;
 }
 
+.heroMbtiPercentText {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
 @keyframes heroMbtiFadeIn {
   0% {
     opacity: 0;
