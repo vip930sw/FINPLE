@@ -342,7 +342,7 @@ export default function DetailPanel({
       <div className="performanceSection">
         <div className="performanceHeader">
           <div><p className="sectionLabel">Annual Performance</p><h3>연차별 예상 성과</h3></div>
-          <p>현재 평가금액, 연간 투자금, 포트폴리오 평균 지표를 기준으로 연차별 장기 성과를 예상합니다.</p>
+          <p>현재 평가금액, 연간 투자금, 포트폴리오 평균 지표를 기준으로 연차별 성과를 예상합니다.</p>
         </div>
 
         <div className="performanceTableWrap">
