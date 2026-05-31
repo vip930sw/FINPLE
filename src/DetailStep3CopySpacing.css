@@ -13,14 +13,222 @@
   white-space: nowrap;
 }
 
+.portfolioIntegratedDiagnosis {
+  display: grid;
+  gap: 18px;
+}
+
+.portfolioIntegratedHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.portfolioIntegratedHeader h4 {
+  margin: 6px 0 0;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: -0.5px;
+}
+
+.portfolioIntegratedLead {
+  max-width: 920px;
+  margin: 12px 0 0;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.portfolioIntegratedTags {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  max-width: 360px;
+}
+
+.portfolioIntegratedReportGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portfolioIntegratedFocusCard,
+.portfolioIntegratedSection {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.portfolioIntegratedFocusCard.primaryMetricCard {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.portfolioIntegratedFocusCard.dangerMetricCard {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.portfolioIntegratedFocusCard span,
+.portfolioIntegratedActionBlock span {
+  display: block;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.portfolioIntegratedFocusCard strong,
+.portfolioIntegratedSection > strong,
+.portfolioIntegratedSectionTitleRow > strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.3;
+}
+
+.portfolioIntegratedFocusCard strong {
+  margin-top: 6px;
+  font-size: 19px;
+  letter-spacing: -0.4px;
+}
+
+.portfolioIntegratedFocusCard p,
+.portfolioIntegratedSection p,
+.portfolioIntegratedSection li {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.portfolioIntegratedFocusCard p,
+.portfolioIntegratedSection p {
+  margin: 8px 0 0;
+}
+
+.portfolioIntegratedSectionGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.portfolioIntegratedTwoColumnGrid {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+}
+
+.portfolioIntegratedSectionTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.portfolioIntegratedSection ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.portfolioIntegratedSection li + li {
+  margin-top: 7px;
+}
+
+.portfolioIntegratedRoleList {
+  margin-top: 14px;
+}
+
+.portfolioIntegratedActionSection {
+  display: grid;
+  gap: 14px;
+}
+
+.portfolioIntegratedActionBlock {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.portfolioIntegratedActionBlock:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.portfolioIntegratedActionBlock p {
+  margin-top: 7px;
+}
+
 @media (max-width: 900px) {
   .performanceHeader > p {
     white-space: normal;
+  }
+
+  .portfolioIntegratedHeader {
+    display: grid;
+  }
+
+  .portfolioIntegratedTags {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .portfolioIntegratedReportGrid,
+  .portfolioIntegratedTwoColumnGrid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media print {
   .performanceHeader > p {
     white-space: normal !important;
+  }
+
+  .portfolioIntegratedDiagnosis {
+    gap: 8px !important;
+  }
+
+  .portfolioIntegratedHeader {
+    padding-bottom: 8px !important;
+  }
+
+  .portfolioIntegratedHeader h4 {
+    font-size: 13px !important;
+  }
+
+  .portfolioIntegratedLead,
+  .portfolioIntegratedFocusCard p,
+  .portfolioIntegratedSection p,
+  .portfolioIntegratedSection li {
+    font-size: 9px !important;
+    line-height: 1.35 !important;
+  }
+
+  .portfolioIntegratedReportGrid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .portfolioIntegratedTwoColumnGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .portfolioIntegratedFocusCard,
+  .portfolioIntegratedSection {
+    padding: 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .portfolioIntegratedFocusCard strong,
+  .portfolioIntegratedSection > strong,
+  .portfolioIntegratedSectionTitleRow > strong {
+    font-size: 11px !important;
   }
 }
