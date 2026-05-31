@@ -170,7 +170,6 @@ function getInitialPage() {
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
-  const [heroPresetIndex, setHeroPresetIndex] = useState(0);
 
   function isFinpleUserLoggedIn() {
     return Boolean(getStoredFinpleAuthUser()?.id);
@@ -318,18 +317,6 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (currentPage !== "home") return undefined;
-
-    const timer = window.setInterval(() => {
-      setHeroPresetIndex((index) => (index + 1) % HERO_MBTI_PRESETS.length);
-    }, HERO_MBTI_ROTATION_MS);
-
-    return () => window.clearInterval(timer);
-  }, [currentPage]);
-
-  const activeHeroPreset = HERO_MBTI_PRESETS[heroPresetIndex % HERO_MBTI_PRESETS.length];
-
   const stockIndexSymbols = [
     { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
     { description: "Nasdaq 100", proName: "CAPITALCOM:US100" },
@@ -448,11 +435,7 @@ function App() {
           </div>
         </div>
 
-        <HeroMbtiPresetCard
-          preset={activeHeroPreset}
-          activeIndex={heroPresetIndex}
-          onSelect={setHeroPresetIndex}
-        />
+        <HeroMbtiPresetCard />
       </section>
 
       <div id="index" className="homeAnchor"><EconomicCalendarSection /></div>
@@ -467,7 +450,18 @@ function App() {
   );
 }
 
-function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
+function HeroMbtiPresetCard() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const preset = HERO_MBTI_PRESETS[activeIndex % HERO_MBTI_PRESETS.length];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % HERO_MBTI_PRESETS.length);
+    }, HERO_MBTI_ROTATION_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="dashboardCard heroMbtiCard" aria-live="polite">
       <div className="cardHeader heroMbtiHeader">
@@ -493,7 +487,7 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
             key={item.name}
             type="button"
             className={index === activeIndex ? "active" : ""}
-            onClick={() => onSelect(index)}
+            onClick={() => setActiveIndex(index)}
             aria-label={`${item.name} 보기`}
           />
         ))}
