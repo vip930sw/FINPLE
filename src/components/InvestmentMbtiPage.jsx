@@ -31,10 +31,10 @@ const US_ASSET_TEMPLATES = {
 };
 
 const KR_ASSET_TEMPLATES = {
-  growthStock: { ticker: "133690", name: "TIGER 미국나스닥100", price: 25000, market: "KR" },
-  valueStock: { ticker: "458730", name: "TIGER 미국배당다우존스", price: 13000, market: "KR" },
+  growthStock: { ticker: "069500", name: "KODEX 200", price: 35000, market: "KR" },
+  valueStock: { ticker: "161510", name: "국내 고배당 ETF", price: 15000, market: "KR" },
   bond: { ticker: "273130", name: "KODEX 종합채권(AA-이상)액티브", price: 100000, market: "KR" },
-  longBond: { ticker: "453850", name: "ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
+  longBond: { ticker: "148070", name: "KOSEF 국고채10년", price: 120000, market: "KR" },
   reit: { ticker: "329200", name: "TIGER 리츠부동산인프라", price: 5000, market: "KR" },
   gold: { ticker: "132030", name: "KODEX 골드선물(H)", price: 15000, market: "KR" },
   crypto: { ticker: "305720", name: "KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },

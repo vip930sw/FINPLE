@@ -67,16 +67,16 @@ const HERO_MBTI_PRESETS = [
     metrics: [
       { label: "성향", value: "안정 · 장기" },
       { label: "운용", value: "자동 · 분산" },
-      { label: "중심 자산", value: "배당·채권" },
+      { label: "중심 자산", value: "배당·종합채권" },
     ],
     allocations: [
-      { label: "성장주", value: 13 },
-      { label: "가치·배당", value: 30 },
-      { label: "채권", value: 30 },
-      { label: "리츠", value: 5 },
+      { label: "성장주", value: 10 },
+      { label: "가치·배당", value: 28 },
+      { label: "종합채권", value: 24 },
+      { label: "장기국채", value: 8 },
+      { label: "리츠", value: 6 },
       { label: "금", value: 8 },
-      { label: "코인", value: 0 },
-      { label: "현금", value: 14 },
+      { label: "현금", value: 16 },
     ],
   },
   {
@@ -85,16 +85,16 @@ const HERO_MBTI_PRESETS = [
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 분산" },
-      { label: "중심 자산", value: "성장·배당" },
+      { label: "중심 자산", value: "성장·분산" },
     ],
     allocations: [
       { label: "성장주", value: 45 },
       { label: "가치·배당", value: 22 },
-      { label: "채권", value: 12 },
-      { label: "리츠", value: 5 },
+      { label: "종합채권", value: 8 },
+      { label: "장기국채", value: 4 },
+      { label: "리츠", value: 7 },
       { label: "금", value: 8 },
-      { label: "코인", value: 0 },
-      { label: "현금", value: 8 },
+      { label: "현금", value: 6 },
     ],
   },
   {
@@ -103,16 +103,15 @@ const HERO_MBTI_PRESETS = [
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 확신" },
-      { label: "중심 자산", value: "성장·코인" },
+      { label: "중심 자산", value: "성장·블록체인" },
     ],
     allocations: [
-      { label: "성장주", value: 43 },
-      { label: "가치·배당", value: 22 },
-      { label: "채권", value: 12 },
-      { label: "리츠", value: 5 },
-      { label: "금", value: 8 },
-      { label: "코인", value: 10 },
-      { label: "현금", value: 0 },
+      { label: "성장주", value: 60 },
+      { label: "가치·배당", value: 18 },
+      { label: "장기국채", value: 8 },
+      { label: "금", value: 4 },
+      { label: "블록체인", value: 5 },
+      { label: "현금", value: 5 },
     ],
   },
   {
@@ -121,16 +120,14 @@ const HERO_MBTI_PRESETS = [
     metrics: [
       { label: "성향", value: "성장 · 기회" },
       { label: "운용", value: "주도 · 확신" },
-      { label: "중심 자산", value: "성장·대체" },
+      { label: "중심 자산", value: "성장·블록체인" },
     ],
     allocations: [
-      { label: "성장주", value: 41 },
-      { label: "가치·배당", value: 22 },
-      { label: "채권", value: 12 },
-      { label: "리츠", value: 5 },
-      { label: "금", value: 10 },
-      { label: "코인", value: 10 },
-      { label: "현금", value: 0 },
+      { label: "성장주", value: 70 },
+      { label: "가치·배당", value: 5 },
+      { label: "금", value: 5 },
+      { label: "블록체인", value: 15 },
+      { label: "현금", value: 5 },
     ],
   },
 ];
@@ -217,8 +214,6 @@ function App() {
     if (currentPath !== nextPath) {
       window.history.pushState({ page: currentPage }, "", nextPath);
     }
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
 
   useEffect(() => {
