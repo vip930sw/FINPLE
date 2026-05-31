@@ -183,41 +183,34 @@ export default function DetailPanel({
           ) : null}
         </div>
 
-        <div className="portfolioIntegratedMetricGrid detailHeroMetricGrid">
-          <div className="detailHeroMetricCard primaryMetricCard">
-            <span>총 평가금액</span>
-            <strong>{safeFormatWholeNumber(safeTotalAssetValue)}원</strong>
-            <p>현재 보유 수량과 현재가 기준</p>
-          </div>
-
-          <div className="detailHeroMetricCard">
-            <span>예상 CAGR</span>
-            <strong>{safeFixed(expectedCagr)}%</strong>
-            <p>장기 성장성 기준 지표</p>
-          </div>
-
-          <div className="detailHeroMetricCard dangerMetricCard">
-            <span>예상 MDD</span>
-            <strong>{safeFixed(simpleMdd)}%</strong>
-            <p>하락장 손실폭 참고 지표</p>
-          </div>
-
-          <div className="detailHeroMetricCard primaryMetricCard">
+        <div className="portfolioIntegratedReportGrid portfolioIntegratedFocusGrid">
+          <article className="portfolioIntegratedFocusCard primaryMetricCard">
             <span>{investmentYears}년 후 예상 자산</span>
             <strong>{safeFormatNumber(futureValue)}원</strong>
-            <p>물가 반영 전 장기 예상값</p>
-          </div>
+            <p>물가 반영 전 예상값입니다. 실질가치는 {safeFormatNumber(inflationAdjustedFutureValue)}원으로 추정됩니다.</p>
+          </article>
+
+          <article className="portfolioIntegratedFocusCard">
+            <span>성장성</span>
+            <strong>예상 CAGR {safeFixed(expectedCagr)}%</strong>
+            <p>{safeReport?.growthText || "성장 기대치를 확인합니다."}</p>
+          </article>
+
+          <article className="portfolioIntegratedFocusCard dangerMetricCard">
+            <span>위험도</span>
+            <strong>예상 MDD {safeFixed(simpleMdd)}%</strong>
+            <p>{safeReport?.riskText || "하락 위험을 확인합니다."}</p>
+          </article>
+
+          <article className="portfolioIntegratedFocusCard">
+            <span>배당</span>
+            <strong>예상 배당률 {safeFixed(expectedDividendYield)}%</strong>
+            <p>{safeReport?.dividendText || "배당 현금흐름을 확인합니다."}</p>
+          </article>
         </div>
 
-        <div className="portfolioIntegratedReportGrid">
-          <div><strong>성장성</strong><p>{safeReport?.growthText || "성장 기대치를 확인합니다."}</p></div>
-          <div><strong>위험도</strong><p>{safeReport?.riskText || "하락 위험을 확인합니다."}</p></div>
-          <div><strong>배당</strong><p>{safeReport?.dividendText || "배당 현금흐름을 확인합니다."}</p></div>
-          <div><strong>활용 방향</strong><p>{safeReport?.directionText || "목표비중을 조정해 장기 성과 변화를 비교해보세요."}</p></div>
-        </div>
-
-        <div className="portfolioIntegratedSectionGrid">
-          <article className="portfolioIntegratedSection">
+        <div className="portfolioIntegratedSectionGrid portfolioIntegratedTwoColumnGrid">
+          <article className="portfolioIntegratedSection portfolioIntegratedProfileSection">
             <div className="portfolioIntegratedSectionTitleRow">
               <strong>포트폴리오 성격</strong>
               <span className="detailRiskBadge">리스크 {portfolioAnalysis.riskLevel}</span>
@@ -238,18 +231,27 @@ export default function DetailPanel({
             ) : null}
           </article>
 
-          <article className="portfolioIntegratedSection">
-            <strong>리스크 진단</strong>
-            <ul>
-              {riskPointItems.map((item, index) => <li key={`risk-${index}`}>{item}</li>)}
-            </ul>
-          </article>
+          <article className="portfolioIntegratedSection portfolioIntegratedActionSection">
+            <strong>활용 방향 및 개선 제안</strong>
 
-          <article className="portfolioIntegratedSection">
-            <strong>개선 제안</strong>
-            <ul>
-              {suggestionItems.map((item, index) => <li key={`suggestion-${index}`}>{item}</li>)}
-            </ul>
+            <div className="portfolioIntegratedActionBlock">
+              <span>활용 방향</span>
+              <p>{safeReport?.directionText || "목표비중을 조정해 장기 성과 변화를 비교해보세요."}</p>
+            </div>
+
+            <div className="portfolioIntegratedActionBlock">
+              <span>리스크 진단</span>
+              <ul>
+                {riskPointItems.map((item, index) => <li key={`risk-${index}`}>{item}</li>)}
+              </ul>
+            </div>
+
+            <div className="portfolioIntegratedActionBlock">
+              <span>개선 제안</span>
+              <ul>
+                {suggestionItems.map((item, index) => <li key={`suggestion-${index}`}>{item}</li>)}
+              </ul>
+            </div>
           </article>
         </div>
       </div>
