@@ -56,12 +56,13 @@ const PERSONAL_ROUTE_PATHS = [
   "/screener",
 ];
 
+const HERO_MBTI_ROTATION_MS = 2400;
+
 const HERO_MBTI_PRESETS = [
   {
     typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "차분한 수호자형",
     status: "안정추구형",
-    summary: "손실 방어와 장기 복리를 우선하는 안정형 프리셋입니다.",
     metrics: [
       { label: "성향", value: "안정 · 장기" },
       { label: "운용", value: "자동 · 분산" },
@@ -74,6 +75,7 @@ const HERO_MBTI_PRESETS = [
       { label: "채권", value: 30 },
       { label: "리츠", value: 5 },
       { label: "금", value: 8 },
+      { label: "코인", value: 0 },
       { label: "현금", value: 14 },
     ],
   },
@@ -81,7 +83,6 @@ const HERO_MBTI_PRESETS = [
     typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "균형 잡힌 건축가형",
     status: "적극투자형",
-    summary: "성장 자산을 중심으로 두되 배당·채권·대체자산을 함께 배치한 대표 균형형입니다.",
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 분산" },
@@ -94,6 +95,7 @@ const HERO_MBTI_PRESETS = [
       { label: "채권", value: 12 },
       { label: "리츠", value: 5 },
       { label: "금", value: 8 },
+      { label: "코인", value: 0 },
       { label: "현금", value: 8 },
     ],
   },
@@ -101,7 +103,6 @@ const HERO_MBTI_PRESETS = [
     typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "장기 성장 전략가형",
     status: "적극투자형",
-    summary: "장기 성장성을 우선하면서 확신 자산을 일부 반영한 성장 중심 프리셋입니다.",
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 확신" },
@@ -115,13 +116,13 @@ const HERO_MBTI_PRESETS = [
       { label: "리츠", value: 5 },
       { label: "금", value: 8 },
       { label: "코인", value: 10 },
+      { label: "현금", value: 0 },
     ],
   },
   {
     typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "용감한 승부사형",
     status: "공격투자형",
-    summary: "시장 기회와 확신 자산을 더 강하게 반영한 고변동성 성장 프리셋입니다.",
     metrics: [
       { label: "성향", value: "성장 · 기회" },
       { label: "운용", value: "주도 · 확신" },
@@ -135,6 +136,7 @@ const HERO_MBTI_PRESETS = [
       { label: "리츠", value: 5 },
       { label: "금", value: 10 },
       { label: "코인", value: 10 },
+      { label: "현금", value: 0 },
     ],
   },
 ];
@@ -332,7 +334,7 @@ function App() {
 
     const timer = window.setInterval(() => {
       setHeroPresetIndex((index) => (index + 1) % HERO_MBTI_PRESETS.length);
-    }, 4000);
+    }, HERO_MBTI_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, [currentPage]);
@@ -449,7 +451,6 @@ function App() {
       <section id="hero" className="hero">
         <div className="heroText">
           <p className="badge">투자 포트폴리오 분석 웹앱</p>
-          <div className="betaNoticeBanner" role="note"><strong>Beta</strong><span>FINPLE은 현재 베타 운영 중입니다. 일부 기능과 데이터는 테스트 단계이며, 투자 판단 전 공식 자료를 함께 확인해 주세요.</span></div>
           <h1>내 포트폴리오의<br />수익과 위험을<br />한눈에 분석하세요</h1>
           <p className="description">FINPLE은 개별 종목 추천 서비스가 아니라, 내 포트폴리오의 장기 수익·위험·배당·실질가치를 한 번에 점검하는 투자 분석 도구입니다.</p>
           <div className="heroButtons">
@@ -488,16 +489,14 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
         <span className="status heroMbtiStatus">{preset.status}</span>
       </div>
 
-      <p className="heroMbtiSummary">{preset.summary}</p>
-
       <div className="metrics heroMbtiMetrics">
         {preset.metrics.map((metric) => (
-          <Metric key={`${preset.name}-${metric.label}`} label={metric.label} value={metric.value} />
+          <Metric key={metric.label} label={metric.label} value={metric.value} />
         ))}
       </div>
 
       <div className="bars heroMbtiBars">
-        {preset.allocations.map((item) => <Bar key={`${preset.name}-${item.label}`} label={item.label} value={item.value} />)}
+        {preset.allocations.map((item) => <Bar key={item.label} label={item.label} value={item.value} />)}
       </div>
 
       <div className="heroMbtiPager" aria-label="투자 MBTI 포트폴리오 예시 선택">
