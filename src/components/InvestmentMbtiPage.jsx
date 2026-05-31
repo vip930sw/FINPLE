@@ -19,23 +19,23 @@ const ASSET_LABELS = {
 };
 
 const US_ASSET_TEMPLATES = {
-  growthStock: { ticker: "QQQ", name: "성장주 / 나스닥100 대표 ETF", price: 430000, market: "US" },
-  valueStock: { ticker: "SCHD", name: "가치·배당 / 배당성장 대표 ETF", price: 110000, market: "US" },
-  bond: { ticker: "TLT", name: "채권 / 미국 장기채 대표 ETF", price: 125000, market: "US" },
-  reit: { ticker: "VNQ", name: "리츠 / 부동산 인컴 대표 ETF", price: 120000, market: "US" },
-  gold: { ticker: "GLD", name: "금 / 금 ETF", price: 300000, market: "US" },
-  crypto: { ticker: "BLOK", name: "블록체인 테마 / 고변동성 위성자산", price: 45000, market: "US", cagr: 9.0, beta: 1.4, mdd: -65, dividendYield: 1.0 },
-  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  growthStock: { ticker: "QQQ", name: "Invesco QQQ Trust ETF", price: 430000, market: "US" },
+  valueStock: { ticker: "SCHD", name: "Schwab U.S. Dividend Equity ETF", price: 110000, market: "US" },
+  bond: { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", price: 125000, market: "US" },
+  reit: { ticker: "VNQ", name: "Vanguard Real Estate ETF", price: 120000, market: "US" },
+  gold: { ticker: "GLD", name: "SPDR Gold Shares ETF", price: 300000, market: "US" },
+  crypto: { ticker: "BLOK", name: "Amplify Transformational Data Sharing ETF", price: 45000, market: "US", cagr: 9.0, beta: 1.4, mdd: -65, dividendYield: 1.0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
 
 const KR_ASSET_TEMPLATES = {
-  growthStock: { ticker: "133690", name: "성장주 / TIGER 미국나스닥100", price: 25000, market: "KR" },
-  valueStock: { ticker: "458730", name: "가치·배당 / TIGER 미국배당다우존스", price: 13000, market: "KR" },
-  bond: { ticker: "453850", name: "채권 / ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
-  reit: { ticker: "329200", name: "리츠 / TIGER 리츠부동산인프라", price: 5000, market: "KR" },
-  gold: { ticker: "132030", name: "금 / KODEX 골드선물(H)", price: 15000, market: "KR" },
-  crypto: { ticker: "305720", name: "위성자산 / KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },
-  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+  growthStock: { ticker: "133690", name: "TIGER 미국나스닥100", price: 25000, market: "KR" },
+  valueStock: { ticker: "458730", name: "TIGER 미국배당다우존스", price: 13000, market: "KR" },
+  bond: { ticker: "453850", name: "ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
+  reit: { ticker: "329200", name: "TIGER 리츠부동산인프라", price: 5000, market: "KR" },
+  gold: { ticker: "132030", name: "KODEX 골드선물(H)", price: 15000, market: "KR" },
+  crypto: { ticker: "305720", name: "KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
 
 const ASSET_TEMPLATES = US_ASSET_TEMPLATES;
@@ -275,8 +275,19 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       priceMode: "manual",
       metricMode: isCash ? "manual" : (baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual"))),
       dataSource: isCash ? "investment-mbti-cash" : (baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"))),
+      lookupDisabled: isCash,
+      shouldAutoLookup: !isCash,
     };
   });
+}
+
+function scheduleSimulatorAutoLookup() {
+  if (typeof window === "undefined") return;
+  window.setTimeout(() => {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const bulkLookupButton = buttons.find((button) => String(button.textContent || "").trim() === "전체 조회");
+    bulkLookupButton?.click?.();
+  }, 900);
 }
 
 function saveResultToSimulator(result, marketMode = "US") {
@@ -287,7 +298,7 @@ function saveResultToSimulator(result, marketMode = "US") {
   const isKrPortfolio = marketMode === "KR";
   const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate };
   const assets = buildAssetsFromPreset(type.preset, 50000000, marketMode);
-  const portfolioName = isKrPortfolio ? `${type.nickname} 한국 주식` : type.nickname;
+  const portfolioName = type.nickname;
   const portfolio = { id, name: portfolioName, settings, assets, updatedAt: now, source: isKrPortfolio ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
 
   try {
@@ -333,8 +344,9 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
   }
 
   function applyToSimulator(marketMode = "US") {
-    saveResultToSimulator(result, marketMode);
+    const saved = saveResultToSimulator(result, marketMode);
     onNavigate?.("personal");
+    if (saved) scheduleSimulatorAutoLookup();
   }
 
   if (result.isComplete && isLastQuestion) {
@@ -457,7 +469,7 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         <button type="button" onClick={handlePdfSave}>PDF 저장</button>
       </div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
-      <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
+      <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
     </section>
   );
 }
