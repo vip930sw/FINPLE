@@ -14,6 +14,7 @@ const DEFAULT_PROVIDER = "backend";
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
 const DEFAULT_BACKEND_TIMEOUT_MS = 12000;
 const DEFAULT_BULK_LOOKUP_DELAY_MS = 1200;
+const CASH_REFERENCE_PRICE = 10000;
 
 function getBuildTimeEnv() {
   // Vite 환경변수는 반드시 VITE_ 접두사를 사용해야 브라우저 코드에서 읽을 수 있습니다.
@@ -86,6 +87,44 @@ export function getAssetDataProviderLabel(options = {}) {
 
 function isRateLimitMessage(message = "") {
   return /Alpha Vantage|호출 제한|rate limit|premium/i.test(String(message));
+}
+
+function isCashTicker(ticker = "") {
+  return String(ticker || "").trim().toUpperCase() === "CASH";
+}
+
+function createCashAssetData() {
+  const now = new Date().toISOString();
+  return {
+    ticker: "CASH",
+    displayTicker: "CASH",
+    providerSymbol: "CASH",
+    name: "현금 / 대기자금",
+    market: "CASH",
+    exchange: "MANUAL",
+    currency: "KRW",
+    quoteCurrency: "KRW",
+    displayCurrency: "KRW",
+    assetType: "CASH",
+    price: CASH_REFERENCE_PRICE,
+    cagr: 2.5,
+    beta: 0,
+    mdd: 0,
+    dividendYield: 2.0,
+    displayDividendYield: "2.00%",
+    dividendPolicy: "cash_reference",
+    dividendSource: "manual",
+    reviewTag: "",
+    reviewReason: "",
+    priceMode: "manual",
+    metricMode: "manual",
+    dataSource: "manual-cash",
+    cacheMode: "cash-reference",
+    rawPrice: CASH_REFERENCE_PRICE,
+    rawCurrency: "KRW",
+    exchangeRate: 1,
+    fetchedAt: now,
+  };
 }
 
 function isKrTickerLike(ticker = "", market = "US") {
@@ -233,6 +272,10 @@ export async function fetchAssetDataByTicker(ticker, options = {}) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
 
+  if (isCashTicker(normalizedTicker)) {
+    return createCashAssetData();
+  }
+
   const csvCandidate = getLocalCsvCandidate(normalizedTicker, config.market);
 
   if (isKrTickerLike(normalizedTicker, config.market)) {
@@ -274,6 +317,20 @@ export async function fetchAssetDataBatch(tickers, options = {}) {
   // 티커별 진행 상태를 호출부로 전달합니다.
   for (let tickerIndex = 0; tickerIndex < uniqueTickers.length; tickerIndex += 1) {
     const ticker = uniqueTickers[tickerIndex];
+
+    if (isCashTicker(ticker)) {
+      const data = createCashAssetData();
+      lookupResults.push({ ticker: "CASH", status: "success", data, cacheMode: "cash-reference" });
+      onProgress?.({
+        ticker: "CASH",
+        index: tickerIndex,
+        total: uniqueTickers.length,
+        status: "success",
+        message: "CASH 기준값 유지",
+      });
+      continue;
+    }
+
     const csvCandidate = getLocalCsvCandidate(ticker, config.market);
 
     if (isKrTickerLike(ticker, config.market)) {
@@ -533,6 +590,10 @@ export async function fetchTickerCandidateByTicker(ticker, options = {}) {
     throw new Error("티커를 먼저 입력해주세요.");
   }
 
+  if (isCashTicker(normalizedTicker)) {
+    return createCashAssetData();
+  }
+
   const localCandidate = getLocalCsvCandidate(normalizedTicker, market);
   if (localCandidate) return localCandidate;
 
@@ -566,7 +627,7 @@ export async function searchTickerCandidates({
   url.searchParams.set("type", type);
   url.searchParams.set("category", category);
   url.searchParams.set("riskLevel", riskLevel);
-  url.searchParams.set("beginnerFit", beginnerFit);
+  url.searchParams.set("beginnerFit", String(beginnerFit));
   url.searchParams.set("limit", String(limit));
 
   const response = await fetchWithTimeout(url.toString(), {
