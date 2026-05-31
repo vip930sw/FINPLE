@@ -60,14 +60,12 @@ const HERO_MBTI_ROTATION_MS = 2400;
 
 const HERO_MBTI_PRESETS = [
   {
-    typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "차분한 수호자형",
     status: "안정추구형",
     metrics: [
       { label: "성향", value: "안정 · 장기" },
       { label: "운용", value: "자동 · 분산" },
       { label: "중심 자산", value: "배당·채권" },
-      { label: "합계", value: "100%" },
     ],
     allocations: [
       { label: "성장주", value: 13 },
@@ -80,14 +78,12 @@ const HERO_MBTI_PRESETS = [
     ],
   },
   {
-    typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "균형 잡힌 건축가형",
     status: "적극투자형",
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 분산" },
       { label: "중심 자산", value: "성장·배당" },
-      { label: "합계", value: "100%" },
     ],
     allocations: [
       { label: "성장주", value: 45 },
@@ -100,14 +96,12 @@ const HERO_MBTI_PRESETS = [
     ],
   },
   {
-    typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "장기 성장 전략가형",
     status: "적극투자형",
     metrics: [
       { label: "성향", value: "성장 · 장기" },
       { label: "운용", value: "주도 · 확신" },
       { label: "중심 자산", value: "성장·코인" },
-      { label: "합계", value: "100%" },
     ],
     allocations: [
       { label: "성장주", value: 43 },
@@ -120,14 +114,12 @@ const HERO_MBTI_PRESETS = [
     ],
   },
   {
-    typeLabel: "투자 MBTI 포트폴리오 예시",
     name: "용감한 승부사형",
     status: "공격투자형",
     metrics: [
       { label: "성향", value: "성장 · 기회" },
       { label: "운용", value: "주도 · 확신" },
       { label: "중심 자산", value: "성장·대체" },
-      { label: "합계", value: "100%" },
     ],
     allocations: [
       { label: "성장주", value: 41 },
@@ -483,7 +475,6 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
     <div className="dashboardCard heroMbtiCard" aria-live="polite">
       <div className="cardHeader heroMbtiHeader">
         <div>
-          <p>{preset.typeLabel}</p>
           <h2>{preset.name}</h2>
         </div>
         <span className="status heroMbtiStatus">{preset.status}</span>
