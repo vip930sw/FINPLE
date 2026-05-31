@@ -1,0 +1,26 @@
+/* Step 3 copy and spacing polish */
+
+.detailMetricHelpBox {
+  align-items: flex-start;
+}
+
+.detailMetricHelpBox > div:first-child .sectionLabel {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.performanceHeader > p {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .performanceHeader > p {
+    white-space: normal;
+  }
+}
+
+@media print {
+  .performanceHeader > p {
+    white-space: normal !important;
+  }
+}
