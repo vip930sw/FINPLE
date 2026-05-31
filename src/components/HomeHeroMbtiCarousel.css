@@ -1,0 +1,202 @@
+/* HOME Hero MBTI preset carousel */
+
+.heroMbtiCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.heroMbtiCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 34%);
+}
+
+.heroMbtiCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.heroMbtiHeader {
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.heroMbtiHeader h2,
+.heroMbtiStatus,
+.heroMbtiMetrics .metric strong,
+.heroMbtiMetrics .metric p,
+.heroMbtiBars .barLabel strong {
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.heroMbtiCrossfadeText {
+  position: relative;
+  display: inline-grid;
+  align-items: center;
+  min-width: max-content;
+  vertical-align: baseline;
+}
+
+.heroMbtiTextCurrent,
+.heroMbtiTextPrevious {
+  grid-area: 1 / 1;
+  display: inline-block;
+  white-space: nowrap;
+  transition: opacity 0.52s ease;
+  will-change: opacity;
+}
+
+.heroMbtiTextCurrent {
+  opacity: 1;
+}
+
+.heroMbtiTextPrevious {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.heroMbtiCrossfadeText.isTransitioning .heroMbtiTextCurrent {
+  animation: heroMbtiFadeIn 0.52s ease both;
+}
+
+.heroMbtiCrossfadeText.isTransitioning .heroMbtiTextPrevious {
+  animation: heroMbtiFadeOut 0.52s ease both;
+}
+
+.heroMbtiPercentText {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@keyframes heroMbtiFadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes heroMbtiFadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.heroMbtiStatus {
+  background: #dbeafe;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.heroMbtiMetrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.heroMbtiMetrics .metric {
+  padding: 13px 12px;
+}
+
+.heroMbtiMetrics .metric p {
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.heroMbtiMetrics .metric strong {
+  font-size: 15px;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.heroMbtiBars {
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.heroMbtiBars .barLabel {
+  margin-bottom: 7px;
+}
+
+.heroMbtiBars .barTrack {
+  height: 10px;
+}
+
+.heroMbtiBars .barFill {
+  background: linear-gradient(90deg, #38bdf8 0%, #2563eb 55%, #0f172a 100%);
+  transition: width 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
+}
+
+.heroMbtiPager {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.heroMbtiPager button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: width 0.28s ease, background-color 0.28s ease;
+}
+
+.heroMbtiPager button.active {
+  width: 24px;
+  background: #2563eb;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroMbtiBars .barFill,
+  .heroMbtiPager button,
+  .heroMbtiHeader h2,
+  .heroMbtiStatus,
+  .heroMbtiMetrics .metric strong,
+  .heroMbtiMetrics .metric p,
+  .heroMbtiBars .barLabel strong,
+  .heroMbtiTextCurrent,
+  .heroMbtiTextPrevious {
+    transition: none;
+    animation: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .heroMbtiHeader {
+    display: grid;
+  }
+
+  .heroMbtiStatus {
+    width: fit-content;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroMbtiCard {
+    padding: 22px;
+    border-radius: 26px;
+  }
+
+  .heroMbtiHeader h2 {
+    font-size: 24px;
+  }
+
+  .heroMbtiMetrics {
+    grid-template-columns: 1fr;
+  }
+}

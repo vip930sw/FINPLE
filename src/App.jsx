@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import "./components/SiteFooter.css";
 import "./components/HomeSimplify.css";
+import "./components/HomeHeroMbtiCarousel.css";
 import "./components/LegalPagesPolish.css";
 import "./components/LoginPageFinalPolish.css";
 
@@ -55,6 +56,85 @@ const PERSONAL_ROUTE_PATHS = [
   "/screener",
 ];
 
+const HERO_MBTI_ROTATION_MS = 2400;
+const HERO_MBTI_TEXT_TRANSITION_MS = 520;
+const HERO_MBTI_NUMBER_TRANSITION_MS = 900;
+
+const HERO_MBTI_PRESETS = [
+  {
+    name: "차분한 수호자형",
+    status: "안정추구형",
+    metrics: [
+      { label: "성향", value: "안정 · 장기" },
+      { label: "운용", value: "자동 · 분산" },
+      { label: "중심 자산", value: "배당·채권" },
+    ],
+    allocations: [
+      { label: "성장주", value: 13 },
+      { label: "가치·배당", value: 30 },
+      { label: "채권", value: 30 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "코인", value: 0 },
+      { label: "현금", value: 14 },
+    ],
+  },
+  {
+    name: "균형 잡힌 건축가형",
+    status: "적극투자형",
+    metrics: [
+      { label: "성향", value: "성장 · 장기" },
+      { label: "운용", value: "주도 · 분산" },
+      { label: "중심 자산", value: "성장·배당" },
+    ],
+    allocations: [
+      { label: "성장주", value: 45 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "코인", value: 0 },
+      { label: "현금", value: 8 },
+    ],
+  },
+  {
+    name: "장기 성장 전략가형",
+    status: "적극투자형",
+    metrics: [
+      { label: "성향", value: "성장 · 장기" },
+      { label: "운용", value: "주도 · 확신" },
+      { label: "중심 자산", value: "성장·코인" },
+    ],
+    allocations: [
+      { label: "성장주", value: 43 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "코인", value: 10 },
+      { label: "현금", value: 0 },
+    ],
+  },
+  {
+    name: "용감한 승부사형",
+    status: "공격투자형",
+    metrics: [
+      { label: "성향", value: "성장 · 기회" },
+      { label: "운용", value: "주도 · 확신" },
+      { label: "중심 자산", value: "성장·대체" },
+    ],
+    allocations: [
+      { label: "성장주", value: 41 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 10 },
+      { label: "코인", value: 10 },
+      { label: "현금", value: 0 },
+    ],
+  },
+];
+
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
 }
@@ -93,6 +173,7 @@ function getInitialPage() {
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
+  const [heroPresetIndex, setHeroPresetIndex] = useState(0);
 
   function isFinpleUserLoggedIn() {
     return Boolean(getStoredFinpleAuthUser()?.id);
@@ -242,6 +323,18 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (currentPage !== "home") return undefined;
+
+    const timer = window.setInterval(() => {
+      setHeroPresetIndex((index) => (index + 1) % HERO_MBTI_PRESETS.length);
+    }, HERO_MBTI_ROTATION_MS);
+
+    return () => window.clearInterval(timer);
+  }, [currentPage]);
+
+  const activeHeroPreset = HERO_MBTI_PRESETS[heroPresetIndex % HERO_MBTI_PRESETS.length];
+
   const stockIndexSymbols = [
     { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
     { description: "Nasdaq 100", proName: "CAPITALCOM:US100" },
@@ -352,20 +445,19 @@ function App() {
       <section id="hero" className="hero">
         <div className="heroText">
           <p className="badge">투자 포트폴리오 분석 웹앱</p>
-          <div className="betaNoticeBanner" role="note"><strong>Beta</strong><span>FINPLE은 현재 베타 운영 중입니다. 일부 기능과 데이터는 테스트 단계이며, 투자 판단 전 공식 자료를 함께 확인해 주세요.</span></div>
-          <h1>내 포트폴리오의<br />수익과 위험을<br />한눈에 분석하세요</h1>
-          <p className="description">FINPLE은 개별 종목 추천 서비스가 아니라, 내 포트폴리오의 장기 수익·위험·배당·실질가치를 한 번에 점검하는 투자 분석 도구입니다.</p>
+          <h1>투자 성향부터<br />포트폴리오까지<br />한 번에 점검하세요</h1>
+          <p className="description">FINPLE은 투자 성향, 자산 비중, 장기 예상 성과를 연결해, 내 포트폴리오의 수익률·위험·배당·실질가치를 함께 점검하는 투자 분석 도구입니다.</p>
           <div className="heroButtons">
             <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
             <button type="button" className="secondaryButton" onClick={() => setCurrentPage("about")}>FINPLE 알아보기</button>
           </div>
         </div>
 
-        <div className="dashboardCard">
-          <div className="cardHeader"><div><p>예상 포트폴리오</p><h2>중립 성장형</h2></div><span className="status">안정적</span></div>
-          <div className="metrics"><Metric label="예상 연수익률" value="7.8%" /><Metric label="예상 변동성" value="14.2%" /><Metric label="예상 MDD" value="-28.5%" /><Metric label="리밸런싱" value="필요" /></div>
-          <div className="bars"><Bar label="성장주" value={55} /><Bar label="가치주" value={25} /><Bar label="채권" value={15} /><Bar label="금" value={5} /></div>
-        </div>
+        <HeroMbtiPresetCard
+          preset={activeHeroPreset}
+          activeIndex={heroPresetIndex}
+          onSelect={setHeroPresetIndex}
+        />
       </section>
 
       <div id="index" className="homeAnchor"><EconomicCalendarSection /></div>
@@ -380,8 +472,141 @@ function App() {
   );
 }
 
-function Metric({ label, value }) { return <div className="metric"><p>{label}</p><strong>{value}</strong></div>; }
-function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
+function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
+  return (
+    <div className="dashboardCard heroMbtiCard" aria-live="polite">
+      <div className="cardHeader heroMbtiHeader">
+        <div>
+          <h2><CrossfadeText value={preset.name} /></h2>
+        </div>
+        <span className="status heroMbtiStatus"><CrossfadeText value={preset.status} /></span>
+      </div>
+
+      <div className="metrics heroMbtiMetrics">
+        {preset.metrics.map((metric) => (
+          <Metric key={metric.label} label={metric.label} value={metric.value} animated />
+        ))}
+      </div>
+
+      <div className="bars heroMbtiBars">
+        {preset.allocations.map((item) => <Bar key={item.label} label={item.label} value={item.value} />)}
+      </div>
+
+      <div className="heroMbtiPager" aria-label="투자 MBTI 포트폴리오 예시 선택">
+        {HERO_MBTI_PRESETS.map((item, index) => (
+          <button
+            key={item.name}
+            type="button"
+            className={index === activeIndex ? "active" : ""}
+            onClick={() => onSelect(index)}
+            aria-label={`${item.name} 보기`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CrossfadeText({ value }) {
+  const nextValue = String(value ?? "");
+  const currentValueRef = useRef(nextValue);
+  const timeoutRef = useRef(null);
+  const [textState, setTextState] = useState({ current: nextValue, previous: null });
+
+  useEffect(() => {
+    if (nextValue === currentValueRef.current) return undefined;
+
+    const previous = currentValueRef.current;
+    currentValueRef.current = nextValue;
+
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+
+    setTextState({ current: nextValue, previous });
+    timeoutRef.current = window.setTimeout(() => {
+      setTextState(({ current }) => ({ current, previous: null }));
+      timeoutRef.current = null;
+    }, HERO_MBTI_TEXT_TRANSITION_MS);
+
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [nextValue]);
+
+  return (
+    <span className={textState.previous ? "heroMbtiCrossfadeText isTransitioning" : "heroMbtiCrossfadeText"}>
+      <span className="heroMbtiTextCurrent">{textState.current}</span>
+      {textState.previous ? <span className="heroMbtiTextPrevious">{textState.previous}</span> : null}
+    </span>
+  );
+}
+
+function useAnimatedNumber(value, duration = HERO_MBTI_NUMBER_TRANSITION_MS) {
+  const targetValue = Number(value) || 0;
+  const frameRef = useRef(null);
+  const displayedValueRef = useRef(targetValue);
+  const [displayedValue, setDisplayedValue] = useState(targetValue);
+
+  useEffect(() => {
+    const startValue = displayedValueRef.current;
+    const difference = targetValue - startValue;
+
+    if (difference === 0) {
+      setDisplayedValue(targetValue);
+      return undefined;
+    }
+
+    let startTime = null;
+
+    function animate(timestamp) {
+      if (startTime === null) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextDisplayedValue = startValue + difference * easedProgress;
+
+      displayedValueRef.current = nextDisplayedValue;
+      setDisplayedValue(nextDisplayedValue);
+
+      if (progress < 1) {
+        frameRef.current = window.requestAnimationFrame(animate);
+      } else {
+        displayedValueRef.current = targetValue;
+        setDisplayedValue(targetValue);
+        frameRef.current = null;
+      }
+    }
+
+    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (frameRef.current) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [targetValue, duration]);
+
+  return Math.round(displayedValue);
+}
+
+function AnimatedPercent({ value }) {
+  const animatedValue = useAnimatedNumber(value);
+  return <span className="heroMbtiPercentText">{animatedValue}%</span>;
+}
+
+function Metric({ label, value, animated = false }) {
+  return (
+    <div className="metric">
+      <p>{label}</p>
+      <strong>{animated ? <CrossfadeText value={value} /> : value}</strong>
+    </div>
+  );
+}
+function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><AnimatedPercent value={value} /></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
