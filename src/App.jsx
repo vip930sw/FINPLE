@@ -443,8 +443,8 @@ function App() {
       <section id="hero" className="hero">
         <div className="heroText">
           <p className="badge">투자 포트폴리오 분석 웹앱</p>
-          <h1>내 포트폴리오의<br />수익과 위험을<br />한눈에 분석하세요</h1>
-          <p className="description">FINPLE은 개별 종목 추천 서비스가 아니라, 내 포트폴리오의 장기 수익·위험·배당·실질가치를 한 번에 점검하는 투자 분석 도구입니다.</p>
+          <h1>투자 성향부터<br />포트폴리오까지<br />한 번에 점검하세요</h1>
+          <p className="description">FINPLE은 투자 성향, 자산 비중, 장기 예상 성과를 연결해, 내 포트폴리오의 수익률·위험·배당·실질가치를 함께 점검하는 투자 분석 도구입니다.</p>
           <div className="heroButtons">
             <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
             <button type="button" className="secondaryButton" onClick={() => setCurrentPage("about")}>FINPLE 알아보기</button>
@@ -475,14 +475,14 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
     <div className="dashboardCard heroMbtiCard" aria-live="polite">
       <div className="cardHeader heroMbtiHeader">
         <div>
-          <h2>{preset.name}</h2>
+          <h2><span key={preset.name} className="heroMbtiChangingText">{preset.name}</span></h2>
         </div>
-        <span className="status heroMbtiStatus">{preset.status}</span>
+        <span key={preset.status} className="status heroMbtiStatus heroMbtiChangingText">{preset.status}</span>
       </div>
 
       <div className="metrics heroMbtiMetrics">
         {preset.metrics.map((metric) => (
-          <Metric key={metric.label} label={metric.label} value={metric.value} />
+          <Metric key={metric.label} label={metric.label} value={metric.value} animated />
         ))}
       </div>
 
@@ -505,8 +505,15 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
   );
 }
 
-function Metric({ label, value }) { return <div className="metric"><p>{label}</p><strong>{value}</strong></div>; }
-function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong>{value}%</strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
+function Metric({ label, value, animated = false }) {
+  return (
+    <div className="metric">
+      <p>{label}</p>
+      <strong>{animated ? <span key={`${label}-${value}`} className="heroMbtiChangingText">{value}</span> : value}</strong>
+    </div>
+  );
+}
+function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><span key={`${label}-${value}`} className="heroMbtiChangingText">{value}%</span></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
