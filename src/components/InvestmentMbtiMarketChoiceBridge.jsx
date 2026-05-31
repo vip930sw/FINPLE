@@ -7,15 +7,15 @@ function InvestmentMbtiMarketChoiceBridge({ onOpenKrSimulator }) {
       if (!actionBox || actionBox.dataset.finpleMarketChoice === "ready") return;
 
       const buttons = Array.from(actionBox.querySelectorAll("button"));
-      const usButton = buttons.find((button) => button.textContent?.includes("시뮬레이터"));
+      const usButton = buttons.find((button) => button.textContent?.includes("시뮬레이터") || button.textContent?.includes("미국"));
       if (!usButton) return;
 
-      usButton.textContent = "미국 포트폴리오에 반영";
+      usButton.textContent = "미국 주식으로 포트폴리오 반영";
 
       const krButton = document.createElement("button");
       krButton.type = "button";
       krButton.className = "secondaryMbtiButton";
-      krButton.textContent = "한국 포트폴리오 Beta로 이동";
+      krButton.textContent = "한국 주식으로 포트폴리오 반영";
       krButton.onclick = () => onOpenKrSimulator?.();
 
       actionBox.insertBefore(krButton, usButton.nextSibling);
