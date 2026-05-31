@@ -18,7 +18,7 @@ const ASSET_LABELS = {
   cash: "현금",
 };
 
-const ASSET_TEMPLATES = {
+const US_ASSET_TEMPLATES = {
   growthStock: { ticker: "QQQ", name: "성장주 / 나스닥100 대표 ETF", price: 430000, market: "US" },
   valueStock: { ticker: "SCHD", name: "가치·배당 / 배당성장 대표 ETF", price: 110000, market: "US" },
   bond: { ticker: "TLT", name: "채권 / 미국 장기채 대표 ETF", price: 125000, market: "US" },
@@ -27,6 +27,18 @@ const ASSET_TEMPLATES = {
   crypto: { ticker: "BTC", name: "코인 / 고변동성 위성자산", price: 1000000, market: "CRYPTO", cagr: 12.0, beta: 2.2, mdd: -75, dividendYield: 0 },
   cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
+
+const KR_ASSET_TEMPLATES = {
+  growthStock: { ticker: "133690", name: "성장주 / TIGER 미국나스닥100", price: 25000, market: "KR" },
+  valueStock: { ticker: "458730", name: "가치·배당 / TIGER 미국배당다우존스", price: 13000, market: "KR" },
+  bond: { ticker: "453850", name: "채권 / ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
+  reit: { ticker: "329200", name: "리츠 / TIGER 리츠부동산인프라", price: 5000, market: "KR" },
+  gold: { ticker: "132030", name: "금 / KODEX 골드선물(H)", price: 15000, market: "KR" },
+  crypto: { ticker: "305720", name: "위성자산 / KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },
+  cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
+};
+
+const ASSET_TEMPLATES = US_ASSET_TEMPLATES;
 
 const MBTI_DISPLAY_NAMES = {
   "안정-장기-자동-분산": "차분한 수호자형",
@@ -236,42 +248,46 @@ function formatWon(value) {
   return Number(value || 0).toLocaleString("ko-KR");
 }
 
-function buildAssetsFromPreset(preset = {}, initialAmount = 50000000) {
+function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode = "US") {
+  const templates = marketMode === "KR" ? KR_ASSET_TEMPLATES : US_ASSET_TEMPLATES;
   return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).map(([assetKey, weight], index) => {
-    const template = ASSET_TEMPLATES[assetKey] || ASSET_TEMPLATES.cash;
+    const template = templates[assetKey] || templates.cash;
+    const isKoreanStock = marketMode === "KR" && template.market === "KR" && template.ticker !== "CASH";
     const baseAsset = hydrateAssetFromScreenerCandidate({
       ...template,
       quantity: 0,
       currency: "KRW",
-      quoteCurrency: template.market === "KR" ? "KRW" : "USD",
+      quoteCurrency: "KRW",
       priceMode: "manual",
-      metricMode: template.market === "US" ? "final_csv_v1_price_close" : "manual",
-      dataSource: template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti",
+      metricMode: isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual"),
+      dataSource: isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"),
     });
     const price = Number(baseAsset.price || template.price || 1);
     const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
     const quantity = Number((assetValue / price).toFixed(4));
     return {
       ...baseAsset,
-      id: `mbti-asset-${assetKey}-${Date.now()}-${index}`,
+      id: `mbti-${marketMode.toLowerCase()}-asset-${assetKey}-${Date.now()}-${index}`,
       quantity,
       price,
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
       priceMode: "manual",
-      metricMode: baseAsset.metricMode || (template.market === "US" ? "final_csv_v1_price_close" : "manual"),
-      dataSource: baseAsset.dataSource || (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"),
+      metricMode: baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual")),
+      dataSource: baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti")),
     };
   });
 }
 
-function saveResultToSimulator(result) {
+function saveResultToSimulator(result, marketMode = "US") {
   if (!result?.type) return false;
   const now = new Date().toISOString();
-  const id = `mbti-${Date.now()}`;
+  const id = `mbti-${marketMode.toLowerCase()}-${Date.now()}`;
   const type = result.type;
+  const isKrPortfolio = marketMode === "KR";
   const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate };
-  const assets = buildAssetsFromPreset(type.preset, 50000000);
-  const portfolio = { id, name: type.nickname, settings, assets, updatedAt: now, source: "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile } };
+  const assets = buildAssetsFromPreset(type.preset, 50000000, marketMode);
+  const portfolioName = isKrPortfolio ? `${type.nickname} 한국 주식` : type.nickname;
+  const portfolio = { id, name: portfolioName, settings, assets, updatedAt: now, source: isKrPortfolio ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
 
   try {
     const currentList = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
@@ -280,7 +296,7 @@ function saveResultToSimulator(result) {
     localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
     localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
-    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, strengths: type.strengths, cautions: type.cautions, actions: type.actions, sectors: type.sectors, simulatorDefaults: type.defaults, createdAt: now }));
+    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, strengths: type.strengths, cautions: type.cautions, actions: type.actions, sectors: type.sectors, simulatorDefaults: type.defaults, createdAt: now }));
     return true;
   } catch (error) {
     console.error("투자 MBTI 프리셋 저장 실패", error);
@@ -315,8 +331,8 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
     setCurrentIndex(0);
   }
 
-  function applyToSimulator() {
-    saveResultToSimulator(result);
+  function applyToSimulator(marketMode = "US") {
+    saveResultToSimulator(result, marketMode);
     onNavigate?.("personal");
   }
 
@@ -329,7 +345,7 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
             <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
           </button>
         </header>
-        <MbtiResult result={result} onReset={resetTest} onApply={applyToSimulator} />
+        <MbtiResult result={result} onReset={resetTest} onApplyUs={() => applyToSimulator("US")} onApplyKr={() => applyToSimulator("KR")} />
       </main>
     );
   }
@@ -378,7 +394,7 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
   );
 }
 
-function MbtiResult({ result, onReset, onApply }) {
+function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const [exportStatusMessage, setExportStatusMessage] = useState("");
   const type = result.type;
   const entries = Object.entries(type.preset);
@@ -440,7 +456,7 @@ function MbtiResult({ result, onReset, onApply }) {
         <button type="button" onClick={handlePdfSave}>PDF 저장</button>
       </div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
-      <div className="investmentMbtiResultActions horizontal"><button type="button" onClick={onApply}>이 프리셋으로 시뮬레이터 열기</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
+      <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
     </section>
   );
 }
