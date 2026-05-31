@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import "./components/SiteFooter.css";
 import "./components/HomeSimplify.css";
+import "./components/HomeHeroMbtiCarousel.css";
 import "./components/LegalPagesPolish.css";
 import "./components/LoginPageFinalPolish.css";
 
@@ -55,6 +56,89 @@ const PERSONAL_ROUTE_PATHS = [
   "/screener",
 ];
 
+const HERO_MBTI_PRESETS = [
+  {
+    typeLabel: "투자 MBTI 포트폴리오 예시",
+    name: "차분한 수호자형",
+    status: "안정추구형",
+    summary: "손실 방어와 장기 복리를 우선하는 안정형 프리셋입니다.",
+    metrics: [
+      { label: "성향", value: "안정 · 장기" },
+      { label: "운용", value: "자동 · 분산" },
+      { label: "중심 자산", value: "배당·채권" },
+      { label: "합계", value: "100%" },
+    ],
+    allocations: [
+      { label: "성장주", value: 13 },
+      { label: "가치·배당", value: 30 },
+      { label: "채권", value: 30 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "현금", value: 14 },
+    ],
+  },
+  {
+    typeLabel: "투자 MBTI 포트폴리오 예시",
+    name: "균형 잡힌 건축가형",
+    status: "적극투자형",
+    summary: "성장 자산을 중심으로 두되 배당·채권·대체자산을 함께 배치한 대표 균형형입니다.",
+    metrics: [
+      { label: "성향", value: "성장 · 장기" },
+      { label: "운용", value: "주도 · 분산" },
+      { label: "중심 자산", value: "성장·배당" },
+      { label: "합계", value: "100%" },
+    ],
+    allocations: [
+      { label: "성장주", value: 45 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "현금", value: 8 },
+    ],
+  },
+  {
+    typeLabel: "투자 MBTI 포트폴리오 예시",
+    name: "장기 성장 전략가형",
+    status: "적극투자형",
+    summary: "장기 성장성을 우선하면서 확신 자산을 일부 반영한 성장 중심 프리셋입니다.",
+    metrics: [
+      { label: "성향", value: "성장 · 장기" },
+      { label: "운용", value: "주도 · 확신" },
+      { label: "중심 자산", value: "성장·코인" },
+      { label: "합계", value: "100%" },
+    ],
+    allocations: [
+      { label: "성장주", value: 43 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 8 },
+      { label: "코인", value: 10 },
+    ],
+  },
+  {
+    typeLabel: "투자 MBTI 포트폴리오 예시",
+    name: "용감한 승부사형",
+    status: "공격투자형",
+    summary: "시장 기회와 확신 자산을 더 강하게 반영한 고변동성 성장 프리셋입니다.",
+    metrics: [
+      { label: "성향", value: "성장 · 기회" },
+      { label: "운용", value: "주도 · 확신" },
+      { label: "중심 자산", value: "성장·대체" },
+      { label: "합계", value: "100%" },
+    ],
+    allocations: [
+      { label: "성장주", value: 41 },
+      { label: "가치·배당", value: 22 },
+      { label: "채권", value: 12 },
+      { label: "리츠", value: 5 },
+      { label: "금", value: 10 },
+      { label: "코인", value: 10 },
+    ],
+  },
+];
+
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
 }
@@ -93,6 +177,7 @@ function getInitialPage() {
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
+  const [heroPresetIndex, setHeroPresetIndex] = useState(0);
 
   function isFinpleUserLoggedIn() {
     return Boolean(getStoredFinpleAuthUser()?.id);
@@ -242,6 +327,18 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (currentPage !== "home") return undefined;
+
+    const timer = window.setInterval(() => {
+      setHeroPresetIndex((index) => (index + 1) % HERO_MBTI_PRESETS.length);
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [currentPage]);
+
+  const activeHeroPreset = HERO_MBTI_PRESETS[heroPresetIndex % HERO_MBTI_PRESETS.length];
+
   const stockIndexSymbols = [
     { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
     { description: "Nasdaq 100", proName: "CAPITALCOM:US100" },
@@ -361,11 +458,11 @@ function App() {
           </div>
         </div>
 
-        <div className="dashboardCard">
-          <div className="cardHeader"><div><p>예상 포트폴리오</p><h2>중립 성장형</h2></div><span className="status">안정적</span></div>
-          <div className="metrics"><Metric label="예상 연수익률" value="7.8%" /><Metric label="예상 변동성" value="14.2%" /><Metric label="예상 MDD" value="-28.5%" /><Metric label="리밸런싱" value="필요" /></div>
-          <div className="bars"><Bar label="성장주" value={55} /><Bar label="가치주" value={25} /><Bar label="채권" value={15} /><Bar label="금" value={5} /></div>
-        </div>
+        <HeroMbtiPresetCard
+          preset={activeHeroPreset}
+          activeIndex={heroPresetIndex}
+          onSelect={setHeroPresetIndex}
+        />
       </section>
 
       <div id="index" className="homeAnchor"><EconomicCalendarSection /></div>
@@ -377,6 +474,44 @@ function App() {
 
       <SiteFooter onNavigate={setCurrentPage} />
     </main>
+  );
+}
+
+function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
+  return (
+    <div className="dashboardCard heroMbtiCard" aria-live="polite">
+      <div className="cardHeader heroMbtiHeader">
+        <div>
+          <p>{preset.typeLabel}</p>
+          <h2>{preset.name}</h2>
+        </div>
+        <span className="status heroMbtiStatus">{preset.status}</span>
+      </div>
+
+      <p className="heroMbtiSummary">{preset.summary}</p>
+
+      <div className="metrics heroMbtiMetrics">
+        {preset.metrics.map((metric) => (
+          <Metric key={`${preset.name}-${metric.label}`} label={metric.label} value={metric.value} />
+        ))}
+      </div>
+
+      <div className="bars heroMbtiBars">
+        {preset.allocations.map((item) => <Bar key={`${preset.name}-${item.label}`} label={item.label} value={item.value} />)}
+      </div>
+
+      <div className="heroMbtiPager" aria-label="투자 MBTI 포트폴리오 예시 선택">
+        {HERO_MBTI_PRESETS.map((item, index) => (
+          <button
+            key={item.name}
+            type="button"
+            className={index === activeIndex ? "active" : ""}
+            onClick={() => onSelect(index)}
+            aria-label={`${item.name} 보기`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
