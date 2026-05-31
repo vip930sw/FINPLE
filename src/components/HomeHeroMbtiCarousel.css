@@ -29,34 +29,60 @@
 .heroMbtiMetrics .metric strong,
 .heroMbtiMetrics .metric p,
 .heroMbtiBars .barLabel strong {
-  transition: color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease, opacity 0.3s ease;
 }
 
-.heroMbtiChangingText {
+.heroMbtiCrossfadeText {
+  position: relative;
+  display: inline-grid;
+  align-items: center;
+  min-width: max-content;
+  vertical-align: baseline;
+}
+
+.heroMbtiTextCurrent,
+.heroMbtiTextPrevious {
+  grid-area: 1 / 1;
   display: inline-block;
-  animation: heroMbtiTextFadeInOut 2.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
+  white-space: nowrap;
+  transition: opacity 0.52s ease;
+  will-change: opacity;
 }
 
-@keyframes heroMbtiTextFadeInOut {
+.heroMbtiTextCurrent {
+  opacity: 1;
+}
+
+.heroMbtiTextPrevious {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.heroMbtiCrossfadeText.isTransitioning .heroMbtiTextCurrent {
+  animation: heroMbtiFadeIn 0.52s ease both;
+}
+
+.heroMbtiCrossfadeText.isTransitioning .heroMbtiTextPrevious {
+  animation: heroMbtiFadeOut 0.52s ease both;
+}
+
+@keyframes heroMbtiFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(6px);
   }
 
-  14% {
+  100% {
     opacity: 1;
-    transform: translateY(0);
   }
+}
 
-  82% {
+@keyframes heroMbtiFadeOut {
+  0% {
     opacity: 1;
-    transform: translateY(0);
   }
 
   100% {
     opacity: 0;
-    transform: translateY(-4px);
   }
 }
 
@@ -134,12 +160,11 @@
   .heroMbtiStatus,
   .heroMbtiMetrics .metric strong,
   .heroMbtiMetrics .metric p,
-  .heroMbtiBars .barLabel strong {
+  .heroMbtiBars .barLabel strong,
+  .heroMbtiTextCurrent,
+  .heroMbtiTextPrevious {
     transition: none;
-  }
-
-  .heroMbtiChangingText {
-    animation: none;
+    animation: none !important;
   }
 }
 
