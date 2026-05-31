@@ -121,7 +121,6 @@ export default function DetailPanel({
     { label: "예상 BETA", value: safeFixed(expectedBeta), note: "시장 대비 변동 민감도" },
     { label: "예상 MDD", value: `${safeFixed(simpleMdd)}%`, note: "최대 하락폭 참고 지표" },
     { label: "예상 Calmar", value: safeFixed(expectedCalmar), note: "CAGR 대비 MDD 효율" },
-    { label: "Sharpe", value: "준비 중", note: "변동성 데이터 연동 후 제공" },
   ];
 
   const dividendMetrics = [
@@ -288,8 +287,6 @@ export default function DetailPanel({
             투자금은 특정 자산에 개별 배분되는 방식이 아니라, 현재 자산 비중으로 산출한 포트폴리오 평균 CAGR,
             배당률, BETA, MDD를 기준으로 전체 포트폴리오에 반영합니다.
           </p>
-          <p className="screenOnlyNoticeText">현재 버전은 자산별 개별 매수·매도, 매년 리밸런싱, 자산별 가격 경로를 직접 계산하지 않습니다.</p>
-          <p className="printOnlyNoticeText">본 시뮬레이션은 자산별 개별 매수·매도나 매년 리밸런싱을 반영하지 않으며, 현재 자산 비중으로 계산한 포트폴리오 평균 지표를 기준으로 장기 성과를 추정합니다.</p>
         </div>
       </div>
 
@@ -297,7 +294,7 @@ export default function DetailPanel({
         <div className="detailInfoHeader">
           <p className="sectionLabel">Detailed Metrics</p>
           <h4>상세 지표</h4>
-          <span>기존 수치 카드는 성과, 위험, 배당/현금흐름 3개 그룹으로 통합했습니다.</span>
+          <span>포트폴리오의 성과, 위험, 배당 지표를 구분해 상세 흐름을 비교합니다.</span>
         </div>
 
         <div className="detailGroupedMetricGrid">
@@ -327,7 +324,6 @@ export default function DetailPanel({
             <MetricTooltip label="BETA">시장 대비 민감도입니다. 1.0은 시장 수준, 0.7 이하는 방어적, 0.8~1.2는 보통, 1.3 이상은 공격적 성향으로 봅니다. 1보다 클수록 상승·하락 모두 크게 움직일 수 있습니다.</MetricTooltip>
             <MetricTooltip label="MDD">고점 대비 최대 하락률입니다. 0~-15%는 낮은 낙폭, -15~-30%는 보통, -30~-50%는 공격형, -50% 이하는 고위험으로 봅니다. 절댓값이 작을수록 안정적입니다.</MetricTooltip>
             <MetricTooltip label="Calmar">CAGR을 MDD 절댓값으로 나눈 지표입니다. 높을수록 하락 위험 대비 수익 효율이 좋습니다. 0.5 미만은 취약, 0.5~1.0은 보통, 1.0 이상은 양호, 2.0 이상은 매우 우수로 참고합니다.</MetricTooltip>
-            <MetricTooltip label="Sharpe">무위험수익률 초과수익을 변동성으로 나눈 위험조정수익률입니다. 높을수록 좋습니다. 1.0 이상은 양호, 2.0 이상은 매우 우수로 보지만, 산정기간·자산군에 따라 비교해야 합니다.</MetricTooltip>
           </div>
         </div>
       </div>
@@ -346,7 +342,7 @@ export default function DetailPanel({
       <div className="performanceSection">
         <div className="performanceHeader">
           <div><p className="sectionLabel">Annual Performance</p><h3>연차별 예상 성과</h3></div>
-          <p>현재 평가금액과 연간 투자금, 포트폴리오 평균 CAGR, 배당률을 기준으로 계산한 연차별 예상 흐름입니다.</p>
+          <p>현재 평가금액, 연간 투자금, 포트폴리오 평균 지표를 기준으로 연차별 장기 성과를 예상합니다.</p>
         </div>
 
         <div className="performanceTableWrap">
@@ -376,8 +372,7 @@ export default function DetailPanel({
       </div>
 
       <p className="calculatorNotice">
-        현재 버전은 사용자가 입력한 자산 구성과 기대지표를 기준으로 계산합니다.
-        실시간 가격, 배당, 변동성 데이터는 이후 API 연동 단계에서 자동 반영할 수 있습니다.
+        ※ 본 결과는 포트폴리오 모델의 가정과 입력값을 바탕으로 산출한 장기 예상치이며, 실제 성과는 시장 상황, 금리, 환율, 지정학적 이슈 등에 따라 달라질 수 있습니다.
       </p>
     </div>
   );
