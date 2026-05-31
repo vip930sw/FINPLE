@@ -38,16 +38,22 @@
   white-space: nowrap;
 }
 
+.heroMbtiMetrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .heroMbtiMetrics .metric {
-  padding: 15px;
+  padding: 13px 12px;
 }
 
 .heroMbtiMetrics .metric p {
-  font-size: 12px;
+  margin-bottom: 6px;
+  font-size: 11px;
 }
 
 .heroMbtiMetrics .metric strong {
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1.25;
   word-break: keep-all;
 }
