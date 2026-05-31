@@ -103,6 +103,14 @@ export default function DetailPanel({
     suggestions: safeArray(rawPortfolioAnalysis.suggestions),
   };
 
+  const reportTags = safeArray(safeReport?.tags);
+  const riskPointItems = portfolioAnalysis.riskPoints.length > 0
+    ? portfolioAnalysis.riskPoints
+    : ["현재 자산 비중과 기대지표를 기준으로 리스크를 점검합니다."];
+  const suggestionItems = portfolioAnalysis.suggestions.length > 0
+    ? portfolioAnalysis.suggestions
+    : ["목표비중을 조정해 장기 성과와 하락 위험의 변화를 비교해보세요."];
+
   const investmentYears = safeNumber(safeSettings.years, 0);
   const monthlyDividend = Math.floor(safeNumber(expectedAnnualDividend) / 12);
   const cumulativeContribution = safeNumber(simulationStartValue) + safeNumber(yearlyContribution) * investmentYears;
@@ -158,42 +166,24 @@ export default function DetailPanel({
         </div>
       </div>
 
-      {safeReport ? (
-        <div className="portfolioDetailReport">
-          <div className="portfolioDetailReportHeader">
-            <div>
-              <p className="sectionLabel">Summary Report</p>
-              <h4>포트폴리오 요약 리포트</h4>
+      <div className="portfolioIntegratedDiagnosis detailStep3ExecutiveSection">
+        <div className="portfolioIntegratedHeader">
+          <div>
+            <p className="sectionLabel">Portfolio Diagnosis</p>
+            <h4>포트폴리오 종합 진단</h4>
+            <p className="portfolioIntegratedLead">
+              {safeReport?.summary || portfolioAnalysis.profileSummary}
+            </p>
+          </div>
+
+          {reportTags.length > 0 ? (
+            <div className="portfolioDetailTags portfolioIntegratedTags">
+              {reportTags.map((tag) => <span key={tag}>#{tag}</span>)}
             </div>
-
-            {safeArray(safeReport.tags).length > 0 ? (
-              <div className="portfolioDetailReportMeta">
-                <div className="portfolioDetailTags">
-                  {safeArray(safeReport.tags).map((tag) => <span key={tag}>#{tag}</span>)}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <p className="portfolioDetailReportLead">{safeReport.summary || "계산 버튼을 누르면 포트폴리오 요약 리포트가 표시됩니다."}</p>
-
-          <div className="portfolioDetailReportGrid">
-            <div><strong>성장성</strong><p>{safeReport.growthText || "성장 기대치를 확인합니다."}</p></div>
-            <div><strong>위험도</strong><p>{safeReport.riskText || "하락 위험을 확인합니다."}</p></div>
-            <div><strong>배당</strong><p>{safeReport.dividendText || "배당 현금흐름을 확인합니다."}</p></div>
-            <div><strong>활용 방향</strong><p>{safeReport.directionText || "목표비중을 조정해 장기 성과 변화를 비교해보세요."}</p></div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="detailExecutiveSection detailStep3ExecutiveSection">
-        <div className="detailInfoHeader">
-          <p className="sectionLabel">Executive Summary</p>
-          <h4>핵심 요약</h4>
-          <span>현재 자산 비중과 기대지표를 기준으로 포트폴리오의 성격과 주요 리스크를 요약합니다.</span>
+          ) : null}
         </div>
 
-        <div className="detailHeroMetricGrid">
+        <div className="portfolioIntegratedMetricGrid detailHeroMetricGrid">
           <div className="detailHeroMetricCard primaryMetricCard">
             <span>총 평가금액</span>
             <strong>{safeFormatWholeNumber(safeTotalAssetValue)}원</strong>
@@ -219,51 +209,48 @@ export default function DetailPanel({
           </div>
         </div>
 
-        <div className="detailNarrativeGrid">
-          <div className="detailNarrativeCard wideNarrativeCard">
-            <div className="detailNarrativeTitleRow">
-              <strong>포트폴리오 성격 요약</strong>
+        <div className="portfolioIntegratedReportGrid">
+          <div><strong>성장성</strong><p>{safeReport?.growthText || "성장 기대치를 확인합니다."}</p></div>
+          <div><strong>위험도</strong><p>{safeReport?.riskText || "하락 위험을 확인합니다."}</p></div>
+          <div><strong>배당</strong><p>{safeReport?.dividendText || "배당 현금흐름을 확인합니다."}</p></div>
+          <div><strong>활용 방향</strong><p>{safeReport?.directionText || "목표비중을 조정해 장기 성과 변화를 비교해보세요."}</p></div>
+        </div>
+
+        <div className="portfolioIntegratedSectionGrid">
+          <article className="portfolioIntegratedSection">
+            <div className="portfolioIntegratedSectionTitleRow">
+              <strong>포트폴리오 성격</strong>
               <span className="detailRiskBadge">리스크 {portfolioAnalysis.riskLevel}</span>
             </div>
             <p>{portfolioAnalysis.profileSummary}</p>
             {portfolioAnalysis.allocationSummary ? (
               <span className="detailMiniNote">상위 자산: {portfolioAnalysis.allocationSummary}</span>
             ) : null}
-          </div>
+            {portfolioAnalysis.roleBreakdown.length > 0 ? (
+              <div className="detailRoleList portfolioIntegratedRoleList">
+                {portfolioAnalysis.roleBreakdown.map((role) => (
+                  <div key={role.key || role.label} className="detailRoleItem">
+                    <span>{role.label || "-"}</span>
+                    <strong>{safeFixed(role.weight, 1)}%</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </article>
 
-          <div className="detailNarrativeCard">
-            <strong>자산 역할 비중</strong>
-            <div className="detailRoleList">
-              {portfolioAnalysis.roleBreakdown.map((role) => (
-                <div key={role.key || role.label} className="detailRoleItem">
-                  <span>{role.label || "-"}</span>
-                  <strong>{safeFixed(role.weight, 1)}%</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+          <article className="portfolioIntegratedSection">
+            <strong>리스크 진단</strong>
+            <ul>
+              {riskPointItems.map((item, index) => <li key={`risk-${index}`}>{item}</li>)}
+            </ul>
+          </article>
 
-      <div className="detailDiagnosisGrid">
-        <div className="detailDiagnosisCard">
-          <div className="detailInfoHeader compactDetailHeader">
-            <p className="sectionLabel">Risk Check</p>
-            <h4>리스크 진단</h4>
-          </div>
-          <ul>
-            {portfolioAnalysis.riskPoints.map((item, index) => <li key={`risk-${index}`}>{item}</li>)}
-          </ul>
-        </div>
-
-        <div className="detailDiagnosisCard suggestionDiagnosisCard">
-          <div className="detailInfoHeader compactDetailHeader">
-            <p className="sectionLabel">Suggestions</p>
-            <h4>개선 제안</h4>
-          </div>
-          <ul>
-            {portfolioAnalysis.suggestions.map((item, index) => <li key={`suggestion-${index}`}>{item}</li>)}
-          </ul>
+          <article className="portfolioIntegratedSection">
+            <strong>개선 제안</strong>
+            <ul>
+              {suggestionItems.map((item, index) => <li key={`suggestion-${index}`}>{item}</li>)}
+            </ul>
+          </article>
         </div>
       </div>
 
