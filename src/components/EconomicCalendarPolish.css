@@ -1,0 +1,15 @@
+/* Economic Calendar section polish */
+
+.calendarSection .sectionSideText {
+  max-width: 780px;
+  margin: 0;
+  color: #475569;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.8;
+  white-space: normal;
+}
+
+.calendarSection .calendarNotice {
+  display: none;
+}
