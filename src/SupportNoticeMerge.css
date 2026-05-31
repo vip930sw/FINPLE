@@ -4,6 +4,17 @@
    - PC/모바일 공통 적용
 ========================================================= */
 
+.supportFormCard {
+  width: min(100% - 64px, 1180px) !important;
+  max-width: 1180px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.supportFormCard form {
+  width: 100%;
+}
+
 .supportFormCard .supportPrivacyNotice {
   margin-bottom: 22px !important;
   border: 1px solid #bfdbfe !important;
@@ -17,6 +28,10 @@
 }
 
 @media (max-width: 640px) {
+  .supportFormCard {
+    width: min(100% - 32px, 1180px) !important;
+  }
+
   .supportFormCard .supportPrivacyNotice {
     margin-bottom: 18px !important;
   }
