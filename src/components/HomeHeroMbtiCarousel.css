@@ -125,6 +125,10 @@
   margin-top: 22px;
 }
 
+.heroMbtiBars > div {
+  animation: heroMbtiRowEnter 0.38s ease both;
+}
+
 .heroMbtiBars .barLabel {
   margin-bottom: 7px;
 }
@@ -137,6 +141,18 @@
   background: linear-gradient(90deg, #38bdf8 0%, #2563eb 55%, #0f172a 100%);
   transition: width 0.95s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: width;
+}
+
+@keyframes heroMbtiRowEnter {
+  0% {
+    opacity: 0.25;
+    transform: translateY(3px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .heroMbtiPager {
@@ -170,7 +186,8 @@
   .heroMbtiMetrics .metric p,
   .heroMbtiBars .barLabel strong,
   .heroMbtiTextCurrent,
-  .heroMbtiTextPrevious {
+  .heroMbtiTextPrevious,
+  .heroMbtiBars > div {
     transition: none;
     animation: none !important;
   }
