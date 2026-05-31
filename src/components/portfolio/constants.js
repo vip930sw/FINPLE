@@ -34,117 +34,23 @@ function createWeightedPresetAssets(weights = {}, initialAmount = 50000000) {
     const targetEvaluationAmount = Math.round(Number(initialAmount) * Number(weight || 0) / 100);
     return {
       ...template,
-      id: `concept-${String(ticker).toLowerCase()}-${index}`,
+      id: `preset-${String(ticker).toLowerCase()}-${index}`,
       quantity: price > 0 ? Number((targetEvaluationAmount / price).toFixed(6)) : 0,
       price,
       targetEvaluationAmount,
       priceMode: template.ticker === "CASH" ? "manual" : "final_csv_v1_price_close",
       metricMode: template.ticker === "CASH" ? "manual" : "manual",
-      dataSource: template.ticker === "CASH" ? "concept-preset-cash" : "concept-preset",
+      dataSource: template.ticker === "CASH" ? "preset-cash" : "preset-weighted",
       lookupDisabled: template.ticker === "CASH",
       shouldAutoLookup: template.ticker !== "CASH",
     };
   }));
 }
 
-export const DEFAULT_ASSETS = hydratePresetAssets([
-    {
-      ticker: "QQQ",
-      name: "나스닥100 ETF",
-      quantity: 50,
-      price: 430000,
-    },
-    {
-      ticker: "SCHD",
-      name: "배당성장 ETF",
-      quantity: 100,
-      price: 110000,
-    },
-    {
-      ticker: "TLT",
-      name: "미국 장기채",
-      quantity: 80,
-      price: 125000,
-    },
-    {
-      ticker: "GLD",
-      name: "금 ETF",
-      quantity: 25,
-      price: 300000,
-    },
-  ]);
-export const DIVIDEND_ASSETS = hydratePresetAssets([
-    {
-      ticker: "SCHD",
-      name: "배당성장 ETF",
-      quantity: 220,
-      price: 110000,
-    },
-    {
-      ticker: "QQQ",
-      name: "나스닥100 ETF",
-      quantity: 25,
-      price: 430000,
-    },
-    {
-      ticker: "TLT",
-      name: "미국 장기채",
-      quantity: 70,
-      price: 125000,
-    },
-    {
-      ticker: "GLD",
-      name: "금 ETF",
-      quantity: 20,
-      price: 300000,
-    },
-  ]);
-export const STABLE_ASSETS = hydratePresetAssets([
-    {
-      ticker: "TLT",
-      name: "미국 장기채",
-      quantity: 180,
-      price: 125000,
-    },
-    {
-      ticker: "GLD",
-      name: "금 ETF",
-      quantity: 45,
-      price: 300000,
-    },
-    {
-      ticker: "SCHD",
-      name: "배당성장 ETF",
-      quantity: 90,
-      price: 110000,
-    },
-    {
-      ticker: "QQQ",
-      name: "나스닥100 ETF",
-      quantity: 10,
-      price: 430000,
-    },
-  ]);
-export const GROWTH_ASSETS = hydratePresetAssets([
-    {
-      ticker: "QQQ",
-      name: "나스닥100 ETF",
-      quantity: 75,
-      price: 430000,
-    },
-    {
-      ticker: "SCHD",
-      name: "배당성장 ETF",
-      quantity: 70,
-      price: 110000,
-    },
-    {
-      ticker: "GLD",
-      name: "금 ETF",
-      quantity: 25,
-      price: 300000,
-    },
-  ]);
+export const DEFAULT_ASSETS = createWeightedPresetAssets({ QQQ: 43, SCHD: 22, TLT: 20, GLD: 15 });
+export const DIVIDEND_ASSETS = createWeightedPresetAssets({ SCHD: 50, QQQ: 20, TLT: 18, GLD: 12 });
+export const STABLE_ASSETS = createWeightedPresetAssets({ TLT: 45, GLD: 27, SCHD: 20, QQQ: 8 });
+export const GROWTH_ASSETS = createWeightedPresetAssets({ QQQ: 70, SCHD: 15, GLD: 15 });
 
 export const GOLD_DEFENSE_ASSETS = createWeightedPresetAssets({ GLD: 35, TLT: 30, SCHD: 20, CASH: 15 });
 export const REIT_INCOME_ASSETS = createWeightedPresetAssets({ VNQ: 35, SCHD: 30, BND: 15, GLD: 10, CASH: 10 });
