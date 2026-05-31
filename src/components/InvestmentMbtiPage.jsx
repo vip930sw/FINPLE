@@ -14,7 +14,7 @@ const ASSET_LABELS = {
   bond: "채권",
   reit: "리츠",
   gold: "금",
-  crypto: "코인",
+  crypto: "블록체인 테마",
   cash: "현금",
 };
 
@@ -24,7 +24,7 @@ const US_ASSET_TEMPLATES = {
   bond: { ticker: "TLT", name: "채권 / 미국 장기채 대표 ETF", price: 125000, market: "US" },
   reit: { ticker: "VNQ", name: "리츠 / 부동산 인컴 대표 ETF", price: 120000, market: "US" },
   gold: { ticker: "GLD", name: "금 / 금 ETF", price: 300000, market: "US" },
-  crypto: { ticker: "BTC", name: "코인 / 고변동성 위성자산", price: 1000000, market: "CRYPTO", cagr: 12.0, beta: 2.2, mdd: -75, dividendYield: 0 },
+  crypto: { ticker: "BLOK", name: "블록체인 테마 / 고변동성 위성자산", price: 45000, market: "US", cagr: 9.0, beta: 1.4, mdd: -65, dividendYield: 1.0 },
   cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
 
@@ -193,7 +193,7 @@ function getTypeInsight(axes, riskProfile) {
   ];
 
   const sectors = isGrowth
-    ? ["미국 대표지수", "테크", "AI", isConcentrated ? "위성자산" : "배당성장"]
+    ? ["미국 대표지수", "테크", "AI", isConcentrated ? "블록체인 테마" : "배당성장"]
     : ["배당", "채권형 ETF", "금", isLongTerm ? "필수소비재" : "단기채·현금성"];
 
   return {
@@ -252,7 +252,8 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
   const templates = marketMode === "KR" ? KR_ASSET_TEMPLATES : US_ASSET_TEMPLATES;
   return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).map(([assetKey, weight], index) => {
     const template = templates[assetKey] || templates.cash;
-    const isKoreanStock = marketMode === "KR" && template.market === "KR" && template.ticker !== "CASH";
+    const isCash = template.ticker === "CASH";
+    const isKoreanStock = marketMode === "KR" && template.market === "KR" && !isCash;
     const baseAsset = hydrateAssetFromScreenerCandidate({
       ...template,
       quantity: 0,
@@ -262,7 +263,7 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       metricMode: isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual"),
       dataSource: isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"),
     });
-    const price = Number(baseAsset.price || template.price || 1);
+    const price = isCash ? Number(template.price || 10000) : Number(baseAsset.price || template.price || 1);
     const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
     const quantity = Number((assetValue / price).toFixed(4));
     return {
@@ -272,8 +273,8 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
       price,
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
       priceMode: "manual",
-      metricMode: baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual")),
-      dataSource: baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti")),
+      metricMode: isCash ? "manual" : (baseAsset.metricMode || (isKoreanStock ? "kis_kr_price_pending" : (template.market === "US" ? "final_csv_v1_price_close" : "manual"))),
+      dataSource: isCash ? "investment-mbti-cash" : (baseAsset.dataSource || (isKoreanStock ? "investment-mbti+kr-template" : (template.market === "US" ? "investment-mbti+final-csv" : "investment-mbti"))),
     };
   });
 }
@@ -449,7 +450,7 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         <article className="investmentMbtiPanel"><p className="sectionLabel">Strength</p><h3>강점</h3><p>{type.strengths}</p></article>
         <article className="investmentMbtiPanel warning"><p className="sectionLabel">Caution</p><h3>주의점</h3><p>{type.cautions}</p></article>
       </div>
-      <article className="investmentMbtiNotice resultNotice"><strong>투자 유의사항</strong><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>코인 등 고변동성 자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
+      <article className="investmentMbtiNotice resultNotice"><strong>투자 유의사항</strong><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>블록체인 테마 등 고변동성 위성자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
       <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
         <button type="button" onClick={handleShareResult}>SNS 공유</button>
         <button type="button" onClick={handleImageMockup}>이미지 저장</button>
