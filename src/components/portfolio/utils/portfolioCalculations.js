@@ -11,7 +11,7 @@ function getAssetPlannedValue(asset = {}) {
 }
 
 function getAssetWeightValue(asset = {}) {
-  return getAssetActualValue(asset) || getAssetPlannedValue(asset);
+  return getAssetPlannedValue(asset) || getAssetActualValue(asset);
 }
 
 export function calculatePortfolioResult(settings, assets) {
