@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import "./components/SiteFooter.css";
 import "./components/HomeSimplify.css";
@@ -57,6 +57,7 @@ const PERSONAL_ROUTE_PATHS = [
 ];
 
 const HERO_MBTI_ROTATION_MS = 2400;
+const HERO_MBTI_TEXT_TRANSITION_MS = 520;
 
 const HERO_MBTI_PRESETS = [
   {
@@ -475,9 +476,9 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
     <div className="dashboardCard heroMbtiCard" aria-live="polite">
       <div className="cardHeader heroMbtiHeader">
         <div>
-          <h2><span key={preset.name} className="heroMbtiChangingText">{preset.name}</span></h2>
+          <h2><CrossfadeText value={preset.name} /></h2>
         </div>
-        <span key={preset.status} className="status heroMbtiStatus heroMbtiChangingText">{preset.status}</span>
+        <span className="status heroMbtiStatus"><CrossfadeText value={preset.status} /></span>
       </div>
 
       <div className="metrics heroMbtiMetrics">
@@ -505,15 +506,51 @@ function HeroMbtiPresetCard({ preset, activeIndex, onSelect }) {
   );
 }
 
+function CrossfadeText({ value }) {
+  const nextValue = String(value ?? "");
+  const currentValueRef = useRef(nextValue);
+  const timeoutRef = useRef(null);
+  const [textState, setTextState] = useState({ current: nextValue, previous: null });
+
+  useEffect(() => {
+    if (nextValue === currentValueRef.current) return undefined;
+
+    const previous = currentValueRef.current;
+    currentValueRef.current = nextValue;
+
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+
+    setTextState({ current: nextValue, previous });
+    timeoutRef.current = window.setTimeout(() => {
+      setTextState(({ current }) => ({ current, previous: null }));
+      timeoutRef.current = null;
+    }, HERO_MBTI_TEXT_TRANSITION_MS);
+
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [nextValue]);
+
+  return (
+    <span className={textState.previous ? "heroMbtiCrossfadeText isTransitioning" : "heroMbtiCrossfadeText"}>
+      <span className="heroMbtiTextCurrent">{textState.current}</span>
+      {textState.previous ? <span className="heroMbtiTextPrevious">{textState.previous}</span> : null}
+    </span>
+  );
+}
+
 function Metric({ label, value, animated = false }) {
   return (
     <div className="metric">
       <p>{label}</p>
-      <strong>{animated ? <span key={`${label}-${value}`} className="heroMbtiChangingText">{value}</span> : value}</strong>
+      <strong>{animated ? <CrossfadeText value={value} /> : value}</strong>
     </div>
   );
 }
-function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><span key={`${label}-${value}`} className="heroMbtiChangingText">{value}%</span></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
+function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><CrossfadeText value={`${value}%`} /></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
