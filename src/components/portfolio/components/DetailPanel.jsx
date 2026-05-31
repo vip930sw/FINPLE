@@ -89,6 +89,7 @@ export default function DetailPanel({
   const safeFormatNumber = typeof formatNumber === "function" ? formatNumber : (value) => Math.floor(safeNumber(value)).toLocaleString();
   const safeFormatPercent = typeof formatPercent === "function" ? formatPercent : (value) => `${safeFixed(value)}%`;
   const safeFormatDecimal = typeof formatDecimal === "function" ? formatDecimal : (value, digits = 2) => safeFixed(value, digits);
+  const safeFormatWholeNumber = (value) => Math.max(0, Math.floor(safeNumber(value))).toLocaleString();
   const safeReportFileName = getSafeReportFileName(reportPdfFileName, activePortfolio);
   const safeTotalAssetValue = safeNumber(totalAssetValue, safeNumber(safeResult.totalAssetValue, getAssetsTotalValue(safeAssets)));
 
@@ -166,14 +167,13 @@ export default function DetailPanel({
               <h4>포트폴리오 요약 리포트</h4>
             </div>
 
-            <div className="portfolioDetailReportMeta">
-              <span className="portfolioDetailTypeBadge">{safeReport.type || "포트폴리오 분석"}</span>
-              {safeArray(safeReport.tags).length > 0 ? (
+            {safeArray(safeReport.tags).length > 0 ? (
+              <div className="portfolioDetailReportMeta">
                 <div className="portfolioDetailTags">
                   {safeArray(safeReport.tags).map((tag) => <span key={tag}>#{tag}</span>)}
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
 
           <p className="portfolioDetailReportLead">{safeReport.summary || "계산 버튼을 누르면 포트폴리오 요약 리포트가 표시됩니다."}</p>
@@ -197,7 +197,7 @@ export default function DetailPanel({
         <div className="detailHeroMetricGrid">
           <div className="detailHeroMetricCard primaryMetricCard">
             <span>총 평가금액</span>
-            <strong>{safeFormatNumber(safeTotalAssetValue)}원</strong>
+            <strong>{safeFormatWholeNumber(safeTotalAssetValue)}원</strong>
             <p>현재 보유 수량과 현재가 기준</p>
           </div>
 
@@ -338,7 +338,7 @@ export default function DetailPanel({
           <h4>자산 구성</h4>
           <span>현재 선택 포트폴리오를 구성하는 자산별 평가금액, 비중, 기대지표입니다.</span>
         </div>
-        <DetailAssetTable assets={safeAssets} totalAssetValue={safeTotalAssetValue} formatNumber={safeFormatNumber} formatPercent={safeFormatPercent} formatDecimal={safeFormatDecimal} />
+        <DetailAssetTable assets={safeAssets} totalAssetValue={safeTotalAssetValue} formatNumber={safeFormatNumber} formatPercent={safeFormatPercent} formatDecimal={safeFormatDecimal} formatWholeNumber={safeFormatWholeNumber} />
       </div>
 
       {safePerformanceRows.length > 0 ? <PerformanceChart rows={safePerformanceRows} /> : null}

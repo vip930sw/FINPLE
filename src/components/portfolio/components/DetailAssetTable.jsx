@@ -4,7 +4,12 @@ export default function DetailAssetTable({
   formatNumber,
   formatPercent,
   formatDecimal,
+  formatWholeNumber,
 }) {
+  const formatAssetValue = typeof formatWholeNumber === "function"
+    ? formatWholeNumber
+    : (value) => Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+
   return (
     <div className="detailAssetTableWrap">
       <table className="detailAssetTable">
@@ -34,7 +39,7 @@ export default function DetailAssetTable({
                 <td>{asset.name || "-"}</td>
                 <td>{formatNumber(asset.quantity)}</td>
                 <td>{formatNumber(asset.price)}</td>
-                <td>{formatNumber(assetValue)}</td>
+                <td>{formatAssetValue(assetValue)}</td>
                 <td>{formatPercent(weight)}</td>
                 <td>{formatDecimal(asset.cagr, 2)}</td>
                 <td>{formatDecimal(asset.beta, 2)}</td>
