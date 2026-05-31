@@ -21,21 +21,21 @@
 .heroMbtiHeader {
   align-items: flex-start;
   gap: 14px;
+  margin-bottom: 20px;
+}
+
+.heroMbtiHeader h2,
+.heroMbtiStatus,
+.heroMbtiMetrics .metric strong,
+.heroMbtiMetrics .metric p,
+.heroMbtiBars .barLabel strong {
+  transition: color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
 }
 
 .heroMbtiStatus {
   background: #dbeafe;
   color: #1d4ed8;
   white-space: nowrap;
-}
-
-.heroMbtiSummary {
-  margin: -6px 0 22px;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.65;
-  word-break: keep-all;
 }
 
 .heroMbtiMetrics .metric {
@@ -53,8 +53,12 @@
 }
 
 .heroMbtiBars {
-  gap: 14px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.heroMbtiBars .barLabel {
+  margin-bottom: 7px;
 }
 
 .heroMbtiBars .barTrack {
@@ -63,14 +67,15 @@
 
 .heroMbtiBars .barFill {
   background: linear-gradient(90deg, #38bdf8 0%, #2563eb 55%, #0f172a 100%);
-  transition: width 0.35s ease;
+  transition: width 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
 }
 
 .heroMbtiPager {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
 .heroMbtiPager button {
@@ -80,12 +85,24 @@
   border: 0;
   border-radius: 999px;
   background: #cbd5e1;
-  transition: width 0.2s ease, background-color 0.2s ease;
+  transition: width 0.28s ease, background-color 0.28s ease;
 }
 
 .heroMbtiPager button.active {
   width: 24px;
   background: #2563eb;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroMbtiBars .barFill,
+  .heroMbtiPager button,
+  .heroMbtiHeader h2,
+  .heroMbtiStatus,
+  .heroMbtiMetrics .metric strong,
+  .heroMbtiMetrics .metric p,
+  .heroMbtiBars .barLabel strong {
+    transition: none;
+  }
 }
 
 @media (max-width: 900px) {
