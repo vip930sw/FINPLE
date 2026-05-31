@@ -58,6 +58,7 @@ const PERSONAL_ROUTE_PATHS = [
 
 const HERO_MBTI_ROTATION_MS = 2400;
 const HERO_MBTI_TEXT_TRANSITION_MS = 520;
+const HERO_MBTI_NUMBER_TRANSITION_MS = 900;
 
 const HERO_MBTI_PRESETS = [
   {
@@ -542,6 +543,61 @@ function CrossfadeText({ value }) {
   );
 }
 
+function useAnimatedNumber(value, duration = HERO_MBTI_NUMBER_TRANSITION_MS) {
+  const targetValue = Number(value) || 0;
+  const frameRef = useRef(null);
+  const displayedValueRef = useRef(targetValue);
+  const [displayedValue, setDisplayedValue] = useState(targetValue);
+
+  useEffect(() => {
+    const startValue = displayedValueRef.current;
+    const difference = targetValue - startValue;
+
+    if (difference === 0) {
+      setDisplayedValue(targetValue);
+      return undefined;
+    }
+
+    let startTime = null;
+
+    function animate(timestamp) {
+      if (startTime === null) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextDisplayedValue = startValue + difference * easedProgress;
+
+      displayedValueRef.current = nextDisplayedValue;
+      setDisplayedValue(nextDisplayedValue);
+
+      if (progress < 1) {
+        frameRef.current = window.requestAnimationFrame(animate);
+      } else {
+        displayedValueRef.current = targetValue;
+        setDisplayedValue(targetValue);
+        frameRef.current = null;
+      }
+    }
+
+    if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (frameRef.current) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [targetValue, duration]);
+
+  return Math.round(displayedValue);
+}
+
+function AnimatedPercent({ value }) {
+  const animatedValue = useAnimatedNumber(value);
+  return <span className="heroMbtiPercentText">{animatedValue}%</span>;
+}
+
 function Metric({ label, value, animated = false }) {
   return (
     <div className="metric">
@@ -550,7 +606,7 @@ function Metric({ label, value, animated = false }) {
     </div>
   );
 }
-function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><CrossfadeText value={`${value}%`} /></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
+function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><AnimatedPercent value={value} /></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
 function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
