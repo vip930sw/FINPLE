@@ -380,6 +380,36 @@ export default function PortfolioManagerPanel({
                 <span>채권·금 비중을 높인 방어 구성</span>
               </button>
 
+              <button onClick={() => handleCreatePortfolioFromTemplate("goldDefense")}>
+                <strong>금 방어형으로 시작</strong>
+                <span>금·장기채 중심의 위기 방어 구성</span>
+              </button>
+
+              <button onClick={() => handleCreatePortfolioFromTemplate("reitIncome")}>
+                <strong>리츠 인컴형으로 시작</strong>
+                <span>리츠·배당 현금흐름 중심</span>
+              </button>
+
+              <button onClick={() => handleCreatePortfolioFromTemplate("growthZero")}>
+                <strong>성장주 제로형으로 시작</strong>
+                <span>성장주 없이 배당·채권·금 중심</span>
+              </button>
+
+              <button onClick={() => handleCreatePortfolioFromTemplate("growthFocus")}>
+                <strong>성장주 집중형으로 시작</strong>
+                <span>나스닥100 비중을 극대화</span>
+              </button>
+
+              <button onClick={() => handleCreatePortfolioFromTemplate("allWeather")}>
+                <strong>올웨더형으로 시작</strong>
+                <span>주식·채권·금·현금 균형 배분</span>
+              </button>
+
+              <button onClick={() => handleCreatePortfolioFromTemplate("highConviction")}>
+                <strong>하이컨빅션형으로 시작</strong>
+                <span>성장주와 블록체인 테마 집중</span>
+              </button>
+
               <button onClick={() => handleCreatePortfolioFromTemplate("empty")}>
                 <strong>빈 포트폴리오로 시작</strong>
                 <span>티커와 수량을 직접 입력</span>
