@@ -11,7 +11,8 @@ const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
 const ASSET_LABELS = {
   growthStock: "성장주",
   valueStock: "가치·배당",
-  bond: "채권",
+  bond: "종합채권",
+  longBond: "장기국채",
   reit: "리츠",
   gold: "금",
   crypto: "블록체인 테마",
@@ -21,7 +22,8 @@ const ASSET_LABELS = {
 const US_ASSET_TEMPLATES = {
   growthStock: { ticker: "QQQ", name: "Invesco QQQ Trust ETF", price: 430000, market: "US" },
   valueStock: { ticker: "SCHD", name: "Schwab U.S. Dividend Equity ETF", price: 110000, market: "US" },
-  bond: { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", price: 125000, market: "US" },
+  bond: { ticker: "BND", name: "Vanguard Total Bond Market ETF", price: 110000, market: "US" },
+  longBond: { ticker: "TLT", name: "iShares 20+ Year Treasury Bond ETF", price: 125000, market: "US" },
   reit: { ticker: "VNQ", name: "Vanguard Real Estate ETF", price: 120000, market: "US" },
   gold: { ticker: "GLD", name: "SPDR Gold Shares ETF", price: 300000, market: "US" },
   crypto: { ticker: "BLOK", name: "Amplify Transformational Data Sharing ETF", price: 45000, market: "US", cagr: 9.0, beta: 1.4, mdd: -65, dividendYield: 1.0 },
@@ -31,14 +33,13 @@ const US_ASSET_TEMPLATES = {
 const KR_ASSET_TEMPLATES = {
   growthStock: { ticker: "133690", name: "TIGER 미국나스닥100", price: 25000, market: "KR" },
   valueStock: { ticker: "458730", name: "TIGER 미국배당다우존스", price: 13000, market: "KR" },
-  bond: { ticker: "453850", name: "ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
+  bond: { ticker: "273130", name: "KODEX 종합채권(AA-이상)액티브", price: 100000, market: "KR" },
+  longBond: { ticker: "453850", name: "ACE 미국30년국채액티브(H)", price: 10000, market: "KR" },
   reit: { ticker: "329200", name: "TIGER 리츠부동산인프라", price: 5000, market: "KR" },
   gold: { ticker: "132030", name: "KODEX 골드선물(H)", price: 15000, market: "KR" },
   crypto: { ticker: "305720", name: "KODEX 2차전지산업", price: 15000, market: "KR", cagr: 8.0, beta: 1.4, mdd: -45, dividendYield: 0 },
   cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "CASH", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
-
-const ASSET_TEMPLATES = US_ASSET_TEMPLATES;
 
 const MBTI_DISPLAY_NAMES = {
   "안정-장기-자동-분산": "차분한 수호자형",
@@ -57,6 +58,25 @@ const MBTI_DISPLAY_NAMES = {
   "성장-기회-자동-확신": "예리한 선구자형",
   "성장-기회-주도-분산": "능동적인 지휘관형",
   "성장-기회-주도-확신": "용감한 승부사형",
+};
+
+const MBTI_PRESET_MAP = {
+  "안정-장기-자동-분산": { growthStock: 10, valueStock: 28, bond: 24, longBond: 8, reit: 6, gold: 8, cash: 16 },
+  "안정-장기-자동-확신": { growthStock: 8, valueStock: 36, longBond: 32, gold: 8, cash: 16 },
+  "안정-장기-주도-분산": { growthStock: 15, valueStock: 26, bond: 20, longBond: 8, reit: 7, gold: 8, cash: 16 },
+  "안정-장기-주도-확신": { growthStock: 12, valueStock: 40, longBond: 28, gold: 8, cash: 12 },
+  "안정-기회-자동-분산": { growthStock: 8, valueStock: 26, bond: 20, longBond: 6, reit: 5, gold: 15, cash: 20 },
+  "안정-기회-자동-확신": { growthStock: 5, valueStock: 25, longBond: 25, gold: 25, cash: 20 },
+  "안정-기회-주도-분산": { growthStock: 15, valueStock: 25, bond: 14, longBond: 8, reit: 8, gold: 15, cash: 15 },
+  "안정-기회-주도-확신": { growthStock: 12, valueStock: 23, longBond: 20, gold: 25, crypto: 5, cash: 15 },
+  "성장-장기-자동-분산": { growthStock: 35, valueStock: 25, bond: 10, longBond: 5, reit: 7, gold: 8, cash: 10 },
+  "성장-장기-자동-확신": { growthStock: 50, valueStock: 20, bond: 8, longBond: 4, gold: 8, cash: 10 },
+  "성장-장기-주도-분산": { growthStock: 45, valueStock: 22, bond: 8, longBond: 4, reit: 7, gold: 8, cash: 6 },
+  "성장-장기-주도-확신": { growthStock: 60, valueStock: 18, longBond: 8, gold: 4, crypto: 5, cash: 5 },
+  "성장-기회-자동-분산": { growthStock: 35, valueStock: 20, bond: 6, longBond: 4, reit: 7, gold: 15, crypto: 3, cash: 10 },
+  "성장-기회-자동-확신": { growthStock: 45, valueStock: 15, longBond: 8, gold: 15, crypto: 10, cash: 7 },
+  "성장-기회-주도-분산": { growthStock: 45, valueStock: 18, bond: 4, longBond: 4, reit: 8, gold: 12, crypto: 5, cash: 4 },
+  "성장-기회-주도-확신": { growthStock: 70, valueStock: 5, gold: 5, crypto: 15, cash: 5 },
 };
 
 const QUESTIONS = [
@@ -143,22 +163,8 @@ function riskProfileFromScore(score) {
 }
 
 function getPreset({ returnStyle, timeStyle, controlStyle, concentrationStyle }) {
-  const baseGrowth = returnStyle === "성장" ? 45 : 18;
-  const value = returnStyle === "성장" ? 22 : 30;
-  const bond = returnStyle === "성장" ? 12 : 30;
-  const gold = timeStyle === "기회" ? 10 : 8;
-  const crypto = concentrationStyle === "확신" && returnStyle === "성장" ? 10 : 0;
-  const reit = 5;
-  const growthAdjustment = controlStyle === "자동" ? 5 : 0;
-  let growth = Math.max(5, baseGrowth - growthAdjustment);
-  let cash = 100 - growth - value - bond - gold - crypto - reit;
-
-  if (cash < 0) {
-    growth = Math.max(5, growth + cash);
-    cash = 100 - growth - value - bond - gold - crypto - reit;
-  }
-
-  return { growthStock: growth, valueStock: value, bond, reit, gold, crypto, cash: Math.max(0, cash) };
+  const typeKey = [returnStyle, timeStyle, controlStyle, concentrationStyle].join("-");
+  return MBTI_PRESET_MAP[typeKey] || MBTI_PRESET_MAP["성장-장기-주도-분산"];
 }
 
 function getTypeName(axes) {
@@ -196,12 +202,7 @@ function getTypeInsight(axes, riskProfile) {
     ? ["미국 대표지수", "테크", "AI", isConcentrated ? "블록체인 테마" : "배당성장"]
     : ["배당", "채권형 ETF", "금", isLongTerm ? "필수소비재" : "단기채·현금성"];
 
-  return {
-    strengths,
-    cautions: cautionByRisk[riskProfile] || cautionByRisk.위험중립형,
-    actions,
-    sectors,
-  };
+  return { strengths, cautions: cautionByRisk[riskProfile] || cautionByRisk.위험중립형, actions, sectors };
 }
 
 function calculateResult(answers) {
