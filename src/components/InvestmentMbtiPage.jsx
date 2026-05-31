@@ -28,6 +28,25 @@ const ASSET_TEMPLATES = {
   cash: { ticker: "CASH", name: "현금 / 대기자금", price: 10000, market: "KR", cagr: 2.5, beta: 0, mdd: 0, dividendYield: 2.0 },
 };
 
+const MBTI_DISPLAY_NAMES = {
+  "안정-장기-자동-분산": "차분한 수호자형",
+  "안정-장기-자동-확신": "신중한 코어빌더형",
+  "안정-장기-주도-분산": "용의주도한 설계자형",
+  "안정-장기-주도-확신": "철저한 전략가형",
+  "안정-기회-자동-분산": "침착한 관찰자형",
+  "안정-기회-자동-확신": "현명한 선별가형",
+  "안정-기회-주도-분산": "민첩한 리스크매니저형",
+  "안정-기회-주도-확신": "대담한 수비수형",
+  "성장-장기-자동-분산": "꾸준한 개척자형",
+  "성장-장기-자동-확신": "믿음직한 항해자형",
+  "성장-장기-주도-분산": "균형 잡힌 건축가형",
+  "성장-장기-주도-확신": "장기 성장 전략가형",
+  "성장-기회-자동-분산": "열린 탐험가형",
+  "성장-기회-자동-확신": "예리한 선구자형",
+  "성장-기회-주도-분산": "능동적인 지휘관형",
+  "성장-기회-주도-확신": "용감한 승부사형",
+};
+
 const QUESTIONS = [
   { id: "q1", axis: "returnStyle", title: "투자에서 가장 우선하는 것은 무엇인가요?", options: [
     { id: "a", label: "원금 손실을 최대한 피하는 것", score: -2, risk: -2 },
@@ -131,10 +150,8 @@ function getPreset({ returnStyle, timeStyle, controlStyle, concentrationStyle })
 }
 
 function getTypeName(axes) {
-  const prefix = axes.returnStyle === "성장" ? "성장" : "안정";
-  const suffix = axes.concentrationStyle === "확신" ? "확신형" : "분산형";
-  if (axes.controlStyle === "주도") return `${prefix} 설계 ${suffix}`;
-  return `${prefix} 자동 ${suffix}`;
+  const typeKey = [axes.returnStyle, axes.timeStyle, axes.controlStyle, axes.concentrationStyle].join("-");
+  return MBTI_DISPLAY_NAMES[typeKey] || `${axes.returnStyle} ${axes.timeStyle} ${axes.controlStyle} ${axes.concentrationStyle}형`;
 }
 
 function getTypeInsight(axes, riskProfile) {
@@ -254,7 +271,7 @@ function saveResultToSimulator(result) {
   const type = result.type;
   const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate };
   const assets = buildAssetsFromPreset(type.preset, 50000000);
-  const portfolio = { id, name: `${type.nickname} 예시 포트폴리오`, settings, assets, updatedAt: now, source: "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile } };
+  const portfolio = { id, name: type.nickname, settings, assets, updatedAt: now, source: "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile } };
 
   try {
     const currentList = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
