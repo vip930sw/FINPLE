@@ -8,6 +8,7 @@ import {
     Briefcase,
     Plane,
   } from "lucide-react";
+  import "./EconomicCalendarPolish.css";
   
   function EconomicCalendarSection() {
     return (
@@ -38,10 +39,6 @@ import {
   
           <EconomicIndicatorLinks />
         </div>
-  
-        <p className="calendarNotice">
-          경제지표 일정과 외부 링크는 제공처 기준으로 표시되며, 실제 데이터와 차이가 있을 수 있습니다.
-        </p>
       </section>
     );
   }
