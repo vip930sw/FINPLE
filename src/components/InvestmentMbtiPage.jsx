@@ -112,16 +112,22 @@ function riskProfileFromScore(score) {
 }
 
 function getPreset({ returnStyle, timeStyle, controlStyle, concentrationStyle }) {
-  const growth = returnStyle === "성장" ? 45 : 18;
+  const baseGrowth = returnStyle === "성장" ? 45 : 18;
   const value = returnStyle === "성장" ? 22 : 30;
   const bond = returnStyle === "성장" ? 12 : 30;
   const gold = timeStyle === "기회" ? 10 : 8;
   const crypto = concentrationStyle === "확신" && returnStyle === "성장" ? 10 : 0;
   const reit = 5;
+  const growthAdjustment = controlStyle === "자동" ? 5 : 0;
+  let growth = Math.max(5, baseGrowth - growthAdjustment);
   let cash = 100 - growth - value - bond - gold - crypto - reit;
-  if (controlStyle === "자동") cash += 5;
-  const nextGrowth = Math.max(5, growth - (controlStyle === "자동" ? 5 : 0));
-  return { growthStock: nextGrowth, valueStock: value, bond, reit, gold, crypto, cash: Math.max(0, cash) };
+
+  if (cash < 0) {
+    growth = Math.max(5, growth + cash);
+    cash = 100 - growth - value - bond - gold - crypto - reit;
+  }
+
+  return { growthStock: growth, valueStock: value, bond, reit, gold, crypto, cash: Math.max(0, cash) };
 }
 
 function getTypeName(axes) {
@@ -359,6 +365,7 @@ function MbtiResult({ result, onReset, onApply }) {
   const [exportStatusMessage, setExportStatusMessage] = useState("");
   const type = result.type;
   const entries = Object.entries(type.preset);
+  const presetTotal = entries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
 
   async function handleShareResult() {
@@ -394,7 +401,7 @@ function MbtiResult({ result, onReset, onApply }) {
         <article className="investmentMbtiCard"><span>기본 조건</span><strong>{type.defaults.years}년</strong><p>월 투자금 {formatWon(type.defaults.monthlyContribution)}원</p></article>
       </div>
       <article className="investmentMbtiPanel">
-        <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Portfolio Preset</p><h3>예시 포트폴리오 프리셋</h3></div><span>합계 100%</span></div>
+        <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Portfolio Preset</p><h3>예시 포트폴리오 프리셋</h3></div><span>합계 {presetTotal}%</span></div>
         <div className="investmentMbtiPortfolioBars">
           {entries.map(([key, value]) => (
             <div key={key} className="investmentMbtiPortfolioRow"><div className="investmentMbtiPortfolioLabel"><strong>{ASSET_LABELS[key] || key}</strong><span>{value}%</span></div><div className="investmentMbtiBarTrack"><i style={{ width: `${value}%` }} /></div></div>
