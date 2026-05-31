@@ -149,8 +149,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       <p className="sectionLabel">Portfolio Simulator</p>
       <h2>FINPLE 포트폴리오 시뮬레이터</h2>
       <p className="simulatorIntroText">
-        국내·해외 자산의 현재가를 조회하고, CSV 기반 CAGR, BETA, MDD,
-        배당률을 결합해 장기 포트폴리오 성과와 실질가치를 계산합니다.
+        포트폴리오 구성과 투자 조건을 반영해 장기 예상 성과와 실질가치 변화를 확인합니다.
       </p>
 
       <SimulatorTabNav
