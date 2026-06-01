@@ -145,6 +145,149 @@
           window.addEventListener("finple-auth-updated", upsertEmailUsageEvidence);
         })();
       </script>
+      <script>
+        (function () {
+          var CHECKOUT_PATHS = ["/checkout", "/payment/success", "/payment/fail", "/payment/cancel"];
+          var originalPushState = history.pushState;
+
+          function isCheckoutPath(pathname) {
+            return CHECKOUT_PATHS.indexOf(String(pathname || "")) >= 0;
+          }
+
+          function getCheckoutPath() {
+            return String(window.location.pathname || "");
+          }
+
+          if (isCheckoutPath(getCheckoutPath())) {
+            history.pushState = function (state, title, url) {
+              var nextPath = url ? new URL(url, window.location.origin).pathname : getCheckoutPath();
+              if (isCheckoutPath(getCheckoutPath()) && nextPath === "/") return;
+              return originalPushState.apply(history, arguments);
+            };
+          }
+
+          function go(path) {
+            window.location.href = path;
+          }
+
+          function getBusinessFooter() {
+            return '<footer style="margin-top:56px;padding:28px 32px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;line-height:1.7;background:#fff;">'
+              + '<strong style="color:#334155;">FINPLE Portfolio Lab</strong><br />'
+              + '상호: 핀플FINPLE | 대표자: 이상원 | 사업자등록번호: 550-21-02319 | 통신판매업 신고번호: 제2025-서울강남-02127호<br />'
+              + '주소: 서울특별시 강남구 테헤란로 70길 12, 4층 402-343A호 H타워(대치동)<br />'
+              + '이메일: finple_lab@naver.com | 전화번호: 010-3354-1028 | 이용약관 · 개인정보처리방침 · 환불정책'
+              + '</footer>';
+          }
+
+          function getShell(title, subtitle, body) {
+            return '<main data-finple-checkout-shell="true" style="min-height:100vh;background:#f8fafc;color:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;">'
+              + '<header style="display:flex;justify-content:space-between;gap:16px;align-items:center;padding:22px 32px;background:#fff;border-bottom:1px solid #e2e8f0;">'
+              + '<button type="button" data-go="/" style="border:0;background:transparent;font-weight:900;font-size:18px;cursor:pointer;">FINPLE <span style="display:block;font-size:12px;color:#64748b;font-weight:800;">Portfolio Lab</span></button>'
+              + '<nav style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;font-weight:800;">'
+              + '<button type="button" data-go="/pricing" style="border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 13px;cursor:pointer;">요금제</button>'
+              + '<button type="button" data-go="/refund" style="border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:9px 13px;cursor:pointer;">환불정책</button>'
+              + '<button type="button" data-go="/mypage" style="border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:999px;padding:9px 13px;cursor:pointer;">MY PAGE</button>'
+              + '</nav></header>'
+              + '<section style="max-width:960px;margin:0 auto;padding:52px 24px 20px;">'
+              + '<p style="margin:0 0 10px;color:#2563eb;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;">Toss Payments Review Flow</p>'
+              + '<h1 style="margin:0 0 12px;font-size:clamp(30px,5vw,48px);line-height:1.12;">' + title + '</h1>'
+              + '<p style="margin:0;color:#475569;font-size:16px;line-height:1.7;">' + subtitle + '</p>'
+              + '</section>'
+              + body
+              + getBusinessFooter()
+              + '</main>';
+          }
+
+          function checkoutPage() {
+            return getShell(
+              'FINPLE Personal 구독 신청',
+              '토스페이먼츠 심사와 테스트 결제 연동을 위한 결제 전 확인 화면입니다.',
+              '<section style="max-width:960px;margin:0 auto;padding:20px 24px 54px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:22px;">'
+              + '<article style="background:#fff;border:1px solid #e2e8f0;border-radius:24px;padding:28px;box-shadow:0 18px 40px rgba(15,23,42,.08);">'
+              + '<p style="margin:0 0 8px;color:#64748b;font-size:13px;font-weight:900;">상품/서비스</p>'
+              + '<h2 style="margin:0 0 10px;font-size:28px;">FINPLE Personal</h2>'
+              + '<p style="margin:0 0 20px;color:#475569;line-height:1.75;">포트폴리오 분석 도구의 서버 저장, PDF 리포트, 확장 조회 기능을 제공하는 월 구독형 서비스입니다. 특정 금융상품 추천, 투자자문, 수익 보장은 포함하지 않습니다.</p>'
+              + '<div style="display:grid;gap:10px;">'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>결제 상품명</span><strong>FINPLE Personal</strong></div>'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>결제 금액</span><strong>월 9,900원</strong></div>'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>결제 방식</span><strong>정기 구독 결제 준비 중</strong></div>'
+              + '</div></article>'
+              + '<aside style="background:#0f172a;color:#fff;border-radius:24px;padding:28px;box-shadow:0 18px 40px rgba(15,23,42,.18);">'
+              + '<h3 style="margin:0 0 14px;font-size:22px;">제공 기능</h3>'
+              + '<ul style="margin:0 0 22px;padding-left:20px;line-height:1.9;color:#e2e8f0;"><li>서버 포트폴리오 저장</li><li>PDF 리포트 제공</li><li>확장 API 조회량</li><li>포트폴리오 비교 기능</li></ul>'
+              + '<button type="button" data-go="/payment/success" style="width:100%;border:0;border-radius:16px;padding:15px 18px;background:#fff;color:#0f172a;font-size:15px;font-weight:900;cursor:pointer;">테스트 결제 성공 화면 보기</button>'
+              + '<button type="button" data-go="/payment/cancel" style="width:100%;margin-top:10px;border:1px solid rgba(255,255,255,.35);border-radius:16px;padding:14px 18px;background:transparent;color:#fff;font-size:14px;font-weight:900;cursor:pointer;">결제 취소 화면 보기</button>'
+              + '<p style="margin:16px 0 0;color:#cbd5e1;font-size:12px;line-height:1.6;">실제 토스페이먼츠 결제창은 테스트 키 확인 후 다음 단계에서 연동합니다.</p>'
+              + '</aside></section>'
+            );
+          }
+
+          function resultPage(kind) {
+            var isSuccess = kind === 'success';
+            var isCancel = kind === 'cancel';
+            var title = isSuccess ? '결제 신청이 완료되었습니다' : isCancel ? '결제가 취소되었습니다' : '결제 진행에 실패했습니다';
+            var subtitle = isSuccess ? '테스트 결제 완료 후 사용자가 확인하게 될 구독 상태 안내 화면입니다.' : isCancel ? '사용자가 결제를 취소했을 때 요금제 화면으로 돌아갈 수 있도록 안내합니다.' : '결제창 오류 또는 승인 실패 시 다시 시도할 수 있도록 안내합니다.';
+            var badge = isSuccess ? '결제 성공' : isCancel ? '결제 취소' : '결제 실패';
+            return getShell(
+              title,
+              subtitle,
+              '<section style="max-width:760px;margin:0 auto;padding:20px 24px 58px;">'
+              + '<article style="background:#fff;border:1px solid #e2e8f0;border-radius:24px;padding:30px;box-shadow:0 18px 40px rgba(15,23,42,.08);">'
+              + '<p style="margin:0 0 10px;color:' + (isSuccess ? '#16a34a' : '#ea580c') + ';font-size:13px;font-weight:900;">' + badge + '</p>'
+              + '<h2 style="margin:0 0 16px;font-size:28px;">FINPLE Personal</h2>'
+              + '<div style="display:grid;gap:10px;margin-bottom:22px;">'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>상품명</span><strong>FINPLE Personal</strong></div>'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>금액</span><strong>월 9,900원</strong></div>'
+              + '<div style="display:flex;justify-content:space-between;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;"><span>상태</span><strong>' + badge + '</strong></div>'
+              + '</div>'
+              + '<p style="margin:0 0 22px;color:#475569;line-height:1.75;">결제 완료 후에는 MY PAGE에서 구독 상태, 결제 이메일, 서버 저장 가능 여부를 확인할 수 있도록 확장할 예정입니다.</p>'
+              + '<div style="display:flex;gap:10px;flex-wrap:wrap;"><button type="button" data-go="/mypage" style="border:0;border-radius:14px;padding:13px 17px;background:#0f172a;color:#fff;font-weight:900;cursor:pointer;">MY PAGE로 이동</button><button type="button" data-go="/pricing" style="border:1px solid #cbd5e1;border-radius:14px;padding:13px 17px;background:#fff;color:#0f172a;font-weight:900;cursor:pointer;">요금제로 이동</button><button type="button" data-go="/refund" style="border:1px solid #cbd5e1;border-radius:14px;padding:13px 17px;background:#fff;color:#0f172a;font-weight:900;cursor:pointer;">환불정책 확인</button></div>'
+              + '</article></section>'
+            );
+          }
+
+          function renderCheckoutShell() {
+            var path = getCheckoutPath();
+            if (!isCheckoutPath(path)) return;
+            var root = document.getElementById('root');
+            if (!root) return;
+            var marker = root.querySelector('[data-finple-checkout-shell="true"]');
+            if (marker && root.getAttribute('data-finple-checkout-path') === path) return;
+            root.setAttribute('data-finple-checkout-path', path);
+            if (path === '/checkout') root.innerHTML = checkoutPage();
+            if (path === '/payment/success') root.innerHTML = resultPage('success');
+            if (path === '/payment/fail') root.innerHTML = resultPage('fail');
+            if (path === '/payment/cancel') root.innerHTML = resultPage('cancel');
+          }
+
+          function bindCheckoutEvents() {
+            document.addEventListener('click', function (event) {
+              var goTarget = event.target && event.target.closest ? event.target.closest('[data-go]') : null;
+              if (goTarget) {
+                event.preventDefault();
+                event.stopPropagation();
+                go(goTarget.getAttribute('data-go'));
+                return;
+              }
+
+              var pricingButton = event.target && event.target.closest ? event.target.closest('.accountPlanCard button') : null;
+              if (!pricingButton) return;
+              var planCard = pricingButton.closest('.accountPlanCard');
+              if (!planCard || !/Personal/.test(planCard.textContent || '')) return;
+              event.preventDefault();
+              event.stopPropagation();
+              go('/checkout');
+            }, true);
+          }
+
+          window.addEventListener('load', function () {
+            bindCheckoutEvents();
+            renderCheckoutShell();
+            var observer = new MutationObserver(renderCheckoutShell);
+            observer.observe(document.body, { childList: true, subtree: true });
+          });
+        })();
+      </script>
   </head>
   <body>
     <div id="root"></div>
