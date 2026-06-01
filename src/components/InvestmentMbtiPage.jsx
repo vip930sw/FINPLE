@@ -428,9 +428,11 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
       "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다.",
     ].join("\n");
     const shareData = { title: "FINPLE 투자 MBTI 결과", text: shareText, url: shareUrl };
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+    const isMobileShareDevice = /Android|iPhone|iPad|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && Number(navigator.maxTouchPoints || 0) > 1);
 
     try {
-      if (typeof navigator !== "undefined" && navigator.share) {
+      if (isMobileShareDevice && typeof navigator !== "undefined" && navigator.share) {
         await navigator.share(shareData);
         setExportStatusMessage("공유 창을 열었습니다.");
         return;
@@ -483,7 +485,7 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
       <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
         <button type="button" onClick={handleShareResult}>SNS 공유</button>
         <button type="button" onClick={handlePdfSave}>PDF 저장</button>
-        <button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검색하기</button>
+        <button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button>
       </div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
       <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button></div>
