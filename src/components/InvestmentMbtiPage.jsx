@@ -450,6 +450,11 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
     }
   }
 
+  function handlePdfSave() {
+    setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.");
+    window.setTimeout(() => window.print(), 80);
+  }
+
   return (
     <section className="investmentMbtiResultPage">
       <div className="investmentMbtiResultHero"><p className="sectionLabel">Investment MBTI Result</p><h1>당신의 투자 MBTI는<br />{type.nickname}입니다.</h1><p>{type.summary}</p></div>
@@ -475,11 +480,13 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         <article className="investmentMbtiPanel warning"><p className="sectionLabel">Caution</p><h3>주의점</h3><p>{type.cautions}</p></article>
       </div>
       <article className="investmentMbtiNotice resultNotice"><strong>투자 유의사항</strong><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>블록체인 테마 등 고변동성 위성자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
-      <div className="investmentMbtiShareActions" aria-label="결과 공유">
+      <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
         <button type="button" onClick={handleShareResult}>SNS 공유</button>
+        <button type="button" onClick={handlePdfSave}>PDF 저장</button>
+        <button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검색하기</button>
       </div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
-      <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
+      <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button></div>
     </section>
   );
 }
