@@ -416,27 +416,38 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
 
   async function handleShareResult() {
-    const shareText = `FINPLE 투자 MBTI: ${type.nickname}\n유형: ${type.finpleType}\n위험성향: ${result.calculatedRiskProfile}`;
+    const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/mbti` : "https://finple.co.kr/mbti";
+    const shareText = [
+      `저의 FINPLE 투자 MBTI는 “${type.nickname}”입니다.`,
+      "",
+      `성향: ${Object.values(result.axes).join(" · ")}`,
+      `FINPLE 유형: ${type.finpleType}`,
+      `위험성향: ${result.calculatedRiskProfile}`,
+      "",
+      "FINPLE에서 나의 투자 성향도 확인해보세요.",
+      "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다.",
+    ].join("\n");
+    const shareData = { title: "FINPLE 투자 MBTI 결과", text: shareText, url: shareUrl };
+
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "FINPLE 투자 MBTI 결과", text: shareText, url: window.location.origin + "/mbti" });
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share(shareData);
         setExportStatusMessage("공유 창을 열었습니다.");
         return;
       }
-      await navigator.clipboard?.writeText(shareText);
-      setExportStatusMessage("공유 문구를 클립보드에 복사했습니다.");
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
+        return;
+      }
+      setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다.");
     } catch (error) {
-      setExportStatusMessage("공유 기능을 사용할 수 없어 목업 상태로 표시됩니다.");
+      if (error?.name === "AbortError") {
+        setExportStatusMessage("공유를 취소했습니다.");
+        return;
+      }
+      setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요.");
     }
-  }
-
-  function handleImageMockup() {
-    setExportStatusMessage("이미지 저장은 다음 단계에서 캡처 기능으로 연결할 예정입니다.");
-  }
-
-  function handlePdfSave() {
-    setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.");
-    window.setTimeout(() => window.print(), 80);
   }
 
   return (
@@ -464,10 +475,8 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         <article className="investmentMbtiPanel warning"><p className="sectionLabel">Caution</p><h3>주의점</h3><p>{type.cautions}</p></article>
       </div>
       <article className="investmentMbtiNotice resultNotice"><strong>투자 유의사항</strong><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>블록체인 테마 등 고변동성 위성자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
-      <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
+      <div className="investmentMbtiShareActions" aria-label="결과 공유">
         <button type="button" onClick={handleShareResult}>SNS 공유</button>
-        <button type="button" onClick={handleImageMockup}>이미지 저장</button>
-        <button type="button" onClick={handlePdfSave}>PDF 저장</button>
       </div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
       <div className="investmentMbtiResultActions horizontal" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국 주식으로 포트폴리오 반영</button><button type="button" onClick={onApplyKr}>한국 주식으로 포트폴리오 반영</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
