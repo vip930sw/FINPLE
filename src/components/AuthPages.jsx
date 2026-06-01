@@ -13,6 +13,7 @@ import {
   signupWithEmailPassword,
   startGoogleOAuthLogin,
   startKakaoOAuthLogin,
+  startNaverOAuthLogin,
   verifyEmailToken,
 } from "./authClientService";
 
@@ -83,6 +84,7 @@ export function LoginPage({ onNavigate }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
+  const [isNaverLoading, setIsNaverLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -151,9 +153,17 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
-  function handleNaverPending() {
-    setStatusMessage("네이버 로그인은 현재 검수 중입니다. 검수 완료 후 다시 활성화하겠습니다.");
+  async function handleNaverLogin() {
+    setIsNaverLoading(true);
+    setStatusMessage(OAUTH_LOADING_MESSAGE);
+    try {
+      await startNaverOAuthLogin();
+    } finally {
+      setIsNaverLoading(false);
+    }
   }
+
+  const isSocialLoading = isGoogleLoading || isKakaoLoading || isNaverLoading;
 
   return (
     <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
@@ -180,14 +190,14 @@ export function LoginPage({ onNavigate }) {
             <button type="button" className="loginTextButton" onClick={() => setStatusMessage("아이디·비밀번호 찾기는 추후 연결 예정입니다.")}>아이디·비밀번호 찾기</button>
           </div>
           {statusMessage ? <p className="accountInlineStatus">{statusMessage}</p> : null}
-          <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isGoogleLoading || isKakaoLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
+          <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isSocialLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
 
         <div className="loginDivider"><span>또는</span></div>
         <div className="loginSocialRow" aria-label="소셜 로그인">
-          <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading || isGoogleLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
-          <button type="button" className="loginSocialButton naver" onClick={handleNaverPending} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
-          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading || isKakaoLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
+          <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading || isGoogleLoading || isNaverLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
+          <button type="button" className="loginSocialButton naver" onClick={handleNaverLogin} disabled={isNaverLoading || isLoading || isGoogleLoading || isKakaoLoading} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
+          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading || isKakaoLoading || isNaverLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
         </div>
         <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
       </section>
