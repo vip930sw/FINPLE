@@ -66,6 +66,85 @@
       <meta name="twitter:image" content="https://finple.co.kr/og-finple-logo-v2.png" />
       <meta name="twitter:image:alt" content="FINPLE 로고" />
       <link rel="image_src" href="https://finple.co.kr/og-finple-logo-v2.png" />
+      <script>
+        (function () {
+          var USER_STORAGE_KEY = "finple-trial-auth-user";
+          var PANEL_MARKER = "finple-email-usage-evidence";
+
+          function readStoredUser() {
+            try {
+              var rawValue = window.localStorage.getItem(USER_STORAGE_KEY);
+              return rawValue ? JSON.parse(rawValue) : null;
+            } catch (error) {
+              return null;
+            }
+          }
+
+          function getAuthProviderLabel(authMode) {
+            var mode = String(authMode || "").toLowerCase();
+            if (mode.indexOf("naver") >= 0) return "NAVER";
+            if (mode.indexOf("google") >= 0) return "GOOGLE";
+            if (mode.indexOf("kakao") >= 0) return "KAKAO";
+            if (mode.indexOf("email") >= 0) return "EMAIL";
+            return mode ? mode.toUpperCase() : "-";
+          }
+
+          function createInfoTile(label, value) {
+            var tile = document.createElement("div");
+            var labelNode = document.createElement("span");
+            var valueNode = document.createElement("strong");
+            labelNode.textContent = label;
+            valueNode.textContent = value || "-";
+            tile.appendChild(labelNode);
+            tile.appendChild(valueNode);
+            return tile;
+          }
+
+          function upsertEmailUsageEvidence() {
+            var pathname = String(window.location.pathname || "");
+            var grid = document.querySelector(".accountStatusPanel .accountStatusGrid");
+            if (!grid || pathname.indexOf("/mypage") < 0) return;
+
+            var user = readStoredUser();
+            var email = user && user.email ? String(user.email) : "-";
+            var authMode = getAuthProviderLabel(user && user.authMode);
+            var existing = document.querySelector("[data-finple-panel='" + PANEL_MARKER + "']");
+
+            if (existing) existing.remove();
+
+            var fragment = document.createElement("div");
+            fragment.setAttribute("data-finple-panel", PANEL_MARKER);
+            fragment.style.display = "contents";
+            fragment.appendChild(createInfoTile("로그인 이메일", email));
+            fragment.appendChild(createInfoTile("가입 방식", authMode));
+
+            var purposeTile = document.createElement("div");
+            purposeTile.style.gridColumn = "1 / -1";
+            var purposeLabel = document.createElement("span");
+            var purposeValue = document.createElement("strong");
+            purposeLabel.textContent = "이메일 활용 목적";
+            purposeValue.textContent = "회원 식별, 로그인 계정 확인, 구독 상태 안내, 결제 내역 안내, 서비스 중요 고지 및 고객 문의 대응에 사용됩니다.";
+            purposeTile.appendChild(purposeLabel);
+            purposeTile.appendChild(purposeValue);
+            fragment.appendChild(purposeTile);
+
+            grid.appendChild(fragment);
+          }
+
+          var observer = new MutationObserver(function () {
+            window.requestAnimationFrame(upsertEmailUsageEvidence);
+          });
+
+          window.addEventListener("load", function () {
+            observer.observe(document.body, { childList: true, subtree: true });
+            upsertEmailUsageEvidence();
+          });
+          window.addEventListener("popstate", function () {
+            window.setTimeout(upsertEmailUsageEvidence, 80);
+          });
+          window.addEventListener("finple-auth-updated", upsertEmailUsageEvidence);
+        })();
+      </script>
   </head>
   <body>
     <div id="root"></div>
