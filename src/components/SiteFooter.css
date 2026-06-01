@@ -30,6 +30,27 @@
   line-height: 1.35;
 }
 
+.siteFooterBusinessInfo {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  padding-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.65;
+  word-break: keep-all;
+}
+
+.siteFooterBusinessInfo p {
+  margin: 0;
+}
+
+.siteFooterBusinessInfo strong {
+  color: #334155;
+  font-weight: 900;
+}
+
 .siteFooterNotice {
   margin: 0;
   color: #475569;
@@ -72,5 +93,10 @@
   .siteFooterLinks {
     justify-content: flex-start;
     min-width: 0;
+  }
+
+  .siteFooterBusinessInfo {
+    font-size: 11px;
+    line-height: 1.6;
   }
 }
