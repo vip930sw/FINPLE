@@ -26,6 +26,7 @@ import {
   PrivacyPage,
   TermsPage,
   InvestmentDisclaimerPage,
+  RefundPolicyPage,
 } from "./components/LegalPolicyPages";
 
 const ROUTE_PATHS = {
@@ -43,6 +44,7 @@ const ROUTE_PATHS = {
   "admin-inquiries": "/admin/inquiries",
   privacy: "/privacy",
   terms: "/terms",
+  refund: "/refund",
   "investment-disclaimer": "/disclaimer",
 };
 
@@ -160,6 +162,7 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
   if (normalizedPath === "/privacy" || normalizedHash === "privacy") return "privacy";
   if (normalizedPath === "/terms" || normalizedHash === "terms") return "terms";
+  if (normalizedPath === "/refund" || normalizedHash === "refund") return "refund";
   if (normalizedPath === "/disclaimer" || normalizedHash === "disclaimer") return "investment-disclaimer";
 
   return "home";
@@ -409,6 +412,7 @@ function App() {
   if (currentPage === "updates") return renderShell(<UpdatesPage onNavigate={setCurrentPage} />);
   if (currentPage === "privacy") return renderShell(<PrivacyPage onNavigate={setCurrentPage} />);
   if (currentPage === "terms") return renderShell(<TermsPage onNavigate={setCurrentPage} />);
+  if (currentPage === "refund") return renderShell(<RefundPolicyPage onNavigate={setCurrentPage} />);
   if (currentPage === "investment-disclaimer") return renderShell(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
 
   return (
@@ -620,6 +624,7 @@ function SiteFooter({ onNavigate }) {
         <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
         <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>
         <a href="/privacy" onClick={(event) => handleFooterLink(event, "privacy")}>개인정보처리방침</a>
+        <a href="/refund" onClick={(event) => handleFooterLink(event, "refund")}>환불정책</a>
         <a href="/disclaimer" onClick={(event) => handleFooterLink(event, "investment-disclaimer")}>투자 유의사항</a>
       </nav>
     </footer>
