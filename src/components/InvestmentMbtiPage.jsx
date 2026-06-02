@@ -458,19 +458,10 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
       "FINPLE에서 나의 투자 성향도 확인해보세요.",
       "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다.",
     ].join("\n");
-    const shareData = { title: "FINPLE 투자 MBTI 결과", text: shareText, url: shareUrl };
     const copyText = `${shareText}\n${shareUrl}`;
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
-    const isMobileShareDevice = /Android|iPhone|iPad|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && Number(navigator.maxTouchPoints || 0) > 1);
-    setExportStatusMessage("공유 문구를 준비 중입니다.");
+    setExportStatusMessage("공유 문구를 복사 중입니다.");
 
     try {
-      if (isMobileShareDevice && typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share(shareData);
-        setExportStatusMessage("공유 창을 열었습니다.");
-        return;
-      }
-
       const copied = await copyTextToClipboard(copyText);
       if (copied) {
         setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
@@ -479,26 +470,15 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
 
       if (typeof window !== "undefined") {
         window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
-        setExportStatusMessage("공유 문구를 수동 복사할 수 있도록 표시했습니다.");
+        setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다.");
         return;
       }
 
       setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다.");
     } catch (error) {
-      if (error?.name === "AbortError") {
-        setExportStatusMessage("공유를 취소했습니다.");
-        return;
-      }
-
-      const copied = await copyTextToClipboard(copyText);
-      if (copied) {
-        setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
-        return;
-      }
-
       if (typeof window !== "undefined") {
         window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
-        setExportStatusMessage("공유 문구를 수동 복사할 수 있도록 표시했습니다.");
+        setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다.");
         return;
       }
 
