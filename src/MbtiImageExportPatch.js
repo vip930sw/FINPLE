@@ -19,6 +19,13 @@ function normalizeQuoteText(value) {
   return String(value || "").replace(/[“”"]/g, "").trim();
 }
 
+function normalizeAxisLabel(value) {
+  return String(value || "")
+    .replace(/\?/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getMbtiNickname() {
   const highlightedName = normalizeQuoteText(getText(".investmentMbtiResultName", ""));
   if (highlightedName) return highlightedName;
@@ -36,6 +43,19 @@ function getAxisTypeText() {
     .map((node) => String(node.textContent || "").trim())
     .filter(Boolean);
   return labels.length ? labels.join(" · ") : getText(".investmentMbtiResultHero p", "-");
+}
+
+function getAxisChartRows() {
+  return Array.from(document.querySelectorAll(".investmentMbtiAxisRow")).map((row) => {
+    const terms = Array.from(row.querySelectorAll(".investmentMbtiAxisTerm"));
+    const leftLabel = normalizeAxisLabel(terms[0]?.textContent);
+    const rightLabel = normalizeAxisLabel(terms[1]?.textContent);
+    const centerLabel = normalizeAxisLabel(row.querySelector(".investmentMbtiAxisLabels > strong")?.textContent);
+    const markerText = String(row.querySelector(".investmentMbtiAxisTrack b")?.textContent || "0").trim();
+    const score = Number(markerText.replace("+", "")) || 0;
+
+    return { leftLabel, rightLabel, centerLabel, score };
+  }).filter((row) => row.leftLabel && row.rightLabel && row.centerLabel);
 }
 
 function getRiskProfile() {
@@ -129,11 +149,11 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
   ctx.arcTo(x + width, y, x + width, y + height, r);
   ctx.arcTo(x + width, y + height, x, y + height, r);
   ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
+  ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
 }
 
-function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3, align = "left") {
   const words = String(text || "").split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
@@ -150,28 +170,16 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
 
   if (line) lines.push(line);
   const visibleLines = lines.slice(0, maxLines);
+  const previousAlign = ctx.textAlign;
+  ctx.textAlign = align;
+
   visibleLines.forEach((visibleLine, index) => {
     const suffix = index === maxLines - 1 && lines.length > maxLines ? "…" : "";
     ctx.fillText(`${visibleLine}${suffix}`, x, y + index * lineHeight);
   });
 
+  ctx.textAlign = previousAlign;
   return y + visibleLines.length * lineHeight;
-}
-
-function drawPill(ctx, text, x, y, options = {}) {
-  const font = options.font || "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const paddingX = options.paddingX || 22;
-  const height = options.height || 52;
-  ctx.font = font;
-  const width = Math.ceil(ctx.measureText(text).width + paddingX * 2);
-  ctx.fillStyle = options.background || "#eff6ff";
-  drawRoundRect(ctx, x, y, width, height, height / 2);
-  ctx.fill();
-  ctx.fillStyle = options.color || "#2563eb";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, x + paddingX, y + height / 2 + 1);
-  ctx.textBaseline = "alphabetic";
-  return width;
 }
 
 function drawRightPill(ctx, text, rightX, y, options = {}) {
@@ -213,17 +221,89 @@ function drawFinpleLogoFallback(ctx, x, y, size = 58) {
   ctx.textBaseline = "alphabetic";
 }
 
+function drawAxisMiniChart(ctx, rows, startX, startY, width) {
+  if (!rows.length) return startY;
+
+  const rowGap = 58;
+  const centerX = startX + width / 2;
+  const trackGap = 34;
+  const trackYGap = 24;
+  const leftTrackX = startX + 26;
+  const leftTrackWidth = centerX - leftTrackX - trackGap;
+  const rightTrackX = centerX + trackGap;
+  const rightTrackWidth = startX + width - 26 - rightTrackX;
+  const trackHeight = 12;
+
+  rows.forEach((row, index) => {
+    const y = startY + index * rowGap;
+    const trackY = y + trackYGap;
+    const score = Math.max(-6, Math.min(6, row.score));
+    const markerText = score > 0 ? `+${score}` : `${score}`;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "900 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(row.leftLabel, startX, y);
+    ctx.textAlign = "center";
+    ctx.fillText(row.centerLabel, centerX, y);
+    ctx.textAlign = "right";
+    ctx.fillText(row.rightLabel, startX + width, y);
+    ctx.textAlign = "left";
+
+    ctx.fillStyle = "#bfdbfe";
+    drawRoundRect(ctx, leftTrackX, trackY, leftTrackWidth, trackHeight, 999);
+    ctx.fill();
+
+    const rightGradient = ctx.createLinearGradient(rightTrackX, trackY, rightTrackX + rightTrackWidth, trackY);
+    rightGradient.addColorStop(0, "#c7d2fe");
+    rightGradient.addColorStop(1, "#2563eb");
+    ctx.fillStyle = rightGradient;
+    drawRoundRect(ctx, rightTrackX, trackY, rightTrackWidth, trackHeight, 999);
+    ctx.fill();
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("-", startX, trackY + 11);
+    ctx.textAlign = "center";
+    ctx.fillText("0", centerX, trackY + 11);
+    ctx.textAlign = "right";
+    ctx.fillText("+", startX + width, trackY + 11);
+    ctx.textAlign = "left";
+
+    let markerX = centerX;
+    if (score > 0) {
+      markerX = rightTrackX + (rightTrackWidth * score) / 6;
+      markerX = Math.min(markerX, rightTrackX + rightTrackWidth - 28);
+    } else if (score < 0) {
+      markerX = leftTrackX + (leftTrackWidth * (score + 6)) / 6;
+      markerX = Math.max(markerX, leftTrackX + 28);
+    }
+
+    const markerY = trackY - 14;
+    ctx.fillStyle = "#0f172a";
+    drawRoundRect(ctx, markerX - 24, markerY, 48, 34, 17);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(markerText, markerX, markerY + 22);
+    ctx.textAlign = "left";
+  });
+
+  return startY + rows.length * rowGap + 6;
+}
+
 async function drawMbtiCanvas() {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
-  canvas.height = 1500;
+  canvas.height = 1600;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas_context_unavailable");
 
   const nickname = getMbtiNickname();
-  const finpleType = getAxisTypeText();
   const riskProfile = getRiskProfile();
   const overview = getTypeOverview();
+  const axisRows = getAxisChartRows();
   const rows = getPortfolioRows();
   const disclaimerItems = getDisclaimerItems();
   const logoImage = await loadFinpleLogoImage();
@@ -232,7 +312,7 @@ async function drawMbtiCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#ffffff";
-  drawRoundRect(ctx, 58, 58, 964, 1384, 48);
+  drawRoundRect(ctx, 58, 58, 964, 1484, 48);
   ctx.fill();
   ctx.strokeStyle = "#dbe5f3";
   ctx.lineWidth = 2;
@@ -255,28 +335,27 @@ async function drawMbtiCanvas() {
   ctx.fillStyle = "#64748b";
   ctx.fillText("Portfolio Lab", brandTextX, 164);
 
-  drawRightPill(ctx, riskProfile, 982, 98, { background: "#0f172a", color: "#ffffff", font: "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
-  drawRightPill(ctx, finpleType, 982, 156, { background: "#eff6ff", color: "#2563eb", font: "700 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
-
-  ctx.font = "900 26px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillStyle = "#2563eb";
-  ctx.fillText("INVESTMENT MBTI RESULT", 98, 246);
+  drawRightPill(ctx, riskProfile, 982, 116, { background: "#0f172a", color: "#ffffff", font: "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
 
   ctx.fillStyle = "#0f172a";
-  ctx.font = "900 60px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, `“${nickname}”`, 98, 320, 884, 70, 2);
+  ctx.font = "900 68px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const titleBottom = drawWrappedText(ctx, `“${nickname}”`, 540, 292, 860, 76, 2, "center");
 
-  drawLabel(ctx, "유형 개요", 98, 500);
+  const overviewTitleY = Math.max(430, titleBottom + 64);
+  drawLabel(ctx, "유형 개요", 98, overviewTitleY);
   ctx.fillStyle = "#475569";
   ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, overview, 98, 542, 884, 34, 4);
+  const overviewBottom = drawWrappedText(ctx, overview, 98, overviewTitleY + 42, 884, 34, 4);
+
+  const axisChartTop = overviewBottom + 34;
+  const axisChartBottom = drawAxisMiniChart(ctx, axisRows, 98, axisChartTop, 884);
 
   const compactRows = rows.length >= 7;
-  let y = compactRows ? 705 : 725;
+  let y = axisChartBottom + 36;
   const barX = 98;
-  const rowGap = compactRows ? 64 : 74;
+  const rowGap = compactRows ? 50 : 64;
   const barHeight = compactRows ? 16 : 20;
-  const labelFontSize = compactRows ? 21 : 23;
+  const labelFontSize = compactRows ? 20 : 23;
 
   rows.forEach((row) => {
     ctx.fillStyle = "#334155";
@@ -287,20 +366,20 @@ async function drawMbtiCanvas() {
     ctx.textAlign = "left";
 
     ctx.fillStyle = "#e2e8f0";
-    drawRoundRect(ctx, barX, y + 20, 884, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 18, 884, barHeight, 999);
     ctx.fill();
 
     const filledWidth = Math.max(12, Math.min(884, 884 * row.weight / 100));
-    const gradient = ctx.createLinearGradient(barX, y + 20, barX + filledWidth, y + 20);
+    const gradient = ctx.createLinearGradient(barX, y + 18, barX + filledWidth, y + 18);
     gradient.addColorStop(0, "#38bdf8");
     gradient.addColorStop(1, "#2563eb");
     ctx.fillStyle = gradient;
-    drawRoundRect(ctx, barX, y + 20, filledWidth, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 18, filledWidth, barHeight, 999);
     ctx.fill();
     y += rowGap;
   });
 
-  const noticeY = Math.min(1258, Math.max(1188, y + 24));
+  const noticeY = Math.min(1350, Math.max(1230, y + 26));
   ctx.fillStyle = "#f8fbff";
   drawRoundRect(ctx, 98, noticeY, 884, 124, 24);
   ctx.fill();
@@ -313,12 +392,13 @@ async function drawMbtiCanvas() {
   ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   drawWrappedText(ctx, `• ${disclaimerItems[0]}`, 122, noticeY + 66, 824, 24, 2);
 
+  const footerY = Math.min(1480, noticeY + 166);
   ctx.fillStyle = "#64748b";
   ctx.font = "700 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, "본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1358, 884, 24, 2);
+  drawWrappedText(ctx, "본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, footerY, 884, 24, 2);
   ctx.fillStyle = "#2563eb";
   ctx.font = "900 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("finple.co.kr", 98, 1404);
+  ctx.fillText("finple.co.kr", 98, footerY + 46);
 
   return canvas;
 }
