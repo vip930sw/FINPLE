@@ -50,12 +50,6 @@ function getDesignReason() {
   return getText(".investmentMbtiDesignBox > p", "포트폴리오 프리셋은 성향을 기준으로 구성된 예시입니다.");
 }
 
-function getMiniCardText(labelText) {
-  const cards = Array.from(document.querySelectorAll(".investmentMbtiMiniGrid > div"));
-  const card = cards.find((item) => String(item.querySelector("strong")?.textContent || "").trim() === labelText);
-  return String(card?.querySelector("p")?.textContent || "").replace(/\s+/g, " ").trim();
-}
-
 function getPortfolioRows() {
   return Array.from(document.querySelectorAll(".investmentMbtiPortfolioRow")).map((row) => {
     const label = String(row.querySelector("strong")?.textContent || "").trim();
@@ -108,7 +102,7 @@ function ensureTopButton() {
   const button = document.createElement("button");
   button.type = "button";
   button.className = MBTI_TOP_BUTTON_CLASS;
-  button.textContent = "TOP";
+  button.textContent = "↑ TOP";
   button.setAttribute("aria-label", "상단으로 이동");
   button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.body.appendChild(button);
@@ -209,7 +203,7 @@ function drawFinpleLogoFallback(ctx, x, y, size = 58) {
 async function drawMbtiCanvas() {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
-  canvas.height = 1600;
+  canvas.height = 1500;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas_context_unavailable");
 
@@ -218,8 +212,6 @@ async function drawMbtiCanvas() {
   const riskProfile = getRiskProfile();
   const overview = getTypeOverview();
   const designReason = getDesignReason();
-  const coreAssets = getMiniCardText("핵심 자산");
-  const bufferAssets = getMiniCardText("완충 자산");
   const rows = getPortfolioRows();
   const disclaimerItems = getDisclaimerItems();
   const logoImage = await loadFinpleLogoImage();
@@ -228,7 +220,7 @@ async function drawMbtiCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#ffffff";
-  drawRoundRect(ctx, 58, 58, 964, 1484, 48);
+  drawRoundRect(ctx, 58, 58, 964, 1384, 48);
   ctx.fill();
   ctx.strokeStyle = "#dbe5f3";
   ctx.lineWidth = 2;
@@ -263,44 +255,20 @@ async function drawMbtiCanvas() {
   pillX += drawPill(ctx, riskProfile, pillX, 410, { background: "#0f172a", color: "#ffffff" }) + 14;
   drawPill(ctx, finpleType, pillX, 410, { background: "#eff6ff", color: "#2563eb", font: "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" });
 
-  drawLabel(ctx, "유형 개요", 98, 520);
+  drawLabel(ctx, "유형 개요", 98, 510);
   ctx.fillStyle = "#475569";
   ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, overview, 98, 566, 884, 34, 4);
+  drawWrappedText(ctx, overview, 98, 552, 884, 34, 4);
 
-  drawLabel(ctx, "포트폴리오 설계", 98, 735);
+  drawLabel(ctx, "포트폴리오 설계", 98, 700);
   ctx.fillStyle = "#475569";
   ctx.font = "700 21px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, designReason, 98, 780, 884, 31, 3);
-
-  ctx.fillStyle = "#f8fbff";
-  drawRoundRect(ctx, 98, 890, 422, 112, 24);
-  ctx.fill();
-  ctx.strokeStyle = "#dbeafe";
-  ctx.stroke();
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "900 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("핵심 자산", 122, 932);
-  ctx.fillStyle = "#475569";
-  ctx.font = "700 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, coreAssets || "-", 122, 966, 374, 27, 2);
-
-  ctx.fillStyle = "#f8fbff";
-  drawRoundRect(ctx, 560, 890, 422, 112, 24);
-  ctx.fill();
-  ctx.strokeStyle = "#dbeafe";
-  ctx.stroke();
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "900 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("완충 자산", 584, 932);
-  ctx.fillStyle = "#475569";
-  ctx.font = "700 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, bufferAssets || "-", 584, 966, 374, 27, 2);
+  drawWrappedText(ctx, designReason, 98, 742, 884, 31, 3);
 
   const compactRows = rows.length >= 7;
-  let y = 1082;
+  let y = compactRows ? 850 : 870;
   const barX = 98;
-  const rowGap = compactRows ? 48 : 62;
+  const rowGap = compactRows ? 46 : 60;
   const barHeight = compactRows ? 16 : 20;
   const labelFontSize = compactRows ? 20 : 23;
 
@@ -326,9 +294,9 @@ async function drawMbtiCanvas() {
     y += rowGap;
   });
 
-  const noticeY = 1378;
+  const noticeY = Math.min(1288, Math.max(1230, y + 18));
   ctx.fillStyle = "#f8fbff";
-  drawRoundRect(ctx, 98, noticeY, 884, 92, 24);
+  drawRoundRect(ctx, 98, noticeY, 884, 96, 24);
   ctx.fill();
   ctx.strokeStyle = "#dbeafe";
   ctx.stroke();
@@ -337,14 +305,14 @@ async function drawMbtiCanvas() {
   ctx.fillText("투자 유의사항", 122, noticeY + 34);
   ctx.fillStyle = "#475569";
   ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, `• ${disclaimerItems[0]}`, 122, noticeY + 65, 824, 24, 1);
+  drawWrappedText(ctx, `• ${disclaimerItems[0]}`, 122, noticeY + 66, 824, 24, 1);
 
   ctx.fillStyle = "#64748b";
   ctx.font = "700 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1510);
+  ctx.fillText("본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1408);
   ctx.fillStyle = "#2563eb";
   ctx.font = "900 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("finple.co.kr", 98, 1546);
+  ctx.fillText("finple.co.kr", 98, 1444);
 
   return canvas;
 }
