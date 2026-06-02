@@ -292,16 +292,34 @@
     width: 100%;
     box-sizing: border-box;
     grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
-    padding: 0 8px;
+    padding: 0 10px;
+  }
+
+  .investmentMbtiAxisTrack span {
+    position: relative;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    min-height: 20px;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.92);
   }
 
   .investmentMbtiAxisTrack b {
+    z-index: 3;
     min-width: 30px;
     height: 24px;
     padding: 0 6px;
     font-size: 11px;
+    box-shadow: 0 9px 16px rgba(15, 23, 42, 0.16);
+  }
+
+  .investmentMbtiAxisTrack i {
+    min-width: 0;
   }
 
   .investmentMbtiAxisTerm:has(button:hover)::after,
