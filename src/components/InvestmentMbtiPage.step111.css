@@ -129,6 +129,17 @@
   content: "Step 6";
 }
 
+.investmentMbtiDisclaimerPanel .sectionLabel {
+  position: static;
+  margin: 0;
+  padding-left: 0;
+}
+
+.investmentMbtiDisclaimerPanel .sectionLabel::before {
+  content: none !important;
+  display: none !important;
+}
+
 .investmentMbtiMiniGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -161,7 +172,7 @@
   color: #ffffff;
 }
 
-.investmentMbtiDisclaimerPanel p {
+.investmentMbtiDisclaimerPanel > p {
   position: relative;
   margin: 0;
   padding-left: 18px;
@@ -169,7 +180,7 @@
   line-height: 1.75;
 }
 
-.investmentMbtiDisclaimerPanel p::before {
+.investmentMbtiDisclaimerPanel > p::before {
   content: "•";
   position: absolute;
   left: 0;
@@ -178,8 +189,35 @@
   font-weight: 900;
 }
 
-.investmentMbtiDisclaimerPanel p + p {
+.investmentMbtiDisclaimerPanel > p + p {
   margin-top: 10px;
+}
+
+.investmentMbtiTopButton {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+}
+
+.investmentMbtiTopButton:hover,
+.investmentMbtiTopButton:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
 @media (max-width: 640px) {
@@ -198,5 +236,12 @@
 
   .investmentMbtiMiniGrid {
     grid-template-columns: 1fr;
+  }
+
+  .investmentMbtiTopButton {
+    right: 18px;
+    bottom: 18px;
+    width: 52px;
+    height: 52px;
   }
 }
