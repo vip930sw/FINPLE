@@ -79,6 +79,24 @@ const MBTI_PRESET_MAP = {
   "성장-기회-주도-확신": { growthStock: 70, valueStock: 5, gold: 5, crypto: 15, cash: 5 },
 };
 
+const AXIS_TOOLTIP_TEXTS = {
+  안정: "손실과 변동성을 줄이는 것을 우선하며, 채권·배당·현금 같은 완충자산을 중시하는 성향입니다.",
+  성장: "변동성을 감수하더라도 장기 수익률과 자산 증식을 더 중시하는 성향입니다.",
+  장기: "단기 시세보다 긴 투자기간과 복리 효과를 중요하게 보는 성향입니다.",
+  기회: "시장 국면, 가격 변동, 테마 변화에 맞춰 비중 조정 여지를 두는 성향입니다.",
+  자동: "예시 프리셋이나 기본 배분을 중심으로 비교적 간편하게 운용하려는 성향입니다.",
+  주도: "사용자가 직접 비중과 자산을 조정하며 능동적으로 관리하려는 성향입니다.",
+  분산: "여러 자산에 나누어 특정 자산의 충격을 줄이려는 성향입니다.",
+  확신: "상대적으로 더 신뢰하는 핵심 자산이나 테마에 높은 비중을 두려는 성향입니다.",
+};
+
+const AXIS_CHART_ITEMS = [
+  { scoreKey: "returnStyle", left: "안정", right: "성장" },
+  { scoreKey: "timeStyle", left: "장기", right: "기회" },
+  { scoreKey: "controlStyle", left: "자동", right: "주도" },
+  { scoreKey: "concentrationStyle", left: "분산", right: "확신" },
+];
+
 const QUESTIONS = [
   { id: "q1", axis: "returnStyle", title: "투자에서 가장 우선하는 것은 무엇인가요?", options: [
     { id: "a", label: "원금 손실을 최대한 피하는 것", score: -2, risk: -2 },
@@ -439,6 +457,47 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
   );
 }
 
+function AxisTooltip({ label }) {
+  const tooltipText = AXIS_TOOLTIP_TEXTS[label];
+  return (
+    <span className="investmentMbtiAxisTerm">
+      <span>{label}</span>
+      <button type="button" aria-label={`${label} 설명`} title={tooltipText}>?</button>
+    </span>
+  );
+}
+
+function AxisScoreChart({ result }) {
+  return (
+    <article className="investmentMbtiPanel investmentMbtiAxisPanel">
+      <div className="investmentMbtiPanelHeader">
+        <div><p className="sectionLabel">Step 2</p><h3>성향 차트</h3></div>
+        <span>-6 · 0 · +6</span>
+      </div>
+      <p className="investmentMbtiAxisGuide">각 축의 3개 문항 합산 점수입니다. 0 이하이면 왼쪽 성향, 0 초과이면 오른쪽 성향으로 판정됩니다.</p>
+      <div className="investmentMbtiAxisRows">
+        {AXIS_CHART_ITEMS.map(({ scoreKey, left, right }) => {
+          const score = Math.max(-6, Math.min(6, Number(result.axisScores?.[scoreKey] || 0)));
+          const markerPosition = ((score + 6) / 12) * 100;
+          return (
+            <div key={scoreKey} className="investmentMbtiAxisRow">
+              <div className="investmentMbtiAxisLabels">
+                <AxisTooltip label={left} />
+                <strong>{score > 0 ? right : left}</strong>
+                <AxisTooltip label={right} />
+              </div>
+              <div className="investmentMbtiAxisTrack" aria-label={`${left}-${right} 점수 ${score}`}>
+                <span>-</span><i /><span>0</span><i /><span>+</span>
+                <b style={{ left: `${markerPosition}%` }}>{score > 0 ? `+${score}` : score}</b>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
 function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const [exportStatusMessage, setExportStatusMessage] = useState("");
   const type = result.type;
@@ -499,6 +558,7 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         <article className="investmentMbtiCard"><span>위험성향</span><strong>{result.calculatedRiskProfile}</strong><p>위험성향 점수 {result.riskScore}</p></article>
         <article className="investmentMbtiCard"><span>기본 조건</span><strong>{type.defaults.years}년</strong><p>월 투자금 {formatWon(type.defaults.monthlyContribution)}원</p></article>
       </div>
+      <AxisScoreChart result={result} />
       <article className="investmentMbtiPanel">
         <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Portfolio Preset</p><h3>예시 포트폴리오 프리셋</h3></div><span>합계 {presetTotal}%</span></div>
         <div className="investmentMbtiPortfolioBars">
