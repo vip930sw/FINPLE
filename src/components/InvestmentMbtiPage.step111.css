@@ -149,7 +149,7 @@
 }
 
 .investmentMbtiDesignBox {
-  margin-bottom: 22px;
+  margin-bottom: 16px;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -161,9 +161,18 @@
 }
 
 .investmentMbtiDesignBox > p {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   color: #475569;
   line-height: 1.75;
+}
+
+.investmentMbtiDesignBox .investmentMbtiMiniGrid {
+  margin-top: 12px;
+}
+
+.investmentMbtiDesignBox .investmentMbtiMiniGrid > div {
+  min-height: auto;
+  padding: 16px;
 }
 
 .investmentMbtiPresetActions button,
@@ -177,7 +186,7 @@
   margin: 0;
   padding-left: 18px;
   color: #64748b;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .investmentMbtiDisclaimerPanel > p::before {
@@ -185,12 +194,12 @@
   position: absolute;
   left: 0;
   top: 0;
-  color: #2563eb;
+  color: #64748b;
   font-weight: 900;
 }
 
 .investmentMbtiDisclaimerPanel > p + p {
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .investmentMbtiTopButton {
@@ -201,28 +210,77 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  height: 58px;
-  border: 1px solid #bfdbfe;
+  min-width: 78px;
+  height: 48px;
+  padding: 0 18px;
+  border: none;
   border-radius: 999px;
-  background: #ffffff;
-  color: #2563eb;
-  font-size: 13px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+  letter-spacing: -0.01em;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
 }
 
 .investmentMbtiTopButton:hover,
 .investmentMbtiTopButton:focus-visible {
   outline: none;
-  border-color: #2563eb;
-  background: #eff6ff;
+  background: #1e293b;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 640px) {
+  .investmentMbtiAxisPanel {
+    overflow: hidden;
+  }
+
+  .investmentMbtiAxisRows {
+    gap: 18px;
+  }
+
+  .investmentMbtiAxisLabels {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .investmentMbtiAxisLabels > strong {
+    justify-self: center;
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child {
+    justify-content: flex-end !important;
+  }
+
+  .investmentMbtiAxisTerm {
+    min-width: 0;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .investmentMbtiAxisTerm button {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+
   .investmentMbtiAxisTrack {
-    padding: 0 14px;
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .investmentMbtiAxisTrack b {
+    min-width: 30px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 11px;
   }
 
   .investmentMbtiAxisTerm:has(button:hover)::after,
@@ -241,7 +299,8 @@
   .investmentMbtiTopButton {
     right: 18px;
     bottom: 18px;
-    width: 52px;
-    height: 52px;
+    min-width: 74px;
+    height: 46px;
+    padding: 0 16px;
   }
 }
