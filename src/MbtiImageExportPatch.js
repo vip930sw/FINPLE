@@ -105,6 +105,23 @@ function drawPill(ctx, text, x, y, options = {}) {
   return width;
 }
 
+function drawFinpleLogo(ctx, x, y, size = 44) {
+  const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+  gradient.addColorStop(0, "#38bdf8");
+  gradient.addColorStop(1, "#2563eb");
+  ctx.fillStyle = gradient;
+  drawRoundRect(ctx, x, y, size, size, 13);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `900 ${Math.round(size * 0.56)}px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("F", x + size / 2, y + size / 2 + 1);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}
+
 function drawMbtiCanvas() {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
@@ -130,36 +147,32 @@ function drawMbtiCanvas() {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  drawFinpleLogo(ctx, 98, 94, 44);
   ctx.fillStyle = "#0f172a";
   ctx.font = "900 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("FINPLE", 98, 128);
+  ctx.fillText("FINPLE", 156, 128);
   ctx.font = "800 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillStyle = "#64748b";
-  ctx.fillText("Portfolio Lab · Investment MBTI", 98, 162);
+  ctx.fillText("Portfolio Lab · Investment MBTI", 98, 166);
 
   ctx.font = "900 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillStyle = "#2563eb";
-  ctx.fillText("INVESTMENT MBTI RESULT", 98, 248);
+  ctx.fillText("INVESTMENT MBTI RESULT", 98, 232);
 
   ctx.fillStyle = "#0f172a";
   ctx.font = "900 66px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, nickname, 98, 330, 884, 78, 2);
+  drawWrappedText(ctx, nickname, 98, 308, 884, 76, 2);
 
   let pillX = 98;
-  pillX += drawPill(ctx, riskProfile, pillX, 440, { background: "#0f172a", color: "#ffffff" }) + 14;
-  drawPill(ctx, finpleType, pillX, 440, { background: "#eff6ff", color: "#2563eb" });
+  pillX += drawPill(ctx, riskProfile, pillX, 410, { background: "#0f172a", color: "#ffffff" }) + 14;
+  drawPill(ctx, finpleType, pillX, 410, { background: "#eff6ff", color: "#2563eb" });
 
   ctx.fillStyle = "#334155";
   ctx.font = "700 26px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, `${conditionYears} · ${conditionContribution}`, 98, 540, 884, 36, 2);
+  drawWrappedText(ctx, `${conditionYears} · ${conditionContribution}`, 98, 500, 884, 36, 2);
 
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "900 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("예시 포트폴리오 프리셋", 98, 630);
-
-  let y = 690;
+  let y = 585;
   const barX = 98;
-  const barWidth = 720;
   rows.forEach((row) => {
     ctx.fillStyle = "#334155";
     ctx.font = "800 27px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -183,7 +196,7 @@ function drawMbtiCanvas() {
   });
 
   ctx.fillStyle = "#fff7ed";
-  drawRoundRect(ctx, 98, 1070, 884, 132, 28);
+  drawRoundRect(ctx, 98, 1065, 884, 120, 28);
   ctx.fill();
   ctx.strokeStyle = "#fed7aa";
   ctx.lineWidth = 2;
@@ -191,17 +204,17 @@ function drawMbtiCanvas() {
 
   ctx.fillStyle = "#9a3412";
   ctx.font = "900 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("투자 유의사항", 128, 1118);
+  ctx.fillText("투자 유의사항", 128, 1112);
   ctx.fillStyle = "#475569";
-  ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, caution, 128, 1162, 824, 34, 2);
+  ctx.font = "700 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  drawWrappedText(ctx, caution, 128, 1152, 824, 30, 2);
 
   ctx.fillStyle = "#64748b";
-  ctx.font = "700 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1250);
+  ctx.font = "700 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1235);
   ctx.fillStyle = "#2563eb";
   ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("finple.co.kr", 98, 1288);
+  ctx.fillText("finple.co.kr", 98, 1274);
 
   return canvas;
 }
