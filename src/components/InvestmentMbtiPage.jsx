@@ -21,7 +21,18 @@ const ASSET_LABELS = {
 };
 
 const AXIS_DISPLAY_LABELS = {
-  자동: "패시브",
+  자동: "추종",
+};
+
+const AXIS_TOOLTIP_TEXTS = {
+  안정: "손실과 변동성을 줄이는 것을 우선하며, 채권·배당·현금 같은 완충자산을 중시하는 성향입니다.",
+  성장: "변동성을 감수하더라도 장기 수익률과 자산 증식을 더 중시하는 성향입니다.",
+  장기: "단기 시세보다 긴 투자기간과 복리 효과를 중요하게 보는 성향입니다.",
+  기회: "시장 국면, 가격 변동, 테마 변화에 맞춰 비중 조정 여지를 두는 성향입니다.",
+  추종: "기본 배분과 예시 프리셋을 중심으로 과도한 판단 개입을 줄이고 일관되게 운용하려는 성향입니다.",
+  주도: "사용자가 직접 비중과 자산을 조정하며 능동적으로 관리하려는 성향입니다.",
+  분산: "여러 자산에 나누어 특정 자산의 충격을 줄이려는 성향입니다.",
+  확신: "상대적으로 더 신뢰하는 핵심 자산이나 테마에 높은 비중을 두려는 성향입니다.",
 };
 
 const US_ASSET_TEMPLATES = {
@@ -84,28 +95,10 @@ const MBTI_PRESET_MAP = {
   "성장-기회-주도-확신": { growthStock: 70, valueStock: 5, gold: 5, crypto: 15, cash: 5 },
 };
 
-const AXIS_TOOLTIP_TEXTS = {
-  안정: "손실과 변동성을 줄이는 것을 우선하며, 채권·배당·현금 같은 완충자산을 중시하는 성향입니다.",
-  성장: "변동성을 감수하더라도 장기 수익률과 자산 증식을 더 중시하는 성향입니다.",
-  장기: "단기 시세보다 긴 투자기간과 복리 효과를 중요하게 보는 성향입니다.",
-  기회: "시장 국면, 가격 변동, 테마 변화에 맞춰 비중 조정 여지를 두는 성향입니다.",
-  패시브: "기본 배분과 예시 프리셋을 중심으로 과도한 판단 개입을 줄이고 일관되게 운용하려는 성향입니다.",
-  주도: "사용자가 직접 비중과 자산을 조정하며 능동적으로 관리하려는 성향입니다.",
-  분산: "여러 자산에 나누어 특정 자산의 충격을 줄이려는 성향입니다.",
-  확신: "상대적으로 더 신뢰하는 핵심 자산이나 테마에 높은 비중을 두려는 성향입니다.",
-};
-
-const AXIS_CHART_ITEMS = [
-  { scoreKey: "returnStyle", left: "안정", right: "성장" },
-  { scoreKey: "timeStyle", left: "장기", right: "기회" },
-  { scoreKey: "controlStyle", left: "자동", right: "주도" },
-  { scoreKey: "concentrationStyle", left: "분산", right: "확신" },
-];
-
-const TYPE_EXCEL_COPY = {
+const TYPE_COPY = {
   "안정-장기-자동-분산": {
     check: "물가상승률을 이길 수 있는 최소 성장주 비중이 확보되어 있는지 점검하세요. 채권과 장기국채가 함께 들어가므로 금리 상승기에는 듀레이션 위험을 함께 확인하고, 리츠·금·현금이 과도하게 겹치지 않는지도 보시면 좋습니다.",
-    strength: "포트폴리오가 여러 완충자산으로 나뉘어 있어 급락장에서 심리적으로 버티기 쉽습니다. 패시브 운용 성향과 잘 맞아 잦은 매매 없이 장기 투자 규칙을 유지하기 좋습니다.",
+    strength: "포트폴리오가 여러 완충자산으로 나뉘어 있어 급락장에서 심리적으로 버티기 쉽습니다. 추종 운용 성향과 잘 맞아 잦은 매매 없이 장기 투자 규칙을 유지하기 좋습니다.",
     caution: "방어자산이 많은 만큼 강한 상승장에서는 상대적으로 느리게 움직일 수 있습니다. 장기 자금 일부는 성장자산으로 실질 구매력 방어를 보완해야 합니다.",
   },
   "안정-장기-자동-확신": {
@@ -125,7 +118,7 @@ const TYPE_EXCEL_COPY = {
   },
   "안정-기회-자동-분산": {
     check: "금 15%와 현금 20%가 기회 대응 여력을 만듭니다. 다만 실제 매수 기준이 없으면 현금이 오래 놀 수 있으므로, 하락 시 분할투입 기준을 미리 정해주세요.",
-    strength: "위험을 낮추면서도 시장 급락 후 재진입할 여지가 있습니다. 패시브 운용과 분산을 유지하기 쉬우며, 금과 현금이 심리적 완충 역할을 합니다.",
+    strength: "위험을 낮추면서도 시장 급락 후 재진입할 여지가 있습니다. 추종 운용과 분산을 유지하기 쉬우며, 금과 현금이 심리적 완충 역할을 합니다.",
     caution: "현금과 금 비중이 높은 구조는 상승장에서 뒤처질 수 있습니다. 관망이 습관화되지 않도록 언제 성장자산을 늘릴지 기준이 필요합니다.",
   },
   "안정-기회-자동-확신": {
@@ -144,12 +137,12 @@ const TYPE_EXCEL_COPY = {
     caution: "방어형이라는 이름과 달리 금·장기국채·블록체인 테마가 모두 변동성을 가질 수 있습니다. 특히 BLOK은 보조 비중을 넘지 않도록 관리해야 합니다.",
   },
   "성장-장기-자동-분산": {
-    check: "QQQ 35%가 성과 중심이지만 SCHD와 채권이 완충합니다. 장기 자동형이므로 월 투자금 지속 가능성, 하락장 추가 납입 가능성, 배당 재투자 여부를 함께 점검하세요.",
-    strength: "성장과 방어가 모두 들어간 가장 표준적인 장기 성장형 구조입니다. 자동 운용과 잘 맞아 장기 적립식 투자에 적용하기 쉽습니다.",
+    check: "QQQ 35%가 성과 중심이지만 SCHD와 채권이 완충합니다. 장기 추종형이므로 월 투자금 지속 가능성, 하락장 추가 납입 가능성, 배당 재투자 여부를 함께 점검하세요.",
+    strength: "성장과 방어가 모두 들어간 가장 표준적인 장기 성장형 구조입니다. 추종 운용과 잘 맞아 장기 적립식 투자에 적용하기 쉽습니다.",
     caution: "분산되어 있어도 성장주 비중이 낮지 않습니다. 나스닥 장기 조정기에는 기대수익보다 투자 지속력이 더 중요한 핵심 지표가 됩니다.",
   },
   "성장-장기-자동-확신": {
-    check: "QQQ 50%가 포트폴리오의 성과 대부분을 좌우합니다. 장기 자동 운용이라도 MDD, 기술주 밸류에이션, 환율 영향을 주기적으로 확인하세요.",
+    check: "QQQ 50%가 포트폴리오의 성과 대부분을 좌우합니다. 장기 추종 운용이라도 MDD, 기술주 밸류에이션, 환율 영향을 주기적으로 확인하세요.",
     strength: "핵심 성장자산이 명확해 운용이 단순합니다. 장기적으로 성장 산업에 노출되면서 SCHD·채권·금이 일부 완충 역할을 합니다.",
     caution: "확신형이지만 BLOK은 없고 QQQ 집중도가 높은 구조입니다. 기술주 장기 부진기에는 성과가 크게 흔들릴 수 있습니다.",
   },
@@ -164,14 +157,14 @@ const TYPE_EXCEL_COPY = {
     caution: "상승장에서는 강하지만 하락장에서 심리적 부담이 클 수 있습니다. TLT·GLD·CASH 비중이 작기 때문에 방어 규칙을 사전에 정해야 합니다.",
   },
   "성장-기회-자동-분산": {
-    check: "QQQ 35%, GLD 15%, CASH 10%가 함께 있어 공격과 방어가 섞인 구조입니다. 기회형이지만 자동 운용 성향이므로 테마 자산 확대 기준은 보수적으로 정하세요.",
+    check: "QQQ 35%, GLD 15%, CASH 10%가 함께 있어 공격과 방어가 섞인 구조입니다. 기회형이지만 추종 운용 성향이므로 테마 자산 확대 기준은 보수적으로 정하세요.",
     strength: "성장자산과 대체자산이 함께 있어 특정 시장 국면에 덜 의존합니다. 초보자도 비교적 관리 가능한 범위에서 기회 회피 성향을 반영할 수 있습니다.",
     caution: "여러 자산이 섞여 있어 방향성이 모호해질 수 있습니다. 금·리츠·BLOK이 왜 필요한지 목적을 정리하지 않으면 단순히 복잡한 포트폴리오가 될 수 있습니다.",
   },
   "성장-기회-자동-확신": {
     check: "QQQ 45%, BLOK 10%, GLD 15%가 핵심입니다. 테마와 금의 비중이 커서 시장 국면에 따라 성과 차이가 크게 날 수 있으므로 리밸런싱 기준이 필요합니다.",
-    strength: "성장·테마·대체자산을 단순한 구조로 담아 기회 포착력이 좋습니다. 자동형이라 매번 세부 판단을 하지 않아도 핵심 방향성을 유지할 수 있습니다.",
-    caution: "확신형이지만 자동형이라 시장 변화에 둔감해질 수 있습니다. BLOK과 QQQ가 동시에 흔들릴 때 감내 가능한 손실 범위를 미리 정해야 합니다.",
+    strength: "성장·테마·대체자산을 단순한 구조로 담아 기회 포착력이 좋습니다. 추종형이라 매번 세부 판단을 하지 않아도 핵심 방향성을 유지할 수 있습니다.",
+    caution: "확신형이지만 추종형이라 시장 변화에 둔감해질 수 있습니다. BLOK과 QQQ가 동시에 흔들릴 때 감내 가능한 손실 범위를 미리 정해야 합니다.",
   },
   "성장-기회-주도-분산": {
     check: "QQQ 45%, VNQ 8%, GLD 12%, BLOK 5%로 기회 자산이 다양합니다. 직접 운용 시 자산별 매수·매도 기준과 중복 위험을 명확히 나누세요.",
@@ -184,6 +177,13 @@ const TYPE_EXCEL_COPY = {
     caution: "16개 유형 중 변동성 부담이 가장 클 수 있습니다. 단기 급락 시 포트폴리오를 유지할 수 있는지, 금·현금 10%가 충분한지 검토해야 합니다.",
   },
 };
+
+const AXIS_CHART_ITEMS = [
+  { scoreKey: "returnStyle", left: "안정", right: "성장" },
+  { scoreKey: "timeStyle", left: "장기", right: "기회" },
+  { scoreKey: "controlStyle", left: "자동", right: "주도" },
+  { scoreKey: "concentrationStyle", left: "분산", right: "확신" },
+];
 
 const QUESTIONS = [
   { id: "q1", axis: "returnStyle", title: "투자에서 가장 우선하는 것은 무엇인가요?", options: [
@@ -276,37 +276,28 @@ function riskProfileFromScore(score) {
   return "공격투자형";
 }
 
-function getPreset({ returnStyle, timeStyle, controlStyle, concentrationStyle }) {
-  const typeKey = [returnStyle, timeStyle, controlStyle, concentrationStyle].join("-");
-  return MBTI_PRESET_MAP[typeKey] || MBTI_PRESET_MAP["성장-장기-주도-분산"];
-}
-
-function getTypeName(axes) {
-  const typeKey = [axes.returnStyle, axes.timeStyle, axes.controlStyle, axes.concentrationStyle].join("-");
-  return MBTI_DISPLAY_NAMES[typeKey] || `${axes.returnStyle} ${axes.timeStyle} ${axes.controlStyle} ${axes.concentrationStyle}형`;
-}
-
 function getTypeKey(axes) {
   return [axes.returnStyle, axes.timeStyle, axes.controlStyle, axes.concentrationStyle].join("-");
 }
 
+function getPreset(axes) {
+  return MBTI_PRESET_MAP[getTypeKey(axes)] || MBTI_PRESET_MAP["성장-장기-주도-분산"];
+}
+
+function getTypeName(axes) {
+  return MBTI_DISPLAY_NAMES[getTypeKey(axes)] || `${axes.returnStyle} ${axes.timeStyle} ${axes.controlStyle} ${axes.concentrationStyle}형`;
+}
+
 function getTopAssetLabels(preset = {}, count = 2) {
-  return Object.entries(preset)
-    .filter(([, weight]) => Number(weight || 0) > 0)
-    .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
-    .slice(0, count)
-    .map(([key, weight]) => `${ASSET_LABELS[key] || key} ${weight}%`);
+  return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0)).slice(0, count).map(([key, weight]) => `${ASSET_LABELS[key] || key} ${weight}%`);
 }
 
 function getBufferAssetLabels(preset = {}) {
-  return ["bond", "longBond", "gold", "cash", "reit"]
-    .filter((key) => Number(preset[key] || 0) > 0)
-    .map((key) => `${ASSET_LABELS[key]} ${preset[key]}%`);
+  return ["bond", "longBond", "gold", "cash", "reit"].filter((key) => Number(preset[key] || 0) > 0).map((key) => `${ASSET_LABELS[key]} ${preset[key]}%`);
 }
 
 function buildTypeDetails(axes, preset, riskProfile, nickname) {
-  const typeKey = getTypeKey(axes);
-  const copy = TYPE_EXCEL_COPY[typeKey] || {};
+  const copy = TYPE_COPY[getTypeKey(axes)] || {};
   const axisText = displayAxisValues(axes).join(" · ");
   const coreAssets = getTopAssetLabels(preset, 2);
   const bufferAssets = getBufferAssetLabels(preset);
@@ -314,14 +305,10 @@ function buildTypeDetails(axes, preset, riskProfile, nickname) {
   const isOpportunity = axes.timeStyle === "기회";
   const isPassive = axes.controlStyle === "자동";
   const isConcentrated = axes.concentrationStyle === "확신";
-
-  const overview = `${nickname}은 ${axisText} 성향을 가진 투자자입니다. ${isGrowth ? "장기 성장성과 자산 증식 가능성을 중시합니다." : "손실 관리와 투자 지속 가능성을 우선합니다."} ${isOpportunity ? "시장 국면에 따른 기회 대응 여지도 함께 둡니다." : "단기 판단보다 긴 투자기간과 복리 효과를 더 중요하게 봅니다."} ${isPassive ? "운용 방식은 기본 배분을 크게 흔들지 않는 패시브 성향에 가깝습니다." : "운용 방식은 직접 비중을 조정하는 주도형에 가깝습니다."}`;
-  const nameMeaning = `‘${nickname.replace("형", "")}’이라는 이름은 ${axes.returnStyle} 성향의 투자 태도와 ${displayAxisLabel(axes.controlStyle)} 운용 방식, 그리고 ${axes.concentrationStyle} 자산 구성 방식을 함께 표현한 별칭입니다.`;
+  const overview = `“${nickname}”은 ${axisText} 성향을 가진 투자자입니다. ${isGrowth ? "장기 성장성과 자산 증식 가능성을 중시합니다." : "손실 관리와 투자 지속 가능성을 우선합니다."} ${isOpportunity ? "시장 국면에 따른 기회 대응 여지도 함께 둡니다." : "단기 판단보다 긴 투자기간과 복리 효과를 더 중요하게 봅니다."} ${isPassive ? "운용 방식은 기본 배분을 크게 흔들지 않는 추종형에 가깝습니다." : "운용 방식은 직접 비중을 조정하는 주도형에 가깝습니다."}`;
   const designReason = `이 유형의 핵심 자산은 ${coreAssets.join(" · ") || "산정 중"}입니다. 완충 자산은 ${bufferAssets.join(" · ") || "낮은 편"}이며, ${isConcentrated ? "확신 자산의 성과 기여도를 높이는 대신 변동성 관리가 중요합니다." : "여러 자산으로 충격을 나누는 구조입니다."}`;
-
   return {
     overview,
-    nameMeaning,
     designReason,
     coreAssets,
     bufferAssets,
@@ -339,7 +326,6 @@ function calculateResult(answers) {
   const axisScores = { returnStyle: 0, timeStyle: 0, controlStyle: 0, concentrationStyle: 0 };
   let riskScore = 0;
   let answeredCount = 0;
-
   QUESTIONS.forEach((question) => {
     const selected = question.options.find((option) => option.id === answers[question.id]);
     if (!selected) return;
@@ -347,7 +333,6 @@ function calculateResult(answers) {
     axisScores[question.axis] += selected.score;
     riskScore += selected.risk;
   });
-
   const axes = {
     returnStyle: axisScores.returnStyle <= 0 ? "안정" : "성장",
     timeStyle: axisScores.timeStyle <= 0 ? "장기" : "기회",
@@ -372,7 +357,6 @@ function calculateResult(answers) {
     details,
     defaults: { years: axes.timeStyle === "장기" ? 15 : 10, monthlyContribution: axes.returnStyle === "성장" ? 800000 : 500000, inflationRate: 2.5 },
   };
-
   return { answeredCount, totalCount: QUESTIONS.length, isComplete: answeredCount === QUESTIONS.length, axisScores, axes, type, calculatedRiskProfile, riskScore };
 }
 
@@ -382,16 +366,9 @@ function formatWon(value) {
 
 async function copyTextToClipboard(text) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (error) {
-      console.warn("클립보드 API 복사 실패", error);
-    }
+    try { await navigator.clipboard.writeText(text); return true; } catch (error) { console.warn("클립보드 API 복사 실패", error); }
   }
-
   if (typeof document === "undefined") return false;
-
   try {
     const textarea = document.createElement("textarea");
     textarea.value = text;
@@ -405,10 +382,7 @@ async function copyTextToClipboard(text) {
     const copied = document.execCommand("copy");
     document.body.removeChild(textarea);
     return copied;
-  } catch (error) {
-    console.warn("대체 복사 방식 실패", error);
-    return false;
-  }
+  } catch (error) { console.warn("대체 복사 방식 실패", error); return false; }
 }
 
 function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode = "US") {
@@ -428,11 +402,10 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
     });
     const price = isCash ? Number(template.price || 10000) : Number(baseAsset.price || template.price || 1);
     const assetValue = Number(initialAmount || 0) * Number(weight || 0) / 100;
-    const quantity = Number((assetValue / price).toFixed(4));
     return {
       ...baseAsset,
       id: `mbti-${marketMode.toLowerCase()}-asset-${assetKey}-${Date.now()}-${index}`,
-      quantity,
+      quantity: Number((assetValue / price).toFixed(4)),
       price,
       targetEvaluationAmount: Number(assetValue.toFixed(0)),
       priceMode: "manual",
@@ -447,8 +420,7 @@ function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode
 function scheduleSimulatorAutoLookup() {
   if (typeof window === "undefined") return;
   window.setTimeout(() => {
-    const buttons = Array.from(document.querySelectorAll("button"));
-    const bulkLookupButton = buttons.find((button) => String(button.textContent || "").trim() === "전체 조회");
+    const bulkLookupButton = Array.from(document.querySelectorAll("button")).find((button) => String(button.textContent || "").trim() === "전체 조회");
     bulkLookupButton?.click?.();
   }, 900);
 }
@@ -458,12 +430,9 @@ function saveResultToSimulator(result, marketMode = "US") {
   const now = new Date().toISOString();
   const id = `mbti-${marketMode.toLowerCase()}-${Date.now()}`;
   const type = result.type;
-  const isKrPortfolio = marketMode === "KR";
   const settings = { monthlyCashFlow: type.defaults.monthlyContribution, years: type.defaults.years, dividendReinvest: true, inflationRate: type.defaults.inflationRate };
   const assets = buildAssetsFromPreset(type.preset, 50000000, marketMode);
-  const portfolioName = type.nickname;
-  const portfolio = { id, name: portfolioName, settings, assets, updatedAt: now, source: isKrPortfolio ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
-
+  const portfolio = { id, name: type.nickname, settings, assets, updatedAt: now, source: marketMode === "KR" ? "investment-mbti-kr" : "investment-mbti", mbti: { typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode } };
   try {
     const currentList = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY) || "[]");
     const nextList = [portfolio, ...(Array.isArray(currentList) ? currentList.filter((item) => item?.id !== id) : [])];
@@ -473,10 +442,7 @@ function saveResultToSimulator(result, marketMode = "US") {
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
     localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, strengths: type.strengths, cautions: type.cautions, actions: type.actions, details: type.details, simulatorDefaults: type.defaults, createdAt: now }));
     return true;
-  } catch (error) {
-    console.error("투자 MBTI 프리셋 저장 실패", error);
-    return false;
-  }
+  } catch (error) { console.error("투자 MBTI 프리셋 저장 실패", error); return false; }
 }
 
 function InvestmentMbtiPage({ onBack, onNavigate }) {
@@ -487,190 +453,57 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
   const selectedOptionId = answers[question.id];
   const progress = Math.round((result.answeredCount / result.totalCount) * 100);
   const isLastQuestion = currentIndex === QUESTIONS.length - 1;
-
-  function handleSelect(optionId) {
-    setAnswers((previous) => ({ ...previous, [question.id]: optionId }));
-  }
-
-  function goNext() {
-    if (!selectedOptionId) return;
-    setCurrentIndex((index) => Math.min(index + 1, QUESTIONS.length - 1));
-  }
-
-  function goPrev() {
-    setCurrentIndex((index) => Math.max(index - 1, 0));
-  }
-
-  function resetTest() {
-    setAnswers({});
-    setCurrentIndex(0);
-  }
-
-  function applyToSimulator(marketMode = "US") {
-    const saved = saveResultToSimulator(result, marketMode);
-    onNavigate?.("personal");
-    if (saved) scheduleSimulatorAutoLookup();
-  }
-
+  function handleSelect(optionId) { setAnswers((previous) => ({ ...previous, [question.id]: optionId })); }
+  function goNext() { if (!selectedOptionId) return; setCurrentIndex((index) => Math.min(index + 1, QUESTIONS.length - 1)); }
+  function goPrev() { setCurrentIndex((index) => Math.max(index - 1, 0)); }
+  function resetTest() { setAnswers({}); setCurrentIndex(0); }
+  function applyToSimulator(marketMode = "US") { const saved = saveResultToSimulator(result, marketMode); onNavigate?.("personal"); if (saved) scheduleSimulatorAutoLookup(); }
   if (result.isComplete && isLastQuestion) {
-    return (
-      <main className="page investmentMbtiPage">
-        <header className="header">
-          <button type="button" className="brandLogo resetButton" onClick={onBack}>
-            <div className="brandIcon"><span>F</span><i /></div>
-            <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
-          </button>
-        </header>
-        <MbtiResult result={result} onReset={resetTest} onApplyUs={() => applyToSimulator("US")} onApplyKr={() => applyToSimulator("KR")} />
-      </main>
-    );
+    return <main className="page investmentMbtiPage"><header className="header"><button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button></header><MbtiResult result={result} onReset={resetTest} onApplyUs={() => applyToSimulator("US")} onApplyKr={() => applyToSimulator("KR")} /></main>;
   }
-
   return (
     <main className="page investmentMbtiPage">
-      <header className="header">
-        <button type="button" className="brandLogo resetButton" onClick={onBack}>
-          <div className="brandIcon"><span>F</span><i /></div>
-          <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
-        </button>
-      </header>
-
-      <section className="investmentMbtiHero">
-        <p className="badge">Beta Feature</p>
-        <h1>나의 투자 성향을 12문항으로 확인해보세요.</h1>
-        <p>안정/성장, 장기/기회, 패시브/주도, 분산/확신 4개 축을 기준으로 투자 성향을 도출하는 참고용 진단입니다.</p>
-      </section>
-
-      <section className="investmentMbtiSingleCard">
-        <div className="investmentMbtiProgress"><span>{currentIndex + 1} / {QUESTIONS.length}</span><strong>{progress}%</strong></div>
-        <div className="investmentMbtiProgressTrack"><i style={{ width: `${progress}%` }} /></div>
-        <article className="investmentMbtiQuestionCard focused">
-          <strong>Q{currentIndex + 1}</strong>
-          <h2>{question.title}</h2>
-          <div className="investmentMbtiOptionGrid">
-            {question.options.map((option) => (
-              <button key={option.id} type="button" className={selectedOptionId === option.id ? "selected" : ""} onClick={() => handleSelect(option.id)}>
-                <span>{option.id.toUpperCase()}</span>{option.label}
-              </button>
-            ))}
-          </div>
-          <div className="investmentMbtiActions">
-            <button type="button" className="secondaryButton" onClick={goPrev} disabled={currentIndex === 0}>이전</button>
-            <button type="button" className="primaryButton" onClick={goNext} disabled={!selectedOptionId || isLastQuestion}>다음</button>
-          </div>
-          {isLastQuestion ? <div className="investmentMbtiFinishBox"><strong>마지막 문항입니다.</strong><p>답변을 선택하면 결과가 자동으로 표시됩니다.</p></div> : null}
-        </article>
-      </section>
-
-      <section className="investmentMbtiNotice" role="note">
-        <strong>유의사항</strong>
-        <p>본 결과는 사용자의 투자 성향 이해를 돕기 위한 참고자료입니다. 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 의미하지 않습니다.</p>
-      </section>
+      <header className="header"><button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button></header>
+      <section className="investmentMbtiHero"><p className="badge">Beta Feature</p><h1>나의 투자 성향을 12문항으로 확인해보세요.</h1><p>안정/성장, 장기/기회, 추종/주도, 분산/확신 4개 축을 기준으로 투자 성향을 도출하는 참고용 진단입니다.</p></section>
+      <section className="investmentMbtiSingleCard"><div className="investmentMbtiProgress"><span>{currentIndex + 1} / {QUESTIONS.length}</span><strong>{progress}%</strong></div><div className="investmentMbtiProgressTrack"><i style={{ width: `${progress}%` }} /></div><article className="investmentMbtiQuestionCard focused"><strong>Q{currentIndex + 1}</strong><h2>{question.title}</h2><div className="investmentMbtiOptionGrid">{question.options.map((option) => <button key={option.id} type="button" className={selectedOptionId === option.id ? "selected" : ""} onClick={() => handleSelect(option.id)}><span>{option.id.toUpperCase()}</span>{option.label}</button>)}</div><div className="investmentMbtiActions"><button type="button" className="secondaryButton" onClick={goPrev} disabled={currentIndex === 0}>이전</button><button type="button" className="primaryButton" onClick={goNext} disabled={!selectedOptionId || isLastQuestion}>다음</button></div>{isLastQuestion ? <div className="investmentMbtiFinishBox"><strong>마지막 문항입니다.</strong><p>답변을 선택하면 결과가 자동으로 표시됩니다.</p></div> : null}</article></section>
+      <section className="investmentMbtiNotice" role="note"><strong>유의사항</strong><p>본 결과는 사용자의 투자 성향 이해를 돕기 위한 참고자료입니다. 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 의미하지 않습니다.</p></section>
     </main>
   );
 }
 
 function AxisTooltip({ label }) {
   const tooltipText = AXIS_TOOLTIP_TEXTS[label];
-  return (
-    <span className="investmentMbtiAxisTerm" data-tooltip={tooltipText}>
-      <span>{label}</span>
-      <button type="button" aria-label={`${label} 설명`}>?</button>
-    </span>
-  );
+  return <span className="investmentMbtiAxisTerm" data-tooltip={tooltipText}><span>{label}</span><button type="button" aria-label={`${label} 설명`}>?</button></span>;
 }
 
 function AxisScoreChart({ result }) {
   return (
     <article className="investmentMbtiPanel investmentMbtiAxisPanel">
-      <div className="investmentMbtiPanelHeader">
-        <div><p className="sectionLabel">Step 2</p><h3>성향 차트</h3></div>
-        <span>-6 · 0 · +6</span>
-      </div>
-      <div className="investmentMbtiAxisRiskCard">
-        <span>위험성향</span>
-        <strong>{result.calculatedRiskProfile}</strong>
-        <p>위험성향 점수 {result.riskScore}</p>
-      </div>
+      <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 2</p><h3>성향 차트</h3></div></div>
+      <div className="investmentMbtiAxisRiskCard"><span>위험성향</span><strong>{result.calculatedRiskProfile}</strong><p>위험성향 점수 {result.riskScore}</p></div>
       <p className="investmentMbtiAxisGuide">각 축의 3개 문항 합산 점수입니다. 0 이하이면 왼쪽 성향, 0 초과이면 오른쪽 성향으로 판정됩니다.</p>
-      <div className="investmentMbtiAxisRows">
-        {AXIS_CHART_ITEMS.map(({ scoreKey, left, right }) => {
-          const score = Math.max(-6, Math.min(6, Number(result.axisScores?.[scoreKey] || 0)));
-          const markerPosition = Math.max(6, Math.min(94, ((score + 6) / 12) * 100));
-          const leftLabel = displayAxisLabel(left);
-          const rightLabel = displayAxisLabel(right);
-          const selectedLabel = score > 0 ? rightLabel : leftLabel;
-          return (
-            <div key={scoreKey} className="investmentMbtiAxisRow">
-              <div className="investmentMbtiAxisLabels">
-                <AxisTooltip label={leftLabel} />
-                <strong>{selectedLabel}</strong>
-                <AxisTooltip label={rightLabel} />
-              </div>
-              <div className="investmentMbtiAxisTrack" aria-label={`${leftLabel}-${rightLabel} 점수 ${score}`}>
-                <span>-</span><i /><span>0</span><i /><span>+</span>
-                <b style={{ left: `${markerPosition}%` }}>{score > 0 ? `+${score}` : score}</b>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <div className="investmentMbtiAxisRows">{AXIS_CHART_ITEMS.map(({ scoreKey, left, right }) => { const score = Math.max(-6, Math.min(6, Number(result.axisScores?.[scoreKey] || 0))); const markerPosition = Math.max(7, Math.min(93, ((score + 6) / 12) * 100)); const leftLabel = displayAxisLabel(left); const rightLabel = displayAxisLabel(right); const selectedLabel = score > 0 ? rightLabel : leftLabel; return <div key={scoreKey} className="investmentMbtiAxisRow"><div className="investmentMbtiAxisLabels"><AxisTooltip label={leftLabel} /><strong>{selectedLabel}</strong><AxisTooltip label={rightLabel} /></div><div className="investmentMbtiAxisTrack" aria-label={`${leftLabel}-${rightLabel} 점수 ${score}`}><span>-</span><i /><span>0</span><i /><span>+</span><b style={{ left: `${markerPosition}%` }}>{score > 0 ? `+${score}` : score}</b></div></div>; })}</div>
     </article>
   );
 }
 
 function TypeOverviewPanel({ type }) {
-  return (
-    <article className="investmentMbtiPanel investmentMbtiStoryPanel">
-      <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 3</p><h3>유형 개요</h3></div></div>
-      <p>{type.details.overview}</p>
-      <div className="investmentMbtiMiniGrid">
-        <div><strong>왜 이런 이름인가요?</strong><p>{type.details.nameMeaning}</p></div>
-        <div><strong>어떤 투자자에게 가까운가요?</strong><p>{type.finpleType} 성향이 함께 나타나며, 위험성향은 {type.riskProfile}에 가깝습니다.</p></div>
-        <div><strong>강점</strong><p>{type.details.strength}</p></div>
-        <div><strong>주의점</strong><p>{type.details.caution}</p></div>
-      </div>
-    </article>
-  );
+  return <article className="investmentMbtiPanel investmentMbtiStoryPanel"><div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 3</p><h3><span className="investmentMbtiInlineName">“{type.nickname}”</span> 유형 개요</h3></div></div><p>{type.details.overview}</p><div className="investmentMbtiMiniGrid"><div><strong>강점</strong><p>{type.details.strength}</p></div><div><strong>주의점</strong><p>{type.details.caution}</p></div></div></article>;
 }
 
-function PortfolioDesignPanel({ type }) {
+function PortfolioPresetPanel({ type, entries, onApplyUs, onApplyKr }) {
   return (
-    <article className="investmentMbtiPanel investmentMbtiStoryPanel">
-      <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 4</p><h3>포트폴리오 설계 이유</h3></div></div>
-      <p>{type.details.designReason}</p>
-      <div className="investmentMbtiMiniGrid">
-        <div><strong>핵심 자산</strong><p>{type.details.coreAssets.join(" · ") || "핵심 자산을 산정 중입니다."}</p></div>
-        <div><strong>완충 자산</strong><p>{type.details.bufferAssets.join(" · ") || "완충 자산 비중이 낮은 공격형 구조입니다."}</p></div>
-      </div>
-    </article>
-  );
-}
-
-function PortfolioPresetPanel({ entries, onApplyUs, onApplyKr }) {
-  return (
-    <article className="investmentMbtiPanel">
+    <article className="investmentMbtiPanel investmentMbtiPresetPanel">
       <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 5</p><h3>포트폴리오 프리셋</h3></div></div>
-      <div className="investmentMbtiPortfolioBars">
-        {entries.map(([key, value]) => (
-          <div key={key} className="investmentMbtiPortfolioRow"><div className="investmentMbtiPortfolioLabel"><strong>{ASSET_LABELS[key] || key}</strong><span>{value}%</span></div><div className="investmentMbtiBarTrack"><i style={{ width: `${value}%` }} /></div></div>
-        ))}
-      </div>
-      <div className="investmentMbtiPresetActions" data-finple-market-choice="ready">
-        <button type="button" onClick={onApplyUs}>미국자산으로 반영</button>
-        <button type="button" onClick={onApplyKr}>한국자산으로 반영</button>
-      </div>
+      <div className="investmentMbtiDesignBox"><strong>설계 이유</strong><p>{type.details.designReason}</p><div className="investmentMbtiMiniGrid"><div><strong>핵심 자산</strong><p>{type.details.coreAssets.join(" · ") || "핵심 자산을 산정 중입니다."}</p></div><div><strong>완충 자산</strong><p>{type.details.bufferAssets.join(" · ") || "완충 자산 비중이 낮은 공격형 구조입니다."}</p></div></div></div>
+      <div className="investmentMbtiPortfolioBars">{entries.map(([key, value]) => <div key={key} className="investmentMbtiPortfolioRow"><div className="investmentMbtiPortfolioLabel"><strong>{ASSET_LABELS[key] || key}</strong><span>{value}%</span></div><div className="investmentMbtiBarTrack"><i style={{ width: `${value}%` }} /></div></div>)}</div>
+      <div className="investmentMbtiPresetActions" data-finple-market-choice="ready"><button type="button" onClick={onApplyUs}>미국자산으로 반영</button><button type="button" onClick={onApplyKr}>한국자산으로 반영</button></div>
     </article>
   );
 }
 
 function CheckpointsPanel({ type }) {
-  return (
-    <article className="investmentMbtiPanel">
-      <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 6</p><h3>점검 포인트</h3></div></div>
-      <ul>{type.details.checks.map((action) => <li key={action}>{action}</li>)}</ul>
-    </article>
-  );
+  return <article className="investmentMbtiPanel"><div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 6</p><h3>점검 포인트</h3></div></div><ul>{type.details.checks.map((action) => <li key={action}>{action}</li>)}</ul></article>;
 }
 
 function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
@@ -678,66 +511,23 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const type = result.type;
   const entries = Object.entries(type.preset);
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
-
   async function handleShareResult() {
     const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/mbti` : "https://finple.co.kr/mbti";
-    const shareText = [
-      `저의 FINPLE 투자 MBTI는 “${type.nickname}”입니다.`,
-      "",
-      `성향: ${displayAxisValues(result.axes).join(" · ")}`,
-      `FINPLE 유형: ${type.finpleType}`,
-      `위험성향: ${result.calculatedRiskProfile}`,
-      "",
-      "FINPLE에서 나의 투자 성향도 확인해보세요.",
-      "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다.",
-    ].join("\n");
+    const shareText = [`저의 FINPLE 투자 MBTI는 “${type.nickname}”입니다.`, "", `성향: ${displayAxisValues(result.axes).join(" · ")}`, `FINPLE 유형: ${type.finpleType}`, `위험성향: ${result.calculatedRiskProfile}`, "", "FINPLE에서 나의 투자 성향도 확인해보세요.", "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다."].join("\n");
     const copyText = `${shareText}\n${shareUrl}`;
     setExportStatusMessage("공유 문구를 복사 중입니다.");
-
-    try {
-      const copied = await copyTextToClipboard(copyText);
-      if (copied) {
-        setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
-        return;
-      }
-
-      if (typeof window !== "undefined") {
-        window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
-        setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다.");
-        return;
-      }
-
-      setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다.");
-    } catch (error) {
-      if (typeof window !== "undefined") {
-        window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
-        setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다.");
-        return;
-      }
-
-      setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요.");
-    }
+    try { const copied = await copyTextToClipboard(copyText); if (copied) { setExportStatusMessage("공유 문구와 링크를 복사했습니다."); return; } if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다."); } catch (error) { if (typeof window !== "undefined") { window.prompt("아래 공유 문구를 복사해 주세요.", copyText); setExportStatusMessage("자동 복사가 제한되어 수동 복사 창을 열었습니다."); return; } setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요."); }
   }
-
-  function handlePdfSave() {
-    setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다.");
-    window.setTimeout(() => window.print(), 80);
-  }
-
+  function handlePdfSave() { setExportStatusMessage("브라우저 인쇄 창에서 PDF로 저장할 수 있습니다."); window.setTimeout(() => window.print(), 80); }
   return (
     <section className="investmentMbtiResultPage">
-      <div className="investmentMbtiResultHero"><p className="sectionLabel">Step 1 · Investment MBTI Result</p><h1>당신의 FINPLE 투자 MBTI는<br />{type.nickname}입니다.</h1><p>{type.summary}</p></div>
+      <div className="investmentMbtiResultHero"><p className="sectionLabel">Step 1 · Investment MBTI Result</p><h1>당신의 FINPLE 투자 MBTI는<br /><span className="investmentMbtiResultName">“{type.nickname}”</span>입니다.</h1></div>
       <AxisScoreChart result={result} />
       <TypeOverviewPanel type={type} />
-      <PortfolioDesignPanel type={type} />
-      <PortfolioPresetPanel entries={entries} onApplyUs={onApplyUs} onApplyKr={onApplyKr} />
+      <PortfolioPresetPanel type={type} entries={entries} onApplyUs={onApplyUs} onApplyKr={onApplyKr} />
       <CheckpointsPanel type={type} />
-      <article className="investmentMbtiNotice resultNotice"><strong>Step 7 · 투자 유의사항</strong><p>{type.details.caution}</p><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>블록체인 테마 등 고변동성 위성자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
-      <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장">
-        <button type="button" onClick={handleShareResult}>SNS 공유</button>
-        <button type="button" onClick={handlePdfSave}>PDF 저장</button>
-        <button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button>
-      </div>
+      <article className="investmentMbtiPanel investmentMbtiDisclaimerPanel"><div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Step 7</p><h3>투자 유의사항</h3></div></div><p>{type.details.caution}</p><p>본 결과는 참고용 성향 진단과 예시 포트폴리오입니다. 특정 종목이나 ETF의 매수·매도 추천이 아니며, 실제 투자 결정과 그 결과에 대한 책임은 사용자 본인에게 있습니다.</p>{hasCrypto ? <p>블록체인 테마 등 고변동성 위성자산은 가격 변동과 손실 가능성이 매우 크므로 전체 자산 대비 제한적인 비중으로만 검토하는 것이 좋습니다.</p> : null}</article>
+      <div className="investmentMbtiShareActions" aria-label="결과 공유 및 저장"><button type="button" onClick={handleShareResult}>SNS 공유</button><button type="button" onClick={handlePdfSave}>PDF 저장</button><button type="button" className="secondaryMbtiButton" onClick={onReset}>다시 검사하기</button></div>
       {exportStatusMessage ? <p className="investmentMbtiExportStatus">{exportStatusMessage}</p> : null}
     </section>
   );
