@@ -318,6 +318,14 @@
     box-shadow: 0 9px 16px rgba(15, 23, 42, 0.16);
   }
 
+  .investmentMbtiAxisTrack b[style*="93%"] {
+    transform: translate(calc(-100% - 10px), -50%);
+  }
+
+  .investmentMbtiAxisTrack b[style*="7%"] {
+    transform: translate(10px, -50%);
+  }
+
   .investmentMbtiAxisTrack i {
     min-width: 0;
   }
