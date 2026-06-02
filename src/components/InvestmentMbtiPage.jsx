@@ -249,6 +249,37 @@ function formatWon(value) {
   return Number(value || 0).toLocaleString("ko-KR");
 }
 
+async function copyTextToClipboard(text) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (error) {
+      console.warn("클립보드 API 복사 실패", error);
+    }
+  }
+
+  if (typeof document === "undefined") return false;
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.top = "-9999px";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return copied;
+  } catch (error) {
+    console.warn("대체 복사 방식 실패", error);
+    return false;
+  }
+}
+
 function buildAssetsFromPreset(preset = {}, initialAmount = 50000000, marketMode = "US") {
   const templates = marketMode === "KR" ? KR_ASSET_TEMPLATES : US_ASSET_TEMPLATES;
   return Object.entries(preset).filter(([, weight]) => Number(weight || 0) > 0).map(([assetKey, weight], index) => {
@@ -428,8 +459,10 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
       "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다.",
     ].join("\n");
     const shareData = { title: "FINPLE 투자 MBTI 결과", text: shareText, url: shareUrl };
+    const copyText = `${shareText}\n${shareUrl}`;
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
     const isMobileShareDevice = /Android|iPhone|iPad|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && Number(navigator.maxTouchPoints || 0) > 1);
+    setExportStatusMessage("공유 문구를 준비 중입니다.");
 
     try {
       if (isMobileShareDevice && typeof navigator !== "undefined" && navigator.share) {
@@ -437,17 +470,38 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
         setExportStatusMessage("공유 창을 열었습니다.");
         return;
       }
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+
+      const copied = await copyTextToClipboard(copyText);
+      if (copied) {
         setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
         return;
       }
+
+      if (typeof window !== "undefined") {
+        window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
+        setExportStatusMessage("공유 문구를 수동 복사할 수 있도록 표시했습니다.");
+        return;
+      }
+
       setExportStatusMessage("이 브라우저에서는 공유 기능을 사용할 수 없습니다.");
     } catch (error) {
       if (error?.name === "AbortError") {
         setExportStatusMessage("공유를 취소했습니다.");
         return;
       }
+
+      const copied = await copyTextToClipboard(copyText);
+      if (copied) {
+        setExportStatusMessage("공유 문구와 링크를 복사했습니다.");
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        window.prompt("아래 공유 문구를 복사해 주세요.", copyText);
+        setExportStatusMessage("공유 문구를 수동 복사할 수 있도록 표시했습니다.");
+        return;
+      }
+
       setExportStatusMessage("공유 기능을 사용할 수 없어 문구 복사를 다시 시도해 주세요.");
     }
   }
