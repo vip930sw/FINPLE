@@ -102,6 +102,33 @@
   margin-top: 26px;
 }
 
+.investmentMbtiPresetPanel .sectionLabel,
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel,
+.investmentMbtiDisclaimerPanel .sectionLabel {
+  font-size: 0 !important;
+}
+
+.investmentMbtiPresetPanel .sectionLabel::after,
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel::after,
+.investmentMbtiDisclaimerPanel .sectionLabel::after {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.investmentMbtiPresetPanel .sectionLabel::after {
+  content: "Step 4";
+}
+
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel::after {
+  content: "Step 5";
+}
+
+.investmentMbtiDisclaimerPanel .sectionLabel::after {
+  content: "Step 6";
+}
+
 .investmentMbtiMiniGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -112,21 +139,18 @@
 
 .investmentMbtiDesignBox {
   margin-bottom: 22px;
-  padding: 20px;
-  border-radius: 22px;
-  border: 1px solid #dbeafe;
-  background: #f8fbff;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .investmentMbtiDesignBox > strong {
-  display: block;
-  margin-bottom: 8px;
-  color: #0f172a;
-  font-size: 15px;
+  display: none;
 }
 
 .investmentMbtiDesignBox > p {
-  margin: 0;
+  margin: 0 0 18px;
   color: #475569;
   line-height: 1.75;
 }
@@ -138,9 +162,20 @@
 }
 
 .investmentMbtiDisclaimerPanel p {
+  position: relative;
   margin: 0;
+  padding-left: 18px;
   color: #64748b;
   line-height: 1.75;
+}
+
+.investmentMbtiDisclaimerPanel p::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #2563eb;
+  font-weight: 900;
 }
 
 .investmentMbtiDisclaimerPanel p + p {
