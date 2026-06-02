@@ -174,6 +174,23 @@ function drawPill(ctx, text, x, y, options = {}) {
   return width;
 }
 
+function drawRightPill(ctx, text, rightX, y, options = {}) {
+  const font = options.font || "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const paddingX = options.paddingX || 22;
+  const height = options.height || 52;
+  ctx.font = font;
+  const width = Math.ceil(ctx.measureText(text).width + paddingX * 2);
+  const x = rightX - width;
+  ctx.fillStyle = options.background || "#eff6ff";
+  drawRoundRect(ctx, x, y, width, height, height / 2);
+  ctx.fill();
+  ctx.fillStyle = options.color || "#2563eb";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + paddingX, y + height / 2 + 1);
+  ctx.textBaseline = "alphabetic";
+  return width;
+}
+
 function drawLabel(ctx, text, x, y) {
   ctx.fillStyle = "#2563eb";
   ctx.font = "900 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -222,7 +239,7 @@ async function drawMbtiCanvas() {
   ctx.stroke();
 
   const logoX = 98;
-  const logoY = 98;
+  const logoY = 106;
   const logoSize = 58;
   const brandTextX = 172;
   if (logoImage) {
@@ -238,27 +255,26 @@ async function drawMbtiCanvas() {
   ctx.fillStyle = "#64748b";
   ctx.fillText("Portfolio Lab", brandTextX, 164);
 
+  drawRightPill(ctx, riskProfile, 982, 98, { background: "#0f172a", color: "#ffffff", font: "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
+  drawRightPill(ctx, finpleType, 982, 156, { background: "#eff6ff", color: "#2563eb", font: "700 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
+
   ctx.font = "900 26px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillStyle = "#2563eb";
-  ctx.fillText("INVESTMENT MBTI RESULT", 98, 232);
+  ctx.fillText("INVESTMENT MBTI RESULT", 98, 246);
 
   ctx.fillStyle = "#0f172a";
   ctx.font = "900 60px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, `“${nickname}”`, 98, 306, 884, 70, 2);
+  drawWrappedText(ctx, `“${nickname}”`, 98, 320, 884, 70, 2);
 
-  let pillX = 98;
-  pillX += drawPill(ctx, riskProfile, pillX, 410, { background: "#0f172a", color: "#ffffff" }) + 14;
-  drawPill(ctx, finpleType, pillX, 410, { background: "#eff6ff", color: "#2563eb", font: "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" });
-
-  drawLabel(ctx, "유형 개요", 98, 510);
+  drawLabel(ctx, "유형 개요", 98, 500);
   ctx.fillStyle = "#475569";
   ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, overview, 98, 552, 884, 34, 4);
+  drawWrappedText(ctx, overview, 98, 542, 884, 34, 4);
 
   const compactRows = rows.length >= 7;
-  let y = compactRows ? 720 : 740;
+  let y = compactRows ? 705 : 725;
   const barX = 98;
-  const rowGap = compactRows ? 60 : 70;
+  const rowGap = compactRows ? 64 : 74;
   const barHeight = compactRows ? 16 : 20;
   const labelFontSize = compactRows ? 21 : 23;
 
@@ -271,22 +287,22 @@ async function drawMbtiCanvas() {
     ctx.textAlign = "left";
 
     ctx.fillStyle = "#e2e8f0";
-    drawRoundRect(ctx, barX, y + 18, 884, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 20, 884, barHeight, 999);
     ctx.fill();
 
     const filledWidth = Math.max(12, Math.min(884, 884 * row.weight / 100));
-    const gradient = ctx.createLinearGradient(barX, y + 18, barX + filledWidth, y + 18);
+    const gradient = ctx.createLinearGradient(barX, y + 20, barX + filledWidth, y + 20);
     gradient.addColorStop(0, "#38bdf8");
     gradient.addColorStop(1, "#2563eb");
     ctx.fillStyle = gradient;
-    drawRoundRect(ctx, barX, y + 18, filledWidth, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 20, filledWidth, barHeight, 999);
     ctx.fill();
     y += rowGap;
   });
 
-  const noticeY = Math.min(1290, Math.max(1215, y + 28));
+  const noticeY = Math.min(1258, Math.max(1188, y + 24));
   ctx.fillStyle = "#f8fbff";
-  drawRoundRect(ctx, 98, noticeY, 884, 118, 24);
+  drawRoundRect(ctx, 98, noticeY, 884, 124, 24);
   ctx.fill();
   ctx.strokeStyle = "#dbeafe";
   ctx.stroke();
@@ -299,10 +315,10 @@ async function drawMbtiCanvas() {
 
   ctx.fillStyle = "#64748b";
   ctx.font = "700 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, "본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1386, 884, 24, 2);
+  drawWrappedText(ctx, "본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1358, 884, 24, 2);
   ctx.fillStyle = "#2563eb";
   ctx.font = "900 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("finple.co.kr", 98, 1432);
+  ctx.fillText("finple.co.kr", 98, 1404);
 
   return canvas;
 }
