@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 795" role="img" aria-labelledby="title desc">
+  <title id="title">FINPLE Portfolio Lab logo</title>
+  <desc id="desc">FINPLE logo with Fn symbol and Portfolio Lab wordmark.</desc>
+  <g font-family="Arial Black, Pretendard, Inter, system-ui, sans-serif" font-weight="900">
+    <text x="126" y="520" font-size="300" letter-spacing="-20" fill="#ffffff">F</text>
+    <text x="278" y="524" font-size="300" letter-spacing="-28" fill="#38bdf8">n</text>
+    <text x="665" y="486" font-size="288" letter-spacing="28" fill="#2f2f32">FINPLE</text>
+  </g>
+  <text x="738" y="588" font-family="Inter, Pretendard, Arial, system-ui, sans-serif" font-size="66" font-weight="800" letter-spacing="42" fill="#2f2f32">PORTFOLIO LAB</text>
+</svg>
