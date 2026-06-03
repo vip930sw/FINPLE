@@ -1,0 +1,4 @@
+.startHubHero > .badge,
+.investmentMbtiHero > .badge {
+  display: none;
+}
