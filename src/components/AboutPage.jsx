@@ -4,7 +4,6 @@ import whyIllustration from "../assets/about/about-why.svg";
 import differenceIllustration from "../assets/about/about-difference.svg";
 import flowIllustration from "../assets/about/about-flow.svg";
 import planIllustration from "../assets/about/about-plan.svg";
-import riskIllustration from "../assets/about/about-risk.svg";
 import "./AboutBrandVisuals.css";
 
 const BRAND_COLORS = [
@@ -22,7 +21,6 @@ const ABOUT_ILLUSTRATIONS = {
   difference: differenceIllustration,
   flow: flowIllustration,
   plan: planIllustration,
-  notice: riskIllustration,
 };
 
 function AboutHeader({ onNavigate }) {
@@ -181,13 +179,6 @@ export default function AboutPage({ onNavigate }) {
       </AboutSection>
 
       <BrandIdentitySection />
-
-      <AboutSection eyebrow="Notice" title="투자 유의사항" visual="notice" visualAlt="투자 유의사항을 안내하는 일러스트">
-        <p>
-          FINPLE은 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 투자 자문을 제공하지 않습니다.
-          과거 데이터와 예상값은 미래 수익을 보장하지 않으며, 최종 투자 판단과 결과에 대한 책임은 이용자 본인에게 있습니다.
-        </p>
-      </AboutSection>
     </main>
   );
 }
