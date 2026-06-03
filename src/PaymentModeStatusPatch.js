@@ -1,6 +1,7 @@
 /* =========================================================
    Step 149 - Payment mode status patch
-   - Toss 테스트 키 연결 전 결제 환경변수 준비 상태를 Payment Prep에 표시합니다.
+   Step 111-3 - Hide payment mode status from public pricing review screen
+   - 결제 환경변수 준비 상태는 내부 점검용으로만 표시합니다.
 ========================================================= */
 
 import { fetchPaymentHealth, getPaymentModeLabel, getTossPublicKeyStatus } from "./components/paymentModeClient";
@@ -13,8 +14,17 @@ function isPricingPage() {
   return window.location.pathname === "/pricing";
 }
 
+function isPaymentModeDebugVisible() {
+  const params = new URLSearchParams(window.location.search || "");
+  return params.get("finplePaymentDebug") === "1";
+}
+
 function getModeBox() {
   return document.querySelector("[data-payment-mode-box]");
+}
+
+function removeModeBox() {
+  getModeBox()?.remove();
 }
 
 function injectModeStyle() {
@@ -132,7 +142,16 @@ async function requestPaymentHealthOnce() {
 }
 
 function upsertModeBox() {
-  if (!isPricingPage()) return;
+  if (!isPricingPage()) {
+    removeModeBox();
+    return;
+  }
+
+  if (!isPaymentModeDebugVisible()) {
+    removeModeBox();
+    return;
+  }
+
   if (getModeBox()) return;
 
   const statusNode = document.querySelector("[data-billing-status]");
