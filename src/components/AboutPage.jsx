@@ -1,10 +1,10 @@
-import finpleLogo from "../assets/finple-logo.svg";
+import finpleLogo from "../assets/finple_logo_asset.png";
 import whatIllustration from "../assets/about/about-what.svg";
 import whyIllustration from "../assets/about/about-why.svg";
 import differenceIllustration from "../assets/about/about-difference.svg";
 import flowIllustration from "../assets/about/about-flow.svg";
-import roadmapIllustration from "../assets/about/about-roadmap.svg";
-import noticeIllustration from "../assets/about/about-notice.svg";
+import planIllustration from "../assets/about/about-plan.svg";
+import riskIllustration from "../assets/about/about-risk.svg";
 import "./AboutBrandVisuals.css";
 
 const BRAND_COLORS = [
@@ -21,8 +21,8 @@ const ABOUT_ILLUSTRATIONS = {
   why: whyIllustration,
   difference: differenceIllustration,
   flow: flowIllustration,
-  roadmap: roadmapIllustration,
-  notice: noticeIllustration,
+  plan: planIllustration,
+  notice: riskIllustration,
 };
 
 function AboutHeader({ onNavigate }) {
@@ -168,7 +168,7 @@ export default function AboutPage({ onNavigate }) {
         </ul>
       </AboutSection>
 
-      <AboutSection eyebrow="Current & Roadmap" title="현재 상황과 개발 목표" visual="roadmap" visualAlt="현재 상황과 개발 목표를 설명하는 일러스트">
+      <AboutSection eyebrow="Current & Roadmap" title="현재 상황과 개발 목표" visual="plan" visualAlt="현재 상황과 개발 목표를 설명하는 일러스트">
         <p>
           현재 베타 버전은 미국주식과 ETF 중심의 포트폴리오 분석에 초점을 둡니다.
           일부 데이터와 기능은 테스트 단계이며, 분석 결과는 투자 판단을 돕는 참고 자료입니다.
