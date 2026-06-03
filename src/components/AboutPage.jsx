@@ -1,14 +1,13 @@
+import finpleLogo from "../assets/finple-logo.svg";
 import "./AboutBrandVisuals.css";
 
 const BRAND_COLORS = [
   { name: "FINPLE Navy", value: "#0F172A", role: "신뢰감과 핵심 텍스트" },
   { name: "FINPLE Blue", value: "#2563EB", role: "주요 버튼과 강조" },
-  { name: "FINPLE Sky", value: "#38BDF8", role: "데이터 흐름과 보조 강조" },
+  { name: "Logo Sky Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
+  { name: "Pastel Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
   { name: "Slate Gray", value: "#64748B", role: "설명문과 보조 정보" },
   { name: "Soft Background", value: "#F8FAFC", role: "차분한 화면 배경" },
-  { name: "Growth Green", value: "#10B981", role: "성장·긍정 지표" },
-  { name: "Caution Red", value: "#EF4444", role: "위험·유의사항" },
-  { name: "Gold Accent", value: "#F59E0B", role: "방어자산·강조 포인트" },
 ];
 
 function AboutHeader({ onNavigate }) {
@@ -74,11 +73,7 @@ function BrandIdentitySection() {
             </p>
           </div>
           <div className="aboutBrandLogoPanel" aria-label="FINPLE 브랜드 로고 예시">
-            <div className="aboutBrandSymbol"><span>F</span><i /></div>
-            <div>
-              <strong>FINPLE</strong>
-              <span>Portfolio Lab</span>
-            </div>
+            <img src={finpleLogo} alt="FINPLE Portfolio Lab" />
           </div>
         </div>
 
