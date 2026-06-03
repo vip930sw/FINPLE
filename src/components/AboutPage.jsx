@@ -1,11 +1,11 @@
-import finpleLogo from "../assets/finple-logo.svg";
+import finpleLogo from "../assets/finple-logo-original.png";
 import "./AboutBrandVisuals.css";
 
 const BRAND_COLORS = [
   { name: "FINPLE Navy", value: "#0F172A", role: "신뢰감과 핵심 텍스트" },
-  { name: "FINPLE Blue", value: "#2563EB", role: "주요 버튼과 강조" },
-  { name: "Logo Sky Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
-  { name: "Pastel Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
+  { name: "FINPLE Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
+  { name: "FINPLE Deep Blue", value: "#2563EB", role: "주요 버튼과 강조" },
+  { name: "Light Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
   { name: "Slate Gray", value: "#64748B", role: "설명문과 보조 정보" },
   { name: "Soft Background", value: "#F8FAFC", role: "차분한 화면 배경" },
 ];
