@@ -1,0 +1,353 @@
+.investmentMbtiResultHero {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.98) 48%, rgba(219, 234, 254, 0.95)),
+    radial-gradient(circle at 12% 0%, rgba(96, 165, 250, 0.22), transparent 34%);
+  border: 1px solid #bfdbfe;
+  color: #0f172a;
+  box-shadow: 0 24px 58px rgba(37, 99, 235, 0.1);
+}
+
+.investmentMbtiResultHero h1 {
+  color: #0f172a;
+}
+
+.investmentMbtiResultHero .sectionLabel {
+  color: #2563eb;
+}
+
+.investmentMbtiResultHero p {
+  color: #475569;
+}
+
+.investmentMbtiResultName,
+.investmentMbtiInlineName {
+  color: #2563eb;
+  text-shadow: 0 8px 22px rgba(37, 99, 235, 0.12);
+}
+
+.investmentMbtiAxisRiskCard {
+  margin: -2px 0 18px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+}
+
+.investmentMbtiAxisRiskCard span {
+  display: block;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.investmentMbtiAxisRiskCard strong {
+  display: block;
+  margin: 7px 0 4px;
+  color: #0f172a;
+  font-size: 22px;
+  letter-spacing: -0.6px;
+}
+
+.investmentMbtiAxisRiskCard p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.investmentMbtiAxisGuide {
+  font-size: 0;
+}
+
+.investmentMbtiAxisGuide::after {
+  content: "각 축의 문항별 합산 점수입니다. 0 이하이면 왼쪽 성향, 0 초과이면 오른쪽 성향으로 판정됩니다.";
+  font-size: 14px;
+}
+
+.investmentMbtiAxisTrack {
+  padding: 0 18px;
+}
+
+.investmentMbtiAxisTrack b {
+  max-width: 42px;
+  white-space: nowrap;
+}
+
+.investmentMbtiAxisTerm button {
+  appearance: none;
+}
+
+.investmentMbtiAxisTerm button::after {
+  display: none !important;
+  content: none !important;
+}
+
+.investmentMbtiAxisTerm:has(button:hover)::after,
+.investmentMbtiAxisTerm:has(button:focus-visible)::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(330px, 78vw);
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+}
+
+.investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:hover)::after,
+.investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:focus-visible)::after {
+  left: auto;
+  right: 0;
+}
+
+.investmentMbtiResultHero + .investmentMbtiAxisPanel {
+  margin-top: 26px;
+}
+
+.investmentMbtiPresetPanel .sectionLabel,
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel,
+.investmentMbtiDisclaimerPanel .sectionLabel {
+  font-size: 0 !important;
+}
+
+.investmentMbtiPresetPanel .sectionLabel::after,
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel::after,
+.investmentMbtiDisclaimerPanel .sectionLabel::after {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.investmentMbtiPresetPanel .sectionLabel::after {
+  content: "Step 4";
+}
+
+.investmentMbtiPresetPanel + .investmentMbtiPanel .sectionLabel::after {
+  content: "Step 5";
+}
+
+.investmentMbtiDisclaimerPanel .sectionLabel::after {
+  content: "Step 6";
+}
+
+.investmentMbtiDisclaimerPanel .sectionLabel {
+  position: static;
+  margin: 0;
+  padding-left: 0;
+}
+
+.investmentMbtiDisclaimerPanel .sectionLabel::before {
+  content: none !important;
+  display: none !important;
+}
+
+.investmentMbtiMiniGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.investmentMbtiMiniGrid > div {
+  min-height: 118px;
+}
+
+.investmentMbtiDesignBox {
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.investmentMbtiDesignBox > strong {
+  display: none;
+}
+
+.investmentMbtiDesignBox > p {
+  margin: 0 0 12px;
+  color: #475569;
+  line-height: 1.75;
+}
+
+.investmentMbtiDesignBox .investmentMbtiMiniGrid {
+  margin-top: 10px;
+}
+
+.investmentMbtiDesignBox .investmentMbtiMiniGrid > div {
+  min-height: auto;
+  padding: 14px 16px;
+}
+
+.investmentMbtiDesignBox .investmentMbtiMiniGrid p {
+  line-height: 1.55;
+}
+
+.investmentMbtiPresetActions button,
+.investmentMbtiPresetActions button + button {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.investmentMbtiDisclaimerPanel > p {
+  position: relative;
+  margin: 0;
+  padding-left: 18px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.investmentMbtiDisclaimerPanel > p::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #64748b;
+  font-weight: 900;
+}
+
+.investmentMbtiDisclaimerPanel > p + p {
+  margin-top: 6px;
+}
+
+.investmentMbtiTopButton {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  height: 48px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
+}
+
+.investmentMbtiTopButton:hover,
+.investmentMbtiTopButton:focus-visible {
+  outline: none;
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .investmentMbtiAxisPanel {
+    overflow: hidden;
+  }
+
+  .investmentMbtiAxisRows {
+    gap: 18px;
+  }
+
+  .investmentMbtiAxisRow {
+    gap: 8px;
+  }
+
+  .investmentMbtiAxisLabels {
+    display: grid !important;
+    grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr) !important;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .investmentMbtiAxisLabels > strong {
+    justify-self: center !important;
+    align-self: center;
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child {
+    justify-content: flex-end !important;
+  }
+
+  .investmentMbtiAxisTerm {
+    min-width: 0;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .investmentMbtiAxisTerm button {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+
+  .investmentMbtiAxisTrack {
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    gap: 8px;
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .investmentMbtiAxisTrack span {
+    position: relative;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    min-height: 20px;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.92);
+  }
+
+  .investmentMbtiAxisTrack b {
+    z-index: 3;
+    min-width: 30px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 11px;
+    box-shadow: 0 9px 16px rgba(15, 23, 42, 0.16);
+  }
+
+  .investmentMbtiAxisTrack b[style*="93%"] {
+    transform: translate(calc(-100% - 10px), -50%);
+  }
+
+  .investmentMbtiAxisTrack b[style*="7%"] {
+    transform: translate(10px, -50%);
+  }
+
+  .investmentMbtiAxisTrack i {
+    min-width: 0;
+  }
+
+  .investmentMbtiAxisTerm:has(button:hover)::after,
+  .investmentMbtiAxisTerm:has(button:focus-visible)::after,
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:hover)::after,
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:focus-visible)::after {
+    left: 0;
+    right: auto;
+    width: min(300px, 74vw);
+  }
+
+  .investmentMbtiMiniGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .investmentMbtiTopButton {
+    right: 18px;
+    bottom: 18px;
+    min-width: 74px;
+    height: 46px;
+    padding: 0 16px;
+  }
+}

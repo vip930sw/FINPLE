@@ -202,7 +202,7 @@
 }
 
 .investmentMbtiNotice.resultNotice {
-  margin-top: 30px;
+  margin-top: 18px;
   max-width: none;
 }
 
@@ -326,6 +326,173 @@
   font-weight: 900;
 }
 
+.investmentMbtiAxisPanel {
+  margin-top: 18px;
+}
+
+.investmentMbtiAxisGuide {
+  margin: -4px 0 20px;
+  font-size: 14px;
+}
+
+.investmentMbtiAxisRows {
+  display: grid;
+  gap: 20px;
+}
+
+.investmentMbtiAxisRow {
+  display: grid;
+  gap: 10px;
+}
+
+.investmentMbtiAxisLabels {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.investmentMbtiAxisLabels > strong {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child {
+  justify-content: flex-end;
+}
+
+.investmentMbtiAxisTerm {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-weight: 900;
+}
+
+.investmentMbtiAxisTerm button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.investmentMbtiAxisTerm button:hover,
+.investmentMbtiAxisTerm button:focus-visible {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.investmentMbtiAxisTerm:has(button:hover)::after,
+.investmentMbtiAxisTerm:has(button:focus-visible)::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(280px, 72vw);
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+}
+
+.investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:hover)::after,
+.investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:focus-visible)::after {
+  left: auto;
+  right: 0;
+}
+
+.investmentMbtiAxisTrack {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.investmentMbtiAxisTrack i {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #93c5fd, #dbeafe);
+}
+
+.investmentMbtiAxisTrack i:nth-of-type(2) {
+  background: linear-gradient(90deg, #dbeafe, #2563eb);
+}
+
+.investmentMbtiAxisTrack b {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
+}
+
+.investmentMbtiStoryPanel > p {
+  margin: 0;
+  font-size: 16px;
+  color: #475569;
+  line-height: 1.8;
+}
+
+.investmentMbtiMiniGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.investmentMbtiMiniGrid > div {
+  padding: 18px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.investmentMbtiMiniGrid strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.investmentMbtiMiniGrid p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
 .investmentMbtiPortfolioBars {
   display: grid;
   gap: 14px;
@@ -351,6 +518,26 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #38bdf8, #2563eb);
+}
+
+.investmentMbtiPresetActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.investmentMbtiPresetActions button {
+  border: none;
+  border-radius: 999px;
+  padding: 13px 18px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.investmentMbtiPresetActions button + button {
+  background: #1d4ed8;
 }
 
 .investmentMbtiTwoColumn {
@@ -432,7 +619,8 @@
 
 @media (max-width: 940px) {
   .investmentMbtiResultGrid,
-  .investmentMbtiTwoColumn {
+  .investmentMbtiTwoColumn,
+  .investmentMbtiMiniGrid {
     grid-template-columns: 1fr;
   }
 
@@ -468,15 +656,36 @@
     grid-template-columns: 1fr;
   }
 
+  .investmentMbtiAxisLabels {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .investmentMbtiAxisLabels > strong {
+    justify-self: flex-start;
+  }
+
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child {
+    justify-content: flex-start;
+  }
+
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:hover)::after,
+  .investmentMbtiAxisLabels .investmentMbtiAxisTerm:last-child:has(button:focus-visible)::after {
+    left: 0;
+    right: auto;
+  }
+
   .investmentMbtiActions,
   .investmentMbtiResultActions.horizontal,
-  .investmentMbtiShareActions {
+  .investmentMbtiShareActions,
+  .investmentMbtiPresetActions {
     flex-direction: column;
   }
 
   .investmentMbtiActions button,
   .investmentMbtiResultActions.horizontal button,
-  .investmentMbtiShareActions button {
+  .investmentMbtiShareActions button,
+  .investmentMbtiPresetActions button {
     width: 100%;
   }
 
@@ -486,6 +695,6 @@
   }
 
   .investmentMbtiNotice.resultNotice {
-    margin: 30px 0 0;
+    margin: 18px 0 0;
   }
 }

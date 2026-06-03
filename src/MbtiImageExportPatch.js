@@ -2,6 +2,7 @@ import { FINPLE_LOGO_DATA_URL } from "./assets/finpleLogoDataUrl.js";
 
 const MBTI_IMAGE_EXPORT_BUTTON_LABEL = "이미지 저장";
 const MBTI_IMAGE_EXPORT_LEGACY_LABEL = "SNS 공유";
+const MBTI_TOP_BUTTON_CLASS = "investmentMbtiTopButton";
 let finpleLogoImagePromise = null;
 
 function isMbtiResultPage() {
@@ -14,12 +15,55 @@ function getText(selector, fallback = "-") {
   return value || fallback;
 }
 
+function normalizeQuoteText(value) {
+  return String(value || "").replace(/[“”"]/g, "").trim();
+}
+
+function normalizeAxisLabel(value) {
+  return String(value || "")
+    .replace(/\?/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getMbtiNickname() {
+  const highlightedName = normalizeQuoteText(getText(".investmentMbtiResultName", ""));
+  if (highlightedName) return highlightedName;
+
   const rawTitle = getText(".investmentMbtiResultHero h1", "FINPLE 투자 MBTI");
-  return rawTitle
+  return normalizeQuoteText(rawTitle)
+    .replace(/^당신의 FINPLE 투자 MBTI는\s*/, "")
     .replace(/^당신의 투자 MBTI는\s*/, "")
     .replace(/입니다\.?$/, "")
     .trim() || rawTitle;
+}
+
+function getAxisTypeText() {
+  const labels = Array.from(document.querySelectorAll(".investmentMbtiAxisLabels > strong"))
+    .map((node) => String(node.textContent || "").trim())
+    .filter(Boolean);
+  return labels.length ? labels.join(" · ") : getText(".investmentMbtiResultHero p", "-");
+}
+
+function getAxisChartRows() {
+  return Array.from(document.querySelectorAll(".investmentMbtiAxisRow")).map((row) => {
+    const terms = Array.from(row.querySelectorAll(".investmentMbtiAxisTerm"));
+    const leftLabel = normalizeAxisLabel(terms[0]?.textContent);
+    const rightLabel = normalizeAxisLabel(terms[1]?.textContent);
+    const centerLabel = normalizeAxisLabel(row.querySelector(".investmentMbtiAxisLabels > strong")?.textContent);
+    const markerText = String(row.querySelector(".investmentMbtiAxisTrack b")?.textContent || "0").trim();
+    const score = Number(markerText.replace("+", "")) || 0;
+
+    return { leftLabel, rightLabel, centerLabel, score };
+  }).filter((row) => row.leftLabel && row.rightLabel && row.centerLabel);
+}
+
+function getRiskProfile() {
+  return getText(".investmentMbtiAxisRiskCard strong", "-");
+}
+
+function getTypeOverview() {
+  return getText(".investmentMbtiStoryPanel > p", "FINPLE 투자 성향 결과입니다.");
 }
 
 function getPortfolioRows() {
@@ -29,6 +73,13 @@ function getPortfolioRows() {
     const weight = Number(weightText.replace("%", "")) || 0;
     return { label, weightText, weight };
   }).filter((row) => row.label && row.weight > 0);
+}
+
+function getDisclaimerItems() {
+  const items = Array.from(document.querySelectorAll(".investmentMbtiDisclaimerPanel > p"))
+    .map((node) => String(node.textContent || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return items.length ? items : ["본 결과는 투자 성향 이해를 돕기 위한 참고용입니다."];
 }
 
 function setExportStatus(message) {
@@ -56,6 +107,28 @@ function updateMbtiActionLabels() {
   }
 }
 
+function ensureTopButton() {
+  if (!isMbtiResultPage()) {
+    document.querySelector(`.${MBTI_TOP_BUTTON_CLASS}`)?.remove();
+    return;
+  }
+
+  if (document.querySelector(`.${MBTI_TOP_BUTTON_CLASS}`)) return;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = MBTI_TOP_BUTTON_CLASS;
+  button.textContent = "↑ TOP";
+  button.setAttribute("aria-label", "상단으로 이동");
+  button.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  document.body.appendChild(button);
+}
+
+function updateMbtiResultEnhancements() {
+  updateMbtiActionLabels();
+  ensureTopButton();
+}
+
 function loadFinpleLogoImage() {
   if (typeof Image === "undefined") return Promise.resolve(null);
   if (!finpleLogoImagePromise) {
@@ -76,11 +149,11 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
   ctx.arcTo(x + width, y, x + width, y + height, r);
   ctx.arcTo(x + width, y + height, x, y + height, r);
   ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
+  ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
 }
 
-function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3, align = "left") {
   const words = String(text || "").split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
@@ -97,20 +170,25 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
 
   if (line) lines.push(line);
   const visibleLines = lines.slice(0, maxLines);
+  const previousAlign = ctx.textAlign;
+  ctx.textAlign = align;
+
   visibleLines.forEach((visibleLine, index) => {
     const suffix = index === maxLines - 1 && lines.length > maxLines ? "…" : "";
     ctx.fillText(`${visibleLine}${suffix}`, x, y + index * lineHeight);
   });
 
+  ctx.textAlign = previousAlign;
   return y + visibleLines.length * lineHeight;
 }
 
-function drawPill(ctx, text, x, y, options = {}) {
-  const font = options.font || "700 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const paddingX = options.paddingX || 24;
-  const height = options.height || 58;
+function drawRightPill(ctx, text, rightX, y, options = {}) {
+  const font = options.font || "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const paddingX = options.paddingX || 22;
+  const height = options.height || 52;
   ctx.font = font;
   const width = Math.ceil(ctx.measureText(text).width + paddingX * 2);
+  const x = rightX - width;
   ctx.fillStyle = options.background || "#eff6ff";
   drawRoundRect(ctx, x, y, width, height, height / 2);
   ctx.fill();
@@ -119,6 +197,12 @@ function drawPill(ctx, text, x, y, options = {}) {
   ctx.fillText(text, x + paddingX, y + height / 2 + 1);
   ctx.textBaseline = "alphabetic";
   return width;
+}
+
+function drawLabel(ctx, text, x, y) {
+  ctx.fillStyle = "#2563eb";
+  ctx.font = "900 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(text, x, y);
 }
 
 function drawFinpleLogoFallback(ctx, x, y, size = 58) {
@@ -137,32 +221,105 @@ function drawFinpleLogoFallback(ctx, x, y, size = 58) {
   ctx.textBaseline = "alphabetic";
 }
 
+function drawAxisMiniChart(ctx, rows, startX, startY, width) {
+  if (!rows.length) return startY;
+
+  const rowGap = 58;
+  const centerX = startX + width / 2;
+  const trackGap = 34;
+  const trackYGap = 24;
+  const leftTrackX = startX + 26;
+  const leftTrackWidth = centerX - leftTrackX - trackGap;
+  const rightTrackX = centerX + trackGap;
+  const rightTrackWidth = startX + width - 26 - rightTrackX;
+  const trackHeight = 12;
+
+  rows.forEach((row, index) => {
+    const y = startY + index * rowGap;
+    const trackY = y + trackYGap;
+    const score = Math.max(-6, Math.min(6, row.score));
+    const markerText = score > 0 ? `+${score}` : `${score}`;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "900 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(row.leftLabel, startX, y);
+    ctx.textAlign = "center";
+    ctx.fillText(row.centerLabel, centerX, y);
+    ctx.textAlign = "right";
+    ctx.fillText(row.rightLabel, startX + width, y);
+    ctx.textAlign = "left";
+
+    ctx.fillStyle = "#bfdbfe";
+    drawRoundRect(ctx, leftTrackX, trackY, leftTrackWidth, trackHeight, 999);
+    ctx.fill();
+
+    const rightGradient = ctx.createLinearGradient(rightTrackX, trackY, rightTrackX + rightTrackWidth, trackY);
+    rightGradient.addColorStop(0, "#c7d2fe");
+    rightGradient.addColorStop(1, "#2563eb");
+    ctx.fillStyle = rightGradient;
+    drawRoundRect(ctx, rightTrackX, trackY, rightTrackWidth, trackHeight, 999);
+    ctx.fill();
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("-", startX, trackY + 11);
+    ctx.textAlign = "center";
+    ctx.fillText("0", centerX, trackY + 11);
+    ctx.textAlign = "right";
+    ctx.fillText("+", startX + width, trackY + 11);
+    ctx.textAlign = "left";
+
+    let markerX = centerX;
+    if (score > 0) {
+      markerX = rightTrackX + (rightTrackWidth * score) / 6;
+      markerX = Math.min(markerX, rightTrackX + rightTrackWidth - 28);
+    } else if (score < 0) {
+      markerX = leftTrackX + (leftTrackWidth * (score + 6)) / 6;
+      markerX = Math.max(markerX, leftTrackX + 28);
+    }
+
+    const markerY = trackY - 14;
+    ctx.fillStyle = "#0f172a";
+    drawRoundRect(ctx, markerX - 24, markerY, 48, 34, 17);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(markerText, markerX, markerY + 22);
+    ctx.textAlign = "left";
+  });
+
+  return startY + rows.length * rowGap + 6;
+}
+
 async function drawMbtiCanvas() {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
-  canvas.height = 1350;
+  canvas.height = 1600;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas_context_unavailable");
 
   const nickname = getMbtiNickname();
-  const finpleType = getText(".investmentMbtiResultGrid .investmentMbtiCard:nth-child(1) strong");
-  const riskProfile = getText(".investmentMbtiResultGrid .investmentMbtiCard:nth-child(2) strong");
+  const riskProfile = getRiskProfile();
+  const overview = getTypeOverview();
+  const axisRows = getAxisChartRows();
   const rows = getPortfolioRows();
-  const caution = getText(".investmentMbtiPanel.warning p:last-child", "본 결과는 투자 성향 이해를 돕기 위한 참고용입니다.");
+  const disclaimerItems = getDisclaimerItems();
   const logoImage = await loadFinpleLogoImage();
 
   ctx.fillStyle = "#f8fafc";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#ffffff";
-  drawRoundRect(ctx, 58, 58, 964, 1234, 48);
+  drawRoundRect(ctx, 58, 58, 964, 1484, 48);
   ctx.fill();
   ctx.strokeStyle = "#dbe5f3";
   ctx.lineWidth = 2;
   ctx.stroke();
 
   const logoX = 98;
-  const logoY = 92;
+  const logoY = 106;
   const logoSize = 58;
   const brandTextX = 172;
   if (logoImage) {
@@ -173,29 +330,66 @@ async function drawMbtiCanvas() {
 
   ctx.fillStyle = "#0f172a";
   ctx.font = "900 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("FINPLE", brandTextX, 130);
+  ctx.fillText("FINPLE", brandTextX, 126);
   ctx.font = "800 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillStyle = "#64748b";
-  ctx.fillText("Portfolio Lab · Investment MBTI", brandTextX, 166);
+  ctx.fillText("Portfolio Lab", brandTextX, 164);
 
-  ctx.font = "900 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillStyle = "#2563eb";
-  ctx.fillText("INVESTMENT MBTI RESULT", 98, 232);
+  drawRightPill(ctx, riskProfile, 982, 116, { background: "#0f172a", color: "#ffffff", font: "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
 
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "900 66px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, nickname, 98, 308, 884, 76, 2);
+  const titleBoxX = 98;
+  const titleBoxY = 238;
+  const titleBoxWidth = 884;
+  const titleBoxHeight = 132;
+  const titleGradient = ctx.createLinearGradient(titleBoxX, titleBoxY, titleBoxX + titleBoxWidth, titleBoxY + titleBoxHeight);
+  titleGradient.addColorStop(0, "#f8fbff");
+  titleGradient.addColorStop(0.52, "#eef6ff");
+  titleGradient.addColorStop(1, "#e7f1ff");
+  ctx.save();
+  ctx.shadowColor = "rgba(37, 99, 235, 0.10)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = titleGradient;
+  drawRoundRect(ctx, titleBoxX, titleBoxY, titleBoxWidth, titleBoxHeight, 34);
+  ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = "#bfdbfe";
+  ctx.lineWidth = 1.5;
+  drawRoundRect(ctx, titleBoxX, titleBoxY, titleBoxWidth, titleBoxHeight, 34);
+  ctx.stroke();
+  const titleTextGradient = ctx.createLinearGradient(titleBoxX, titleBoxY, titleBoxX + titleBoxWidth, titleBoxY);
+  titleTextGradient.addColorStop(0, "#1d4ed8");
+  titleTextGradient.addColorStop(1, "#2563eb");
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "900 58px Pretendard, 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = "rgba(29, 78, 216, 0.16)";
+  ctx.strokeText(`“${nickname}”`, 540, titleBoxY + titleBoxHeight / 2 + 2);
+  ctx.fillStyle = titleTextGradient;
+  ctx.fillText(`“${nickname}”`, 540, titleBoxY + titleBoxHeight / 2 + 2);
+  ctx.restore();
 
-  let pillX = 98;
-  pillX += drawPill(ctx, riskProfile, pillX, 410, { background: "#0f172a", color: "#ffffff" }) + 14;
-  drawPill(ctx, finpleType, pillX, 410, { background: "#eff6ff", color: "#2563eb" });
+  const overviewTitleY = titleBoxY + titleBoxHeight + 60;
+  drawLabel(ctx, "유형 개요", 98, overviewTitleY);
+  ctx.fillStyle = "#475569";
+  ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const overviewBottom = drawWrappedText(ctx, overview, 98, overviewTitleY + 42, 884, 34, 4);
+
+  const axisTitleY = overviewBottom + 42;
+  drawLabel(ctx, "성향 차트", 98, axisTitleY);
+  const axisChartTop = axisTitleY + 42;
+  const axisChartBottom = drawAxisMiniChart(ctx, axisRows, 98, axisChartTop, 884);
 
   const compactRows = rows.length >= 7;
-  let y = compactRows ? 520 : 540;
   const barX = 98;
-  const rowGap = compactRows ? 58 : 82;
-  const barHeight = compactRows ? 20 : 24;
-  const labelFontSize = compactRows ? 23 : 27;
+  let y = axisChartBottom + 50;
+  drawLabel(ctx, "포트폴리오 프리셋", barX, y);
+  y += 42;
+  const rowGap = compactRows ? 48 : 62;
+  const barHeight = compactRows ? 15 : 19;
+  const labelFontSize = compactRows ? 19 : 22;
 
   rows.forEach((row) => {
     ctx.fillStyle = "#334155";
@@ -206,39 +400,39 @@ async function drawMbtiCanvas() {
     ctx.textAlign = "left";
 
     ctx.fillStyle = "#e2e8f0";
-    drawRoundRect(ctx, barX, y + 20, 884, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 18, 884, barHeight, 999);
     ctx.fill();
 
     const filledWidth = Math.max(12, Math.min(884, 884 * row.weight / 100));
-    const gradient = ctx.createLinearGradient(barX, y + 20, barX + filledWidth, y + 20);
+    const gradient = ctx.createLinearGradient(barX, y + 18, barX + filledWidth, y + 18);
     gradient.addColorStop(0, "#38bdf8");
     gradient.addColorStop(1, "#2563eb");
     ctx.fillStyle = gradient;
-    drawRoundRect(ctx, barX, y + 20, filledWidth, barHeight, 999);
+    drawRoundRect(ctx, barX, y + 18, filledWidth, barHeight, 999);
     ctx.fill();
     y += rowGap;
   });
 
-  ctx.fillStyle = "#fff7ed";
-  drawRoundRect(ctx, 98, 1015, 884, 140, 28);
+  const noticeY = Math.min(1350, Math.max(1230, y + 24));
+  ctx.fillStyle = "#f8fbff";
+  drawRoundRect(ctx, 98, noticeY, 884, 124, 24);
   ctx.fill();
-  ctx.strokeStyle = "#fed7aa";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#dbeafe";
   ctx.stroke();
-
-  ctx.fillStyle = "#9a3412";
-  ctx.font = "900 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("투자 유의사항", 128, 1062);
-  ctx.fillStyle = "#475569";
-  ctx.font = "700 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  drawWrappedText(ctx, caution, 128, 1102, 824, 28, 2);
-
-  ctx.fillStyle = "#64748b";
-  ctx.font = "700 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, 1224);
   ctx.fillStyle = "#2563eb";
-  ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("finple.co.kr", 98, 1264);
+  ctx.font = "900 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("투자 유의사항", 122, noticeY + 34);
+  ctx.fillStyle = "#475569";
+  ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  drawWrappedText(ctx, `• ${disclaimerItems[0]}`, 122, noticeY + 66, 824, 24, 2);
+
+  const footerY = Math.min(1480, noticeY + 166);
+  ctx.fillStyle = "#64748b";
+  ctx.font = "700 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  drawWrappedText(ctx, "본 이미지는 투자 성향 이해를 돕기 위한 참고용이며 특정 금융상품의 매수·매도 권유가 아닙니다.", 98, footerY, 884, 24, 2);
+  ctx.fillStyle = "#2563eb";
+  ctx.font = "900 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("finple.co.kr", 98, footerY + 46);
 
   return canvas;
 }
@@ -281,11 +475,11 @@ function bindMbtiImageExport() {
 (function initMbtiImageExportPatch() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  window.addEventListener("load", updateMbtiActionLabels);
-  window.addEventListener("popstate", () => window.setTimeout(updateMbtiActionLabels, 80));
+  window.addEventListener("load", updateMbtiResultEnhancements);
+  window.addEventListener("popstate", () => window.setTimeout(updateMbtiResultEnhancements, 80));
 
   const observer = new MutationObserver(() => {
-    window.requestAnimationFrame(updateMbtiActionLabels);
+    window.requestAnimationFrame(updateMbtiResultEnhancements);
   });
   window.addEventListener("load", () => {
     observer.observe(document.body, { childList: true, subtree: true });
