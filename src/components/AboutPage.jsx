@@ -1,4 +1,4 @@
-import finpleLogo from "../assets/finple_logo_asset.png";
+import finpleLogo from "../assets/finple-logo.svg";
 import whatIllustration from "../assets/about/about-what.svg";
 import whyIllustration from "../assets/about/about-why.svg";
 import differenceIllustration from "../assets/about/about-difference.svg";
