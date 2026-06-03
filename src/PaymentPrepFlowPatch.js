@@ -6,6 +6,7 @@
    Step 144 - Connect Pricing Personal to prepare API
    Step 144B - Prevent MutationObserver render loop on /pricing
    Step 151 - Expose latest prepare payload for Toss checkout
+   Step 111-2 - Prevent review checkout shell from intercepting Personal checkout
    - PG 실제 연동 전 결제 준비 흐름과 환불·해지 정책 초안을 안내합니다.
    - React 구조 변경을 최소화하기 위해 베타 패치 레이어로 적용합니다.
 ========================================================= */
@@ -87,6 +88,12 @@ async function requestPrepareAndRender() {
   }
 }
 
+function stopCheckoutShellInterception(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation?.();
+  event.stopPropagation();
+}
+
 function handlePricingClick(event) {
   const button = event.target?.closest?.("button");
   if (!button || !isPersonalButton(button)) return;
@@ -102,21 +109,18 @@ function handlePricingClick(event) {
   setPendingCheckoutPlan("personal");
 
   if (!isLoggedIn()) {
-    event.preventDefault();
-    event.stopPropagation();
+    stopCheckoutShellInterception(event);
     navigateTo("/login");
     return;
   }
 
   if (!isPricingPage()) {
-    event.preventDefault();
-    event.stopPropagation();
+    stopCheckoutShellInterception(event);
     navigateTo(`/pricing?${BILLING_QUERY}=personal`);
     return;
   }
 
-  event.preventDefault();
-  event.stopPropagation();
+  stopCheckoutShellInterception(event);
   window.setTimeout(requestPrepareAndRender, 80);
 }
 
