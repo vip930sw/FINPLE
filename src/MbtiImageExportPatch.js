@@ -337,25 +337,42 @@ async function drawMbtiCanvas() {
 
   drawRightPill(ctx, riskProfile, 982, 116, { background: "#0f172a", color: "#ffffff", font: "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", height: 48, paddingX: 20 });
 
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "900 68px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const titleBottom = drawWrappedText(ctx, `“${nickname}”`, 540, 292, 860, 76, 2, "center");
+  const titleBoxX = 98;
+  const titleBoxY = 238;
+  const titleBoxWidth = 884;
+  const titleBoxHeight = 110;
+  const titleGradient = ctx.createLinearGradient(titleBoxX, titleBoxY, titleBoxX + titleBoxWidth, titleBoxY);
+  titleGradient.addColorStop(0, "#1d4ed8");
+  titleGradient.addColorStop(1, "#38bdf8");
+  ctx.fillStyle = titleGradient;
+  drawRoundRect(ctx, titleBoxX, titleBoxY, titleBoxWidth, titleBoxHeight, 32);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  drawRoundRect(ctx, titleBoxX + 18, titleBoxY + 16, titleBoxWidth - 36, 22, 999);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "1000 66px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  drawWrappedText(ctx, `“${nickname}”`, 540, titleBoxY + 74, 812, 72, 1, "center");
 
-  const overviewTitleY = Math.max(430, titleBottom + 64);
+  const overviewTitleY = titleBoxY + titleBoxHeight + 82;
   drawLabel(ctx, "유형 개요", 98, overviewTitleY);
   ctx.fillStyle = "#475569";
   ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   const overviewBottom = drawWrappedText(ctx, overview, 98, overviewTitleY + 42, 884, 34, 4);
 
-  const axisChartTop = overviewBottom + 34;
+  const axisTitleY = overviewBottom + 42;
+  drawLabel(ctx, "성향 차트", 98, axisTitleY);
+  const axisChartTop = axisTitleY + 42;
   const axisChartBottom = drawAxisMiniChart(ctx, axisRows, 98, axisChartTop, 884);
 
   const compactRows = rows.length >= 7;
-  let y = axisChartBottom + 36;
   const barX = 98;
-  const rowGap = compactRows ? 50 : 64;
-  const barHeight = compactRows ? 16 : 20;
-  const labelFontSize = compactRows ? 20 : 23;
+  let y = axisChartBottom + 50;
+  drawLabel(ctx, "포트폴리오 프리셋", barX, y);
+  y += 42;
+  const rowGap = compactRows ? 48 : 62;
+  const barHeight = compactRows ? 15 : 19;
+  const labelFontSize = compactRows ? 19 : 22;
 
   rows.forEach((row) => {
     ctx.fillStyle = "#334155";
@@ -379,7 +396,7 @@ async function drawMbtiCanvas() {
     y += rowGap;
   });
 
-  const noticeY = Math.min(1350, Math.max(1230, y + 26));
+  const noticeY = Math.min(1350, Math.max(1230, y + 24));
   ctx.fillStyle = "#f8fbff";
   drawRoundRect(ctx, 98, noticeY, 884, 124, 24);
   ctx.fill();
