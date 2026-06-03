@@ -127,8 +127,6 @@ export default function AboutPage({ onNavigate }) {
         </p>
       </section>
 
-      <BrandIdentitySection />
-
       <AboutSection eyebrow="What" title="FINPLE은 무엇인가요?" visual="what" visualAlt="포트폴리오 분석 도구를 설명하는 일러스트">
         <p>
           FINPLE은 사용자가 직접 입력한 포트폴리오 구성과 투자 조건을 바탕으로 장기 성과와 위험을 점검하는 웹 기반 분석 서비스입니다.
@@ -181,6 +179,8 @@ export default function AboutPage({ onNavigate }) {
           <li>정식 오픈 전 고급 위험지표와 리포트 기능 검토</li>
         </ul>
       </AboutSection>
+
+      <BrandIdentitySection />
 
       <AboutSection eyebrow="Notice" title="투자 유의사항" visual="notice" visualAlt="투자 유의사항을 안내하는 일러스트">
         <p>
