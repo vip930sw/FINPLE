@@ -1,3 +1,16 @@
+import "./AboutBrandVisuals.css";
+
+const BRAND_COLORS = [
+  { name: "FINPLE Navy", value: "#0F172A", role: "신뢰감과 핵심 텍스트" },
+  { name: "FINPLE Blue", value: "#2563EB", role: "주요 버튼과 강조" },
+  { name: "FINPLE Sky", value: "#38BDF8", role: "데이터 흐름과 보조 강조" },
+  { name: "Slate Gray", value: "#64748B", role: "설명문과 보조 정보" },
+  { name: "Soft Background", value: "#F8FAFC", role: "차분한 화면 배경" },
+  { name: "Growth Green", value: "#10B981", role: "성장·긍정 지표" },
+  { name: "Caution Red", value: "#EF4444", role: "위험·유의사항" },
+  { name: "Gold Accent", value: "#F59E0B", role: "방어자산·강조 포인트" },
+];
+
 function AboutHeader({ onNavigate }) {
   return (
     <header className="accountHeader">
@@ -16,13 +29,80 @@ function AboutHeader({ onNavigate }) {
   );
 }
 
-function AboutSection({ eyebrow, title, children }) {
+function AboutIllustration({ type }) {
+  return (
+    <div className={`aboutIllustration aboutIllustration-${type}`} aria-hidden="true">
+      <span className="aboutIllustrationOrb primary" />
+      <span className="aboutIllustrationOrb secondary" />
+      <span className="aboutIllustrationCard main" />
+      <span className="aboutIllustrationCard sub" />
+      <span className="aboutIllustrationLine one" />
+      <span className="aboutIllustrationLine two" />
+      <span className="aboutIllustrationDot one" />
+      <span className="aboutIllustrationDot two" />
+      <span className="aboutIllustrationDot three" />
+    </div>
+  );
+}
+
+function AboutSection({ eyebrow, title, visual, children }) {
   return (
     <section className="accountCard legalDocumentCard aboutSectionCard">
+      <article className={visual ? "legalDocumentSection aboutVisualSection" : "legalDocumentSection"}>
+        <div className="aboutSectionText">
+          <p className="accountMiniLabel aboutSectionEyebrow">{eyebrow}</p>
+          <h2>{title}</h2>
+          {children}
+        </div>
+        {visual ? <AboutIllustration type={visual} /> : null}
+      </article>
+    </section>
+  );
+}
+
+function BrandIdentitySection() {
+  return (
+    <section className="accountCard legalDocumentCard aboutBrandCard">
       <article className="legalDocumentSection">
-        <p className="accountMiniLabel aboutSectionEyebrow">{eyebrow}</p>
-        <h2>{title}</h2>
-        {children}
+        <div className="aboutBrandIntro">
+          <div>
+            <p className="accountMiniLabel aboutSectionEyebrow">Brand Identity</p>
+            <h2>FINPLE의 브랜드 시스템</h2>
+            <p>
+              FINPLE은 복잡한 투자 정보를 사용자가 직접 이해하고 점검할 수 있도록 돕는 포트폴리오 분석 브랜드입니다.
+              로고, 컬러, 화면 구성은 금융 서비스에 필요한 신뢰감과 데이터 분석 도구의 명확함을 함께 전달하는 방향으로 설계했습니다.
+            </p>
+          </div>
+          <div className="aboutBrandLogoPanel" aria-label="FINPLE 브랜드 로고 예시">
+            <div className="aboutBrandSymbol"><span>F</span><i /></div>
+            <div>
+              <strong>FINPLE</strong>
+              <span>Portfolio Lab</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="aboutBrandMeaningGrid">
+          <div>
+            <strong>Financial Planner</strong>
+            <p>스스로 재무와 투자를 계획하고, 자산 비중과 장기 성과를 점검하는 도구라는 출발점입니다.</p>
+          </div>
+          <div>
+            <strong>Finance &amp; People</strong>
+            <p>금융 지식이 실제 투자자와 생활 재무를 실천하는 사람들에게 연결되는 서비스를 지향합니다.</p>
+          </div>
+        </div>
+
+        <div className="aboutColorPalette" aria-label="FINPLE 컬러 팔레트">
+          {BRAND_COLORS.map((color) => (
+            <div key={color.name} className="aboutColorSwatch">
+              <span style={{ background: color.value }} />
+              <strong>{color.name}</strong>
+              <em>{color.value}</em>
+              <p>{color.role}</p>
+            </div>
+          ))}
+        </div>
       </article>
     </section>
   );
@@ -42,7 +122,9 @@ export default function AboutPage({ onNavigate }) {
         </p>
       </section>
 
-      <AboutSection eyebrow="What" title="FINPLE은 무엇인가요?">
+      <BrandIdentitySection />
+
+      <AboutSection eyebrow="What" title="FINPLE은 무엇인가요?" visual="dashboard">
         <p>
           FINPLE은 사용자가 직접 입력한 포트폴리오 구성과 투자 조건을 바탕으로 장기 성과와 위험을 점검하는 웹 기반 분석 서비스입니다.
           특정 종목을 추천하기보다는 사용자가 자신의 자산 구조를 이해하고, 여러 시나리오를 비교할 수 있도록 돕는 데 초점을 둡니다.
@@ -53,18 +135,7 @@ export default function AboutPage({ onNavigate }) {
         </p>
       </AboutSection>
 
-      <AboutSection eyebrow="Name" title="FINPLE이라는 이름에 담긴 의미">
-        <p>
-          FINPLE은 Financial Planner에서 출발한 이름입니다. 사용자가 스스로 재무와 투자를 계획하고,
-          포트폴리오를 점검하며, 장기적인 자산 흐름을 관리할 수 있도록 돕는 도구라는 의미를 담고 있습니다.
-        </p>
-        <p>
-          동시에 FINPLE은 Finance & People, 즉 금융과 재무를 실천하는 사람들의 서비스로 확장될 수 있습니다.
-          단순한 계산기를 넘어, 투자자와 생활 재무를 연결하는 플랫폼으로 성장하는 것이 장기 방향입니다.
-        </p>
-      </AboutSection>
-
-      <AboutSection eyebrow="Why" title="왜 만들었나요?">
+      <AboutSection eyebrow="Why" title="왜 만들었나요?" visual="problem">
         <p>
           많은 투자자는 증권사 앱에서 현재 평가금액은 쉽게 확인하지만, 내가 가진 자산이 장기적으로 어떤 구조인지,
           하락 위험은 어느 정도인지, 배당과 실질가치까지 고려하면 어떤 결과가 나오는지는 한눈에 보기 어렵습니다.
@@ -75,7 +146,7 @@ export default function AboutPage({ onNavigate }) {
         </p>
       </AboutSection>
 
-      <AboutSection eyebrow="Difference" title="증권사 앱·엑셀과 무엇이 다른가요?">
+      <AboutSection eyebrow="Difference" title="증권사 앱·엑셀과 무엇이 다른가요?" visual="compare">
         <ul>
           <li>증권사 앱처럼 현재 잔고만 보여주는 것이 아니라 장기 시뮬레이션 흐름을 제공합니다.</li>
           <li>엑셀처럼 직접 수식을 만들지 않아도 포트폴리오 비중과 주요 가정값을 빠르게 조정할 수 있습니다.</li>
@@ -84,7 +155,7 @@ export default function AboutPage({ onNavigate }) {
         </ul>
       </AboutSection>
 
-      <AboutSection eyebrow="Flow" title="FINPLE의 3단계 흐름">
+      <AboutSection eyebrow="Flow" title="FINPLE의 3단계 흐름" visual="flow">
         <ul>
           <li><strong>투자 MBTI</strong> — 투자 성향과 운용 방식을 간단히 확인합니다.</li>
           <li><strong>자산 스크리너</strong> — ETF와 주요 자산 후보를 목적과 위험도 기준으로 탐색합니다.</li>
@@ -92,7 +163,7 @@ export default function AboutPage({ onNavigate }) {
         </ul>
       </AboutSection>
 
-      <AboutSection eyebrow="Beta" title="현재 베타 범위">
+      <AboutSection eyebrow="Beta" title="현재 베타 범위" visual="scope">
         <p>
           현재 베타 버전은 미국주식과 ETF 중심의 포트폴리오 분석에 초점을 둡니다.
           일부 데이터와 기능은 테스트 단계이며, 분석 결과는 투자 판단을 돕는 참고 자료입니다.
@@ -102,7 +173,7 @@ export default function AboutPage({ onNavigate }) {
         </p>
       </AboutSection>
 
-      <AboutSection eyebrow="Roadmap" title="향후 개발 방향">
+      <AboutSection eyebrow="Roadmap" title="향후 개발 방향" visual="roadmap">
         <ul>
           <li>미국주식·ETF 중심 분석 안정화</li>
           <li>한국주식·한국 ETF 데이터 조회 가능성 검토</li>
@@ -112,7 +183,7 @@ export default function AboutPage({ onNavigate }) {
         </ul>
       </AboutSection>
 
-      <AboutSection eyebrow="Notice" title="투자 유의사항">
+      <AboutSection eyebrow="Notice" title="투자 유의사항" visual="notice">
         <p>
           FINPLE은 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 투자 자문을 제공하지 않습니다.
           과거 데이터와 예상값은 미래 수익을 보장하지 않으며, 최종 투자 판단과 결과에 대한 책임은 이용자 본인에게 있습니다.
