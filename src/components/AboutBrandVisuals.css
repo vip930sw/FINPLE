@@ -25,14 +25,13 @@
   min-height: 220px;
   padding: 24px;
   border-radius: 28px;
-  background:
-    radial-gradient(circle at 24% 22%, rgba(56, 189, 248, 0.26), transparent 34%),
-    linear-gradient(135deg, #020617, #0f172a 58%, #1e293b);
-  color: #ffffff;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #dbe5f3;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08);
 }
 
 .aboutBrandLogoPanel img {
@@ -129,167 +128,26 @@
   min-width: 0;
 }
 
-.aboutIllustration {
+.aboutIllustrationAsset {
   min-height: 230px;
   border-radius: 30px;
   background:
-    radial-gradient(circle at 24% 28%, rgba(56, 189, 248, 0.22), transparent 30%),
+    radial-gradient(circle at 24% 28%, rgba(56, 189, 248, 0.18), transparent 30%),
     linear-gradient(145deg, #e0f2fe, #ffffff);
   border: 1px solid #dbe5f3;
-  position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
 }
 
-.aboutIllustrationOrb {
-  position: absolute;
+.aboutIllustrationAsset img {
   display: block;
-  border-radius: 999px;
+  width: 100%;
+  max-height: 230px;
+  object-fit: contain;
 }
-
-.aboutIllustrationOrb.primary {
-  width: 112px;
-  height: 112px;
-  right: -28px;
-  top: -28px;
-  background: rgba(37, 99, 235, 0.16);
-}
-
-.aboutIllustrationOrb.secondary {
-  width: 82px;
-  height: 82px;
-  left: -18px;
-  bottom: -20px;
-  background: rgba(56, 189, 248, 0.22);
-}
-
-.aboutIllustrationCard {
-  position: absolute;
-  display: block;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-}
-
-.aboutIllustrationCard.main {
-  width: 150px;
-  height: 96px;
-  left: 38px;
-  top: 52px;
-}
-
-.aboutIllustrationCard.sub {
-  width: 108px;
-  height: 76px;
-  right: 38px;
-  bottom: 44px;
-}
-
-.aboutIllustrationLine {
-  position: absolute;
-  display: block;
-  height: 8px;
-  border-radius: 999px;
-  background: #2563eb;
-  opacity: 0.22;
-}
-
-.aboutIllustrationLine.one {
-  width: 86px;
-  left: 64px;
-  top: 82px;
-}
-
-.aboutIllustrationLine.two {
-  width: 56px;
-  right: 64px;
-  bottom: 76px;
-  background: #38bdf8;
-  opacity: 0.45;
-}
-
-.aboutIllustrationDot {
-  position: absolute;
-  display: block;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background: #2563eb;
-}
-
-.aboutIllustrationDot.one { left: 56px; bottom: 58px; }
-.aboutIllustrationDot.two { right: 108px; top: 54px; background: #38bdf8; }
-.aboutIllustrationDot.three { right: 52px; top: 88px; background: #93c5fd; }
-
-.aboutIllustration-dashboard .aboutIllustrationCard.main::before {
-  content: "";
-  position: absolute;
-  left: 22px;
-  top: 22px;
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  background: conic-gradient(#2563eb 0 42%, #38bdf8 42% 72%, #e0f2fe 72% 100%);
-}
-
-.aboutIllustration-dashboard .aboutIllustrationCard.main::after {
-  content: "";
-  position: absolute;
-  right: 22px;
-  top: 24px;
-  width: 36px;
-  height: 44px;
-  border-radius: 8px 8px 0 0;
-  background: linear-gradient(180deg, #38bdf8 0 35%, #2563eb 35% 100%);
-}
-
-.aboutIllustration-problem .aboutIllustrationLine.one,
-.aboutIllustration-problem .aboutIllustrationLine.two {
-  transform: rotate(-10deg);
-}
-
-.aboutIllustration-compare .aboutIllustrationCard.main,
-.aboutIllustration-compare .aboutIllustrationCard.sub {
-  width: 86px;
-  height: 112px;
-  top: 58px;
-}
-
-.aboutIllustration-compare .aboutIllustrationCard.main { left: 48px; }
-.aboutIllustration-compare .aboutIllustrationCard.sub { right: 48px; bottom: auto; }
-
-.aboutIllustration-flow .aboutIllustrationLine.one {
-  width: 190px;
-  left: 58px;
-  top: 108px;
-}
-
-.aboutIllustration-flow .aboutIllustrationDot.one,
-.aboutIllustration-flow .aboutIllustrationDot.two,
-.aboutIllustration-flow .aboutIllustrationDot.three {
-  top: 101px;
-  width: 28px;
-  height: 28px;
-}
-
-.aboutIllustration-flow .aboutIllustrationDot.one { left: 52px; }
-.aboutIllustration-flow .aboutIllustrationDot.two { left: 138px; }
-.aboutIllustration-flow .aboutIllustrationDot.three { right: 58px; }
-
-.aboutIllustration-scope .aboutIllustrationCard.main::before,
-.aboutIllustration-roadmap .aboutIllustrationCard.main::before,
-.aboutIllustration-notice .aboutIllustrationCard.main::before {
-  position: absolute;
-  left: 24px;
-  top: 22px;
-  color: #2563eb;
-  font-size: 38px;
-  font-weight: 950;
-}
-
-.aboutIllustration-scope .aboutIllustrationCard.main::before { content: "β"; }
-.aboutIllustration-roadmap .aboutIllustrationCard.main::before { content: "↗"; }
-.aboutIllustration-notice .aboutIllustrationCard.main::before { content: "!"; color: #2563eb; }
 
 @media (max-width: 900px) {
   .aboutBrandIntro,
@@ -301,8 +159,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .aboutIllustration {
+  .aboutIllustrationAsset {
     min-height: 190px;
+  }
+
+  .aboutIllustrationAsset img {
+    max-height: 190px;
   }
 }
 
@@ -320,7 +182,12 @@
     width: min(100%, 320px);
   }
 
-  .aboutIllustration {
+  .aboutIllustrationAsset {
     min-height: 170px;
+    padding: 18px;
+  }
+
+  .aboutIllustrationAsset img {
+    max-height: 170px;
   }
 }
