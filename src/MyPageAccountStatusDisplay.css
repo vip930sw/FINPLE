@@ -1,17 +1,13 @@
-/* Step 111-9F - MY PAGE Account Status cards */
+/* Step 111-9G - MY PAGE Account Status cards */
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 12px !important;
 }
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > div:not(.accountStatusInfoCard) {
   display: none !important;
-}
-
-.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusInfoCard:nth-child(4) {
-  display: flex !important;
 }
 
 .accountStatusInfoCard {
@@ -45,27 +41,23 @@
   overflow-wrap: anywhere;
 }
 
-.accountStatusInfoCard strong.accountStatusEmailValue {
-  font-size: 15px;
-  line-height: 1.35;
-  letter-spacing: -0.04em;
-  word-break: normal;
-  overflow-wrap: anywhere;
-}
-
 .accountStatusInfoCard em {
   display: none !important;
 }
 
-.accountStatusPurposeNote {
-  margin-top: 16px;
+.accountStatusInfoNote {
+  margin-top: 18px;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
-.accountStatusPurposeNote span {
+.accountStatusTextRow + .accountStatusTextRow {
+  margin-top: 14px;
+}
+
+.accountStatusTextRow span {
   display: block;
   margin-bottom: 7px;
   font-size: 12px;
@@ -74,13 +66,24 @@
   letter-spacing: -0.02em;
 }
 
-.accountStatusPurposeNote strong {
+.accountStatusTextRow strong {
   display: block;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.65;
   color: #334155;
   word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.accountStatusTextRow:first-child strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.accountStatusPanel .accountStatusPurposeNote {
+  display: none !important;
 }
 
 .accountStatusPanel .accountStatusMessageHidden,
