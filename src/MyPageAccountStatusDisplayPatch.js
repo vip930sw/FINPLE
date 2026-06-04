@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 111-9C - MY PAGE Account Status safe display patch
+   Step 111-9F - MY PAGE Account Status safe display patch
    - document-wide MutationObserver를 사용하지 않습니다.
    - /mypage Account Status 영역만 제한적으로 보정합니다.
    - 같은 내용이면 다시 렌더링하지 않아 반복 갱신/렉을 방지합니다.
@@ -36,8 +36,8 @@ function normalizeAuthModeLabel(value) {
   const lower = text.toLowerCase();
 
   if (lower.includes("naver") || text.includes("네이버")) return "NAVER";
-  if (lower.includes("kakao") || text.includes("카카오")) return "카카오";
-  if (lower.includes("google") || text.includes("구글")) return "구글";
+  if (lower.includes("kakao") || text.includes("카카오")) return "KAKAO";
+  if (lower.includes("google") || text.includes("구글")) return "GOOGLE";
 
   return "";
 }
@@ -47,7 +47,7 @@ function inferExistingAuthModeLabel(panel) {
   for (const node of nodes) {
     const label = String(node.querySelector("span")?.textContent || "").trim().replace(/\s+/g, "");
     const value = String(node.querySelector("strong")?.textContent || "").trim();
-    if (label === "가입방식" || label === "가입방식" || label === "가입방법") {
+    if (label === "가입방식" || label === "가입방법") {
       const normalized = normalizeAuthModeLabel(value);
       if (normalized) return normalized;
     }
@@ -82,10 +82,10 @@ function getAccountStatusCards(user, panel) {
   const userName = user?.name || user?.nickname || "-";
 
   return [
-    { label: "로그인 이메일", value: email, note: "계정 식별 정보", className: "monoText" },
-    { label: "가입방식", value: authMode, note: "로그인 제공 방식" },
-    { label: "현재 플랜", value: plan, note: "요금제 기준" },
-    { label: "사용자", value: userName, note: "표시 이름" },
+    { label: "로그인 이메일", value: email, className: "accountStatusEmailValue" },
+    { label: "가입 방식", value: authMode },
+    { label: "사용자", value: userName },
+    { label: "현재 플랜/요금제", value: plan },
   ];
 }
 
@@ -94,7 +94,6 @@ function getCardsHtml(cards) {
     <div class="accountStatusInfoCard">
       <span>${escapeHtml(card.label)}</span>
       <strong class="${escapeHtml(card.className || "")}">${escapeHtml(card.value)}</strong>
-      <em>${escapeHtml(card.note)}</em>
     </div>
   `).join("");
 }
