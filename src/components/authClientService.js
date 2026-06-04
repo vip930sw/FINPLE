@@ -128,7 +128,7 @@ export function normalizeFinpleAuthMessage(message = "", status = null) {
   if (text.includes("이메일 인증") && (text.includes("필요") || text.includes("완료"))) return "이메일 인증 후 로그인할 수 있습니다.";
   if (text.includes("카카오") && (text.includes("취소") || text.includes("실패"))) return "카카오 로그인이 취소되었습니다.";
   if (text.includes("카카오") && text.includes("이메일")) return "카카오계정 이메일 제공 동의가 필요합니다.";
-  if (text.includes("네이버") && text.includes("검수")) return "네이버 로그인은 현재 검수 중입니다.";
+  if (text.includes("네이버") && text.includes("검수")) return "네이버 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
   if (status === 401 && !text.includes("이메일 또는 비밀번호")) return "로그인 시간이 만료되었습니다. 다시 로그인해 주세요.";
   return text || "인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.";
 }
