@@ -5,6 +5,7 @@
 }
 
 .loginSimplePage .loginSimpleCard {
+  position: relative !important;
   margin-top: 100px !important;
 }
 
@@ -105,6 +106,61 @@
 .googleIcon {
   width: 24px;
   height: 24px;
+}
+
+.loginSocialLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.finpleLoginSpinner {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  border-radius: 999px;
+  animation: finpleLoginSpinnerRotate 1.05s linear infinite;
+}
+
+.finpleLoginSpinner span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 38px;
+  margin-left: -7px;
+  margin-top: -56px;
+  border-radius: 999px;
+  background: #dbeafe;
+  transform-origin: 7px 56px;
+}
+
+.finpleLoginSpinner span:nth-child(1) { transform: rotate(0deg); opacity: 0.16; }
+.finpleLoginSpinner span:nth-child(2) { transform: rotate(30deg); opacity: 0.22; }
+.finpleLoginSpinner span:nth-child(3) { transform: rotate(60deg); opacity: 0.3; }
+.finpleLoginSpinner span:nth-child(4) { transform: rotate(90deg); opacity: 0.38; }
+.finpleLoginSpinner span:nth-child(5) { transform: rotate(120deg); opacity: 0.48; }
+.finpleLoginSpinner span:nth-child(6) { transform: rotate(150deg); opacity: 0.58; }
+.finpleLoginSpinner span:nth-child(7) { transform: rotate(180deg); opacity: 0.68; }
+.finpleLoginSpinner span:nth-child(8) { transform: rotate(210deg); opacity: 0.78; }
+.finpleLoginSpinner span:nth-child(9) { transform: rotate(240deg); opacity: 0.88; }
+.finpleLoginSpinner span:nth-child(10) { transform: rotate(270deg); opacity: 1; background: #3b82f6; }
+.finpleLoginSpinner span:nth-child(11) { transform: rotate(300deg); opacity: 0.82; background: #60a5fa; }
+.finpleLoginSpinner span:nth-child(12) { transform: rotate(330deg); opacity: 0.64; background: #93c5fd; }
+
+@keyframes finpleLoginSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finpleLoginSpinner {
+    animation-duration: 2.4s;
+  }
 }
 
 .brandIcon,
