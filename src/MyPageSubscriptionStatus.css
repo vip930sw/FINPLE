@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 162B - MY PAGE subscription status panel
+   Step 111-10 - MY PAGE subscription status panel
 ========================================================= */
 
 .subscriptionStatusPanel {
@@ -20,6 +20,12 @@
   background: #f8fafc;
 }
 
+.subscriptionStatusGrid > .subscriptionPlanHighlight {
+  border-color: #93c5fd !important;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%) !important;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.10);
+}
+
 .subscriptionStatusGrid span {
   display: block;
   margin-bottom: 8px;
@@ -36,34 +42,22 @@
   word-break: keep-all;
 }
 
-.subscriptionStatusGrid em {
-  display: block;
-  margin-top: 6px;
-  color: #64748b;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 800;
+.subscriptionStatusGrid em,
+.subscriptionStatusGridNoteHidden {
+  display: none !important;
 }
 
-.subscriptionStatusMessage {
-  margin-top: 18px;
-}
-
-.subscriptionStatusPanel--scheduled .subscriptionStatusMessage {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1e3a8a;
-}
-
-.subscriptionStatusPanel--error .subscriptionStatusMessage {
-  border-color: #fecaca;
-  background: #fff7f7;
-  color: #dc2626;
+.subscriptionStatusMessage,
+.subscriptionStatusBadgeHidden,
+.subscriptionStatusRefreshHidden,
+.subscriptionStatusMessageHidden {
+  display: none !important;
 }
 
 .subscriptionStatusActions {
   align-items: center;
   flex-wrap: wrap;
+  margin-top: 24px;
 }
 
 .subscriptionEndButton {
