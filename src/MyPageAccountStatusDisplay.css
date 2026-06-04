@@ -1,17 +1,12 @@
-/* Step 111-9C - MY PAGE Account Status cards */
+/* Step 111-9D - MY PAGE Account Status cards */
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
   display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 12px !important;
 }
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > div:not(.accountStatusInfoCard) {
-  display: none !important;
-}
-
-.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusInfoCard:nth-child(3),
-.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusInfoCard:nth-child(4) {
   display: none !important;
 }
 
@@ -52,6 +47,32 @@
   line-height: 1.35;
 }
 
+.accountStatusPurposeNote {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.accountStatusPurposeNote span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #64748b;
+  letter-spacing: -0.02em;
+}
+
+.accountStatusPurposeNote strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.65;
+  color: #0f172a;
+  word-break: keep-all;
+}
+
 .accountStatusPanel .accountStatusMessageHidden,
 .accountStatusPanel .accountStatusRefreshHidden {
   display: none !important;
@@ -61,7 +82,7 @@
   display: none !important;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
