@@ -3,9 +3,12 @@
    - ACCOUNT STATUS를 3 x 2 카드 배열로 정리합니다.
    - 로그인 이메일, 가입방식, 이메일 활용 목적을 명확히 표시합니다.
    - 체험 세션 안내 문구와 계정 상태 새로고침 버튼은 사용자 화면에서 숨깁니다.
+   - 반복 렌더링을 방지하기 위해 MutationObserver를 사용하지 않습니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+let lastAccountStatusSignature = "";
+let accountStatusTimer = null;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -67,6 +70,35 @@ function getAccountStatusCards(user) {
   ];
 }
 
+function getCardsHtml(cards) {
+  return cards.map((card) => `
+    <div class="accountStatusInfoCard">
+      <span>${escapeHtml(card.label)}</span>
+      <strong class="${escapeHtml(card.className || "")}">${escapeHtml(card.value)}</strong>
+      <em>${escapeHtml(card.note)}</em>
+    </div>
+  `).join("");
+}
+
+function hideLowValueAccountStatusElements(panel) {
+  panel.querySelectorAll(".serverStorageMessage.compact").forEach((node) => {
+    if (!node.hasAttribute("hidden")) {
+      node.classList.add("accountStatusMessageHidden");
+      node.setAttribute("hidden", "true");
+    }
+  });
+
+  panel.querySelectorAll(".serverStorageActions button").forEach((button) => {
+    const text = String(button.textContent || "").trim();
+    if (text === "계정 상태 새로고침" || text === "체험 사용자 연결") {
+      if (!button.hasAttribute("hidden")) {
+        button.classList.add("accountStatusRefreshHidden");
+        button.setAttribute("hidden", "true");
+      }
+    }
+  });
+}
+
 function renderAccountStatusCards() {
   if (!isMyPagePath()) return;
 
@@ -76,39 +108,31 @@ function renderAccountStatusCards() {
 
   const user = readJson(AUTH_USER_STORAGE_KEY);
   const cards = getAccountStatusCards(user);
+  const signature = JSON.stringify(cards);
 
   grid.classList.add("accountStatusGrid--sixCards");
-  grid.innerHTML = cards.map((card) => `
-    <div class="accountStatusInfoCard">
-      <span>${escapeHtml(card.label)}</span>
-      <strong class="${escapeHtml(card.className || "")}">${escapeHtml(card.value)}</strong>
-      <em>${escapeHtml(card.note)}</em>
-    </div>
-  `).join("");
+  hideLowValueAccountStatusElements(panel);
 
-  panel.querySelectorAll(".serverStorageMessage.compact").forEach((node) => {
-    node.classList.add("accountStatusMessageHidden");
-    node.setAttribute("hidden", "true");
-  });
+  if (grid.getAttribute("data-account-status-signature") === signature) return;
 
-  panel.querySelectorAll(".serverStorageActions button").forEach((button) => {
-    const text = String(button.textContent || "").trim();
-    if (text === "계정 상태 새로고침" || text === "체험 사용자 연결") {
-      button.classList.add("accountStatusRefreshHidden");
-      button.setAttribute("hidden", "true");
-    }
-  });
+  grid.innerHTML = getCardsHtml(cards);
+  grid.setAttribute("data-account-status-signature", signature);
+  lastAccountStatusSignature = signature;
+}
+
+function scheduleAccountStatusRender(delay = 80) {
+  window.clearTimeout(accountStatusTimer);
+  accountStatusTimer = window.setTimeout(renderAccountStatusCards, delay);
 }
 
 function bootAccountStatusDisplayPatch() {
   [100, 240, 520, 1000, 1800].forEach((delay) => window.setTimeout(renderAccountStatusCards, delay));
 
-  const observer = new MutationObserver(() => window.requestAnimationFrame(renderAccountStatusCards));
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  window.addEventListener("popstate", () => window.setTimeout(renderAccountStatusCards, 120));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(renderAccountStatusCards, 120));
-  window.addEventListener("storage", () => window.setTimeout(renderAccountStatusCards, 120));
+  window.addEventListener("popstate", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-auth-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-plan-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-local-storage-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("storage", () => scheduleAccountStatusRender(120));
 }
 
 if (typeof window !== "undefined" && typeof document !== "undefined") {
