@@ -26,6 +26,7 @@ const EMAIL_DOMAIN_OPTIONS = [
   "직접입력",
 ];
 const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
+const OAUTH_READY_MESSAGE = "곧 이동합니다.";
 
 function GoogleGIcon() {
   return (
@@ -35,6 +36,18 @@ function GoogleGIcon() {
       <path fill="#FBBC05" d="M9.7 28.1c-.4-1.2-.6-2.6-.6-4.1s.2-2.8.6-4.1l-6.2-4.8C2.2 17.9 1.5 20.9 1.5 24s.7 6.1 2 8.8l6.2-4.7Z" />
       <path fill="#34A853" d="M24 45.5c4.9 0 9-1.6 12-4.4l-6-4.6c-1.6 1.1-3.7 1.9-6 1.9-7.1 0-12.8-5.8-14.3-10.3l-6.2 4.8C7.2 40.3 14.9 45.5 24 45.5Z" />
     </svg>
+  );
+}
+
+function LoginSocialSpinner() {
+  return (
+    <div className="loginSocialLoadingOverlay" aria-hidden="true">
+      <div className="finpleLoginSpinner">
+        <span /><span /><span /><span />
+        <span /><span /><span /><span />
+        <span /><span /><span /><span />
+      </div>
+    </div>
   );
 }
 
@@ -108,7 +121,12 @@ export function LoginPage({ onNavigate }) {
   useEffect(() => {
     function handleOAuthWakeupStatus(event) {
       const message = event?.detail?.message;
-      if (message) setStatusMessage(message);
+      if (!message) return;
+      if (message === OAUTH_LOADING_MESSAGE || message === OAUTH_READY_MESSAGE) {
+        setStatusMessage("");
+        return;
+      }
+      setStatusMessage(message);
     }
 
     window.addEventListener("finple-oauth-wakeup-status", handleOAuthWakeupStatus);
@@ -135,7 +153,7 @@ export function LoginPage({ onNavigate }) {
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
-    setStatusMessage(OAUTH_LOADING_MESSAGE);
+    setStatusMessage("");
     try {
       await startGoogleOAuthLogin();
     } finally {
@@ -145,7 +163,7 @@ export function LoginPage({ onNavigate }) {
 
   async function handleKakaoLogin() {
     setIsKakaoLoading(true);
-    setStatusMessage(OAUTH_LOADING_MESSAGE);
+    setStatusMessage("");
     try {
       await startKakaoOAuthLogin();
     } finally {
@@ -155,7 +173,7 @@ export function LoginPage({ onNavigate }) {
 
   async function handleNaverLogin() {
     setIsNaverLoading(true);
-    setStatusMessage(OAUTH_LOADING_MESSAGE);
+    setStatusMessage("");
     try {
       await startNaverOAuthLogin();
     } finally {
@@ -168,6 +186,7 @@ export function LoginPage({ onNavigate }) {
   return (
     <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
       <section className="accountCard accountFormCard loginRoleCard singleLoginCard loginSimpleCard">
+        {isSocialLoading ? <LoginSocialSpinner /> : null}
         <div className="loginSimpleBrand" aria-hidden="true">
           <div className="brandIcon loginSimpleBrandIcon"><span>F</span><i /></div>
           <strong>FINPLE</strong>
