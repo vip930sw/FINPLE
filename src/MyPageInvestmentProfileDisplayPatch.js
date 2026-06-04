@@ -1,7 +1,8 @@
 /* =========================================================
-   Step 111-6 - MY PAGE investment profile display patch
+   Step 111-6 Hotfix - MY PAGE investment profile display patch
    - 내 투자성향 상세 비중에서 내부 asset key가 노출되지 않도록 한글 표시명을 보정합니다.
    - 저장된 관심 섹터가 없을 때 포트폴리오 프리셋 비중을 기준으로 관심 섹터를 자동 보완합니다.
+   - MutationObserver 반복 감지를 제거해 /mypage 렉을 방지합니다.
 ========================================================= */
 
 const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
@@ -18,6 +19,9 @@ const ASSET_DISPLAY_LABELS = {
   채권: "종합채권",
   코인: "블록체인 테마",
 };
+
+let investmentProfileRenderTimer = null;
+let lastInvestmentProfileSignature = "";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -80,11 +84,10 @@ function hasEmptySectorPlaceholder(listNode) {
   return !text || text.includes("섹터 정보 없음") || text.includes("저장된 섹터");
 }
 
-function ensureInvestmentProfileSectors() {
+function ensureInvestmentProfileSectors(result) {
   const sectorsNode = document.querySelector("[data-investment-profile-sectors]");
   if (!sectorsNode || !hasEmptySectorPlaceholder(sectorsNode)) return;
 
-  const result = readJson(MBTI_PRESET_STORAGE_KEY);
   const storedSectors = Array.isArray(result?.sectors) ? result.sectors.filter(Boolean) : [];
   const sectors = storedSectors.length ? storedSectors : deriveSectorsFromPreset(getPresetFromStoredResult(result));
 
@@ -92,21 +95,43 @@ function ensureInvestmentProfileSectors() {
   sectorsNode.innerHTML = sectors.map((sector) => `<li>${escapeHtml(sector)}</li>`).join("");
 }
 
+function getInvestmentProfileSignature(result) {
+  const ratioText = Array.from(document.querySelectorAll("[data-investment-profile-ratios] span, [data-investment-profile-preview] span"))
+    .map((node) => String(node.textContent || "").trim())
+    .join("|");
+  const sectorText = String(document.querySelector("[data-investment-profile-sectors]")?.textContent || "").trim();
+  return JSON.stringify({
+    resultPreset: getPresetFromStoredResult(result),
+    sectors: Array.isArray(result?.sectors) ? result.sectors : [],
+    ratioText,
+    sectorText,
+  });
+}
+
 function applyInvestmentProfileDisplayPatch() {
   if (!isMyPagePath()) return;
+
+  const result = readJson(MBTI_PRESET_STORAGE_KEY);
+  const signature = getInvestmentProfileSignature(result);
+  if (signature === lastInvestmentProfileSignature) return;
+
   normalizeInvestmentProfileAssetLabels();
-  ensureInvestmentProfileSectors();
+  ensureInvestmentProfileSectors(result);
+  lastInvestmentProfileSignature = getInvestmentProfileSignature(result);
+}
+
+function scheduleInvestmentProfilePatch(delay = 120) {
+  window.clearTimeout(investmentProfileRenderTimer);
+  investmentProfileRenderTimer = window.setTimeout(applyInvestmentProfileDisplayPatch, delay);
 }
 
 function bootInvestmentProfileDisplayPatch() {
   [120, 300, 700, 1200, 2200].forEach((delay) => window.setTimeout(applyInvestmentProfileDisplayPatch, delay));
 
-  const observer = new MutationObserver(() => window.requestAnimationFrame(applyInvestmentProfileDisplayPatch));
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-
-  window.addEventListener("popstate", () => window.setTimeout(applyInvestmentProfileDisplayPatch, 120));
-  window.addEventListener("finple-route-changed", () => window.setTimeout(applyInvestmentProfileDisplayPatch, 120));
-  window.addEventListener("storage", () => window.setTimeout(applyInvestmentProfileDisplayPatch, 120));
+  window.addEventListener("popstate", () => scheduleInvestmentProfilePatch(120));
+  window.addEventListener("finple-route-changed", () => scheduleInvestmentProfilePatch(120));
+  window.addEventListener("finple-auth-updated", () => scheduleInvestmentProfilePatch(120));
+  window.addEventListener("storage", () => scheduleInvestmentProfilePatch(120));
 }
 
 if (typeof window !== "undefined" && typeof document !== "undefined") {
