@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 111-9F - MY PAGE Account Status safe display patch
+   Step 111-9G - MY PAGE Account Status safe display patch
    - document-wide MutationObserver를 사용하지 않습니다.
    - /mypage Account Status 영역만 제한적으로 보정합니다.
    - 같은 내용이면 다시 렌더링하지 않아 반복 갱신/렉을 방지합니다.
@@ -75,14 +75,16 @@ function getEmailPurposeText() {
   return "회원 식별, 로그인 계정 확인, 구독 상태 안내, 결제 내역 안내, 서비스 중요 고지 및 고객 문의 대응에 사용됩니다.";
 }
 
+function getAccountDescriptionText() {
+  return "로그인 방식, 사용자명, 현재 이용 중인 플랜/요금제를 확인하는 계정 관리 영역입니다.";
+}
+
 function getAccountStatusCards(user, panel) {
-  const email = user?.email || "-";
   const authMode = formatAuthMode(user, panel);
-  const plan = user?.plan ? String(user.plan).toUpperCase() : "FREE";
   const userName = user?.name || user?.nickname || "-";
+  const plan = user?.plan ? String(user.plan).toUpperCase() : "FREE";
 
   return [
-    { label: "로그인 이메일", value: email, className: "accountStatusEmailValue" },
     { label: "가입 방식", value: authMode },
     { label: "사용자", value: userName },
     { label: "현재 플랜/요금제", value: plan },
@@ -112,26 +114,41 @@ function ensureMyPageTitleStyle() {
   document.head.appendChild(style);
 }
 
-function normalizeAccountStatusTitle(panel) {
+function normalizeAccountStatusHeading(panel) {
   const title = panel.querySelector("h2");
   if (title && title.textContent.trim() === "계정 연결 상태") {
     title.textContent = "계정 상태";
   }
+
+  const description = title?.nextElementSibling;
+  if (description?.tagName === "P") {
+    description.textContent = getAccountDescriptionText();
+  }
 }
 
-function ensureEmailPurposeNote(panel) {
-  const text = getEmailPurposeText();
-  let note = panel.querySelector("[data-account-email-purpose-note]");
+function ensureAccountInfoNote(panel, user) {
+  const email = user?.email || "-";
+  const purposeText = getEmailPurposeText();
+  let note = panel.querySelector("[data-account-info-note]");
   if (!note) {
     note = document.createElement("div");
-    note.className = "accountStatusPurposeNote";
-    note.setAttribute("data-account-email-purpose-note", "true");
+    note.className = "accountStatusInfoNote";
+    note.setAttribute("data-account-info-note", "true");
     const grid = panel.querySelector(".accountStatusGrid");
     if (grid?.parentNode) grid.insertAdjacentElement("afterend", note);
     else panel.appendChild(note);
   }
 
-  note.innerHTML = `<span>이메일 활용 목적</span><strong>${escapeHtml(text)}</strong>`;
+  note.innerHTML = `
+    <div class="accountStatusTextRow">
+      <span>로그인 이메일</span>
+      <strong>${escapeHtml(email)}</strong>
+    </div>
+    <div class="accountStatusTextRow accountStatusPurposeRow">
+      <span>이메일 활용 목적</span>
+      <strong>${escapeHtml(purposeText)}</strong>
+    </div>
+  `;
 }
 
 function hideLowValueAccountStatusElements(panel) {
@@ -158,15 +175,15 @@ function renderAccountStatusCards() {
   const grid = panel?.querySelector(".accountStatusGrid");
   if (!panel || !grid) return;
 
-  normalizeAccountStatusTitle(panel);
+  normalizeAccountStatusHeading(panel);
 
   const user = readJson(AUTH_USER_STORAGE_KEY);
   const cards = getAccountStatusCards(user, panel);
-  const signature = JSON.stringify({ cards, purpose: getEmailPurposeText() });
+  const signature = JSON.stringify({ cards, email: user?.email || "-", purpose: getEmailPurposeText(), description: getAccountDescriptionText() });
 
   grid.classList.add("accountStatusGrid--sixCards");
   hideLowValueAccountStatusElements(panel);
-  ensureEmailPurposeNote(panel);
+  ensureAccountInfoNote(panel, user);
 
   if (grid.getAttribute("data-account-status-signature") === signature) return;
 
