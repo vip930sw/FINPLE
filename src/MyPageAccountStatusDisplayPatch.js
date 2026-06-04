@@ -1,11 +1,12 @@
 /* =========================================================
-   Step 111-9 - MY PAGE Account Status safe display patch
+   Step 111-9B - MY PAGE Account Status safe display patch
    - document-wide MutationObserver를 사용하지 않습니다.
-   - /mypage Account Status 영역만 제한적으로 3 x 2 카드 형태로 보정합니다.
+   - /mypage Account Status 영역만 제한적으로 보정합니다.
    - 같은 내용이면 다시 렌더링하지 않아 반복 갱신/렉을 방지합니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const MY_PAGE_LABEL_STYLE_ID = "finple-mypage-mini-label-blue-style";
 let accountStatusRenderTimer = null;
 
 function isMyPagePath() {
@@ -32,13 +33,11 @@ function escapeHtml(value) {
 function formatAuthMode(authMode) {
   const normalized = String(authMode || "").toLowerCase();
   const labels = {
-    "email-password": "이메일 가입",
-    email: "이메일 가입",
-    google: "Google 로그인",
-    kakao: "Kakao 로그인",
-    naver: "Naver 로그인",
-    "trial-user": "체험 계정",
+    google: "구글",
+    kakao: "카카오",
+    naver: "NAVER",
   };
+
   return labels[normalized] || "계정 로그인";
 }
 
@@ -57,7 +56,6 @@ function getAccountStatusCards(user) {
   const emailPurpose = getEmailPurposeText(user);
   const loginStatus = isLoggedIn ? "로그인됨" : "미연결";
   const plan = user?.plan ? String(user.plan).toUpperCase() : "FREE";
-  const userName = user?.name || user?.nickname || "-";
 
   return [
     { label: "로그인 이메일", value: email, note: "계정 식별 정보", className: "monoText" },
@@ -65,7 +63,6 @@ function getAccountStatusCards(user) {
     { label: "이메일 활용 목적", value: emailPurpose, note: "필수 안내 수신" },
     { label: "로그인 상태", value: loginStatus, note: isLoggedIn ? "이용 가능" : "로그인 필요" },
     { label: "현재 플랜", value: plan, note: "요금제 기준" },
-    { label: "사용자", value: userName, note: "표시 이름" },
   ];
 }
 
@@ -77,6 +74,27 @@ function getCardsHtml(cards) {
       <em>${escapeHtml(card.note)}</em>
     </div>
   `).join("");
+}
+
+function ensureMyPageTitleStyle() {
+  if (document.getElementById(MY_PAGE_LABEL_STYLE_ID)) return;
+
+  const style = document.createElement("style");
+  style.id = MY_PAGE_LABEL_STYLE_ID;
+  style.textContent = `
+    .accountPage .accountPanelStack .accountMiniLabel,
+    .accountPage .myPageBetaCompactNotice .accountMiniLabel {
+      color: #2563eb !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function normalizeAccountStatusTitle(panel) {
+  const title = panel.querySelector("h2");
+  if (title && title.textContent.trim() === "계정 연결 상태") {
+    title.textContent = "계정 상태";
+  }
 }
 
 function hideLowValueAccountStatusElements(panel) {
@@ -97,9 +115,13 @@ function hideLowValueAccountStatusElements(panel) {
 function renderAccountStatusCards() {
   if (!isMyPagePath()) return;
 
+  ensureMyPageTitleStyle();
+
   const panel = document.querySelector(".accountStatusPanel");
   const grid = panel?.querySelector(".accountStatusGrid");
   if (!panel || !grid) return;
+
+  normalizeAccountStatusTitle(panel);
 
   const user = readJson(AUTH_USER_STORAGE_KEY);
   const cards = getAccountStatusCards(user);
