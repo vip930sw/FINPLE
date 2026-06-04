@@ -1,11 +1,18 @@
-/* =========================================================
-   Step 111-8 - MY PAGE Account Status cards
-========================================================= */
+/* Step 111-9C - MY PAGE Account Status cards */
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 12px !important;
+}
+
+.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > div:not(.accountStatusInfoCard) {
+  display: none !important;
+}
+
+.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusInfoCard:nth-child(3),
+.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusInfoCard:nth-child(4) {
+  display: none !important;
 }
 
 .accountStatusInfoCard {
@@ -29,10 +36,11 @@
 }
 
 .accountStatusInfoCard strong {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   color: #0f172a;
   line-height: 1.35;
+  letter-spacing: -0.03em;
   word-break: break-all;
 }
 
