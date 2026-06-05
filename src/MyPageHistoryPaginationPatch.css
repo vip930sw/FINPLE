@@ -11,8 +11,27 @@
   margin-top: 18px;
 }
 
-.historyToggleButton {
+.historyPrimaryActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.historyToggleButton,
+.historyInlineActionButton {
   min-width: 132px;
+}
+
+.historyInlineActionButton {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+}
+
+.historyEmptyActionRow {
+  display: none !important;
 }
 
 .historyPager {
@@ -52,6 +71,11 @@
 
 @media (max-width: 560px) {
   .historyPaginationToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .historyPrimaryActions {
     align-items: stretch;
     flex-direction: column;
   }
