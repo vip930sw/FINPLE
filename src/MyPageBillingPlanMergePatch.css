@@ -1,0 +1,44 @@
+/* =========================================================
+   Step 112-3 - MY PAGE billing/plan merged panel style
+========================================================= */
+
+.billingPlanMergedPanel .subscriptionStatusGrid,
+.billingPlanMergedPanel .billingMergedUsageGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.billingMergedUsageCard {
+  min-height: 86px;
+}
+
+.billingMergedUsageMessage {
+  display: block !important;
+  margin-top: 16px !important;
+  margin-bottom: 0 !important;
+}
+
+.billingMergedPlanPanelHidden {
+  display: none !important;
+}
+
+.billingPlanMergedPanel [data-subscription-pricing] {
+  display: none !important;
+}
+
+.billingMergedPlanBadge {
+  display: inline-flex !important;
+}
+
+@media (max-width: 920px) {
+  .billingPlanMergedPanel .subscriptionStatusGrid,
+  .billingPlanMergedPanel .billingMergedUsageGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .billingPlanMergedPanel .subscriptionStatusGrid,
+  .billingPlanMergedPanel .billingMergedUsageGrid {
+    grid-template-columns: 1fr;
+  }
+}
