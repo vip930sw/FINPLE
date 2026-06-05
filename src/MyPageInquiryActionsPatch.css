@@ -1,0 +1,22 @@
+/* =========================================================
+   Step 112-2B - MY PAGE inquiry action button polish
+   - 문의내역 새로고침 버튼은 사용자 화면에서 숨깁니다.
+   - 새 문의 작성 버튼을 기존 기본 액션 버튼과 같은 톤으로 보정합니다.
+========================================================= */
+
+[data-my-inquiries-refresh] {
+  display: none !important;
+}
+
+[data-my-inquiries-support] {
+  border-color: #0f172a !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+}
+
+[data-my-inquiries-support]:hover {
+  border-color: #1d4ed8 !important;
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+}
