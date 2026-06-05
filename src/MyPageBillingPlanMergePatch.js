@@ -18,7 +18,7 @@ const PANEL_TITLES = [
   { selector: "[data-payment-method-panel]", eyebrow: "MY PAYMENT METHOD", title: "내 결제수단" },
   { selector: "[data-payment-history-panel]", eyebrow: "MY PAYMENT HISTORY", title: "내 결제내역" },
   { selector: "[data-my-inquiries-panel]", eyebrow: "MY INQUIRIES", title: "내 문의내역" },
-  { selector: ".serverStoragePanel", eyebrow: "MY SERVER STORAGE", title: "서버 저장" },
+  { selector: ".serverStoragePanel", eyebrow: "MY STORAGE HISTORY", title: "내 저장내역" },
 ];
 
 function isMyPagePath() {
