@@ -6,6 +6,7 @@
 ========================================================= */
 
 import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
+import { fetchMySupportInquiries } from "./components/portfolio/services/serverPortfolioService";
 
 const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
 const ASSET_LABELS = {
@@ -18,12 +19,28 @@ const ASSET_LABELS = {
   cash: "현금",
 };
 
+const INQUIRY_CATEGORY_LABELS = {
+  bug: "오류 신고",
+  feature: "기능 제안",
+  payment: "결제 문의",
+  data: "데이터 문의",
+  etc: "기타 문의",
+};
+
+const INQUIRY_STATUS_LABELS = {
+  open: "접수됨",
+  in_progress: "확인 중",
+  resolved: "답변 완료",
+  closed: "종료",
+};
+
 const MENU_ITEMS = [
   { key: "account", label: "계정 상태", description: "로그인·사용자", selector: ".accountStatusPanel" },
   { key: "investment-profile", label: "내 투자성향", description: "투자 MBTI", selector: "[data-investment-profile-panel]" },
   { key: "billing", label: "구독 / 결제", description: "플랜·해지", selector: "[data-subscription-status-panel]" },
   { key: "plan", label: "요금제 상태", description: "한도·권한", selector: ".planStatusPanel" },
   { key: "payment-method", label: "결제수단", description: "자동결제 등록", selector: "[data-payment-method-panel]" },
+  { key: "inquiries", label: "내 문의내역", description: "접수·처리 현황", selector: "[data-my-inquiries-panel]" },
   { key: "storage", label: "서버 저장", description: "저장·불러오기", selector: ".serverStoragePanel" },
 ];
 
@@ -33,6 +50,8 @@ let activeMenuKey = "account";
 let isInvestmentResultOpen = false;
 let billingMethodRequested = false;
 let billingMethodState = { loading: false, registered: false, method: null, error: "" };
+let myInquiriesRequested = false;
+let myInquiriesState = { loading: false, inquiries: [], error: "" };
 
 function isMyPagePath() { return window.location.pathname === "/mypage"; }
 function navigateTo(path) { window.location.href = path; }
@@ -65,6 +84,28 @@ function getPresetEntries(result) {
 }
 function getArrayItems(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+function formatShortDate(value) {
+  if (!value) return "일자 없음";
+  try {
+    return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
+  } catch (error) {
+    return "일자 없음";
+  }
+}
+function getInquiryStatusLabel(status) {
+  return INQUIRY_STATUS_LABELS[status] || status || "접수됨";
+}
+function getInquiryCategoryLabel(category) {
+  return INQUIRY_CATEGORY_LABELS[category] || "기타 문의";
+}
+function getInquiryExcerpt(message = "") {
+  const body = String(message || "")
+    .split("--- 문의 메타 정보 ---")[0]
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!body) return "문의 내용 미리보기가 없습니다.";
+  return body.length > 96 ? `${body.slice(0, 96)}…` : body;
 }
 
 function getInvestmentProfilePanelHtml() {
@@ -214,6 +255,30 @@ function getPaymentMethodPanelHtml() {
   `;
 }
 
+function getMyInquiriesPanelHtml() {
+  return `
+    <section class="accountCard myInquiriesPanel" data-my-inquiries-panel data-mypage-panel-key="inquiries">
+      <div class="serverStorageHeader">
+        <div><p class="accountMiniLabel">My Inquiries</p><h2>내 문의내역</h2><p>내가 남긴 문의의 접수 상태와 최근 처리 현황을 확인합니다.</p></div>
+        <span class="serverStatusBadge ready" data-my-inquiries-badge>확인 중</span>
+      </div>
+      <div class="paymentMethodEntryGrid myInquiriesSummaryGrid">
+        <div><span>전체 문의</span><strong data-my-inquiries-total>확인 중</strong><em>최근 50건 기준</em></div>
+        <div><span>진행 중</span><strong data-my-inquiries-active>확인 중</strong><em>접수·확인 중</em></div>
+        <div><span>최근 문의</span><strong data-my-inquiries-latest>확인 중</strong><em>작성일 기준</em></div>
+      </div>
+      <p class="serverStorageMessage compact paymentMethodEntryMessage" data-my-inquiries-message>문의내역을 확인하고 있습니다.</p>
+      <div class="myInquiriesList" data-my-inquiries-list>
+        <p class="serverPortfolioEmpty">문의내역을 불러오기 전입니다.</p>
+      </div>
+      <div class="serverStorageActions compactActions">
+        <button type="button" class="primaryButton" data-my-inquiries-refresh>문의내역 새로고침</button>
+        <button type="button" class="secondaryButton" data-my-inquiries-support>새 문의 작성</button>
+      </div>
+    </section>
+  `;
+}
+
 function markPanelKeys() {
   MENU_ITEMS.forEach((item) => {
     const panel = document.querySelector(item.selector);
@@ -251,8 +316,31 @@ function ensurePaymentMethodPanel() {
   else stack.insertAdjacentHTML("beforeend", getPaymentMethodPanelHtml());
   bindPaymentMethodPanelActions();
 }
+function bindMyInquiriesPanelActions() {
+  const refreshButton = document.querySelector("[data-my-inquiries-refresh]");
+  if (refreshButton && refreshButton.getAttribute("data-my-inquiries-wired") !== "true") {
+    refreshButton.setAttribute("data-my-inquiries-wired", "true");
+    refreshButton.addEventListener("click", () => loadMyInquiries({ force: true }));
+  }
+  const supportButton = document.querySelector("[data-my-inquiries-support]");
+  if (supportButton && supportButton.getAttribute("data-my-inquiries-wired") !== "true") {
+    supportButton.setAttribute("data-my-inquiries-wired", "true");
+    supportButton.addEventListener("click", () => navigateTo("/support"));
+  }
+}
+function ensureMyInquiriesPanel() {
+  if (document.querySelector("[data-my-inquiries-panel]")) { bindMyInquiriesPanelActions(); return; }
+  const stack = document.querySelector(".accountPanelStack");
+  if (!stack) return;
+  const paymentMethodPanel = document.querySelector("[data-payment-method-panel]");
+  const storagePanel = document.querySelector(".serverStoragePanel");
+  if (paymentMethodPanel?.parentNode) paymentMethodPanel.insertAdjacentHTML("afterend", getMyInquiriesPanelHtml());
+  else if (storagePanel?.parentNode) storagePanel.insertAdjacentHTML("beforebegin", getMyInquiriesPanelHtml());
+  else stack.insertAdjacentHTML("beforeend", getMyInquiriesPanelHtml());
+  bindMyInquiriesPanelActions();
+}
 function getSidebarHtml() {
-  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>계정·성향·결제·저장 관리</span></div><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
+  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>계정·성향·결제·문의·저장 관리</span></div><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
 }
 function ensureTopButton() {
   if (document.querySelector("[data-mypage-top-button]")) return;
@@ -303,6 +391,66 @@ async function loadBillingMethodStatus(options = {}) {
   }
   updateBillingMethodUi();
 }
+function getInquiryListHtml(inquiries) {
+  if (!inquiries.length) return `<p class="serverPortfolioEmpty">아직 접수된 문의내역이 없습니다.</p>`;
+  return inquiries.slice(0, 10).map((inquiry) => {
+    const status = inquiry.status || "open";
+    return `
+      <article class="myInquiryItem">
+        <div class="myInquiryItemTop">
+          <span class="inquiryStatusBadge status-${escapeHtml(status)}">${escapeHtml(getInquiryStatusLabel(status))}</span>
+          <em>${escapeHtml(formatShortDate(inquiry.createdAt || inquiry.created_at))}</em>
+        </div>
+        <strong>${escapeHtml(inquiry.title || "제목 없는 문의")}</strong>
+        <p>${escapeHtml(getInquiryExcerpt(inquiry.message))}</p>
+        <div class="myInquiryItemMeta"><span>${escapeHtml(getInquiryCategoryLabel(inquiry.category))}</span><span>ID ${escapeHtml(String(inquiry.id || "").slice(0, 8))}</span></div>
+      </article>
+    `;
+  }).join("") + (inquiries.length > 10 ? `<p class="serverPortfolioMore">외 ${inquiries.length - 10}건은 서버에 보관 중입니다.</p>` : "");
+}
+function updateMyInquiriesUi() {
+  const badge = document.querySelector("[data-my-inquiries-badge]");
+  const total = document.querySelector("[data-my-inquiries-total]");
+  const active = document.querySelector("[data-my-inquiries-active]");
+  const latest = document.querySelector("[data-my-inquiries-latest]");
+  const message = document.querySelector("[data-my-inquiries-message]");
+  const list = document.querySelector("[data-my-inquiries-list]");
+  if (!badge || !total || !active || !latest || !message || !list) return;
+
+  if (myInquiriesState.loading) {
+    setText(badge, "조회 중"); setText(total, "확인 중"); setText(active, "확인 중"); setText(latest, "확인 중"); setText(message, "내 문의내역을 불러오고 있습니다.");
+    setHtml(list, `<p class="serverPortfolioEmpty">문의내역 조회 중입니다.</p>`);
+    return;
+  }
+  if (myInquiriesState.error) {
+    setText(badge, "확인 필요"); setText(total, "-"); setText(active, "-"); setText(latest, "-"); setText(message, myInquiriesState.error);
+    setHtml(list, `<p class="serverPortfolioEmpty">문의내역을 불러오지 못했습니다.</p>`);
+    return;
+  }
+
+  const inquiries = Array.isArray(myInquiriesState.inquiries) ? myInquiriesState.inquiries : [];
+  const activeCount = inquiries.filter((inquiry) => ["open", "in_progress"].includes(inquiry.status || "open")).length;
+  setText(badge, inquiries.length ? "조회됨" : "내역 없음");
+  setText(total, `${inquiries.length}건`);
+  setText(active, `${activeCount}건`);
+  setText(latest, inquiries[0] ? formatShortDate(inquiries[0].createdAt || inquiries[0].created_at) : "없음");
+  setText(message, inquiries.length ? "최근 문의내역을 최신순으로 표시합니다." : "아직 접수된 문의내역이 없습니다. 문의사항 화면에서 새 문의를 남길 수 있습니다.");
+  setHtml(list, getInquiryListHtml(inquiries));
+}
+async function loadMyInquiries(options = {}) {
+  if (!isMyPagePath() || myInquiriesState.loading) return;
+  if (myInquiriesRequested && !options.force) { updateMyInquiriesUi(); return; }
+  myInquiriesRequested = true;
+  myInquiriesState = { loading: true, inquiries: [], error: "" };
+  updateMyInquiriesUi();
+  try {
+    const inquiries = await fetchMySupportInquiries();
+    myInquiriesState = { loading: false, inquiries: Array.isArray(inquiries) ? inquiries : [], error: "" };
+  } catch (error) {
+    myInquiriesState = { loading: false, inquiries: [], error: error?.message || "문의내역을 확인하지 못했습니다." };
+  }
+  updateMyInquiriesUi();
+}
 function wrapMyPageLayout() {
   const stack = document.querySelector(".accountPanelStack");
   if (!stack || stack.closest(".myPageDashboardLayout")) return;
@@ -340,6 +488,7 @@ function setActivePanel(nextKey, options = {}) {
   setActiveMenu(activeMenuKey);
   if (activeMenuKey === "payment-method") loadBillingMethodStatus();
   if (activeMenuKey === "investment-profile") updateInvestmentProfileUi();
+  if (activeMenuKey === "inquiries") loadMyInquiries();
   if (options.scrollToTop) {
     const layout = document.querySelector(".myPageDashboardLayout");
     const top = layout ? Math.max(0, layout.getBoundingClientRect().top + window.scrollY - 90) : 0;
@@ -350,6 +499,7 @@ function applyMyPageSidebar() {
   if (!isMyPagePath()) return;
   ensureInvestmentProfilePanel();
   ensurePaymentMethodPanel();
+  ensureMyInquiriesPanel();
   markPanelKeys();
   hideStandalonePanels();
   wrapMyPageLayout();
@@ -358,6 +508,7 @@ function applyMyPageSidebar() {
   updateTopButtonVisibility();
   updateBillingMethodUi();
   updateInvestmentProfileUi();
+  updateMyInquiriesUi();
 }
 function bootMyPageSidebarPatch() {
   [80, 180, 420, 900, 1600, 2600].forEach((delay) => window.setTimeout(applyMyPageSidebar, delay));
