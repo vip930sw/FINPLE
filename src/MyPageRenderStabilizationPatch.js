@@ -1,13 +1,14 @@
 /* =========================================================
    Step 112-5A/B/E/F - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
-   - 빈 화면 대신 텍스트 없는 로딩 스피너를 표시합니다.
+   - SNS 로그인과 같은 구조의 텍스트 없는 로딩 스피너를 표시합니다.
    - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
 ========================================================= */
 
 const MAX_WAIT_MS = 1400;
 const MIN_WAIT_MS = 180;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
+const LOADER_ID = "finple-mypage-loading-overlay";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -24,44 +25,82 @@ function installStabilizationStyle() {
       opacity: 0;
     }
 
-    html.finple-mypage-booting body::before,
-    body.finple-mypage-stabilizing::before {
-      content: "";
+    .finpleMyPageLoadingOverlay.loginSocialLoadingOverlay {
       position: fixed;
       inset: 0;
       z-index: 2147483000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background: #f8fafc;
       pointer-events: none;
     }
 
-    html.finple-mypage-booting body::after,
-    body.finple-mypage-stabilizing::after {
-      content: "";
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      width: 36px;
-      height: 36px;
-      margin-left: -18px;
-      margin-top: -18px;
-      z-index: 2147483001;
-      border: 3px solid rgba(15, 23, 42, 0.14);
-      border-top-color: #0f172a;
-      border-radius: 999px;
-      animation: finpleMyPageSpin 0.82s linear infinite;
-      pointer-events: none;
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner {
+      position: relative;
+      width: 54px;
+      height: 54px;
     }
+
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span {
+      position: absolute;
+      left: 25px;
+      top: 4px;
+      width: 4px;
+      height: 12px;
+      border-radius: 999px;
+      background: #0f172a;
+      opacity: 0.16;
+      transform-origin: 2px 23px;
+      animation: finpleMyPageLoginSpinner 1s linear infinite;
+    }
+
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(1) { transform: rotate(0deg); animation-delay: -0.916s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(2) { transform: rotate(30deg); animation-delay: -0.833s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(3) { transform: rotate(60deg); animation-delay: -0.75s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(4) { transform: rotate(90deg); animation-delay: -0.666s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(5) { transform: rotate(120deg); animation-delay: -0.583s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(6) { transform: rotate(150deg); animation-delay: -0.5s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(7) { transform: rotate(180deg); animation-delay: -0.416s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(8) { transform: rotate(210deg); animation-delay: -0.333s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(9) { transform: rotate(240deg); animation-delay: -0.25s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(10) { transform: rotate(270deg); animation-delay: -0.166s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(11) { transform: rotate(300deg); animation-delay: -0.083s; }
+    .finpleMyPageLoadingOverlay .finpleLoginSpinner span:nth-child(12) { transform: rotate(330deg); animation-delay: 0s; }
 
     body.finple-mypage-ready #root {
       opacity: 1;
       transition: opacity 120ms ease-out;
     }
 
-    @keyframes finpleMyPageSpin {
-      to { transform: rotate(360deg); }
+    @keyframes finpleMyPageLoginSpinner {
+      0% { opacity: 1; }
+      100% { opacity: 0.16; }
     }
   `;
   document.head.appendChild(style);
+}
+
+function ensureLoadingOverlay() {
+  if (!isMyPagePath()) return;
+  if (document.getElementById(LOADER_ID)) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = LOADER_ID;
+  overlay.className = "loginSocialLoadingOverlay finpleMyPageLoadingOverlay";
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.innerHTML = `
+    <div class="finpleLoginSpinner">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function removeLoadingOverlay() {
+  document.getElementById(LOADER_ID)?.remove();
 }
 
 function getSidebarText() {
@@ -107,6 +146,7 @@ function isFinalMyPageReady() {
 }
 
 function revealMyPage() {
+  removeLoadingOverlay();
   document.documentElement.classList.remove("finple-mypage-booting");
   document.body.classList.remove("finple-mypage-stabilizing");
   document.body.classList.add("finple-mypage-ready");
@@ -142,6 +182,7 @@ function waitForFinalLayout() {
 function bootMyPageRenderStabilization() {
   if (!isMyPagePath()) {
     document.documentElement.classList.remove("finple-mypage-booting");
+    removeLoadingOverlay();
     return;
   }
 
@@ -149,6 +190,7 @@ function bootMyPageRenderStabilization() {
   document.documentElement.classList.add("finple-mypage-booting");
   document.body.classList.add("finple-mypage-stabilizing");
   document.body.classList.remove("finple-mypage-ready");
+  ensureLoadingOverlay();
   waitForFinalLayout();
 }
 
