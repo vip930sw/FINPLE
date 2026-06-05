@@ -21,8 +21,24 @@
   display: none !important;
 }
 
-.billingPlanMergedPanel [data-subscription-pricing] {
-  display: none !important;
+.billingPlanMergedPanel [data-subscription-pricing].billingPlanPrimaryAction {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  padding: 12px 20px !important;
+  border-radius: 999px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: normal !important;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+}
+
+.billingPlanMergedPanel [data-subscription-pricing].billingPlanPrimaryAction:hover {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
 }
 
 .billingMergedPlanBadge {
