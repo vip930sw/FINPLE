@@ -1,0 +1,62 @@
+/* =========================================================
+   Step 112-4 - MY PAGE history pagination controls
+========================================================= */
+
+.historyPaginationToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.historyToggleButton {
+  min-width: 132px;
+}
+
+.historyPager {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.historyPager[hidden] {
+  display: none !important;
+}
+
+.historyPager span {
+  min-width: 54px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.historyPagerButton {
+  min-width: 64px;
+  padding: 9px 13px !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+
+.historyPagerButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.historyListCollapsed {
+  display: none !important;
+}
+
+@media (max-width: 560px) {
+  .historyPaginationToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .historyPager {
+    justify-content: space-between;
+  }
+}
