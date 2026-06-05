@@ -11,7 +11,7 @@ const MENU_LABELS = {
   "payment-method": { label: "내 결제수단", description: "자동결제 등록" },
   "payment-history": { label: "내 결제내역", description: "영수증·이력" },
   inquiries: { label: "내 문의내역", description: "접수·처리 현황" },
-  storage: { label: "서버 저장", description: "저장·불러오기" },
+  storage: { label: "내 저장내역", description: "저장·불러오기" },
 };
 
 const MENU_ORDER = [
