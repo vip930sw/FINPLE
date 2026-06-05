@@ -1,5 +1,5 @@
 /* =========================================================
-   Step 112-5A - MY PAGE render stabilization guard
+   Step 112-5A/B - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
    - 최종 MY PAGE 메뉴/패널 구조가 준비되면 화면을 표시합니다.
    - 근본 통합 전 단기 안정화용 가드입니다.
@@ -19,6 +19,7 @@ function installStabilizationStyle() {
   const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
+    html.finple-mypage-booting #root,
     body.finple-mypage-stabilizing #root {
       opacity: 0;
     }
@@ -49,6 +50,7 @@ function isFinalMyPageReady() {
 }
 
 function revealMyPage() {
+  document.documentElement.classList.remove("finple-mypage-booting");
   document.body.classList.remove("finple-mypage-stabilizing");
   document.body.classList.add("finple-mypage-ready");
   window.setTimeout(() => {
@@ -80,18 +82,26 @@ function waitForFinalLayout() {
 }
 
 function bootMyPageRenderStabilization() {
-  if (!isMyPagePath()) return;
+  if (!isMyPagePath()) {
+    document.documentElement.classList.remove("finple-mypage-booting");
+    return;
+  }
 
   installStabilizationStyle();
+  document.documentElement.classList.add("finple-mypage-booting");
   document.body.classList.add("finple-mypage-stabilizing");
   document.body.classList.remove("finple-mypage-ready");
   waitForFinalLayout();
 }
 
 if (typeof window !== "undefined") {
+  installStabilizationStyle();
+
+  if (isMyPagePath()) {
+    document.documentElement.classList.add("finple-mypage-booting");
+  }
+
   if (document.readyState === "loading") {
-    installStabilizationStyle();
-    if (isMyPagePath()) document.documentElement.classList.add("finple-mypage-booting");
     document.addEventListener("DOMContentLoaded", bootMyPageRenderStabilization, { once: true });
   } else {
     bootMyPageRenderStabilization();
