@@ -1,0 +1,88 @@
+/* =========================================================
+   Step 112-2C - MY PAGE payment history panel
+========================================================= */
+
+.paymentHistoryList {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.paymentHistoryItem {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+}
+
+.paymentHistoryItemTop,
+.paymentHistoryItemMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.paymentHistoryItemTop em,
+.paymentHistoryItemMeta span,
+.paymentHistoryItemMeta a {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.paymentHistoryItemMeta a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.paymentHistoryItem strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.paymentHistoryItem p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.65;
+}
+
+.paymentStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.paymentStatusBadge.status-failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.paymentStatusBadge.status-canceled,
+.paymentStatusBadge.status-cancelled {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.paymentStatusBadge.status-refunded {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.paymentStatusBadge.status-pending {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
