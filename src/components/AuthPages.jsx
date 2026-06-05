@@ -39,6 +39,14 @@ function GoogleGIcon() {
   );
 }
 
+function triggerMyPageTransitionLoader() {
+  if (typeof window === "undefined") return;
+  if (typeof window.__finpleShowMyPageLoader === "function") {
+    window.__finpleShowMyPageLoader(2200);
+  }
+  window.dispatchEvent(new Event("finple-mypage-transition-start"));
+}
+
 function LoginSocialSpinner() {
   return (
     <div className="loginSocialLoadingOverlay" aria-hidden="true">
@@ -56,6 +64,7 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
   const isLoggedIn = Boolean(storedUser?.id);
 
   function handleMyPageClick() {
+    if (isLoggedIn) triggerMyPageTransitionLoader();
     onNavigate(isLoggedIn ? "mypage" : "login");
   }
 
@@ -104,6 +113,7 @@ export function LoginPage({ onNavigate }) {
       const oauthUser = consumeGoogleOAuthRedirectResult();
       if (oauthUser?.id) {
         setStatusMessage(`${oauthUser.email || oauthUser.name || "소셜 로그인 사용자"} 계정으로 로그인되었습니다.`);
+        triggerMyPageTransitionLoader();
         window.setTimeout(() => onNavigate("mypage"), 80);
         return;
       }
@@ -143,6 +153,7 @@ export function LoginPage({ onNavigate }) {
     try {
       const user = await loginWithEmailPassword({ email, password });
       setStatusMessage(`${user.email || user.name || "사용자"} 계정으로 로그인되었습니다.`);
+      triggerMyPageTransitionLoader();
       onNavigate("mypage");
     } catch (error) {
       setStatusMessage(error?.message || "로그인에 실패했습니다.");
@@ -328,7 +339,7 @@ export function SignupPage({ onNavigate }) {
 
   async function handleDemoSignup() {
     setIsDemoLoading(true);
-    try { await createOrLoadDemoUser(); onNavigate("mypage"); }
+    try { await createOrLoadDemoUser(); triggerMyPageTransitionLoader(); onNavigate("mypage"); }
     catch (error) { setFormNotice(error?.message || "체험 계정 준비에 실패했습니다."); }
     finally { setIsDemoLoading(false); }
   }
