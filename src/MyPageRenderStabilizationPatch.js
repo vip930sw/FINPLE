@@ -1,12 +1,12 @@
 /* =========================================================
    Step 112-5A/B/E - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
-   - 최종 MY PAGE 메뉴/패널 구조가 준비되면 화면을 표시합니다.
-   - 근본 통합 전 단기 안정화용 가드입니다.
+   - 빈 화면 시간을 줄이기 위해 최종 Shell이 준비되면 빠르게 표시합니다.
+   - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
 ========================================================= */
 
-const MAX_WAIT_MS = 3600;
-const MIN_WAIT_MS = 820;
+const MAX_WAIT_MS = 1400;
+const MIN_WAIT_MS = 180;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 
 function isMyPagePath() {
@@ -26,7 +26,7 @@ function installStabilizationStyle() {
 
     body.finple-mypage-ready #root {
       opacity: 1;
-      transition: opacity 140ms ease-out;
+      transition: opacity 120ms ease-out;
     }
   `;
   document.head.appendChild(style);
@@ -40,9 +40,7 @@ function hasOldSidebarLabels(sidebarText) {
   return ["계정 상태", "구독 / 결제", "요금제 상태", "결제수단", "서버 저장"].some((label) => sidebarText.includes(label));
 }
 
-function isFinalMyPageReady() {
-  if (!isMyPagePath()) return true;
-
+function isShellReady() {
   const sidebarText = getSidebarText();
   const hasLayout = Boolean(document.querySelector(".myPageDashboardLayout") && document.querySelector(".myPageSidebarNav"));
   const hasFinalMenuNames = sidebarText.includes("내 계정")
@@ -52,6 +50,14 @@ function isFinalMyPageReady() {
     && sidebarText.includes("내 문의내역")
     && sidebarText.includes("내 저장내역");
   const hasNoOldMenuNames = !hasOldSidebarLabels(sidebarText);
+  const hasAccountPanel = Boolean(document.querySelector('.accountStatusPanel[data-mypage-panel-key="account"]'));
+
+  return hasLayout && hasFinalMenuNames && hasNoOldMenuNames && hasAccountPanel;
+}
+
+function isFinalMyPageReady() {
+  if (!isMyPagePath()) return true;
+
   const hasPaymentHistoryPanel = Boolean(document.querySelector("[data-payment-history-panel]"));
   const hasInquiryPagination = Boolean(document.querySelector('[data-history-pagination-control="my-inquiries"]'));
   const hasPaymentPagination = Boolean(document.querySelector('[data-history-pagination-control="payment-history"]'));
@@ -59,9 +65,7 @@ function isFinalMyPageReady() {
   const hasBillingUsageMessage = Boolean(document.querySelector("[data-billing-usage-message]"));
   const hasInlineInquiryActions = Boolean(document.querySelector('[data-history-primary-actions="my-inquiries"] [data-my-inquiries-support]'));
 
-  return hasLayout
-    && hasFinalMenuNames
-    && hasNoOldMenuNames
+  return isShellReady()
     && hasPaymentHistoryPanel
     && hasInquiryPagination
     && hasPaymentPagination
@@ -76,7 +80,7 @@ function revealMyPage() {
   document.body.classList.add("finple-mypage-ready");
   window.setTimeout(() => {
     document.body.classList.remove("finple-mypage-ready");
-  }, 420);
+  }, 360);
 }
 
 function waitForFinalLayout() {
@@ -87,10 +91,11 @@ function waitForFinalLayout() {
     if (revealed) return;
 
     const elapsed = Date.now() - startedAt;
-    const ready = elapsed >= MIN_WAIT_MS && isFinalMyPageReady();
+    const shellReady = elapsed >= MIN_WAIT_MS && isShellReady();
+    const fullyReady = elapsed >= MIN_WAIT_MS && isFinalMyPageReady();
     const timedOut = elapsed >= MAX_WAIT_MS;
 
-    if (ready || timedOut) {
+    if (shellReady || fullyReady || timedOut) {
       revealed = true;
       revealMyPage();
       return;
