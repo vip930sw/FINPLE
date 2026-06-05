@@ -1,4 +1,4 @@
-/* Step 111-11 - MY PAGE Server Storage display patch
+/* Step 111-11B - MY PAGE Server Storage display patch
    - Server Storage 뱃지를 DB 연결 상태가 아니라 저장 상태 관점으로 표시합니다.
    - MutationObserver 없이 초기 타이머와 상태 변경 이벤트에서만 보정합니다.
 */
@@ -14,15 +14,26 @@ function getNumberFromText(text) {
   return match ? Number(match[1]) : null;
 }
 
-function getServerSavedCount(panel) {
+function getStorageStatNumber(panel, labelText) {
   const statItems = Array.from(panel.querySelectorAll(".serverStorageStats > div"));
-  const serverCountItem = statItems.find((item) => String(item.querySelector("span")?.textContent || "").trim() === "서버 저장 수");
-  return getNumberFromText(serverCountItem?.querySelector("strong")?.textContent);
+  const item = statItems.find((node) => String(node.querySelector("span")?.textContent || "").trim() === labelText);
+  return getNumberFromText(item?.querySelector("strong")?.textContent);
+}
+
+function getBrowserPortfolioCount(panel) {
+  return getStorageStatNumber(panel, "브라우저 포트폴리오");
+}
+
+function getServerSavedCount(panel) {
+  return getStorageStatNumber(panel, "서버 저장 수");
 }
 
 function inferServerStorageSaved(panel) {
+  const browserPortfolioCount = getBrowserPortfolioCount(panel);
   const serverSavedCount = getServerSavedCount(panel);
-  if (serverSavedCount !== null) return serverSavedCount > 0;
+
+  if (serverSavedCount !== null && serverSavedCount > 0) return true;
+  if (browserPortfolioCount !== null && browserPortfolioCount > 0) return true;
 
   const message = String(panel.querySelector(".serverStorageMessage")?.textContent || "");
   if (message.includes("서버 동기화 완료") || message.includes("서버에 저장된 포트폴리오")) return true;
@@ -40,8 +51,11 @@ function updateServerStorageBadge() {
 
   const saved = inferServerStorageSaved(panel);
   badge.textContent = saved ? "저장됨" : "저장 필요";
-  badge.classList.toggle("ready", saved);
-  badge.classList.toggle("disabled", !saved);
+
+  badge.classList.remove("disabled");
+  badge.classList.add("ready");
+  badge.classList.toggle("serverStorageBadgeSaved", saved);
+  badge.classList.toggle("serverStorageBadgeNeedsSave", !saved);
 }
 
 function scheduleServerStorageBadgeUpdate(delay = 120) {
