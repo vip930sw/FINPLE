@@ -15,7 +15,12 @@ const PANEL_TITLES = [
     title: "내 구독/플랜",
     description: "현재 이용 중인 플랜, 결제 일정, 사용량과 저장 권한을 한눈에 확인합니다.",
   },
-  { selector: "[data-payment-method-panel]", eyebrow: "MY PAYMENT METHOD", title: "내 결제수단" },
+  {
+    selector: "[data-payment-method-panel]",
+    eyebrow: "MY PAYMENT METHOD",
+    title: "내 결제수단",
+    description: "정기결제에 사용할 결제수단을 관리하며, 카드번호 원문은 FINPLE 서버에 저장되지 않습니다.",
+  },
   { selector: "[data-payment-history-panel]", eyebrow: "MY PAYMENT HISTORY", title: "내 결제내역" },
   { selector: "[data-my-inquiries-panel]", eyebrow: "MY INQUIRIES", title: "내 문의내역" },
   { selector: ".serverStoragePanel", eyebrow: "MY STORAGE HISTORY", title: "내 저장내역" },
