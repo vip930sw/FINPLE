@@ -163,7 +163,9 @@ function getTotalPages(items) {
 function getControlHtml(config) {
   return `
     <div class="historyPaginationToolbar" data-history-pagination-control="${config.controlKey}">
-      <button type="button" class="primaryButton historyToggleButton" data-history-toggle="${config.controlKey}">${escapeHtml(config.viewLabel)}</button>
+      <div class="historyPrimaryActions" data-history-primary-actions="${config.controlKey}">
+        <button type="button" class="primaryButton historyToggleButton" data-history-toggle="${config.controlKey}">${escapeHtml(config.viewLabel)}</button>
+      </div>
       <div class="historyPager" data-history-pager="${config.controlKey}" hidden>
         <button type="button" class="secondaryButton historyPagerButton" data-history-prev="${config.controlKey}">이전</button>
         <span data-history-page-label="${config.controlKey}">1 / 1</span>
@@ -171,6 +173,41 @@ function getControlHtml(config) {
       </div>
     </div>
   `;
+}
+
+function hideEmptyInquiryActionRow(panel) {
+  const actionRow = panel?.querySelector(".serverStorageActions.compactActions");
+  if (!actionRow) return;
+
+  const hasVisibleButton = Array.from(actionRow.querySelectorAll("button")).some((button) => {
+    if (button.matches("[data-my-inquiries-refresh]")) return false;
+    if (button.hidden) return false;
+    if (button.getAttribute("aria-hidden") === "true") return false;
+    return button.offsetParent !== null;
+  });
+
+  if (!hasVisibleButton) {
+    actionRow.hidden = true;
+    actionRow.classList.add("historyEmptyActionRow");
+  }
+}
+
+function alignInquirySupportButton(panel, control) {
+  if (!panel || !control) return;
+
+  const primaryActions = control.querySelector('[data-history-primary-actions="my-inquiries"]');
+  const supportButton = panel.querySelector("[data-my-inquiries-support]");
+  if (!primaryActions || !supportButton) return;
+
+  if (!supportButton.classList.contains("historyInlineActionButton")) {
+    supportButton.classList.add("historyInlineActionButton");
+  }
+
+  if (supportButton.parentNode !== primaryActions) {
+    primaryActions.appendChild(supportButton);
+  }
+
+  hideEmptyInquiryActionRow(panel);
 }
 
 function ensureControl(type) {
@@ -183,6 +220,10 @@ function ensureControl(type) {
   if (!control) {
     list.insertAdjacentHTML("beforebegin", getControlHtml(config));
     control = panel.querySelector(`[data-history-pagination-control="${config.controlKey}"]`);
+  }
+
+  if (type === "inquiries") {
+    alignInquirySupportButton(panel, control);
   }
 
   return { panel, list, control };
