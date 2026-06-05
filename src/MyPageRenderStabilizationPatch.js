@@ -1,8 +1,8 @@
 /* =========================================================
    Step 112-5A/B/E/F - MY PAGE render stabilization guard
-   - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
-   - 빈 화면을 만들지 않고, 화면 위에 로딩 오버레이만 표시합니다.
-   - RightBrain 로딩 UX 참고 방향: 명확한 상태 피드백 + 단순하고 안정적인 시각 신호.
+   - /mypage 새로고침 및 로그인 → MY PAGE 이동 시 빈 화면을 줄입니다.
+   - 화면을 숨기지 않고, 즉시 표시 가능한 파란색 12-bar 로딩 스피너를 오버레이합니다.
+   - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
 ========================================================= */
 
 const MAX_WAIT_MS = 900;
@@ -13,9 +13,14 @@ const LOADER_ID = "finple-mypage-loading-overlay";
 let activeBootId = 0;
 let lastPathname = typeof window !== "undefined" ? window.location.pathname : "";
 let isHistoryPatched = false;
+let forcedLoaderUntil = 0;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
+}
+
+function shouldKeepLoader() {
+  return isMyPagePath() || Date.now() < forcedLoaderUntil;
 }
 
 function installStabilizationStyle() {
@@ -37,54 +42,45 @@ function installStabilizationStyle() {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(248, 250, 252, 0.92);
-      backdrop-filter: blur(2px);
+      background: #f8fafc;
       pointer-events: none;
     }
 
-    .finpleMyPageLoaderCard {
-      width: 82px;
-      height: 82px;
-      border-radius: 28px;
-      background: #ffffff;
-      border: 1px solid #dbeafe;
-      box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .finpleMyPageLoaderRing {
+    .finpleMyPageLoaderSpinner {
       position: relative;
-      width: 42px;
-      height: 42px;
-      border-radius: 999px;
-      background: conic-gradient(from 0deg, #0f172a 0deg, #0f172a 82deg, rgba(15, 23, 42, 0.1) 82deg, rgba(15, 23, 42, 0.1) 360deg);
-      animation: finpleMyPageLoaderSpin 0.78s linear infinite;
+      width: 136px;
+      height: 136px;
+      animation: finpleMyPageLoaderRotate 1.05s steps(12) infinite;
     }
 
-    .finpleMyPageLoaderRing::before {
-      content: "";
-      position: absolute;
-      inset: 5px;
-      border-radius: 999px;
-      background: #ffffff;
-    }
-
-    .finpleMyPageLoaderRing::after {
-      content: "";
+    .finpleMyPageLoaderBar {
       position: absolute;
       left: 50%;
-      top: 0;
-      width: 8px;
-      height: 8px;
-      margin-left: -4px;
+      top: 50%;
+      width: 14px;
+      height: 40px;
+      margin-left: -7px;
+      margin-top: -60px;
       border-radius: 999px;
-      background: #0f172a;
-      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+      background: #3b82f6;
+      transform-origin: 7px 60px;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
     }
 
-    @keyframes finpleMyPageLoaderSpin {
+    .finpleMyPageLoaderBar:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+    .finpleMyPageLoaderBar:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+    .finpleMyPageLoaderBar:nth-child(3) { transform: rotate(60deg); opacity: 0.82; }
+    .finpleMyPageLoaderBar:nth-child(4) { transform: rotate(90deg); opacity: 0.7; }
+    .finpleMyPageLoaderBar:nth-child(5) { transform: rotate(120deg); opacity: 0.58; }
+    .finpleMyPageLoaderBar:nth-child(6) { transform: rotate(150deg); opacity: 0.46; }
+    .finpleMyPageLoaderBar:nth-child(7) { transform: rotate(180deg); opacity: 0.34; }
+    .finpleMyPageLoaderBar:nth-child(8) { transform: rotate(210deg); opacity: 0.26; }
+    .finpleMyPageLoaderBar:nth-child(9) { transform: rotate(240deg); opacity: 0.2; }
+    .finpleMyPageLoaderBar:nth-child(10) { transform: rotate(270deg); opacity: 0.36; }
+    .finpleMyPageLoaderBar:nth-child(11) { transform: rotate(300deg); opacity: 0.62; }
+    .finpleMyPageLoaderBar:nth-child(12) { transform: rotate(330deg); opacity: 0.86; }
+
+    @keyframes finpleMyPageLoaderRotate {
       to { transform: rotate(360deg); }
     }
   `;
@@ -92,7 +88,7 @@ function installStabilizationStyle() {
 }
 
 function ensureLoadingOverlay() {
-  if (!isMyPagePath() || !document.body) return;
+  if (!shouldKeepLoader() || !document.body) return;
   if (document.getElementById(LOADER_ID)) return;
 
   const overlay = document.createElement("div");
@@ -100,8 +96,19 @@ function ensureLoadingOverlay() {
   overlay.className = "finpleMyPageLoadingOverlay";
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
-    <div class="finpleMyPageLoaderCard">
-      <div class="finpleMyPageLoaderRing"></div>
+    <div class="finpleMyPageLoaderSpinner">
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
+      <span class="finpleMyPageLoaderBar"></span>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -135,6 +142,7 @@ function isShellReady() {
 }
 
 function revealMyPage() {
+  forcedLoaderUntil = 0;
   removeLoadingOverlay();
   document.documentElement.classList.remove("finple-mypage-booting");
   document.body?.classList.remove("finple-mypage-stabilizing");
@@ -153,8 +161,9 @@ function waitForFinalLayout(bootId) {
     const elapsed = Date.now() - startedAt;
     const shellReady = elapsed >= MIN_WAIT_MS && isShellReady();
     const timedOut = elapsed >= MAX_WAIT_MS;
+    const forcedExpiredAwayFromMyPage = !isMyPagePath() && Date.now() >= forcedLoaderUntil;
 
-    if (shellReady || timedOut || !isMyPagePath()) {
+    if (shellReady || timedOut || forcedExpiredAwayFromMyPage) {
       revealed = true;
       revealMyPage();
       return;
@@ -166,11 +175,22 @@ function waitForFinalLayout(bootId) {
   window.requestAnimationFrame(tryReveal);
 }
 
+function showImmediateMyPageLoader(duration = 2200) {
+  forcedLoaderUntil = Math.max(forcedLoaderUntil, Date.now() + duration);
+  installStabilizationStyle();
+  document.documentElement.classList.add("finple-mypage-booting");
+  document.body?.classList.add("finple-mypage-stabilizing");
+  ensureLoadingOverlay();
+  window.setTimeout(() => {
+    if (!isMyPagePath() && Date.now() >= forcedLoaderUntil) revealMyPage();
+  }, duration + 60);
+}
+
 function bootMyPageRenderStabilization() {
   activeBootId += 1;
   const bootId = activeBootId;
 
-  if (!isMyPagePath()) {
+  if (!shouldKeepLoader()) {
     document.documentElement.classList.remove("finple-mypage-booting");
     document.body?.classList.remove("finple-mypage-stabilizing");
     removeLoadingOverlay();
@@ -207,11 +227,16 @@ function patchHistoryNavigation() {
   window.addEventListener("popstate", () => window.setTimeout(handleRouteMaybeChanged, 0));
   window.addEventListener("finple-auth-updated", () => window.setTimeout(bootMyPageRenderStabilization, 0));
   window.addEventListener("finple-local-storage-updated", () => window.setTimeout(bootMyPageRenderStabilization, 0));
+  window.addEventListener("finple-mypage-transition-start", () => {
+    showImmediateMyPageLoader(2200);
+    window.setTimeout(bootMyPageRenderStabilization, 0);
+  });
 }
 
 if (typeof window !== "undefined") {
   installStabilizationStyle();
   patchHistoryNavigation();
+  window.__finpleShowMyPageLoader = showImmediateMyPageLoader;
 
   if (isMyPagePath()) {
     document.documentElement.classList.add("finple-mypage-booting");
