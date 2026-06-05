@@ -1,0 +1,272 @@
+import express from "express";
+
+import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
+import { isDatabaseConfigured, query } from "../db/database.js";
+
+const router = express.Router();
+
+const CARD_ISSUER_NAMES = {
+  "3K": "IBK카드",
+  "46": "광주카드",
+  "71": "롯데카드",
+  "30": "KDB카드",
+  "31": "BC카드",
+  "51": "삼성카드",
+  "38": "새마을금고카드",
+  "41": "신한카드",
+  "62": "신협카드",
+  "36": "씨티카드",
+  "33": "우리카드",
+  W1: "우리카드",
+  "37": "우체국카드",
+  "39": "저축은행카드",
+  "35": "전북카드",
+  "42": "제주카드",
+  "15": "카카오뱅크카드",
+  "3A": "케이뱅크카드",
+  "24": "토스뱅크카드",
+  "21": "하나카드",
+  "61": "현대카드",
+  "11": "KB국민카드",
+  "91": "NH농협카드",
+  "34": "수협카드",
+};
+
+function getSessionToken(request) {
+  const authHeader = request.get("authorization") || "";
+  const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+  return bearerMatch?.[1] || request.get("x-finple-session-token") || request.body?.sessionToken || "";
+}
+
+async function getRequestUser(request) {
+  const sessionToken = getSessionToken(request);
+  const headerUserId = request.get("x-finple-user-id") || request.query?.userId || "";
+  if (sessionToken) return getUserBySessionToken(sessionToken);
+  return getUserByAuthHeader(headerUserId);
+}
+
+async function ensureRecurringPaymentMethodSchema() {
+  await query(`CREATE TABLE IF NOT EXISTS recurring_payment_methods (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'toss-payments',
+    customer_key TEXT NOT NULL,
+    billing_key_encrypted TEXT,
+    method_type TEXT NOT NULL DEFAULT 'card',
+    display_label TEXT,
+    card_company TEXT,
+    card_last4 TEXT,
+    masked_card_number TEXT,
+    is_default BOOLEAN NOT NULL DEFAULT TRUE,
+    status TEXT NOT NULL DEFAULT 'active',
+    issued_at TIMESTAMPTZ DEFAULT NOW(),
+    disabled_at TIMESTAMPTZ,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT recurring_payment_methods_provider_customer_key_unique UNIQUE (provider, customer_key)
+  )`);
+
+  await query(`CREATE INDEX IF NOT EXISTS idx_recurring_payment_methods_user_default
+    ON recurring_payment_methods(user_id, is_default, status)`);
+}
+
+function normalizeCardCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function isCodeLike(value) {
+  const code = normalizeCardCode(value);
+  return /^[0-9A-Z]{2,3}$/.test(code) && Boolean(CARD_ISSUER_NAMES[code] || /^\d{2,3}$/.test(code));
+}
+
+function resolveCardCompany(...values) {
+  for (const value of values) {
+    const raw = String(value || "").trim();
+    if (!raw) continue;
+    const code = normalizeCardCode(raw);
+    if (CARD_ISSUER_NAMES[code]) return CARD_ISSUER_NAMES[code];
+    if (!isCodeLike(raw)) return raw.endsWith("카드") ? raw : `${raw}카드`;
+  }
+  return "카드";
+}
+
+function getMaskedTail(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const compact = raw.replace(/[^0-9*]/g, "");
+  if (!compact) return "";
+
+  if (compact.includes("*")) {
+    const tail = compact.slice(-4);
+    return /[0-9]/.test(tail) ? tail : "";
+  }
+
+  const digits = compact.replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : "";
+}
+
+function getCardNumberCandidates(card = {}, payload = {}, row = {}) {
+  return [
+    card.number,
+    card.cardNumber,
+    card.maskedNumber,
+    card.maskedCardNumber,
+    payload.maskedCardNumber,
+    payload.masked_card_number,
+    row.masked_card_number,
+    row.card_last4,
+  ];
+}
+
+function summarizeCardFromPayload(payload, row = {}) {
+  if (!payload || typeof payload !== "object") return null;
+
+  const card = payload.card && typeof payload.card === "object" ? payload.card : {};
+  const company = resolveCardCompany(
+    card.company,
+    card.cardCompany,
+    payload.cardCompany,
+    card.issuerCode,
+    card.acquirerCode,
+    row.card_company
+  );
+  const tail = getCardNumberCandidates(card, payload, row).map(getMaskedTail).find(Boolean);
+
+  if (!tail) return null;
+
+  return {
+    displayLabel: `${company} · **** ${tail}`,
+    cardCompany: company,
+    cardLast4: tail,
+    cardBrandKey: normalizeCardCode(card.issuerCode || card.acquirerCode || row.card_company),
+    source: "payment_metadata",
+  };
+}
+
+function summarizeCardFromRow(row) {
+  if (!row) return null;
+
+  const company = resolveCardCompany(row.card_company);
+  const tail = getMaskedTail(row.masked_card_number || row.card_last4);
+
+  if (tail && row.card_company && !isCodeLike(row.card_company)) {
+    return {
+      displayLabel: `${company} · **** ${tail}`,
+      cardCompany: company,
+      cardLast4: tail,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_method",
+    };
+  }
+
+  if (row.display_label && !/^\d{2,3}\s*\*+/.test(String(row.display_label).trim())) {
+    return {
+      displayLabel: row.display_label,
+      cardCompany: row.card_company || null,
+      cardLast4: row.card_last4 || null,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_display_label",
+    };
+  }
+
+  return {
+    displayLabel: "카드 등록 완료",
+    cardCompany: null,
+    cardLast4: null,
+    cardBrandKey: null,
+    source: "stored_method_safe_fallback",
+  };
+}
+
+function serializePaymentMethod(row) {
+  if (!row) return null;
+
+  const paymentSummary = summarizeCardFromPayload(row.payment_metadata, row);
+  const rowSummary = summarizeCardFromRow(row);
+  const summary = paymentSummary || rowSummary;
+
+  return {
+    id: row.id,
+    provider: row.provider,
+    methodType: row.method_type,
+    displayLabel: summary?.displayLabel || "등록된 결제수단",
+    cardCompany: summary?.cardCompany || row.card_company || null,
+    cardLast4: summary?.cardLast4 || row.card_last4 || null,
+    cardBrandKey: summary?.cardBrandKey || null,
+    displaySource: summary?.source || "unknown",
+    isDefault: Boolean(row.is_default),
+    status: row.status,
+    issuedAt: row.issued_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+router.get("/toss/billing/method", async (request, response, next) => {
+  try {
+    const user = await getRequestUser(request);
+
+    if (!user) {
+      response.status(401).json({
+        ok: false,
+        code: "AUTH_REQUIRED",
+        message: "결제수단 확인을 위해 로그인이 필요합니다.",
+      });
+      return;
+    }
+
+    if (!isDatabaseConfigured()) {
+      response.json({
+        ok: true,
+        registered: false,
+        method: null,
+        reason: "database_not_configured",
+        message: "데이터베이스 연결 전입니다.",
+      });
+      return;
+    }
+
+    await ensureRecurringPaymentMethodSchema();
+
+    const result = await query(
+      `SELECT rpm.id, rpm.provider, rpm.method_type, rpm.display_label, rpm.card_company,
+              rpm.card_last4, rpm.masked_card_number, rpm.is_default, rpm.status,
+              rpm.issued_at, rpm.updated_at, latest_payment.metadata AS payment_metadata
+       FROM recurring_payment_methods rpm
+       LEFT JOIN LATERAL (
+         SELECT p.metadata
+         FROM payments p
+         WHERE p.provider = 'toss-payments'
+           AND p.user_id = rpm.user_id
+           AND p.status = 'confirmed'
+           AND (
+             p.metadata->>'recurringPaymentMethodId' = rpm.id::text
+             OR p.metadata->>'customerKey' = rpm.customer_key
+             OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
+           )
+         ORDER BY p.requested_at DESC NULLS LAST, p.created_at DESC NULLS LAST
+         LIMIT 1
+       ) latest_payment ON TRUE
+       WHERE rpm.provider = 'toss-payments'
+         AND rpm.user_id = $1
+         AND rpm.status = 'active'
+       ORDER BY rpm.is_default DESC, rpm.issued_at DESC NULLS LAST, rpm.updated_at DESC NULLS LAST
+       LIMIT 1`,
+      [user.id]
+    );
+
+    const method = serializePaymentMethod(result.rows[0]);
+
+    response.json({
+      ok: true,
+      registered: Boolean(method),
+      method,
+      message: method ? "등록된 자동결제 결제수단이 있습니다." : "등록된 자동결제 결제수단이 없습니다.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export default router;
