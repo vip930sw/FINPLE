@@ -1,8 +1,7 @@
 /* =========================================================
-   Step 168B - Recurring payment method setup route patch
-   - 자동결제 결제수단 등록 준비와 Toss 등록창 열기를 하나의 버튼으로 통합합니다.
-   - success 페이지에서 authKey를 서버로 전달해 billingKey 발급/저장을 시도합니다.
-   - 상단 상태와 등록 상태 카드 문구를 동일하게 동기화합니다.
+   Step 112 - Personal one-way recurring billing setup route
+   - 자동결제 결제수단 등록과 첫 달 결제를 하나의 구독 시작 흐름으로 안내합니다.
+   - success 페이지에서 authKey를 서버로 전달해 billingKey 발급, 첫 달 결제, Personal 활성화를 진행합니다.
 ========================================================= */
 
 import { issueBillingKey, prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
@@ -50,40 +49,40 @@ function setText(node, value) {
 function getPageCopy(path) {
   if (path === "/payment-method/success") {
     return {
-      eyebrow: "Payment Method",
-      title: "결제수단 등록이 완료되었습니다.",
-      description: "자동결제 결제수단 인증이 완료되었습니다. 서버 저장 결과를 확인합니다.",
+      eyebrow: "Personal Billing",
+      title: "Personal 구독을 시작하고 있습니다.",
+      description: "결제수단 인증 결과를 확인한 뒤 첫 달 결제와 Personal 활성화를 순서대로 처리합니다.",
       tone: "success",
-      badge: "SETUP SUCCESS",
-      statusLabel: "등록 확인 중",
+      badge: "SUBSCRIPTION START",
+      statusLabel: "처리 중",
     };
   }
 
   if (path === "/payment-method/fail") {
     return {
-      eyebrow: "Payment Method",
-      title: "결제수단 등록을 완료하지 못했습니다.",
+      eyebrow: "Personal Billing",
+      title: "Personal 구독을 시작하지 못했습니다.",
       description: "사용자 취소, 인증 실패, 카드 확인 실패 등의 상황에서 표시될 화면입니다.",
       tone: "danger",
       badge: "SETUP FAILED",
-      statusLabel: "등록 실패",
+      statusLabel: "실패",
     };
   }
 
   return {
-    eyebrow: "Recurring Billing Setup",
-    title: "자동결제 결제수단 등록",
-    description: "FINPLE Personal 월 구독 자동결제를 위한 결제수단 등록 화면입니다. 카드번호는 FINPLE 서버에 직접 저장하지 않습니다.",
+    eyebrow: "Personal Billing",
+    title: "Personal 구독 시작",
+    description: "카드 인증 후 결제수단을 등록하고 첫 달 9,900원 결제를 진행합니다. 카드번호 원문은 FINPLE 서버에 직접 저장하지 않습니다.",
     tone: "neutral",
-    badge: "자동결제 등록",
-    statusLabel: "등록 준비 중",
+    badge: "월 자동결제",
+    statusLabel: "시작 준비 중",
   };
 }
 
 function getSetupStatusMessage() {
-  if (isStartingBillingAuth) return "자동결제 등록창을 준비하고 있습니다.";
+  if (isStartingBillingAuth) return "Personal 구독 시작을 준비하고 있습니다.";
   if (billingAuthError) return billingAuthError;
-  return "필수 확인 항목을 체크하면 자동결제 결제수단 등록을 시작할 수 있습니다.";
+  return "필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.";
 }
 
 function updateSetupUi() {
@@ -103,7 +102,7 @@ function updateSetupUi() {
 
   if (startButton) {
     startButton.disabled = !allChecked || isStartingBillingAuth;
-    setText(startButton, isStartingBillingAuth ? "등록창 준비 중" : "자동결제 결제수단 등록하기");
+    setText(startButton, isStartingBillingAuth ? "구독 시작 준비 중" : "Personal 구독 시작하기");
   }
 }
 
@@ -119,7 +118,7 @@ async function handleStartBillingAuth() {
     await requestTossBillingAuth(preparePayload);
   } catch (error) {
     isStartingBillingAuth = false;
-    billingAuthError = error?.message || "자동결제 결제수단 등록을 시작하지 못했습니다.";
+    billingAuthError = error?.message || "Personal 구독 시작을 진행하지 못했습니다.";
     updateSetupUi();
   }
 }
@@ -133,30 +132,31 @@ function getSetupCardHtml() {
         <em>매월 자동결제 예정</em>
       </div>
       <div>
-        <span>해지·실패 정책</span>
-        <strong>종료일까지 이용</strong>
-        <em>D+1 1회 재시도 후 Free 전환</em>
+        <span>구독 시작 방식</span>
+        <strong>카드 인증 후 첫 결제</strong>
+        <em>빌링키 등록 + 첫 달 결제</em>
       </div>
     </div>
 
     <div class="paymentMethodChecklist">
-      <label><input type="checkbox" data-payment-method-check /> 월 9,900원이 매월 자동결제되는 점을 확인했습니다.</label>
-      <label><input type="checkbox" data-payment-method-check /> 결제 예정일 전 안내가 제공되며, 결제 실패 시 D+1 1회 재시도 후 Free로 전환될 수 있음을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 카드 인증 후 첫 달 9,900원이 결제되고, 이후 매월 자동결제되는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> FINPLE은 카드번호 원문을 서버에 직접 저장하지 않고, 토스페이먼츠 자동결제용 식별값을 사용한다는 점을 확인했습니다.</label>
       <label><input type="checkbox" data-payment-method-check /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단되는 점을 확인했습니다.</label>
     </div>
 
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
-      <strong>등록 안내</strong>
-      <p data-payment-method-status>필수 확인 항목을 체크하면 자동결제 결제수단 등록을 시작할 수 있습니다.</p>
+      <strong>구독 시작 안내</strong>
+      <p data-payment-method-status>필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.</p>
     </div>
 
     <ul class="billingResultBulletList paymentMethodUserNoticeList">
-      <li>FINPLE은 카드번호 원문을 서버에 직접 저장하지 않습니다.</li>
-      <li>등록 후 MY PAGE에서 결제수단, 다음 결제일, 해지 예약 상태를 확인할 수 있도록 연결할 예정입니다.</li>
+      <li>카드 인증 성공 후 결제수단 등록과 첫 달 결제가 이어서 처리됩니다.</li>
+      <li>Personal 기능 활성화 여부와 다음 결제 예정일은 MY PAGE에서 확인할 수 있습니다.</li>
+      <li>토스페이먼츠 테스트 환경에서는 실제 카드 청구가 발생하지 않습니다.</li>
     </ul>
 
     <div class="billingResultActions">
-      <button type="button" class="primaryButton" data-payment-method-start disabled>자동결제 결제수단 등록하기</button>
+      <button type="button" class="primaryButton" data-payment-method-start disabled>Personal 구독 시작하기</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE로 돌아가기</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/pricing">요금제 확인</button>
     </div>
@@ -164,16 +164,18 @@ function getSetupCardHtml() {
 }
 
 function getSuccessStateLabel() {
-  if (billingIssueResult?.stored) return "등록 완료";
+  if (billingIssueResult?.subscriptionActivated) return "구독 시작 완료";
+  if (billingIssueResult?.stored) return "결제수단 등록 완료";
   if (billingIssueError) return "확인 필요";
-  return "등록 확인 중";
+  return "처리 중";
 }
 
 function getSuccessMessage() {
-  if (isIssuingBillingKey) return { title: "서버 저장 확인 중", message: "결제수단 인증 결과를 확인하고 있습니다." };
-  if (billingIssueResult?.stored) return { title: "결제수단 등록 완료", message: "자동결제 결제수단이 안전하게 등록되었습니다." };
-  if (billingIssueError) return { title: "서버 저장 확인 필요", message: billingIssueError };
-  return { title: "결제수단 인증 완료", message: "결제수단 인증 결과를 서버에 저장할 준비를 하고 있습니다." };
+  if (isIssuingBillingKey) return { title: "구독 시작 처리 중", message: "결제수단 등록, 첫 달 결제, Personal 활성화를 순서대로 확인하고 있습니다." };
+  if (billingIssueResult?.subscriptionActivated) return { title: "Personal 구독 시작 완료", message: "결제수단 등록과 첫 달 결제가 완료되어 Personal 기능이 활성화되었습니다." };
+  if (billingIssueResult?.stored) return { title: "결제수단 등록 완료", message: "결제수단은 등록되었지만 구독 활성화 상태를 다시 확인해 주세요." };
+  if (billingIssueError) return { title: "구독 시작 확인 필요", message: billingIssueError };
+  return { title: "결제수단 인증 완료", message: "구독 시작 처리를 준비하고 있습니다." };
 }
 
 function updateSuccessUi() {
@@ -194,8 +196,8 @@ function updateSuccessUi() {
   setText(statusTitle, copy.title);
   setText(statusMessage, copy.message);
   setText(statusLabel, stateLabel);
-  setText(methodLabel, billingIssueResult?.method?.displayLabel || billingIssueResult?.storage?.displayLabel || "등록 확인 중");
-  setText(nextStep, billingIssueResult?.stored ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "서버 저장");
+  setText(methodLabel, billingIssueResult?.method?.displayLabel || billingIssueResult?.storage?.displayLabel || "확인 중");
+  setText(nextStep, billingIssueResult?.subscriptionActivated ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "처리 중");
 
   statusBox?.classList.toggle("billingResultMessageBox--success", !billingIssueError);
   statusBox?.classList.toggle("billingResultMessageBox--danger", Boolean(billingIssueError));
@@ -209,7 +211,7 @@ async function handleIssueBillingKeyFromSuccess() {
   const orderId = getQueryValue("orderId");
 
   if (!authKey) {
-    billingIssueError = "Toss 결제수단 인증값이 없어 서버 저장을 진행할 수 없습니다.";
+    billingIssueError = "Toss 결제수단 인증값이 없어 Personal 구독 시작을 진행할 수 없습니다.";
     updateSuccessUi();
     return;
   }
@@ -223,7 +225,7 @@ async function handleIssueBillingKeyFromSuccess() {
   try {
     billingIssueResult = await issueBillingKey({ authKey, orderId, customerKey });
   } catch (error) {
-    billingIssueError = error?.message || "자동결제 결제수단 서버 저장에 실패했습니다.";
+    billingIssueError = error?.message || "Personal 구독 시작 처리에 실패했습니다.";
   } finally {
     isIssuingBillingKey = false;
     updateSuccessUi();
@@ -240,24 +242,24 @@ function getResultCardHtml(path) {
       <div class="billingResultGrid">
         <div><span>상품</span><strong>FINPLE Personal</strong></div>
         <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
-        <div><span>등록 상태</span><strong data-payment-method-result-status>등록 확인 중</strong></div>
-        <div><span>결제수단</span><strong data-payment-method-display-label>등록 확인 중</strong></div>
+        <div><span>구독 상태</span><strong data-payment-method-result-status>처리 중</strong></div>
+        <div><span>결제수단</span><strong data-payment-method-display-label>확인 중</strong></div>
       </div>
 
       <div class="billingResultMessageBox billingResultMessageBox--success" data-payment-method-success-box>
         <strong data-payment-method-success-title>결제수단 인증 완료</strong>
-        <p data-payment-method-success-message>결제수단 인증 결과를 서버에 저장할 준비를 하고 있습니다.</p>
+        <p data-payment-method-success-message>구독 시작 처리를 준비하고 있습니다.</p>
       </div>
 
       <ul class="billingResultBulletList">
         <li>FINPLE은 카드번호 원문을 서버에 직접 저장하지 않습니다.</li>
-        <li>등록된 결제수단은 MY PAGE에서 확인·변경할 수 있도록 연결할 예정입니다.</li>
-        <li>정기결제 성공 시 다음 이용기간이 자동 연장됩니다.</li>
+        <li>첫 달 결제 후 Personal 기능이 활성화됩니다.</li>
+        <li>다음 결제 예정일과 해지 예약 상태는 MY PAGE에서 확인할 수 있습니다.</li>
       </ul>
 
       <div class="billingResultActions">
         <button type="button" class="primaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
-        <button type="button" class="secondaryButton" data-payment-method-nav="/payment-method/setup">결제수단 다시 등록</button>
+        <button type="button" class="secondaryButton" data-payment-method-nav="/payment-method/setup">다시 시도</button>
         <button type="button" class="secondaryButton" data-payment-method-nav="/support">결제 문의</button>
       </div>
     `;
@@ -267,23 +269,23 @@ function getResultCardHtml(path) {
     <div class="billingResultGrid">
       <div><span>상품</span><strong>FINPLE Personal</strong></div>
       <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
-      <div><span>등록 상태</span><strong>등록 실패</strong></div>
-      <div><span>다음 단계</span><strong>다시 등록</strong></div>
+      <div><span>상태</span><strong>실패</strong></div>
+      <div><span>다음 단계</span><strong>다시 시도</strong></div>
     </div>
 
     <div class="billingResultMessageBox billingResultMessageBox--danger">
-      <strong>${escapeHtml(code || "등록 실패")}</strong>
-      <p>${escapeHtml(message || "결제수단 등록을 완료하지 못했습니다. 다시 시도하거나 문의해 주세요.")}</p>
+      <strong>${escapeHtml(code || "구독 시작 실패")}</strong>
+      <p>${escapeHtml(message || "Personal 구독 시작을 완료하지 못했습니다. 다시 시도하거나 문의해 주세요.")}</p>
     </div>
 
     <ul class="billingResultBulletList">
-      <li>FINPLE은 카드번호 원문을 서버에 직접 저장하지 않습니다.</li>
-      <li>등록된 결제수단은 MY PAGE에서 확인·변경할 수 있도록 연결할 예정입니다.</li>
-      <li>정기결제 성공 시 다음 이용기간이 자동 연장됩니다.</li>
+      <li>카드 인증을 취소했거나 인증에 실패한 경우에는 결제가 발생하지 않습니다.</li>
+      <li>결제수단을 다시 확인한 뒤 Personal 구독 시작을 재시도할 수 있습니다.</li>
+      <li>오류가 반복되면 결제 문의를 남겨 주세요.</li>
     </ul>
 
     <div class="billingResultActions">
-      <button type="button" class="primaryButton" data-payment-method-nav="/payment-method/setup">결제수단 다시 등록</button>
+      <button type="button" class="primaryButton" data-payment-method-nav="/payment-method/setup">다시 시도</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/support">결제 문의</button>
     </div>
