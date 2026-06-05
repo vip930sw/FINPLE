@@ -1,12 +1,12 @@
 /* =========================================================
-   Step 112-5A/B - MY PAGE render stabilization guard
+   Step 112-5A/B/E - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
    - 최종 MY PAGE 메뉴/패널 구조가 준비되면 화면을 표시합니다.
    - 근본 통합 전 단기 안정화용 가드입니다.
 ========================================================= */
 
-const MAX_WAIT_MS = 2200;
-const MIN_WAIT_MS = 220;
+const MAX_WAIT_MS = 3600;
+const MIN_WAIT_MS = 820;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 
 function isMyPagePath() {
@@ -36,17 +36,38 @@ function getSidebarText() {
   return document.querySelector(".myPageSidebarNav")?.textContent || "";
 }
 
+function hasOldSidebarLabels(sidebarText) {
+  return ["계정 상태", "구독 / 결제", "요금제 상태", "결제수단", "서버 저장"].some((label) => sidebarText.includes(label));
+}
+
 function isFinalMyPageReady() {
   if (!isMyPagePath()) return true;
 
   const sidebarText = getSidebarText();
   const hasLayout = Boolean(document.querySelector(".myPageDashboardLayout") && document.querySelector(".myPageSidebarNav"));
-  const hasFinalMenuNames = sidebarText.includes("내 구독/플랜") && sidebarText.includes("내 저장내역");
+  const hasFinalMenuNames = sidebarText.includes("내 계정")
+    && sidebarText.includes("내 구독/플랜")
+    && sidebarText.includes("내 결제수단")
+    && sidebarText.includes("내 결제내역")
+    && sidebarText.includes("내 문의내역")
+    && sidebarText.includes("내 저장내역");
+  const hasNoOldMenuNames = !hasOldSidebarLabels(sidebarText);
   const hasPaymentHistoryPanel = Boolean(document.querySelector("[data-payment-history-panel]"));
   const hasInquiryPagination = Boolean(document.querySelector('[data-history-pagination-control="my-inquiries"]'));
+  const hasPaymentPagination = Boolean(document.querySelector('[data-history-pagination-control="payment-history"]'));
   const hasBillingMerge = Boolean(document.querySelector(".billingPlanMergedPanel"));
+  const hasBillingUsageMessage = Boolean(document.querySelector("[data-billing-usage-message]"));
+  const hasInlineInquiryActions = Boolean(document.querySelector('[data-history-primary-actions="my-inquiries"] [data-my-inquiries-support]'));
 
-  return hasLayout && hasFinalMenuNames && hasPaymentHistoryPanel && hasInquiryPagination && hasBillingMerge;
+  return hasLayout
+    && hasFinalMenuNames
+    && hasNoOldMenuNames
+    && hasPaymentHistoryPanel
+    && hasInquiryPagination
+    && hasPaymentPagination
+    && hasBillingMerge
+    && hasBillingUsageMessage
+    && hasInlineInquiryActions;
 }
 
 function revealMyPage() {
