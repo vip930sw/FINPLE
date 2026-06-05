@@ -3,10 +3,49 @@
    - 구독 상태 카드를 제거하고 Billing Status를 2행 3열로 정리합니다.
    - 플랜 사용량의 포트폴리오/현재 자산/서버 저장 카드를 Billing Status로 옮깁니다.
    - Personal 뱃지와 사용량 안내 박스를 Billing Status 영역으로 옮깁니다.
+   - 좌측 메뉴명에 맞춰 각 패널의 영문 라벨/한글 제목을 정리합니다.
 ========================================================= */
+
+const PANEL_TITLES = [
+  { selector: ".accountStatusPanel", eyebrow: "MY ACCOUNT", title: "내 계정" },
+  { selector: "[data-investment-profile-panel]", eyebrow: "MY INVESTMENT PROFILE", title: "내 투자성향" },
+  {
+    selector: "[data-subscription-status-panel]",
+    eyebrow: "MY BILLING / PLAN",
+    title: "내 구독/플랜",
+    description: "현재 이용 중인 플랜, 결제 일정, 사용량과 저장 권한을 한눈에 확인합니다.",
+  },
+  { selector: "[data-payment-method-panel]", eyebrow: "MY PAYMENT METHOD", title: "내 결제수단" },
+  { selector: "[data-payment-history-panel]", eyebrow: "MY PAYMENT HISTORY", title: "내 결제내역" },
+  { selector: "[data-my-inquiries-panel]", eyebrow: "MY INQUIRIES", title: "내 문의내역" },
+  { selector: ".serverStoragePanel", eyebrow: "MY SERVER STORAGE", title: "서버 저장" },
+];
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
+}
+
+function setText(node, value) {
+  if (!node || !value) return;
+  const nextValue = String(value);
+  if (node.textContent !== nextValue) node.textContent = nextValue;
+}
+
+function setPanelTitle({ selector, eyebrow, title, description }) {
+  const panel = document.querySelector(selector);
+  if (!panel) return;
+
+  setText(panel.querySelector(".accountMiniLabel"), eyebrow);
+  setText(panel.querySelector("h2"), title);
+
+  if (description) {
+    const descriptionNode = panel.querySelector(".serverStorageHeader p:not(.accountMiniLabel)") || panel.querySelector("h2 + p");
+    setText(descriptionNode, description);
+  }
+}
+
+function relabelPanelsToMatchSidebar() {
+  PANEL_TITLES.forEach(setPanelTitle);
 }
 
 function getCardByLabel(container, label) {
@@ -69,6 +108,17 @@ function moveUsageMessage(subscriptionPanel, planPanel) {
   }
 }
 
+function restorePricingButton(subscriptionPanel) {
+  const pricingButton = subscriptionPanel?.querySelector("[data-subscription-pricing]");
+  if (!pricingButton) return;
+
+  pricingButton.hidden = false;
+  pricingButton.removeAttribute("hidden");
+  pricingButton.style.removeProperty("display");
+  pricingButton.classList.add("billingPlanPrimaryAction");
+  setText(pricingButton, "요금제 변경");
+}
+
 function hideMergedPlanPanel(planPanel) {
   if (!planPanel) return;
   planPanel.setAttribute("data-billing-plan-merged", "true");
@@ -77,6 +127,8 @@ function hideMergedPlanPanel(planPanel) {
 
 function applyBillingPlanMergePatch() {
   if (!isMyPagePath()) return;
+
+  relabelPanelsToMatchSidebar();
 
   const subscriptionPanel = document.querySelector("[data-subscription-status-panel]");
   const planPanel = document.querySelector(".planStatusPanel");
@@ -87,6 +139,7 @@ function applyBillingPlanMergePatch() {
   movePlanUsageCards(subscriptionPanel, planPanel);
   movePlanBadge(subscriptionPanel, planPanel);
   moveUsageMessage(subscriptionPanel, planPanel);
+  restorePricingButton(subscriptionPanel);
   hideMergedPlanPanel(planPanel);
 }
 
