@@ -1,12 +1,12 @@
 /* =========================================================
    Step 112-5A/B/E/F - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
-   - 로그인 → MY PAGE 같은 SPA 이동에서도 로딩 오버레이가 즉시 뜨도록 보정합니다.
-   - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
+   - 빈 화면을 만들지 않고, 화면 위에 로딩 오버레이만 표시합니다.
+   - RightBrain 로딩 UX 참고 방향: 명확한 상태 피드백 + 단순하고 안정적인 시각 신호.
 ========================================================= */
 
-const MAX_WAIT_MS = 1200;
-const MIN_WAIT_MS = 120;
+const MAX_WAIT_MS = 900;
+const MIN_WAIT_MS = 80;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
 
@@ -25,56 +25,66 @@ function installStabilizationStyle() {
   style.id = STYLE_ID;
   style.textContent = `
     html.finple-mypage-booting #root,
-    body.finple-mypage-stabilizing #root {
-      opacity: 0;
+    body.finple-mypage-stabilizing #root,
+    body.finple-mypage-ready #root {
+      opacity: 1 !important;
     }
 
-    .finpleMyPageLoadingOverlay.loginSocialLoadingOverlay {
+    .finpleMyPageLoadingOverlay {
       position: fixed;
       inset: 0;
       z-index: 2147483000;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f8fafc;
+      background: rgba(248, 250, 252, 0.92);
+      backdrop-filter: blur(2px);
       pointer-events: none;
     }
 
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner {
-      position: relative;
-      width: 44px;
-      height: 44px;
-      animation: finpleMyPageSpinnerRotate 0.82s linear infinite;
+    .finpleMyPageLoaderCard {
+      width: 82px;
+      height: 82px;
+      border-radius: 28px;
+      background: #ffffff;
+      border: 1px solid #dbeafe;
+      box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner::before,
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner::after {
+    .finpleMyPageLoaderRing {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      background: conic-gradient(from 0deg, #0f172a 0deg, #0f172a 82deg, rgba(15, 23, 42, 0.1) 82deg, rgba(15, 23, 42, 0.1) 360deg);
+      animation: finpleMyPageLoaderSpin 0.78s linear infinite;
+    }
+
+    .finpleMyPageLoaderRing::before {
       content: "";
       position: absolute;
-      inset: 0;
+      inset: 5px;
       border-radius: 999px;
+      background: #ffffff;
     }
 
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner::before {
-      border: 4px solid rgba(15, 23, 42, 0.12);
+    .finpleMyPageLoaderRing::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 8px;
+      height: 8px;
+      margin-left: -4px;
+      border-radius: 999px;
+      background: #0f172a;
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
     }
 
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner::after {
-      border: 4px solid transparent;
-      border-top-color: #0f172a;
-      border-right-color: #0f172a;
-    }
-
-    .finpleMyPageLoadingOverlay .finpleLoginSpinner span {
-      display: none !important;
-    }
-
-    body.finple-mypage-ready #root {
-      opacity: 1;
-      transition: opacity 100ms ease-out;
-    }
-
-    @keyframes finpleMyPageSpinnerRotate {
+    @keyframes finpleMyPageLoaderSpin {
       to { transform: rotate(360deg); }
     }
   `;
@@ -87,13 +97,11 @@ function ensureLoadingOverlay() {
 
   const overlay = document.createElement("div");
   overlay.id = LOADER_ID;
-  overlay.className = "loginSocialLoadingOverlay finpleMyPageLoadingOverlay";
+  overlay.className = "finpleMyPageLoadingOverlay";
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
-    <div class="finpleLoginSpinner">
-      <span></span><span></span><span></span><span></span>
-      <span></span><span></span><span></span><span></span>
-      <span></span><span></span><span></span><span></span>
+    <div class="finpleMyPageLoaderCard">
+      <div class="finpleMyPageLoaderRing"></div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -126,33 +134,11 @@ function isShellReady() {
   return hasLayout && hasFinalMenuNames && hasNoOldMenuNames && hasAccountPanel;
 }
 
-function isFinalMyPageReady() {
-  if (!isMyPagePath()) return true;
-
-  const hasPaymentHistoryPanel = Boolean(document.querySelector("[data-payment-history-panel]"));
-  const hasInquiryPagination = Boolean(document.querySelector('[data-history-pagination-control="my-inquiries"]'));
-  const hasPaymentPagination = Boolean(document.querySelector('[data-history-pagination-control="payment-history"]'));
-  const hasBillingMerge = Boolean(document.querySelector(".billingPlanMergedPanel"));
-  const hasBillingUsageMessage = Boolean(document.querySelector("[data-billing-usage-message]"));
-  const hasInlineInquiryActions = Boolean(document.querySelector('[data-history-primary-actions="my-inquiries"] [data-my-inquiries-support]'));
-
-  return isShellReady()
-    && hasPaymentHistoryPanel
-    && hasInquiryPagination
-    && hasPaymentPagination
-    && hasBillingMerge
-    && hasBillingUsageMessage
-    && hasInlineInquiryActions;
-}
-
 function revealMyPage() {
   removeLoadingOverlay();
   document.documentElement.classList.remove("finple-mypage-booting");
   document.body?.classList.remove("finple-mypage-stabilizing");
-  document.body?.classList.add("finple-mypage-ready");
-  window.setTimeout(() => {
-    document.body?.classList.remove("finple-mypage-ready");
-  }, 280);
+  document.body?.classList.remove("finple-mypage-ready");
 }
 
 function waitForFinalLayout(bootId) {
@@ -166,10 +152,9 @@ function waitForFinalLayout(bootId) {
 
     const elapsed = Date.now() - startedAt;
     const shellReady = elapsed >= MIN_WAIT_MS && isShellReady();
-    const fullyReady = elapsed >= MIN_WAIT_MS && isFinalMyPageReady();
     const timedOut = elapsed >= MAX_WAIT_MS;
 
-    if (shellReady || fullyReady || timedOut || !isMyPagePath()) {
+    if (shellReady || timedOut || !isMyPagePath()) {
       revealed = true;
       revealMyPage();
       return;
@@ -195,7 +180,6 @@ function bootMyPageRenderStabilization() {
   installStabilizationStyle();
   document.documentElement.classList.add("finple-mypage-booting");
   document.body?.classList.add("finple-mypage-stabilizing");
-  document.body?.classList.remove("finple-mypage-ready");
   ensureLoadingOverlay();
   waitForFinalLayout(bootId);
 }
