@@ -1,7 +1,7 @@
 /* =========================================================
-   Step 112-5A/B/E - MY PAGE render stabilization guard
+   Step 112-5A/B/E/F - MY PAGE render stabilization guard
    - /mypage 새로고침 시 기본 화면이 먼저 보였다가 패치 화면으로 바뀌는 깜빡임을 완화합니다.
-   - 빈 화면 시간을 줄이기 위해 최종 Shell이 준비되면 빠르게 표시합니다.
+   - 빈 화면 대신 텍스트 없는 로딩 스피너를 표시합니다.
    - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
 ========================================================= */
 
@@ -24,9 +24,41 @@ function installStabilizationStyle() {
       opacity: 0;
     }
 
+    html.finple-mypage-booting body::before,
+    body.finple-mypage-stabilizing::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      background: #f8fafc;
+      pointer-events: none;
+    }
+
+    html.finple-mypage-booting body::after,
+    body.finple-mypage-stabilizing::after {
+      content: "";
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: 36px;
+      height: 36px;
+      margin-left: -18px;
+      margin-top: -18px;
+      z-index: 2147483001;
+      border: 3px solid rgba(15, 23, 42, 0.14);
+      border-top-color: #0f172a;
+      border-radius: 999px;
+      animation: finpleMyPageSpin 0.82s linear infinite;
+      pointer-events: none;
+    }
+
     body.finple-mypage-ready #root {
       opacity: 1;
       transition: opacity 120ms ease-out;
+    }
+
+    @keyframes finpleMyPageSpin {
+      to { transform: rotate(360deg); }
     }
   `;
   document.head.appendChild(style);
