@@ -263,13 +263,13 @@ function getMyInquiriesPanelHtml() {
         <span class="serverStatusBadge ready" data-my-inquiries-badge>확인 중</span>
       </div>
       <div class="paymentMethodEntryGrid myInquiriesSummaryGrid">
-        <div><span>전체 문의</span><strong data-my-inquiries-total>확인 중</strong><em>최근 50건 기준</em></div>
-        <div><span>진행 중</span><strong data-my-inquiries-active>확인 중</strong><em>접수·확인 중</em></div>
-        <div><span>최근 문의</span><strong data-my-inquiries-latest>확인 중</strong><em>작성일 기준</em></div>
+        <div><span>전체 문의</span><strong data-my-inquiries-total>확인 중</strong></div>
+        <div><span>처리 중</span><strong data-my-inquiries-active>확인 중</strong></div>
+        <div><span>최근 문의</span><strong data-my-inquiries-latest>확인 중</strong></div>
       </div>
       <p class="serverStorageMessage compact paymentMethodEntryMessage" data-my-inquiries-message>문의내역을 확인하고 있습니다.</p>
       <div class="myInquiriesList" data-my-inquiries-list>
-        <p class="serverPortfolioEmpty">문의내역을 불러오기 전입니다.</p>
+        <article class="myInquiryItem myInquiryItem--empty"><strong>문의내역을 불러오기 전입니다.</strong></article>
       </div>
       <div class="serverStorageActions compactActions">
         <button type="button" class="primaryButton" data-my-inquiries-refresh>문의내역 새로고침</button>
@@ -392,7 +392,9 @@ async function loadBillingMethodStatus(options = {}) {
   updateBillingMethodUi();
 }
 function getInquiryListHtml(inquiries) {
-  if (!inquiries.length) return `<p class="serverPortfolioEmpty">아직 접수된 문의내역이 없습니다.</p>`;
+  if (!inquiries.length) {
+    return `<article class="myInquiryItem myInquiryItem--empty"><strong>아직 접수된 문의내역이 없습니다.</strong><p>문의사항 화면에서 새 문의를 남길 수 있습니다.</p></article>`;
+  }
   return inquiries.slice(0, 10).map((inquiry) => {
     const status = inquiry.status || "open";
     return `
@@ -419,12 +421,12 @@ function updateMyInquiriesUi() {
 
   if (myInquiriesState.loading) {
     setText(badge, "조회 중"); setText(total, "확인 중"); setText(active, "확인 중"); setText(latest, "확인 중"); setText(message, "내 문의내역을 불러오고 있습니다.");
-    setHtml(list, `<p class="serverPortfolioEmpty">문의내역 조회 중입니다.</p>`);
+    setHtml(list, `<article class="myInquiryItem myInquiryItem--empty"><strong>문의내역 조회 중입니다.</strong></article>`);
     return;
   }
   if (myInquiriesState.error) {
     setText(badge, "확인 필요"); setText(total, "-"); setText(active, "-"); setText(latest, "-"); setText(message, myInquiriesState.error);
-    setHtml(list, `<p class="serverPortfolioEmpty">문의내역을 불러오지 못했습니다.</p>`);
+    setHtml(list, `<article class="myInquiryItem myInquiryItem--empty"><strong>문의내역을 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></article>`);
     return;
   }
 
