@@ -107,6 +107,25 @@ function getMaskedTail(value) {
   return digits.length >= 4 ? digits.slice(-4) : "";
 }
 
+function formatCardDisplayLabel(company, tail) {
+  const safeCompany = resolveCardCompany(company);
+  const safeTail = getMaskedTail(tail);
+  return safeTail ? `${safeCompany} (${safeTail})` : `${safeCompany} 등록완료`;
+}
+
+function normalizeStoredDisplayLabel(value) {
+  const label = String(value || "").trim();
+  if (!label) return "";
+
+  const withoutDefaultBadge = label.replace(/\s*기본\s*$/g, "").trim();
+  const legacyMatch = withoutDefaultBadge.match(/^(.+?)\s*[·-]\s*\*+\s*([0-9*]{3,4})$/);
+  if (legacyMatch) {
+    return formatCardDisplayLabel(legacyMatch[1], legacyMatch[2]);
+  }
+
+  return withoutDefaultBadge;
+}
+
 function getCardNumberCandidates(card = {}, payload = {}, row = {}) {
   return [
     card.number,
@@ -137,7 +156,7 @@ function summarizeCardFromPayload(payload, row = {}) {
   if (!tail) return null;
 
   return {
-    displayLabel: `${company} · **** ${tail}`,
+    displayLabel: formatCardDisplayLabel(company, tail),
     cardCompany: company,
     cardLast4: tail,
     cardBrandKey: normalizeCardCode(card.issuerCode || card.acquirerCode || row.card_company),
@@ -153,7 +172,7 @@ function summarizeCardFromRow(row) {
 
   if (tail && row.card_company && !isCodeLike(row.card_company)) {
     return {
-      displayLabel: `${company} · **** ${tail}`,
+      displayLabel: formatCardDisplayLabel(company, tail),
       cardCompany: company,
       cardLast4: tail,
       cardBrandKey: normalizeCardCode(row.card_company),
@@ -161,9 +180,10 @@ function summarizeCardFromRow(row) {
     };
   }
 
-  if (row.display_label && !/^\d{2,3}\s*\*+/.test(String(row.display_label).trim())) {
+  const storedDisplayLabel = normalizeStoredDisplayLabel(row.display_label);
+  if (storedDisplayLabel && !/^\d{2,3}\s*\*+/.test(storedDisplayLabel)) {
     return {
-      displayLabel: row.display_label,
+      displayLabel: storedDisplayLabel,
       cardCompany: row.card_company || null,
       cardLast4: row.card_last4 || null,
       cardBrandKey: normalizeCardCode(row.card_company),
