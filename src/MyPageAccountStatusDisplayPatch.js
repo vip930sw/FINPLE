@@ -8,4 +8,4 @@
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
-const ACCOUNT_PLAN_STORAGE
+const STYLE_ID = "finple-my
