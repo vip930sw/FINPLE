@@ -47,6 +47,11 @@ function triggerMyPageTransitionLoader() {
   window.dispatchEvent(new Event("finple-mypage-transition-start"));
 }
 
+function replaceToMyPageAfterOAuth() {
+  if (typeof window === "undefined") return;
+  window.location.replace("/mypage");
+}
+
 function LoginSocialSpinner() {
   return (
     <div className="loginSocialLoadingOverlay" aria-hidden="true">
@@ -114,7 +119,7 @@ export function LoginPage({ onNavigate }) {
       if (oauthUser?.id) {
         setStatusMessage(`${oauthUser.email || oauthUser.name || "소셜 로그인 사용자"} 계정으로 로그인되었습니다.`);
         triggerMyPageTransitionLoader();
-        window.setTimeout(() => onNavigate("mypage"), 80);
+        window.setTimeout(replaceToMyPageAfterOAuth, 80);
         return;
       }
 
