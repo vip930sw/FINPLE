@@ -9,6 +9,7 @@ const MAX_WAIT_MS = 900;
 const MIN_WAIT_MS = 80;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
+const FAILSAFE_WAIT_MS = 2600;
 
 let activeBootId = 0;
 let lastPathname = typeof window !== "undefined" ? window.location.pathname : "";
@@ -149,6 +150,13 @@ function revealMyPage() {
   document.body?.classList.remove("finple-mypage-ready");
 }
 
+function revealMyPageFailsafe(bootId) {
+  window.setTimeout(() => {
+    if (bootId !== activeBootId) return;
+    revealMyPage();
+  }, FAILSAFE_WAIT_MS);
+}
+
 function waitForFinalLayout(bootId) {
   const startedAt = Date.now();
   let revealed = false;
@@ -201,6 +209,7 @@ function bootMyPageRenderStabilization() {
   document.documentElement.classList.add("finple-mypage-booting");
   document.body?.classList.add("finple-mypage-stabilizing");
   ensureLoadingOverlay();
+  revealMyPageFailsafe(bootId);
   waitForFinalLayout(bootId);
 }
 

@@ -49,7 +49,7 @@ function triggerMyPageTransitionLoader() {
 
 function replaceToMyPageAfterOAuth() {
   if (typeof window === "undefined") return;
-  window.location.replace("/mypage");
+  window.location.replace(`/mypage?oauth=google&t=${Date.now()}`);
 }
 
 function LoginSocialSpinner() {
