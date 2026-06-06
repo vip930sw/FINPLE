@@ -1,223 +1,215 @@
 /* =========================================================
-   Step 112-6 - MY PAGE / MY ACCOUNT polish
-   - 이메일 활용 목적 본문을 푸른색 안내 박스로 표시합니다.
-   - Free / Personal 표기를 대소문자 혼용으로 정리합니다.
-   - 현재 요금제를 Free 또는 Personal 뱃지로 표시합니다.
-   - 계정 상태 새로고침 버튼을 제거합니다.
-   - MY ACCOUNT 영문 타이틀 스타일을 복구합니다.
+   Step 111-9G - MY PAGE Account Status safe display patch
+   - document-wide MutationObserver를 사용하지 않습니다.
+   - /mypage Account Status 영역만 제한적으로 보정합니다.
+   - 같은 내용이면 다시 렌더링하지 않아 반복 갱신/렉을 방지합니다.
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
-const STYLE_ID = "finple-my-account-polish-style";
+const MY_PAGE_LABEL_STYLE_ID = "finple-mypage-mini-label-blue-style";
+let accountStatusRenderTimer = null;
+let lastKnownAuthModeLabel = "";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
 }
 
-function getAccountPanel() {
-  return document.querySelector(".accountStatusPanel");
-}
-
-function normalizePlanName(value) {
-  const text = String(value || "").trim().toLowerCase();
-  if (text.includes("personal") || text.includes("pro") || text.includes("paid")) return "Personal";
-  return "Free";
-}
-
-function readStoredUser() {
+function readJson(key) {
   try {
-    return JSON.parse(localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return JSON.parse(window.localStorage.getItem(key) || "null");
   } catch (error) {
     return null;
   }
 }
 
-function getCurrentPlan() {
-  const storedUser = readStoredUser();
-  const candidates = [
-    storedUser?.plan,
-    storedUser?.subscription?.plan,
-    storedUser?.subscription?.tier,
-    storedUser?.billing?.plan,
-    document.querySelector("[data-subscription-plan]")?.textContent,
-    document.querySelector("[data-subscription-badge]")?.textContent,
-  ];
-
-  const raw = candidates.find((item) => String(item || "").trim());
-  return normalizePlanName(raw || "Free");
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function installStyle() {
-  if (document.getElementById(STYLE_ID)) return;
+function normalizeAuthModeLabel(value) {
+  const text = String(value || "").trim();
+  const lower = text.toLowerCase();
+
+  if (lower.includes("naver") || text.includes("네이버")) return "NAVER";
+  if (lower.includes("kakao") || text.includes("카카오")) return "KAKAO";
+  if (lower.includes("google") || text.includes("구글")) return "GOOGLE";
+
+  return "";
+}
+
+function inferExistingAuthModeLabel(panel) {
+  const nodes = Array.from(panel.querySelectorAll("div"));
+  for (const node of nodes) {
+    const label = String(node.querySelector("span")?.textContent || "").trim().replace(/\s+/g, "");
+    const value = String(node.querySelector("strong")?.textContent || "").trim();
+    if (label === "가입방식" || label === "가입방법") {
+      const normalized = normalizeAuthModeLabel(value);
+      if (normalized) return normalized;
+    }
+  }
+  return "";
+}
+
+function formatAuthMode(user, panel) {
+  const fromExistingDom = inferExistingAuthModeLabel(panel);
+  if (fromExistingDom) {
+    lastKnownAuthModeLabel = fromExistingDom;
+    return fromExistingDom;
+  }
+
+  const normalized = normalizeAuthModeLabel(user?.authMode || user?.provider || user?.oauthProvider || user?.loginProvider);
+  if (normalized) {
+    lastKnownAuthModeLabel = normalized;
+    return normalized;
+  }
+
+  return lastKnownAuthModeLabel || "계정 로그인";
+}
+
+function getEmailPurposeText() {
+  return "회원 식별, 로그인 계정 확인, 구독 상태 안내, 결제 내역 안내, 서비스 중요 고지 및 고객 문의 대응에 사용됩니다.";
+}
+
+function getAccountDescriptionText() {
+  return "로그인 방식, 사용자명, 현재 이용 중인 플랜/요금제를 확인하는 계정 관리 영역입니다.";
+}
+
+function getAccountStatusCards(user, panel) {
+  const authMode = formatAuthMode(user, panel);
+  const userName = user?.name || user?.nickname || "-";
+  const plan = user?.plan ? String(user.plan).toUpperCase() : "FREE";
+
+  return [
+    { label: "가입 방식", value: authMode },
+    { label: "사용자", value: userName },
+    { label: "현재 플랜/요금제", value: plan },
+  ];
+}
+
+function getCardsHtml(cards) {
+  return cards.map((card) => `
+    <div class="accountStatusInfoCard">
+      <span>${escapeHtml(card.label)}</span>
+      <strong class="${escapeHtml(card.className || "")}">${escapeHtml(card.value)}</strong>
+    </div>
+  `).join("");
+}
+
+function ensureMyPageTitleStyle() {
+  if (document.getElementById(MY_PAGE_LABEL_STYLE_ID)) return;
 
   const style = document.createElement("style");
-  style.id = STYLE_ID;
+  style.id = MY_PAGE_LABEL_STYLE_ID;
   style.textContent = `
-    .accountStatusPanel .accountMiniLabel,
-    .accountStatusPanel .serverStorageHeader .accountMiniLabel {
+    .accountPage .accountPanelStack .accountMiniLabel,
+    .accountPage .myPageBetaCompactNotice .accountMiniLabel {
       color: #2563eb !important;
-      font-size: 12px !important;
-      font-weight: 900 !important;
-      letter-spacing: 0.24em !important;
-      text-transform: uppercase !important;
-    }
-
-    .accountStatusPanel .accountEmailPurposeBox {
-      margin-top: 12px;
-      padding: 13px 15px;
-      border: 1px solid #bfdbfe;
-      border-radius: 14px;
-      background: #eff6ff;
-      color: #1e3a8a !important;
-      font-size: 14px;
-      font-weight: 850;
-      line-height: 1.65;
-    }
-
-    .accountStatusPanel .accountPlanValueLine {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .accountStatusPanel .accountPlanBadge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 26px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      border: 1px solid #86efac;
-      background: #dcfce7;
-      color: #047857;
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1;
-      white-space: nowrap;
-    }
-
-    .accountStatusPanel .accountPlanBadge.free {
-      border-color: #bfdbfe;
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
-
-    .accountStatusPanel .accountRefreshHidden {
-      display: none !important;
     }
   `;
   document.head.appendChild(style);
 }
 
-function normalizePlanTexts(panel, planName) {
-  const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-
-  nodes.forEach((node) => {
-    const current = node.nodeValue || "";
-    const trimmed = current.trim();
-    if (["free", "FREE", "Free"].includes(trimmed)) {
-      node.nodeValue = current.replace(trimmed, "Free");
-    }
-    if (["personal", "PERSONAL", "Personal"].includes(trimmed)) {
-      node.nodeValue = current.replace(trimmed, "Personal");
-    }
-  });
-
-  const planCards = Array.from(panel.querySelectorAll("div, article, section")).filter((node) => {
-    const label = node.querySelector("span")?.textContent?.trim();
-    return label === "플랜" || label === "요금제";
-  });
-
-  const planCard = planCards[0];
-  if (!planCard) return;
-
-  const valueNode = Array.from(planCard.querySelectorAll("strong, b, p, div")).find((node) => {
-    const text = node.textContent?.trim().toLowerCase();
-    return text === "free" || text === "personal" || text === "FREE".toLowerCase() || text === "PERSONAL".toLowerCase();
-  }) || planCard.querySelector("strong") || planCard;
-
-  if (!valueNode) return;
-
-  if (!valueNode.classList.contains("accountPlanValueLine")) {
-    valueNode.classList.add("accountPlanValueLine");
+function normalizeAccountStatusHeading(panel) {
+  const title = panel.querySelector("h2");
+  if (title && title.textContent.trim() === "계정 연결 상태") {
+    title.textContent = "계정 상태";
   }
 
-  const textNodes = Array.from(valueNode.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
-  if (textNodes.length) {
-    textNodes[0].nodeValue = planName;
-    textNodes.slice(1).forEach((node) => node.remove());
-  } else if (!valueNode.querySelector(".accountPlanText")) {
-    const textSpan = document.createElement("span");
-    textSpan.className = "accountPlanText";
-    textSpan.textContent = planName;
-    valueNode.prepend(textSpan);
-  } else {
-    valueNode.querySelector(".accountPlanText").textContent = planName;
-  }
-
-  let badge = valueNode.querySelector(".accountPlanBadge");
-  if (!badge) {
-    badge = document.createElement("span");
-    badge.className = "accountPlanBadge";
-    valueNode.appendChild(badge);
-  }
-  badge.textContent = planName;
-  badge.classList.toggle("free", planName === "Free");
-  badge.classList.toggle("personal", planName === "Personal");
-}
-
-function markEmailPurpose(panel) {
-  const nodes = Array.from(panel.querySelectorAll("p, div"));
-  const purposeNode = nodes.find((node) => {
-    const text = node.textContent?.trim() || "";
-    return text.includes("회원 식별") && text.includes("고객 문의 대응");
-  });
-
-  if (purposeNode) {
-    purposeNode.classList.add("accountEmailPurposeBox");
+  const description = title?.nextElementSibling;
+  if (description?.tagName === "P") {
+    description.textContent = getAccountDescriptionText();
   }
 }
 
-function hideRefreshButton(panel) {
-  Array.from(panel.querySelectorAll("button")).forEach((button) => {
-    const text = button.textContent?.trim() || "";
-    if (text.includes("계정 상태 새로고침")) {
-      button.hidden = true;
-      button.classList.add("accountRefreshHidden");
-      button.setAttribute("aria-hidden", "true");
+function ensureAccountInfoNote(panel, user) {
+  const email = user?.email || "-";
+  const purposeText = getEmailPurposeText();
+  let note = panel.querySelector("[data-account-info-note]");
+  if (!note) {
+    note = document.createElement("div");
+    note.className = "accountStatusInfoNote";
+    note.setAttribute("data-account-info-note", "true");
+    const grid = panel.querySelector(".accountStatusGrid");
+    if (grid?.parentNode) grid.insertAdjacentElement("afterend", note);
+    else panel.appendChild(note);
+  }
+
+  note.innerHTML = `
+    <div class="accountStatusTextRow">
+      <span>로그인 이메일</span>
+      <strong>${escapeHtml(email)}</strong>
+    </div>
+    <div class="accountStatusTextRow accountStatusPurposeRow">
+      <span>이메일 활용 목적</span>
+      <strong>${escapeHtml(purposeText)}</strong>
+    </div>
+  `;
+}
+
+function hideLowValueAccountStatusElements(panel) {
+  panel.querySelectorAll(".serverStorageMessage.compact").forEach((node) => {
+    node.classList.add("accountStatusMessageHidden");
+    node.setAttribute("hidden", "true");
+  });
+
+  panel.querySelectorAll(".serverStorageActions button").forEach((button) => {
+    const text = String(button.textContent || "").trim();
+    if (text === "계정 상태 새로고침" || text === "체험 사용자 연결") {
+      button.classList.add("accountStatusRefreshHidden");
+      button.setAttribute("hidden", "true");
     }
   });
 }
 
-function applyMyAccountPolish() {
+function renderAccountStatusCards() {
   if (!isMyPagePath()) return;
-  installStyle();
 
-  const panel = getAccountPanel();
-  if (!panel) return;
+  ensureMyPageTitleStyle();
 
-  const planName = getCurrentPlan();
-  normalizePlanTexts(panel, planName);
-  markEmailPurpose(panel);
-  hideRefreshButton(panel);
+  const panel = document.querySelector(".accountStatusPanel");
+  const grid = panel?.querySelector(".accountStatusGrid");
+  if (!panel || !grid) return;
+
+  normalizeAccountStatusHeading(panel);
+
+  const user = readJson(AUTH_USER_STORAGE_KEY);
+  const cards = getAccountStatusCards(user, panel);
+  const signature = JSON.stringify({ cards, email: user?.email || "-", purpose: getEmailPurposeText(), description: getAccountDescriptionText() });
+
+  grid.classList.add("accountStatusGrid--sixCards");
+  hideLowValueAccountStatusElements(panel);
+  ensureAccountInfoNote(panel, user);
+
+  if (grid.getAttribute("data-account-status-signature") === signature) return;
+
+  grid.innerHTML = getCardsHtml(cards);
+  grid.setAttribute("data-account-status-signature", signature);
 }
 
-function bootMyAccountPolish() {
-  [120, 360, 720, 1200, 2200, 3600].forEach((delay) => {
-    window.setTimeout(applyMyAccountPolish, delay);
-  });
-  window.addEventListener("click", () => window.setTimeout(applyMyAccountPolish, 80), true);
-  window.addEventListener("popstate", () => window.setTimeout(applyMyAccountPolish, 160));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(applyMyAccountPolish, 180));
+function scheduleAccountStatusRender(delay = 120) {
+  window.clearTimeout(accountStatusRenderTimer);
+  accountStatusRenderTimer = window.setTimeout(renderAccountStatusCards, delay);
 }
 
-if (typeof window !== "undefined") {
+function bootAccountStatusDisplayPatch() {
+  [120, 300, 700, 1200].forEach((delay) => window.setTimeout(renderAccountStatusCards, delay));
+
+  window.addEventListener("popstate", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-auth-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-plan-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("finple-local-storage-updated", () => scheduleAccountStatusRender(120));
+  window.addEventListener("storage", () => scheduleAccountStatusRender(120));
+}
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootMyAccountPolish, { once: true });
+    document.addEventListener("DOMContentLoaded", bootAccountStatusDisplayPatch, { once: true });
   } else {
-    bootMyAccountPolish();
+    bootAccountStatusDisplayPatch();
   }
 }
