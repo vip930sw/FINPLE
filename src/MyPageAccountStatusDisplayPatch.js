@@ -7,13 +7,4 @@
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const MY_PAGE_LABEL_STYLE_ID = "finple-mypage-mini-label-blue-style";
-let accountStatusRenderTimer = null;
-let lastKnownAuthModeLabel = "";
-
-function isMyPagePath() {
-  return window.location.pathname === "/mypage";
-}
-
-function readJson(key) {
-  try {
-    return JSON.parse(window.localStorage.getItem(key) ||
+let account
