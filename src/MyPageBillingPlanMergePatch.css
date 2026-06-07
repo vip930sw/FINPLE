@@ -22,9 +22,10 @@
 }
 
 .billingMergedUsageMessage.upgradePromptBox p {
-  color: #334155 !important;
-  font-weight: 800 !important;
-  line-height: 1.65 !important;
+  color: #2f4764 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1.45 !important;
 }
 
 .billingMergedPlanPanelHidden {

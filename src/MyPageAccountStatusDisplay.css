@@ -1,5 +1,9 @@
 /* Step 111-9G - MY PAGE Account Status cards */
 
+.accountStatusPanel {
+  position: relative;
+}
+
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -59,10 +63,14 @@
   justify-content: space-between !important;
   gap: 18px;
   width: 100%;
+  padding-right: 124px;
+  box-sizing: border-box;
 }
 
 .accountPlanBadge {
-  margin-left: auto;
+  position: absolute;
+  top: 30px;
+  right: 30px;
   white-space: nowrap;
   flex: 0 0 auto;
 }
@@ -98,14 +106,14 @@
 
 .accountStatusPurposeBox {
   margin-top: 18px;
-  padding: 14px 16px;
-  border: 1px solid #bfdbfe;
-  border-radius: 16px;
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.65;
+  padding: 10px 12px;
+  border: 1px solid #b9d8ff;
+  border-radius: 14px;
+  background: #eef6ff;
+  color: #2f4764;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
   word-break: keep-all;
 }
 
@@ -129,6 +137,15 @@
 }
 
 @media (max-width: 640px) {
+  .accountStatusPanel .serverStorageHeader {
+    padding-right: 0;
+  }
+
+  .accountPlanBadge {
+    position: static;
+    margin-top: 12px;
+  }
+
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: 1fr !important;
   }
