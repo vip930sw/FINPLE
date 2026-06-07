@@ -10,6 +10,7 @@ const MIN_WAIT_MS = 80;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
 const FAILSAFE_WAIT_MS = 2600;
+const OAUTH_RECOVERY_SESSION_KEY = "finple-oauth-mypage-recovery-signature";
 
 let activeBootId = 0;
 let lastPathname = typeof window !== "undefined" ? window.location.pathname : "";
@@ -18,6 +19,54 @@ let forcedLoaderUntil = 0;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
+}
+
+function isOAuthMyPagePath() {
+  if (!isMyPagePath()) return false;
+  return new URLSearchParams(window.location.search || "").has("oauth");
+}
+
+function getOAuthRecoverySignature() {
+  const params = new URLSearchParams(window.location.search || "");
+  return `${window.location.pathname}?oauth=${params.get("oauth") || ""}&t=${params.get("t") || ""}`;
+}
+
+function hasRenderableMyPageContent() {
+  const root = document.getElementById("root");
+  const rootText = String(root?.textContent || "").trim();
+
+  return Boolean(
+    document.querySelector(".accountPage") ||
+      document.querySelector(".myPageDashboardLayout") ||
+      document.querySelector(".accountStatusPanel") ||
+      rootText.length > 20
+  );
+}
+
+function recoverBlankOAuthMyPage(expectedHref) {
+  if (!isOAuthMyPagePath()) return;
+  if (expectedHref && window.location.href !== expectedHref) return;
+  if (hasRenderableMyPageContent()) return;
+
+  const signature = getOAuthRecoverySignature();
+
+  try {
+    if (window.sessionStorage.getItem(OAUTH_RECOVERY_SESSION_KEY) === signature) return;
+    window.sessionStorage.setItem(OAUTH_RECOVERY_SESSION_KEY, signature);
+  } catch (error) {
+    // If sessionStorage is unavailable, still try a single best-effort recovery.
+  }
+
+  window.location.replace(window.location.href);
+}
+
+function scheduleOAuthMyPageBlankRecovery() {
+  if (!isOAuthMyPagePath()) return;
+
+  const expectedHref = window.location.href;
+  [900, 1800, 3200].forEach((delay) => {
+    window.setTimeout(() => recoverBlankOAuthMyPage(expectedHref), delay);
+  });
 }
 
 function shouldKeepLoader() {
@@ -197,6 +246,7 @@ function showImmediateMyPageLoader(duration = 2200) {
 function bootMyPageRenderStabilization() {
   activeBootId += 1;
   const bootId = activeBootId;
+  scheduleOAuthMyPageBlankRecovery();
 
   if (!shouldKeepLoader()) {
     document.documentElement.classList.remove("finple-mypage-booting");
