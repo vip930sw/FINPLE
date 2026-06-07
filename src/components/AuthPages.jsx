@@ -47,9 +47,27 @@ function triggerMyPageTransitionLoader() {
   window.dispatchEvent(new Event("finple-mypage-transition-start"));
 }
 
-function replaceToMyPageAfterOAuth() {
+function getOAuthProviderParam(authMode = "") {
+  const normalizedAuthMode = String(authMode || "").toLowerCase();
+  if (normalizedAuthMode.includes("naver")) return "naver";
+  if (normalizedAuthMode.includes("kakao")) return "kakao";
+  if (normalizedAuthMode.includes("google")) return "google";
+  return "social";
+}
+
+function moveToMyPageAfterOAuth({ authMode, onNavigate }) {
   if (typeof window === "undefined") return;
-  window.location.replace(`/mypage?oauth=google&t=${Date.now()}`);
+  const provider = getOAuthProviderParam(authMode);
+  const nextPath = `/mypage?oauth=${encodeURIComponent(provider)}&t=${Date.now()}`;
+
+  window.history.replaceState({ page: "mypage", oauth: provider }, "", nextPath);
+
+  if (typeof onNavigate === "function") {
+    onNavigate("mypage");
+    return;
+  }
+
+  window.location.replace(nextPath);
 }
 
 function LoginSocialSpinner() {
@@ -119,7 +137,7 @@ export function LoginPage({ onNavigate }) {
       if (oauthUser?.id) {
         setStatusMessage(`${oauthUser.email || oauthUser.name || "소셜 로그인 사용자"} 계정으로 로그인되었습니다.`);
         triggerMyPageTransitionLoader();
-        window.setTimeout(replaceToMyPageAfterOAuth, 80);
+        window.setTimeout(() => moveToMyPageAfterOAuth({ authMode: oauthUser.authMode, onNavigate }), 80);
         return;
       }
 
