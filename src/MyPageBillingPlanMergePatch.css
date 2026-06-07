@@ -19,12 +19,13 @@
 
 .billingMergedUsageMessage.upgradePromptBox {
   justify-content: flex-start !important;
+  padding: 10px 12px !important;
 }
 
 .billingMergedUsageMessage.upgradePromptBox p {
-  color: #2f4764 !important;
+  color: #334155 !important;
   font-size: 13px !important;
-  font-weight: 900 !important;
+  font-weight: 800 !important;
   line-height: 1.45 !important;
 }
 

@@ -1171,7 +1171,7 @@ function ServerStoragePanel({ planKey = "free" }) {
         </div>
       </div>
 
-      <p className="serverStorageMessage">{statusMessage}</p>
+      <p className="serverStorageMessage compact">{statusMessage}</p>
 
       <div className="serverPortfolioListBox">
         <div className="serverPortfolioListHeader">
