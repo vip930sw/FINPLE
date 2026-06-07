@@ -10,9 +10,9 @@ const BRAND_COLORS = [
   { name: "FINPLE Navy", value: "#0F172A", role: "신뢰감과 핵심 텍스트" },
   { name: "FINPLE Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
   { name: "FINPLE Deep Blue", value: "#2563EB", role: "주요 버튼과 강조" },
-  { name: "Light Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
-  { name: "Slate Gray", value: "#64748B", role: "설명문과 보조 정보" },
-  { name: "Soft Background", value: "#F8FAFC", role: "차분한 화면 배경" },
+  { name: "Finple Light Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
+  { name: "Finple Gray", value: "#64748B", role: "설명문과 보조 정보" },
+  { name: "Finple White", value: "#F8FAFC", role: "차분한 화면 배경" },
 ];
 
 const ABOUT_ILLUSTRATIONS = {
@@ -93,6 +93,10 @@ function BrandIdentitySection() {
           <div>
             <strong>Finance &amp; People</strong>
             <p>금융 지식이 실제 투자자와 생활 재무를 실천하는 사람들에게 연결되는 서비스를 지향합니다.</p>
+          </div>
+          <div>
+            <strong>Function</strong>
+            <p>복잡한 경제 시스템을 함수화하여 사용자에게 단순하고 이해하기 쉬운 형태의 정보로 만들고자 합니다.</p>
           </div>
         </div>
 
