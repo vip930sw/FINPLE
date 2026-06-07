@@ -20,6 +20,10 @@
 .billingMergedUsageMessage.upgradePromptBox {
   justify-content: flex-start !important;
   padding: 10px 12px !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 14px !important;
+  background: #eff6ff !important;
+  box-shadow: none !important;
 }
 
 .billingMergedUsageMessage.upgradePromptBox p {
