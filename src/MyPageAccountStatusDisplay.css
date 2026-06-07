@@ -53,6 +53,15 @@
   box-shadow: none;
 }
 
+.accountStatusPanel .serverStorageHeader {
+  align-items: flex-start;
+}
+
+.accountPlanBadge {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .accountStatusTextRow + .accountStatusTextRow {
   margin-top: 14px;
 }
@@ -80,6 +89,19 @@
   font-size: 15px;
   font-weight: 800;
   color: #0f172a;
+}
+
+.accountStatusPurposeBox {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.65;
+  word-break: keep-all;
 }
 
 .accountStatusPanel .accountStatusPurposeNote {

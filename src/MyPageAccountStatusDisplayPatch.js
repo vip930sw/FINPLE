@@ -136,6 +136,7 @@ function normalizeAccountStatusHeading(panel) {
 function ensureAccountInfoNote(panel, user) {
   const email = user?.email || "-";
   const purposeText = getEmailPurposeText();
+  const plan = formatPlanLabel(user?.plan);
   let note = panel.querySelector("[data-account-info-note]");
   if (!note) {
     note = document.createElement("div");
@@ -151,11 +152,19 @@ function ensureAccountInfoNote(panel, user) {
       <span>로그인 이메일</span>
       <strong>${escapeHtml(email)}</strong>
     </div>
-    <div class="accountStatusTextRow accountStatusPurposeRow">
-      <span>이메일 활용 목적</span>
-      <strong>${escapeHtml(purposeText)}</strong>
-    </div>
+    <div class="accountStatusPurposeBox">${escapeHtml(purposeText)}</div>
   `;
+
+  let badge = panel.querySelector("[data-account-plan-badge]");
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "serverStatusBadge ready accountPlanBadge";
+    badge.setAttribute("data-account-plan-badge", "true");
+    const header = panel.querySelector(".serverStorageHeader");
+    if (header) header.appendChild(badge);
+    else panel.appendChild(badge);
+  }
+  badge.textContent = plan;
 }
 
 function hideLowValueAccountStatusElements(panel) {
