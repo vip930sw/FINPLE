@@ -124,7 +124,7 @@ export default function AboutPage({ onNavigate }) {
         <p className="sectionLabel">About FINPLE</p>
         <h1>복잡한 투자 정보를 간단한 흐름으로 바꾸는 FINPLE</h1>
         <p>
-          FINPLE은 복잡한 투자 정보를 사용자가 이해하고 비교할 수 있는 형태로 정리합니다.
+          FINPLE은 복잡한 투자 정보를 사용자가 이해하고 비교할 수 있는 형태로 정리합니다.<br />
           포트폴리오 분석, 투자 성향, 자산 비중, 장기 시뮬레이션을 하나의 흐름으로 연결해 스스로 재무 방향을 점검할 수 있도록 돕습니다.
         </p>
       </section>
