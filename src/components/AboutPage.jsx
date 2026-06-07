@@ -183,6 +183,14 @@ export default function AboutPage({ onNavigate }) {
       </AboutSection>
 
       <BrandIdentitySection />
+      <button
+        type="button"
+        className="floatingTopButton"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="ABOUT 페이지 상단으로 이동"
+      >
+        ↑ TOP
+      </button>
     </main>
   );
 }
