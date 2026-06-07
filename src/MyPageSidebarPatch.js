@@ -148,6 +148,12 @@ function getAxisSelectedLabel(item, axes, score) {
   const storedValue = normalizeAxisLabel(axes[item.scoreKey]);
   return storedValue || "저장값 없음";
 }
+function getFallbackAxisPosition(item, axes) {
+  const storedValue = normalizeAxisLabel(axes[item.scoreKey]);
+  if (storedValue === item.right) return 93;
+  if (storedValue === item.left) return 7;
+  return 50;
+}
 function getInvestmentProfileAxisChartHtml(result) {
   const axes = getStoredAxes(result);
   const axisScores = result?.axisScores && typeof result.axisScores === "object" ? result.axisScores : {};
@@ -167,8 +173,9 @@ function getInvestmentProfileAxisChartHtml(result) {
           const scoreValue = Number(axisScores[item.scoreKey]);
           const hasScore = Number.isFinite(scoreValue);
           const score = hasScore ? Math.max(-6, Math.min(6, scoreValue)) : null;
-          const markerPosition = hasScore ? Math.max(7, Math.min(93, ((score + 6) / 12) * 100)) : 50;
+          const markerPosition = hasScore ? Math.max(7, Math.min(93, ((score + 6) / 12) * 100)) : getFallbackAxisPosition(item, axes);
           const selectedLabel = getAxisSelectedLabel(item, axes, score);
+          const markerText = hasScore ? formatAxisScore(score) : selectedLabel;
           return `
             <div class="investmentProfileAxisRow">
               <div class="investmentProfileAxisLabels">
@@ -178,7 +185,7 @@ function getInvestmentProfileAxisChartHtml(result) {
               </div>
               <div class="investmentProfileAxisTrack">
                 <i></i>
-                <b style="left:${markerPosition}%">${escapeHtml(formatAxisScore(score))}</b>
+                <b style="left:${markerPosition}%">${escapeHtml(markerText)}</b>
               </div>
             </div>
           `;
