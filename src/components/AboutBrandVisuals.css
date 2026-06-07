@@ -100,9 +100,11 @@
 
 .aboutColorSwatch strong {
   color: #0f172a;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 950;
-  line-height: 1.25;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .aboutColorSwatch em {
