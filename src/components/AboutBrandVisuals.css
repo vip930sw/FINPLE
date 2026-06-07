@@ -30,15 +30,19 @@
 
 .aboutBrandIntro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
-  gap: 28px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
   align-items: stretch;
 }
 
+.aboutBrandIntro > div:first-child {
+  grid-column: span 2;
+}
+
 .aboutBrandLogoPanel {
-  min-height: 220px;
-  padding: 24px;
-  border-radius: 28px;
+  min-height: 160px;
+  padding: 20px;
+  border-radius: 22px;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #dbe5f3;
@@ -50,7 +54,7 @@
 
 .aboutBrandLogoPanel img {
   display: block;
-  width: min(100%, 360px);
+  width: min(100%, 280px);
   height: auto;
   object-fit: contain;
 }
@@ -177,6 +181,10 @@
   .aboutBrandIntro,
   .aboutVisualSection {
     grid-template-columns: 1fr;
+  }
+
+  .aboutBrandIntro > div:first-child {
+    grid-column: auto;
   }
 
   .aboutBrandMeaningGrid {
