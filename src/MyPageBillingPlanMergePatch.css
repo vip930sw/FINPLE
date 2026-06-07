@@ -17,6 +17,16 @@
   margin-bottom: 0 !important;
 }
 
+.billingMergedUsageMessage.upgradePromptBox {
+  justify-content: flex-start !important;
+}
+
+.billingMergedUsageMessage.upgradePromptBox p {
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  line-height: 1.65 !important;
+}
+
 .billingMergedPlanPanelHidden {
   display: none !important;
 }

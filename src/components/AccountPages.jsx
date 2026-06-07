@@ -871,10 +871,8 @@ function PlanStatusPanel({ planKey, onNavigate }) {
       {isFreePlan ? (
         <div className="upgradePromptBox">
           <div>
-            <strong>Free는 체험판입니다</strong>
-            <p>Personal 플랜부터 서버 저장, PDF 리포트, 확장된 API 조회량을 사용할 수 있습니다.</p>
+            <p>Free 플랜은 체험판입니다. Personal 플랜부터 서버 저장, PDF 리포트, 확장된 API 조회량을 사용할 수 있습니다.</p>
           </div>
-          <button type="button" className="primaryButton" onClick={() => onNavigate("pricing")}>요금제 보기</button>
         </div>
       ) : usage.portfolios.isOverLimit ? (
         <p className="serverStorageMessage dangerMessage">
