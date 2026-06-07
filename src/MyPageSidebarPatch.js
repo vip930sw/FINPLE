@@ -154,6 +154,20 @@ function getFallbackAxisPosition(item, axes) {
   if (storedValue === item.left) return 7;
   return 50;
 }
+function getFallbackAxisScore(item, axes, result = {}) {
+  const storedValue = normalizeAxisLabel(axes[item.scoreKey]);
+  if (!storedValue) return null;
+
+  if (item.scoreKey === "returnStyle") {
+    const riskProfile = String(result?.riskProfile || "");
+    if (storedValue === "성장" && (riskProfile.includes("적극") || riskProfile.includes("공격"))) return 6;
+    if (storedValue === "안정" && (riskProfile.includes("안정") || riskProfile.includes("보수"))) return -6;
+  }
+
+  if (storedValue === item.right) return 3;
+  if (storedValue === item.left) return -3;
+  return null;
+}
 function getInvestmentProfileAxisChartHtml(result) {
   const axes = getStoredAxes(result);
   const axisScores = result?.axisScores && typeof result.axisScores === "object" ? result.axisScores : {};
@@ -172,10 +186,12 @@ function getInvestmentProfileAxisChartHtml(result) {
         ${AXIS_ITEMS.map((item) => {
           const scoreValue = Number(axisScores[item.scoreKey]);
           const hasScore = Number.isFinite(scoreValue);
-          const score = hasScore ? Math.max(-6, Math.min(6, scoreValue)) : null;
-          const markerPosition = hasScore ? Math.max(7, Math.min(93, ((score + 6) / 12) * 100)) : getFallbackAxisPosition(item, axes);
+          const fallbackScore = getFallbackAxisScore(item, axes, result);
+          const score = hasScore ? Math.max(-6, Math.min(6, scoreValue)) : fallbackScore;
+          const hasDisplayScore = Number.isFinite(score);
+          const markerPosition = hasDisplayScore ? Math.max(7, Math.min(93, ((score + 6) / 12) * 100)) : getFallbackAxisPosition(item, axes);
           const selectedLabel = getAxisSelectedLabel(item, axes, score);
-          const markerText = hasScore ? formatAxisScore(score) : selectedLabel;
+          const markerText = hasDisplayScore ? formatAxisScore(score) : selectedLabel;
           return `
             <div class="investmentProfileAxisRow">
               <div class="investmentProfileAxisLabels">
