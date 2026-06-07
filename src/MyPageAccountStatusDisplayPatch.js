@@ -133,10 +133,29 @@ function normalizeAccountStatusHeading(panel) {
   }
 }
 
+function ensureAccountStatusHeader(panel) {
+  const title = panel.querySelector("h2");
+  const existingHeader = title?.closest(".serverStorageHeader");
+  if (existingHeader && panel.contains(existingHeader)) return existingHeader;
+
+  const header = title?.parentElement;
+  if (!header || header.classList.contains("serverStorageHeader")) return header;
+
+  header.classList.add("serverStorageHeader", "accountStatusHeader");
+
+  const inner = document.createElement("div");
+  while (header.firstChild) {
+    inner.appendChild(header.firstChild);
+  }
+  header.appendChild(inner);
+  return header;
+}
+
 function ensureAccountInfoNote(panel, user) {
   const email = user?.email || "-";
   const purposeText = getEmailPurposeText();
   const plan = formatPlanLabel(user?.plan);
+  const header = ensureAccountStatusHeader(panel);
   let note = panel.querySelector("[data-account-info-note]");
   if (!note) {
     note = document.createElement("div");
@@ -160,7 +179,6 @@ function ensureAccountInfoNote(panel, user) {
     badge = document.createElement("span");
     badge.className = "serverStatusBadge ready accountPlanBadge";
     badge.setAttribute("data-account-plan-badge", "true");
-    const header = panel.querySelector(".serverStorageHeader");
     if (header) header.appendChild(badge);
     else panel.appendChild(badge);
   }
