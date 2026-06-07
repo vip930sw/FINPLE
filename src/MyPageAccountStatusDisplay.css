@@ -54,12 +54,17 @@
 }
 
 .accountStatusPanel .serverStorageHeader {
+  display: flex !important;
   align-items: flex-start;
+  justify-content: space-between !important;
+  gap: 18px;
+  width: 100%;
 }
 
 .accountPlanBadge {
   margin-left: auto;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .accountStatusTextRow + .accountStatusTextRow {
