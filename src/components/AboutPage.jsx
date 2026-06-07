@@ -7,12 +7,12 @@ import planIllustration from "../assets/about/about-plan.svg";
 import "./AboutBrandVisuals.css";
 
 const BRAND_COLORS = [
-  { name: "FINPLE Navy", value: "#0F172A", role: "신뢰감과 핵심 텍스트" },
-  { name: "FINPLE Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
-  { name: "FINPLE Deep Blue", value: "#2563EB", role: "주요 버튼과 강조" },
-  { name: "Light Blue", value: "#E0F2FE", role: "부드러운 배경과 보조 면" },
-  { name: "Slate Gray", value: "#64748B", role: "설명문과 보조 정보" },
-  { name: "Soft Background", value: "#F8FAFC", role: "차분한 화면 배경" },
+  { name: "Finple Blue", value: "#38BDF8", role: "로고 포인트 컬러" },
+  { name: "Finple Deep Blue", value: "#2563EB", role: "주요 텍스트와 강조" },
+  { name: "Finple Light Blue", value: "#E0F2FE", role: "부드러운 배경과 박스" },
+  { name: "Finple Navy", value: "#0F172A", role: "주요 버튼과 강조" },
+  { name: "Finple Gray", value: "#64748B", role: "설명문과 보조 정보" },
+  { name: "Finple White", value: "#F8FAFC", role: "차분한 배경화면" },
 ];
 
 const ABOUT_ILLUSTRATIONS = {
@@ -94,6 +94,10 @@ function BrandIdentitySection() {
             <strong>Finance &amp; People</strong>
             <p>금융 지식이 실제 투자자와 생활 재무를 실천하는 사람들에게 연결되는 서비스를 지향합니다.</p>
           </div>
+          <div>
+            <strong>Function</strong>
+            <p>복잡한 경제 시스템을 함수화하여 사용자에게 단순하고 이해하기 쉬운 형태의 정보로 만들고자 합니다.</p>
+          </div>
         </div>
 
         <div className="aboutColorPalette" aria-label="FINPLE 컬러 팔레트">
@@ -118,16 +122,16 @@ export default function AboutPage({ onNavigate }) {
 
       <section className="accountHero aboutHero">
         <p className="sectionLabel">About FINPLE</p>
-        <h1>FINPLE은 Financial Planner에서 시작해 Finance & People로 확장되는 재무관리 도구입니다.</h1>
+        <h1>복잡한 투자 정보를 간단한 흐름으로 바꾸는 FINPLE</h1>
         <p>
-          FINPLE은 처음에는 포트폴리오를 더 쉽게 점검하기 위한 Financial Planner의 관점에서 출발했습니다.
-          앞으로는 투자, 재테크, 재무 목표를 함께 다루는 Finance & People, 즉 금융과 재무를 실천하는 사람들을 위한 서비스로 확장해 나가려 합니다.
+          FINPLE은 복잡한 투자 정보를 사용자가 이해하고 비교할 수 있는 형태로 정리합니다.<br />
+          포트폴리오 분석, 투자 성향, 자산 비중, 장기 시뮬레이션을 하나의 흐름으로 연결해 스스로 재무 방향을 점검할 수 있도록 돕습니다.
         </p>
       </section>
 
       <AboutSection eyebrow="What" title="FINPLE은 무엇인가요?" visual="what" visualAlt="포트폴리오 분석 도구를 설명하는 일러스트">
         <p>
-          FINPLE은 사용자가 직접 입력한 포트폴리오 구성과 투자 조건을 바탕으로 장기 성과와 위험을 점검하는 웹 기반 분석 서비스입니다.
+          FINPLE은 포트폴리오 구성, 투자 성향, 자산 비중, 장기 시뮬레이션을 연결해 사용자가 자신의 투자 구조를 이해하고 비교할 수 있도록 돕는 웹 기반 분석 서비스입니다.
           특정 종목을 추천하기보다는 사용자가 자신의 자산 구조를 이해하고, 여러 시나리오를 비교할 수 있도록 돕는 데 초점을 둡니다.
         </p>
         <p>
@@ -138,8 +142,8 @@ export default function AboutPage({ onNavigate }) {
 
       <AboutSection eyebrow="Why" title="왜 만들었나요?" visual="why" visualAlt="복잡한 투자 정보를 정리하는 일러스트">
         <p>
-          많은 투자자는 증권사 앱에서 현재 평가금액은 쉽게 확인하지만, 내가 가진 자산이 장기적으로 어떤 구조인지,
-          하락 위험은 어느 정도인지, 배당과 실질가치까지 고려하면 어떤 결과가 나오는지는 한눈에 보기 어렵습니다.
+          많은 투자자는 현재 평가금액은 쉽게 확인하지만, 내 자산이 장기적으로 어떤 구조인지,
+          하락 위험과 성장 가능성이 어느 정도인지는 한눈에 보기 어렵습니다.
         </p>
         <p>
           FINPLE은 투자자가 종목 단위가 아니라 포트폴리오 단위로 생각할 수 있도록 돕기 위해 만들어졌습니다.
@@ -151,7 +155,7 @@ export default function AboutPage({ onNavigate }) {
         <ul>
           <li>증권사 앱처럼 현재 잔고만 보여주는 것이 아니라 장기 시뮬레이션 흐름을 제공합니다.</li>
           <li>엑셀처럼 직접 수식을 만들지 않아도 포트폴리오 비중과 주요 가정값을 빠르게 조정할 수 있습니다.</li>
-          <li>투자 MBTI, 자산 스크리너, 시뮬레이터를 연결해 초보자도 분석 흐름에 진입하기 쉽게 설계했습니다.</li>
+          <li>투자 MBTI, 자산 스크리너, 시뮬레이터를 연결해 입문자도 분석 흐름에 진입하기 쉽게 설계했습니다.</li>
           <li>앞으로는 포트폴리오 분석을 넘어 재테크와 재무 목표 관리까지 확장할 수 있는 구조를 지향합니다.</li>
         </ul>
       </AboutSection>
@@ -166,7 +170,7 @@ export default function AboutPage({ onNavigate }) {
 
       <AboutSection eyebrow="Current & Roadmap" title="현재 상황과 개발 목표" visual="plan" visualAlt="현재 상황과 개발 목표를 설명하는 일러스트">
         <p>
-          현재 베타 버전은 미국주식과 ETF 중심의 포트폴리오 분석에 초점을 둡니다.
+          현재 베타 버전은 미국주식과 ETF 중심의 포트폴리오 분석을 기반으로, 한국 가격 데이터 조회와 계정 기반 저장, 결제·구독, 마이페이지 운영 흐름을 함께 안정화하고 있습니다.
           일부 데이터와 기능은 테스트 단계이며, 분석 결과는 투자 판단을 돕는 참고 자료입니다.
         </p>
         <ul>
