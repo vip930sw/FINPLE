@@ -12,6 +12,7 @@ const ASSET_DISPLAY_LABELS = {
   valueStock: "가치·배당",
   bond: "종합채권",
   longBond: "장기국채",
+  longbond: "장기국채",
   reit: "리츠",
   gold: "금",
   crypto: "블록체인 테마",
@@ -70,7 +71,7 @@ function deriveSectorsFromPreset(preset = {}) {
 
   push(Number(preset.growthStock || 0) > 0, "성장·기술");
   push(Number(preset.valueStock || 0) > 0, "배당·가치");
-  push(Number(preset.bond || 0) > 0 || Number(preset.longBond || 0) > 0, "채권·금리");
+  push(Number(preset.bond || 0) > 0 || Number(preset.longBond || preset.longbond || 0) > 0, "채권·금리");
   push(Number(preset.reit || 0) > 0, "리츠·부동산");
   push(Number(preset.gold || 0) > 0, "금·원자재");
   push(Number(preset.crypto || 0) > 0, "블록체인 테마");

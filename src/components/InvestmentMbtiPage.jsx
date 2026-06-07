@@ -296,6 +296,23 @@ function getBufferAssetLabels(preset = {}) {
   return ["bond", "longBond", "gold", "cash", "reit"].filter((key) => Number(preset[key] || 0) > 0).map((key) => `${ASSET_LABELS[key]} ${preset[key]}%`);
 }
 
+function getSectorsFromPreset(preset = {}) {
+  const sectors = [];
+  const push = (condition, label) => {
+    if (condition && !sectors.includes(label)) sectors.push(label);
+  };
+
+  push(Number(preset.growthStock || 0) > 0, "성장·기술");
+  push(Number(preset.valueStock || 0) > 0, "배당·가치");
+  push(Number(preset.bond || 0) > 0 || Number(preset.longBond || 0) > 0, "채권·금리");
+  push(Number(preset.reit || 0) > 0, "리츠·부동산");
+  push(Number(preset.gold || 0) > 0, "금·원자재");
+  push(Number(preset.crypto || 0) > 0, "블록체인 테마");
+  push(Number(preset.cash || 0) >= 10, "현금성·대기자금");
+
+  return sectors.slice(0, 5);
+}
+
 function buildTypeDetails(axes, preset, riskProfile, nickname) {
   const copy = TYPE_COPY[getTypeKey(axes)] || {};
   const axisText = displayAxisValues(axes).join(" · ");
@@ -440,7 +457,26 @@ function saveResultToSimulator(result, marketMode = "US") {
     localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
     localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
-    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({ typeId: type.typeId, nickname: type.nickname, finpleType: type.finpleType, riskProfile: result.calculatedRiskProfile, marketMode, portfolioPreset: type.preset, preset: type.preset, summary: type.summary, strengths: type.strengths, cautions: type.cautions, actions: type.actions, details: type.details, simulatorDefaults: type.defaults, createdAt: now }));
+    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({
+      typeId: type.typeId,
+      nickname: type.nickname,
+      finpleType: type.finpleType,
+      riskProfile: result.calculatedRiskProfile,
+      riskScore: result.riskScore,
+      axes: result.axes,
+      axisScores: result.axisScores,
+      sectors: getSectorsFromPreset(type.preset),
+      marketMode,
+      portfolioPreset: type.preset,
+      preset: type.preset,
+      summary: type.summary,
+      strengths: type.strengths,
+      cautions: type.cautions,
+      actions: type.actions,
+      details: type.details,
+      simulatorDefaults: type.defaults,
+      createdAt: now,
+    }));
     return true;
   } catch (error) { console.error("투자 MBTI 프리셋 저장 실패", error); return false; }
 }

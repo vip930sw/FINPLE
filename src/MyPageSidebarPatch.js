@@ -12,12 +12,25 @@ const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
 const ASSET_LABELS = {
   growthStock: "성장주",
   valueStock: "가치·배당",
-  bond: "채권",
+  bond: "종합채권",
+  longBond: "장기국채",
+  longbond: "장기국채",
   reit: "리츠",
   gold: "금",
-  crypto: "코인",
+  crypto: "블록체인 테마",
   cash: "현금",
+  채권: "종합채권",
+  코인: "블록체인 테마",
 };
+
+const AXIS_ITEMS = [
+  { scoreKey: "returnStyle", left: "안정", right: "성장" },
+  { scoreKey: "timeStyle", left: "장기", right: "기회" },
+  { scoreKey: "controlStyle", left: "추종", right: "주도", storedLeft: "자동" },
+  { scoreKey: "concentrationStyle", left: "분산", right: "확신" },
+];
+
+const TYPE_ID_AXIS_KEYS = ["returnStyle", "timeStyle", "controlStyle", "concentrationStyle"];
 
 const INQUIRY_CATEGORY_LABELS = {
   bug: "오류 신고",
@@ -75,15 +88,104 @@ function formatMbtiDate(value) {
   if (!value) return "저장일 없음";
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value)); } catch (error) { return "저장일 없음"; }
 }
+function normalizeAssetLabel(value) {
+  const text = String(value || "").trim();
+  return ASSET_LABELS[text] || text;
+}
+function normalizeAxisLabel(value) {
+  return value === "자동" ? "추종" : value;
+}
+function getPresetFromStoredResult(result) {
+  return result?.preset || result?.portfolioPreset || result?.allocation || {};
+}
 function getPresetEntries(result) {
-  const preset = result?.preset || result?.allocation || {};
+  const preset = getPresetFromStoredResult(result);
   return Object.entries(preset)
-    .map(([key, value]) => ({ key, label: ASSET_LABELS[key] || key, value: Number(value) }))
+    .map(([key, value]) => ({ key, label: normalizeAssetLabel(key), value: Number(value) }))
     .filter((item) => Number.isFinite(item.value) && item.value > 0)
     .sort((a, b) => b.value - a.value);
 }
 function getArrayItems(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+function deriveSectorsFromPreset(preset = {}) {
+  const sectors = [];
+  const push = (condition, label) => {
+    if (condition && !sectors.includes(label)) sectors.push(label);
+  };
+
+  push(Number(preset.growthStock || 0) > 0, "성장·기술");
+  push(Number(preset.valueStock || 0) > 0, "배당·가치");
+  push(Number(preset.bond || 0) > 0 || Number(preset.longBond || preset.longbond || 0) > 0, "채권·금리");
+  push(Number(preset.reit || 0) > 0, "리츠·부동산");
+  push(Number(preset.gold || 0) > 0, "금·원자재");
+  push(Number(preset.crypto || 0) > 0, "블록체인 테마");
+  push(Number(preset.cash || 0) >= 10, "현금성·대기자금");
+
+  return sectors.slice(0, 5);
+}
+function getInvestmentProfileSectors(result) {
+  const storedSectors = getArrayItems(result?.sectors);
+  return storedSectors.length ? storedSectors : deriveSectorsFromPreset(getPresetFromStoredResult(result));
+}
+function getStoredAxes(result = {}) {
+  if (result?.axes && typeof result.axes === "object") return result.axes;
+  const values = String(result?.typeId || "")
+    .split("-")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return TYPE_ID_AXIS_KEYS.reduce((axes, key, index) => {
+    if (values[index]) axes[key] = values[index];
+    return axes;
+  }, {});
+}
+function formatAxisScore(value) {
+  if (!Number.isFinite(value)) return "점수 없음";
+  return value > 0 ? `+${value}` : String(value);
+}
+function getAxisSelectedLabel(item, axes, score) {
+  if (Number.isFinite(score)) return score > 0 ? item.right : item.left;
+  const storedValue = normalizeAxisLabel(axes[item.scoreKey]);
+  return storedValue || "저장값 없음";
+}
+function getInvestmentProfileAxisChartHtml(result) {
+  const axes = getStoredAxes(result);
+  const axisScores = result?.axisScores && typeof result.axisScores === "object" ? result.axisScores : {};
+  const hasAxisInfo = AXIS_ITEMS.some((item) => axes[item.scoreKey] || Number.isFinite(Number(axisScores[item.scoreKey])));
+  if (!hasAxisInfo) {
+    return `<div class="investmentProfileAxisBox investmentProfileAxisBox--empty">저장된 성향 차트 점수가 없습니다. 새 검사 후 미국/한국자산으로 반영하면 성향 차트가 함께 저장됩니다.</div>`;
+  }
+
+  return `
+    <div class="investmentProfileAxisBox">
+      <div class="investmentProfileAxisHeader">
+        <strong>성향 차트</strong>
+        <span>${escapeHtml(result?.riskProfile || "위험성향 저장값 없음")}</span>
+      </div>
+      <div class="investmentProfileAxisRows">
+        ${AXIS_ITEMS.map((item) => {
+          const scoreValue = Number(axisScores[item.scoreKey]);
+          const hasScore = Number.isFinite(scoreValue);
+          const score = hasScore ? Math.max(-6, Math.min(6, scoreValue)) : null;
+          const markerPosition = hasScore ? Math.max(7, Math.min(93, ((score + 6) / 12) * 100)) : 50;
+          const selectedLabel = getAxisSelectedLabel(item, axes, score);
+          return `
+            <div class="investmentProfileAxisRow">
+              <div class="investmentProfileAxisLabels">
+                <span>${escapeHtml(item.left)}</span>
+                <strong>${escapeHtml(selectedLabel)}</strong>
+                <span>${escapeHtml(item.right)}</span>
+              </div>
+              <div class="investmentProfileAxisTrack">
+                <i></i>
+                <b style="left:${markerPosition}%">${escapeHtml(formatAxisScore(score))}</b>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
 }
 function formatShortDate(value) {
   if (!value) return "일자 없음";
@@ -135,6 +237,7 @@ function getInvestmentProfilePanelHtml() {
           <span data-investment-profile-result-date>저장일 없음</span>
         </div>
         <p data-investment-profile-summary>저장된 요약이 없습니다.</p>
+        <div data-investment-profile-axis-chart></div>
         <div class="investmentProfileVisualLayout">
           <div class="investmentProfileRatioList" data-investment-profile-ratios></div>
           <div class="investmentProfileMiniPreview" data-investment-profile-preview></div>
@@ -178,6 +281,7 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
   setText(panel.querySelector("[data-investment-profile-summary]"), result?.summary || "저장된 요약이 없습니다.");
   setText(panel.querySelector("[data-investment-profile-strength]"), result?.strengths || "성향에 맞는 포트폴리오 점검 기준을 세우는 데 활용할 수 있습니다.");
   setText(panel.querySelector("[data-investment-profile-caution]"), result?.cautions || "본 결과는 참고용이며 실제 투자 전 손실 가능성을 확인해야 합니다.");
+  setHtml(panel.querySelector("[data-investment-profile-axis-chart]"), getInvestmentProfileAxisChartHtml(result));
 
   const ratioNode = panel.querySelector("[data-investment-profile-ratios]");
   const ratios = getPresetEntries(result);
@@ -186,7 +290,7 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
     : `<p class="investmentProfileEmptyRatio">저장된 포트폴리오 비율이 없습니다.</p>`);
   setHtml(panel.querySelector("[data-investment-profile-preview]"), getMiniPreviewHtml(ratios));
 
-  renderList(panel.querySelector("[data-investment-profile-sectors]"), getArrayItems(result?.sectors), "저장된 섹터 정보 없음");
+  renderList(panel.querySelector("[data-investment-profile-sectors]"), getInvestmentProfileSectors(result), "저장된 섹터 정보 없음");
   renderList(panel.querySelector("[data-investment-profile-actions]"), getArrayItems(result?.actions), "저장된 권장 액션 없음");
 }
 
