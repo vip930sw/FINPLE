@@ -120,11 +120,15 @@ function getInvestmentProfilePanelHtml() {
         <span class="serverStatusBadge ready" data-investment-profile-badge>확인 중</span>
       </div>
       <div class="paymentMethodEntryGrid investmentProfileGrid">
-        <div><span>투자 MBTI</span><strong data-investment-profile-nickname>확인 중</strong><em data-investment-profile-created>최근 결과</em></div>
-        <div><span>FINPLE 유형</span><strong data-investment-profile-type>확인 중</strong><em>성향 분류</em></div>
-        <div><span>위험성향</span><strong data-investment-profile-risk>확인 중</strong><em>참고용</em></div>
+        <div><span>투자 MBTI</span><strong data-investment-profile-nickname>확인 중</strong></div>
+        <div><span>투자성향</span><strong data-investment-profile-type>확인 중</strong></div>
+        <div><span>위험성향</span><strong data-investment-profile-risk>확인 중</strong></div>
       </div>
       <p class="serverStorageMessage compact paymentMethodEntryMessage" data-investment-profile-message>투자 MBTI 결과를 확인하고 있습니다.</p>
+      <div class="serverStorageActions compactActions investmentProfileActions">
+        <button type="button" class="primaryButton" data-investment-profile-result>결과 자세히 보기</button>
+        <button type="button" class="secondaryButton" data-investment-profile-start>투자 MBTI 다시 하기</button>
+      </div>
       <div class="investmentProfileResultBox" data-investment-profile-result-box hidden>
         <div class="investmentProfileResultHeader">
           <strong data-investment-profile-summary-title>투자 MBTI 결과</strong>
@@ -143,10 +147,6 @@ function getInvestmentProfilePanelHtml() {
           <div><span>관심 섹터</span><ul data-investment-profile-sectors></ul></div>
           <div><span>권장 액션</span><ul data-investment-profile-actions></ul></div>
         </div>
-      </div>
-      <div class="serverStorageActions compactActions investmentProfileActions">
-        <button type="button" class="primaryButton" data-investment-profile-result>결과 자세히 보기</button>
-        <button type="button" class="secondaryButton" data-investment-profile-start>투자 MBTI 다시 하기</button>
       </div>
     </section>
   `;
@@ -197,7 +197,6 @@ function updateInvestmentProfileUi() {
   const hasResult = Boolean(result?.typeId || result?.nickname || result?.finpleType);
   setText(panel.querySelector("[data-investment-profile-badge]"), hasResult ? "저장됨" : "미검사");
   setText(panel.querySelector("[data-investment-profile-nickname]"), result?.nickname || "검사 결과 없음");
-  setText(panel.querySelector("[data-investment-profile-created]"), hasResult ? formatMbtiDate(result?.createdAt) : "투자 MBTI 필요");
   setText(panel.querySelector("[data-investment-profile-type]"), result?.finpleType || "-영역");
   setText(panel.querySelector("[data-investment-profile-risk]"), result?.riskProfile || "-영역");
   setText(panel.querySelector("[data-investment-profile-message]"), hasResult
