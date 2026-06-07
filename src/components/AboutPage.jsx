@@ -122,10 +122,10 @@ export default function AboutPage({ onNavigate }) {
 
       <section className="accountHero aboutHero">
         <p className="sectionLabel">About FINPLE</p>
-        <h1>복잡한 투자 정보를 이해 가능한 흐름으로 바꾸는 FINPLE</h1>
+        <h1>복잡한 투자 정보를 간단한 흐름으로 바꾸는 FINPLE</h1>
         <p>
-          FINPLE은 처음에는 포트폴리오를 더 쉽게 점검하기 위한 Financial Planner의 관점에서 출발했습니다.
-          앞으로는 투자, 재테크, 재무 목표를 함께 다루는 Finance & People, 즉 금융과 재무를 실천하는 사람들을 위한 서비스로 확장해 나가려 합니다.
+          FINPLE은 복잡한 투자 정보를 사용자가 이해하고 비교할 수 있는 형태로 정리합니다.
+          포트폴리오 분석, 투자 성향, 자산 비중, 장기 시뮬레이션을 하나의 흐름으로 연결해 스스로 재무 방향을 점검할 수 있도록 돕습니다.
         </p>
       </section>
 
