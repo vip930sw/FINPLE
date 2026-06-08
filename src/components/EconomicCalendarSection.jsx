@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Clock,
     Gauge,
@@ -11,6 +12,8 @@ import {
   import "./EconomicCalendarPolish.css";
   
   function EconomicCalendarSection() {
+    const [isCalendarLoading, setIsCalendarLoading] = useState(true);
+
     return (
       <section className="section calendarSection">
         <p className="sectionLabel">Economic Calendar</p>
@@ -23,7 +26,15 @@ import {
         </div>
   
         <div className="economicGrid">
-          <div className="investingCalendarBox">
+          <div className={isCalendarLoading ? "investingCalendarBox isCalendarLoading" : "investingCalendarBox"}>
+            {isCalendarLoading ? (
+              <div className="calendarLoadingOverlay" aria-hidden="true">
+                <div className="calendarLoadingSpinner">
+                  <span /><span /><span /><span />
+                  <span /><span /><span /><span />
+                </div>
+              </div>
+            ) : null}
             <iframe
               className="investingCalendarFrame"
               src="https://sslecal2.investing.com?ecoDayBackground=%23545454&borderColor=%23545454&columns=exc_flags,exc_actual,exc_forecast,exc_previous&category=_employment,_economicActivity,_inflation,_credit,_centralBanks,_confidenceIndex,_balance,_Bonds&importance=3&features=datepicker&countries=5,11&calType=week&timeZone=88&lang=18"
@@ -33,6 +44,7 @@ import {
               allowTransparency="true"
               marginWidth="0"
               marginHeight="0"
+              onLoad={() => setIsCalendarLoading(false)}
               title="Investing.com Economic Calendar"
             />
           </div>

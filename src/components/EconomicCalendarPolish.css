@@ -13,3 +13,69 @@
 .calendarSection .calendarNotice {
   display: none;
 }
+
+.calendarSection .investingCalendarBox {
+  position: relative;
+}
+
+.calendarSection .investingCalendarFrame {
+  transition: opacity 240ms ease;
+}
+
+.calendarSection .investingCalendarBox.isCalendarLoading .investingCalendarFrame {
+  opacity: 0.16;
+}
+
+.calendarLoadingOverlay {
+  position: absolute;
+  inset: 20px 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.78));
+  pointer-events: none;
+}
+
+.calendarLoadingSpinner {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  animation: calendarLoadingSpinnerRotate 920ms steps(8) infinite;
+}
+
+.calendarLoadingSpinner span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 16px;
+  margin-left: -3.5px;
+  margin-top: -25px;
+  border-radius: 999px;
+  background: #2563eb;
+  transform-origin: 3.5px 25px;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.18);
+}
+
+.calendarLoadingSpinner span:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+.calendarLoadingSpinner span:nth-child(2) { transform: rotate(45deg); opacity: 0.84; }
+.calendarLoadingSpinner span:nth-child(3) { transform: rotate(90deg); opacity: 0.68; }
+.calendarLoadingSpinner span:nth-child(4) { transform: rotate(135deg); opacity: 0.52; }
+.calendarLoadingSpinner span:nth-child(5) { transform: rotate(180deg); opacity: 0.36; }
+.calendarLoadingSpinner span:nth-child(6) { transform: rotate(225deg); opacity: 0.28; }
+.calendarLoadingSpinner span:nth-child(7) { transform: rotate(270deg); opacity: 0.46; }
+.calendarLoadingSpinner span:nth-child(8) { transform: rotate(315deg); opacity: 0.76; }
+
+@keyframes calendarLoadingSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendarSection .investingCalendarFrame {
+    transition: none;
+  }
+
+  .calendarLoadingSpinner {
+    animation-duration: 2.4s;
+  }
+}
