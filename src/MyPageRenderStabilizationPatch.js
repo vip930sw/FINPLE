@@ -5,6 +5,12 @@
    - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
 ========================================================= */
 
+import {
+  FINPLE_LOADING_MESSAGE_INTERVAL_MS,
+  FINPLE_LOADING_MESSAGES,
+  getRandomLoadingMessageIndex,
+} from "./loadingMessages";
+
 const MAX_WAIT_MS = 900;
 const OAUTH_MAX_WAIT_MS = 3600;
 const MIN_WAIT_MS = 80;
@@ -17,6 +23,52 @@ let activeBootId = 0;
 let lastPathname = typeof window !== "undefined" ? window.location.pathname : "";
 let isHistoryPatched = false;
 let forcedLoaderUntil = 0;
+let loadingMessageIndex = getRandomLoadingMessageIndex();
+let loadingMessageTimer = null;
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
+function getCurrentLoadingMessage() {
+  return FINPLE_LOADING_MESSAGES[loadingMessageIndex] || FINPLE_LOADING_MESSAGES[0] || "";
+}
+
+function renderLoadingMessage() {
+  const messageNode = document.querySelector("[data-finple-loading-message]");
+  if (!messageNode) return;
+
+  const nextMessage = getCurrentLoadingMessage();
+  if (messageNode.textContent === nextMessage) return;
+
+  messageNode.textContent = nextMessage;
+  messageNode.classList.remove("isChanging");
+  void messageNode.offsetWidth;
+  messageNode.classList.add("isChanging");
+}
+
+function startLoadingMessageRotation() {
+  renderLoadingMessage();
+  if (loadingMessageTimer) return;
+
+  loadingMessageTimer = window.setInterval(() => {
+    loadingMessageIndex = getRandomLoadingMessageIndex(loadingMessageIndex);
+    renderLoadingMessage();
+  }, FINPLE_LOADING_MESSAGE_INTERVAL_MS);
+}
+
+function stopLoadingMessageRotation() {
+  if (!loadingMessageTimer) return;
+
+  window.clearInterval(loadingMessageTimer);
+  loadingMessageTimer = null;
+}
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -100,6 +152,30 @@ function installStabilizationStyle() {
       animation: finpleMyPageLoaderRotate 1.05s steps(12) infinite;
     }
 
+    .finpleMyPageLoadingStack {
+      display: grid;
+      justify-items: center;
+      gap: 20px;
+      width: min(380px, calc(100vw - 48px));
+    }
+
+    .finpleMyPageLoadingMessage {
+      min-height: 24px;
+      max-width: 100%;
+      margin: 0;
+      color: #334155;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.45;
+      letter-spacing: 0;
+      text-align: center;
+      word-break: keep-all;
+    }
+
+    .finpleMyPageLoadingMessage.isChanging {
+      animation: finpleMyPageLoadingMessageRise 420ms ease both;
+    }
+
     .finpleMyPageLoaderBar {
       position: absolute;
       left: 50%;
@@ -130,38 +206,67 @@ function installStabilizationStyle() {
     @keyframes finpleMyPageLoaderRotate {
       to { transform: rotate(360deg); }
     }
+
+    @keyframes finpleMyPageLoadingMessageRise {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .finpleMyPageLoaderSpinner {
+        animation-duration: 2.4s;
+      }
+
+      .finpleMyPageLoadingMessage.isChanging {
+        animation-duration: 1ms;
+      }
+    }
   `;
   document.head.appendChild(style);
 }
 
 function ensureLoadingOverlay() {
   if (!shouldKeepLoader() || !document.body) return;
-  if (document.getElementById(LOADER_ID)) return;
+  if (document.getElementById(LOADER_ID)) {
+    startLoadingMessageRotation();
+    return;
+  }
 
   const overlay = document.createElement("div");
   overlay.id = LOADER_ID;
   overlay.className = "finpleMyPageLoadingOverlay";
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
-    <div class="finpleMyPageLoaderSpinner">
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
-      <span class="finpleMyPageLoaderBar"></span>
+    <div class="finpleMyPageLoadingStack">
+      <div class="finpleMyPageLoaderSpinner">
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+        <span class="finpleMyPageLoaderBar"></span>
+      </div>
+      <p class="finpleMyPageLoadingMessage isChanging" data-finple-loading-message>${escapeHtml(getCurrentLoadingMessage())}</p>
     </div>
   `;
   document.body.appendChild(overlay);
+  startLoadingMessageRotation();
 }
 
 function removeLoadingOverlay() {
+  stopLoadingMessageRotation();
   document.getElementById(LOADER_ID)?.remove();
 }
 

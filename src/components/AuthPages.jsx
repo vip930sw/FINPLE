@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  FINPLE_LOADING_MESSAGE_INTERVAL_MS,
+  FINPLE_LOADING_MESSAGES,
+  getRandomLoadingMessageIndex,
+} from "../loadingMessages";
+import {
   createOrLoadDemoUser,
   getStoredFinpleAuthUser,
 } from "./portfolio/services/serverPortfolioService";
@@ -71,12 +76,26 @@ function moveToMyPageAfterOAuth({ authMode, onNavigate }) {
 }
 
 function LoginSocialSpinner() {
+  const [messageIndex, setMessageIndex] = useState(() => getRandomLoadingMessageIndex());
+  const loadingMessage = FINPLE_LOADING_MESSAGES[messageIndex] || FINPLE_LOADING_MESSAGES[0];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMessageIndex((currentIndex) => getRandomLoadingMessageIndex(currentIndex));
+    }, FINPLE_LOADING_MESSAGE_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="loginSocialLoadingOverlay" aria-hidden="true">
-      <div className="finpleLoginSpinner">
-        <span /><span /><span /><span />
-        <span /><span /><span /><span />
-        <span /><span /><span /><span />
+      <div className="finpleLoadingStack">
+        <div className="finpleLoginSpinner">
+          <span /><span /><span /><span />
+          <span /><span /><span /><span />
+          <span /><span /><span /><span />
+        </div>
+        <p key={loadingMessage} className="finpleLoadingMessage">{loadingMessage}</p>
       </div>
     </div>
   );

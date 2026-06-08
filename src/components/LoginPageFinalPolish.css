@@ -119,12 +119,33 @@
   backdrop-filter: blur(3px);
 }
 
+.finpleLoadingStack {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(320px, calc(100% - 32px));
+}
+
 .finpleLoginSpinner {
   position: relative;
   width: 148px;
   height: 148px;
   border-radius: 999px;
   animation: finpleLoginSpinnerRotate 1.05s steps(12) infinite;
+}
+
+.finpleLoadingMessage {
+  min-height: 22px;
+  max-width: 100%;
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-align: center;
+  word-break: keep-all;
+  animation: finpleLoadingMessageRise 420ms ease both;
 }
 
 .finpleLoginSpinner span {
@@ -158,9 +179,24 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes finpleLoadingMessageRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .finpleLoginSpinner {
     animation-duration: 2.4s;
+  }
+
+  .finpleLoadingMessage {
+    animation-duration: 1ms;
   }
 }
 
