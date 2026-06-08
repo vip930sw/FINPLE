@@ -7,6 +7,25 @@
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const TOOL_PATHS = ["/start", "/tools", "/mbti", "/simulator", "/screener"];
+const SPA_NAVIGATION_PATHS = [
+  "/",
+  "/about",
+  "/start",
+  "/login",
+  "/signup",
+  "/verify-email",
+  "/mypage",
+  "/pricing",
+  "/support",
+  "/updates",
+  "/admin",
+  "/admin/inquiries",
+  "/privacy",
+  "/terms",
+  "/refund",
+  "/disclaimer",
+  ...TOOL_PATHS,
+];
 let globalHeaderPatchTimer = null;
 let globalHeaderObserver = null;
 let isPatchingHeader = false;
@@ -38,11 +57,33 @@ function getHeaderStateKey() {
   return `${getActiveKey()}|${isLoggedIn() ? "in" : "out"}`;
 }
 
+function canUseSpaNavigation(path) {
+  const nextPath = normalizePath(String(path || "/").split("?")[0].split("#")[0]);
+  return document.body?.getAttribute("data-finple-spa-active") === "true" && SPA_NAVIGATION_PATHS.includes(nextPath);
+}
+
+function dispatchSpaNavigation() {
+  try {
+    window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+  } catch (error) {
+    window.dispatchEvent(new Event("popstate"));
+  }
+
+  window.dispatchEvent(new Event("finple-route-changed"));
+}
+
 function navigateTo(path) {
   if (window.location.pathname === path) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
+
+  if (canUseSpaNavigation(path)) {
+    window.history.pushState({ page: getActiveKey() }, "", path);
+    dispatchSpaNavigation();
+    return;
+  }
+
   window.location.href = path;
 }
 
@@ -140,7 +181,12 @@ function patchAllHeaders() {
   if (isPatchingHeader) return;
   isPatchingHeader = true;
   try {
-    document.querySelectorAll(".header, .accountHeader").forEach(patchHeader);
+    const root = document.getElementById("root");
+    const isSpaActive = document.body?.getAttribute("data-finple-spa-active") === "true";
+    document.querySelectorAll(".header, .accountHeader").forEach((header) => {
+      if (isSpaActive && root?.contains(header)) return;
+      patchHeader(header);
+    });
   } finally {
     isPatchingHeader = false;
   }
@@ -148,6 +194,7 @@ function patchAllHeaders() {
 
 function schedulePatch() {
   if (globalHeaderPatchTimer) window.clearTimeout(globalHeaderPatchTimer);
+  patchAllHeaders();
   globalHeaderPatchTimer = window.setTimeout(() => {
     patchAllHeaders();
     [40, 120, 280, 600].forEach((delay) => window.setTimeout(patchAllHeaders, delay));

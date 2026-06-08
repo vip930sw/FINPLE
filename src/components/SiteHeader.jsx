@@ -2,6 +2,7 @@ export default function SiteHeader({
   isLoggedIn = false,
   isAdminMode = false,
   authLabel,
+  activePage = "home",
   onHome,
   onStart,
   onNavigate,
@@ -51,8 +52,18 @@ export default function SiteHeader({
     onNavigate?.("login");
   }
 
+  const activeKey = activePage === "personal" ? "start" : activePage;
+  const stateKey = `${activeKey}|${isLoggedIn ? "in" : "out"}`;
+  const navItems = [
+    { key: "home", label: "홈", path: "/", className: "", onClick: handleHomeClick },
+    { key: "start", label: "시작하기", path: "/start", className: "finpleGlobalStartButton", onClick: handleStartClick },
+    { key: "pricing", label: "요금제", path: "/pricing", className: "", onClick: () => onNavigate?.("pricing") },
+    { key: "support", label: "문의사항", path: "/support", className: "", onClick: () => onNavigate?.("support") },
+    { key: "mypage", label: "MY PAGE", path: "/mypage", className: "", onClick: handleMyPageClick },
+  ];
+
   return (
-    <header className="header homeHeader siteHeader">
+    <header className="header homeHeader siteHeader finpleUnifiedHeader" data-finple-global-nav-state={stateKey}>
       <button type="button" className="brandLogo resetButton" onClick={handleHomeClick}>
         <div className="brandIcon"><span>F</span><i /></div>
         <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
@@ -66,13 +77,26 @@ export default function SiteHeader({
         </nav>
       ) : null}
 
-      <div className="headerActions siteHeaderActions">
-        <button className="secondaryHeaderButton" onClick={handleHomeClick}>홈</button>
-        <button className="headerButton" onClick={handleStartClick}>시작하기</button>
-        <button className="secondaryHeaderButton supportHeaderButton" onClick={() => onNavigate?.("support")}>문의사항</button>
-        <button className="secondaryHeaderButton" onClick={handleMyPageClick}>MY PAGE</button>
-        <button className="secondaryHeaderButton" onClick={onLoginLogout}>{authLabel || (isLoggedIn ? "로그오프" : "로그인")}</button>
-      </div>
+      <nav className="finpleGlobalNav" aria-label="FINPLE 주요 메뉴" data-finple-global-nav>
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={[item.className, activeKey === item.key ? "active" : ""].filter(Boolean).join(" ")}
+            data-finple-nav-path={item.path}
+            onClick={item.onClick}
+          >
+            {item.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={["finpleGlobalAuthButton", activeKey === "login" ? "active" : ""].filter(Boolean).join(" ")}
+          onClick={onLoginLogout}
+        >
+          {authLabel || (isLoggedIn ? "로그아웃" : "로그인")}
+        </button>
+      </nav>
     </header>
   );
 }

@@ -177,6 +177,11 @@ function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
 
+  useEffect(() => {
+    document.body?.setAttribute("data-finple-spa-active", "true");
+    return () => document.body?.removeAttribute("data-finple-spa-active");
+  }, []);
+
   function isFinpleUserLoggedIn() {
     return Boolean(getStoredFinpleAuthUser()?.id);
   }
@@ -373,7 +378,7 @@ function App() {
     window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
-  function renderShell(pageContent, { includeHeader = true } = {}) {
+  function renderShell(pageContent, { includeHeader = true, showHomeSectionNav = false } = {}) {
     return (
       <>
         {includeHeader ? (
@@ -381,11 +386,13 @@ function App() {
             isLoggedIn={isFinpleUserLoggedIn()}
             isAdminMode={hasFinpleAdminToken() && !isFinpleUserLoggedIn()}
             authLabel={getHeaderAuthLabel()}
+            activePage={currentPage}
             onHome={goHome}
             onStart={goPersonal}
             onNavigate={setCurrentPage}
             onLoginLogout={handleHeaderLoginLogout}
             onHomeSection={scrollHomeToSection}
+            showHomeSectionNav={showHomeSectionNav}
           />
         ) : null}
         {pageContent}
@@ -415,20 +422,8 @@ function App() {
   if (currentPage === "refund") return renderShell(<RefundPolicyPage onNavigate={setCurrentPage} />);
   if (currentPage === "investment-disclaimer") return renderShell(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
 
-  return (
+  return renderShell(
     <main className="page">
-      <SiteHeader
-        isLoggedIn={isFinpleUserLoggedIn()}
-        isAdminMode={hasFinpleAdminToken() && !isFinpleUserLoggedIn()}
-        authLabel={getHeaderAuthLabel()}
-        onHome={goHome}
-        onStart={goPersonal}
-        onNavigate={setCurrentPage}
-        onLoginLogout={handleHeaderLoginLogout}
-        onHomeSection={scrollHomeToSection}
-        showHomeSectionNav
-      />
-
       <div className="tickerArea"><TradingViewTicker symbols={[...stockIndexSymbols, ...currencyCryptoSymbols]} /></div>
 
       <section id="hero" className="hero">
@@ -451,9 +446,8 @@ function App() {
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
         <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} /></div>
       </section>
-
-      <SiteFooter onNavigate={setCurrentPage} />
-    </main>
+    </main>,
+    { showHomeSectionNav: true }
   );
 }
 
