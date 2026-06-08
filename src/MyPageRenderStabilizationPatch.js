@@ -6,6 +6,7 @@
 ========================================================= */
 
 const MAX_WAIT_MS = 900;
+const OAUTH_MAX_WAIT_MS = 3600;
 const MIN_WAIT_MS = 80;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
@@ -32,14 +33,10 @@ function getOAuthRecoverySignature() {
 }
 
 function hasRenderableMyPageContent() {
-  const root = document.getElementById("root");
-  const rootText = String(root?.textContent || "").trim();
-
   return Boolean(
-    document.querySelector(".accountPage") ||
-      document.querySelector(".myPageDashboardLayout") ||
-      document.querySelector(".accountStatusPanel") ||
-      rootText.length > 20
+    document.querySelector(".myPageDashboardLayout .accountStatusPanel") ||
+      document.querySelector('.accountStatusPanel[data-mypage-panel-key="account"]') ||
+      document.querySelector(".accountPanelStack .accountStatusPanel")
   );
 }
 
@@ -98,8 +95,8 @@ function installStabilizationStyle() {
 
     .finpleMyPageLoaderSpinner {
       position: relative;
-      width: 136px;
-      height: 136px;
+      width: 148px;
+      height: 148px;
       animation: finpleMyPageLoaderRotate 1.05s steps(12) infinite;
     }
 
@@ -110,10 +107,10 @@ function installStabilizationStyle() {
       width: 14px;
       height: 40px;
       margin-left: -7px;
-      margin-top: -60px;
+      margin-top: -72px;
       border-radius: 999px;
       background: #3b82f6;
-      transform-origin: 7px 60px;
+      transform-origin: 7px 72px;
       box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
     }
 
@@ -202,6 +199,10 @@ function revealMyPage() {
 function revealMyPageFailsafe(bootId) {
   window.setTimeout(() => {
     if (bootId !== activeBootId) return;
+    if (isOAuthMyPagePath() && !hasRenderableMyPageContent()) {
+      recoverBlankOAuthMyPage(window.location.href);
+      return;
+    }
     revealMyPage();
   }, FAILSAFE_WAIT_MS);
 }
@@ -217,10 +218,11 @@ function waitForFinalLayout(bootId) {
 
     const elapsed = Date.now() - startedAt;
     const shellReady = elapsed >= MIN_WAIT_MS && isShellReady();
-    const timedOut = elapsed >= MAX_WAIT_MS;
+    const isOAuthRoute = isOAuthMyPagePath();
+    const timedOut = elapsed >= (isOAuthRoute ? OAUTH_MAX_WAIT_MS : MAX_WAIT_MS);
     const forcedExpiredAwayFromMyPage = !isMyPagePath() && Date.now() >= forcedLoaderUntil;
 
-    if (shellReady || timedOut || forcedExpiredAwayFromMyPage) {
+    if (shellReady || (!isOAuthRoute && timedOut) || (isOAuthRoute && timedOut && hasRenderableMyPageContent()) || forcedExpiredAwayFromMyPage) {
       revealed = true;
       revealMyPage();
       return;
