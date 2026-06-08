@@ -359,18 +359,11 @@ function App() {
       return;
     }
 
-    if (hasFinpleAdminToken()) {
-      setCurrentPage("admin-inquiries");
-      return;
-    }
-
     setCurrentPage("login");
   }
 
   function getHeaderAuthLabel() {
-    if (isFinpleUserLoggedIn()) return "로그오프";
-    if (hasFinpleAdminToken()) return "관리자";
-    return "로그인";
+    return isFinpleUserLoggedIn() ? "로그아웃" : "로그인";
   }
 
   function scrollHomeToSection(sectionId) {
@@ -378,21 +371,18 @@ function App() {
     window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
-  function renderShell(pageContent, { includeHeader = true, showHomeSectionNav = false } = {}) {
+  function renderShell(pageContent, { includeHeader = true } = {}) {
     return (
       <>
         {includeHeader ? (
           <SiteHeader
             isLoggedIn={isFinpleUserLoggedIn()}
-            isAdminMode={hasFinpleAdminToken() && !isFinpleUserLoggedIn()}
             authLabel={getHeaderAuthLabel()}
             activePage={currentPage}
             onHome={goHome}
             onStart={goPersonal}
             onNavigate={setCurrentPage}
             onLoginLogout={handleHeaderLoginLogout}
-            onHomeSection={scrollHomeToSection}
-            showHomeSectionNav={showHomeSectionNav}
           />
         ) : null}
         {pageContent}
@@ -405,7 +395,7 @@ function App() {
     setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
   }
 
-  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} />, { includeHeader: false });
+  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} onNavigate={setCurrentPage} />);
   if (currentPage === "about") return renderShell(<AboutPage onNavigate={setCurrentPage} />);
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={handleAdminNavigate} />);
   if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={setCurrentPage} />);
@@ -446,8 +436,7 @@ function App() {
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
         <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} /></div>
       </section>
-    </main>,
-    { showHomeSectionNav: true }
+    </main>
   );
 }
 

@@ -38,20 +38,6 @@ const START_MENU_ITEMS = [
 function StartHubPage({ onBack, onNavigate }) {
   return (
     <main className="page startHubPage">
-      <header className="header">
-        <button type="button" className="brandLogo resetButton" onClick={onBack}>
-          <div className="brandIcon">
-            <span>F</span>
-            <i />
-          </div>
-
-          <div className="brandText">
-            <strong>FINPLE</strong>
-            <span>Portfolio Lab</span>
-          </div>
-        </button>
-      </header>
-
       <section className="startHubHero">
         <p className="badge">FINPLE Beta v0.3 Flow</p>
         <h1>무엇부터 시작할까요?</h1>

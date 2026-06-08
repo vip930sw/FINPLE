@@ -288,7 +288,6 @@ function ScreenerPage({ onBack }) {
   const activeCandidates = activeMarket === "KR" ? KR_SCREENER_CANDIDATES : activeMarket === "US" ? US_SCREENER_CANDIDATES : [...US_SCREENER_CANDIDATES, ...KR_SCREENER_CANDIDATES];
   return (
     <main className="page screenerPage">
-      <header className="header"><button type="button" className="brandLogo resetButton" onClick={onBack}><div className="brandIcon"><span>F</span><i /></div><div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div></button></header>
       <section className="section calculatorSection screenerStandaloneSection screenerUnifiedSection">
         <p className="sectionLabel">Asset Finder</p>
         <h2>FINPLE 자산 파인더</h2>

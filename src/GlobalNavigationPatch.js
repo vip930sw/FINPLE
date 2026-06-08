@@ -177,6 +177,13 @@ function patchHeader(header) {
   ensureGlobalNav(header);
 }
 
+function restorePageLocalHeader(header) {
+  if (!header || header.classList.contains("siteHeader")) return;
+  header.querySelector(".finpleGlobalNav")?.remove();
+  header.classList.remove("finpleUnifiedHeader");
+  header.removeAttribute("data-finple-global-nav-state");
+}
+
 function patchAllHeaders() {
   if (isPatchingHeader) return;
   isPatchingHeader = true;
@@ -184,7 +191,10 @@ function patchAllHeaders() {
     const root = document.getElementById("root");
     const isSpaActive = document.body?.getAttribute("data-finple-spa-active") === "true";
     document.querySelectorAll(".header, .accountHeader").forEach((header) => {
-      if (isSpaActive && root?.contains(header)) return;
+      if (isSpaActive && root?.contains(header) && !header.classList.contains("siteHeader")) {
+        restorePageLocalHeader(header);
+        return;
+      }
       patchHeader(header);
     });
   } finally {

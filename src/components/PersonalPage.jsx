@@ -37,7 +37,7 @@ function getPathForPersonalView(view) {
   return "/start";
 }
 
-function PersonalPage({ onBack }) {
+function PersonalPage({ onBack, onNavigate }) {
   const [personalView, setPersonalView] = useState(getInitialPersonalView);
   const [initialTab, setInitialTab] = useState("settings");
   const simulatorRef = useRef(null);
@@ -75,6 +75,11 @@ function PersonalPage({ onBack }) {
     }
 
     if (nextTarget === "support") {
+      if (typeof onNavigate === "function") {
+        onNavigate("support");
+        return;
+      }
+
       window.location.href = "/support";
       return;
     }
@@ -147,34 +152,6 @@ function PersonalPage({ onBack }) {
 
   return (
     <main className="page personalPage">
-      <header className="header">
-        <button className="brandLogo resetButton" onClick={onBack}>
-          <div className="brandIcon">
-            <span>F</span>
-            <i />
-          </div>
-
-          <div className="brandText">
-            <strong>FINPLE</strong>
-            <span>Portfolio Lab</span>
-          </div>
-        </button>
-
-        <nav className="headerNav">
-          <button type="button" onClick={() => moveToSimulatorTab("settings")}>
-            시뮬레이터
-          </button>
-
-          <button type="button" onClick={() => moveToSimulatorTab("compare")}>
-            포트폴리오
-          </button>
-
-          <button type="button" onClick={() => moveToSimulatorTab("detail")}>
-            상세분석
-          </button>
-        </nav>
-      </header>
-
       <PortfolioSimulator ref={simulatorRef} />
     </main>
   );
