@@ -197,7 +197,7 @@ function App() {
   }
 
   function navigateToPage(page, options = {}) {
-    setCurrentPage(page);
+    setCurrentPage(page === "personal" && !isFinpleUserLoggedIn() ? "login" : page);
     if (options.scrollTop !== false) schedulePageTopScroll();
   }
 
@@ -218,6 +218,10 @@ function App() {
     let redirectPage = null;
 
     if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
+      redirectPage = "login";
+    }
+
+    if (currentPage === "personal" && !isFinpleUserLoggedIn()) {
       redirectPage = "login";
     }
 
@@ -366,6 +370,11 @@ function App() {
   }
 
   function goPersonal() {
+    if (!isFinpleUserLoggedIn()) {
+      navigateToPage("login");
+      return;
+    }
+
     setCurrentPage("personal");
     if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start");
     window.dispatchEvent(new CustomEvent("finple-open-personal-view", { detail: { view: "hub" } }));
@@ -416,6 +425,7 @@ function App() {
     setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
   }
 
+  if (currentPage === "personal" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={navigateToPage} />);
   if (currentPage === "personal") {
     return renderShell(
       <PersonalPage
