@@ -8,7 +8,7 @@
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 12px !important;
-  margin-top: 0 !important;
+  margin-top: 24px !important;
 }
 
 .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > div:not(.accountStatusInfoCard) {
@@ -64,9 +64,22 @@
   justify-content: space-between !important;
   gap: 18px;
   width: 100%;
-  margin-bottom: 12px !important;
+  margin-bottom: 0 !important;
   padding-right: 124px;
   box-sizing: border-box;
+}
+
+.accountPage .accountPanelStack .accountStatusPanel {
+  gap: 0 !important;
+}
+
+.accountPage .accountPanelStack .accountStatusPanel .serverStorageHeader {
+  margin-bottom: 0 !important;
+}
+
+.accountPage .accountPanelStack .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
+  margin-top: 24px !important;
+  margin-bottom: 16px !important;
 }
 
 .accountPlanBadge {
@@ -149,5 +162,6 @@
 
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: 1fr !important;
+    margin-top: 18px !important;
   }
 }
