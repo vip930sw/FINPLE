@@ -3,6 +3,7 @@
    - /mypage 새로고침 및 로그인 → MY PAGE 이동 시 빈 화면을 줄입니다.
    - 화면을 숨기지 않고, 즉시 표시 가능한 파란색 12-bar 로딩 스피너를 오버레이합니다.
    - 세부 패널 보정은 화면 표시 후 이어서 적용합니다.
+   - 로그인 후 /start 복귀처럼 MY PAGE가 아닌 라우트 전환에도 같은 스피너를 재사용합니다.
 ========================================================= */
 
 import {
@@ -397,12 +398,17 @@ function patchHistoryNavigation() {
     showImmediateMyPageLoader(2200);
     window.setTimeout(bootMyPageRenderStabilization, 0);
   });
+  window.addEventListener("finple-route-transition-start", () => {
+    showImmediateMyPageLoader(2200);
+    window.setTimeout(bootMyPageRenderStabilization, 0);
+  });
 }
 
 if (typeof window !== "undefined") {
   installStabilizationStyle();
   patchHistoryNavigation();
   window.__finpleShowMyPageLoader = showImmediateMyPageLoader;
+  window.__finpleShowRouteTransitionLoader = showImmediateMyPageLoader;
 
   if (isMyPagePath()) {
     document.documentElement.classList.add("finple-mypage-booting");
