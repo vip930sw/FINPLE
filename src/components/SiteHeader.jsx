@@ -6,6 +6,7 @@ export default function SiteHeader({
   onStart,
   onNavigate,
   onLoginLogout,
+  localNav = null,
 }) {
   function handleHomeClick() {
     if (typeof onHome === "function") {
@@ -48,6 +49,8 @@ export default function SiteHeader({
         <div className="brandIcon"><span>F</span><i /></div>
         <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
       </button>
+
+      <div className="finpleHeaderLocalNav">{localNav}</div>
 
       <nav className="finpleGlobalNav" aria-label="FINPLE 주요 메뉴" data-finple-global-nav>
         {navItems.map((item) => (

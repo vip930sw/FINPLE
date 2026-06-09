@@ -37,7 +37,7 @@ function normalizePath(pathname) {
 function isLoggedIn() {
   try {
     return Boolean(JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null")?.id);
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -65,22 +65,27 @@ function canUseSpaNavigation(path) {
 function dispatchSpaNavigation() {
   try {
     window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
-  } catch (error) {
+  } catch {
     window.dispatchEvent(new Event("popstate"));
   }
 
   window.dispatchEvent(new Event("finple-route-changed"));
 }
 
+function scrollToPageTop(delay = 70) {
+  window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), delay);
+}
+
 function navigateTo(path) {
   if (window.location.pathname === path) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToPageTop(0);
     return;
   }
 
   if (canUseSpaNavigation(path)) {
     window.history.pushState({ page: getActiveKey() }, "", path);
     dispatchSpaNavigation();
+    scrollToPageTop();
     return;
   }
 

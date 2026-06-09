@@ -181,6 +181,7 @@ function schedulePageTopScroll(delay = 70) {
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
+  const [personalHeaderSubNav, setPersonalHeaderSubNav] = useState(null);
 
   useEffect(() => {
     document.body?.setAttribute("data-finple-spa-active", "true");
@@ -402,9 +403,9 @@ function App() {
             onStart={goPersonal}
             onNavigate={navigateToPage}
             onLoginLogout={handleHeaderLoginLogout}
+            localNav={subNav}
           />
         ) : null}
-        {subNav}
         {pageContent}
         <SiteFooter onNavigate={navigateToPage} />
       </>
@@ -415,7 +416,16 @@ function App() {
     setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
   }
 
-  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} onNavigate={navigateToPage} />);
+  if (currentPage === "personal") {
+    return renderShell(
+      <PersonalPage
+        onBack={goHome}
+        onNavigate={navigateToPage}
+        onHeaderSubNavChange={setPersonalHeaderSubNav}
+      />,
+      { subNav: personalHeaderSubNav }
+    );
+  }
   if (currentPage === "about") return renderShell(<AboutPage onNavigate={navigateToPage} />);
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={handleAdminNavigate} />);
   if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} />);

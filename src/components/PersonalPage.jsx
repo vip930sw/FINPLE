@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PortfolioSimulator from "./PortfolioSimulator";
 import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
@@ -38,9 +38,9 @@ function getPathForPersonalView(view) {
 }
 
 const SIMULATOR_STEP_ITEMS = [
-  { key: "settings", step: "Step 1", label: "시뮬레이터" },
-  { key: "compare", step: "Step 2", label: "포트폴리오" },
-  { key: "detail", step: "Step 3", label: "상세분석" },
+  { key: "settings", step: "Step 1" },
+  { key: "compare", step: "Step 2" },
+  { key: "detail", step: "Step 3" },
 ];
 
 function scrollWindowTop(delay = 70) {
@@ -48,15 +48,15 @@ function scrollWindowTop(delay = 70) {
   window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), delay);
 }
 
-function PersonalPage({ onBack, onNavigate }) {
+function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
   const [personalView, setPersonalView] = useState(getInitialPersonalView);
   const [initialTab, setInitialTab] = useState("settings");
   const [activeSimulatorStep, setActiveSimulatorStep] = useState("settings");
   const simulatorRef = useRef(null);
 
-  function moveToSimulatorTab(tabName, options = {}) {
+  const moveToSimulatorTab = useCallback(function moveToSimulatorTab(tabName, options = {}) {
     simulatorRef.current?.changeTab(tabName, options);
-  }
+  }, []);
 
   function openSimulator(tabName = "settings", options = {}) {
     setInitialTab(tabName);
@@ -109,7 +109,7 @@ function PersonalPage({ onBack, onNavigate }) {
       moveToSimulatorTab(initialTab, { scroll: false });
       simulatorRef.current?.scrollToTop?.();
     }, 120);
-  }, [personalView, initialTab]);
+  }, [personalView, initialTab, moveToSimulatorTab]);
 
   useEffect(() => {
     const tool = new URLSearchParams(window.location.search).get("tool");
@@ -130,6 +130,33 @@ function PersonalPage({ onBack, onNavigate }) {
     window.addEventListener("finple-open-personal-view", handleOpenPersonalView);
     return () => window.removeEventListener("finple-open-personal-view", handleOpenPersonalView);
   }, []);
+
+  useEffect(() => {
+    if (personalView !== "simulator") {
+      onHeaderSubNavChange?.(null);
+      return undefined;
+    }
+
+    onHeaderSubNavChange?.(
+      <nav className="routeSubNav simulatorRouteSubNav" aria-label="시뮬레이터 단계 이동">
+        {SIMULATOR_STEP_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={activeSimulatorStep === item.key ? "active" : ""}
+            onClick={() => {
+              setActiveSimulatorStep(item.key);
+              moveToSimulatorTab(item.key);
+            }}
+          >
+            {item.step}
+          </button>
+        ))}
+      </nav>
+    );
+
+    return () => onHeaderSubNavChange?.(null);
+  }, [activeSimulatorStep, moveToSimulatorTab, onHeaderSubNavChange, personalView]);
 
   useEffect(() => {
     function handlePopState() {
@@ -173,28 +200,8 @@ function PersonalPage({ onBack, onNavigate }) {
     );
   }
 
-  const simulatorSubNav = (
-    <nav className="routeSubNav simulatorRouteSubNav" aria-label="시뮬레이터 단계 이동">
-      {SIMULATOR_STEP_ITEMS.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          className={activeSimulatorStep === item.key ? "active" : ""}
-          onClick={() => {
-            setActiveSimulatorStep(item.key);
-            moveToSimulatorTab(item.key);
-          }}
-        >
-          <span>{item.step}</span>
-          <strong>{item.label}</strong>
-        </button>
-      ))}
-    </nav>
-  );
-
   return (
     <main className="page personalPage">
-      {simulatorSubNav}
       <PortfolioSimulator ref={simulatorRef} onActiveTabChange={setActiveSimulatorStep} />
     </main>
   );

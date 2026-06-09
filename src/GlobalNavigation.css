@@ -52,6 +52,14 @@
   letter-spacing: 0.02em !important;
 }
 
+.finpleHeaderLocalNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
 .homeHeader .homeSectionNav,
 .personalPage .headerNav {
   display: flex !important;
@@ -160,18 +168,17 @@
 }
 
 .routeSubNav {
-  position: sticky;
-  top: 72px;
-  z-index: 990;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  min-height: 48px;
-  padding: 8px 40px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #e2e8f0;
-  backdrop-filter: blur(10px);
+  gap: 30px;
+  min-width: 0;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
 }
 
 .routeSubNav button {
@@ -182,11 +189,11 @@
   gap: 6px;
   border: 0;
   background: transparent;
-  color: #475569;
-  padding: 8px 0;
-  font-size: 14px;
+  color: #334155;
+  padding: 10px 0;
+  font-size: 15px;
   font-weight: 950;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -211,17 +218,6 @@
 
 .routeSubNav button.active {
   color: #0f172a;
-}
-
-.simulatorRouteSubNav button span {
-  color: #2563eb;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.simulatorRouteSubNav button strong {
-  color: inherit;
-  font-size: 14px;
 }
 
 .homeLegacyAnchor {
@@ -274,12 +270,22 @@
     width: 100%;
   }
 
+  .finpleHeaderLocalNav {
+    order: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
   .homeHeader .homeSectionNav,
   .personalPage .headerNav {
     display: none !important;
   }
 
   .finpleGlobalNav {
+    order: 3;
     width: 100% !important;
     min-width: 0 !important;
     justify-content: flex-start !important;
@@ -302,11 +308,10 @@
   }
 
   .routeSubNav {
-    top: 112px;
     justify-content: flex-start;
     gap: 18px;
-    min-height: 46px;
-    padding: 7px 20px 8px;
+    min-height: 0;
+    padding: 0;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
@@ -314,16 +319,6 @@
 
   .routeSubNav button {
     flex: 0 0 auto;
-    font-size: 13px;
-  }
-
-  .simulatorRouteSubNav button {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-
-  .simulatorRouteSubNav button strong {
     font-size: 13px;
   }
 }
@@ -354,8 +349,6 @@
   }
 
   .routeSubNav {
-    top: 110px;
-    padding-left: 16px;
-    padding-right: 16px;
+    gap: 14px;
   }
 }

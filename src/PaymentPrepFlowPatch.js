@@ -76,7 +76,7 @@ function shouldResumePendingPersonalBilling() {
 
   const params = new URLSearchParams(window.location.search);
   if (path === "/login" || path === "/signup") return true;
-  if (path === "/pricing" && (params.has(BILLING_QUERY) || pending?.planKey === "personal")) return true;
+  if (path === "/pricing" && params.has(BILLING_QUERY)) return true;
 
   return false;
 }

@@ -36,7 +36,7 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -44,6 +44,28 @@ function setText(node, value) {
   if (!node) return;
   const nextValue = String(value ?? "");
   if (node.textContent !== nextValue) node.textContent = nextValue;
+}
+
+function getSiteFooterHtml() {
+  return `
+    <footer class="footer siteFooter">
+      <div class="siteFooterBrandBlock">
+        <strong>FINPLE Portfolio Lab</strong>
+        <span>© 2026 FINPLE. Beta service.</span>
+      </div>
+      <p class="siteFooterNotice">
+        FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,
+        특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
+      </p>
+      <nav class="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
+        <a href="/updates">업데이트</a>
+        <a href="/terms">이용약관</a>
+        <a href="/privacy">개인정보처리방침</a>
+        <a href="/refund">환불정책</a>
+        <a href="/disclaimer">투자 유의사항</a>
+      </nav>
+    </footer>
+  `;
 }
 
 function getPageCopy(path) {
@@ -336,6 +358,7 @@ export function renderPaymentMethodPage() {
         </div>
         ${isSetup ? getSetupCardHtml() : getResultCardHtml(path)}
       </section>
+      ${getSiteFooterHtml()}
     </main>
   `;
 
