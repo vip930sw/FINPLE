@@ -32,6 +32,7 @@ const EMAIL_DOMAIN_OPTIONS = [
 ];
 const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
 const OAUTH_READY_MESSAGE = "곧 이동합니다.";
+const POST_LOGIN_REDIRECT_STORAGE_KEY = "finple-post-login-redirect-page";
 
 function GoogleGIcon() {
   return (
@@ -60,11 +61,33 @@ function getOAuthProviderParam(authMode = "") {
   return "social";
 }
 
-function moveToMyPageAfterOAuth({ authMode, onNavigate }) {
+function consumePostLoginRedirectPage(fallbackPage = "mypage") {
+  if (typeof window === "undefined") return fallbackPage;
+  const storedPage = window.sessionStorage.getItem(POST_LOGIN_REDIRECT_STORAGE_KEY);
+  window.sessionStorage.removeItem(POST_LOGIN_REDIRECT_STORAGE_KEY);
+  return storedPage === "personal" ? storedPage : fallbackPage;
+}
+
+function moveToPageAfterOAuth({ authMode, onNavigate }) {
   if (typeof window === "undefined") return;
+  const nextPage = consumePostLoginRedirectPage();
+
+  if (nextPage === "personal") {
+    window.history.replaceState({ page: "personal" }, "", "/start");
+
+    if (typeof onNavigate === "function") {
+      onNavigate("personal");
+      return;
+    }
+
+    window.location.replace("/start");
+    return;
+  }
+
   const provider = getOAuthProviderParam(authMode);
   const nextPath = `/mypage?oauth=${encodeURIComponent(provider)}&t=${Date.now()}`;
 
+  triggerMyPageTransitionLoader();
   window.history.replaceState({ page: "mypage", oauth: provider }, "", nextPath);
 
   if (typeof onNavigate === "function") {
@@ -155,8 +178,7 @@ export function LoginPage({ onNavigate }) {
       const oauthUser = consumeGoogleOAuthRedirectResult();
       if (oauthUser?.id) {
         setStatusMessage(`${oauthUser.email || oauthUser.name || "소셜 로그인 사용자"} 계정으로 로그인되었습니다.`);
-        triggerMyPageTransitionLoader();
-        window.setTimeout(() => moveToMyPageAfterOAuth({ authMode: oauthUser.authMode, onNavigate }), 80);
+        window.setTimeout(() => moveToPageAfterOAuth({ authMode: oauthUser.authMode, onNavigate }), 80);
         return;
       }
 
@@ -195,8 +217,9 @@ export function LoginPage({ onNavigate }) {
     try {
       const user = await loginWithEmailPassword({ email, password });
       setStatusMessage(`${user.email || user.name || "사용자"} 계정으로 로그인되었습니다.`);
-      triggerMyPageTransitionLoader();
-      onNavigate("mypage");
+      const nextPage = consumePostLoginRedirectPage();
+      if (nextPage === "mypage") triggerMyPageTransitionLoader();
+      onNavigate(nextPage);
     } catch (error) {
       setStatusMessage(error?.message || "로그인에 실패했습니다.");
     } finally {
