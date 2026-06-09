@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -11,6 +11,7 @@ import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail"];
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
+  const { onActiveTabChange } = props || {};
   const {
     portfolioList,
     activePortfolioId,
@@ -90,16 +91,20 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     ? activeSimulatorTab
     : "settings";
 
-  function scrollToSimulatorTop() {
+  useEffect(() => {
+    onActiveTabChange?.(effectiveActiveSimulatorTab);
+  }, [effectiveActiveSimulatorTab, onActiveTabChange]);
+
+  const scrollToSimulatorTop = useCallback(function scrollToSimulatorTop() {
     window.setTimeout(() => {
       document.getElementById("simulator")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     }, 80);
-  }
+  }, []);
 
-  function scrollToSimulatorTab(nextTab) {
+  const scrollToSimulatorTab = useCallback(function scrollToSimulatorTab(nextTab) {
     const anchorMap = {
       settings: "settings",
       compare: "compare",
@@ -114,15 +119,15 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         block: "start",
       });
     }, 80);
-  }
+  }, []);
 
-  function handleSimulatorTabChange(nextTab, options = {}) {
+  const handleSimulatorTabChange = useCallback(function handleSimulatorTabChange(nextTab, options = {}) {
     changeSimulatorTab(nextTab);
 
     if (options.scroll !== false) {
       scrollToSimulatorTab(nextTab);
     }
-  }
+  }, [changeSimulatorTab, scrollToSimulatorTab]);
 
   useImperativeHandle(
     ref,
@@ -134,7 +139,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         scrollToSimulatorTop();
       },
     }),
-    [changeSimulatorTab]
+    [handleSimulatorTabChange, scrollToSimulatorTop]
   );
 
   const shouldShowFloatingPortfolioDropdown = ["settings", "detail"].includes(

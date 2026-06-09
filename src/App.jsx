@@ -173,6 +173,11 @@ function getInitialPage() {
   return getPageForPath(window.location.pathname, window.location.hash);
 }
 
+function schedulePageTopScroll(delay = 70) {
+  if (typeof window === "undefined") return;
+  window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), delay);
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
@@ -190,6 +195,11 @@ function App() {
     return Boolean(getFinpleAdminToken());
   }
 
+  function navigateToPage(page, options = {}) {
+    setCurrentPage(page);
+    if (options.scrollTop !== false) schedulePageTopScroll();
+  }
+
   useEffect(() => {
     function handleAdminTokenUpdate() {
       setAdminTokenVersion((version) => version + 1);
@@ -204,13 +214,20 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let redirectPage = null;
+
     if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
-      setCurrentPage("login");
+      redirectPage = "login";
     }
 
     if (currentPage === "admin-inquiries" && !hasFinpleAdminToken()) {
-      setCurrentPage("admin-login");
+      redirectPage = "admin-login";
     }
+
+    if (!redirectPage) return undefined;
+
+    const redirectTimer = window.setTimeout(() => setCurrentPage(redirectPage), 0);
+    return () => window.clearTimeout(redirectTimer);
   }, [currentPage, adminTokenVersion]);
 
   useEffect(() => {
@@ -343,23 +360,25 @@ function App() {
   ];
 
   function goHome() {
-    setCurrentPage("home");
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 40);
+    navigateToPage("home", { scrollTop: false });
+    schedulePageTopScroll(40);
   }
 
   function goPersonal() {
     setCurrentPage("personal");
     if (window.location.pathname !== "/start") window.history.pushState({ page: "personal" }, "", "/start");
+    window.dispatchEvent(new CustomEvent("finple-open-personal-view", { detail: { view: "hub" } }));
+    schedulePageTopScroll();
   }
 
   async function handleHeaderLoginLogout() {
     if (isFinpleUserLoggedIn()) {
       await logoutFinpleAuth();
-      setCurrentPage("home");
+      navigateToPage("home");
       return;
     }
 
-    setCurrentPage("login");
+    navigateToPage("login");
   }
 
   function getHeaderAuthLabel() {
@@ -371,7 +390,7 @@ function App() {
     window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
-  function renderShell(pageContent, { includeHeader = true } = {}) {
+  function renderShell(pageContent, { includeHeader = true, subNav = null } = {}) {
     return (
       <>
         {includeHeader ? (
@@ -381,12 +400,13 @@ function App() {
             activePage={currentPage}
             onHome={goHome}
             onStart={goPersonal}
-            onNavigate={setCurrentPage}
+            onNavigate={navigateToPage}
             onLoginLogout={handleHeaderLoginLogout}
           />
         ) : null}
+        {subNav}
         {pageContent}
-        <SiteFooter onNavigate={setCurrentPage} />
+        <SiteFooter onNavigate={navigateToPage} />
       </>
     );
   }
@@ -395,22 +415,22 @@ function App() {
     setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
   }
 
-  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} onNavigate={setCurrentPage} />);
-  if (currentPage === "about") return renderShell(<AboutPage onNavigate={setCurrentPage} />);
+  if (currentPage === "personal") return renderShell(<PersonalPage onBack={goHome} onNavigate={navigateToPage} />);
+  if (currentPage === "about") return renderShell(<AboutPage onNavigate={navigateToPage} />);
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={handleAdminNavigate} />);
-  if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={setCurrentPage} />);
-  if (currentPage === "login") return renderShell(<LoginPage onNavigate={setCurrentPage} />);
-  if (currentPage === "signup") return renderShell(<SignupPage onNavigate={setCurrentPage} />);
-  if (currentPage === "verify-email") return renderShell(<VerifyEmailPage onNavigate={setCurrentPage} />);
-  if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={setCurrentPage} />);
-  if (currentPage === "mypage") return renderShell(<MyPage onNavigate={setCurrentPage} />);
-  if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={setCurrentPage} />);
-  if (currentPage === "support") return renderShell(<SupportPage onNavigate={setCurrentPage} />);
-  if (currentPage === "updates") return renderShell(<UpdatesPage onNavigate={setCurrentPage} />);
-  if (currentPage === "privacy") return renderShell(<PrivacyPage onNavigate={setCurrentPage} />);
-  if (currentPage === "terms") return renderShell(<TermsPage onNavigate={setCurrentPage} />);
-  if (currentPage === "refund") return renderShell(<RefundPolicyPage onNavigate={setCurrentPage} />);
-  if (currentPage === "investment-disclaimer") return renderShell(<InvestmentDisclaimerPage onNavigate={setCurrentPage} />);
+  if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} />);
+  if (currentPage === "login") return renderShell(<LoginPage onNavigate={navigateToPage} />);
+  if (currentPage === "signup") return renderShell(<SignupPage onNavigate={navigateToPage} />);
+  if (currentPage === "verify-email") return renderShell(<VerifyEmailPage onNavigate={navigateToPage} />);
+  if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={navigateToPage} />);
+  if (currentPage === "mypage") return renderShell(<MyPage onNavigate={navigateToPage} />);
+  if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={navigateToPage} />);
+  if (currentPage === "support") return renderShell(<SupportPage onNavigate={navigateToPage} />);
+  if (currentPage === "updates") return renderShell(<UpdatesPage onNavigate={navigateToPage} />);
+  if (currentPage === "privacy") return renderShell(<PrivacyPage onNavigate={navigateToPage} />);
+  if (currentPage === "terms") return renderShell(<TermsPage onNavigate={navigateToPage} />);
+  if (currentPage === "refund") return renderShell(<RefundPolicyPage onNavigate={navigateToPage} />);
+  if (currentPage === "investment-disclaimer") return renderShell(<InvestmentDisclaimerPage onNavigate={navigateToPage} />);
 
   return renderShell(
     <main className="page">
@@ -423,20 +443,30 @@ function App() {
           <p className="description">FINPLE은 투자 성향, 자산 비중, 장기 예상 성과를 연결해, 내 포트폴리오의 수익률·위험·배당·실질가치를 함께 점검하는 투자 분석 도구입니다.</p>
           <div className="heroButtons">
             <button className="primaryButton" onClick={goPersonal}>무료로 시작하기</button>
-            <button type="button" className="secondaryButton" onClick={() => setCurrentPage("about")}>FINPLE 알아보기</button>
+            <button type="button" className="secondaryButton" onClick={() => navigateToPage("about")}>FINPLE 알아보기</button>
           </div>
         </div>
 
         <HeroMbtiPresetCard />
       </section>
 
-      <div id="index" className="homeAnchor"><EconomicCalendarSection /></div>
+      <div id="index" className="homeLegacyAnchor" aria-hidden="true" />
+      <div id="calendar" className="homeAnchor"><EconomicCalendarSection /></div>
 
       <section id="pricing" className="section pricingPreviewSection">
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
         <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} /></div>
       </section>
-    </main>
+    </main>,
+    {
+      subNav: (
+        <nav className="routeSubNav homeRouteSubNav" aria-label="홈 섹션 이동">
+          <button type="button" onClick={() => scrollHomeToSection("hero")}>소개</button>
+          <button type="button" onClick={() => scrollHomeToSection("calendar")}>캘린더</button>
+          <button type="button" onClick={() => scrollHomeToSection("pricing")}>요금제</button>
+        </nav>
+      ),
+    }
   );
 }
 

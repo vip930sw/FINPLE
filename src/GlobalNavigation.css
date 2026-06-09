@@ -159,6 +159,80 @@
   color: #2563eb !important;
 }
 
+.routeSubNav {
+  position: sticky;
+  top: 72px;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  min-height: 48px;
+  padding: 8px 40px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e2e8f0;
+  backdrop-filter: blur(10px);
+}
+
+.routeSubNav button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.routeSubNav button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: #2563eb;
+  transform: scaleX(0);
+  transition: transform 0.16s ease;
+}
+
+.routeSubNav button:hover::after,
+.routeSubNav button.active::after {
+  transform: scaleX(1);
+}
+
+.routeSubNav button.active {
+  color: #0f172a;
+}
+
+.simulatorRouteSubNav button span {
+  color: #2563eb;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.simulatorRouteSubNav button strong {
+  color: inherit;
+  font-size: 14px;
+}
+
+.homeLegacyAnchor {
+  position: relative;
+  top: -120px;
+  display: block;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .accountPage .accountHero,
 .legalPage .accountHero {
   padding-top: 56px !important;
@@ -226,6 +300,32 @@
     min-width: 92px !important;
     padding: 9px 16px !important;
   }
+
+  .routeSubNav {
+    top: 112px;
+    justify-content: flex-start;
+    gap: 18px;
+    min-height: 46px;
+    padding: 7px 20px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+
+  .routeSubNav button {
+    flex: 0 0 auto;
+    font-size: 13px;
+  }
+
+  .simulatorRouteSubNav button {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .simulatorRouteSubNav button strong {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -251,5 +351,11 @@
   .finpleGlobalNav .finpleGlobalStartButton {
     min-width: 86px !important;
     text-align: center;
+  }
+
+  .routeSubNav {
+    top: 110px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
