@@ -53,6 +53,16 @@ function triggerMyPageTransitionLoader() {
   window.dispatchEvent(new Event("finple-mypage-transition-start"));
 }
 
+function triggerRouteTransitionLoader() {
+  if (typeof window === "undefined") return;
+  if (typeof window.__finpleShowRouteTransitionLoader === "function") {
+    window.__finpleShowRouteTransitionLoader(2200);
+  } else if (typeof window.__finpleShowMyPageLoader === "function") {
+    window.__finpleShowMyPageLoader(2200);
+  }
+  window.dispatchEvent(new Event("finple-route-transition-start"));
+}
+
 function getOAuthProviderParam(authMode = "") {
   const normalizedAuthMode = String(authMode || "").toLowerCase();
   if (normalizedAuthMode.includes("naver")) return "naver";
@@ -73,6 +83,7 @@ function moveToPageAfterOAuth({ authMode, onNavigate }) {
   const nextPage = consumePostLoginRedirectPage();
 
   if (nextPage === "personal") {
+    triggerRouteTransitionLoader();
     window.history.replaceState({ page: "personal" }, "", "/start");
 
     if (typeof onNavigate === "function") {
@@ -218,6 +229,7 @@ export function LoginPage({ onNavigate }) {
       const user = await loginWithEmailPassword({ email, password });
       setStatusMessage(`${user.email || user.name || "사용자"} 계정으로 로그인되었습니다.`);
       const nextPage = consumePostLoginRedirectPage();
+      if (nextPage === "personal") triggerRouteTransitionLoader();
       if (nextPage === "mypage") triggerMyPageTransitionLoader();
       onNavigate(nextPage);
     } catch (error) {
