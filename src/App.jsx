@@ -58,6 +58,8 @@ const PERSONAL_ROUTE_PATHS = [
   "/screener",
 ];
 
+const POST_LOGIN_REDIRECT_STORAGE_KEY = "finple-post-login-redirect-page";
+
 const HERO_MBTI_ROTATION_MS = 2400;
 const HERO_MBTI_TEXT_TRANSITION_MS = 520;
 const HERO_MBTI_NUMBER_TRANSITION_MS = 900;
@@ -178,6 +180,17 @@ function schedulePageTopScroll(delay = 70) {
   window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), delay);
 }
 
+function rememberPostLoginRedirectPage(page) {
+  if (typeof window === "undefined") return;
+  if (page !== "personal") return;
+  window.sessionStorage.setItem(POST_LOGIN_REDIRECT_STORAGE_KEY, page);
+}
+
+function clearPostLoginRedirectPage() {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(POST_LOGIN_REDIRECT_STORAGE_KEY);
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [adminTokenVersion, setAdminTokenVersion] = useState(0);
@@ -197,7 +210,18 @@ function App() {
   }
 
   function navigateToPage(page, options = {}) {
-    setCurrentPage(page === "personal" && !isFinpleUserLoggedIn() ? "login" : page);
+    if (page === "personal" && !isFinpleUserLoggedIn()) {
+      rememberPostLoginRedirectPage(page);
+      setCurrentPage("login");
+      if (options.scrollTop !== false) schedulePageTopScroll();
+      return;
+    }
+
+    if (page === "login" && !options.preserveLoginRedirect) {
+      clearPostLoginRedirectPage();
+    }
+
+    setCurrentPage(page);
     if (options.scrollTop !== false) schedulePageTopScroll();
   }
 
@@ -222,6 +246,7 @@ function App() {
     }
 
     if (currentPage === "personal" && !isFinpleUserLoggedIn()) {
+      rememberPostLoginRedirectPage("personal");
       redirectPage = "login";
     }
 
@@ -371,7 +396,7 @@ function App() {
 
   function goPersonal() {
     if (!isFinpleUserLoggedIn()) {
-      navigateToPage("login");
+      navigateToPage("personal");
       return;
     }
 
