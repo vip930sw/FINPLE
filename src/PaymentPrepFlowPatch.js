@@ -37,6 +37,8 @@ function isPersonalButton(button) {
 }
 
 function isPricingAction(button) {
+  if (normalizePath(window.location.pathname) !== "/pricing") return false;
+
   return Boolean(
     button?.closest?.("#pricing") ||
     button?.closest?.(".accountPlanCard") ||

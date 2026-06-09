@@ -465,7 +465,7 @@ function App() {
 
       <section id="pricing" className="section pricingPreviewSection">
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
-        <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} /></div>
+        <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} onConfirm={() => navigateToPage("pricing")} /></div>
       </section>
     </main>,
     {
@@ -626,7 +626,7 @@ function Metric({ label, value, animated = false }) {
   );
 }
 function Bar({ label, value }) { return <div><div className="barLabel"><span>{label}</span><strong><AnimatedPercent value={value} /></strong></div><div className="barTrack"><div className="barFill" style={{ width: `${value}%` }} /></div></div>; }
-function PriceCard({ name, price, items, featured }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton">확인</button></article>; }
+function PriceCard({ name, price, items, featured, onConfirm }) { return <article className={featured ? "priceCard featured" : "priceCard"}><h3>{name}</h3><strong>{price}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul><button type="button" className="primaryButton" onClick={onConfirm}>확인</button></article>; }
 function SiteFooter({ onNavigate }) {
   function handleFooterLink(event, page) {
     event.preventDefault();
