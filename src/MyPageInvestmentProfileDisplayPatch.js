@@ -31,7 +31,7 @@ function isMyPagePath() {
 function readJson(key) {
   try {
     return JSON.parse(window.localStorage.getItem(key) || "null");
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -41,8 +41,52 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function getInvestmentProfileResultTitle(result) {
+  const fallback = "투자 MBTI";
+  const nickname = String(result?.nickname || fallback).trim();
+  if (!nickname) return fallback;
+
+  const baseTitle = nickname.replace(/\s+결과$/u, "").trim();
+  return baseTitle.replace(/^(.+?)한\s+(.+)$/u, "$1형 $2");
+}
+
+function normalizeInvestmentProfileResultCopy(result) {
+  let changed = false;
+  const titleNode = document.querySelector("[data-investment-profile-summary-title]");
+  const nextTitle = getInvestmentProfileResultTitle(result);
+
+  if (titleNode) {
+    if (titleNode.textContent !== nextTitle) {
+      titleNode.textContent = nextTitle;
+      changed = true;
+    }
+    if (!titleNode.classList.contains("investmentProfileResultTitleHighlight")) {
+      titleNode.classList.add("investmentProfileResultTitleHighlight");
+      changed = true;
+    }
+  }
+
+  const summaryNode = document.querySelector("[data-investment-profile-summary]");
+  if (summaryNode) {
+    if (summaryNode.textContent) {
+      summaryNode.textContent = "";
+      changed = true;
+    }
+    if (!summaryNode.hidden) {
+      summaryNode.hidden = true;
+      changed = true;
+    }
+    if (!summaryNode.classList.contains("investmentProfileSummaryHidden")) {
+      summaryNode.classList.add("investmentProfileSummaryHidden");
+      changed = true;
+    }
+  }
+
+  return changed;
 }
 
 function normalizeAssetLabel(value) {
@@ -101,11 +145,15 @@ function getInvestmentProfileSignature(result) {
     .map((node) => String(node.textContent || "").trim())
     .join("|");
   const sectorText = String(document.querySelector("[data-investment-profile-sectors]")?.textContent || "").trim();
+  const resultTitle = String(document.querySelector("[data-investment-profile-summary-title]")?.textContent || "").trim();
+  const resultSummary = String(document.querySelector("[data-investment-profile-summary]")?.textContent || "").trim();
   return JSON.stringify({
     resultPreset: getPresetFromStoredResult(result),
     sectors: Array.isArray(result?.sectors) ? result.sectors : [],
     ratioText,
     sectorText,
+    resultTitle,
+    resultSummary,
   });
 }
 
@@ -113,11 +161,13 @@ function applyInvestmentProfileDisplayPatch() {
   if (!isMyPagePath()) return;
 
   const result = readJson(MBTI_PRESET_STORAGE_KEY);
+  const copyChanged = normalizeInvestmentProfileResultCopy(result);
   const signature = getInvestmentProfileSignature(result);
-  if (signature === lastInvestmentProfileSignature) return;
+  if (!copyChanged && signature === lastInvestmentProfileSignature) return;
 
   normalizeInvestmentProfileAssetLabels();
   ensureInvestmentProfileSectors(result);
+  normalizeInvestmentProfileResultCopy(result);
   lastInvestmentProfileSignature = getInvestmentProfileSignature(result);
 }
 
@@ -128,6 +178,10 @@ function scheduleInvestmentProfilePatch(delay = 120) {
 
 function bootInvestmentProfileDisplayPatch() {
   [120, 300, 700, 1200, 2200].forEach((delay) => window.setTimeout(applyInvestmentProfileDisplayPatch, delay));
+
+  document.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-investment-profile-result]")) scheduleInvestmentProfilePatch(0);
+  }, true);
 
   window.addEventListener("popstate", () => scheduleInvestmentProfilePatch(120));
   window.addEventListener("finple-route-changed", () => scheduleInvestmentProfilePatch(120));

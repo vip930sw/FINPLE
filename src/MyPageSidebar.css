@@ -245,10 +245,18 @@
   font-weight: 950;
 }
 
+.investmentProfileResultHeader strong.investmentProfileResultTitleHighlight {
+  color: #2563eb;
+}
+
 .investmentProfileResultHeader span {
   color: #64748b;
   font-size: 12px;
   font-weight: 850;
+}
+
+.investmentProfileSummaryHidden {
+  display: none !important;
 }
 
 .investmentProfileAxisBox {
