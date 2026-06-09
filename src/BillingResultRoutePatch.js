@@ -8,6 +8,7 @@
 
 import { confirmTossPayment, getBillingSuccessParams, hasBillingConfirmParams } from "./components/paymentConfirmClient";
 
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const RESULT_COPY = {
   "/billing/success": {
     eyebrow: "Billing Success",
@@ -80,6 +81,21 @@ function navigateTo(path) {
   window.location.href = path;
 }
 
+function isLoggedIn() {
+  try {
+    return Boolean(JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null")?.id);
+  } catch {
+    return false;
+  }
+}
+
+function handleLogout() {
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  window.dispatchEvent(new Event("finple-auth-updated"));
+  window.dispatchEvent(new Event("finple-local-storage-updated"));
+  navigateTo("/");
+}
+
 function setText(node, value) {
   if (!node) return;
   node.textContent = String(value || "");
@@ -104,6 +120,28 @@ function getSiteFooterHtml() {
         <a href="/disclaimer">투자 유의사항</a>
       </nav>
     </footer>
+  `;
+}
+
+function getGlobalHeaderHtml() {
+  const loggedIn = isLoggedIn();
+
+  return `
+    <header class="header homeHeader siteHeader finpleUnifiedHeader" data-finple-global-nav-state="pricing|${loggedIn ? "in" : "out"}">
+      <button type="button" class="brandLogo resetButton" data-billing-nav="/">
+        <div class="brandIcon"><span>F</span><i></i></div>
+        <div class="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
+      </button>
+      <div class="finpleHeaderLocalNav"></div>
+      <nav class="finpleGlobalNav" aria-label="FINPLE 주요 메뉴" data-finple-global-nav>
+        <button type="button" data-billing-nav="/">홈</button>
+        <button type="button" class="finpleGlobalStartButton" data-billing-nav="/start">시작하기</button>
+        <button type="button" class="active" data-billing-nav="/pricing">요금제</button>
+        <button type="button" data-billing-nav="/support">문의사항</button>
+        <button type="button" data-billing-nav="/mypage">MY PAGE</button>
+        <button type="button" class="finpleGlobalAuthButton" data-billing-auth-action="${loggedIn ? "logout" : "login"}">${loggedIn ? "로그아웃" : "로그인"}</button>
+      </nav>
+    </header>
   `;
 }
 
@@ -187,19 +225,7 @@ export function renderBillingResultPage() {
 
   root.innerHTML = `
     <main class="accountPage billingResultPage">
-      <header class="accountHeader">
-        <button type="button" class="brandLogo resetButton" data-billing-nav="/">
-          <div class="brandIcon"><span>F</span><i></i></div>
-          <div class="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
-        </button>
-        <nav class="accountNav">
-          <button type="button" data-billing-nav="/">홈</button>
-          <button type="button" data-billing-nav="/simulator">시작하기</button>
-          <button type="button" data-billing-nav="/pricing">요금제</button>
-          <button type="button" data-billing-nav="/support">문의사항</button>
-          <button type="button" data-billing-nav="/mypage">MY PAGE</button>
-        </nav>
-      </header>
+      ${getGlobalHeaderHtml()}
 
       <section class="accountHero billingResultHero">
         <p class="sectionLabel">${copy.eyebrow}</p>
@@ -241,6 +267,11 @@ export function renderBillingResultPage() {
 
   root.querySelectorAll("[data-billing-nav]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-billing-nav") || "/"));
+  });
+  root.querySelector("[data-billing-auth-action]")?.addEventListener("click", (event) => {
+    const action = event.currentTarget.getAttribute("data-billing-auth-action");
+    if (action === "logout") handleLogout();
+    else navigateTo("/login");
   });
 
   window.setTimeout(confirmSuccessPaymentIfNeeded, 80);

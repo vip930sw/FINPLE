@@ -11,6 +11,7 @@ const PAYMENT_METHOD_PATHS = new Set([
   "/payment-method/success",
   "/payment-method/fail",
 ]);
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 let billingAuthError = "";
 let isStartingBillingAuth = false;
@@ -25,6 +26,21 @@ function normalizePathname(pathname) {
 
 function navigateTo(path) {
   window.location.href = path;
+}
+
+function isLoggedIn() {
+  try {
+    return Boolean(JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null")?.id);
+  } catch {
+    return false;
+  }
+}
+
+function handleLogout() {
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  window.dispatchEvent(new Event("finple-auth-updated"));
+  window.dispatchEvent(new Event("finple-local-storage-updated"));
+  navigateTo("/");
 }
 
 function getQueryValue(key) {
@@ -65,6 +81,28 @@ function getSiteFooterHtml() {
         <a href="/disclaimer">투자 유의사항</a>
       </nav>
     </footer>
+  `;
+}
+
+function getGlobalHeaderHtml() {
+  const loggedIn = isLoggedIn();
+
+  return `
+    <header class="header homeHeader siteHeader finpleUnifiedHeader" data-finple-global-nav-state="pricing|${loggedIn ? "in" : "out"}">
+      <button type="button" class="brandLogo resetButton" data-payment-method-nav="/">
+        <div class="brandIcon"><span>F</span><i></i></div>
+        <div class="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
+      </button>
+      <div class="finpleHeaderLocalNav"></div>
+      <nav class="finpleGlobalNav" aria-label="FINPLE 주요 메뉴" data-finple-global-nav>
+        <button type="button" data-payment-method-nav="/">홈</button>
+        <button type="button" class="finpleGlobalStartButton" data-payment-method-nav="/start">시작하기</button>
+        <button type="button" class="active" data-payment-method-nav="/pricing">요금제</button>
+        <button type="button" data-payment-method-nav="/support">문의사항</button>
+        <button type="button" data-payment-method-nav="/mypage">MY PAGE</button>
+        <button type="button" class="finpleGlobalAuthButton" data-payment-method-auth-action="${loggedIn ? "logout" : "login"}">${loggedIn ? "로그아웃" : "로그인"}</button>
+      </nav>
+    </header>
   `;
 }
 
@@ -114,8 +152,9 @@ function updateSetupUi() {
   const status = root.querySelector("[data-payment-method-status]");
   const statusBox = root.querySelector("[data-payment-method-status-box]");
   const startButton = root.querySelector("[data-payment-method-start]");
+  const checkboxes = root.querySelectorAll("[data-payment-method-check]");
   const checkedCount = root.querySelectorAll("[data-payment-method-check]:checked").length;
-  const allChecked = checkedCount >= 3;
+  const allChecked = checkboxes.length > 0 && checkedCount >= checkboxes.length;
 
   setText(status, getSetupStatusMessage());
   status?.classList.toggle("paymentMethodStatusText--error", Boolean(billingAuthError));
@@ -164,23 +203,24 @@ function getSetupCardHtml() {
       <label><input type="checkbox" data-payment-method-check /> 카드 인증 후 첫 달 9,900원이 결제되고, 이후 매월 자동결제되는 점을 확인했습니다.</label>
       <label><input type="checkbox" data-payment-method-check /> FINPLE은 카드번호 원문을 서버에 직접 저장하지 않고, 토스페이먼츠 자동결제용 식별값을 사용한다는 점을 확인했습니다.</label>
       <label><input type="checkbox" data-payment-method-check /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단되는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 구독 시작 후 즉시 기능이 제공되는 웹앱 특성상 결제 완료 후 단순 변심, 미사용, 부분 사용에 따른 금액 환불은 제한될 수 있다는 점을 확인했습니다.</label>
     </div>
 
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
-      <strong>구독 시작 안내</strong>
+      <strong>구독 시작 및 환불 안내</strong>
       <p data-payment-method-status>필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.</p>
+      <p>구독 취소는 다음 갱신 중단을 의미하며, 이미 결제된 이용기간은 종료일까지 제공됩니다. 디지털 기능 제공이 시작된 뒤에는 결제 금액 환불이 어려울 수 있습니다.</p>
     </div>
 
     <ul class="billingResultBulletList paymentMethodUserNoticeList">
       <li>카드 인증 성공 후 결제수단 등록과 첫 달 결제가 이어서 처리됩니다.</li>
       <li>Personal 기능 활성화 여부와 다음 결제 예정일은 MY PAGE에서 확인할 수 있습니다.</li>
+      <li>서비스 장애나 중복 결제 등 회사 귀책 사유가 있는 경우에는 결제 문의를 통해 별도로 확인합니다.</li>
       <li>토스페이먼츠 테스트 환경에서는 실제 카드 청구가 발생하지 않습니다.</li>
     </ul>
 
     <div class="billingResultActions">
       <button type="button" class="primaryButton" data-payment-method-start disabled>Personal 구독 시작하기</button>
-      <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE로 돌아가기</button>
-      <button type="button" class="secondaryButton" data-payment-method-nav="/pricing">요금제 확인</button>
     </div>
   `;
 }
@@ -331,19 +371,7 @@ export function renderPaymentMethodPage() {
 
   root.innerHTML = `
     <main class="accountPage billingResultPage paymentMethodPage">
-      <header class="accountHeader">
-        <button type="button" class="brandLogo resetButton" data-payment-method-nav="/">
-          <div class="brandIcon"><span>F</span><i></i></div>
-          <div class="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>
-        </button>
-        <nav class="accountNav">
-          <button type="button" data-payment-method-nav="/">홈</button>
-          <button type="button" data-payment-method-nav="/simulator">시작하기</button>
-          <button type="button" data-payment-method-nav="/pricing">요금제</button>
-          <button type="button" data-payment-method-nav="/support">문의사항</button>
-          <button type="button" data-payment-method-nav="/mypage">MY PAGE</button>
-        </nav>
-      </header>
+      ${getGlobalHeaderHtml()}
 
       <section class="accountHero billingResultHero paymentMethodHero">
         <p class="sectionLabel">${copy.eyebrow}</p>
@@ -364,6 +392,11 @@ export function renderPaymentMethodPage() {
 
   root.querySelectorAll("[data-payment-method-nav]").forEach((button) => {
     button.addEventListener("click", () => navigateTo(button.getAttribute("data-payment-method-nav") || "/"));
+  });
+  root.querySelector("[data-payment-method-auth-action]")?.addEventListener("click", (event) => {
+    const action = event.currentTarget.getAttribute("data-payment-method-auth-action");
+    if (action === "logout") handleLogout();
+    else navigateTo("/login");
   });
 
   if (isSetup) {
