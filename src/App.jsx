@@ -42,6 +42,8 @@ const ROUTE_PATHS = {
   updates: "/updates",
   "admin-login": "/admin",
   "admin-inquiries": "/admin/inquiries",
+  "admin-members": "/admin/members",
+  "admin-subscriptions": "/admin/subscriptions",
   privacy: "/privacy",
   terms: "/terms",
   refund: "/refund",
@@ -161,6 +163,8 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/support" || normalizedHash === "support") return "support";
   if (normalizedPath === "/updates" || normalizedHash === "updates" || normalizedHash === "notice" || normalizedHash === "changelog") return "updates";
   if (normalizedPath === "/admin/inquiries" || normalizedHash === "admin-inquiries") return "admin-inquiries";
+  if (normalizedPath === "/admin/members" || normalizedHash === "admin-members") return "admin-members";
+  if (normalizedPath === "/admin/subscriptions" || normalizedHash === "admin-subscriptions") return "admin-subscriptions";
   if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
   if (normalizedPath === "/privacy" || normalizedHash === "privacy") return "privacy";
   if (normalizedPath === "/terms" || normalizedHash === "terms") return "terms";
@@ -250,7 +254,7 @@ function App() {
       redirectPage = "login";
     }
 
-    if (currentPage === "admin-inquiries" && !hasFinpleAdminToken()) {
+    if (["admin-inquiries", "admin-members", "admin-subscriptions"].includes(currentPage) && !hasFinpleAdminToken()) {
       redirectPage = "admin-login";
     }
 
@@ -463,7 +467,9 @@ function App() {
   }
   if (currentPage === "about") return renderShell(<AboutPage onNavigate={navigateToPage} />);
   if (currentPage === "admin-login") return renderShell(<AdminLoginPage onNavigate={handleAdminNavigate} />);
-  if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} />);
+  if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="inquiries" />);
+  if (currentPage === "admin-members") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="members" />);
+  if (currentPage === "admin-subscriptions") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="subscriptions" />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={navigateToPage} />);
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={navigateToPage} />);
   if (currentPage === "verify-email") return renderShell(<VerifyEmailPage onNavigate={navigateToPage} />);

@@ -20,6 +20,8 @@ const SPA_NAVIGATION_PATHS = [
   "/updates",
   "/admin",
   "/admin/inquiries",
+  "/admin/members",
+  "/admin/subscriptions",
   "/privacy",
   "/terms",
   "/refund",
@@ -49,7 +51,7 @@ function getActiveKey() {
   if (path === "/support") return "support";
   if (path === "/mypage") return "mypage";
   if (path === "/login" || path === "/signup") return "login";
-  if (path === "/admin") return "admin";
+  if (path === "/admin" || path.startsWith("/admin/")) return "admin";
   return "home";
 }
 

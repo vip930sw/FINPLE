@@ -197,6 +197,14 @@ export async function updateSupportInquiryStatus(inquiryId, status) {
   );
 }
 
+export async function fetchAdminMembersSummary() {
+  return requestJson("/admin/members", {}, { includeAdminToken: true });
+}
+
+export async function fetchAdminSubscriptionsSummary() {
+  return requestJson("/admin/subscriptions", {}, { includeAdminToken: true });
+}
+
 export function importServerPortfoliosToBrowser(serverPortfolios = [], options = {}) {
   const mode = options.mode || "merge";
   const normalizedServerPortfolios = Array.isArray(serverPortfolios)
