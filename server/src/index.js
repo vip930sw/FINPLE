@@ -15,6 +15,7 @@ import paymentHistoryRoutes from "./routes/paymentHistoryRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import portfolioDbRoutes from "./routes/portfolioDbRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 import {
   getAssetDataBatch,
@@ -66,6 +67,7 @@ app.use("/api/payments", paymentHistoryRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/inquiries", inquiryRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/health", (request, response) => {
   response.json({

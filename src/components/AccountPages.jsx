@@ -134,7 +134,7 @@ export function LoginPage({ onNavigate }) {
 
 export function AdminLoginPage({ onNavigate }) {
   const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
-  const [adminStatusMessage, setAdminStatusMessage] = useState("관리자 토큰이 있는 경우 문의사항 관리자 기능을 사용할 수 있습니다.");
+  const [adminStatusMessage, setAdminStatusMessage] = useState("관리자 토큰이 있는 경우 관리자 콘솔 기능을 사용할 수 있습니다.");
 
   function handleAdminLogin() {
     const token = adminTokenInput.trim();
@@ -146,7 +146,7 @@ export function AdminLoginPage({ onNavigate }) {
 
     window.localStorage.setItem("finple-admin-token", token);
     window.dispatchEvent(new Event("finple-admin-token-updated"));
-    setAdminStatusMessage("관리자 토큰을 저장했습니다. MY PAGE에서 관리자 문의 조회를 사용할 수 있습니다.");
+    setAdminStatusMessage("관리자 토큰을 저장했습니다. 관리자 콘솔로 이동합니다.");
     onNavigate("mypage");
   }
 
@@ -161,7 +161,7 @@ export function AdminLoginPage({ onNavigate }) {
         <div className="loginRoleHeader">
           <p className="accountMiniLabel">Admin Login</p>
           <h2>관리자 로그인</h2>
-          <span>문의사항 조회와 처리 상태 변경은 관리자 토큰이 있는 브라우저에서만 사용할 수 있습니다.</span>
+          <span>문의사항, 회원, 구독 관리는 관리자 토큰이 있는 브라우저에서만 사용할 수 있습니다.</span>
         </div>
 
         <label>
