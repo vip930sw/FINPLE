@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
@@ -107,6 +107,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [subscriptionMessage, setSubscriptionMessage] = useState("구독 통계를 불러오면 플랜과 결제 기간이 표시됩니다.");
   const [isLoading, setIsLoading] = useState(false);
+  const autoLoadedSectionsRef = useRef({});
 
   const filteredInquiries = useMemo(() => {
     if (statusFilter === "all") return inquiries;
@@ -151,12 +152,13 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setInquiries([]);
     setMemberData(null);
     setSubscriptionData(null);
+    autoLoadedSectionsRef.current = {};
     setSelectedId(null);
     setStatusFilter("all");
     setInquiryMessage("관리자 모드를 해제했습니다.");
   }
 
-  async function handleLoadInquiries() {
+  const handleLoadInquiries = useCallback(async function handleLoadInquiries() {
     if (!getFinpleAdminToken()) {
       setInquiryMessage("관리자 토큰을 먼저 저장해 주세요.");
       setIsAdminMode(false);
@@ -174,9 +176,9 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function handleLoadMembers() {
+  const handleLoadMembers = useCallback(async function handleLoadMembers() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
     try {
@@ -188,9 +190,9 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  async function handleLoadSubscriptions() {
+  const handleLoadSubscriptions = useCallback(async function handleLoadSubscriptions() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
     try {
@@ -202,7 +204,25 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!isAdminMode) return;
+    if (autoLoadedSectionsRef.current[activeSection]) return;
+
+    autoLoadedSectionsRef.current[activeSection] = true;
+    const loadTimer = window.setTimeout(() => {
+      if (activeSection === "inquiries") {
+        handleLoadInquiries();
+      } else if (activeSection === "members") {
+        handleLoadMembers();
+      } else if (activeSection === "subscriptions") {
+        handleLoadSubscriptions();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
+  }, [activeSection, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
 
   async function handleChangeStatus(inquiryId, status) {
     if (!inquiryId) return;
