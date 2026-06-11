@@ -134,19 +134,16 @@ export function LoginPage({ onNavigate }) {
 
 export function AdminLoginPage({ onNavigate }) {
   const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
-  const [adminStatusMessage, setAdminStatusMessage] = useState("관리자 토큰이 있는 경우 관리자 콘솔 기능을 사용할 수 있습니다.");
 
   function handleAdminLogin() {
     const token = adminTokenInput.trim();
 
     if (!token) {
-      setAdminStatusMessage("관리자 토큰을 입력해 주세요.");
       return;
     }
 
     window.localStorage.setItem("finple-admin-token", token);
     window.dispatchEvent(new Event("finple-admin-token-updated"));
-    setAdminStatusMessage("관리자 토큰을 저장했습니다. 관리자 콘솔로 이동합니다.");
     onNavigate("mypage");
   }
 
@@ -175,14 +172,14 @@ export function AdminLoginPage({ onNavigate }) {
           />
         </label>
 
-        <p className="accountInlineStatus">{adminStatusMessage}</p>
-
-        <button type="button" className="primaryButton" onClick={handleAdminLogin}>
+        <button
+          type="button"
+          className="primaryButton"
+          onClick={handleAdminLogin}
+          disabled={!adminTokenInput.trim()}
+        >
           관리자 모드로 이동
         </button>
-        <p className="adminLoginHint">
-          관리자 주소는 직접 공유하지 마세요. 관리자 토큰은 현재 브라우저에만 저장되며, 공용 PC에서는 MY PAGE에서 관리자 모드 해제를 눌러 주세요.
-        </p>
       </section>
     </AccountShell>
   );
@@ -644,7 +641,6 @@ const INQUIRY_STATUS_LABELS = {
 };
 
 function AdminInquiryPanel() {
-  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
   const [isAdminMode, setIsAdminMode] = useState(() => Boolean(getFinpleAdminToken()));
   const [inquiries, setInquiries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -664,22 +660,8 @@ function AdminInquiryPanel() {
     filteredInquiries[0] ||
     null;
 
-  function handleSaveAdminToken() {
-    const token = adminTokenInput.trim();
-
-    if (!token) {
-      setStatusMessage("관리자 토큰을 입력해 주세요.");
-      return;
-    }
-
-    window.localStorage.setItem("finple-admin-token", token);
-    setIsAdminMode(true);
-    setStatusMessage("관리자 토큰을 저장했습니다. 문의 목록을 불러올 수 있습니다.");
-  }
-
   function handleClearAdminToken() {
     window.localStorage.removeItem("finple-admin-token");
-    setAdminTokenInput("");
     setIsAdminMode(false);
     setInquiries([]);
     setSelectedId(null);
@@ -1229,12 +1211,3 @@ function formatServerDate(value) {
   });
 }
 
-function InfoCard({ title, text, items }) {
-  return (
-    <article className="accountCard">
-      <h2>{title}</h2>
-      <p>{text}</p>
-      <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>
-    </article>
-  );
-}
