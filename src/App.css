@@ -11824,24 +11824,33 @@ body,
   gap: 18px;
 }
 
-.adminAccessPanel {
-  border-color: #dbeafe;
-}
-
-.adminConsoleToolbar {
-  grid-template-columns: repeat(4, minmax(0, auto));
+.adminConsolePanels .accountMiniLabel {
+  color: #2563eb !important;
 }
 
 .adminManagementPanel {
   display: grid;
-  gap: 20px;
+  gap: 12px;
+}
+
+.adminConsolePanels .serverStorageHeader {
+  margin-bottom: 0 !important;
+}
+
+.adminConsolePanels .adminInquiryToolbar {
+  margin-top: 0 !important;
+}
+
+.adminConsolePanels .adminMetricGrid {
+  margin-top: 4px !important;
+  margin-bottom: 10px !important;
 }
 
 .adminConsoleInquiryPanel {
   width: 100%;
   margin: 0;
   display: grid !important;
-  gap: 20px;
+  gap: 12px;
 }
 
 .adminConsoleInquiryPanel .adminInquiryToolbar,
@@ -11968,10 +11977,6 @@ body,
 }
 
 @media (max-width: 920px) {
-  .adminConsoleToolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .adminMetricGrid,
   .adminInsightGrid {
     grid-template-columns: 1fr;
