@@ -16,6 +16,14 @@ export function getFinpleApiBaseUrl() {
   return runtimeConfig.apiBaseUrl || buildEnv.VITE_FINPLE_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
+function buildApiUrl(path) {
+  const baseUrl = String(getFinpleApiBaseUrl() || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const apiBaseUrl = baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
+
+  return `${apiBaseUrl}${normalizedPath}`;
+}
+
 export function getFinpleAdminToken() {
   const runtimeConfig = typeof window !== "undefined" ? window.FINPLE_ASSET_DATA_CONFIG || {} : {};
   const buildEnv = getBuildTimeEnv();
@@ -333,17 +341,25 @@ async function requestJson(path, options = {}, config = {}) {
     : {};
   const adminToken = config.includeAdminToken ? getFinpleAdminToken() : "";
   const adminHeaders = adminToken ? { "x-finple-admin-token": adminToken } : {};
+  const requestUrl = buildApiUrl(path);
 
-  const response = await fetch(`${getFinpleApiBaseUrl()}${path}`, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...authHeaders,
-      ...adminHeaders,
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(requestUrl, {
+      ...options,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...authHeaders,
+        ...adminHeaders,
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(
+      `API 요청에 실패했습니다. 호출 주소: ${requestUrl}. VITE_FINPLE_API_BASE_URL 또는 백엔드 CORS_ORIGIN 설정을 확인해 주세요.`
+    );
+  }
 
   const payload = await readResponseJson(response);
 
@@ -367,7 +383,7 @@ async function requestJson(path, options = {}, config = {}) {
 async function readResponseJson(response) {
   try {
     return await response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -379,7 +395,7 @@ function readJson(key, fallback) {
     const rawValue = window.localStorage.getItem(key);
     if (!rawValue) return fallback;
     return JSON.parse(rawValue);
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }

@@ -6,6 +6,14 @@ import { requireAdminAccess } from "../middleware/adminGuard.js";
 const router = express.Router();
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "cancel_at_period_end"];
 
+router.get("/health", (request, response) => {
+  response.json({
+    ok: true,
+    route: "admin",
+    databaseConfigured: isDatabaseConfigured(),
+  });
+});
+
 function mapMemberRow(row) {
   return {
     id: row.id,
