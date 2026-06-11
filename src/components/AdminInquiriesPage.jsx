@@ -92,7 +92,6 @@ function AdminMetricCard({ label, value, note }) {
 
 export default function AdminInquiriesPage({ onNavigate, initialSection = "inquiries" }) {
   const activeSection = getActiveSectionFromPage(initialSection);
-  const [adminTokenInput, setAdminTokenInput] = useState(() => getFinpleAdminToken());
   const [isAdminMode, setIsAdminMode] = useState(() => Boolean(getFinpleAdminToken()));
   const [inquiries, setInquiries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -128,34 +127,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
 
   function handleNavigateSection(item) {
     onNavigate(item.page);
-  }
-
-  function handleSaveAdminToken() {
-    const token = adminTokenInput.trim();
-
-    if (!token) {
-      setInquiryMessage("관리자 토큰을 입력해 주세요.");
-      return;
-    }
-
-    window.localStorage.setItem("finple-admin-token", token);
-    window.dispatchEvent(new Event("finple-admin-token-updated"));
-    setIsAdminMode(true);
-    setInquiryMessage("관리자 토큰을 저장했습니다. 관리자 데이터를 불러올 수 있습니다.");
-  }
-
-  function handleClearAdminToken() {
-    window.localStorage.removeItem("finple-admin-token");
-    window.dispatchEvent(new Event("finple-admin-token-updated"));
-    setAdminTokenInput("");
-    setIsAdminMode(false);
-    setInquiries([]);
-    setMemberData(null);
-    setSubscriptionData(null);
-    autoLoadedSectionsRef.current = {};
-    setSelectedId(null);
-    setStatusFilter("all");
-    setInquiryMessage("관리자 모드를 해제했습니다.");
   }
 
   const handleLoadInquiries = useCallback(async function handleLoadInquiries() {
@@ -273,52 +244,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
         </aside>
 
         <section className="accountPanelStack adminConsolePanels" aria-label="관리자 패널">
-          <section className="accountCard adminAccessPanel">
-            <div className="serverStorageHeader">
-              <div>
-                <p className="accountMiniLabel">Admin Mode</p>
-                <h2>관리자 접근 상태</h2>
-                <p>관리자 토큰이 있는 브라우저에서만 콘솔 데이터를 조회합니다.</p>
-              </div>
-              <span className={isAdminMode ? "serverStatusBadge ready" : "serverStatusBadge"}>
-                {isAdminMode ? "관리자" : "토큰 필요"}
-              </span>
-            </div>
-
-            {!isAdminMode ? (
-              <div className="adminTokenInlineBox">
-                <label>
-                  관리자 토큰
-                  <input
-                    type="password"
-                    value={adminTokenInput}
-                    onChange={(event) => setAdminTokenInput(event.target.value)}
-                    placeholder="FINPLE_ADMIN_TOKEN 입력"
-                    autoComplete="off"
-                  />
-                </label>
-                <button type="button" className="primaryButton" onClick={handleSaveAdminToken}>
-                  관리자 토큰 저장
-                </button>
-              </div>
-            ) : (
-              <div className="adminInquiryToolbar adminConsoleToolbar">
-                <button type="button" className="primaryButton" onClick={handleLoadInquiries} disabled={isLoading}>
-                  문의 새로고침
-                </button>
-                <button type="button" className="secondaryButton" onClick={handleLoadMembers} disabled={isLoading}>
-                  회원 새로고침
-                </button>
-                <button type="button" className="secondaryButton" onClick={handleLoadSubscriptions} disabled={isLoading}>
-                  구독 새로고침
-                </button>
-                <button type="button" className="secondaryButton" onClick={handleClearAdminToken}>
-                  관리자 모드 해제
-                </button>
-              </div>
-            )}
-          </section>
-
           {activeSection === "inquiries" ? (
             <InquiryManagementPanel
               filteredInquiries={filteredInquiries}
@@ -331,7 +256,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isLoading={isLoading}
               onLoadInquiries={handleLoadInquiries}
               onChangeStatus={handleChangeStatus}
-              onNavigate={onNavigate}
             />
           ) : null}
 
@@ -377,7 +301,6 @@ function InquiryManagementPanel({
   isLoading,
   onLoadInquiries,
   onChangeStatus,
-  onNavigate,
 }) {
   return (
     <section className="accountCard adminManagementPanel adminConsoleInquiryPanel">
@@ -461,11 +384,6 @@ function InquiryManagementPanel({
           </div>
         </div>
       ) : null}
-
-      <div className="accountActionRow compactMyPageActions">
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("admin-login")}>관리자 로그인으로 이동</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("home")}>홈으로 이동</button>
-      </div>
     </section>
   );
 }
