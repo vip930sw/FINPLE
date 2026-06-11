@@ -310,9 +310,6 @@ function InquiryManagementPanel({
           <h2>문의사항 관리</h2>
           <p>접수된 문의를 조회하고 처리 상태를 변경합니다.</p>
         </div>
-        <span className={isAdminMode ? "serverStatusBadge ready" : "serverStatusBadge"}>
-          {isAdminMode ? "조회 가능" : "토큰 필요"}
-        </span>
       </div>
 
       {isAdminMode ? (
@@ -409,9 +406,6 @@ function MemberManagementPanel({
           <h2>회원 관리</h2>
           <p>가입 회원 수, 구독자 수, 구독률과 최근 활동 상태를 확인합니다.</p>
         </div>
-        <span className={isAdminMode ? "serverStatusBadge ready" : "serverStatusBadge"}>
-          {isAdminMode ? "조회 가능" : "토큰 필요"}
-        </span>
       </div>
 
       <div className="accountStatusGrid adminMetricGrid">
@@ -509,9 +503,6 @@ function SubscriptionManagementPanel({
           <h2>구독 관리</h2>
           <p>총 구독자 수, 적용 플랜, 결제 기간과 환불 대응이 필요한 구간을 확인합니다.</p>
         </div>
-        <span className={isAdminMode ? "serverStatusBadge ready" : "serverStatusBadge"}>
-          {isAdminMode ? "조회 가능" : "토큰 필요"}
-        </span>
       </div>
 
       <div className="accountStatusGrid adminMetricGrid">

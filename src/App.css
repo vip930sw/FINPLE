@@ -11826,15 +11826,25 @@ body,
 
 .adminConsolePanels .accountMiniLabel {
   color: #2563eb !important;
+  margin-bottom: 6px !important;
 }
 
 .adminManagementPanel {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .adminConsolePanels .serverStorageHeader {
   margin-bottom: 0 !important;
+}
+
+.adminConsolePanels .serverStorageHeader h2 {
+  margin: 0 0 6px !important;
+}
+
+.adminConsolePanels .serverStorageHeader p:not(.accountMiniLabel) {
+  margin: 0 !important;
+  line-height: 1.45 !important;
 }
 
 .adminConsolePanels .adminInquiryToolbar {
@@ -11842,15 +11852,15 @@ body,
 }
 
 .adminConsolePanels .adminMetricGrid {
-  margin-top: 4px !important;
-  margin-bottom: 10px !important;
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 .adminConsoleInquiryPanel {
   width: 100%;
   margin: 0;
   display: grid !important;
-  gap: 12px;
+  gap: 8px;
 }
 
 .adminConsoleInquiryPanel .adminInquiryToolbar,
