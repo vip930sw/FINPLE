@@ -11837,6 +11837,18 @@ body,
   gap: 20px;
 }
 
+.adminConsoleInquiryPanel {
+  width: 100%;
+  margin: 0;
+  display: grid !important;
+  gap: 20px;
+}
+
+.adminConsoleInquiryPanel .adminInquiryToolbar,
+.adminConsoleInquiryPanel .adminInquiryLayout {
+  margin-top: 0 !important;
+}
+
 .adminMetricGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
