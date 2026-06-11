@@ -380,7 +380,7 @@ function InquiryManagementPanel({
   onNavigate,
 }) {
   return (
-    <section className="accountCard adminInquiryPanel standaloneAdminInquiryPanel">
+    <section className="accountCard adminManagementPanel adminConsoleInquiryPanel">
       <div className="serverStorageHeader">
         <div>
           <p className="accountMiniLabel">Inquiries</p>
