@@ -10648,8 +10648,7 @@ body,
   letter-spacing: -0.6px;
 }
 
-.loginRoleHeader span,
-.adminLoginHint {
+.loginRoleHeader span {
   color: #64748b;
   font-size: 14px;
   line-height: 1.7;
