@@ -37,7 +37,7 @@ function getSidebarHtml() {
     <aside class="myPageSidebar" data-mypage-sidebar data-mypage-shell-bridge>
       <div class="myPageSidebarHeader">
         <strong>MY PAGE</strong>
-        <span>계정·성향·결제·문의·저장 관리</span>
+        <span>내 정보 메뉴</span>
       </div>
       <nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">
         ${MENU_ITEMS.map((item) => `

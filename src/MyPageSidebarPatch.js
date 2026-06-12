@@ -466,7 +466,7 @@ function ensureMyInquiriesPanel() {
   bindMyInquiriesPanelActions();
 }
 function getSidebarHtml() {
-  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>계정·성향·결제·문의·저장 관리</span></div><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
+  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>내 정보 메뉴</span></div><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
 }
 function ensureTopButton() {
   if (document.querySelector("[data-mypage-top-button]")) return;
