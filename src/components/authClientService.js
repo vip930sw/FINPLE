@@ -143,10 +143,11 @@ function normalizeAuthUser(user, authMode = "email-password") {
   };
 }
 
-async function requestAuth(path, body) {
+async function requestAuth(path, body, options = {}) {
   const session = getStoredFinpleAuthSession();
+  const method = options.method || (body ? "POST" : "GET");
   const response = await fetch(`${getFinpleApiBaseUrl()}${path}`, {
-    method: body ? "POST" : "GET",
+    method,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -325,6 +326,39 @@ export async function logoutFinpleAuth() {
   }
 
   return { ok: true };
+}
+
+export async function deleteFinpleAccount({
+  confirmText,
+  privacyDeletionConfirmed,
+  subscriptionAccessConfirmed,
+  refundPolicyConfirmed,
+}) {
+  const storedUser = readJson(AUTH_USER_STORAGE_KEY, null);
+  const payload = await requestAuth(
+    "/auth/me",
+    {
+      confirmText,
+      privacyDeletionConfirmed,
+      subscriptionAccessConfirmed,
+      refundPolicyConfirmed,
+    },
+    { method: "DELETE" }
+  );
+
+  if (storedUser?.id) archiveVisiblePortfolioStorageForUser(storedUser);
+  clearStoredFinpleAuthSession();
+  clearStoredFinpleAuthUser();
+  resetVisiblePortfolioStorageToGuest();
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("finple-auth-updated"));
+    window.dispatchEvent(new Event("finple-local-storage-updated"));
+    window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
+    dispatchPortfolioStorageUpdated();
+  }
+
+  return payload;
 }
 
 export async function fetchCurrentAuthUser() {

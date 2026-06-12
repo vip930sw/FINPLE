@@ -23,6 +23,7 @@ import {
   getPlanUsageStatus,
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
+import { deleteFinpleAccount } from "./authClientService";
 
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   const storedUser = getStoredFinpleAuthUser();
@@ -886,6 +887,14 @@ function AccountStatusPanel({ onNavigate }) {
     authUser ? "체험 사용자 세션이 브라우저에 저장되어 있습니다." : "아직 로그인 데모가 연결되지 않았습니다."
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isWithdrawalOpen, setIsWithdrawalOpen] = useState(false);
+  const [withdrawalConfirmText, setWithdrawalConfirmText] = useState("");
+  const [withdrawalChecks, setWithdrawalChecks] = useState({
+    privacyDeletionConfirmed: false,
+    subscriptionAccessConfirmed: false,
+    refundPolicyConfirmed: false,
+  });
+  const [withdrawalMessage, setWithdrawalMessage] = useState("");
 
   useEffect(() => {
     function handleAuthUpdate() {
@@ -929,6 +938,59 @@ function AccountStatusPanel({ onNavigate }) {
     setStatusMessage("브라우저의 체험 사용자 세션을 해제했습니다.");
   }
 
+  function resetWithdrawalForm() {
+    setWithdrawalConfirmText("");
+    setWithdrawalChecks({
+      privacyDeletionConfirmed: false,
+      subscriptionAccessConfirmed: false,
+      refundPolicyConfirmed: false,
+    });
+    setWithdrawalMessage("");
+  }
+
+  function closeWithdrawalModal() {
+    if (isLoading) return;
+    setIsWithdrawalOpen(false);
+    resetWithdrawalForm();
+  }
+
+  function updateWithdrawalCheck(key) {
+    setWithdrawalChecks((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  async function handleDeleteAccount() {
+    if (!authUser?.id) {
+      setWithdrawalMessage("회원탈퇴를 진행하려면 먼저 로그인해 주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    setWithdrawalMessage("");
+    try {
+      await deleteFinpleAccount({
+        confirmText: withdrawalConfirmText,
+        ...withdrawalChecks,
+      });
+      setAuthUser(null);
+      setServerUser(null);
+      setIsWithdrawalOpen(false);
+      resetWithdrawalForm();
+      onNavigate("home");
+    } catch (error) {
+      setWithdrawalMessage(error?.message || "회원탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const canSubmitWithdrawal =
+    authUser?.id &&
+    withdrawalConfirmText.trim() === "회원탈퇴" &&
+    withdrawalChecks.privacyDeletionConfirmed &&
+    withdrawalChecks.subscriptionAccessConfirmed &&
+    withdrawalChecks.refundPolicyConfirmed &&
+    !isLoading;
+
   return (
     <section className="accountCard accountStatusPanel">
       <div>
@@ -968,6 +1030,80 @@ function AccountStatusPanel({ onNavigate }) {
         <button type="button" className="secondaryButton betaHiddenAction" onClick={() => onNavigate("login")}>로그인 화면</button>
         <button type="button" className="secondaryButton dangerSubtle betaHiddenAction" onClick={handleLogout} disabled={isLoading || !authUser}>로그아웃 데모</button>
       </div>
+      <div className="accountWithdrawalZone">
+        <div>
+          <strong>계정 관리</strong>
+          <p>계정 삭제가 필요한 경우에만 회원탈퇴를 진행해 주세요.</p>
+        </div>
+        <button type="button" className="secondaryButton accountWithdrawalButton" onClick={() => setIsWithdrawalOpen(true)} disabled={isLoading || !authUser}>
+          회원탈퇴
+        </button>
+      </div>
+
+      {isWithdrawalOpen ? (
+        <div className="accountWithdrawalModalBackdrop" role="presentation">
+          <section className="accountWithdrawalModal" role="dialog" aria-modal="true" aria-labelledby="accountWithdrawalTitle">
+            <p className="accountMiniLabel">Account Withdrawal</p>
+            <h3 id="accountWithdrawalTitle">회원탈퇴 전 확인해 주세요</h3>
+            <p className="accountWithdrawalLead">
+              탈퇴 후 FINPLE 계정과 저장된 개인정보는 복구할 수 없도록 삭제됩니다.
+            </p>
+
+            <div className="accountWithdrawalWarning">
+              <strong>구독 및 결제 안내</strong>
+              <p>
+                탈퇴와 동시에 진행 중인 구독은 자동 해지되며 Personal 기능 접근 권한도 즉시 사라집니다.
+                이미 결제된 금액은 탈퇴 사유만으로 환불되지 않습니다. 환불이 필요한 경우 탈퇴 전 문의사항을 통해 먼저 요청해 주세요.
+              </p>
+            </div>
+
+            <label className="accountWithdrawalCheck">
+              <input
+                type="checkbox"
+                checked={withdrawalChecks.privacyDeletionConfirmed}
+                onChange={() => updateWithdrawalCheck("privacyDeletionConfirmed")}
+              />
+              <span>회원탈퇴 후 계정과 개인정보가 복구되지 않는다는 점을 확인했습니다.</span>
+            </label>
+            <label className="accountWithdrawalCheck">
+              <input
+                type="checkbox"
+                checked={withdrawalChecks.subscriptionAccessConfirmed}
+                onChange={() => updateWithdrawalCheck("subscriptionAccessConfirmed")}
+              />
+              <span>진행 중인 구독이 자동 해지되고 접근 권한이 사라진다는 점을 확인했습니다.</span>
+            </label>
+            <label className="accountWithdrawalCheck">
+              <input
+                type="checkbox"
+                checked={withdrawalChecks.refundPolicyConfirmed}
+                onChange={() => updateWithdrawalCheck("refundPolicyConfirmed")}
+              />
+              <span>이미 결제된 금액은 탈퇴만으로 환불되지 않는다는 점을 확인했습니다.</span>
+            </label>
+
+            <label className="accountWithdrawalConfirm">
+              <span>최종 확인을 위해 <b>회원탈퇴</b>를 입력해 주세요.</span>
+              <input
+                type="text"
+                value={withdrawalConfirmText}
+                onChange={(event) => setWithdrawalConfirmText(event.target.value)}
+                placeholder="회원탈퇴"
+                autoComplete="off"
+              />
+            </label>
+
+            {withdrawalMessage ? <p className="serverStorageMessage compact dangerMessage">{withdrawalMessage}</p> : null}
+
+            <div className="accountWithdrawalActions">
+              <button type="button" className="secondaryButton" onClick={closeWithdrawalModal} disabled={isLoading}>취소</button>
+              <button type="button" className="primaryButton accountWithdrawalSubmit" onClick={handleDeleteAccount} disabled={!canSubmitWithdrawal}>
+                {isLoading ? "처리 중" : "회원탈퇴 진행"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
