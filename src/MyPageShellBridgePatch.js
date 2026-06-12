@@ -39,6 +39,9 @@ function getSidebarHtml() {
         <strong>MY PAGE</strong>
         <span>내 정보 메뉴</span>
       </div>
+      <select class="myPageMobileMenuSelect" data-mypage-mobile-menu aria-label="MY PAGE 메뉴 선택">
+        ${MENU_ITEMS.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}
+      </select>
       <nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">
         ${MENU_ITEMS.map((item) => `
           <button
@@ -108,6 +111,10 @@ function activatePanel(nextKey, options = {}) {
     button.classList.toggle("active", button.getAttribute("data-mypage-menu-key") === activeMenuKey);
   });
 
+  document.querySelectorAll("[data-mypage-mobile-menu]").forEach((select) => {
+    if (select.value !== activeMenuKey) select.value = activeMenuKey;
+  });
+
   document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
     const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;
     panel.classList.toggle("myPagePanelActive", isActive);
@@ -129,6 +136,14 @@ function wireMenu() {
     button.addEventListener("click", () => {
       const key = button.getAttribute("data-mypage-menu-key") || "account";
       activatePanel(key, { scrollToTop: true });
+    });
+  });
+
+  document.querySelectorAll("[data-mypage-mobile-menu]").forEach((select) => {
+    if (select.getAttribute("data-mypage-shell-wired") === "true") return;
+    select.setAttribute("data-mypage-shell-wired", "true");
+    select.addEventListener("change", () => {
+      activatePanel(select.value || "account", { scrollToTop: true });
     });
   });
 }

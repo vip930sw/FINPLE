@@ -2,6 +2,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
+import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
 
@@ -89,6 +90,16 @@ router.post("/subscription/end-at-period", async (request, response, next) => {
       );
       return result.rows[0];
     });
+    const notification = await sendSubscriptionNotification({
+      to: user.email,
+      type: "cancelScheduled",
+      plan: "Personal",
+      currentPeriodEnd: updated?.current_period_end || null,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "subscription_cancel_notification_failed",
+    }));
 
     response.json({
       ok: true,
@@ -97,6 +108,7 @@ router.post("/subscription/end-at-period", async (request, response, next) => {
       status: "cancel_at_period_end",
       subscription: updated,
       currentPeriodEnd: updated?.current_period_end || null,
+      notification,
       message: "구독 종료가 예약되었습니다. 이용기간 종료일까지 Personal 기능을 사용할 수 있습니다.",
     });
   } catch (error) {

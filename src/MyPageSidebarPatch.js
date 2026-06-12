@@ -466,7 +466,7 @@ function ensureMyInquiriesPanel() {
   bindMyInquiriesPanelActions();
 }
 function getSidebarHtml() {
-  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>내 정보 메뉴</span></div><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
+  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>내 정보 메뉴</span></div><select class="myPageMobileMenuSelect" data-mypage-mobile-menu aria-label="MY PAGE 메뉴 선택">${MENU_ITEMS.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}</select><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
 }
 function ensureTopButton() {
   if (document.querySelector("[data-mypage-top-button]")) return;
@@ -596,6 +596,11 @@ function wireSidebarActions(wrapper) {
     button.setAttribute("data-mypage-menu-wired", "true");
     button.addEventListener("click", () => setActivePanel(button.getAttribute("data-mypage-menu-key") || "account", { scrollToTop: true }));
   });
+  wrapper.querySelectorAll("[data-mypage-mobile-menu]").forEach((select) => {
+    if (select.getAttribute("data-mypage-menu-wired") === "true") return;
+    select.setAttribute("data-mypage-menu-wired", "true");
+    select.addEventListener("change", () => setActivePanel(select.value || "account", { scrollToTop: true }));
+  });
 }
 function getFallbackActiveKey() {
   const activeItem = MENU_ITEMS.find((item) => document.querySelector(item.selector));
@@ -603,6 +608,9 @@ function getFallbackActiveKey() {
 }
 function setActiveMenu(activeKey) {
   document.querySelectorAll("[data-mypage-menu-key]").forEach((button) => button.classList.toggle("active", button.getAttribute("data-mypage-menu-key") === activeKey));
+  document.querySelectorAll("[data-mypage-mobile-menu]").forEach((select) => {
+    if (select.value !== activeKey) select.value = activeKey;
+  });
 }
 function setActivePanel(nextKey, options = {}) {
   activeMenuKey = MENU_ITEMS.some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();

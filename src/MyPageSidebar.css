@@ -70,6 +70,20 @@
   gap: 6px;
 }
 
+.myPageMobileMenuSelect {
+  display: none;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 42px 0 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .myPageSidebarNav button {
   display: grid;
   gap: 3px;
@@ -528,6 +542,24 @@
 }
 
 @media (max-width: 720px) {
+  .myPageSidebar {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .myPageSidebarHeader {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .myPageMobileMenuSelect {
+    display: block;
+  }
+
+  .myPageSidebarNav {
+    display: none;
+  }
+
   .myPageSidebarNav,
   .paymentMethodEntryGrid,
   .investmentProfileVisualLayout,
