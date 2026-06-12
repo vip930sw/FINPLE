@@ -4,6 +4,11 @@ import { randomUUID } from "node:crypto";
 import { isDatabaseConfigured, query } from "../db/database.js";
 import { getAdminSecurityStatus, requireAdminAccess } from "../middleware/adminGuard.js";
 import { getInquiryNotificationStatus, sendInquiryNotification } from "../services/inquiryNotificationService.js";
+import {
+  getUserNotificationStatus,
+  sendInquiryReceivedNotification,
+  sendInquiryStatusNotification,
+} from "../services/userNotificationService.js";
 
 const router = express.Router();
 
@@ -26,8 +31,20 @@ function normalizeStatus(value) {
   return allowed.has(value) ? value : "open";
 }
 
+const INQUIRY_STATUS_LABELS = {
+  open: "접수",
+  in_progress: "확인 중",
+  resolved: "처리 완료",
+  closed: "종료",
+};
+
 function normalizeText(value, maxLength = 5000) {
   return String(value || "").trim().slice(0, maxLength);
+}
+
+function extractEmailFromText(value = "") {
+  const match = String(value || "").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match?.[0] || "";
 }
 
 function createStoredMessage({ email, message, pageUrl, userAgent }) {
@@ -64,6 +81,7 @@ router.get("/notification-status", (request, response) => {
   response.json({
     ok: true,
     notification: getInquiryNotificationStatus(),
+    userNotification: getUserNotificationStatus(),
   });
 });
 
@@ -156,10 +174,15 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
 
     const status = normalizeStatus(request.body?.status);
     const result = await query(
-      `UPDATE inquiries
+      `WITH updated AS (
+        UPDATE inquiries
           SET status = $2, updated_at = NOW()
         WHERE id = $1
-        RETURNING id, user_id, category, title, message, status, created_at, updated_at`,
+        RETURNING id, user_id, category, title, message, status, created_at, updated_at
+      )
+      SELECT updated.*, users.email AS user_email
+        FROM updated
+        LEFT JOIN users ON users.id = updated.user_id`,
       [inquiryId, status]
     );
 
@@ -171,9 +194,21 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
       return;
     }
 
+    const row = result.rows[0];
+    const notification = await sendInquiryStatusNotification({
+      to: row.user_email || extractEmailFromText(row.message),
+      inquiry: row,
+      statusLabel: INQUIRY_STATUS_LABELS[status] || status,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "inquiry_status_notification_failed",
+    }));
+
     response.json({
       ok: true,
-      inquiry: mapInquiryRow(result.rows[0]),
+      inquiry: mapInquiryRow(row),
+      notification,
     });
   } catch (error) {
     next(error);
@@ -232,10 +267,20 @@ router.post("/", async (request, response, next) => {
       error: error?.message || "메일 알림 처리 중 오류가 발생했습니다.",
     }));
 
+    const userNotification = await sendInquiryReceivedNotification({
+      to: email,
+      inquiry: row,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "inquiry_received_notification_failed",
+    }));
+
     response.status(201).json({
       ok: true,
       inquiry: mapInquiryRow(row),
       notification,
+      userNotification,
     });
   } catch (error) {
     next(error);

@@ -4,6 +4,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
+import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
 
@@ -836,6 +837,18 @@ router.post("/toss/confirm", async (request, response, next) => {
     assertTossPaymentMatches(payment, { orderId, amount });
     const storage = await recordPaymentConfirmation({ user, plan, amount, orderId, payment });
     const entitlementUpdate = await applyPersonalEntitlementAfterPayment({ user, plan, amount, orderId, payment });
+    const notification = entitlementUpdate.applied ? await sendSubscriptionNotification({
+      to: user.email,
+      type: "activated",
+      plan,
+      amount,
+      currentPeriodEnd: entitlementUpdate.validUntil,
+      receiptUrl: payment.receipt?.url || payment.checkout?.url || null,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "subscription_activation_notification_failed",
+    })) : { enabled: false, sent: false, reason: "entitlement_not_applied" };
 
     response.json({
       ok: true,
@@ -856,6 +869,7 @@ router.post("/toss/confirm", async (request, response, next) => {
       storage,
       entitlementUpdated: entitlementUpdate.applied,
       entitlementUpdate,
+      notification,
       payment,
       message: entitlementUpdate.applied
         ? "Toss 결제 승인이 확인되어 Personal 권한으로 전환되었습니다."

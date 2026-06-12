@@ -4,6 +4,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
+import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
 
@@ -587,6 +588,18 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       paymentPayload: firstPayment,
       amount,
     });
+    const notification = storage.stored && storage.subscriptionActivated ? await sendSubscriptionNotification({
+      to: user.email,
+      type: "activated",
+      plan: PERSONAL_PLAN,
+      amount,
+      currentPeriodEnd: storage.validUntil,
+      receiptUrl: firstPayment?.receipt?.url || null,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "subscription_activation_notification_failed",
+    })) : { enabled: false, sent: false, reason: "subscription_not_activated" };
 
     response.status(storage.stored ? 200 : 500).json({
       ok: Boolean(storage.stored),
@@ -600,6 +613,7 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       stored: Boolean(storage.stored),
       subscriptionActivated: Boolean(storage.subscriptionActivated),
       storage,
+      notification,
       method: getCardSummary(issuePayload),
       firstPayment: firstPayment?.skipped ? { skipped: true, reason: firstPayment.reason } : {
         paymentKey: firstPayment?.paymentKey || null,

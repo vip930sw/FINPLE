@@ -243,6 +243,19 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
             <strong>ADMIN</strong>
             <span>관리자 메뉴</span>
           </div>
+          <select
+            className="myPageMobileMenuSelect"
+            aria-label="관리자 메뉴 선택"
+            value={activeSection}
+            onChange={(event) => {
+              const item = ADMIN_MENU_ITEMS.find((menuItem) => menuItem.key === event.target.value);
+              if (item) handleNavigateSection(item);
+            }}
+          >
+            {ADMIN_MENU_ITEMS.map((item) => (
+              <option key={item.key} value={item.key}>{item.label}</option>
+            ))}
+          </select>
           <nav className="myPageSidebarNav" aria-label="관리자 메뉴">
             {ADMIN_MENU_ITEMS.map((item) => (
               <button
