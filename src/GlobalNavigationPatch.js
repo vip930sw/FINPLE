@@ -22,6 +22,7 @@ const SPA_NAVIGATION_PATHS = [
   "/admin/inquiries",
   "/admin/members",
   "/admin/subscriptions",
+  "/admin/clear",
   "/privacy",
   "/terms",
   "/refund",
