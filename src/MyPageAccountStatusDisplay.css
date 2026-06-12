@@ -144,6 +144,149 @@
   display: none !important;
 }
 
+.accountWithdrawalZone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 16px;
+  background: #fff7f7;
+}
+
+.accountWithdrawalZone strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.accountWithdrawalZone p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.accountWithdrawalButton {
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+  background: #ffffff !important;
+}
+
+.accountWithdrawalModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.accountWithdrawalModal {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 26px;
+  border: 1px solid #fecaca;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+}
+
+.accountWithdrawalModal h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.accountWithdrawalLead {
+  margin: 0 0 16px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.accountWithdrawalWarning {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fff7f7;
+}
+
+.accountWithdrawalWarning strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.accountWithdrawalWarning p {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.accountWithdrawalCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.accountWithdrawalCheck input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.accountWithdrawalConfirm {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.accountWithdrawalConfirm input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  box-sizing: border-box;
+}
+
+.accountWithdrawalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.accountWithdrawalSubmit {
+  background: #991b1b !important;
+}
+
 @media (max-width: 1200px) {
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -163,5 +306,16 @@
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: 1fr !important;
     margin-top: 18px !important;
+  }
+
+  .accountWithdrawalZone,
+  .accountWithdrawalActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accountWithdrawalZone button,
+  .accountWithdrawalActions button {
+    width: 100%;
   }
 }

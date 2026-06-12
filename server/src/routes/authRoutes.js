@@ -1,5 +1,6 @@
 import express from "express";
 
+import { isDatabaseConfigured, withTransaction } from "../db/database.js";
 import {
   checkEmailAvailability,
   getUserByAuthHeader,
@@ -42,6 +43,12 @@ function getSessionToken(request) {
   const authHeader = request.get("authorization") || "";
   const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
   return bearerMatch?.[1] || request.get("x-finple-session-token") || request.body?.sessionToken || "";
+}
+
+async function getRequestUser(request) {
+  const sessionToken = getSessionToken(request);
+  const headerUserId = request.get("x-finple-user-id") || request.body?.userId || "";
+  return sessionToken ? getUserBySessionToken(sessionToken) : getUserByAuthHeader(headerUserId);
 }
 
 router.get("/check-email", async (request, response, next) => {
@@ -162,10 +169,89 @@ router.post("/logout", async (request, response, next) => {
 
 router.get("/me", async (request, response, next) => {
   try {
-    const sessionToken = getSessionToken(request);
-    const headerUserId = request.get("x-finple-user-id") || "";
-    const user = sessionToken ? await getUserBySessionToken(sessionToken) : await getUserByAuthHeader(headerUserId);
-    response.json({ ok: Boolean(user), user, authMode: sessionToken ? "session-token" : "user-id-header" });
+    const user = await getRequestUser(request);
+    response.json({ ok: Boolean(user), user, authMode: getSessionToken(request) ? "session-token" : "user-id-header" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/me", async (request, response, next) => {
+  try {
+    if (!isDatabaseConfigured()) {
+      response.status(503).json({ ok: false, code: "DATABASE_NOT_CONFIGURED", message: "회원탈퇴를 처리할 데이터베이스가 연결되어 있지 않습니다." });
+      return;
+    }
+
+    const user = await getRequestUser(request);
+    if (!user?.id) {
+      response.status(401).json({ ok: false, code: "AUTH_REQUIRED", message: "회원탈퇴를 위해 로그인이 필요합니다." });
+      return;
+    }
+
+    const confirmText = String(request.body?.confirmText || "").trim();
+    const privacyConfirmed = Boolean(request.body?.privacyDeletionConfirmed);
+    const subscriptionConfirmed = Boolean(request.body?.subscriptionAccessConfirmed);
+    const refundConfirmed = Boolean(request.body?.refundPolicyConfirmed);
+
+    if (confirmText !== "회원탈퇴" || !privacyConfirmed || !subscriptionConfirmed || !refundConfirmed) {
+      response.status(400).json({
+        ok: false,
+        code: "WITHDRAWAL_CONFIRMATION_REQUIRED",
+        message: "회원탈퇴 안내와 경고사항을 모두 확인해 주세요.",
+      });
+      return;
+    }
+
+    const result = await withTransaction(async (tx) => {
+      await tx(
+        `UPDATE subscriptions
+            SET status = 'canceled',
+                cancel_at_period_end = FALSE,
+                canceled_at = COALESCE(canceled_at, NOW()),
+                ended_at = COALESCE(ended_at, NOW()),
+                metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb
+          WHERE user_id = $1`,
+        [
+          user.id,
+          JSON.stringify({
+            reason: "account_withdrawal",
+            requestedAt: new Date().toISOString(),
+            refundPolicy: "no_refund_by_withdrawal_only",
+          }),
+        ]
+      );
+
+      await tx(
+        `UPDATE recurring_payment_methods
+            SET status = 'disabled',
+                disabled_at = COALESCE(disabled_at, NOW()),
+                metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb
+          WHERE user_id = $1`,
+        [
+          user.id,
+          JSON.stringify({
+            reason: "account_withdrawal",
+            disabledBy: "user",
+            disabledAt: new Date().toISOString(),
+          }),
+        ]
+      );
+
+      await tx("DELETE FROM inquiries WHERE user_id = $1", [user.id]);
+      await tx("DELETE FROM api_usage_logs WHERE user_id = $1", [user.id]);
+      await tx("DELETE FROM payment_events WHERE user_id = $1", [user.id]);
+      const deleteResult = await tx("DELETE FROM users WHERE id = $1 RETURNING id", [user.id]);
+      return { deleted: deleteResult.rowCount > 0 };
+    });
+
+    response.json({
+      ok: true,
+      deleted: Boolean(result.deleted),
+      subscriptionCanceled: true,
+      personalDataDeleted: true,
+      message: "회원탈퇴가 완료되었습니다.",
+    });
   } catch (error) {
     next(error);
   }
