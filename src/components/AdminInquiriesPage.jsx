@@ -11,6 +11,7 @@ const ADMIN_MENU_ITEMS = [
   { key: "inquiries", page: "admin-inquiries", label: "문의사항 관리", description: "접수·처리 상태" },
   { key: "members", page: "admin-members", label: "회원 관리", description: "가입·구독 전환" },
   { key: "subscriptions", page: "admin-subscriptions", label: "구독 관리", description: "플랜·결제 기간" },
+  { key: "clear", page: "admin-clear", label: "관리자 모드 해제", description: "저장 토큰 삭제" },
 ];
 
 const INQUIRY_CATEGORY_LABELS = {
@@ -77,6 +78,7 @@ function getDaysUntil(value) {
 function getActiveSectionFromPage(page) {
   if (page === "members") return "members";
   if (page === "subscriptions") return "subscriptions";
+  if (page === "clear") return "clear";
   return "inquiries";
 }
 
@@ -127,6 +129,19 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
 
   function handleNavigateSection(item) {
     onNavigate(item.page);
+  }
+
+  function handleClearAdminMode() {
+    window.localStorage.removeItem("finple-admin-token");
+    window.dispatchEvent(new Event("finple-admin-token-updated"));
+    setIsAdminMode(false);
+    setInquiries([]);
+    setMemberData(null);
+    setSubscriptionData(null);
+    autoLoadedSectionsRef.current = {};
+    setSelectedId(null);
+    setStatusFilter("all");
+    onNavigate("admin-login");
   }
 
   const handleLoadInquiries = useCallback(async function handleLoadInquiries() {
@@ -226,7 +241,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
         <aside className="myPageSidebar adminConsoleSidebar">
           <div className="myPageSidebarHeader">
             <strong>ADMIN</strong>
-            <span>문의·회원·구독 관리</span>
+            <span>관리자 메뉴</span>
           </div>
           <nav className="myPageSidebarNav" aria-label="관리자 메뉴">
             {ADMIN_MENU_ITEMS.map((item) => (
@@ -284,9 +299,34 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               onLoad={handleLoadSubscriptions}
             />
           ) : null}
+
+          {activeSection === "clear" ? (
+            <AdminClearPanel onClear={handleClearAdminMode} />
+          ) : null}
         </section>
       </div>
     </main>
+  );
+}
+
+function AdminClearPanel({ onClear }) {
+  return (
+    <section className="accountCard adminManagementPanel adminClearPanel">
+      <div className="serverStorageHeader">
+        <div>
+          <p className="accountMiniLabel">Admin Session</p>
+          <h2>관리자 모드 해제</h2>
+          <p>현재 브라우저에 저장된 관리자 토큰을 삭제합니다.</p>
+        </div>
+      </div>
+
+      <div className="adminClearBox">
+        <p>해제 후에는 관리자 메뉴에 다시 접근할 때 관리자 토큰을 다시 입력해야 합니다.</p>
+        <button type="button" className="primaryButton" onClick={onClear}>
+          관리자 모드 해제
+        </button>
+      </div>
+    </section>
   );
 }
 
