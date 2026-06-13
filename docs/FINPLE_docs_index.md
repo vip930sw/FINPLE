@@ -54,3 +54,5 @@
 - [Step 112. 결제 / MY PAGE 작업 인수인계](./FINPLE_step112_payment_mypage_handoff.md)
 - [Step 112-5. MY PAGE 안정화 / 통합 계획](./FINPLE_step112_5_mypage_stabilization_plan.md)
 - [Step 112-6. MY PAGE UI / CSS 인수인계](./FINPLE_step112_6_mypage_ui_handoff.md)
+- [교육용 계정 설계 및 작업 순서](./FINPLE_education_account_plan.md)
+- [2026-06-13 채팅 작업 인수인계](./FINPLE_chat_handoff_2026_06_13.md)
