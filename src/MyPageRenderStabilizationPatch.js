@@ -19,6 +19,7 @@ const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
 const FAILSAFE_WAIT_MS = 2600;
 const OAUTH_RECOVERY_SESSION_KEY = "finple-oauth-mypage-recovery-signature";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 let activeBootId = 0;
 let lastPathname = typeof window !== "undefined" ? window.location.pathname : "";
@@ -75,6 +76,15 @@ function isMyPagePath() {
   return window.location.pathname === "/mypage";
 }
 
+function isEducationAccountUser() {
+  try {
+    const user = JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return user?.authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+  } catch {
+    return false;
+  }
+}
+
 function isOAuthMyPagePath() {
   if (!isMyPagePath()) return false;
   return new URLSearchParams(window.location.search || "").has("oauth");
@@ -103,7 +113,7 @@ function recoverBlankOAuthMyPage(expectedHref) {
   try {
     if (window.sessionStorage.getItem(OAUTH_RECOVERY_SESSION_KEY) === signature) return;
     window.sessionStorage.setItem(OAUTH_RECOVERY_SESSION_KEY, signature);
-  } catch (error) {
+  } catch {
     // If sessionStorage is unavailable, still try a single best-effort recovery.
   }
 
@@ -281,11 +291,12 @@ function hasOldSidebarLabels(sidebarText) {
 
 function isShellReady() {
   const sidebarText = getSidebarText();
+  const isEducationAccount = isEducationAccountUser();
   const hasLayout = Boolean(document.querySelector(".myPageDashboardLayout") && document.querySelector(".myPageSidebarNav"));
   const hasFinalMenuNames = sidebarText.includes("내 계정")
     && sidebarText.includes("내 구독/플랜")
-    && sidebarText.includes("내 결제수단")
-    && sidebarText.includes("내 결제내역")
+    && (isEducationAccount || sidebarText.includes("내 결제수단"))
+    && (isEducationAccount || sidebarText.includes("내 결제내역"))
     && sidebarText.includes("내 문의내역")
     && sidebarText.includes("내 저장내역");
   const hasNoOldMenuNames = !hasOldSidebarLabels(sidebarText);

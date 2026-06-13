@@ -1,5 +1,7 @@
 import { fetchFinplePaymentHistory } from "./PaymentHistoryClientPatch.js";
 
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+
 let paymentHistoryRequested = false;
 let paymentHistoryState = { loading: false, payments: [], error: "" };
 
@@ -7,12 +9,21 @@ function isMyPagePath() {
   return window.location.pathname === "/mypage";
 }
 
+function isEducationAccountUser() {
+  try {
+    const user = JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return user?.authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+  } catch {
+    return false;
+  }
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -32,7 +43,7 @@ function formatDate(value) {
   if (!value) return "없음";
   try {
     return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
-  } catch (error) {
+  } catch {
     return "없음";
   }
 }
@@ -198,6 +209,7 @@ function bindPaymentHistoryMenu() {
 
 function applyPaymentHistoryPatch() {
   if (!isMyPagePath()) return;
+  if (isEducationAccountUser()) return;
   ensurePaymentHistoryPanel();
   ensurePaymentHistoryMenu();
   bindPaymentHistoryMenu();

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateAdminEducationAccounts,
+  deleteAdminEducationAccounts,
   fetchAdminEducationAccounts,
   fetchAdminEducationAccountsCsv,
   fetchAdminMembersSummary,
@@ -130,7 +131,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [educationData, setEducationData] = useState(null);
   const [educationMessage, setEducationMessage] = useState("교육 계정 목록을 불러오면 수업별 계정과 만료 상태를 표시합니다.");
   const [educationCredentialsCsv, setEducationCredentialsCsv] = useState("");
-  const [educationCredentials, setEducationCredentials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const autoLoadedSectionsRef = useRef({});
 
@@ -164,7 +164,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setSubscriptionData(null);
     setEducationData(null);
     setEducationCredentialsCsv("");
-    setEducationCredentials([]);
     autoLoadedSectionsRef.current = {};
     setSelectedId(null);
     setStatusFilter("all");
@@ -257,10 +256,8 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setIsLoading(true);
     try {
       const result = await bulkCreateAdminEducationAccounts(input);
-      const credentials = Array.isArray(result?.credentials) ? result.credentials : [];
       setEducationCredentialsCsv(result?.credentialsCsv || "");
-      setEducationCredentials(credentials);
-      setEducationMessage(`교육 계정 ${result?.accounts?.length || 0}개를 일괄 생성했습니다. 초기 비밀번호는 아래 전달용 패널과 CSV에서만 확인하세요.`);
+      setEducationMessage(`교육 계정 ${result?.accounts?.length || 0}개를 일괄 생성했습니다. 초기 비밀번호는 목록 표와 CSV에서 확인하세요.`);
       await handleLoadEducationAccounts();
     } catch (error) {
       setEducationMessage(error?.message || "교육 계정을 일괄 생성하지 못했습니다.");
@@ -287,10 +284,28 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     try {
       const csv = await fetchAdminEducationAccountsCsv();
       setEducationCredentialsCsv(csv);
-      setEducationCredentials([]);
-      setEducationMessage("교육 계정 CSV를 생성했습니다. 비밀번호는 포함되지 않습니다.");
+      setEducationMessage("교육 계정 CSV를 생성했습니다. 초기 비밀번호가 포함됩니다.");
     } catch (error) {
       setEducationMessage(error?.message || "교육 계정 CSV를 생성하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDeleteEducationAccounts() {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm("모든 교육 계정을 삭제할까요? 교육용 로그인 계정과 권한이 함께 삭제됩니다.");
+      if (!confirmed) return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await deleteAdminEducationAccounts();
+      setEducationCredentialsCsv("");
+      setEducationMessage(`교육 계정 ${result?.deletedAccounts || 0}개를 일괄 삭제했습니다.`);
+      await handleLoadEducationAccounts();
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정을 일괄 삭제하지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -404,13 +419,13 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               data={educationData}
               statusMessage={educationMessage}
               credentialsCsv={educationCredentialsCsv}
-              credentials={educationCredentials}
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadEducationAccounts}
               onBulkCreate={handleBulkCreateEducationAccounts}
               onUpdate={handleUpdateEducationAccount}
               onDownloadCsv={handleDownloadEducationCsv}
+              onDeleteAll={handleDeleteEducationAccounts}
             />
           ) : null}
 
@@ -640,17 +655,17 @@ function EducationAccountManagementPanel({
   data,
   statusMessage,
   credentialsCsv,
-  credentials,
   isAdminMode,
   isLoading,
   onLoad,
   onBulkCreate,
   onUpdate,
   onDownloadCsv,
+  onDeleteAll,
 }) {
   const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
   const summary = data?.summary || {};
-  const latestCredentials = Array.isArray(credentials) ? credentials : [];
+  const latestCredentials = [];
   const [bulkForm, setBulkForm] = useState({
     prefix: "finple-class",
     count: 10,
@@ -695,6 +710,9 @@ function EducationAccountManagementPanel({
         <div className="serverStorageActions compactActions">
           <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
             {isLoading ? "불러오는 중..." : "교육 계정 새로고침"}
+          </button>
+          <button type="button" className="dangerSubtle" onClick={onDeleteAll} disabled={isLoading || accounts.length === 0}>
+            교육 계정 일괄 삭제
           </button>
           <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
             목록 CSV
@@ -758,6 +776,7 @@ function EducationAccountManagementPanel({
           <thead>
             <tr>
               <th>교육용 ID</th>
+              <th>비밀번호</th>
               <th>수업/세미나</th>
               <th>상태</th>
               <th>만료일</th>
@@ -776,7 +795,7 @@ function EducationAccountManagementPanel({
                 />
               ))
             ) : (
-              <tr><td colSpan="6">교육 계정 목록을 아직 불러오지 않았습니다.</td></tr>
+              <tr><td colSpan="7">교육 계정 목록을 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>
@@ -791,6 +810,7 @@ function EducationAccountRow({ account, isLoading, onUpdate }) {
   return (
     <tr>
       <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
+      <td><strong className="monoText">{account.initialPassword || "-"}</strong></td>
       <td>{account.cohortName || "-"}</td>
       <td>{EDUCATION_STATUS_LABELS[account.status] || account.status || "활성"}</td>
       <td>

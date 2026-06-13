@@ -437,6 +437,15 @@
   letter-spacing: 0;
 }
 
+.educationAdminPanel .adminDataTable th {
+  text-align: center;
+}
+
+.educationAdminPanel .monoText {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0;
+}
+
 .adminRowActions {
   display: flex;
   flex-wrap: wrap;

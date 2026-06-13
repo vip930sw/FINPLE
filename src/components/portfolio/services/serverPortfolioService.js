@@ -241,6 +241,14 @@ export async function updateAdminEducationAccount(accountId, input = {}) {
   );
 }
 
+export async function deleteAdminEducationAccounts() {
+  return requestJson(
+    "/admin/education-accounts",
+    { method: "DELETE" },
+    { includeAdminToken: true }
+  );
+}
+
 export async function fetchAdminEducationAccountsCsv() {
   const adminToken = getFinpleAdminToken();
   const response = await fetch(buildApiUrl("/admin/education-accounts.csv"), {

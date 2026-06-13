@@ -4,6 +4,7 @@ export async function ensureEducationAccountSchema(runQuery) {
       id UUID PRIMARY KEY,
       user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
       login_id TEXT NOT NULL UNIQUE,
+      initial_password TEXT,
       label TEXT,
       cohort_name TEXT,
       status TEXT NOT NULL DEFAULT 'active',
@@ -16,6 +17,11 @@ export async function ensureEducationAccountSchema(runQuery) {
       CONSTRAINT education_accounts_status_check
         CHECK (status IN ('active', 'paused', 'expired', 'revoked'))
     )
+  `);
+
+  await runQuery(`
+    ALTER TABLE education_accounts
+      ADD COLUMN IF NOT EXISTS initial_password TEXT
   `);
 
   await runQuery(`
