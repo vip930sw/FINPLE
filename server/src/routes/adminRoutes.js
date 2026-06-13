@@ -1,6 +1,14 @@
 import express from "express";
 
 import { isDatabaseConfigured, query } from "../db/database.js";
+import {
+  buildEducationAccountsCsv,
+  buildEducationCredentialsCsv,
+  bulkCreateEducationAccounts,
+  createEducationAccount,
+  listEducationAccounts,
+  updateEducationAccount,
+} from "../db/educationAccountRepository.js";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 
 const router = express.Router();
@@ -71,17 +79,26 @@ router.get("/members", (request, response, next) => {
                FROM subscriptions
               WHERE status = ANY($1)
               GROUP BY user_id
+           ),
+           education_users AS (
+             SELECT user_id
+               FROM education_accounts
            )
            SELECT
              COUNT(*)::int AS total_members,
              COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS new_members_30d,
              COUNT(*) FILTER (WHERE last_login_at >= NOW() - INTERVAL '30 days')::int AS active_members_30d,
+             COUNT(*) FILTER (WHERE education_users.user_id IS NOT NULL)::int AS education_members,
              COUNT(*) FILTER (
-               WHERE COALESCE(plan, 'free') <> 'free'
-                  OR COALESCE(active_subscription_count, 0) > 0
+               WHERE education_users.user_id IS NULL
+                 AND (
+                   COALESCE(plan, 'free') <> 'free'
+                   OR COALESCE(active_subscription_count, 0) > 0
+                 )
              )::int AS subscriber_members
             FROM users
-            LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id`,
+            LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id
+            LEFT JOIN education_users ON education_users.user_id = users.id`,
           [activeStatuses]
         ),
         query(
@@ -137,6 +154,7 @@ router.get("/members", (request, response, next) => {
           newMembers30d: Number(summary.new_members_30d || 0),
           activeMembers30d: Number(summary.active_members_30d || 0),
           subscriberMembers: Number(summary.subscriber_members || 0),
+          educationMembers: Number(summary.education_members || 0),
         },
         planBreakdown: planResult.rows.map((row) => ({
           plan: row.plan || "free",
@@ -144,6 +162,83 @@ router.get("/members", (request, response, next) => {
         })),
         members: recentMembersResult.rows.map(mapMemberRow),
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.get("/education-accounts", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await listEducationAccounts();
+      response.json({ ok: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.get("/education-accounts.csv", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await listEducationAccounts();
+      response.setHeader("Content-Type", "text/csv; charset=utf-8");
+      response.setHeader("Content-Disposition", "attachment; filename=\"finple-education-accounts.csv\"");
+      response.send(buildEducationAccountsCsv(result.accounts));
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.post("/education-accounts", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await createEducationAccount(request.body);
+      response.status(201).json({
+        ok: true,
+        ...result,
+        credentialsCsv: buildEducationCredentialsCsv([
+          {
+            loginId: result.account.loginId,
+            password: result.initialPassword,
+            validUntil: result.account.validUntil,
+            cohortName: result.account.cohortName,
+          },
+        ]),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.post("/education-accounts/bulk", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await bulkCreateEducationAccounts(request.body);
+      response.status(201).json({
+        ok: true,
+        ...result,
+        credentialsCsv: buildEducationCredentialsCsv(result.credentials),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.patch("/education-accounts/:id", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await updateEducationAccount(request.params.id, request.body);
+      response.json({ ok: true, ...result });
     } catch (error) {
       next(error);
     }

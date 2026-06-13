@@ -40,7 +40,7 @@ function assertPassword(password) {
   return raw;
 }
 
-async function hashPassword(password) {
+export async function hashPassword(password) {
   const salt = randomBytes(16).toString("base64url");
   const derived = await pbkdf2Async(
     password,
@@ -52,7 +52,7 @@ async function hashPassword(password) {
   return `pbkdf2$${PASSWORD_HASH_DIGEST}$${PASSWORD_HASH_ITERATIONS}$${salt}$${derived.toString("base64url")}`;
 }
 
-async function verifyPassword(password, storedHash = "") {
+export async function verifyPassword(password, storedHash = "") {
   const parts = String(storedHash || "").split("$");
   if (parts.length !== 5 || parts[0] !== "pbkdf2") return false;
 
@@ -136,9 +136,20 @@ export async function checkEmailAvailability(email) {
 
 async function getUserById(userId) {
   const result = await query(
-    `SELECT id, email, name, nickname, plan, auth_status, email_verified_at, created_at, updated_at, last_login_at
+    `SELECT users.id, users.email, users.name, users.nickname, users.plan,
+            users.auth_status, users.email_verified_at, users.created_at,
+            users.updated_at, users.last_login_at
      FROM users
-     WHERE id = $1
+     LEFT JOIN education_accounts ON education_accounts.user_id = users.id
+     WHERE users.id = $1
+       AND (
+         education_accounts.id IS NULL
+         OR (
+           education_accounts.status = 'active'
+           AND education_accounts.valid_from <= NOW()
+           AND (education_accounts.valid_until IS NULL OR education_accounts.valid_until >= NOW())
+         )
+       )
      LIMIT 1`,
     [userId]
   );
@@ -168,7 +179,8 @@ async function ensureDefaultEntitlement(tx, userId, plan = "free") {
        screener_level = EXCLUDED.screener_level,
        support_level = EXCLUDED.support_level,
        source = EXCLUDED.source,
-       updated_at = NOW()`,
+       updated_at = NOW()
+     WHERE user_entitlements.source <> 'education'`,
     [userId, plan]
   );
 }
@@ -383,6 +395,155 @@ export async function loginWithEmail(input = {}, requestMeta = {}) {
   });
 }
 
+export async function loginWithEducationAccount(input = {}, requestMeta = {}) {
+  const loginId = String(input.loginId || input.educationId || "").trim().toLowerCase();
+  const password = assertPassword(input.password);
+
+  if (!loginId || loginId.length > 80) {
+    const error = new Error("교육용 ID를 확인해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return withTransaction(async (tx) => {
+    const result = await tx(
+      `SELECT
+         education_accounts.id AS education_account_id,
+         education_accounts.login_id,
+         education_accounts.label,
+         education_accounts.cohort_name,
+         education_accounts.status AS education_status,
+         education_accounts.valid_from,
+         education_accounts.valid_until,
+         users.id,
+         users.email,
+         users.name,
+         users.nickname,
+         users.plan,
+         users.auth_status,
+         users.email_verified_at,
+         users.created_at,
+         users.updated_at,
+         users.last_login_at,
+         auth_credentials.password_hash,
+         auth_credentials.locked_until
+       FROM education_accounts
+       JOIN users ON users.id = education_accounts.user_id
+       JOIN auth_credentials ON auth_credentials.user_id = users.id
+       WHERE LOWER(education_accounts.login_id) = LOWER($1)
+       LIMIT 1`,
+      [loginId]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      const error = new Error("교육용 ID 또는 비밀번호를 확인해 주세요.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (row.locked_until && new Date(row.locked_until).getTime() > Date.now()) {
+      const error = new Error("로그인 시도가 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
+      error.statusCode = 423;
+      throw error;
+    }
+
+    const isValid = await verifyPassword(password, row.password_hash);
+    if (!isValid) {
+      await tx(
+        `UPDATE auth_credentials
+         SET failed_login_count = failed_login_count + 1,
+             locked_until = CASE WHEN failed_login_count + 1 >= 5 THEN NOW() + INTERVAL '10 minutes' ELSE locked_until END,
+             updated_at = NOW()
+         WHERE user_id = $1`,
+        [row.id]
+      );
+      const error = new Error("교육용 ID 또는 비밀번호를 확인해 주세요.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (row.education_status !== "active") {
+      const error = new Error("사용할 수 없는 교육용 계정입니다. 관리자에게 문의해 주세요.");
+      error.statusCode = 403;
+      error.code = "EDUCATION_ACCOUNT_INACTIVE";
+      throw error;
+    }
+
+    const now = Date.now();
+    if (row.valid_from && new Date(row.valid_from).getTime() > now) {
+      const error = new Error("아직 사용 시작 전인 교육용 계정입니다.");
+      error.statusCode = 403;
+      error.code = "EDUCATION_ACCOUNT_NOT_STARTED";
+      throw error;
+    }
+
+    if (row.valid_until && new Date(row.valid_until).getTime() < now) {
+      const error = new Error("교육 기간이 종료된 계정입니다. 관리자에게 문의해 주세요.");
+      error.statusCode = 403;
+      error.code = "EDUCATION_ACCOUNT_EXPIRED";
+      throw error;
+    }
+
+    await tx(
+      `UPDATE auth_credentials
+       SET failed_login_count = 0, locked_until = NULL, updated_at = NOW()
+       WHERE user_id = $1`,
+      [row.id]
+    );
+    await tx("UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1", [row.id]);
+    await tx("UPDATE education_accounts SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1", [
+      row.education_account_id,
+    ]);
+
+    await tx(
+      `INSERT INTO user_entitlements (
+         user_id, plan, portfolio_limit, assets_per_portfolio_limit,
+         server_storage_enabled, api_lookup_limit_per_day, pdf_report_enabled,
+         report_level, screener_level, support_level, source, valid_from, valid_until
+       )
+       SELECT $1, ent.plan, ent.portfolio_limit, ent.assets_per_portfolio_limit,
+         ent.server_storage_enabled, ent.api_lookup_limit_per_day, ent.pdf_report_enabled,
+         ent.report_level, ent.screener_level, ent.support_level, 'education', NOW(), $3
+       FROM plan_entitlements ent
+       WHERE ent.plan = $2
+       ON CONFLICT (user_id) DO UPDATE SET
+         plan = EXCLUDED.plan,
+         portfolio_limit = EXCLUDED.portfolio_limit,
+         assets_per_portfolio_limit = EXCLUDED.assets_per_portfolio_limit,
+         server_storage_enabled = EXCLUDED.server_storage_enabled,
+         api_lookup_limit_per_day = EXCLUDED.api_lookup_limit_per_day,
+         pdf_report_enabled = EXCLUDED.pdf_report_enabled,
+         report_level = EXCLUDED.report_level,
+         screener_level = EXCLUDED.screener_level,
+         support_level = EXCLUDED.support_level,
+         source = EXCLUDED.source,
+         valid_from = EXCLUDED.valid_from,
+         valid_until = EXCLUDED.valid_until,
+         updated_at = NOW()`,
+      [row.id, "personal", row.valid_until || null]
+    );
+
+    const session = await createSession(tx, row.id, requestMeta);
+    const user = mapUser({ ...row, last_login_at: new Date().toISOString() });
+
+    return {
+      user: {
+        ...user,
+        entitlementSource: "education",
+        educationAccount: {
+          id: row.education_account_id,
+          loginId: row.login_id,
+          label: row.label,
+          cohortName: row.cohort_name,
+          validUntil: row.valid_until,
+        },
+      },
+      session,
+    };
+  });
+}
+
 export async function verifyEmailToken(token) {
   const rawToken = String(token || "").trim();
   if (!rawToken) {
@@ -485,9 +646,18 @@ export async function getUserBySessionToken(sessionToken) {
             users.updated_at, users.last_login_at
      FROM user_sessions
      JOIN users ON users.id = user_sessions.user_id
+     LEFT JOIN education_accounts ON education_accounts.user_id = users.id
      WHERE user_sessions.refresh_token_hash = $1
        AND user_sessions.revoked_at IS NULL
        AND user_sessions.expires_at > NOW()
+       AND (
+         education_accounts.id IS NULL
+         OR (
+           education_accounts.status = 'active'
+           AND education_accounts.valid_from <= NOW()
+           AND (education_accounts.valid_until IS NULL OR education_accounts.valid_until >= NOW())
+         )
+       )
      LIMIT 1`,
     [tokenHash]
   );

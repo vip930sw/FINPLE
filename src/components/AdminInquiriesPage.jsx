@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  bulkCreateAdminEducationAccounts,
+  createAdminEducationAccount,
+  fetchAdminEducationAccounts,
+  fetchAdminEducationAccountsCsv,
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
   fetchSupportInquiries,
   getFinpleAdminToken,
+  updateAdminEducationAccount,
   updateSupportInquiryStatus,
 } from "./portfolio/services/serverPortfolioService";
 
@@ -11,6 +16,7 @@ const ADMIN_MENU_ITEMS = [
   { key: "inquiries", page: "admin-inquiries", label: "문의사항 관리", description: "접수·처리 상태" },
   { key: "members", page: "admin-members", label: "회원 관리", description: "가입·구독 전환" },
   { key: "subscriptions", page: "admin-subscriptions", label: "구독 관리", description: "플랜·결제 기간" },
+  { key: "education", page: "admin-education", label: "교육 계정 관리", description: "수업·만료 관리" },
   { key: "clear", page: "admin-clear", label: "관리자 모드 해제", description: "저장 토큰 삭제" },
 ];
 
@@ -75,9 +81,17 @@ function getDaysUntil(value) {
   return Math.ceil((date.getTime() - Date.now()) / 86400000);
 }
 
+function toDateInputValue(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
 function getActiveSectionFromPage(page) {
   if (page === "members") return "members";
   if (page === "subscriptions") return "subscriptions";
+  if (page === "education") return "education";
   if (page === "clear") return "clear";
   return "inquiries";
 }
@@ -107,6 +121,9 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [memberMessage, setMemberMessage] = useState("회원 통계를 불러오면 가입/구독 전환 현황이 표시됩니다.");
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [subscriptionMessage, setSubscriptionMessage] = useState("구독 통계를 불러오면 플랜과 결제 기간이 표시됩니다.");
+  const [educationData, setEducationData] = useState(null);
+  const [educationMessage, setEducationMessage] = useState("교육 계정 목록을 불러오면 수업별 계정과 만료 상태를 표시합니다.");
+  const [educationCredentialsCsv, setEducationCredentialsCsv] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const autoLoadedSectionsRef = useRef({});
 
@@ -138,6 +155,8 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setInquiries([]);
     setMemberData(null);
     setSubscriptionData(null);
+    setEducationData(null);
+    setEducationCredentialsCsv("");
     autoLoadedSectionsRef.current = {};
     setSelectedId(null);
     setStatusFilter("all");
@@ -192,6 +211,20 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }, []);
 
+  const handleLoadEducationAccounts = useCallback(async function handleLoadEducationAccounts() {
+    if (!getFinpleAdminToken()) return;
+    setIsLoading(true);
+    try {
+      const data = await fetchAdminEducationAccounts();
+      setEducationData(data);
+      setEducationMessage(`교육 계정 ${data?.summary?.totalAccounts || 0}개를 확인했습니다.`);
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAdminMode) return;
     if (autoLoadedSectionsRef.current[activeSection]) return;
@@ -204,11 +237,67 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
         handleLoadMembers();
       } else if (activeSection === "subscriptions") {
         handleLoadSubscriptions();
+      } else if (activeSection === "education") {
+        handleLoadEducationAccounts();
       }
     }, 0);
 
     return () => window.clearTimeout(loadTimer);
-  }, [activeSection, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
+  }, [activeSection, handleLoadEducationAccounts, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
+
+  async function handleCreateEducationAccount(input) {
+    setIsLoading(true);
+    try {
+      const result = await createAdminEducationAccount(input);
+      setEducationCredentialsCsv(result?.credentialsCsv || "");
+      setEducationMessage(`${result?.account?.loginId || "교육 계정"} 계정을 생성했습니다. 초기 비밀번호 CSV는 이 화면에서만 확인하세요.`);
+      await handleLoadEducationAccounts();
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정을 생성하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleBulkCreateEducationAccounts(input) {
+    setIsLoading(true);
+    try {
+      const result = await bulkCreateAdminEducationAccounts(input);
+      setEducationCredentialsCsv(result?.credentialsCsv || "");
+      setEducationMessage(`교육 계정 ${result?.accounts?.length || 0}개를 일괄 생성했습니다. 초기 비밀번호 CSV는 이 화면에서만 확인하세요.`);
+      await handleLoadEducationAccounts();
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정을 일괄 생성하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleUpdateEducationAccount(accountId, input) {
+    setIsLoading(true);
+    try {
+      await updateAdminEducationAccount(accountId, input);
+      setEducationMessage("교육 계정 상태를 변경했습니다.");
+      await handleLoadEducationAccounts();
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정 상태를 변경하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDownloadEducationCsv() {
+    setIsLoading(true);
+    try {
+      const csv = await fetchAdminEducationAccountsCsv();
+      setEducationCredentialsCsv(csv);
+      setEducationMessage("교육 계정 CSV를 생성했습니다. 비밀번호는 포함되지 않습니다.");
+    } catch (error) {
+      setEducationMessage(error?.message || "교육 계정 CSV를 생성하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   async function handleChangeStatus(inquiryId, status) {
     if (!inquiryId) return;
@@ -310,6 +399,21 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadSubscriptions}
+            />
+          ) : null}
+
+          {activeSection === "education" ? (
+            <EducationAccountManagementPanel
+              data={educationData}
+              statusMessage={educationMessage}
+              credentialsCsv={educationCredentialsCsv}
+              isAdminMode={isAdminMode}
+              isLoading={isLoading}
+              onLoad={handleLoadEducationAccounts}
+              onCreate={handleCreateEducationAccount}
+              onBulkCreate={handleBulkCreateEducationAccounts}
+              onUpdate={handleUpdateEducationAccount}
+              onDownloadCsv={handleDownloadEducationCsv}
             />
           ) : null}
 
@@ -532,6 +636,184 @@ function MemberManagementPanel({
         </table>
       </div>
     </section>
+  );
+}
+
+function EducationAccountManagementPanel({
+  data,
+  statusMessage,
+  credentialsCsv,
+  isAdminMode,
+  isLoading,
+  onLoad,
+  onCreate,
+  onBulkCreate,
+  onUpdate,
+  onDownloadCsv,
+}) {
+  const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
+  const summary = data?.summary || {};
+  const [singleForm, setSingleForm] = useState({
+    loginId: "",
+    password: "",
+    label: "",
+    cohortName: "",
+    validUntil: "",
+  });
+  const [bulkForm, setBulkForm] = useState({
+    prefix: "finple-class",
+    count: 10,
+    cohortName: "",
+    validUntil: "",
+  });
+
+  function updateSingleField(field, value) {
+    setSingleForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateBulkField(field, value) {
+    setBulkForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleSingleSubmit(event) {
+    event.preventDefault();
+    await onCreate({
+      loginId: singleForm.loginId,
+      password: singleForm.password || undefined,
+      label: singleForm.label,
+      cohortName: singleForm.cohortName,
+      validUntil: singleForm.validUntil,
+    });
+    setSingleForm((current) => ({ ...current, loginId: "", password: "", label: "" }));
+  }
+
+  async function handleBulkSubmit(event) {
+    event.preventDefault();
+    await onBulkCreate({
+      prefix: bulkForm.prefix,
+      count: bulkForm.count,
+      cohortName: bulkForm.cohortName,
+      validUntil: bulkForm.validUntil,
+    });
+  }
+
+  return (
+    <section className="accountCard adminManagementPanel educationAdminPanel">
+      <div className="serverStorageHeader">
+        <div>
+          <p className="accountMiniLabel">Education</p>
+          <h2>교육 계정 관리</h2>
+          <p>오프라인 수업과 세미나용 Personal 권한 계정을 생성하고 만료 상태를 관리합니다.</p>
+        </div>
+      </div>
+
+      <div className="accountStatusGrid adminMetricGrid">
+        <AdminMetricCard label="전체 교육 계정" value={`${summary.totalAccounts || 0}개`} note="생성된 계정" />
+        <AdminMetricCard label="활성 계정" value={`${summary.activeAccounts || 0}개`} note="로그인 가능" />
+        <AdminMetricCard label="7일 내 만료" value={`${summary.expiring7d || 0}개`} note="수업 종료 예정" />
+        <AdminMetricCard label="최근 30일 로그인" value={`${summary.logins30d || 0}개`} note="교육 계정 사용" />
+      </div>
+
+      <p className="serverStorageMessage compact">{statusMessage}</p>
+
+      {isAdminMode ? (
+        <div className="serverStorageActions compactActions">
+          <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
+            {isLoading ? "불러오는 중..." : "교육 계정 새로고침"}
+          </button>
+          <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
+            CSV 생성
+          </button>
+        </div>
+      ) : null}
+
+      <div className="adminInsightGrid educationAdminFormGrid">
+        <article>
+          <strong>단일 생성</strong>
+          <form className="educationAdminForm" onSubmit={handleSingleSubmit}>
+            <input value={singleForm.loginId} onChange={(event) => updateSingleField("loginId", event.target.value)} placeholder="finple-class-001" required />
+            <input value={singleForm.password} onChange={(event) => updateSingleField("password", event.target.value)} placeholder="초기 비밀번호 자동 생성" />
+            <input value={singleForm.label} onChange={(event) => updateSingleField("label", event.target.value)} placeholder="표시 이름" />
+            <input value={singleForm.cohortName} onChange={(event) => updateSingleField("cohortName", event.target.value)} placeholder="수업/세미나명" />
+            <input type="date" value={singleForm.validUntil} onChange={(event) => updateSingleField("validUntil", event.target.value)} />
+            <button type="submit" className="primaryButton" disabled={isLoading}>생성</button>
+          </form>
+        </article>
+        <article>
+          <strong>일괄 생성</strong>
+          <form className="educationAdminForm" onSubmit={handleBulkSubmit}>
+            <input value={bulkForm.prefix} onChange={(event) => updateBulkField("prefix", event.target.value)} placeholder="finple-class" required />
+            <input type="number" min="1" max="200" value={bulkForm.count} onChange={(event) => updateBulkField("count", event.target.value)} />
+            <input value={bulkForm.cohortName} onChange={(event) => updateBulkField("cohortName", event.target.value)} placeholder="수업/세미나명" />
+            <input type="date" value={bulkForm.validUntil} onChange={(event) => updateBulkField("validUntil", event.target.value)} />
+            <button type="submit" className="primaryButton" disabled={isLoading}>일괄 생성</button>
+          </form>
+        </article>
+      </div>
+
+      {credentialsCsv ? (
+        <textarea className="adminCsvTextArea" readOnly value={credentialsCsv} aria-label="교육 계정 CSV" />
+      ) : null}
+
+      <div className="adminTableWrap">
+        <table className="adminDataTable">
+          <thead>
+            <tr>
+              <th>교육용 ID</th>
+              <th>수업/세미나</th>
+              <th>상태</th>
+              <th>만료일</th>
+              <th>최근 로그인</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.length > 0 ? (
+              accounts.map((account) => (
+                <EducationAccountRow
+                  key={`${account.id}-${account.validUntil || ""}`}
+                  account={account}
+                  isLoading={isLoading}
+                  onUpdate={onUpdate}
+                />
+              ))
+            ) : (
+              <tr><td colSpan="6">교육 계정 목록을 아직 불러오지 않았습니다.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function EducationAccountRow({ account, isLoading, onUpdate }) {
+  const [validUntil, setValidUntil] = useState(toDateInputValue(account.validUntil));
+
+  return (
+    <tr>
+      <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
+      <td>{account.cohortName || "-"}</td>
+      <td>{account.status || "active"}</td>
+      <td>
+        <input
+          className="adminInlineDateInput"
+          type="date"
+          value={validUntil}
+          onChange={(event) => setValidUntil(event.target.value)}
+        />
+      </td>
+      <td>{formatShortDate(account.lastLoginAt)}</td>
+      <td>
+        <div className="adminRowActions">
+          <button type="button" onClick={() => onUpdate(account.id, { validUntil })} disabled={isLoading}>만료일 저장</button>
+          <button type="button" onClick={() => onUpdate(account.id, { status: account.status === "active" ? "paused" : "active" })} disabled={isLoading}>
+            {account.status === "active" ? "중지" : "활성"}
+          </button>
+          <button type="button" onClick={() => onUpdate(account.id, { status: "expired" })} disabled={isLoading}>만료</button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
