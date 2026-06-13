@@ -79,7 +79,11 @@
   font-weight: 700;
   line-height: 1.65;
   word-break: keep-all;
-  text-align: left;
+  text-align: right;
+}
+
+.siteFooterNoticeMobileSpace {
+  display: none;
 }
 
 .siteFooterLinks {
@@ -123,6 +127,15 @@
     justify-self: stretch;
     width: auto;
     max-width: none;
+    text-align: left;
+  }
+
+  .siteFooterNoticeBreak {
+    display: none;
+  }
+
+  .siteFooterNoticeMobileSpace {
+    display: inline;
   }
 
   .siteFooterLinks {
