@@ -44,6 +44,13 @@ const SUBSCRIPTION_STATUS_LABELS = {
   beta_free: "베타 Free",
 };
 
+const EDUCATION_STATUS_LABELS = {
+  active: "활성",
+  paused: "일시중지",
+  expired: "만료",
+  revoked: "회수",
+};
+
 function formatServerDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -321,7 +328,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   return (
     <main className="accountPage adminInquiriesPage adminConsolePage">
       <section className="accountHero">
-        <p className="sectionLabel">Admin Console</p>
+        <p className="sectionLabel">관리자 콘솔</p>
         <h1>관리자 콘솔</h1>
         <p>문의사항, 회원, 구독 상태를 한 화면 구조에서 관리합니다.</p>
       </section>
@@ -329,7 +336,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
       <div className="myPageDashboardLayout adminConsoleLayout">
         <aside className="myPageSidebar adminConsoleSidebar">
           <div className="myPageSidebarHeader">
-            <strong>ADMIN</strong>
+            <strong>관리자</strong>
             <span>관리자 메뉴</span>
           </div>
           <select
@@ -431,7 +438,7 @@ function AdminClearPanel({ onClear }) {
     <section className="accountCard adminManagementPanel adminClearPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Admin Session</p>
+          <p className="accountMiniLabel">관리자 세션</p>
           <h2>관리자 모드 해제</h2>
           <p>현재 브라우저에 저장된 관리자 토큰을 삭제합니다.</p>
         </div>
@@ -463,7 +470,7 @@ function InquiryManagementPanel({
     <section className="accountCard adminManagementPanel adminConsoleInquiryPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Inquiries</p>
+          <p className="accountMiniLabel">문의 관리</p>
           <h2>문의사항 관리</h2>
           <p>접수된 문의를 조회하고 처리 상태를 변경합니다.</p>
         </div>
@@ -559,7 +566,7 @@ function MemberManagementPanel({
     <section className="accountCard adminManagementPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Members</p>
+          <p className="accountMiniLabel">회원 관리</p>
           <h2>회원 관리</h2>
           <p>가입 회원 수, 구독자 수, 구독률과 최근 활동 상태를 확인합니다.</p>
         </div>
@@ -701,7 +708,7 @@ function EducationAccountManagementPanel({
     <section className="accountCard adminManagementPanel educationAdminPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Education</p>
+          <p className="accountMiniLabel">교육 계정</p>
           <h2>교육 계정 관리</h2>
           <p>오프라인 수업과 세미나용 Personal 권한 계정을 생성하고 만료 상태를 관리합니다.</p>
         </div>
@@ -794,7 +801,7 @@ function EducationAccountRow({ account, isLoading, onUpdate }) {
     <tr>
       <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
       <td>{account.cohortName || "-"}</td>
-      <td>{account.status || "active"}</td>
+      <td>{EDUCATION_STATUS_LABELS[account.status] || account.status || "활성"}</td>
       <td>
         <input
           className="adminInlineDateInput"
@@ -834,7 +841,7 @@ function SubscriptionManagementPanel({
     <section className="accountCard adminManagementPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Subscriptions</p>
+          <p className="accountMiniLabel">구독 관리</p>
           <h2>구독 관리</h2>
           <p>총 구독자 수, 적용 플랜, 결제 기간과 환불 대응이 필요한 구간을 확인합니다.</p>
         </div>

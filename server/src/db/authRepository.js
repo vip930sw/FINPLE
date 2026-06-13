@@ -2,6 +2,7 @@ import { createHash, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from "no
 import { promisify } from "node:util";
 
 import { query, withTransaction } from "./database.js";
+import { ensureEducationAccountSchema } from "./educationAccountSchema.js";
 import { sendVerificationEmail } from "../services/emailService.js";
 
 const pbkdf2Async = promisify(pbkdf2);
@@ -135,6 +136,7 @@ export async function checkEmailAvailability(email) {
 }
 
 async function getUserById(userId) {
+  await ensureEducationAccountSchema(query);
   const result = await query(
     `SELECT users.id, users.email, users.name, users.nickname, users.plan,
             users.auth_status, users.email_verified_at, users.created_at,
@@ -406,6 +408,7 @@ export async function loginWithEducationAccount(input = {}, requestMeta = {}) {
   }
 
   return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
     const result = await tx(
       `SELECT
          education_accounts.id AS education_account_id,
@@ -639,6 +642,7 @@ export async function resendVerificationEmail(input = {}, requestMeta = {}) {
 
 export async function getUserBySessionToken(sessionToken) {
   if (!sessionToken) return null;
+  await ensureEducationAccountSchema(query);
   const tokenHash = hashSessionToken(sessionToken);
   const result = await query(
     `SELECT users.id, users.email, users.name, users.nickname, users.plan,
