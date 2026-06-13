@@ -155,7 +155,8 @@ async function ensureDefaultEntitlement(tx, userId, plan = "free") {
        report_level = EXCLUDED.report_level,
        screener_level = EXCLUDED.screener_level,
        support_level = EXCLUDED.support_level,
-       updated_at = NOW()`,
+       updated_at = NOW()
+     WHERE user_entitlements.source <> 'education'`,
     [userId, plan]
   );
 }

@@ -296,6 +296,11 @@ export async function loginWithEmailPassword({ email, password }) {
   return storeAuthResult(payload);
 }
 
+export async function loginWithEducationAccount({ loginId, password }) {
+  const payload = await requestAuth("/auth/education-login", { loginId, password });
+  return storeAuthResult(payload);
+}
+
 export async function logoutFinpleAuth() {
   const session = getStoredFinpleAuthSession();
   const storedUser = readJson(AUTH_USER_STORAGE_KEY, null);

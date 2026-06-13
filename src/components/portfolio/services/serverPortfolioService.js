@@ -56,6 +56,8 @@ export function setStoredFinpleAuthUser(user) {
         nickname: user.nickname === "trial" ? "trial" : user.nickname || "trial",
         plan: user.plan || "free",
         authMode: user.authMode || "trial-user",
+        entitlementSource: user.entitlementSource || null,
+        educationAccount: user.educationAccount || null,
         connectedAt: user.connectedAt || new Date().toISOString(),
       }
     : null;
@@ -211,6 +213,59 @@ export async function fetchAdminMembersSummary() {
 
 export async function fetchAdminSubscriptionsSummary() {
   return requestJson("/admin/subscriptions", {}, { includeAdminToken: true });
+}
+
+export async function fetchAdminEducationAccounts() {
+  return requestJson("/admin/education-accounts", {}, { includeAdminToken: true });
+}
+
+export async function createAdminEducationAccount(input = {}) {
+  return requestJson(
+    "/admin/education-accounts",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { includeAdminToken: true }
+  );
+}
+
+export async function bulkCreateAdminEducationAccounts(input = {}) {
+  return requestJson(
+    "/admin/education-accounts/bulk",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+    { includeAdminToken: true }
+  );
+}
+
+export async function updateAdminEducationAccount(accountId, input = {}) {
+  return requestJson(
+    `/admin/education-accounts/${encodeURIComponent(accountId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+    { includeAdminToken: true }
+  );
+}
+
+export async function fetchAdminEducationAccountsCsv() {
+  const adminToken = getFinpleAdminToken();
+  const response = await fetch(buildApiUrl("/admin/education-accounts.csv"), {
+    headers: {
+      Accept: "text/csv",
+      ...(adminToken ? { "x-finple-admin-token": adminToken } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("교육 계정 CSV를 다운로드하지 못했습니다.");
+  }
+
+  return response.text();
 }
 
 export function importServerPortfoliosToBrowser(serverPortfolios = [], options = {}) {

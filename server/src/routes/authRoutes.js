@@ -5,6 +5,7 @@ import {
   checkEmailAvailability,
   getUserByAuthHeader,
   getUserBySessionToken,
+  loginWithEducationAccount,
   loginWithEmail,
   logoutSession,
   resendVerificationEmail,
@@ -153,6 +154,15 @@ router.post("/login", async (request, response, next) => {
   try {
     const result = await loginWithEmail(request.body, getRequestMeta(request));
     response.json({ ok: true, authMode: "email-password", ...result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/education-login", async (request, response, next) => {
+  try {
+    const result = await loginWithEducationAccount(request.body, getRequestMeta(request));
+    response.json({ ok: true, authMode: "education-account", ...result });
   } catch (error) {
     next(error);
   }

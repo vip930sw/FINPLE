@@ -12,6 +12,7 @@ import {
 import {
   checkEmailAvailability,
   consumeGoogleOAuthRedirectResult,
+  loginWithEducationAccount,
   loginWithEmailPassword,
   logoutFinpleAuth,
   resendVerificationEmail,
@@ -176,7 +177,9 @@ function AccountShell({ eyebrow, title, description, children, onNavigate, pageC
 }
 
 export function LoginPage({ onNavigate }) {
+  const [loginMode, setLoginMode] = useState("standard");
   const [email, setEmail] = useState("");
+  const [educationLoginId, setEducationLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -220,13 +223,16 @@ export function LoginPage({ onNavigate }) {
 
   async function handleEmailLogin(event) {
     event.preventDefault();
-    if (!email.trim() || !password) {
-      setStatusMessage("이메일과 비밀번호를 입력해 주세요.");
+    const isEducationMode = loginMode === "education";
+    if ((isEducationMode ? !educationLoginId.trim() : !email.trim()) || !password) {
+      setStatusMessage(isEducationMode ? "교육용 ID와 비밀번호를 입력해 주세요." : "이메일과 비밀번호를 입력해 주세요.");
       return;
     }
     setIsLoading(true);
     try {
-      const user = await loginWithEmailPassword({ email, password });
+      const user = isEducationMode
+        ? await loginWithEducationAccount({ loginId: educationLoginId, password })
+        : await loginWithEmailPassword({ email, password });
       setStatusMessage(`${user.email || user.name || "사용자"} 계정으로 로그인되었습니다.`);
       const nextPage = consumePostLoginRedirectPage();
       if (nextPage === "personal") triggerRouteTransitionLoader();
@@ -270,6 +276,7 @@ export function LoginPage({ onNavigate }) {
   }
 
   const isSocialLoading = isGoogleLoading || isKakaoLoading || isNaverLoading;
+  const isEducationMode = loginMode === "education";
 
   return (
     <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
@@ -283,11 +290,45 @@ export function LoginPage({ onNavigate }) {
           <h2>로그인 하고 나만의 자산관리를 <br /> 시작해보세요</h2>
         </div>
 
+        <div className="loginModeSegment" role="tablist" aria-label="로그인 방식">
+          <button
+            type="button"
+            className={!isEducationMode ? "active" : ""}
+            onClick={() => {
+              setLoginMode("standard");
+              setStatusMessage("");
+            }}
+            role="tab"
+            aria-selected={!isEducationMode}
+          >
+            일반 계정
+          </button>
+          <button
+            type="button"
+            className={isEducationMode ? "active" : ""}
+            onClick={() => {
+              setLoginMode("education");
+              setStatusMessage("");
+            }}
+            role="tab"
+            aria-selected={isEducationMode}
+          >
+            교육용 계정
+          </button>
+        </div>
+
         <form onSubmit={handleEmailLogin} className="loginSimpleForm">
-          <label>
-            이메일
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="example@finple.co.kr" autoComplete="email" />
-          </label>
+          {isEducationMode ? (
+            <label>
+              교육용 ID
+              <input type="text" value={educationLoginId} onChange={(event) => setEducationLoginId(event.target.value)} placeholder="finple-class-001" autoComplete="username" />
+            </label>
+          ) : (
+            <label>
+              이메일
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="example@finple.co.kr" autoComplete="email" />
+            </label>
+          )}
           <label>
             비밀번호
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" autoComplete="current-password" />
@@ -300,13 +341,19 @@ export function LoginPage({ onNavigate }) {
           <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isSocialLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
 
-        <div className="loginDivider"><span>또는</span></div>
-        <div className="loginSocialRow" aria-label="소셜 로그인">
-          <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading || isGoogleLoading || isNaverLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
-          <button type="button" className="loginSocialButton naver" onClick={handleNaverLogin} disabled={isNaverLoading || isLoading || isGoogleLoading || isKakaoLoading} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
-          <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading || isKakaoLoading || isNaverLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
-        </div>
-        <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
+        {!isEducationMode ? (
+          <>
+            <div className="loginDivider"><span>또는</span></div>
+            <div className="loginSocialRow" aria-label="소셜 로그인">
+              <button type="button" className="loginSocialButton kakao" onClick={handleKakaoLogin} disabled={isKakaoLoading || isLoading || isGoogleLoading || isNaverLoading} aria-label="카카오로 계속하기"><span className="loginSocialIcon kakaoTalkIcon">TALK</span></button>
+              <button type="button" className="loginSocialButton naver" onClick={handleNaverLogin} disabled={isNaverLoading || isLoading || isGoogleLoading || isKakaoLoading} aria-label="네이버로 계속하기"><span className="loginSocialIcon naverIcon">N</span></button>
+              <button type="button" className="loginSocialButton google" onClick={handleGoogleLogin} disabled={isGoogleLoading || isLoading || isKakaoLoading || isNaverLoading} aria-label="Google로 계속하기"><GoogleGIcon /></button>
+            </div>
+            <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
+          </>
+        ) : (
+          <p className="loginSignupPrompt">수업 또는 세미나에서 받은 교육용 ID로 로그인합니다.</p>
+        )}
       </section>
     </AccountShell>
   );
