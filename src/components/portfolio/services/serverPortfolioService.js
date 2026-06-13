@@ -219,17 +219,6 @@ export async function fetchAdminEducationAccounts() {
   return requestJson("/admin/education-accounts", {}, { includeAdminToken: true });
 }
 
-export async function createAdminEducationAccount(input = {}) {
-  return requestJson(
-    "/admin/education-accounts",
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    },
-    { includeAdminToken: true }
-  );
-}
-
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

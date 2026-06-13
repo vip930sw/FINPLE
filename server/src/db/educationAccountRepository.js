@@ -7,6 +7,7 @@ import { hashPassword } from "./authRepository.js";
 const EDUCATION_PLAN = "personal";
 const EDUCATION_EMAIL_DOMAIN = "education.finple.local";
 const EDUCATION_ACCOUNT_STATUSES = new Set(["active", "paused", "expired", "revoked"]);
+const EDUCATION_PASSWORD_BASE = "qwerasdf";
 
 function normalizeLoginId(value = "") {
   return String(value || "")
@@ -61,13 +62,13 @@ function assertPassword(password = "") {
   return raw;
 }
 
-function createEducationPassword() {
-  return randomBytes(6)
-    .toString("base64url")
-    .replace(/[^A-Z0-9]/gi, "")
-    .toUpperCase()
-    .slice(0, 10)
-    .replace(/(.{5})/, "$1-");
+function createEducationPassword(sequenceNumber) {
+  const randomCasePrefix = EDUCATION_PASSWORD_BASE
+    .split("")
+    .map((char) => (randomBytes(1)[0] % 2 === 0 ? char.toLowerCase() : char.toUpperCase()))
+    .join("");
+  const suffix = String(sequenceNumber || 1).padStart(3, "0");
+  return `${randomCasePrefix}${suffix}`;
 }
 
 function buildEducationEmail(loginId) {
@@ -171,9 +172,9 @@ export async function listEducationAccounts() {
   };
 }
 
-export async function createEducationAccount(input = {}) {
+async function createEducationAccount(input = {}) {
   const loginId = assertLoginId(input.loginId);
-  const password = assertPassword(input.password || createEducationPassword());
+  const password = assertPassword(input.password);
   const passwordHash = await hashPassword(password);
   const userId = randomUUID();
   const accountId = randomUUID();
@@ -251,7 +252,7 @@ export async function bulkCreateEducationAccounts(input = {}) {
     const labelPrefix = normalizeText(input.labelPrefix || input.cohortName || "FINPLE class");
     const result = await createEducationAccount({
       loginId,
-      password: input.password ? String(input.password) : undefined,
+      password: createEducationPassword(index),
       label: `${labelPrefix} ${index}`,
       cohortName: input.cohortName,
       validUntil: input.validUntil,

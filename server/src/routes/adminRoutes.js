@@ -5,7 +5,6 @@ import {
   buildEducationAccountsCsv,
   buildEducationCredentialsCsv,
   bulkCreateEducationAccounts,
-  createEducationAccount,
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
@@ -188,29 +187,6 @@ router.get("/education-accounts.csv", (request, response, next) => {
       response.setHeader("Content-Type", "text/csv; charset=utf-8");
       response.setHeader("Content-Disposition", "attachment; filename=\"finple-education-accounts.csv\"");
       response.send(buildEducationAccountsCsv(result.accounts));
-    } catch (error) {
-      next(error);
-    }
-  });
-});
-
-router.post("/education-accounts", (request, response, next) => {
-  requireAdminAccess(request, response, async () => {
-    try {
-      if (!requireDatabase(response)) return;
-      const result = await createEducationAccount(request.body);
-      response.status(201).json({
-        ok: true,
-        ...result,
-        credentialsCsv: buildEducationCredentialsCsv([
-          {
-            loginId: result.account.loginId,
-            password: result.initialPassword,
-            validUntil: result.account.validUntil,
-            cohortName: result.account.cohortName,
-          },
-        ]),
-      });
     } catch (error) {
       next(error);
     }
