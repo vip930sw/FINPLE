@@ -681,7 +681,7 @@ function SiteFooter({ onNavigate }) {
     <footer className="footer siteFooter">
       <div className="siteFooterBrandBlock">
         <strong>FINPLE Portfolio Lab</strong>
-        <span>© 2026 FINPLE. Beta service.</span>
+        <span>© 2026 FINPLE.</span>
       </div>
       <p className="siteFooterNotice">
         FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,

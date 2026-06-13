@@ -1,8 +1,11 @@
 .siteFooter {
   display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(320px, 1fr) auto;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(520px, 1.8fr);
+  grid-template-areas:
+    "brand notice"
+    "business links";
   align-items: start;
-  gap: 28px;
+  gap: 28px 40px;
   padding: 34px 40px;
   border-top: 1px solid #e2e8f0;
   background: #ffffff;
@@ -11,7 +14,7 @@
 
 .siteFooter::after {
   content: "상호: 핀플FINPLE | 대표자: 이상원 | 사업자등록번호: 550-21-02319 | 통신판매업 신고번호: 제2025-서울강남-02127호\A주소: 서울특별시 강남구 테헤란로 70길 12, 4층 402-343A호 H타워(대치동)\A이메일: finple_lab@naver.com | 전화번호: 010-3354-1028";
-  grid-column: 1 / -1;
+  grid-area: business;
   display: block;
   padding-top: 2px;
   color: #64748b;
@@ -23,6 +26,7 @@
 }
 
 .siteFooterBrandBlock {
+  grid-area: brand;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -65,20 +69,26 @@
 }
 
 .siteFooterNotice {
+  grid-area: notice;
+  justify-self: end;
+  max-width: 760px;
   margin: 0;
   color: #475569;
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.75;
+  line-height: 1.65;
   word-break: keep-all;
+  text-align: left;
 }
 
 .siteFooterLinks {
+  grid-area: links;
+  justify-self: end;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 14px 18px;
-  min-width: 270px;
+  min-width: 0;
 }
 
 .siteFooterLinks a {
@@ -99,11 +109,22 @@
 @media (max-width: 900px) {
   .siteFooter {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "notice"
+      "links"
+      "business";
     gap: 18px;
     padding: 28px 24px;
   }
 
+  .siteFooterNotice {
+    justify-self: stretch;
+    max-width: none;
+  }
+
   .siteFooterLinks {
+    justify-self: stretch;
     justify-content: flex-start;
     min-width: 0;
   }
