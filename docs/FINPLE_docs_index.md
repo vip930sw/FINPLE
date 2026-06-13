@@ -1,5 +1,10 @@
 # FINPLE Docs Index
 
+## 교육 계정
+
+- [FINPLE 교육계정 구현 및 운영 문서](./FINPLE_education_account_plan.md)
+- [FINPLE 교육계정 인수인계](./FINPLE_chat_handoff_2026_06_13.md)
+
 이 문서는 FINPLE 프로젝트의 운영·배포·베타 테스트 관련 문서 목록입니다.
 
 ## 핵심 운영 문서
