@@ -684,7 +684,7 @@ function SiteFooter({ onNavigate }) {
         <span>© 2026 FINPLE.</span>
       </div>
       <p className="siteFooterNotice">
-        FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,
+        FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,<br />
         특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
       </p>
       <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
