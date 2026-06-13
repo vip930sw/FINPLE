@@ -22,11 +22,11 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
           <div>
             <p className="sectionLabel">Portfolio Compare</p>
             <h3>포트폴리오 비교</h3>
-          </div>
 
-          <p>
-            저장된 포트폴리오의 실질가치, 성장성, 안정성, 배당 매력을 비교합니다.
-          </p>
+            <p>
+              저장된 포트폴리오의 실질가치, 성장성, 안정성, 배당 매력을 비교합니다.
+            </p>
+          </div>
         </div>
 
         <div className="portfolioCompareGrid">
