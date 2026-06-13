@@ -82,6 +82,7 @@ function mapEducationAccount(row) {
     userId: row.user_id,
     email: row.email,
     loginId: row.login_id,
+    initialPassword: row.initial_password,
     label: row.label,
     cohortName: row.cohort_name,
     status: row.status,
@@ -212,11 +213,11 @@ async function createEducationAccount(input = {}) {
 
     const accountResult = await tx(
       `INSERT INTO education_accounts (
-         id, user_id, login_id, label, cohort_name, status, valid_until, memo
+         id, user_id, login_id, initial_password, label, cohort_name, status, valid_until, memo
        )
-       VALUES ($1, $2, $3, $4, $5, 'active', $6, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $8)
        RETURNING *`,
-      [accountId, userId, loginId, label, cohortName, validUntil, memo]
+      [accountId, userId, loginId, password, label, cohortName, validUntil, memo]
     );
 
     return mapEducationAccount({ ...accountResult.rows[0], email: buildEducationEmail(loginId) });
@@ -323,6 +324,28 @@ export async function updateEducationAccount(accountId, input = {}) {
   });
 }
 
+export async function deleteAllEducationAccounts() {
+  return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
+    const result = await tx(
+      `WITH target_accounts AS (
+         SELECT user_id FROM education_accounts
+       ),
+       deleted_users AS (
+         DELETE FROM users
+          WHERE id IN (SELECT user_id FROM target_accounts)
+          RETURNING id
+       )
+       SELECT COUNT(*)::int AS deleted_accounts
+         FROM deleted_users`
+    );
+
+    return {
+      deletedAccounts: Number(result.rows[0]?.deleted_accounts || 0),
+    };
+  });
+}
+
 function escapeCsvCell(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -350,6 +373,7 @@ export function buildEducationAccountsCsv(accounts = []) {
     ...accounts.map((item, index) => [
       index + 1,
       item.loginId,
+      item.initialPassword || "",
       item.status,
       item.validUntil || "",
       item.cohortName || "",
@@ -357,6 +381,7 @@ export function buildEducationAccountsCsv(accounts = []) {
       item.label || "",
     ]),
   ];
+  rows[0] = ["번호", "교육용 ID", "초기 비밀번호", "상태", "만료일", "수업/세미나", "최근 로그인", "표시 이름"];
 
   return rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
 }

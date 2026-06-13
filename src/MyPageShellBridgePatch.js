@@ -15,6 +15,9 @@ const MENU_ITEMS = [
   { key: "storage", label: "내 저장내역", description: "저장·불러오기", selector: ".serverStoragePanel" },
 ];
 
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]);
+
 let activeMenuKey = "account";
 let observer = null;
 let observerStartedAt = 0;
@@ -28,11 +31,26 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
+function isEducationAccountUser() {
+  try {
+    const user = JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return user?.authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+  } catch {
+    return false;
+  }
+}
+
+function getVisibleMenuItems() {
+  if (!isEducationAccountUser()) return MENU_ITEMS;
+  return MENU_ITEMS.filter((item) => !EDUCATION_HIDDEN_MENU_KEYS.has(item.key));
+}
+
 function getSidebarHtml() {
+  const visibleMenuItems = getVisibleMenuItems();
   return `
     <aside class="myPageSidebar" data-mypage-sidebar data-mypage-shell-bridge>
       <div class="myPageSidebarHeader">
@@ -40,10 +58,10 @@ function getSidebarHtml() {
         <span>내 정보 메뉴</span>
       </div>
       <select class="myPageMobileMenuSelect" data-mypage-mobile-menu aria-label="MY PAGE 메뉴 선택">
-        ${MENU_ITEMS.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}
+        ${visibleMenuItems.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}
       </select>
       <nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">
-        ${MENU_ITEMS.map((item) => `
+        ${visibleMenuItems.map((item) => `
           <button
             type="button"
             data-mypage-menu-key="${escapeHtml(item.key)}"
@@ -95,11 +113,11 @@ function markPanelKeys() {
 }
 
 function getFallbackKey() {
-  return MENU_ITEMS.find((item) => document.querySelector(item.selector))?.key || "account";
+  return getVisibleMenuItems().find((item) => document.querySelector(item.selector))?.key || "account";
 }
 
 function getActiveKey(nextKey) {
-  if (MENU_ITEMS.some((item) => item.key === nextKey)) return nextKey;
+  if (getVisibleMenuItems().some((item) => item.key === nextKey)) return nextKey;
   return getFallbackKey();
 }
 

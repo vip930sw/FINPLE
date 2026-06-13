@@ -12,6 +12,15 @@ import {
 
 const AUTH_SESSION_STORAGE_KEY = "finple-auth-session";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const EDUCATION_STORAGE_RESET_MARKER_KEY = "finple-education-storage-reset-user-id";
+const EDUCATION_LOCAL_STORAGE_KEYS = [
+  "finple-portfolio-list",
+  "finple-active-portfolio-id",
+  "finple-global-settings",
+  "finple-portfolio-simulator",
+  "finple-simulator-state",
+  "finple-mbti-simulator-preset",
+];
 const OAUTH_WAKEUP_TIMEOUT_MS = 12000;
 const OAUTH_WAKEUP_MAX_ATTEMPTS = 3;
 const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
@@ -24,7 +33,7 @@ function readJson(key, fallback) {
   try {
     const rawValue = window.localStorage.getItem(key);
     return rawValue ? JSON.parse(rawValue) : fallback;
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
@@ -64,7 +73,7 @@ function dispatchOAuthWakeupStatus(message) {
 
   try {
     window.dispatchEvent(new CustomEvent("finple-oauth-wakeup-status", { detail: { message } }));
-  } catch (error) {
+  } catch {
     // 상태 이벤트 전파 실패는 로그인 흐름을 막지 않습니다.
   }
 }
@@ -87,7 +96,7 @@ async function ensureFinpleApiReadyForOAuth() {
       }
     } catch (error) {
       if (attempt >= OAUTH_WAKEUP_MAX_ATTEMPTS) {
-        throw new Error(OAUTH_RETRY_MESSAGE);
+        throw new Error(OAUTH_RETRY_MESSAGE, { cause: error });
       }
     }
 
@@ -143,6 +152,27 @@ function normalizeAuthUser(user, authMode = "email-password") {
   };
 }
 
+function isEducationAuthUser(user, authMode = user?.authMode) {
+  return authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+}
+
+function resetEducationLocalDataIfNeeded(user, authMode, previousUser = null) {
+  if (typeof window === "undefined" || !window.localStorage) return false;
+  if (!isEducationAuthUser(user, authMode)) return false;
+
+  const markerValue = user?.educationAccount?.id || user?.id || "education";
+  const previousUserId = previousUser?.id || null;
+  if (window.localStorage.getItem(EDUCATION_STORAGE_RESET_MARKER_KEY) === markerValue && (!previousUserId || previousUserId === user?.id)) return false;
+
+  const scopedSuffix = user?.id ? `:user:${user.id}` : "";
+  EDUCATION_LOCAL_STORAGE_KEYS.forEach((key) => {
+    window.localStorage.removeItem(key);
+    if (scopedSuffix) window.localStorage.removeItem(`${key}${scopedSuffix}`);
+  });
+  window.localStorage.setItem(EDUCATION_STORAGE_RESET_MARKER_KEY, markerValue);
+  return true;
+}
+
 async function requestAuth(path, body, options = {}) {
   const session = getStoredFinpleAuthSession();
   const method = options.method || (body ? "POST" : "GET");
@@ -156,12 +186,7 @@ async function requestAuth(path, body, options = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch (error) {
-    payload = null;
-  }
+  const payload = await response.json().catch(() => null);
 
   if (!response.ok || payload?.ok === false) {
     const rawMessage = payload?.message || "인증 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.";
@@ -182,7 +207,9 @@ function storeAuthResult(payload) {
     throw new Error("사용자 정보를 확인하지 못했습니다.");
   }
 
+  const previousUser = readJson(AUTH_USER_STORAGE_KEY, null);
   setStoredFinpleAuthUser(user);
+  const educationLocalDataReset = resetEducationLocalDataIfNeeded(user, authMode, previousUser);
   restoreVisiblePortfolioStorageForUser(user);
 
   if (payload?.session?.token) {
@@ -196,7 +223,7 @@ function storeAuthResult(payload) {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("finple-auth-updated"));
     window.dispatchEvent(new Event("finple-local-storage-updated"));
-    window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
+    if (educationLocalDataReset) window.dispatchEvent(new Event("finple-portfolio-storage-reset"));
   }
 
   return user;
@@ -205,7 +232,7 @@ function storeAuthResult(payload) {
 function decodeOAuthPayload(payloadText) {
   try {
     return JSON.parse(decodeURIComponent(escape(window.atob(payloadText.replace(/-/g, "+").replace(/_/g, "/")))));
-  } catch (error) {
+  } catch {
     throw new Error("소셜 로그인 결과를 확인하지 못했습니다.");
   }
 }
@@ -309,7 +336,7 @@ export async function logoutFinpleAuth() {
     if (session?.token) {
       await requestAuth("/auth/logout", { sessionToken: session.token });
     }
-  } catch (error) {
+  } catch {
     // 로그아웃은 사용자 화면을 막지 않기 위해 로컬 정리를 우선합니다.
   }
 

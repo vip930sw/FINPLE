@@ -9,6 +9,8 @@ import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
 import { fetchMySupportInquiries } from "./components/portfolio/services/serverPortfolioService";
 
 const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]);
 const ASSET_LABELS = {
   growthStock: "성장주",
   valueStock: "가치·배당",
@@ -69,7 +71,7 @@ let myInquiriesState = { loading: false, inquiries: [], error: "" };
 function isMyPagePath() { return window.location.pathname === "/mypage"; }
 function navigateTo(path) { window.location.href = path; }
 function escapeHtml(value) {
-  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function setText(node, value) {
   if (!node) return;
@@ -82,11 +84,19 @@ function setHtml(node, value) {
   if (node.innerHTML !== nextValue) node.innerHTML = nextValue;
 }
 function readJson(key) {
-  try { return JSON.parse(window.localStorage.getItem(key) || "null"); } catch (error) { return null; }
+  try { return JSON.parse(window.localStorage.getItem(key) || "null"); } catch { return null; }
+}
+function isEducationAccountUser() {
+  const user = readJson(AUTH_USER_STORAGE_KEY);
+  return user?.authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+}
+function getVisibleMenuItems() {
+  if (!isEducationAccountUser()) return MENU_ITEMS;
+  return MENU_ITEMS.filter((item) => !EDUCATION_HIDDEN_MENU_KEYS.has(item.key));
 }
 function formatMbtiDate(value) {
   if (!value) return "저장일 없음";
-  try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value)); } catch (error) { return "저장일 없음"; }
+  try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value)); } catch { return "저장일 없음"; }
 }
 function normalizeAssetLabel(value) {
   const text = String(value || "").trim();
@@ -214,7 +224,7 @@ function formatShortDate(value) {
   if (!value) return "일자 없음";
   try {
     return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
-  } catch (error) {
+  } catch {
     return "일자 없음";
   }
 }
@@ -406,7 +416,7 @@ function getMyInquiriesPanelHtml() {
 }
 
 function markPanelKeys() {
-  MENU_ITEMS.forEach((item) => {
+  getVisibleMenuItems().forEach((item) => {
     const panel = document.querySelector(item.selector);
     if (panel) panel.setAttribute("data-mypage-panel-key", item.key);
   });
@@ -432,6 +442,7 @@ function bindPaymentMethodPanelActions() {
   }
 }
 function ensurePaymentMethodPanel() {
+  if (isEducationAccountUser()) return;
   if (document.querySelector("[data-payment-method-panel]")) { bindPaymentMethodPanelActions(); return; }
   const stack = document.querySelector(".accountPanelStack");
   if (!stack) return;
@@ -466,7 +477,8 @@ function ensureMyInquiriesPanel() {
   bindMyInquiriesPanelActions();
 }
 function getSidebarHtml() {
-  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>내 정보 메뉴</span></div><select class="myPageMobileMenuSelect" data-mypage-mobile-menu aria-label="MY PAGE 메뉴 선택">${MENU_ITEMS.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}</select><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${MENU_ITEMS.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
+  const visibleMenuItems = getVisibleMenuItems();
+  return `<aside class="myPageSidebar" data-mypage-sidebar><div class="myPageSidebarHeader"><strong>MY PAGE</strong><span>내 정보 메뉴</span></div><select class="myPageMobileMenuSelect" data-mypage-mobile-menu aria-label="MY PAGE 메뉴 선택">${visibleMenuItems.map((item) => `<option value="${escapeHtml(item.key)}">${escapeHtml(item.label)}</option>`).join("")}</select><nav class="myPageSidebarNav" aria-label="MY PAGE 메뉴">${visibleMenuItems.map((item) => `<button type="button" data-mypage-menu-key="${escapeHtml(item.key)}"><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.description)}</em></button>`).join("")}</nav></aside>`;
 }
 function ensureTopButton() {
   if (document.querySelector("[data-mypage-top-button]")) return;
@@ -603,7 +615,7 @@ function wireSidebarActions(wrapper) {
   });
 }
 function getFallbackActiveKey() {
-  const activeItem = MENU_ITEMS.find((item) => document.querySelector(item.selector));
+  const activeItem = getVisibleMenuItems().find((item) => document.querySelector(item.selector));
   return activeItem?.key || "account";
 }
 function setActiveMenu(activeKey) {
@@ -613,7 +625,7 @@ function setActiveMenu(activeKey) {
   });
 }
 function setActivePanel(nextKey, options = {}) {
-  activeMenuKey = MENU_ITEMS.some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
+  activeMenuKey = getVisibleMenuItems().some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
   if (!document.querySelector(`[data-mypage-panel-key="${activeMenuKey}"]`)) activeMenuKey = getFallbackActiveKey();
   document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
     const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;

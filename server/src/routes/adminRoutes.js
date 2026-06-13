@@ -5,6 +5,7 @@ import {
   buildEducationAccountsCsv,
   buildEducationCredentialsCsv,
   bulkCreateEducationAccounts,
+  deleteAllEducationAccounts,
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
@@ -203,6 +204,18 @@ router.post("/education-accounts/bulk", (request, response, next) => {
         ...result,
         credentialsCsv: buildEducationCredentialsCsv(result.credentials),
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.delete("/education-accounts", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await deleteAllEducationAccounts();
+      response.json({ ok: true, ...result });
     } catch (error) {
       next(error);
     }

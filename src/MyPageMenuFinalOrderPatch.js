@@ -24,8 +24,20 @@ const MENU_ORDER = [
   "storage",
 ];
 
+const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]);
+
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
+}
+
+function isEducationAccountUser() {
+  try {
+    const user = JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return user?.authMode === "education-account" || user?.entitlementSource === "education" || Boolean(user?.educationAccount);
+  } catch {
+    return false;
+  }
 }
 
 function setButtonText(button, key) {
@@ -48,7 +60,17 @@ function relabelAndReorderMenu() {
     planButton.setAttribute("aria-hidden", "true");
   }
 
+  const hiddenMenuKeys = isEducationAccountUser() ? EDUCATION_HIDDEN_MENU_KEYS : new Set();
+  hiddenMenuKeys.forEach((key) => {
+    const button = nav.querySelector(`[data-mypage-menu-key="${key}"]`);
+    if (!button) return;
+    button.hidden = true;
+    button.style.display = "none";
+    button.setAttribute("aria-hidden", "true");
+  });
+
   MENU_ORDER.forEach((key) => {
+    if (hiddenMenuKeys.has(key)) return;
     const button = nav.querySelector(`[data-mypage-menu-key="${key}"]`);
     if (!button) return;
     setButtonText(button, key);
