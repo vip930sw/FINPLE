@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   checkServerDatabaseHealth,
   clearStoredFinpleAuthUser,
@@ -24,6 +24,18 @@ import {
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
 import { deleteFinpleAccount } from "./authClientService";
+
+function isEducationAuthUser(user) {
+  return Boolean(
+    user?.authMode === "education-account" ||
+    user?.entitlementSource === "education" ||
+    user?.educationAccount
+  );
+}
+
+function getEffectiveStoredPlanKey() {
+  return isEducationAuthUser(getStoredFinpleAuthUser()) ? "personal" : getStoredFinplePlan();
+}
 
 function AccountShell({ eyebrow, title, description, children, onNavigate, pageClassName = "" }) {
   const storedUser = getStoredFinpleAuthUser();
@@ -234,38 +246,44 @@ export function SignupPage({ onNavigate }) {
 }
 
 export function MyPage({ onNavigate }) {
-  const [planKey, setPlanKey] = useState(() => getStoredFinplePlan());
+  const [storedPlanKey, setStoredPlanKey] = useState(() => getStoredFinplePlan());
+  const [authUser, setAuthUser] = useState(() => getStoredFinpleAuthUser());
+  const isEducationAccount = isEducationAuthUser(authUser);
+  const effectivePlanKey = isEducationAccount ? "personal" : storedPlanKey;
 
   useEffect(() => {
     function handlePlanUpdate() {
-      setPlanKey(getStoredFinplePlan());
+      setStoredPlanKey(getStoredFinplePlan());
+      setAuthUser(getStoredFinpleAuthUser());
     }
 
     window.addEventListener("finple-plan-updated", handlePlanUpdate);
+    window.addEventListener("finple-auth-updated", handlePlanUpdate);
     window.addEventListener("finple-local-storage-updated", handlePlanUpdate);
     return () => {
       window.removeEventListener("finple-plan-updated", handlePlanUpdate);
+      window.removeEventListener("finple-auth-updated", handlePlanUpdate);
       window.removeEventListener("finple-local-storage-updated", handlePlanUpdate);
     };
   }, []);
 
   return (
     <AccountShell
-      eyebrow="My Page"
+      eyebrow="마이페이지"
       title="MY PAGE"
       description="저장 데이터, 계정, 포트폴리오, 요금제 상태를 관리하는 사용자 공간입니다."
       onNavigate={onNavigate}
     >
       <section className="accountPanelStack" aria-label="계정 및 서버 관리 패널">
         <AccountStatusPanel onNavigate={onNavigate} />
-        <PlanStatusPanel planKey={planKey} onNavigate={onNavigate} />
-        <ServerStoragePanel planKey={planKey} />
+        <PlanStatusPanel planKey={effectivePlanKey} onNavigate={onNavigate} isEducationAccount={isEducationAccount} />
+        <ServerStoragePanel planKey={effectivePlanKey} isEducationAccount={isEducationAccount} />
         <AdminInquiryPanel />
       </section>
 
       <section className="accountCard myPageBetaCompactNotice">
         <div>
-          <p className="accountMiniLabel">Beta My Page</p>
+          <p className="accountMiniLabel">마이페이지 베타</p>
           <h2>MY PAGE 기능은 단계적으로 확장됩니다.</h2>
           <p>
             현재는 계정 연결 상태, 요금제 상태, 서버 저장 동기화 흐름을 먼저 검증합니다.
@@ -282,11 +300,46 @@ export function MyPage({ onNavigate }) {
 }
 
 export function PricingPage({ onNavigate }) {
-  const [selectedPlan, setSelectedPlan] = useState(() => getStoredFinplePlan());
-  const [statusMessage, setStatusMessage] = useState("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다.");
+  const [authUser, setAuthUser] = useState(() => getStoredFinpleAuthUser());
+  const [selectedPlan, setSelectedPlan] = useState(() => getEffectiveStoredPlanKey());
+  const [statusMessage, setStatusMessage] = useState(() => (
+    isEducationAuthUser(getStoredFinpleAuthUser())
+      ? "교육용 계정에는 Personal 권한이 적용되어 있습니다. 실제 결제나 구독 변경 없이 수업 기간 동안 사용할 수 있습니다."
+      : "요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다."
+  ));
   const plans = Object.values(FINPLE_PLAN_CONFIGS);
+  const isEducationAccount = isEducationAuthUser(authUser);
+  const displayPlanKey = isEducationAccount ? "personal" : selectedPlan;
+
+  useEffect(() => {
+    function handleAuthUpdate() {
+      const nextUser = getStoredFinpleAuthUser();
+      setAuthUser(nextUser);
+      if (isEducationAuthUser(nextUser)) {
+        setSelectedPlan("personal");
+        setStatusMessage("교육용 계정에는 Personal 권한이 적용되어 있습니다. 실제 결제나 구독 변경 없이 수업 기간 동안 사용할 수 있습니다.");
+        return;
+      }
+
+      setSelectedPlan(getStoredFinplePlan());
+      setStatusMessage("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다.");
+    }
+
+    window.addEventListener("finple-auth-updated", handleAuthUpdate);
+    window.addEventListener("finple-local-storage-updated", handleAuthUpdate);
+    return () => {
+      window.removeEventListener("finple-auth-updated", handleAuthUpdate);
+      window.removeEventListener("finple-local-storage-updated", handleAuthUpdate);
+    };
+  }, []);
 
   function handleSelectPlan(planKey) {
+    if (isEducationAccount) {
+      setSelectedPlan("personal");
+      setStatusMessage("교육용 계정은 Personal 권한으로 고정됩니다. 만료일이나 비활성화는 관리자 콘솔에서 관리합니다.");
+      return;
+    }
+
     const plan = setStoredFinplePlan(planKey);
     setSelectedPlan(plan.key);
 
@@ -302,9 +355,18 @@ export function PricingPage({ onNavigate }) {
     );
   }
 
+  function getPlanButtonLabel(plan) {
+    if (isEducationAccount) {
+      return plan.key === "personal" ? "교육용 권한 적용 중" : "교육 계정 변경 불가";
+    }
+
+    if (displayPlanKey === plan.key) return "선택됨";
+    return plan.key === "free" ? "체험판 선택" : `${plan.label} 선택`;
+  }
+
   return (
     <AccountShell
-      eyebrow="Pricing"
+      eyebrow="요금제"
       title="요금제"
       description="처음에는 가볍게 체험하고, 필요할 때 서버 저장·리포트·조회량을 확장할 수 있도록 플랜 기준을 정리했습니다."
       onNavigate={onNavigate}
@@ -312,7 +374,7 @@ export function PricingPage({ onNavigate }) {
       <section className="pricingStatusPanel">
         <div>
           <span>현재 선택 플랜</span>
-          <strong>{FINPLE_PLAN_CONFIGS[selectedPlan]?.label || "Free"}</strong>
+          <strong>{isEducationAccount ? "교육용 Personal" : FINPLE_PLAN_CONFIGS[displayPlanKey]?.label || "Free"}</strong>
         </div>
         <p>{statusMessage}</p>
       </section>
@@ -324,13 +386,13 @@ export function PricingPage({ onNavigate }) {
             className={[
               "accountPlanCard",
               plan.featured ? "featured" : "",
-              selectedPlan === plan.key ? "selected" : "",
+              displayPlanKey === plan.key ? "selected" : "",
             ].filter(Boolean).join(" ")}
           >
             <div className="planCardTopLine">
               <p>{plan.label}</p>
               {plan.key === "personal" ? <span>추천</span> : null}
-              {selectedPlan === plan.key ? <span>현재 플랜</span> : null}
+              {displayPlanKey === plan.key ? <span>{isEducationAccount ? "교육용 권한" : "현재 플랜"}</span> : null}
             </div>
             <h2>{plan.priceLabel}</h2>
             <ul>{plan.items.map((item) => <li key={item}>{item}</li>)}</ul>
@@ -341,8 +403,8 @@ export function PricingPage({ onNavigate }) {
               {plan.limits.assetsPerPortfolio ? <span>자산 {plan.limits.assetsPerPortfolio}개 기준</span> : null}
               {plan.limits.reportLevel ? <span>{plan.limits.reportLevel}</span> : null}
             </div>
-            <button type="button" onClick={() => handleSelectPlan(plan.key)}>
-              {selectedPlan === plan.key ? "선택됨" : plan.key === "free" ? "체험판 선택" : `${plan.label} 선택`}
+            <button type="button" onClick={() => handleSelectPlan(plan.key)} disabled={isEducationAccount}>
+              {getPlanButtonLabel(plan)}
             </button>
           </article>
         ))}
@@ -794,7 +856,7 @@ function AdminInquiryPanel() {
   );
 }
 
-function PlanStatusPanel({ planKey, onNavigate }) {
+function PlanStatusPanel({ planKey, onNavigate, isEducationAccount = false }) {
   const snapshot = getLocalPortfolioSnapshot();
   const currentPlan = FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
   const usage = getPlanUsageStatus(currentPlan.key, snapshot);
@@ -810,11 +872,11 @@ function PlanStatusPanel({ planKey, onNavigate }) {
     <section className="accountCard planStatusPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Plan Status</p>
+          <p className="accountMiniLabel">요금제 상태</p>
           <h2>플랜 / 사용량</h2>
-          <p>현재 선택된 요금제 기준으로 포트폴리오 저장, 서버 저장, PDF 리포트 사용 범위를 확인합니다.</p>
+          <p>{isEducationAccount ? "교육용 계정에 적용된 Personal 권한 기준으로 사용 범위를 확인합니다." : "현재 선택된 요금제 기준으로 포트폴리오 저장, 서버 저장, PDF 리포트 사용 범위를 확인합니다."}</p>
         </div>
-        <span className="serverStatusBadge ready">{currentPlan.label}</span>
+        <span className="serverStatusBadge ready">{isEducationAccount ? "교육용 Personal" : currentPlan.label}</span>
       </div>
 
       <div className="planUsageGrid planUsageGridExpanded">
@@ -851,7 +913,11 @@ function PlanStatusPanel({ planKey, onNavigate }) {
         </div>
       </div>
 
-      {isFreePlan ? (
+      {isEducationAccount ? (
+        <p className="serverStorageMessage compact">
+          교육용 계정은 수업 기간 동안 Personal 권한으로 서버 저장과 리포트 기능을 사용할 수 있습니다.
+        </p>
+      ) : isFreePlan ? (
         <div className="upgradePromptBox">
           <div>
             <p>Free 플랜은 체험판입니다. Personal 플랜부터 서버 저장, PDF 리포트, 확장된 API 조회량을 사용할 수 있습니다.</p>
@@ -868,8 +934,12 @@ function PlanStatusPanel({ planKey, onNavigate }) {
       )}
 
       <div className="serverStorageActions compactActions">
-        <button type="button" className="primaryButton" onClick={() => onNavigate("pricing")}>요금제 변경</button>
-        <button type="button" className="secondaryButton" onClick={() => onNavigate("support")}>결제 문의</button>
+        <button type="button" className="primaryButton" onClick={() => onNavigate("pricing")}>
+          {isEducationAccount ? "교육 권한 확인" : "요금제 변경"}
+        </button>
+        <button type="button" className="secondaryButton" onClick={() => onNavigate("support")}>
+          {isEducationAccount ? "수업 계정 문의" : "결제 문의"}
+        </button>
       </div>
     </section>
   );
@@ -990,21 +1060,28 @@ function AccountStatusPanel({ onNavigate }) {
     withdrawalChecks.subscriptionAccessConfirmed &&
     withdrawalChecks.refundPolicyConfirmed &&
     !isLoading;
+  const isEducationAccount = isEducationAuthUser(authUser);
+  const loginStatusLabel = authUser
+    ? isEducationAccount ? "교육용 계정 연결됨" : "체험 사용자 연결됨"
+    : "미연결";
+  const planStatusLabel = isEducationAccount ? "교육용 Personal" : authUser?.plan || serverUser?.plan || "free";
 
   return (
     <section className="accountCard accountStatusPanel">
       <div>
-        <p className="accountMiniLabel">Account Status</p>
+        <p className="accountMiniLabel">계정 상태</p>
         <h2>계정 연결 상태</h2>
         <p>
-          현재는 실제 소셜 로그인 전 단계입니다. 체험 사용자로 서버 저장/불러오기 흐름을 먼저 검증합니다.
+          {isEducationAccount
+            ? "교육용 계정으로 로그인되어 있으며 수업 기간 동안 Personal 권한이 적용됩니다."
+            : "현재는 실제 소셜 로그인 전 단계입니다. 체험 사용자로 서버 저장/불러오기 흐름을 먼저 검증합니다."}
         </p>
       </div>
 
       <div className="accountStatusGrid">
         <div>
           <span>로그인 상태</span>
-          <strong>{authUser ? "체험 사용자 연결됨" : "미연결"}</strong>
+          <strong>{loginStatusLabel}</strong>
         </div>
         <div>
           <span>사용자</span>
@@ -1012,7 +1089,7 @@ function AccountStatusPanel({ onNavigate }) {
         </div>
         <div>
           <span>플랜</span>
-          <strong>{authUser?.plan || serverUser?.plan || "free"}</strong>
+          <strong>{planStatusLabel}</strong>
         </div>
         <div>
           <span>사용자 ID</span>
@@ -1108,10 +1185,10 @@ function AccountStatusPanel({ onNavigate }) {
   );
 }
 
-function ServerStoragePanel({ planKey = "free" }) {
+function ServerStoragePanel({ planKey = "free", isEducationAccount = false }) {
   const currentPlan = FINPLE_PLAN_CONFIGS[planKey] || FINPLE_PLAN_CONFIGS.free;
   const canUseServerStorage = Boolean(currentPlan.limits.serverStorage);
-  const [snapshotVersion, setSnapshotVersion] = useState(0);
+  const [, setSnapshotVersion] = useState(0);
   const [dbHealth, setDbHealth] = useState(null);
   const [serverPortfolioCount, setServerPortfolioCount] = useState(null);
   const [serverPortfolios, setServerPortfolios] = useState([]);
@@ -1122,15 +1199,16 @@ function ServerStoragePanel({ planKey = "free" }) {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const snapshot = useMemo(() => getLocalPortfolioSnapshot(), [snapshotVersion]);
+  const snapshot = getLocalPortfolioSnapshot();
   const isDatabaseReady = Boolean(dbHealth?.configured && dbHealth?.ok);
   const isServerActionDisabled = isLoading || !isDatabaseReady || !canUseServerStorage;
+  const storageDescription = isEducationAccount
+    ? "교육용 Personal 권한으로 서버 저장과 불러오기를 사용할 수 있습니다."
+    : canUseServerStorage
+      ? "브라우저 포트폴리오를 서버에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다."
+      : "Free 체험 플랜에서는 서버 저장 기능과 PDF 저장 기능이 제한됩니다. Personal 이상에서 서버 동기화를 사용할 수 있습니다.";
 
-  useEffect(() => {
-    refreshDatabaseStatus({ silent: true });
-  }, []);
-
-  async function refreshDatabaseStatus(options = {}) {
+  const refreshDatabaseStatus = useCallback(async function refreshDatabaseStatus(options = {}) {
     setIsLoading(true);
     try {
       const health = await checkServerDatabaseHealth();
@@ -1153,7 +1231,15 @@ function ServerStoragePanel({ planKey = "free" }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [canUseServerStorage]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      refreshDatabaseStatus({ silent: true });
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [refreshDatabaseStatus]);
 
   async function handleRefreshLocalSnapshot() {
     setSnapshotVersion((value) => value + 1);
@@ -1256,13 +1342,9 @@ function ServerStoragePanel({ planKey = "free" }) {
     <section className="accountCard serverStoragePanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Server Storage</p>
+          <p className="accountMiniLabel">서버 저장</p>
           <h2>서버 저장</h2>
-          <p>
-            {canUseServerStorage
-              ? "브라우저 포트폴리오를 서버에 저장하거나, 서버에 저장된 포트폴리오를 다시 불러옵니다."
-              : "Free 체험 플랜에서는 서버 저장 기능과 PDF 저장 기능이 제한됩니다. Personal 이상에서 서버 동기화를 사용할 수 있습니다."}
-          </p>
+          <p>{storageDescription}</p>
         </div>
 
         <span className={!canUseServerStorage ? "serverStatusBadge disabled" : isDatabaseReady ? "serverStatusBadge ready" : "serverStatusBadge disabled"}>

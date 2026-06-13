@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { query, withTransaction } from "./database.js";
+import { ensureEducationAccountSchema } from "./educationAccountSchema.js";
 import { hashPassword } from "./authRepository.js";
 
 const EDUCATION_PLAN = "personal";
@@ -132,6 +133,7 @@ async function revokeEducationSessions(tx, userId) {
 }
 
 export async function listEducationAccounts() {
+  await ensureEducationAccountSchema(query);
   const [summaryResult, accountResult] = await Promise.all([
     query(
       `SELECT
@@ -181,6 +183,7 @@ export async function createEducationAccount(input = {}) {
   const memo = normalizeText(input.memo, 500);
 
   const account = await withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
     const existing = await tx("SELECT id FROM education_accounts WHERE LOWER(login_id) = LOWER($1) LIMIT 1", [
       loginId,
     ]);
@@ -228,6 +231,7 @@ export async function bulkCreateEducationAccounts(input = {}) {
   const loginIds = Array.from({ length: count }, (_, index) => `${prefix}-${String(index + 1).padStart(width, "0")}`);
   const created = [];
 
+  await ensureEducationAccountSchema(query);
   const existing = await query(
     `SELECT login_id
        FROM education_accounts
@@ -275,6 +279,7 @@ export async function updateEducationAccount(accountId, input = {}) {
   const memo = input.memo === undefined ? undefined : normalizeText(input.memo, 500);
 
   return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
     const currentResult = await tx("SELECT * FROM education_accounts WHERE id = $1 LIMIT 1", [accountId]);
     const current = currentResult.rows[0];
     if (!current) {
@@ -324,7 +329,7 @@ function escapeCsvCell(value) {
 
 export function buildEducationCredentialsCsv(credentials = []) {
   const rows = [
-    ["No", "Education ID", "Initial Password", "Valid Until", "Cohort", "Login URL"],
+    ["번호", "교육용 ID", "초기 비밀번호", "만료일", "수업/세미나", "로그인 주소"],
     ...credentials.map((item, index) => [
       index + 1,
       item.loginId,
@@ -340,7 +345,7 @@ export function buildEducationCredentialsCsv(credentials = []) {
 
 export function buildEducationAccountsCsv(accounts = []) {
   const rows = [
-    ["No", "Education ID", "Status", "Valid Until", "Cohort", "Last Login", "Label"],
+    ["번호", "교육용 ID", "상태", "만료일", "수업/세미나", "최근 로그인", "표시 이름"],
     ...accounts.map((item, index) => [
       index + 1,
       item.loginId,
