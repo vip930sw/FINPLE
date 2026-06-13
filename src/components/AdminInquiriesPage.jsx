@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateAdminEducationAccounts,
-  createAdminEducationAccount,
   fetchAdminEducationAccounts,
   fetchAdminEducationAccountsCsv,
   fetchAdminMembersSummary,
@@ -131,6 +130,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [educationData, setEducationData] = useState(null);
   const [educationMessage, setEducationMessage] = useState("교육 계정 목록을 불러오면 수업별 계정과 만료 상태를 표시합니다.");
   const [educationCredentialsCsv, setEducationCredentialsCsv] = useState("");
+  const [educationCredentials, setEducationCredentials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const autoLoadedSectionsRef = useRef({});
 
@@ -164,6 +164,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setSubscriptionData(null);
     setEducationData(null);
     setEducationCredentialsCsv("");
+    setEducationCredentials([]);
     autoLoadedSectionsRef.current = {};
     setSelectedId(null);
     setStatusFilter("all");
@@ -252,26 +253,14 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     return () => window.clearTimeout(loadTimer);
   }, [activeSection, handleLoadEducationAccounts, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
 
-  async function handleCreateEducationAccount(input) {
-    setIsLoading(true);
-    try {
-      const result = await createAdminEducationAccount(input);
-      setEducationCredentialsCsv(result?.credentialsCsv || "");
-      setEducationMessage(`${result?.account?.loginId || "교육 계정"} 계정을 생성했습니다. 초기 비밀번호 CSV는 이 화면에서만 확인하세요.`);
-      await handleLoadEducationAccounts();
-    } catch (error) {
-      setEducationMessage(error?.message || "교육 계정을 생성하지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function handleBulkCreateEducationAccounts(input) {
     setIsLoading(true);
     try {
       const result = await bulkCreateAdminEducationAccounts(input);
+      const credentials = Array.isArray(result?.credentials) ? result.credentials : [];
       setEducationCredentialsCsv(result?.credentialsCsv || "");
-      setEducationMessage(`교육 계정 ${result?.accounts?.length || 0}개를 일괄 생성했습니다. 초기 비밀번호 CSV는 이 화면에서만 확인하세요.`);
+      setEducationCredentials(credentials);
+      setEducationMessage(`교육 계정 ${result?.accounts?.length || 0}개를 일괄 생성했습니다. 초기 비밀번호는 아래 전달용 패널과 CSV에서만 확인하세요.`);
       await handleLoadEducationAccounts();
     } catch (error) {
       setEducationMessage(error?.message || "교육 계정을 일괄 생성하지 못했습니다.");
@@ -298,6 +287,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     try {
       const csv = await fetchAdminEducationAccountsCsv();
       setEducationCredentialsCsv(csv);
+      setEducationCredentials([]);
       setEducationMessage("교육 계정 CSV를 생성했습니다. 비밀번호는 포함되지 않습니다.");
     } catch (error) {
       setEducationMessage(error?.message || "교육 계정 CSV를 생성하지 못했습니다.");
@@ -414,10 +404,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               data={educationData}
               statusMessage={educationMessage}
               credentialsCsv={educationCredentialsCsv}
+              credentials={educationCredentials}
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadEducationAccounts}
-              onCreate={handleCreateEducationAccount}
               onBulkCreate={handleBulkCreateEducationAccounts}
               onUpdate={handleUpdateEducationAccount}
               onDownloadCsv={handleDownloadEducationCsv}
@@ -650,23 +640,17 @@ function EducationAccountManagementPanel({
   data,
   statusMessage,
   credentialsCsv,
+  credentials,
   isAdminMode,
   isLoading,
   onLoad,
-  onCreate,
   onBulkCreate,
   onUpdate,
   onDownloadCsv,
 }) {
   const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
   const summary = data?.summary || {};
-  const [singleForm, setSingleForm] = useState({
-    loginId: "",
-    password: "",
-    label: "",
-    cohortName: "",
-    validUntil: "",
-  });
+  const latestCredentials = Array.isArray(credentials) ? credentials : [];
   const [bulkForm, setBulkForm] = useState({
     prefix: "finple-class",
     count: 10,
@@ -674,24 +658,8 @@ function EducationAccountManagementPanel({
     validUntil: "",
   });
 
-  function updateSingleField(field, value) {
-    setSingleForm((current) => ({ ...current, [field]: value }));
-  }
-
   function updateBulkField(field, value) {
     setBulkForm((current) => ({ ...current, [field]: value }));
-  }
-
-  async function handleSingleSubmit(event) {
-    event.preventDefault();
-    await onCreate({
-      loginId: singleForm.loginId,
-      password: singleForm.password || undefined,
-      label: singleForm.label,
-      cohortName: singleForm.cohortName,
-      validUntil: singleForm.validUntil,
-    });
-    setSingleForm((current) => ({ ...current, loginId: "", password: "", label: "" }));
   }
 
   async function handleBulkSubmit(event) {
@@ -710,7 +678,7 @@ function EducationAccountManagementPanel({
         <div>
           <p className="accountMiniLabel">교육 계정</p>
           <h2>교육 계정 관리</h2>
-          <p>오프라인 수업과 세미나용 Personal 권한 계정을 생성하고 만료 상태를 관리합니다.</p>
+          <p>오프라인 수업과 세미나용 Personal 권한 계정을 일괄 생성하고 만료 상태를 관리합니다.</p>
         </div>
       </div>
 
@@ -729,25 +697,15 @@ function EducationAccountManagementPanel({
             {isLoading ? "불러오는 중..." : "교육 계정 새로고침"}
           </button>
           <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
-            CSV 생성
+            목록 CSV
           </button>
         </div>
       ) : null}
 
       <div className="adminInsightGrid educationAdminFormGrid">
         <article>
-          <strong>단일 생성</strong>
-          <form className="educationAdminForm" onSubmit={handleSingleSubmit}>
-            <input value={singleForm.loginId} onChange={(event) => updateSingleField("loginId", event.target.value)} placeholder="finple-class-001" required />
-            <input value={singleForm.password} onChange={(event) => updateSingleField("password", event.target.value)} placeholder="초기 비밀번호 자동 생성" />
-            <input value={singleForm.label} onChange={(event) => updateSingleField("label", event.target.value)} placeholder="표시 이름" />
-            <input value={singleForm.cohortName} onChange={(event) => updateSingleField("cohortName", event.target.value)} placeholder="수업/세미나명" />
-            <input type="date" value={singleForm.validUntil} onChange={(event) => updateSingleField("validUntil", event.target.value)} />
-            <button type="submit" className="primaryButton" disabled={isLoading}>생성</button>
-          </form>
-        </article>
-        <article>
           <strong>일괄 생성</strong>
+          <p>비밀번호는 qwerasdf 무작위 대소문자 + 3자리 번호 형식으로 자동 생성됩니다.</p>
           <form className="educationAdminForm" onSubmit={handleBulkSubmit}>
             <input value={bulkForm.prefix} onChange={(event) => updateBulkField("prefix", event.target.value)} placeholder="finple-class" required />
             <input type="number" min="1" max="200" value={bulkForm.count} onChange={(event) => updateBulkField("count", event.target.value)} />
@@ -758,8 +716,41 @@ function EducationAccountManagementPanel({
         </article>
       </div>
 
+      {latestCredentials.length > 0 ? (
+        <div className="educationCredentialPanel">
+          <strong>최근 생성 전달 정보</strong>
+          <div className="adminTableWrap educationCredentialTableWrap">
+            <table className="adminDataTable">
+              <thead>
+                <tr>
+                  <th>번호</th>
+                  <th>교육용 ID</th>
+                  <th>초기 비밀번호</th>
+                  <th>수업/세미나</th>
+                  <th>만료일</th>
+                </tr>
+              </thead>
+              <tbody>
+                {latestCredentials.map((item, index) => (
+                  <tr key={`${item.loginId}-${index}`}>
+                    <td>{index + 1}</td>
+                    <td><strong>{item.loginId}</strong></td>
+                    <td><strong className="monoText">{item.password}</strong></td>
+                    <td>{item.cohortName || "-"}</td>
+                    <td>{item.validUntil ? toDateInputValue(item.validUntil) : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
       {credentialsCsv ? (
-        <textarea className="adminCsvTextArea" readOnly value={credentialsCsv} aria-label="교육 계정 CSV" />
+        <div className="educationCredentialPanel">
+          <strong>{latestCredentials.length > 0 ? "전달용 CSV" : "목록 CSV"}</strong>
+          <textarea className="adminCsvTextArea" readOnly value={credentialsCsv} aria-label="교육 계정 CSV" />
+        </div>
       ) : null}
 
       <div className="adminTableWrap">

@@ -377,6 +377,10 @@
   margin-top: 22px;
 }
 
+.educationAdminFormGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .educationAdminFormGrid article {
   min-width: 0;
 }
@@ -404,7 +408,7 @@
 .adminCsvTextArea {
   width: 100%;
   min-height: 150px;
-  margin: 16px 0;
+  margin: 10px 0 0;
   padding: 12px;
   border: 1px solid rgba(148, 163, 184, 0.42);
   border-radius: 6px;
@@ -415,6 +419,22 @@
   line-height: 1.5;
   letter-spacing: 0;
   resize: vertical;
+}
+
+.educationCredentialPanel {
+  margin: 16px 0;
+}
+
+.educationCredentialPanel > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.educationCredentialTableWrap .monoText {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0;
 }
 
 .adminRowActions {
