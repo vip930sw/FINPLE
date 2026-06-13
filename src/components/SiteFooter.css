@@ -71,6 +71,7 @@
 .siteFooterNotice {
   grid-area: notice;
   justify-self: end;
+  width: fit-content;
   max-width: 760px;
   margin: 0;
   color: #475569;
@@ -120,6 +121,7 @@
 
   .siteFooterNotice {
     justify-self: stretch;
+    width: auto;
     max-width: none;
   }
 
