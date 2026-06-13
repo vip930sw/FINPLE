@@ -10415,14 +10415,16 @@ body,
 }
 
 .portfolioCompareGrowthChart .performanceHeader {
-  display: block;
+  display: block !important;
   margin-bottom: 18px;
 }
 
 .portfolioCompareHeader,
 .compareGrowthHeader {
-  display: block;
-  text-align: left;
+  display: block !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
 }
 
 .portfolioCompareHeader > div,
@@ -10433,12 +10435,13 @@ body,
 
 .portfolioCompareHeader p:not(.sectionLabel),
 .portfolioCompareGrowthChart .performanceHeader p:not(.sectionLabel) {
-  max-width: 100%;
-  margin: 8px 0 0;
-  text-align: left;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  display: block !important;
+  max-width: 100% !important;
+  margin: 8px 0 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .compareGrowthCard {

@@ -92,7 +92,6 @@ export default function PortfolioCompareLineChart({ portfolios }) {
 
           <p>
             물가 반영 실질가치 기준 상위 포트폴리오의 장기 흐름을 비교합니다.
-            30년 구간은 상세분석 차트와 같은 가로 스크롤 방식으로 확인합니다.
           </p>
         </div>
       </div>
