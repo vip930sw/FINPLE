@@ -10415,7 +10415,33 @@ body,
 }
 
 .portfolioCompareGrowthChart .performanceHeader {
+  display: block !important;
   margin-bottom: 18px;
+}
+
+.portfolioCompareHeader,
+.compareGrowthHeader {
+  display: block !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.portfolioCompareHeader > div,
+.compareGrowthHeader > div {
+  width: 100%;
+  min-width: 0;
+}
+
+.portfolioCompareHeader p:not(.sectionLabel),
+.portfolioCompareGrowthChart .performanceHeader p:not(.sectionLabel) {
+  display: block !important;
+  max-width: 100% !important;
+  margin: 8px 0 0 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .compareGrowthCard {
