@@ -2,6 +2,7 @@
 
 ## 교육 계정
 
+- [FINPLE 교육계정 작업내역 및 인수인계](./FINPLE_education_account_worklog_2026_06_14.md)
 - [FINPLE 교육계정 구현 및 운영 문서](./FINPLE_education_account_plan.md)
 - [FINPLE 교육계정 인수인계](./FINPLE_chat_handoff_2026_06_13.md)
 
