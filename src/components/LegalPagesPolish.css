@@ -391,6 +391,20 @@
   margin-top: 12px;
 }
 
+.educationAdminForm label {
+  display: grid;
+  grid-template-columns: minmax(88px, 120px) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.educationAdminForm label span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
 .educationAdminForm input,
 .adminInlineDateInput {
   width: 100%;
@@ -446,6 +460,30 @@
   letter-spacing: 0;
 }
 
+.educationAdminPanel .dangerSubtle {
+  min-height: 38px;
+  padding: 9px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fff7f7;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.educationAdminPanel .dangerSubtle:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.educationAdminPanel .dangerSubtle:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .adminRowActions {
   display: flex;
   flex-wrap: wrap;
@@ -463,6 +501,16 @@
   font-weight: 800;
   letter-spacing: 0;
   cursor: pointer;
+}
+
+.educationAdminPanel .adminRowActions {
+  justify-content: center;
+}
+
+.educationAdminPanel .adminRowActions .dangerSubtle {
+  min-height: 32px;
+  padding: 6px 14px;
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {

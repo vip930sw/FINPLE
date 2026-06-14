@@ -6,6 +6,7 @@ import {
   buildEducationCredentialsCsv,
   bulkCreateEducationAccounts,
   deleteAllEducationAccounts,
+  deleteEducationAccount,
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
@@ -215,6 +216,18 @@ router.delete("/education-accounts", (request, response, next) => {
     try {
       if (!requireDatabase(response)) return;
       const result = await deleteAllEducationAccounts();
+      response.json({ ok: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.delete("/education-accounts/:id", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await deleteEducationAccount(request.params.id);
       response.json({ ok: true, ...result });
     } catch (error) {
       next(error);

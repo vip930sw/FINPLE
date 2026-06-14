@@ -33,7 +33,10 @@ function normalizeText(value = "", maxLength = 120) {
 
 function normalizeDate(value) {
   if (!value) return null;
-  const date = new Date(value);
+  const rawValue = String(value || "").trim();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+    ? new Date(`${rawValue}T23:59:59.999+09:00`)
+    : new Date(rawValue);
   if (Number.isNaN(date.getTime())) {
     const error = new Error("유효한 날짜를 입력해 주세요.");
     error.statusCode = 400;
@@ -60,6 +63,38 @@ function assertPassword(password = "") {
     throw error;
   }
   return raw;
+}
+
+function normalizeBulkNumber(value, fallback = 1) {
+  const number = Number(value ?? fallback);
+  if (!Number.isInteger(number) || number < 1 || number > 999999) {
+    const error = new Error("교육 계정 번호는 1~999999 사이의 정수로 입력해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+  return number;
+}
+
+function getBulkNumberRange(input = {}) {
+  const startNumber = normalizeBulkNumber(input.startNumber, 1);
+  const endNumber = input.endNumber === undefined
+    ? startNumber + Math.min(Math.max(Number(input.count || 1), 1), 200) - 1
+    : normalizeBulkNumber(input.endNumber, startNumber);
+  const count = endNumber - startNumber + 1;
+
+  if (count < 1) {
+    const error = new Error("끝번호는 시작번호보다 크거나 같아야 합니다.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (count > 200) {
+    const error = new Error("교육 계정은 한 번에 200개까지 생성할 수 있습니다.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return { startNumber, endNumber, count };
 }
 
 function createEducationPassword(sequenceNumber) {
@@ -227,10 +262,13 @@ async function createEducationAccount(input = {}) {
 }
 
 export async function bulkCreateEducationAccounts(input = {}) {
-  const count = Math.min(Math.max(Number(input.count || 1), 1), 200);
+  const { startNumber, endNumber, count } = getBulkNumberRange(input);
   const prefix = assertLoginId(input.prefix || "finple-class");
-  const width = Math.max(String(count).length, 3);
-  const loginIds = Array.from({ length: count }, (_, index) => `${prefix}-${String(index + 1).padStart(width, "0")}`);
+  const width = Math.max(String(endNumber).length, 3);
+  const loginIds = Array.from(
+    { length: count },
+    (_, index) => `${prefix}-${String(startNumber + index).padStart(width, "0")}`
+  );
   const created = [];
 
   await ensureEducationAccountSchema(query);
@@ -248,13 +286,14 @@ export async function bulkCreateEducationAccounts(input = {}) {
     throw error;
   }
 
-  for (let index = 1; index <= count; index += 1) {
-    const loginId = loginIds[index - 1];
+  for (let offset = 0; offset < count; offset += 1) {
+    const sequenceNumber = startNumber + offset;
+    const loginId = loginIds[offset];
     const labelPrefix = normalizeText(input.labelPrefix || input.cohortName || "FINPLE class");
     const result = await createEducationAccount({
       loginId,
-      password: createEducationPassword(index),
-      label: `${labelPrefix} ${index}`,
+      password: createEducationPassword(sequenceNumber),
+      label: `${labelPrefix} ${sequenceNumber}`,
       cohortName: input.cohortName,
       validUntil: input.validUntil,
       memo: input.memo,
@@ -346,9 +385,42 @@ export async function deleteAllEducationAccounts() {
   });
 }
 
+export async function deleteEducationAccount(accountId) {
+  return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
+    const currentResult = await tx("SELECT user_id FROM education_accounts WHERE id = $1 LIMIT 1", [accountId]);
+    const current = currentResult.rows[0];
+
+    if (!current) {
+      const error = new Error("교육 계정을 찾을 수 없습니다.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const deletedResult = await tx(
+      `DELETE FROM users
+        WHERE id = $1
+        RETURNING id`,
+      [current.user_id]
+    );
+
+    return {
+      deletedAccountId: accountId,
+      deletedAccounts: deletedResult.rowCount,
+    };
+  });
+}
+
 function escapeCsvCell(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
+}
+
+function formatDateForCsv(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toISOString().slice(0, 10);
 }
 
 export function buildEducationCredentialsCsv(credentials = []) {
@@ -358,7 +430,7 @@ export function buildEducationCredentialsCsv(credentials = []) {
       index + 1,
       item.loginId,
       item.password,
-      item.validUntil || "",
+      formatDateForCsv(item.validUntil),
       item.cohortName || "",
       "https://finple.co.kr/login",
     ]),
@@ -375,7 +447,7 @@ export function buildEducationAccountsCsv(accounts = []) {
       item.loginId,
       item.initialPassword || "",
       item.status,
-      item.validUntil || "",
+      formatDateForCsv(item.validUntil),
       item.cohortName || "",
       item.lastLoginAt || "",
       item.label || "",
