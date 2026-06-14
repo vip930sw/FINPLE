@@ -131,6 +131,30 @@
   word-break: keep-all;
 }
 
+.accountStatusPurposeBoxWithAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.accountStatusPurposeBoxWithAction span {
+  min-width: 0;
+}
+
+.accountPasswordChangeButton {
+  flex: 0 0 auto;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-color: #b9d8ff !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+
 .accountStatusPanel .accountStatusPurposeNote {
   display: none !important;
 }
@@ -287,6 +311,18 @@
   background: #991b1b !important;
 }
 
+.accountPasswordChangeModal .accountWithdrawalConfirm + .accountWithdrawalConfirm {
+  margin-top: 12px;
+}
+
+.accountPasswordChangeModal .accountWithdrawalConfirm input {
+  border-color: #dbe5f3;
+}
+
+.accountPasswordChangeSubmit {
+  background: #0f172a !important;
+}
+
 @media (max-width: 1200px) {
   .accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -309,13 +345,15 @@
   }
 
   .accountWithdrawalZone,
-  .accountWithdrawalActions {
+  .accountWithdrawalActions,
+  .accountStatusPurposeBoxWithAction {
     align-items: stretch;
     flex-direction: column;
   }
 
   .accountWithdrawalZone button,
-  .accountWithdrawalActions button {
+  .accountWithdrawalActions button,
+  .accountPasswordChangeButton {
     width: 100%;
   }
 }

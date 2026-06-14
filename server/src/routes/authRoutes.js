@@ -2,6 +2,7 @@ import express from "express";
 
 import { isDatabaseConfigured, withTransaction } from "../db/database.js";
 import {
+  changeUserPassword,
   checkEmailAvailability,
   getUserByAuthHeader,
   getUserBySessionToken,
@@ -181,6 +182,26 @@ router.get("/me", async (request, response, next) => {
   try {
     const user = await getRequestUser(request);
     response.json({ ok: Boolean(user), user, authMode: getSessionToken(request) ? "session-token" : "user-id-header" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/password", async (request, response, next) => {
+  try {
+    if (!isDatabaseConfigured()) {
+      response.status(503).json({ ok: false, code: "DATABASE_NOT_CONFIGURED", message: "비밀번호 변경을 처리할 데이터베이스가 연결되어 있지 않습니다." });
+      return;
+    }
+
+    const user = await getRequestUser(request);
+    if (!user?.id) {
+      response.status(401).json({ ok: false, code: "AUTH_REQUIRED", message: "비밀번호 변경을 위해 다시 로그인해 주세요." });
+      return;
+    }
+
+    const result = await changeUserPassword(user.id, request.body);
+    response.json({ ok: true, ...result });
   } catch (error) {
     next(error);
   }

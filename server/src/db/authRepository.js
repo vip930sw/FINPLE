@@ -581,6 +581,80 @@ export async function loginWithEducationAccount(input = {}, requestMeta = {}) {
   });
 }
 
+export async function changeUserPassword(userId, input = {}) {
+  if (!userId) {
+    const error = new Error("비밀번호 변경을 위해 로그인이 필요합니다.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const currentPassword = assertPassword(input.currentPassword);
+  const newPassword = assertPassword(input.newPassword || input.password);
+
+  if (currentPassword === newPassword) {
+    const error = new Error("새 비밀번호는 현재 비밀번호와 다르게 입력해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+
+  return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
+    const result = await tx(
+      `SELECT
+         users.id,
+         users.auth_status,
+         users.email_verified_at,
+         auth_credentials.password_hash,
+         education_accounts.id AS education_account_id
+       FROM users
+       JOIN auth_credentials ON auth_credentials.user_id = users.id
+       LEFT JOIN education_accounts ON education_accounts.user_id = users.id
+       WHERE users.id = $1
+       LIMIT 1`,
+      [userId]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      const error = new Error("비밀번호를 변경할 계정을 찾을 수 없습니다.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (row.education_account_id) {
+      const error = new Error("교육용 계정 비밀번호는 관리자에게 문의해 주세요.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const isValid = await verifyPassword(currentPassword, row.password_hash);
+    if (!isValid) {
+      const error = new Error("현재 비밀번호를 확인해 주세요.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const updated = await tx(
+      `UPDATE auth_credentials
+          SET password_hash = $2,
+              password_updated_at = NOW(),
+              failed_login_count = 0,
+              locked_until = NULL,
+              updated_at = NOW()
+        WHERE user_id = $1
+        RETURNING password_updated_at`,
+      [userId, passwordHash]
+    );
+
+    return {
+      ok: true,
+      passwordUpdatedAt: updated.rows[0]?.password_updated_at || new Date().toISOString(),
+    };
+  });
+}
+
 export async function verifyEmailToken(token) {
   const rawToken = String(token || "").trim();
   if (!rawToken) {
