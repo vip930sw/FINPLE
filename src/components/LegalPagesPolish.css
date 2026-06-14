@@ -197,6 +197,10 @@
   font-weight: 800;
 }
 
+.educationLoginHelpText {
+  margin-top: 10px;
+}
+
 .loginSignupPrompt button {
   color: #2563eb;
   margin-left: 6px;

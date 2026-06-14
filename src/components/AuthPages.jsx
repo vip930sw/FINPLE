@@ -352,7 +352,7 @@ export function LoginPage({ onNavigate }) {
             <p className="loginSignupPrompt">아직 핀플 회원이 아닌가요? <button type="button" onClick={() => onNavigate("signup")}>회원가입</button></p>
           </>
         ) : (
-          <p className="loginSignupPrompt">수업 또는 세미나에서 받은 교육용 ID로 로그인합니다.</p>
+          <p className="loginSignupPrompt educationLoginHelpText">수업 또는 세미나에서 받은 교육용 ID로 로그인합니다.</p>
         )}
       </section>
     </AccountShell>
