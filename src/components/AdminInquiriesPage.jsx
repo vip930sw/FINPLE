@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateAdminEducationAccounts,
+  deleteAdminEducationAccount,
   deleteAdminEducationAccounts,
   fetchAdminEducationAccounts,
   fetchAdminEducationAccountsCsv,
@@ -8,7 +9,6 @@ import {
   fetchAdminSubscriptionsSummary,
   fetchSupportInquiries,
   getFinpleAdminToken,
-  updateAdminEducationAccount,
   updateSupportInquiryStatus,
 } from "./portfolio/services/serverPortfolioService";
 
@@ -266,14 +266,19 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }
 
-  async function handleUpdateEducationAccount(accountId, input) {
+  async function handleDeleteEducationAccount(accountId, loginId) {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(`${loginId || "선택한 교육 계정"}을 삭제할까요? 로그인 계정과 권한이 함께 삭제됩니다.`);
+      if (!confirmed) return;
+    }
+
     setIsLoading(true);
     try {
-      await updateAdminEducationAccount(accountId, input);
-      setEducationMessage("교육 계정 상태를 변경했습니다.");
+      await deleteAdminEducationAccount(accountId);
+      setEducationMessage("교육 계정을 삭제했습니다.");
       await handleLoadEducationAccounts();
     } catch (error) {
-      setEducationMessage(error?.message || "교육 계정 상태를 변경하지 못했습니다.");
+      setEducationMessage(error?.message || "교육 계정을 삭제하지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -423,7 +428,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isLoading={isLoading}
               onLoad={handleLoadEducationAccounts}
               onBulkCreate={handleBulkCreateEducationAccounts}
-              onUpdate={handleUpdateEducationAccount}
+              onDeleteAccount={handleDeleteEducationAccount}
               onDownloadCsv={handleDownloadEducationCsv}
               onDeleteAll={handleDeleteEducationAccounts}
             />
@@ -659,16 +664,16 @@ function EducationAccountManagementPanel({
   isLoading,
   onLoad,
   onBulkCreate,
-  onUpdate,
+  onDeleteAccount,
   onDownloadCsv,
   onDeleteAll,
 }) {
   const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
   const summary = data?.summary || {};
-  const latestCredentials = [];
   const [bulkForm, setBulkForm] = useState({
     prefix: "finple-class",
-    count: 10,
+    startNumber: 1,
+    endNumber: 10,
     cohortName: "",
     validUntil: "",
   });
@@ -681,7 +686,8 @@ function EducationAccountManagementPanel({
     event.preventDefault();
     await onBulkCreate({
       prefix: bulkForm.prefix,
-      count: bulkForm.count,
+      startNumber: bulkForm.startNumber,
+      endNumber: bulkForm.endNumber,
       cohortName: bulkForm.cohortName,
       validUntil: bulkForm.validUntil,
     });
@@ -725,48 +731,34 @@ function EducationAccountManagementPanel({
           <strong>일괄 생성</strong>
           <p>비밀번호는 qwerasdf 무작위 대소문자 + 3자리 번호 형식으로 자동 생성됩니다.</p>
           <form className="educationAdminForm" onSubmit={handleBulkSubmit}>
-            <input value={bulkForm.prefix} onChange={(event) => updateBulkField("prefix", event.target.value)} placeholder="finple-class" required />
-            <input type="number" min="1" max="200" value={bulkForm.count} onChange={(event) => updateBulkField("count", event.target.value)} />
-            <input value={bulkForm.cohortName} onChange={(event) => updateBulkField("cohortName", event.target.value)} placeholder="수업/세미나명" />
-            <input type="date" value={bulkForm.validUntil} onChange={(event) => updateBulkField("validUntil", event.target.value)} />
+            <label>
+              <span>ID</span>
+              <input value={bulkForm.prefix} onChange={(event) => updateBulkField("prefix", event.target.value)} placeholder="finple-class" required />
+            </label>
+            <label>
+              <span>시작번호</span>
+              <input type="number" min="1" max="999999" value={bulkForm.startNumber} onChange={(event) => updateBulkField("startNumber", event.target.value)} />
+            </label>
+            <label>
+              <span>끝번호</span>
+              <input type="number" min="1" max="999999" value={bulkForm.endNumber} onChange={(event) => updateBulkField("endNumber", event.target.value)} />
+            </label>
+            <label>
+              <span>수업/세미나명</span>
+              <input value={bulkForm.cohortName} onChange={(event) => updateBulkField("cohortName", event.target.value)} placeholder="수업/세미나명" />
+            </label>
+            <label>
+              <span>만료일</span>
+              <input type="date" value={bulkForm.validUntil} onChange={(event) => updateBulkField("validUntil", event.target.value)} />
+            </label>
             <button type="submit" className="primaryButton" disabled={isLoading}>일괄 생성</button>
           </form>
         </article>
       </div>
 
-      {latestCredentials.length > 0 ? (
-        <div className="educationCredentialPanel">
-          <strong>최근 생성 전달 정보</strong>
-          <div className="adminTableWrap educationCredentialTableWrap">
-            <table className="adminDataTable">
-              <thead>
-                <tr>
-                  <th>번호</th>
-                  <th>교육용 ID</th>
-                  <th>초기 비밀번호</th>
-                  <th>수업/세미나</th>
-                  <th>만료일</th>
-                </tr>
-              </thead>
-              <tbody>
-                {latestCredentials.map((item, index) => (
-                  <tr key={`${item.loginId}-${index}`}>
-                    <td>{index + 1}</td>
-                    <td><strong>{item.loginId}</strong></td>
-                    <td><strong className="monoText">{item.password}</strong></td>
-                    <td>{item.cohortName || "-"}</td>
-                    <td>{item.validUntil ? toDateInputValue(item.validUntil) : "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
-
       {credentialsCsv ? (
         <div className="educationCredentialPanel">
-          <strong>{latestCredentials.length > 0 ? "전달용 CSV" : "목록 CSV"}</strong>
+          <strong>목록 CSV</strong>
           <textarea className="adminCsvTextArea" readOnly value={credentialsCsv} aria-label="교육 계정 CSV" />
         </div>
       ) : null}
@@ -791,7 +783,7 @@ function EducationAccountManagementPanel({
                   key={`${account.id}-${account.validUntil || ""}`}
                   account={account}
                   isLoading={isLoading}
-                  onUpdate={onUpdate}
+                  onDelete={onDeleteAccount}
                 />
               ))
             ) : (
@@ -804,31 +796,18 @@ function EducationAccountManagementPanel({
   );
 }
 
-function EducationAccountRow({ account, isLoading, onUpdate }) {
-  const [validUntil, setValidUntil] = useState(toDateInputValue(account.validUntil));
-
+function EducationAccountRow({ account, isLoading, onDelete }) {
   return (
     <tr>
       <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
       <td><strong className="monoText">{account.initialPassword || "-"}</strong></td>
       <td>{account.cohortName || "-"}</td>
       <td>{EDUCATION_STATUS_LABELS[account.status] || account.status || "활성"}</td>
-      <td>
-        <input
-          className="adminInlineDateInput"
-          type="date"
-          value={validUntil}
-          onChange={(event) => setValidUntil(event.target.value)}
-        />
-      </td>
+      <td>{toDateInputValue(account.validUntil) || "-"}</td>
       <td>{formatShortDate(account.lastLoginAt)}</td>
       <td>
         <div className="adminRowActions">
-          <button type="button" onClick={() => onUpdate(account.id, { validUntil })} disabled={isLoading}>만료일 저장</button>
-          <button type="button" onClick={() => onUpdate(account.id, { status: account.status === "active" ? "paused" : "active" })} disabled={isLoading}>
-            {account.status === "active" ? "중지" : "활성"}
-          </button>
-          <button type="button" onClick={() => onUpdate(account.id, { status: "expired" })} disabled={isLoading}>만료</button>
+          <button type="button" className="dangerSubtle" onClick={() => onDelete(account.id, account.loginId)} disabled={isLoading}>삭제</button>
         </div>
       </td>
     </tr>
