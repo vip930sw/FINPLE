@@ -7,6 +7,7 @@ import {
   bulkCreateEducationAccounts,
   deleteAllEducationAccounts,
   deleteEducationAccount,
+  deleteEducationAccountsByIds,
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
@@ -215,7 +216,10 @@ router.delete("/education-accounts", (request, response, next) => {
   requireAdminAccess(request, response, async () => {
     try {
       if (!requireDatabase(response)) return;
-      const result = await deleteAllEducationAccounts();
+      const accountIds = request.body?.accountIds;
+      const result = Array.isArray(accountIds) && accountIds.length > 0
+        ? await deleteEducationAccountsByIds(accountIds)
+        : await deleteAllEducationAccounts();
       response.json({ ok: true, ...result });
     } catch (error) {
       next(error);

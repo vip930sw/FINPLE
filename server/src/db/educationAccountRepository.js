@@ -8,6 +8,14 @@ const EDUCATION_PLAN = "personal";
 const EDUCATION_EMAIL_DOMAIN = "education.finple.local";
 const EDUCATION_ACCOUNT_STATUSES = new Set(["active", "paused", "expired", "revoked"]);
 const EDUCATION_PASSWORD_BASE = "qwerasdf";
+const EDUCATION_ACCOUNT_VALIDITY_SQL = `(
+  valid_until IS NULL
+  OR valid_until >= NOW()
+  OR (
+    (valid_until AT TIME ZONE 'UTC')::time = TIME '00:00:00'
+    AND (valid_until AT TIME ZONE 'UTC')::date >= (NOW() AT TIME ZONE 'Asia/Seoul')::date
+  )
+)`;
 
 function normalizeLoginId(value = "") {
   return String(value || "")
@@ -97,6 +105,14 @@ function getBulkNumberRange(input = {}) {
   return { startNumber, endNumber, count };
 }
 
+function normalizeAccountIds(values = []) {
+  const ids = Array.isArray(values)
+    ? values.map((value) => String(value || "").trim()).filter(Boolean)
+    : [];
+
+  return [...new Set(ids)].slice(0, 500);
+}
+
 function createEducationPassword(sequenceNumber) {
   const randomCasePrefix = EDUCATION_PASSWORD_BASE
     .split("")
@@ -175,11 +191,11 @@ export async function listEducationAccounts() {
     query(
       `SELECT
          COUNT(*)::int AS total_accounts,
-         COUNT(*) FILTER (WHERE status = 'active' AND (valid_until IS NULL OR valid_until >= NOW()))::int AS active_accounts,
+         COUNT(*) FILTER (WHERE status = 'active' AND ${EDUCATION_ACCOUNT_VALIDITY_SQL})::int AS active_accounts,
          COUNT(*) FILTER (
            WHERE status = 'active'
              AND valid_until IS NOT NULL
-             AND valid_until >= NOW()
+             AND ${EDUCATION_ACCOUNT_VALIDITY_SQL}
              AND valid_until < NOW() + INTERVAL '7 days'
          )::int AS expiring_7d,
          COUNT(*) FILTER (WHERE last_login_at >= NOW() - INTERVAL '30 days')::int AS logins_30d
@@ -377,6 +393,38 @@ export async function deleteAllEducationAccounts() {
        )
        SELECT COUNT(*)::int AS deleted_accounts
          FROM deleted_users`
+    );
+
+    return {
+      deletedAccounts: Number(result.rows[0]?.deleted_accounts || 0),
+    };
+  });
+}
+
+export async function deleteEducationAccountsByIds(accountIds = []) {
+  const ids = normalizeAccountIds(accountIds);
+  if (ids.length === 0) {
+    const error = new Error("삭제할 교육 계정을 선택해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
+    const result = await tx(
+      `WITH target_accounts AS (
+         SELECT user_id
+           FROM education_accounts
+          WHERE id::text = ANY($1::text[])
+       ),
+       deleted_users AS (
+         DELETE FROM users
+          WHERE id IN (SELECT user_id FROM target_accounts)
+          RETURNING id
+       )
+       SELECT COUNT(*)::int AS deleted_accounts
+         FROM deleted_users`,
+      [ids]
     );
 
     return {

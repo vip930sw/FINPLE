@@ -1,3 +1,4 @@
+/* global Buffer, process */
 import { createHash, pbkdf2, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 
@@ -11,6 +12,14 @@ const PASSWORD_HASH_KEYLEN = 32;
 const PASSWORD_HASH_DIGEST = "sha256";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
 const EMAIL_VERIFICATION_HOURS = Number(process.env.FINPLE_EMAIL_VERIFICATION_HOURS || 24);
+const EDUCATION_ACCOUNT_VALIDITY_SQL = `(
+  education_accounts.valid_until IS NULL
+  OR education_accounts.valid_until >= NOW()
+  OR (
+    (education_accounts.valid_until AT TIME ZONE 'UTC')::time = TIME '00:00:00'
+    AND (education_accounts.valid_until AT TIME ZONE 'UTC')::date >= (NOW() AT TIME ZONE 'Asia/Seoul')::date
+  )
+)`;
 
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
@@ -39,6 +48,30 @@ function assertPassword(password) {
     throw error;
   }
   return raw;
+}
+
+function getEducationValidUntilTime(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const isLegacyDateOnlyMidnight =
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0;
+
+  if (!isLegacyDateOnlyMidnight) return date.getTime();
+
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    14,
+    59,
+    59,
+    999
+  );
 }
 
 export async function hashPassword(password) {
@@ -149,7 +182,7 @@ async function getUserById(userId) {
          OR (
            education_accounts.status = 'active'
            AND education_accounts.valid_from <= NOW()
-           AND (education_accounts.valid_until IS NULL OR education_accounts.valid_until >= NOW())
+           AND ${EDUCATION_ACCOUNT_VALIDITY_SQL}
          )
        )
      LIMIT 1`,
@@ -481,7 +514,8 @@ export async function loginWithEducationAccount(input = {}, requestMeta = {}) {
       throw error;
     }
 
-    if (row.valid_until && new Date(row.valid_until).getTime() < now) {
+    const validUntilTime = getEducationValidUntilTime(row.valid_until);
+    if (validUntilTime && validUntilTime < now) {
       const error = new Error("교육 기간이 종료된 계정입니다. 관리자에게 문의해 주세요.");
       error.statusCode = 403;
       error.code = "EDUCATION_ACCOUNT_EXPIRED";
@@ -659,7 +693,7 @@ export async function getUserBySessionToken(sessionToken) {
          OR (
            education_accounts.status = 'active'
            AND education_accounts.valid_from <= NOW()
-           AND (education_accounts.valid_until IS NULL OR education_accounts.valid_until >= NOW())
+           AND ${EDUCATION_ACCOUNT_VALIDITY_SQL}
          )
        )
      LIMIT 1`,
