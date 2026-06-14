@@ -136,6 +136,12 @@
   opacity: 0 !important;
 }
 
+.loginSimpleCard .educationLoginHelpText {
+  display: block;
+  margin-top: 0 !important;
+  padding-top: 12px;
+}
+
 .googleIcon {
   width: 24px;
   height: 24px;
