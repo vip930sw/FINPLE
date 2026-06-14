@@ -241,10 +241,15 @@ export async function updateAdminEducationAccount(accountId, input = {}) {
   );
 }
 
-export async function deleteAdminEducationAccounts() {
+export async function deleteAdminEducationAccounts(accountIds = []) {
+  const options = { method: "DELETE" };
+  if (Array.isArray(accountIds) && accountIds.length > 0) {
+    options.body = JSON.stringify({ accountIds });
+  }
+
   return requestJson(
     "/admin/education-accounts",
-    { method: "DELETE" },
+    options,
     { includeAdminToken: true }
   );
 }

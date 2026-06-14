@@ -405,6 +405,29 @@
   letter-spacing: 0;
 }
 
+.educationAdminFormError {
+  margin: 2px 0 0;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.educationAdminFormActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.educationAdminFormActions .primaryButton,
+.educationAdminFormActions .secondaryButton,
+.educationAdminFormActions .dangerSubtle {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .educationAdminForm input,
 .adminInlineDateInput {
   width: 100%;
@@ -453,6 +476,18 @@
 
 .educationAdminPanel .adminDataTable th {
   text-align: center;
+}
+
+.educationAdminPanel .adminDataTable th:first-child,
+.educationAdminPanel .adminDataTable td:first-child {
+  width: 44px;
+  text-align: center;
+}
+
+.educationAdminPanel .adminDataTable input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
 }
 
 .educationAdminPanel .monoText {
@@ -514,6 +549,10 @@
 }
 
 @media (max-width: 900px) {
+  .educationAdminFormActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .accountPage,
   .accountPage.legalPage,
   .legalPage.standaloneLegalPage,
@@ -565,5 +604,11 @@
   .standaloneAdminInquiryPanel .adminInquiryToolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .educationAdminFormActions {
+    grid-template-columns: 1fr;
   }
 }

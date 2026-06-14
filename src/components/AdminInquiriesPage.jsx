@@ -297,20 +297,27 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }
 
-  async function handleDeleteEducationAccounts() {
+  async function handleDeleteSelectedEducationAccounts(accountIds = []) {
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+      setEducationMessage("삭제할 교육 계정을 먼저 선택해 주세요.");
+      return false;
+    }
+
     if (typeof window !== "undefined") {
-      const confirmed = window.confirm("모든 교육 계정을 삭제할까요? 교육용 로그인 계정과 권한이 함께 삭제됩니다.");
-      if (!confirmed) return;
+      const confirmed = window.confirm(`선택한 교육 계정 ${accountIds.length}개를 삭제할까요? 로그인 계정과 권한이 함께 삭제됩니다.`);
+      if (!confirmed) return false;
     }
 
     setIsLoading(true);
     try {
-      const result = await deleteAdminEducationAccounts();
+      const result = await deleteAdminEducationAccounts(accountIds);
       setEducationCredentialsCsv("");
-      setEducationMessage(`교육 계정 ${result?.deletedAccounts || 0}개를 일괄 삭제했습니다.`);
+      setEducationMessage(`선택한 교육 계정 ${result?.deletedAccounts || 0}개를 삭제했습니다.`);
       await handleLoadEducationAccounts();
+      return true;
     } catch (error) {
-      setEducationMessage(error?.message || "교육 계정을 일괄 삭제하지 못했습니다.");
+      setEducationMessage(error?.message || "선택한 교육 계정을 삭제하지 못했습니다.");
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -424,13 +431,12 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               data={educationData}
               statusMessage={educationMessage}
               credentialsCsv={educationCredentialsCsv}
-              isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadEducationAccounts}
               onBulkCreate={handleBulkCreateEducationAccounts}
               onDeleteAccount={handleDeleteEducationAccount}
               onDownloadCsv={handleDownloadEducationCsv}
-              onDeleteAll={handleDeleteEducationAccounts}
+              onDeleteSelected={handleDeleteSelectedEducationAccounts}
             />
           ) : null}
 
@@ -660,16 +666,17 @@ function EducationAccountManagementPanel({
   data,
   statusMessage,
   credentialsCsv,
-  isAdminMode,
   isLoading,
   onLoad,
   onBulkCreate,
   onDeleteAccount,
   onDownloadCsv,
-  onDeleteAll,
+  onDeleteSelected,
 }) {
-  const accounts = Array.isArray(data?.accounts) ? data.accounts : [];
+  const accounts = useMemo(() => (Array.isArray(data?.accounts) ? data.accounts : []), [data]);
   const summary = data?.summary || {};
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkFormError, setBulkFormError] = useState("");
   const [bulkForm, setBulkForm] = useState({
     prefix: "finple-class",
     startNumber: 1,
@@ -677,13 +684,31 @@ function EducationAccountManagementPanel({
     cohortName: "",
     validUntil: "",
   });
+  const selectedAccountIds = useMemo(
+    () => selectedIds.filter((accountId) => accounts.some((account) => account.id === accountId)),
+    [accounts, selectedIds]
+  );
+  const selectedIdSet = useMemo(() => new Set(selectedAccountIds), [selectedAccountIds]);
+  const allAccountsSelected = accounts.length > 0 && accounts.every((account) => selectedIdSet.has(account.id));
 
   function updateBulkField(field, value) {
+    setBulkFormError("");
     setBulkForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleBulkSubmit(event) {
     event.preventDefault();
+    const startNumber = Number(bulkForm.startNumber);
+    const endNumber = Number(bulkForm.endNumber);
+    if (!Number.isInteger(startNumber) || !Number.isInteger(endNumber) || startNumber < 1 || endNumber < 1) {
+      setBulkFormError("시작번호와 끝번호는 1 이상의 정수로 입력해 주세요.");
+      return;
+    }
+    if (startNumber > endNumber) {
+      setBulkFormError("끝번호는 시작번호보다 크거나 같아야 합니다.");
+      return;
+    }
+
     await onBulkCreate({
       prefix: bulkForm.prefix,
       startNumber: bulkForm.startNumber,
@@ -691,6 +716,23 @@ function EducationAccountManagementPanel({
       cohortName: bulkForm.cohortName,
       validUntil: bulkForm.validUntil,
     });
+  }
+
+  function toggleSelectedAccount(accountId) {
+    setSelectedIds((current) => (
+      current.includes(accountId)
+        ? current.filter((selectedId) => selectedId !== accountId)
+        : [...current, accountId]
+    ));
+  }
+
+  function toggleSelectAllAccounts() {
+    setSelectedIds(allAccountsSelected ? [] : accounts.map((account) => account.id));
+  }
+
+  async function handleDeleteSelected() {
+    const didDelete = await onDeleteSelected(selectedAccountIds);
+    if (didDelete) setSelectedIds([]);
   }
 
   return (
@@ -711,20 +753,6 @@ function EducationAccountManagementPanel({
       </div>
 
       <p className="serverStorageMessage compact">{statusMessage}</p>
-
-      {isAdminMode ? (
-        <div className="serverStorageActions compactActions">
-          <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
-            {isLoading ? "불러오는 중..." : "교육 계정 새로고침"}
-          </button>
-          <button type="button" className="dangerSubtle" onClick={onDeleteAll} disabled={isLoading || accounts.length === 0}>
-            교육 계정 일괄 삭제
-          </button>
-          <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
-            목록 CSV
-          </button>
-        </div>
-      ) : null}
 
       <div className="adminInsightGrid educationAdminFormGrid">
         <article>
@@ -751,7 +779,19 @@ function EducationAccountManagementPanel({
               <span>만료일</span>
               <input type="date" value={bulkForm.validUntil} onChange={(event) => updateBulkField("validUntil", event.target.value)} />
             </label>
-            <button type="submit" className="primaryButton" disabled={isLoading}>일괄 생성</button>
+            {bulkFormError ? <p className="educationAdminFormError">{bulkFormError}</p> : null}
+            <div className="educationAdminFormActions">
+              <button type="submit" className="primaryButton" disabled={isLoading}>일괄 생성</button>
+              <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
+                {isLoading ? "불러오는 중..." : "교육 계정 새로고침"}
+              </button>
+              <button type="button" className="dangerSubtle" onClick={handleDeleteSelected} disabled={isLoading || selectedAccountIds.length === 0}>
+                선택한 교육 계정 삭제{selectedAccountIds.length > 0 ? ` (${selectedAccountIds.length})` : ""}
+              </button>
+              <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
+                목록 CSV
+              </button>
+            </div>
           </form>
         </article>
       </div>
@@ -767,6 +807,15 @@ function EducationAccountManagementPanel({
         <table className="adminDataTable">
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  aria-label="교육 계정 전체 선택"
+                  checked={allAccountsSelected}
+                  onChange={toggleSelectAllAccounts}
+                  disabled={accounts.length === 0 || isLoading}
+                />
+              </th>
               <th>교육용 ID</th>
               <th>비밀번호</th>
               <th>수업/세미나</th>
@@ -784,10 +833,12 @@ function EducationAccountManagementPanel({
                   account={account}
                   isLoading={isLoading}
                   onDelete={onDeleteAccount}
+                  isSelected={selectedIdSet.has(account.id)}
+                  onToggleSelected={toggleSelectedAccount}
                 />
               ))
             ) : (
-              <tr><td colSpan="7">교육 계정 목록을 아직 불러오지 않았습니다.</td></tr>
+              <tr><td colSpan="8">교육 계정 목록을 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>
@@ -796,9 +847,18 @@ function EducationAccountManagementPanel({
   );
 }
 
-function EducationAccountRow({ account, isLoading, onDelete }) {
+function EducationAccountRow({ account, isLoading, onDelete, isSelected, onToggleSelected }) {
   return (
     <tr>
+      <td>
+        <input
+          type="checkbox"
+          aria-label={`${account.loginId} 선택`}
+          checked={isSelected}
+          onChange={() => onToggleSelected(account.id)}
+          disabled={isLoading}
+        />
+      </td>
       <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
       <td><strong className="monoText">{account.initialPassword || "-"}</strong></td>
       <td>{account.cohortName || "-"}</td>
