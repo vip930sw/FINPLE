@@ -9,6 +9,7 @@ const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const MY_PAGE_LABEL_STYLE_ID = "finple-mypage-mini-label-blue-style";
 let accountStatusRenderTimer = null;
 let lastKnownAuthModeLabel = "";
+let passwordChangeListenerAttached = false;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -17,7 +18,7 @@ function isMyPagePath() {
 function readJson(key) {
   try {
     return JSON.parse(window.localStorage.getItem(key) || "null");
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -27,7 +28,7 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -73,6 +74,16 @@ function formatAuthMode(user, panel) {
 
 function getEmailPurposeText() {
   return "회원 식별, 로그인 계정 확인, 구독 상태 안내, 결제 내역 안내, 서비스 중요 고지 및 고객 문의 대응에 사용됩니다.";
+}
+
+function canShowPasswordChangeButton(user) {
+  const email = String(user?.email || "").toLowerCase();
+  return Boolean(
+    user?.authMode === "email-password" &&
+    !user?.educationAccount &&
+    user?.entitlementSource !== "education" &&
+    !email.endsWith("@education.finple.local")
+  );
 }
 
 function getAccountDescriptionText() {
@@ -155,6 +166,7 @@ function ensureAccountInfoNote(panel, user) {
   const email = user?.email || "-";
   const purposeText = getEmailPurposeText();
   const plan = formatPlanLabel(user?.plan);
+  const showPasswordChangeButton = canShowPasswordChangeButton(user);
   const header = ensureAccountStatusHeader(panel);
   let note = panel.querySelector("[data-account-info-note]");
   if (!note) {
@@ -171,7 +183,10 @@ function ensureAccountInfoNote(panel, user) {
       <span>로그인 이메일</span>
       <strong>${escapeHtml(email)}</strong>
     </div>
-    <div class="accountStatusPurposeBox">${escapeHtml(purposeText)}</div>
+    <div class="accountStatusPurposeBox${showPasswordChangeButton ? " accountStatusPurposeBoxWithAction" : ""}">
+      <span>${escapeHtml(purposeText)}</span>
+      ${showPasswordChangeButton ? '<button type="button" class="secondaryButton accountPasswordChangeButton" data-account-password-change="true">비밀번호 변경</button>' : ""}
+    </div>
   `;
 
   let badge = panel.querySelector("[data-account-plan-badge]");
@@ -213,7 +228,7 @@ function renderAccountStatusCards() {
 
   const user = readJson(AUTH_USER_STORAGE_KEY);
   const cards = getAccountStatusCards(user, panel);
-  const signature = JSON.stringify({ cards, email: user?.email || "-", purpose: getEmailPurposeText(), description: getAccountDescriptionText() });
+  const signature = JSON.stringify({ cards, email: user?.email || "-", purpose: getEmailPurposeText(), description: getAccountDescriptionText(), canChangePassword: canShowPasswordChangeButton(user) });
 
   grid.classList.add("accountStatusGrid--sixCards");
   hideLowValueAccountStatusElements(panel);
@@ -225,6 +240,14 @@ function renderAccountStatusCards() {
   grid.setAttribute("data-account-status-signature", signature);
 }
 
+function handlePasswordChangeClick(event) {
+  const button = event.target?.closest?.("[data-account-password-change]");
+  if (!button) return;
+
+  event.preventDefault();
+  window.dispatchEvent(new Event("finple-password-change-requested"));
+}
+
 function scheduleAccountStatusRender(delay = 120) {
   window.clearTimeout(accountStatusRenderTimer);
   accountStatusRenderTimer = window.setTimeout(renderAccountStatusCards, delay);
@@ -232,6 +255,11 @@ function scheduleAccountStatusRender(delay = 120) {
 
 function bootAccountStatusDisplayPatch() {
   [120, 300, 700, 1200].forEach((delay) => window.setTimeout(renderAccountStatusCards, delay));
+
+  if (!passwordChangeListenerAttached) {
+    document.addEventListener("click", handlePasswordChangeClick);
+    passwordChangeListenerAttached = true;
+  }
 
   window.addEventListener("popstate", () => scheduleAccountStatusRender(120));
   window.addEventListener("finple-auth-updated", () => scheduleAccountStatusRender(120));

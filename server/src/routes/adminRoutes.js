@@ -97,10 +97,11 @@ router.get("/members", (request, response, next) => {
                    COALESCE(plan, 'free') <> 'free'
                    OR COALESCE(active_subscription_count, 0) > 0
                  )
-             )::int AS subscriber_members
+            )::int AS subscriber_members
             FROM users
             LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id
-            LEFT JOIN education_users ON education_users.user_id = users.id`,
+            LEFT JOIN education_users ON education_users.user_id = users.id
+           WHERE education_users.user_id IS NULL`,
           [activeStatuses]
         ),
         query(
@@ -119,6 +120,10 @@ router.get("/members", (request, response, next) => {
              SELECT user_id, COUNT(*) AS inquiry_count
                FROM inquiries
               GROUP BY user_id
+           ),
+           education_users AS (
+             SELECT user_id
+               FROM education_accounts
            )
            SELECT
              users.id,
@@ -136,6 +141,8 @@ router.get("/members", (request, response, next) => {
             LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id
             LEFT JOIN portfolio_counts ON portfolio_counts.user_id = users.id
             LEFT JOIN inquiry_counts ON inquiry_counts.user_id = users.id
+            LEFT JOIN education_users ON education_users.user_id = users.id
+           WHERE education_users.user_id IS NULL
             ORDER BY users.created_at DESC
             LIMIT 50`,
           [activeStatuses]
@@ -143,6 +150,11 @@ router.get("/members", (request, response, next) => {
         query(
           `SELECT COALESCE(plan, 'free') AS plan, COUNT(*)::int AS members
              FROM users
+            WHERE NOT EXISTS (
+              SELECT 1
+                FROM education_accounts
+               WHERE education_accounts.user_id = users.id
+            )
             GROUP BY COALESCE(plan, 'free')
             ORDER BY members DESC, plan ASC`
         ),

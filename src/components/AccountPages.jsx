@@ -23,7 +23,7 @@ import {
   getPlanUsageStatus,
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
-import { deleteFinpleAccount } from "./authClientService";
+import { changeFinplePassword, deleteFinpleAccount } from "./authClientService";
 
 function isEducationAuthUser(user) {
   return Boolean(
@@ -965,6 +965,13 @@ function AccountStatusPanel({ onNavigate }) {
     refundPolicyConfirmed: false,
   });
   const [withdrawalMessage, setWithdrawalMessage] = useState("");
+  const [isPasswordChangeOpen, setIsPasswordChangeOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
 
   useEffect(() => {
     function handleAuthUpdate() {
@@ -973,6 +980,20 @@ function AccountStatusPanel({ onNavigate }) {
 
     window.addEventListener("finple-auth-updated", handleAuthUpdate);
     return () => window.removeEventListener("finple-auth-updated", handleAuthUpdate);
+  }, []);
+
+  useEffect(() => {
+    function handlePasswordChangeRequest() {
+      const currentUser = getStoredFinpleAuthUser();
+      if (currentUser?.authMode !== "email-password" || isEducationAuthUser(currentUser)) return;
+
+      setAuthUser(currentUser);
+      setPasswordChangeMessage("");
+      setIsPasswordChangeOpen(true);
+    }
+
+    window.addEventListener("finple-password-change-requested", handlePasswordChangeRequest);
+    return () => window.removeEventListener("finple-password-change-requested", handlePasswordChangeRequest);
   }, []);
 
   async function handleConnectDemoUser() {
@@ -1028,6 +1049,63 @@ function AccountStatusPanel({ onNavigate }) {
     setWithdrawalChecks((current) => ({ ...current, [key]: !current[key] }));
   }
 
+  function resetPasswordChangeForm() {
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setPasswordChangeMessage("");
+  }
+
+  function closePasswordChangeModal() {
+    if (isLoading) return;
+    setIsPasswordChangeOpen(false);
+    resetPasswordChangeForm();
+  }
+
+  function updatePasswordForm(key, value) {
+    setPasswordForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function handleChangePassword() {
+    if (!authUser?.id) {
+      setPasswordChangeMessage("비밀번호 변경을 위해 다시 로그인해 주세요.");
+      return;
+    }
+
+    if (authUser.authMode !== "email-password" || isEducationAuthUser(authUser)) {
+      setPasswordChangeMessage("비밀번호 변경은 일반 계정 로그인 사용자만 사용할 수 있습니다.");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordChangeMessage("새 비밀번호는 8자 이상으로 입력해 주세요.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordChangeMessage("새 비밀번호 확인이 일치하지 않습니다.");
+      return;
+    }
+
+    setIsLoading(true);
+    setPasswordChangeMessage("");
+    try {
+      await changeFinplePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setIsPasswordChangeOpen(false);
+      resetPasswordChangeForm();
+      setStatusMessage("비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용해 주세요.");
+    } catch (error) {
+      setPasswordChangeMessage(error?.message || "비밀번호를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleDeleteAccount() {
     if (!authUser?.id) {
       setWithdrawalMessage("회원탈퇴를 진행하려면 먼저 로그인해 주세요.");
@@ -1061,6 +1139,14 @@ function AccountStatusPanel({ onNavigate }) {
     withdrawalChecks.refundPolicyConfirmed &&
     !isLoading;
   const isEducationAccount = isEducationAuthUser(authUser);
+  const canSubmitPasswordChange =
+    authUser?.id &&
+    authUser.authMode === "email-password" &&
+    !isEducationAccount &&
+    passwordForm.currentPassword.length >= 8 &&
+    passwordForm.newPassword.length >= 8 &&
+    passwordForm.newPassword === passwordForm.confirmPassword &&
+    !isLoading;
   const loginStatusLabel = authUser
     ? isEducationAccount ? "교육용 계정 연결됨" : "체험 사용자 연결됨"
     : "미연결";
@@ -1176,6 +1262,58 @@ function AccountStatusPanel({ onNavigate }) {
               <button type="button" className="secondaryButton" onClick={closeWithdrawalModal} disabled={isLoading}>취소</button>
               <button type="button" className="primaryButton accountWithdrawalSubmit" onClick={handleDeleteAccount} disabled={!canSubmitWithdrawal}>
                 {isLoading ? "처리 중" : "회원탈퇴 진행"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isPasswordChangeOpen ? (
+        <div className="accountWithdrawalModalBackdrop" role="presentation">
+          <section className="accountWithdrawalModal accountPasswordChangeModal" role="dialog" aria-modal="true" aria-labelledby="accountPasswordChangeTitle">
+            <p className="accountMiniLabel">Password</p>
+            <h3 id="accountPasswordChangeTitle">비밀번호 변경</h3>
+            <p className="accountWithdrawalLead">
+              일반 계정 로그인에 사용하는 비밀번호를 변경합니다. 다음 로그인부터 새 비밀번호가 적용됩니다.
+            </p>
+
+            <label className="accountWithdrawalConfirm">
+              <span>현재 비밀번호</span>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(event) => updatePasswordForm("currentPassword", event.target.value)}
+                placeholder="현재 비밀번호"
+                autoComplete="current-password"
+              />
+            </label>
+            <label className="accountWithdrawalConfirm">
+              <span>새 비밀번호</span>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(event) => updatePasswordForm("newPassword", event.target.value)}
+                placeholder="8자 이상"
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="accountWithdrawalConfirm">
+              <span>새 비밀번호 확인</span>
+              <input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(event) => updatePasswordForm("confirmPassword", event.target.value)}
+                placeholder="새 비밀번호 재입력"
+                autoComplete="new-password"
+              />
+            </label>
+
+            {passwordChangeMessage ? <p className="serverStorageMessage compact dangerMessage">{passwordChangeMessage}</p> : null}
+
+            <div className="accountWithdrawalActions">
+              <button type="button" className="secondaryButton" onClick={closePasswordChangeModal} disabled={isLoading}>취소</button>
+              <button type="button" className="primaryButton accountPasswordChangeSubmit" onClick={handleChangePassword} disabled={!canSubmitPasswordChange}>
+                {isLoading ? "변경 중" : "비밀번호 변경"}
               </button>
             </div>
           </section>

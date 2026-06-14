@@ -360,6 +360,14 @@ export async function logoutFinpleAuth() {
   return { ok: true };
 }
 
+export async function changeFinplePassword({ currentPassword, newPassword }) {
+  return requestAuth(
+    "/auth/password",
+    { currentPassword, newPassword },
+    { method: "PATCH" }
+  );
+}
+
 export async function deleteFinpleAccount({
   confirmText,
   privacyDeletionConfirmed,
