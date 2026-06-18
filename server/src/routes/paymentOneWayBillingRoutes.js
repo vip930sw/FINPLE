@@ -4,6 +4,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
+import { sendSubscriptionAdminNotification } from "../services/inquiryNotificationService.js";
 import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
@@ -600,6 +601,18 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       sent: false,
       error: error?.message || "subscription_activation_notification_failed",
     })) : { enabled: false, sent: false, reason: "subscription_not_activated" };
+    const adminNotification = storage.stored && storage.subscriptionActivated ? await sendSubscriptionAdminNotification({
+      user,
+      plan: PERSONAL_PLAN,
+      amount,
+      currentPeriodEnd: storage.validUntil,
+      receiptUrl: firstPayment?.receipt?.url || null,
+      orderId: firstPaymentOrderId,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      error: error?.message || "subscription_admin_notification_failed",
+    })) : { enabled: false, sent: false, reason: "subscription_not_activated" };
 
     response.status(storage.stored ? 200 : 500).json({
       ok: Boolean(storage.stored),
@@ -614,6 +627,7 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       subscriptionActivated: Boolean(storage.subscriptionActivated),
       storage,
       notification,
+      adminNotification,
       method: getCardSummary(issuePayload),
       firstPayment: firstPayment?.skipped ? { skipped: true, reason: firstPayment.reason } : {
         paymentKey: firstPayment?.paymentKey || null,

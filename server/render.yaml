@@ -33,7 +33,7 @@ services:
       - key: FINPLE_ADMIN_TOKEN
         sync: false
       - key: SUPPORT_NOTIFY_EMAIL
-        sync: false
+        value: finple_lab@naver.com
       - key: RESEND_API_KEY
         sync: false
       - key: SUPPORT_EMAIL_FROM
