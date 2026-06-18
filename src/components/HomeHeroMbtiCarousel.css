@@ -138,7 +138,7 @@
 }
 
 .heroMbtiBars .barFill {
-  background: linear-gradient(90deg, #38bdf8 0%, #2563eb 55%, #0f172a 100%);
+  background: linear-gradient(90deg, #38bdf8 0%, #2563eb 55%, #2563eb 100%);
   transition: width 0.95s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: width;
 }
