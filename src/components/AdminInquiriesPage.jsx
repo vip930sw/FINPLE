@@ -5,7 +5,6 @@ import {
   deleteAdminEducationAccounts,
   deleteExpiredAdminEducationAccounts,
   fetchAdminEducationAccounts,
-  fetchAdminEducationAccountsCsv,
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
   fetchSupportInquiries,
@@ -285,19 +284,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }
 
-  async function handleDownloadEducationCsv() {
-    setIsLoading(true);
-    try {
-      const csv = await fetchAdminEducationAccountsCsv();
-      setEducationCredentialsCsv(csv);
-      setEducationMessage("교육 계정 CSV를 생성했습니다. 초기 비밀번호가 포함됩니다.");
-    } catch (error) {
-      setEducationMessage(error?.message || "교육 계정 CSV를 생성하지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function handleDeleteSelectedEducationAccounts(accountIds = []) {
     if (!Array.isArray(accountIds) || accountIds.length === 0) {
       setEducationMessage("삭제할 교육 계정을 먼저 선택해 주세요.");
@@ -462,7 +448,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               onLoad={handleLoadEducationAccounts}
               onBulkCreate={handleBulkCreateEducationAccounts}
               onDeleteAccount={handleDeleteEducationAccount}
-              onDownloadCsv={handleDownloadEducationCsv}
               onDeleteSelected={handleDeleteSelectedEducationAccounts}
               onDeleteExpired={handleDeleteExpiredEducationAccounts}
             />
@@ -698,7 +683,6 @@ function EducationAccountManagementPanel({
   onLoad,
   onBulkCreate,
   onDeleteAccount,
-  onDownloadCsv,
   onDeleteSelected,
   onDeleteExpired,
 }) {
@@ -824,9 +808,6 @@ function EducationAccountManagementPanel({
               <button type="button" className="dangerSubtle" onClick={() => onDeleteExpired(expiredAccountCount)} disabled={isLoading || expiredAccountCount === 0}>
                 만료된 계정 삭제{expiredAccountCount > 0 ? ` (${expiredAccountCount})` : ""}
               </button>
-              <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
-                목록 CSV
-              </button>
             </div>
           </form>
         </article>
@@ -834,7 +815,7 @@ function EducationAccountManagementPanel({
 
       {credentialsCsv ? (
         <div className="educationCredentialPanel">
-          <strong>목록 CSV</strong>
+          <strong>생성 계정 CSV</strong>
           <textarea className="adminCsvTextArea" readOnly value={credentialsCsv} aria-label="교육 계정 CSV" />
         </div>
       ) : null}
