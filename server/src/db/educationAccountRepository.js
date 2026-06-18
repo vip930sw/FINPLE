@@ -137,6 +137,7 @@ function mapEducationAccount(row) {
     label: row.label,
     cohortName: row.cohort_name,
     status: row.status,
+    effectiveStatus: row.effective_status || row.status,
     validFrom: row.valid_from,
     validUntil: row.valid_until,
     lastLoginAt: row.last_login_at,
@@ -193,6 +194,10 @@ export async function listEducationAccounts() {
          COUNT(*)::int AS total_accounts,
          COUNT(*) FILTER (WHERE status = 'active' AND ${EDUCATION_ACCOUNT_VALIDITY_SQL})::int AS active_accounts,
          COUNT(*) FILTER (
+           WHERE status = 'expired'
+              OR (valid_until IS NOT NULL AND NOT ${EDUCATION_ACCOUNT_VALIDITY_SQL})
+         )::int AS expired_accounts,
+         COUNT(*) FILTER (
            WHERE status = 'active'
              AND valid_until IS NOT NULL
              AND ${EDUCATION_ACCOUNT_VALIDITY_SQL}
@@ -204,7 +209,16 @@ export async function listEducationAccounts() {
     query(
       `SELECT
          education_accounts.*,
-         users.email
+         users.email,
+         CASE
+           WHEN education_accounts.status = 'expired'
+             OR (
+               education_accounts.valid_until IS NOT NULL
+               AND NOT ${EDUCATION_ACCOUNT_VALIDITY_SQL}
+             )
+           THEN 'expired'
+           ELSE education_accounts.status
+         END AS effective_status
        FROM education_accounts
        JOIN users ON users.id = education_accounts.user_id
        ORDER BY education_accounts.created_at DESC
@@ -217,6 +231,7 @@ export async function listEducationAccounts() {
     summary: {
       totalAccounts: Number(summary.total_accounts || 0),
       activeAccounts: Number(summary.active_accounts || 0),
+      expiredAccounts: Number(summary.expired_accounts || 0),
       expiring7d: Number(summary.expiring_7d || 0),
       logins30d: Number(summary.logins_30d || 0),
     },
@@ -425,6 +440,34 @@ export async function deleteEducationAccountsByIds(accountIds = []) {
        SELECT COUNT(*)::int AS deleted_accounts
          FROM deleted_users`,
       [ids]
+    );
+
+    return {
+      deletedAccounts: Number(result.rows[0]?.deleted_accounts || 0),
+    };
+  });
+}
+
+export async function deleteExpiredEducationAccounts() {
+  return withTransaction(async (tx) => {
+    await ensureEducationAccountSchema(tx);
+    const result = await tx(
+      `WITH target_accounts AS (
+         SELECT user_id
+           FROM education_accounts
+          WHERE status = 'expired'
+             OR (
+               valid_until IS NOT NULL
+               AND NOT ${EDUCATION_ACCOUNT_VALIDITY_SQL}
+             )
+       ),
+       deleted_users AS (
+         DELETE FROM users
+          WHERE id IN (SELECT user_id FROM target_accounts)
+          RETURNING id
+       )
+       SELECT COUNT(*)::int AS deleted_accounts
+         FROM deleted_users`
     );
 
     return {
