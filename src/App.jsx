@@ -690,13 +690,41 @@ function SiteFooter({ onNavigate }) {
         FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,<span className="siteFooterNoticeMobileSpace"> </span><br className="siteFooterNoticeBreak" />
         특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
       </p>
-      <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
-        <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
-        <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>
-        <a href="/privacy" onClick={(event) => handleFooterLink(event, "privacy")}>개인정보처리방침</a>
-        <a href="/refund" onClick={(event) => handleFooterLink(event, "refund")}>환불정책</a>
-        <a href="/disclaimer" onClick={(event) => handleFooterLink(event, "investment-disclaimer")}>투자 유의사항</a>
-      </nav>
+      <div className="siteFooterActions">
+        <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
+          <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
+          <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>
+          <a href="/privacy" onClick={(event) => handleFooterLink(event, "privacy")}>개인정보처리방침</a>
+          <a href="/refund" onClick={(event) => handleFooterLink(event, "refund")}>환불정책</a>
+          <a href="/disclaimer" onClick={(event) => handleFooterLink(event, "investment-disclaimer")}>투자 유의사항</a>
+        </nav>
+        <div className="siteFooterSocials" aria-label="FINPLE 소셜 미디어">
+          <a
+            href="https://www.instagram.com/finple_lab/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="FINPLE Instagram 새 창에서 열기"
+            title="Instagram"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4.25" />
+              <circle className="siteFooterSocialDot" cx="17.4" cy="6.7" r="1" />
+            </svg>
+          </a>
+          <span
+            className="siteFooterSocialPlaceholder"
+            role="img"
+            aria-label="FINPLE YouTube 준비 중"
+            title="YouTube 준비 중"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.2 7.1a2.7 2.7 0 0 0-1.9-1.9C17.7 4.8 12 4.8 12 4.8s-5.7 0-7.3.4a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2.4 12a28 28 0 0 0 .4 4.9 2.7 2.7 0 0 0 1.9 1.9c1.6.4 7.3.4 7.3.4s5.7 0 7.3-.4a2.7 2.7 0 0 0 1.9-1.9 28 28 0 0 0 .4-4.9 28 28 0 0 0-.4-4.9Z" />
+              <path className="siteFooterSocialPlay" d="m10 15.2 5-3.2-5-3.2v6.4Z" />
+            </svg>
+          </span>
+        </div>
+      </div>
     </footer>
   );
 }
