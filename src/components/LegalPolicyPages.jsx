@@ -1,3 +1,5 @@
+import FloatingTopButton from "./FloatingTopButton";
+
 function LegalDocumentPage({ eyebrow, title, description, sections }) {
   return (
     <main className="accountPage legalPage standaloneLegalPage">
@@ -22,6 +24,7 @@ function LegalDocumentPage({ eyebrow, title, description, sections }) {
           </article>
         ))}
       </section>
+      <FloatingTopButton ariaLabel={`${title} 페이지 상단으로 이동`} />
     </main>
   );
 }
