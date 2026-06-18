@@ -21,6 +21,7 @@
 | FINPLE_step90_beta_ops_log.md | 베타 운영 기록 / 개선 로그 |
 | FINPLE_step93_beta_share_messages.md | 소수 사용자 공유 메시지 |
 | FINPLE_step94_beta_feedback_runbook.md | 베타 피드백 운영 가이드 |
+| FINPLE_legal_routes_top_button.md | 정책/업데이트 라우터 TOP 버튼 적용 기준 |
 
 ## 전체 문서 목록
 

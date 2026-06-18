@@ -1,3 +1,5 @@
+import FloatingTopButton from "./FloatingTopButton";
+
 const UPDATE_ITEMS = [
   {
     version: "Beta v0.4.3",
@@ -221,6 +223,7 @@ export default function UpdatesPage({ onNavigate }) {
           </p>
         </article>
       </section>
+      <FloatingTopButton ariaLabel="업데이트 페이지 상단으로 이동" />
     </main>
   );
 }
