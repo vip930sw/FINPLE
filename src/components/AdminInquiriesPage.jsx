@@ -3,6 +3,7 @@ import {
   bulkCreateAdminEducationAccounts,
   deleteAdminEducationAccount,
   deleteAdminEducationAccounts,
+  deleteExpiredAdminEducationAccounts,
   fetchAdminEducationAccounts,
   fetchAdminEducationAccountsCsv,
   fetchAdminMembersSummary,
@@ -323,6 +324,32 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }
 
+  async function handleDeleteExpiredEducationAccounts(expiredCount = 0) {
+    if (expiredCount < 1) {
+      setEducationMessage("삭제할 만료 계정이 없습니다.");
+      return false;
+    }
+
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(`만료된 교육 계정 ${expiredCount}개를 삭제할까요? 로그인 계정과 권한이 함께 삭제됩니다.`);
+      if (!confirmed) return false;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await deleteExpiredAdminEducationAccounts();
+      setEducationCredentialsCsv("");
+      setEducationMessage(`만료된 교육 계정 ${result?.deletedAccounts || 0}개를 삭제했습니다.`);
+      await handleLoadEducationAccounts();
+      return true;
+    } catch (error) {
+      setEducationMessage(error?.message || "만료된 교육 계정을 삭제하지 못했습니다.");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleChangeStatus(inquiryId, status) {
     if (!inquiryId) return;
 
@@ -437,6 +464,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               onDeleteAccount={handleDeleteEducationAccount}
               onDownloadCsv={handleDownloadEducationCsv}
               onDeleteSelected={handleDeleteSelectedEducationAccounts}
+              onDeleteExpired={handleDeleteExpiredEducationAccounts}
             />
           ) : null}
 
@@ -672,6 +700,7 @@ function EducationAccountManagementPanel({
   onDeleteAccount,
   onDownloadCsv,
   onDeleteSelected,
+  onDeleteExpired,
 }) {
   const accounts = useMemo(() => (Array.isArray(data?.accounts) ? data.accounts : []), [data]);
   const summary = data?.summary || {};
@@ -690,6 +719,10 @@ function EducationAccountManagementPanel({
   );
   const selectedIdSet = useMemo(() => new Set(selectedAccountIds), [selectedAccountIds]);
   const allAccountsSelected = accounts.length > 0 && accounts.every((account) => selectedIdSet.has(account.id));
+  const expiredAccountCount = Number(
+    summary.expiredAccounts ??
+    accounts.filter((account) => (account.effectiveStatus || account.status) === "expired").length
+  );
 
   function updateBulkField(field, value) {
     setBulkFormError("");
@@ -788,6 +821,9 @@ function EducationAccountManagementPanel({
               <button type="button" className="dangerSubtle" onClick={handleDeleteSelected} disabled={isLoading || selectedAccountIds.length === 0}>
                 선택한 교육 계정 삭제{selectedAccountIds.length > 0 ? ` (${selectedAccountIds.length})` : ""}
               </button>
+              <button type="button" className="dangerSubtle" onClick={() => onDeleteExpired(expiredAccountCount)} disabled={isLoading || expiredAccountCount === 0}>
+                만료된 계정 삭제{expiredAccountCount > 0 ? ` (${expiredAccountCount})` : ""}
+              </button>
               <button type="button" className="secondaryButton" onClick={onDownloadCsv} disabled={isLoading}>
                 목록 CSV
               </button>
@@ -819,7 +855,7 @@ function EducationAccountManagementPanel({
               <th>교육용 ID</th>
               <th>비밀번호</th>
               <th>수업/세미나</th>
-              <th>상태</th>
+              <th>상태 (활성/만료)</th>
               <th>만료일</th>
               <th>최근 로그인</th>
               <th>관리</th>
@@ -848,6 +884,7 @@ function EducationAccountManagementPanel({
 }
 
 function EducationAccountRow({ account, isLoading, onDelete, isSelected, onToggleSelected }) {
+  const effectiveStatus = account.effectiveStatus || account.status || "active";
   return (
     <tr>
       <td>
@@ -862,7 +899,11 @@ function EducationAccountRow({ account, isLoading, onDelete, isSelected, onToggl
       <td><strong>{account.loginId}</strong><span>{account.label || account.email || "-"}</span></td>
       <td><strong className="monoText">{account.initialPassword || "-"}</strong></td>
       <td>{account.cohortName || "-"}</td>
-      <td>{EDUCATION_STATUS_LABELS[account.status] || account.status || "활성"}</td>
+      <td>
+        <span className={`educationAccountStatus educationAccountStatus--${effectiveStatus}`}>
+          {EDUCATION_STATUS_LABELS[effectiveStatus] || effectiveStatus}
+        </span>
+      </td>
       <td>{toDateInputValue(account.validUntil) || "-"}</td>
       <td>{formatShortDate(account.lastLoginAt)}</td>
       <td>

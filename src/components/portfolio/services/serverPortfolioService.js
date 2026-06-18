@@ -254,6 +254,14 @@ export async function deleteAdminEducationAccounts(accountIds = []) {
   );
 }
 
+export async function deleteExpiredAdminEducationAccounts() {
+  return requestJson(
+    "/admin/education-accounts/expired",
+    { method: "DELETE" },
+    { includeAdminToken: true }
+  );
+}
+
 export async function deleteAdminEducationAccount(accountId) {
   return requestJson(
     `/admin/education-accounts/${encodeURIComponent(accountId)}`,

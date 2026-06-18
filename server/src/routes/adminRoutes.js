@@ -8,6 +8,7 @@ import {
   deleteAllEducationAccounts,
   deleteEducationAccount,
   deleteEducationAccountsByIds,
+  deleteExpiredEducationAccounts,
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
@@ -232,6 +233,18 @@ router.delete("/education-accounts", (request, response, next) => {
       const result = Array.isArray(accountIds) && accountIds.length > 0
         ? await deleteEducationAccountsByIds(accountIds)
         : await deleteAllEducationAccounts();
+      response.json({ ok: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.delete("/education-accounts/expired", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const result = await deleteExpiredEducationAccounts();
       response.json({ ok: true, ...result });
     } catch (error) {
       next(error);

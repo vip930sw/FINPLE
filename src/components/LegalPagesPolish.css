@@ -418,7 +418,7 @@
 
 .educationAdminFormActions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   align-items: center;
 }
@@ -497,6 +497,35 @@
 .educationAdminPanel .monoText {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: 0;
+}
+
+.educationAccountStatus {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 5px 9px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #166534 !important;
+  font-size: 12px !important;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.educationAccountStatus--expired,
+.educationAccountStatus--revoked {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #b91c1c !important;
+}
+
+.educationAccountStatus--paused {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e !important;
 }
 
 .educationAdminPanel .dangerSubtle {
