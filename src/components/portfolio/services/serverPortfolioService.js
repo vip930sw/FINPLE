@@ -270,22 +270,6 @@ export async function deleteAdminEducationAccount(accountId) {
   );
 }
 
-export async function fetchAdminEducationAccountsCsv() {
-  const adminToken = getFinpleAdminToken();
-  const response = await fetch(buildApiUrl("/admin/education-accounts.csv"), {
-    headers: {
-      Accept: "text/csv",
-      ...(adminToken ? { "x-finple-admin-token": adminToken } : {}),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("교육 계정 CSV를 다운로드하지 못했습니다.");
-  }
-
-  return response.text();
-}
-
 export function importServerPortfoliosToBrowser(serverPortfolios = [], options = {}) {
   const mode = options.mode || "merge";
   const normalizedServerPortfolios = Array.isArray(serverPortfolios)
