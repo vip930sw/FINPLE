@@ -47,12 +47,18 @@ function createLocalTrialUser() {
 
 function saveLocalPendingInquiry(requestUrl, requestInit) {
   const now = new Date().toISOString();
-  let body = {};
+  let body;
 
-  try {
-    body = JSON.parse(requestInit?.body || "{}");
-  } catch (error) {
-    body = {};
+  if (typeof FormData !== "undefined" && requestInit?.body instanceof FormData) {
+    body = Object.fromEntries(
+      Array.from(requestInit.body.entries()).filter(([, value]) => typeof value === "string")
+    );
+  } else {
+    try {
+      body = JSON.parse(requestInit?.body || "{}");
+    } catch {
+      body = {};
+    }
   }
 
   const inquiry = {
@@ -72,7 +78,7 @@ function saveLocalPendingInquiry(requestUrl, requestInit) {
     const current = JSON.parse(window.localStorage.getItem(storageKey) || "[]");
     const next = Array.isArray(current) ? [inquiry, ...current].slice(0, 20) : [inquiry];
     window.localStorage.setItem(storageKey, JSON.stringify(next));
-  } catch (error) {
+  } catch {
     // localStorage 사용이 막힌 환경에서는 화면 흐름만 유지합니다.
   }
 
@@ -82,7 +88,7 @@ function saveLocalPendingInquiry(requestUrl, requestInit) {
 if (typeof window !== "undefined") {
   try {
     window.localStorage.removeItem("FINPLE_ALPHA_VANTAGE_RATE_LIMIT_UNTIL");
-  } catch (error) {
+  } catch {
     // 레거시 Alpha Vantage 조회 제한 플래그 제거 실패 시에도 앱 실행은 계속합니다.
   }
 }
@@ -120,7 +126,7 @@ if (typeof window !== "undefined" && typeof window.fetch === "function" && !wind
         });
       }
 
-      throw new Error(NETWORK_FALLBACK_MESSAGE);
+      throw new Error(NETWORK_FALLBACK_MESSAGE, { cause: error });
     }
   };
 }

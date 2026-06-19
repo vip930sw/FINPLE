@@ -1,8 +1,18 @@
 import express from "express";
 import { randomUUID } from "node:crypto";
+import multer from "multer";
 
 import { isDatabaseConfigured, query } from "../db/database.js";
 import { getAdminSecurityStatus, requireAdminAccess } from "../middleware/adminGuard.js";
+import {
+  applyInquiryAttachmentRetention,
+  ensureInquiryAttachmentSchema,
+  getInquiryAttachmentStatus,
+  getInquiryUploadLimits,
+  isAllowedInquiryImage,
+  listInquiryAttachmentsForAdmin,
+  storeInquiryAttachments,
+} from "../services/inquiryAttachmentService.js";
 import { getInquiryNotificationStatus, sendInquiryNotification } from "../services/inquiryNotificationService.js";
 import {
   getUserNotificationStatus,
@@ -11,6 +21,52 @@ import {
 } from "../services/userNotificationService.js";
 
 const router = express.Router();
+const attachmentRateLimit = new Map();
+const uploadLimits = getInquiryUploadLimits();
+const inquiryImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: uploadLimits,
+  fileFilter: (request, file, callback) => {
+    if (isAllowedInquiryImage({ ...file, size: 1 })) {
+      callback(null, true);
+      return;
+    }
+    callback(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+  },
+}).array("attachments", uploadLimits.files);
+
+function handleInquiryImageUpload(request, response, next) {
+  inquiryImageUpload(request, response, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    const isSizeError = error?.code === "LIMIT_FILE_SIZE";
+    const isCountError = error?.code === "LIMIT_FILE_COUNT";
+    response.status(400).json({
+      ok: false,
+      code: error?.code || "INQUIRY_ATTACHMENT_INVALID",
+      message: isSizeError
+        ? "사진은 장당 5MB까지 첨부할 수 있습니다."
+        : isCountError
+          ? "사진은 최대 3장까지 첨부할 수 있습니다."
+          : "JPG, PNG, WebP 사진만 첨부할 수 있습니다.",
+    });
+  });
+}
+
+function checkAttachmentRateLimit(request) {
+  if (!Array.isArray(request.files) || request.files.length === 0) return true;
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const key = String(request.ip || request.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+  const recent = (attachmentRateLimit.get(key) || []).filter((timestamp) => now - timestamp < windowMs);
+  if (recent.length >= 5) return false;
+  recent.push(now);
+  attachmentRateLimit.set(key, recent);
+  return true;
+}
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
@@ -72,6 +128,7 @@ function mapInquiryRow(row) {
     title: row.title,
     message: row.message,
     status: row.status,
+    attachmentCount: Number(row.attachment_count || 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -82,6 +139,7 @@ router.get("/notification-status", (request, response) => {
     ok: true,
     notification: getInquiryNotificationStatus(),
     userNotification: getUserNotificationStatus(),
+    attachments: getInquiryAttachmentStatus(),
   });
 });
 
@@ -104,14 +162,22 @@ router.get("/", async (request, response, next) => {
 
     const scope = request.query?.scope === "all" ? "all" : "mine";
     const userId = getRequestUserId(request);
+    await ensureInquiryAttachmentSchema();
 
     if (scope === "all") {
       requireAdminAccess(request, response, async () => {
         try {
           const result = await query(
-            `SELECT id, user_id, category, title, message, status, created_at, updated_at
+            `SELECT inquiries.id, inquiries.user_id, inquiries.category, inquiries.title,
+                    inquiries.message, inquiries.status, inquiries.created_at, inquiries.updated_at,
+                    COUNT(inquiry_attachments.id) FILTER (
+                      WHERE inquiry_attachments.deleted_at IS NULL
+                        AND inquiry_attachments.expires_at > NOW()
+                    ) AS attachment_count
                FROM inquiries
-              ORDER BY created_at DESC
+               LEFT JOIN inquiry_attachments ON inquiry_attachments.inquiry_id = inquiries.id
+              GROUP BY inquiries.id
+              ORDER BY inquiries.created_at DESC
               LIMIT 100`
           );
 
@@ -132,10 +198,17 @@ router.get("/", async (request, response, next) => {
     }
 
     const result = await query(
-      `SELECT id, user_id, category, title, message, status, created_at, updated_at
+      `SELECT inquiries.id, inquiries.user_id, inquiries.category, inquiries.title,
+              inquiries.message, inquiries.status, inquiries.created_at, inquiries.updated_at,
+              COUNT(inquiry_attachments.id) FILTER (
+                WHERE inquiry_attachments.deleted_at IS NULL
+                  AND inquiry_attachments.expires_at > NOW()
+              ) AS attachment_count
          FROM inquiries
-        WHERE user_id = $1
-        ORDER BY created_at DESC
+         LEFT JOIN inquiry_attachments ON inquiry_attachments.inquiry_id = inquiries.id
+        WHERE inquiries.user_id = $1
+        GROUP BY inquiries.id
+        ORDER BY inquiries.created_at DESC
         LIMIT 50`,
       [userId]
     );
@@ -195,6 +268,7 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
     }
 
     const row = result.rows[0];
+    await applyInquiryAttachmentRetention(inquiryId, status);
     const notification = await sendInquiryStatusNotification({
       to: row.user_email || extractEmailFromText(row.message),
       inquiry: row,
@@ -215,7 +289,29 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
   }
 });
 
-router.post("/", async (request, response, next) => {
+router.get("/:inquiryId/attachments", async (request, response, next) => {
+  try {
+    requireAdminAccess(request, response, () => {});
+    if (response.headersSent) return;
+
+    const inquiryId = request.params?.inquiryId;
+    if (!isUuid(inquiryId)) {
+      response.status(400).json({ ok: false, message: "문의 ID 형식이 올바르지 않습니다." });
+      return;
+    }
+
+    const attachments = await listInquiryAttachmentsForAdmin(inquiryId);
+    response.json({
+      ok: true,
+      attachments,
+      storage: getInquiryAttachmentStatus(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/", handleInquiryImageUpload, async (request, response, next) => {
   try {
     if (!isDatabaseConfigured()) {
       response.status(503).json({
@@ -232,6 +328,16 @@ router.post("/", async (request, response, next) => {
     const pageUrl = normalizeText(request.body?.pageUrl, 300);
     const userAgent = normalizeText(request.body?.userAgent, 500);
     const userId = getRequestUserId(request);
+    const files = Array.isArray(request.files) ? request.files : [];
+
+    if (!checkAttachmentRateLimit(request)) {
+      response.status(429).json({
+        ok: false,
+        code: "INQUIRY_ATTACHMENT_RATE_LIMITED",
+        message: "사진 첨부 문의가 너무 자주 접수되었습니다. 1시간 후 다시 시도해 주세요.",
+      });
+      return;
+    }
 
     if (!message) {
       response.status(400).json({
@@ -252,6 +358,13 @@ router.post("/", async (request, response, next) => {
     );
 
     const row = result.rows[0];
+    let attachments = [];
+    try {
+      attachments = await storeInquiryAttachments({ inquiryId: id, files });
+    } catch (error) {
+      await query("DELETE FROM inquiries WHERE id = $1", [id]).catch(() => {});
+      throw error;
+    }
     const notification = await sendInquiryNotification({
       id,
       userId,
@@ -261,6 +374,7 @@ router.post("/", async (request, response, next) => {
       message,
       pageUrl,
       userAgent,
+      attachments,
     }).catch((error) => ({
       enabled: true,
       sent: false,
@@ -279,6 +393,13 @@ router.post("/", async (request, response, next) => {
     response.status(201).json({
       ok: true,
       inquiry: mapInquiryRow(row),
+      attachments: attachments.map((attachment) => ({
+        id: attachment.id,
+        fileName: attachment.file_name,
+        mimeType: attachment.mime_type,
+        fileSize: Number(attachment.file_size || 0),
+        expiresAt: attachment.expires_at,
+      })),
       notification,
       userNotification,
     });

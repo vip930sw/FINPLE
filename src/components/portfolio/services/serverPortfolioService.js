@@ -157,18 +157,19 @@ export async function fetchServerPortfolios() {
 
 
 export async function submitSupportInquiry(inquiry) {
-  const payload = {
-    category: inquiry?.category || "feature",
-    email: inquiry?.email || "",
-    title: inquiry?.title || "FINPLE 문의사항",
-    message: inquiry?.message || "",
-    pageUrl: typeof window !== "undefined" ? window.location.href : "",
-    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
-  };
+  const attachments = Array.isArray(inquiry?.attachments) ? inquiry.attachments : [];
+  const formData = new FormData();
+  formData.append("category", inquiry?.category || "feature");
+  formData.append("email", inquiry?.email || "");
+  formData.append("title", inquiry?.title || "FINPLE 문의사항");
+  formData.append("message", inquiry?.message || "");
+  formData.append("pageUrl", typeof window !== "undefined" ? window.location.href : "");
+  formData.append("userAgent", typeof navigator !== "undefined" ? navigator.userAgent : "");
+  attachments.forEach((file) => formData.append("attachments", file));
 
   return requestJson("/inquiries", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: formData,
   });
 }
 
@@ -190,6 +191,20 @@ export async function fetchSupportInquiries(options = {}) {
     scope === "all" ? { includeAdminToken: true } : {}
   );
   return Array.isArray(payload?.inquiries) ? payload.inquiries : [];
+}
+
+export async function fetchSupportInquiryAttachments(inquiryId) {
+  const payload = await requestJson(
+    `/inquiries/${encodeURIComponent(inquiryId)}/attachments`,
+    {},
+    { includeAdminToken: true }
+  );
+  return Array.isArray(payload?.attachments) ? payload.attachments : [];
+}
+
+export async function fetchInquiryAttachmentStatus() {
+  const payload = await requestJson("/inquiries/notification-status", {}, { skipAuthHeader: true });
+  return payload?.attachments || null;
 }
 
 export async function updateSupportInquiryStatus(inquiryId, status) {
@@ -399,6 +414,7 @@ async function requestJson(path, options = {}, config = {}) {
   const adminToken = config.includeAdminToken ? getFinpleAdminToken() : "";
   const adminHeaders = adminToken ? { "x-finple-admin-token": adminToken } : {};
   const requestUrl = buildApiUrl(path);
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
 
   let response;
   try {
@@ -406,7 +422,7 @@ async function requestJson(path, options = {}, config = {}) {
       ...options,
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...authHeaders,
         ...adminHeaders,
         ...(options.headers || {}),

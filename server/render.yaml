@@ -38,3 +38,9 @@ services:
         sync: false
       - key: SUPPORT_EMAIL_FROM
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_INQUIRY_BUCKET
+        value: finple-inquiry-attachments
