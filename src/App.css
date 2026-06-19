@@ -7843,6 +7843,119 @@ body {
   min-width: 140px;
 }
 
+.supportSuccessOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(5px);
+}
+
+.supportSuccessDialog {
+  width: min(100%, 440px);
+  box-sizing: border-box;
+  padding: 32px;
+  border: 1px solid #dbeafe;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+  text-align: center;
+}
+
+.supportSuccessIcon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.supportSuccessIcon svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.supportSuccessDialog .sectionLabel {
+  margin: 0 0 8px;
+}
+
+.supportSuccessDialog h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.supportSuccessDialog > p:not(.sectionLabel) {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.supportSuccessDetails {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.supportSuccessDetails div {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.supportSuccessDetails dt {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.supportSuccessDetails dd {
+  min-width: 0;
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.supportSuccessDialog .primaryButton {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .supportSuccessOverlay {
+    padding: 18px;
+  }
+
+  .supportSuccessDialog {
+    padding: 26px 22px;
+    border-radius: 22px;
+  }
+
+  .supportSuccessDialog h2 {
+    font-size: 21px;
+  }
+}
+
 /* =========================================================
    STEP 57. Plan limit / pricing state polish
    ========================================================= */
