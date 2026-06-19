@@ -580,6 +580,18 @@ export function SupportPage({ onNavigate }) {
   const [message, setMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("문의 내용을 작성하면 관리자 확인을 위해 접수됩니다.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedInquiry, setSubmittedInquiry] = useState(null);
+
+  useEffect(() => {
+    if (!submittedInquiry) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setSubmittedInquiry(null);
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [submittedInquiry]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -598,7 +610,13 @@ export function SupportPage({ onNavigate }) {
         message: message.trim(),
       });
 
-      setStatusMessage(`문의가 접수되었습니다. 접수번호: ${result?.inquiry?.id?.slice(0, 8) || "저장 완료"}`);
+      const inquiryNumber = result?.inquiry?.id?.slice(0, 8) || "저장 완료";
+      setStatusMessage(`문의가 접수되었습니다. 접수번호: ${inquiryNumber}`);
+      setSubmittedInquiry({
+        number: inquiryNumber,
+        title: title.trim() || getDefaultInquiryTitle(category),
+        hasReplyEmail: Boolean(email.trim()),
+      });
       setTitle("");
       setMessage("");
     } catch (error) {
@@ -671,6 +689,54 @@ export function SupportPage({ onNavigate }) {
           </div>
         </form>
       </section>
+      {submittedInquiry ? (
+        <div
+          className="supportSuccessOverlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSubmittedInquiry(null);
+          }}
+        >
+          <section
+            className="supportSuccessDialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="supportSuccessTitle"
+            aria-describedby="supportSuccessDescription"
+          >
+            <div className="supportSuccessIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="m5 12.5 4.2 4.2L19 7" />
+              </svg>
+            </div>
+            <p className="sectionLabel">Inquiry Received</p>
+            <h2 id="supportSuccessTitle">문의가 정상 접수되었습니다</h2>
+            <p id="supportSuccessDescription">
+              {submittedInquiry.hasReplyEmail
+                ? "담당자가 내용을 확인한 뒤 입력하신 이메일로 안내드리겠습니다."
+                : "담당자가 내용을 확인합니다. 답변 이메일을 입력하지 않은 문의는 별도 회신이 어려울 수 있습니다."}
+            </p>
+            <dl className="supportSuccessDetails">
+              <div>
+                <dt>접수번호</dt>
+                <dd>{submittedInquiry.number}</dd>
+              </div>
+              <div>
+                <dt>문의 제목</dt>
+                <dd>{submittedInquiry.title}</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              className="primaryButton"
+              autoFocus
+              onClick={() => setSubmittedInquiry(null)}
+            >
+              확인
+            </button>
+          </section>
+        </div>
+      ) : null}
     </AccountShell>
   );
 }
