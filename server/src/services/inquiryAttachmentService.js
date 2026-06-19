@@ -15,9 +15,22 @@ const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 let schemaReady = false;
 let bucketReady = false;
 
+function normalizeSupabaseUrl(value) {
+  const rawUrl = String(value || "").trim().replace(/\/+$/, "");
+  if (!rawUrl) return "";
+
+  try {
+    const parsedUrl = new URL(rawUrl);
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) return rawUrl;
+    return parsedUrl.origin;
+  } catch {
+    return rawUrl;
+  }
+}
+
 function getStorageConfig() {
   return {
-    url: String(process.env.SUPABASE_URL || "").replace(/\/+$/, ""),
+    url: normalizeSupabaseUrl(process.env.SUPABASE_URL),
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
     bucket: process.env.SUPABASE_INQUIRY_BUCKET || DEFAULT_BUCKET,
   };
