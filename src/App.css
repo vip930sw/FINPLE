@@ -7859,6 +7859,8 @@ body {
   place-items: initial !important;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  height: 42px;
   min-width: 94px;
   padding: 10px 14px;
   border: 1px solid #2563eb;
@@ -7867,6 +7869,9 @@ body {
   color: #2563eb !important;
   font-size: 13px !important;
   font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
 }
 

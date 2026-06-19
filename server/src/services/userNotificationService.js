@@ -1,5 +1,7 @@
 /* global process */
 
+import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
+
 const DEFAULT_FROM = "FINPLE <onboarding@resend.dev>";
 
 function getEmailConfig() {
@@ -103,7 +105,7 @@ async function sendUserNotificationEmail({ to, subject, title, intro, details, a
     </div>
   `;
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -116,7 +118,7 @@ async function sendUserNotificationEmail({ to, subject, title, intro, details, a
       text,
       html,
     }),
-  });
+  }, 15000);
 
   const payload = await response.json().catch(() => ({}));
 

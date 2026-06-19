@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { query } from "../db/database.js";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
 
 const DEFAULT_BUCKET = "finple-inquiry-attachments";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -8,6 +9,7 @@ const MAX_FILE_COUNT = 3;
 const OPEN_RETENTION_DAYS = 180;
 const CLOSED_RETENTION_DAYS = 90;
 const SIGNED_URL_SECONDS = 600;
+const STORAGE_REQUEST_TIMEOUT_MS = 15000;
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 let schemaReady = false;
@@ -126,7 +128,30 @@ async function ensurePrivateBucket() {
   if (bucketReady) return;
   const config = getStorageConfig();
 
-  const response = await fetch(`${config.url}/storage/v1/bucket`, {
+  const bucketResponse = await fetchWithTimeout(
+    `${config.url}/storage/v1/bucket/${encodeURIComponent(config.bucket)}`,
+    {
+      method: "GET",
+      headers: getStorageHeaders(),
+    },
+    STORAGE_REQUEST_TIMEOUT_MS
+  );
+
+  if (bucketResponse.ok) {
+    bucketReady = true;
+    return;
+  }
+
+  const bucketPayload = await bucketResponse.json().catch(() => ({}));
+  const bucketMessage = String(bucketPayload?.message || bucketPayload?.error || "");
+  const bucketMissing = bucketResponse.status === 404 ||
+    (bucketResponse.status === 400 && /not found/i.test(bucketMessage));
+
+  if (!bucketMissing) {
+    throw new Error(bucketMessage || `사진 저장소 확인에 실패했습니다. (${bucketResponse.status})`);
+  }
+
+  const response = await fetchWithTimeout(`${config.url}/storage/v1/bucket`, {
     method: "POST",
     headers: getStorageHeaders(),
     body: JSON.stringify({
@@ -136,14 +161,44 @@ async function ensurePrivateBucket() {
       file_size_limit: MAX_FILE_SIZE,
       allowed_mime_types: Array.from(ALLOWED_MIME_TYPES),
     }),
-  });
+  }, STORAGE_REQUEST_TIMEOUT_MS);
 
-  if (!response.ok && response.status !== 409) {
+  if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message || `첨부파일 저장소 준비에 실패했습니다. (${response.status})`);
+    const message = String(payload?.message || payload?.error || "");
+    const alreadyExists = [400, 409].includes(response.status) && /already exists|duplicate/i.test(message);
+    if (!alreadyExists) {
+      throw new Error(message || `사진 저장소 준비에 실패했습니다. (${response.status})`);
+    }
   }
 
   bucketReady = true;
+}
+
+export async function checkInquiryAttachmentStorageConnection() {
+  const status = getInquiryAttachmentStatus();
+  if (!status.enabled) {
+    return {
+      ...status,
+      connected: false,
+      error: "SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.",
+    };
+  }
+
+  try {
+    await ensurePrivateBucket();
+    return {
+      ...status,
+      connected: true,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      ...status,
+      connected: false,
+      error: error?.message || "사진 저장소 연결을 확인할 수 없습니다.",
+    };
+  }
 }
 
 function sanitizeFileName(value = "") {
@@ -164,7 +219,7 @@ function encodeStoragePath(path) {
 
 async function uploadStorageObject(path, file) {
   const config = getStorageConfig();
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${config.url}/storage/v1/object/${encodeURIComponent(config.bucket)}/${encodeStoragePath(path)}`,
     {
       method: "POST",
@@ -173,7 +228,8 @@ async function uploadStorageObject(path, file) {
         "x-upsert": "false",
       },
       body: file.buffer,
-    }
+    },
+    STORAGE_REQUEST_TIMEOUT_MS
   );
 
   if (!response.ok) {
@@ -185,11 +241,11 @@ async function uploadStorageObject(path, file) {
 async function removeStorageObjects(paths = []) {
   if (!paths.length) return;
   const config = getStorageConfig();
-  const response = await fetch(`${config.url}/storage/v1/object/${encodeURIComponent(config.bucket)}`, {
+  const response = await fetchWithTimeout(`${config.url}/storage/v1/object/${encodeURIComponent(config.bucket)}`, {
     method: "DELETE",
     headers: getStorageHeaders(),
     body: JSON.stringify({ prefixes: paths }),
-  });
+  }, STORAGE_REQUEST_TIMEOUT_MS);
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -199,13 +255,14 @@ async function removeStorageObjects(paths = []) {
 
 async function createSignedUrl(path) {
   const config = getStorageConfig();
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${config.url}/storage/v1/object/sign/${encodeURIComponent(config.bucket)}/${encodeStoragePath(path)}`,
     {
       method: "POST",
       headers: getStorageHeaders(),
       body: JSON.stringify({ expiresIn: SIGNED_URL_SECONDS }),
-    }
+    },
+    STORAGE_REQUEST_TIMEOUT_MS
   );
   const payload = await response.json().catch(() => ({}));
 

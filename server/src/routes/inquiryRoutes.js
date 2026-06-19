@@ -6,6 +6,7 @@ import { isDatabaseConfigured, query } from "../db/database.js";
 import { getAdminSecurityStatus, requireAdminAccess } from "../middleware/adminGuard.js";
 import {
   applyInquiryAttachmentRetention,
+  checkInquiryAttachmentStorageConnection,
   ensureInquiryAttachmentSchema,
   getInquiryAttachmentStatus,
   getInquiryUploadLimits,
@@ -134,13 +135,18 @@ function mapInquiryRow(row) {
   };
 }
 
-router.get("/notification-status", (request, response) => {
-  response.json({
-    ok: true,
-    notification: getInquiryNotificationStatus(),
-    userNotification: getUserNotificationStatus(),
-    attachments: getInquiryAttachmentStatus(),
-  });
+router.get("/notification-status", async (request, response, next) => {
+  try {
+    const attachments = await checkInquiryAttachmentStorageConnection();
+    response.json({
+      ok: true,
+      notification: getInquiryNotificationStatus(),
+      userNotification: getUserNotificationStatus(),
+      attachments,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get("/admin-status", (request, response) => {
@@ -365,30 +371,31 @@ router.post("/", handleInquiryImageUpload, async (request, response, next) => {
       await query("DELETE FROM inquiries WHERE id = $1", [id]).catch(() => {});
       throw error;
     }
-    const notification = await sendInquiryNotification({
-      id,
-      userId,
-      category,
-      title,
-      email,
-      message,
-      pageUrl,
-      userAgent,
-      attachments,
-    }).catch((error) => ({
-      enabled: true,
-      sent: false,
-      error: error?.message || "메일 알림 처리 중 오류가 발생했습니다.",
-    }));
-
-    const userNotification = await sendInquiryReceivedNotification({
-      to: email,
-      inquiry: row,
-    }).catch((error) => ({
-      enabled: true,
-      sent: false,
-      error: error?.message || "inquiry_received_notification_failed",
-    }));
+    const [notification, userNotification] = await Promise.all([
+      sendInquiryNotification({
+        id,
+        userId,
+        category,
+        title,
+        email,
+        message,
+        pageUrl,
+        userAgent,
+        attachments,
+      }).catch((error) => ({
+        enabled: true,
+        sent: false,
+        error: error?.message || "메일 알림 처리 중 오류가 발생했습니다.",
+      })),
+      sendInquiryReceivedNotification({
+        to: email,
+        inquiry: row,
+      }).catch((error) => ({
+        enabled: true,
+        sent: false,
+        error: error?.message || "inquiry_received_notification_failed",
+      })),
+    ]);
 
     response.status(201).json({
       ok: true,
