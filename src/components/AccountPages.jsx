@@ -713,7 +713,7 @@ export function SupportPage({ onNavigate }) {
             <h2 id="supportSuccessTitle">문의가 정상 접수되었습니다</h2>
             <p id="supportSuccessDescription">
               {submittedInquiry.hasReplyEmail
-                ? "담당자가 내용을 확인한 뒤 입력하신 이메일로 안내드리겠습니다."
+                ? "담당자 확인 후 이메일로 안내드립니다."
                 : "담당자가 내용을 확인합니다. 답변 이메일을 입력하지 않은 문의는 별도 회신이 어려울 수 있습니다."}
             </p>
             <dl className="supportSuccessDetails">
