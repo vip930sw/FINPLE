@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
+
 const DEFAULT_FROM = "FINPLE <onboarding@resend.dev>";
 const DEFAULT_ADMIN_EMAIL = "finple_lab@naver.com";
 
@@ -105,7 +107,7 @@ async function sendAdminNotification({ subject, text, html, replyTo }) {
     };
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -119,7 +121,7 @@ async function sendAdminNotification({ subject, text, html, replyTo }) {
       html,
       reply_to: replyTo || undefined,
     }),
-  });
+  }, 15000);
 
   const payload = await response.json().catch(() => ({}));
 

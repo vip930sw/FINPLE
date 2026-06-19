@@ -170,7 +170,7 @@ export async function submitSupportInquiry(inquiry) {
   return requestJson("/inquiries", {
     method: "POST",
     body: formData,
-  });
+  }, { timeoutMs: 90000 });
 }
 
 export async function fetchMySupportInquiries() {
@@ -415,6 +415,17 @@ async function requestJson(path, options = {}, config = {}) {
   const adminHeaders = adminToken ? { "x-finple-admin-token": adminToken } : {};
   const requestUrl = buildApiUrl(path);
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const timeoutMs = Number(config.timeoutMs) > 0 ? Number(config.timeoutMs) : 30000;
+  const controller = new AbortController();
+  const externalSignal = options.signal;
+  const abortFromExternalSignal = () => controller.abort(externalSignal?.reason);
+  const timer = setTimeout(() => controller.abort("timeout"), timeoutMs);
+
+  if (externalSignal?.aborted) {
+    abortFromExternalSignal();
+  } else {
+    externalSignal?.addEventListener("abort", abortFromExternalSignal, { once: true });
+  }
 
   let response;
   try {
@@ -427,11 +438,18 @@ async function requestJson(path, options = {}, config = {}) {
         ...adminHeaders,
         ...(options.headers || {}),
       },
+      signal: controller.signal,
     });
   } catch {
+    if (controller.signal.aborted && !externalSignal?.aborted) {
+      throw new Error("문의 저장 시간이 초과되었습니다. 사진 용량이나 네트워크 상태를 확인한 뒤 다시 시도해 주세요.");
+    }
     throw new Error(
       `API 요청에 실패했습니다. 호출 주소: ${requestUrl}. VITE_FINPLE_API_BASE_URL 또는 백엔드 CORS_ORIGIN 설정을 확인해 주세요.`
     );
+  } finally {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener("abort", abortFromExternalSignal);
   }
 
   const payload = await readResponseJson(response);
