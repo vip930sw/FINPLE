@@ -6,6 +6,7 @@ function getResendConfig() {
     apiKey: process.env.RESEND_API_KEY || "",
     to: process.env.SUPPORT_NOTIFY_EMAIL || DEFAULT_ADMIN_EMAIL,
     from: process.env.SUPPORT_EMAIL_FROM || process.env.FINPLE_EMAIL_FROM || DEFAULT_FROM,
+    appBaseUrl: process.env.FINPLE_APP_BASE_URL || "https://finple.co.kr",
   };
 }
 
@@ -29,6 +30,7 @@ function escapeHtml(value) {
 }
 
 function buildTextBody(inquiry) {
+  const adminUrl = `${getResendConfig().appBaseUrl}/admin`;
   const lines = [
     "FINPLE 문의사항이 접수되었습니다.",
     "",
@@ -38,6 +40,8 @@ function buildTextBody(inquiry) {
     `답변 이메일: ${inquiry.email || "미입력"}`,
     `페이지: ${inquiry.pageUrl || "-"}`,
     `사용자 ID: ${inquiry.userId || "-"}`,
+    `첨부 사진: ${Array.isArray(inquiry.attachments) ? inquiry.attachments.length : 0}장`,
+    `관리자 확인: ${adminUrl}`,
     "",
     "문의 내용",
     "----------------",
@@ -48,6 +52,7 @@ function buildTextBody(inquiry) {
 }
 
 function buildHtmlBody(inquiry) {
+  const adminUrl = `${getResendConfig().appBaseUrl}/admin`;
   return `
     <div style="font-family:Arial, sans-serif; line-height:1.6; color:#111827;">
       <h2 style="margin:0 0 12px;">FINPLE 문의사항 접수</h2>
@@ -59,10 +64,12 @@ function buildHtmlBody(inquiry) {
           <tr><th align="left" style="padding:8px; border:1px solid #e5e7eb; background:#f9fafb;">답변 이메일</th><td style="padding:8px; border:1px solid #e5e7eb;">${escapeHtml(inquiry.email || "미입력")}</td></tr>
           <tr><th align="left" style="padding:8px; border:1px solid #e5e7eb; background:#f9fafb;">페이지</th><td style="padding:8px; border:1px solid #e5e7eb;">${escapeHtml(inquiry.pageUrl || "-")}</td></tr>
           <tr><th align="left" style="padding:8px; border:1px solid #e5e7eb; background:#f9fafb;">사용자 ID</th><td style="padding:8px; border:1px solid #e5e7eb;">${escapeHtml(inquiry.userId || "-")}</td></tr>
+          <tr><th align="left" style="padding:8px; border:1px solid #e5e7eb; background:#f9fafb;">첨부 사진</th><td style="padding:8px; border:1px solid #e5e7eb;">${Array.isArray(inquiry.attachments) ? inquiry.attachments.length : 0}장 · 관리자 페이지에서 확인</td></tr>
         </tbody>
       </table>
       <h3 style="margin:0 0 8px;">문의 내용</h3>
       <pre style="white-space:pre-wrap; padding:12px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb;">${escapeHtml(inquiry.message)}</pre>
+      <p style="margin:20px 0 0;"><a href="${escapeHtml(adminUrl)}" style="display:inline-block;padding:11px 16px;border-radius:10px;background:#0f172a;color:#fff;text-decoration:none;font-weight:800;">관리자 문의 상세 확인</a></p>
     </div>
   `;
 }

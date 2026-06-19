@@ -7,6 +7,7 @@ import {
   fetchAdminEducationAccounts,
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
+  fetchSupportInquiryAttachments,
   fetchSupportInquiries,
   getFinpleAdminToken,
   updateSupportInquiryStatus,
@@ -81,6 +82,12 @@ function formatKrw(value) {
   return `${amount.toLocaleString("ko-KR")}원`;
 }
 
+function formatFileSize(value) {
+  const bytes = Number(value || 0);
+  if (bytes >= 1024 * 1024) return `${Math.round((bytes / 1024 / 1024) * 10) / 10}MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))}KB`;
+}
+
 function getDaysUntil(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -118,6 +125,8 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [isAdminMode, setIsAdminMode] = useState(() => Boolean(getFinpleAdminToken()));
   const [inquiries, setInquiries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [inquiryAttachments, setInquiryAttachments] = useState({});
+  const [attachmentMessages, setAttachmentMessages] = useState({});
   const [statusFilter, setStatusFilter] = useState("all");
   const [inquiryMessage, setInquiryMessage] = useState(
     isAdminMode
@@ -143,6 +152,11 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     filteredInquiries.find((inquiry) => inquiry.id === selectedId) ||
     filteredInquiries[0] ||
     null;
+  const selectedAttachments = selectedInquiry ? inquiryAttachments[selectedInquiry.id] || [] : [];
+  const selectedAttachmentMessage = selectedInquiry
+    ? attachmentMessages[selectedInquiry.id] ||
+      (Number(selectedInquiry.attachmentCount || 0) > 0 ? "첨부 사진을 불러오는 중입니다." : "첨부된 사진이 없습니다.")
+    : "";
 
   const totalMembers = Number(memberData?.summary?.totalMembers || 0);
   const subscriberMembers = Number(memberData?.summary?.subscriberMembers || 0);
@@ -189,6 +203,32 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!selectedInquiry?.id || !isAdminMode || inquiryAttachments[selectedInquiry.id]) return;
+    let active = true;
+
+    fetchSupportInquiryAttachments(selectedInquiry.id)
+      .then((attachments) => {
+        if (!active) return;
+        setInquiryAttachments((current) => ({ ...current, [selectedInquiry.id]: attachments }));
+        setAttachmentMessages((current) => ({
+          ...current,
+          [selectedInquiry.id]: attachments.length > 0 ? "" : "첨부된 사진이 없습니다.",
+        }));
+      })
+      .catch((error) => {
+        if (!active) return;
+        setAttachmentMessages((current) => ({
+          ...current,
+          [selectedInquiry.id]: error?.message || "첨부 사진을 불러오지 못했습니다.",
+        }));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedInquiry?.id, selectedInquiry?.attachmentCount, inquiryAttachments, isAdminMode]);
 
   const handleLoadMembers = useCallback(async function handleLoadMembers() {
     if (!getFinpleAdminToken()) return;
@@ -402,6 +442,8 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
             <InquiryManagementPanel
               filteredInquiries={filteredInquiries}
               selectedInquiry={selectedInquiry}
+              selectedAttachments={selectedAttachments}
+              attachmentMessage={selectedAttachmentMessage}
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
               setSelectedId={setSelectedId}
@@ -486,6 +528,8 @@ function AdminClearPanel({ onClear }) {
 function InquiryManagementPanel({
   filteredInquiries,
   selectedInquiry,
+  selectedAttachments,
+  attachmentMessage,
   statusFilter,
   setStatusFilter,
   setSelectedId,
@@ -538,7 +582,10 @@ function InquiryManagementPanel({
                     {INQUIRY_STATUS_LABELS[inquiry.status] || inquiry.status || "접수"}
                   </span>
                   <strong>{inquiry.title || "제목 없는 문의"}</strong>
-                  <em>{INQUIRY_CATEGORY_LABELS[inquiry.category] || "기타 문의"} · {formatServerDate(inquiry.createdAt || inquiry.created_at)}</em>
+                  <em>
+                    {INQUIRY_CATEGORY_LABELS[inquiry.category] || "기타 문의"} · {formatServerDate(inquiry.createdAt || inquiry.created_at)}
+                    {Number(inquiry.attachmentCount || 0) > 0 ? ` · 사진 ${inquiry.attachmentCount}장` : ""}
+                  </em>
                 </button>
               ))
             ) : (
@@ -567,6 +614,36 @@ function InquiryManagementPanel({
                   </select>
                 </div>
                 <pre className="adminInquiryMessage">{selectedInquiry.message || "문의 내용이 없습니다."}</pre>
+                <section className="adminInquiryAttachments">
+                  <div className="adminInquiryAttachmentsHeader">
+                    <div>
+                      <span>첨부 사진</span>
+                      <strong>{selectedAttachments.length || Number(selectedInquiry.attachmentCount || 0)}장</strong>
+                    </div>
+                    <p>사진 링크는 관리자 확인용으로 10분간 유효합니다.</p>
+                  </div>
+                  {selectedAttachments.length > 0 ? (
+                    <div className="adminInquiryAttachmentGrid">
+                      {selectedAttachments.map((attachment) => (
+                        <a
+                          key={attachment.id}
+                          href={attachment.signedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`${attachment.fileName} 원본 보기`}
+                        >
+                          <img src={attachment.signedUrl} alt={attachment.fileName} />
+                          <span>{attachment.fileName}</span>
+                          <em>{formatFileSize(attachment.fileSize)} · 만료 {formatServerDate(attachment.expiresAt)}</em>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="adminInquiryAttachmentEmpty">
+                      {attachmentMessage || "첨부된 사진이 없습니다."}
+                    </p>
+                  )}
+                </section>
               </>
             ) : (
               <p className="serverPortfolioEmpty">왼쪽 목록에서 문의를 선택해 주세요.</p>

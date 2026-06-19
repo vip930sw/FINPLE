@@ -7827,6 +7827,116 @@ body {
   line-height: 1.6;
 }
 
+.supportAttachmentField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px dashed #bfdbfe;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.supportAttachmentField > div {
+  display: grid;
+  gap: 4px;
+}
+
+.supportAttachmentField strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.supportAttachmentField span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.supportAttachmentButton {
+  display: inline-flex !important;
+  place-items: initial !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 94px;
+  padding: 10px 14px;
+  border: 1px solid #2563eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #2563eb !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  cursor: pointer;
+}
+
+.supportAttachmentButton.disabled {
+  border-color: #cbd5e1;
+  color: #94a3b8 !important;
+  cursor: not-allowed;
+}
+
+.supportAttachmentButton input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.supportAttachmentPreviewList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.supportAttachmentPreviewList figure {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.supportAttachmentPreviewList img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.supportAttachmentPreviewList figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+}
+
+.supportAttachmentPreviewList figcaption span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supportAttachmentPreviewList figcaption button {
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .supportStatusText {
   margin: 2px 0 0;
 }
@@ -7942,6 +8052,20 @@ body {
 }
 
 @media (max-width: 560px) {
+  .supportAttachmentField {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .supportAttachmentButton {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .supportAttachmentPreviewList {
+    grid-template-columns: 1fr;
+  }
+
   .supportSuccessOverlay {
     padding: 18px;
   }
@@ -8441,6 +8565,108 @@ body {
   overflow-x: auto;
 }
 
+.adminInquiryAttachments {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.adminInquiryAttachmentsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.adminInquiryAttachmentsHeader > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.adminInquiryAttachmentsHeader span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.adminInquiryAttachmentsHeader strong {
+  color: #2563eb;
+  font-size: 14px;
+}
+
+.adminInquiryAttachmentsHeader p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.adminInquiryAttachmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adminInquiryAttachmentGrid a {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.adminInquiryAttachmentGrid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #e2e8f0;
+}
+
+.adminInquiryAttachmentGrid span,
+.adminInquiryAttachmentGrid em {
+  display: block;
+  margin-right: 9px;
+  margin-left: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adminInquiryAttachmentGrid span {
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.adminInquiryAttachmentGrid em {
+  margin-top: 3px;
+  margin-bottom: 9px;
+  color: #64748b;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.adminInquiryAttachmentEmpty {
+  margin: 0;
+  padding: 18px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .adminInquiryNotice {
   margin: 14px 0 0 !important;
   padding: 10px 12px;
@@ -8463,6 +8689,18 @@ body {
   .adminInquiryDetailHeader select {
     width: 100%;
     flex-basis: auto;
+  }
+
+  .adminInquiryAttachmentsHeader {
+    flex-direction: column;
+  }
+
+  .adminInquiryAttachmentsHeader p {
+    text-align: left;
+  }
+
+  .adminInquiryAttachmentGrid {
+    grid-template-columns: 1fr;
   }
 }
 

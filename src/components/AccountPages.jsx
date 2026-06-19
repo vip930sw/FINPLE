@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   checkServerDatabaseHealth,
   clearStoredFinpleAuthUser,
   createOrLoadDemoUser,
   fetchCurrentServerUser,
+  fetchInquiryAttachmentStatus,
   fetchServerPortfolios,
   fetchSupportInquiries,
   getFinpleAdminToken,
@@ -458,10 +459,10 @@ export function PrivacyPage({ onNavigate }) {
         {
           title: "1. 수집하는 정보",
           paragraphs: [
-            "서비스 이용 과정에서 이메일, 문의 내용, 브라우저에 저장된 사용자 식별 정보, 포트폴리오 저장 데이터, 접속 환경 정보가 수집될 수 있습니다.",
+            "서비스 이용 과정에서 이메일, 문의 내용과 선택적으로 첨부한 사진, 브라우저에 저장된 사용자 식별 정보, 포트폴리오 저장 데이터, 접속 환경 정보가 수집될 수 있습니다.",
             "현재 로그인과 결제 기능은 체험 운영 단계이며, 실제 소셜 로그인·결제 기능 도입 시 수집 항목은 별도로 고지합니다.",
           ],
-          items: ["이메일 및 문의 답변 연락처", "문의 제목·내용·처리 상태", "포트폴리오 구성 및 저장 데이터", "서비스 오류 확인을 위한 접속 환경 정보"],
+          items: ["이메일 및 문의 답변 연락처", "문의 제목·내용·처리 상태", "문의자가 선택적으로 첨부한 오류 화면 등의 사진", "포트폴리오 구성 및 저장 데이터", "서비스 오류 확인을 위한 접속 환경 정보"],
         },
         {
           title: "2. 이용 목적",
@@ -472,7 +473,7 @@ export function PrivacyPage({ onNavigate }) {
         {
           title: "3. 보관 기간",
           paragraphs: [
-            "일반 문의와 오류 신고는 처리 및 서비스 개선을 위해 원칙적으로 1년간 보관할 수 있습니다. 결제 관련 정보는 결제 기능 도입 이후 관련 법령과 내부 기준에 따라 별도로 정합니다.",
+            "일반 문의와 오류 신고는 처리 및 서비스 개선을 위해 원칙적으로 1년간 보관할 수 있습니다. 문의 첨부 사진은 비공개로 보관하며 문의 종료 후 90일이 지나면 삭제합니다.",
             "사용자가 삭제를 요청하거나 보관 목적이 사라진 경우 지체 없이 삭제합니다. 단, 법령상 보관 의무가 있는 정보는 해당 기간 동안 보관할 수 있습니다.",
           ],
         },
@@ -581,6 +582,9 @@ export function SupportPage({ onNavigate }) {
   const [statusMessage, setStatusMessage] = useState("문의 내용을 작성하면 관리자 확인을 위해 접수됩니다.");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedInquiry, setSubmittedInquiry] = useState(null);
+  const [attachmentImages, setAttachmentImages] = useState([]);
+  const attachmentImagesRef = useRef([]);
+  const [attachmentStatus, setAttachmentStatus] = useState(null);
 
   useEffect(() => {
     if (!submittedInquiry) return undefined;
@@ -592,6 +596,59 @@ export function SupportPage({ onNavigate }) {
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [submittedInquiry]);
+
+  useEffect(() => {
+    let active = true;
+    fetchInquiryAttachmentStatus()
+      .then((status) => {
+        if (active) setAttachmentStatus(status);
+      })
+      .catch(() => {
+        if (active) setAttachmentStatus({ enabled: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    attachmentImagesRef.current = attachmentImages;
+  }, [attachmentImages]);
+
+  useEffect(() => () => {
+    attachmentImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+  }, []);
+
+  function handleAttachmentChange(event) {
+    const files = Array.from(event.target.files || []);
+    const availableSlots = Math.max(0, 3 - attachmentImages.length);
+    const acceptedFiles = files
+      .filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type))
+      .filter((file) => file.size <= 5 * 1024 * 1024)
+      .slice(0, availableSlots);
+
+    if (acceptedFiles.length !== files.length) {
+      setStatusMessage("사진은 JPG, PNG, WebP 형식으로 최대 3장, 장당 5MB까지 첨부할 수 있습니다.");
+    }
+
+    setAttachmentImages((current) => [
+      ...current,
+      ...acceptedFiles.map((file) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+    event.target.value = "";
+  }
+
+  function removeAttachment(imageId) {
+    setAttachmentImages((current) => {
+      const target = current.find((image) => image.id === imageId);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((image) => image.id !== imageId);
+    });
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -608,6 +665,7 @@ export function SupportPage({ onNavigate }) {
         email,
         title: title.trim() || getDefaultInquiryTitle(category),
         message: message.trim(),
+        attachments: attachmentImages.map((image) => image.file),
       });
 
       const inquiryNumber = result?.inquiry?.id?.slice(0, 8) || "저장 완료";
@@ -619,6 +677,8 @@ export function SupportPage({ onNavigate }) {
       });
       setTitle("");
       setMessage("");
+      attachmentImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      setAttachmentImages([]);
     } catch (error) {
       setStatusMessage(error?.message || "문의 저장에 실패했습니다.");
     } finally {
@@ -671,10 +731,47 @@ export function SupportPage({ onNavigate }) {
               placeholder="오류 상황, 필요한 기능, 결제 문의 등 내용을 입력해 주세요."
             />
           </label>
+          <div className="supportAttachmentField">
+            <div>
+              <strong>사진 첨부</strong>
+              <span>
+                {attachmentStatus?.enabled
+                  ? "JPG·PNG·WebP, 최대 3장, 장당 5MB"
+                  : attachmentStatus
+                    ? "사진 저장소 설정 후 사용할 수 있습니다."
+                    : "사진 첨부 가능 여부를 확인하는 중입니다."}
+              </span>
+            </div>
+            <label className={attachmentImages.length >= 3 || !attachmentStatus?.enabled ? "supportAttachmentButton disabled" : "supportAttachmentButton"}>
+              사진 선택
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                disabled={attachmentImages.length >= 3 || isSubmitting || !attachmentStatus?.enabled}
+                onChange={handleAttachmentChange}
+              />
+            </label>
+          </div>
+          {attachmentImages.length > 0 ? (
+            <div className="supportAttachmentPreviewList" aria-label="첨부할 사진 목록">
+              {attachmentImages.map((image) => (
+                <figure key={image.id}>
+                  <img src={image.previewUrl} alt="" />
+                  <figcaption>
+                    <span>{image.file.name}</span>
+                    <button type="button" onClick={() => removeAttachment(image.id)} disabled={isSubmitting}>
+                      삭제
+                    </button>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ) : null}
 
           <div className="supportPrivacyNotice">
             <strong>개인정보 수집 안내</strong>
-            <p>답변 이메일과 문의 내용은 문의 처리와 서비스 개선을 위해 저장됩니다. 접수된 문의는 처리 완료 후 종료 처리될 수 있습니다.</p>
+            <p>답변 이메일, 문의 내용, 첨부 사진은 문의 처리와 서비스 개선을 위해 저장됩니다. 첨부 사진은 비공개로 보관되며 문의 종료 후 90일이 지나면 삭제됩니다.</p>
           </div>
 
           <p className="accountInlineStatus supportStatusText">{statusMessage}</p>
