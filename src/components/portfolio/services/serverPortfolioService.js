@@ -202,6 +202,30 @@ export async function fetchSupportInquiryAttachments(inquiryId) {
   return Array.isArray(payload?.attachments) ? payload.attachments : [];
 }
 
+export async function fetchSupportInquiryReplies(inquiryId) {
+  const payload = await requestJson(
+    `/inquiries/${encodeURIComponent(inquiryId)}/replies`,
+    {},
+    { includeAdminToken: true }
+  );
+  return Array.isArray(payload?.replies) ? payload.replies : [];
+}
+
+export async function sendSupportInquiryReply(inquiryId, body) {
+  if (!inquiryId) {
+    throw new Error("답변을 등록할 문의 ID가 없습니다.");
+  }
+
+  return requestJson(
+    `/inquiries/${encodeURIComponent(inquiryId)}/replies`,
+    {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    },
+    { includeAdminToken: true, timeoutMs: 45000 }
+  );
+}
+
 export async function fetchInquiryAttachmentStatus() {
   const payload = await requestJson("/inquiries/notification-status", {}, { skipAuthHeader: true });
   return payload?.attachments || null;

@@ -17,9 +17,15 @@ import {
 import { getInquiryNotificationStatus, sendInquiryNotification } from "../services/inquiryNotificationService.js";
 import {
   getUserNotificationStatus,
+  sendInquiryReplyNotification,
   sendInquiryReceivedNotification,
   sendInquiryStatusNotification,
 } from "../services/userNotificationService.js";
+import {
+  createInquiryReply,
+  listInquiryReplies,
+  updateInquiryReplyDelivery,
+} from "../services/inquiryReplyService.js";
 
 const router = express.Router();
 const attachmentRateLimit = new Map();
@@ -292,7 +298,7 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
     }
     const notification = statusChanged
       ? await sendInquiryStatusNotification({
-          to: row.user_email || extractEmailFromText(row.message),
+          to: extractEmailFromText(row.message) || row.user_email,
           inquiry: row,
           status,
           statusLabel: INQUIRY_STATUS_LABELS[status] || status,
@@ -310,6 +316,100 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
     response.json({
       ok: true,
       inquiry: mapInquiryRow(row),
+      notification,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:inquiryId/replies", async (request, response, next) => {
+  try {
+    requireAdminAccess(request, response, () => {});
+    if (response.headersSent) return;
+
+    const inquiryId = request.params?.inquiryId;
+    if (!isUuid(inquiryId)) {
+      response.status(400).json({ ok: false, message: "문의 ID 형식이 올바르지 않습니다." });
+      return;
+    }
+
+    const replies = await listInquiryReplies(inquiryId);
+    response.json({ ok: true, replies });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:inquiryId/replies", async (request, response, next) => {
+  try {
+    if (!isDatabaseConfigured()) {
+      response.status(503).json({
+        ok: false,
+        message: "DATABASE_URL이 설정되어 있지 않습니다.",
+      });
+      return;
+    }
+
+    requireAdminAccess(request, response, () => {});
+    if (response.headersSent) return;
+
+    const inquiryId = request.params?.inquiryId;
+    if (!isUuid(inquiryId)) {
+      response.status(400).json({ ok: false, message: "문의 ID 형식이 올바르지 않습니다." });
+      return;
+    }
+
+    const body = normalizeText(request.body?.body, 5000);
+    if (!body) {
+      response.status(400).json({ ok: false, message: "답변 내용을 입력해 주세요." });
+      return;
+    }
+
+    const inquiryResult = await query(
+      `SELECT inquiries.id, inquiries.title, inquiries.message, inquiries.status,
+              inquiries.created_at, inquiries.updated_at, users.email AS user_email
+         FROM inquiries
+         LEFT JOIN users ON users.id = inquiries.user_id
+        WHERE inquiries.id = $1`,
+      [inquiryId]
+    );
+
+    if (inquiryResult.rowCount === 0) {
+      response.status(404).json({ ok: false, message: "해당 문의를 찾지 못했습니다." });
+      return;
+    }
+
+    const inquiry = inquiryResult.rows[0];
+    const recipientEmail = extractEmailFromText(inquiry.message) || inquiry.user_email || "";
+    if (!recipientEmail) {
+      response.status(400).json({
+        ok: false,
+        message: "답변을 받을 이메일 주소가 없는 문의입니다.",
+      });
+      return;
+    }
+
+    let reply = await createInquiryReply({
+      inquiryId,
+      body,
+      recipientEmail,
+    });
+    const notification = await sendInquiryReplyNotification({
+      to: recipientEmail,
+      inquiry,
+      reply: body,
+    }).catch((error) => ({
+      enabled: true,
+      sent: false,
+      recipient: recipientEmail,
+      error: error?.message || "inquiry_reply_notification_failed",
+    }));
+    reply = await updateInquiryReplyDelivery(reply.id, notification);
+
+    response.status(201).json({
+      ok: true,
+      reply,
       notification,
     });
   } catch (error) {

@@ -82,6 +82,7 @@ async function sendUserNotificationEmail({ to, subject, title, intro, details, a
     return {
       enabled: Boolean(config.apiKey),
       sent: false,
+      recipient,
       reason: !recipient ? "recipient_email_missing" : "RESEND_API_KEY is not configured",
     };
   }
@@ -105,27 +106,33 @@ async function sendUserNotificationEmail({ to, subject, title, intro, details, a
     </div>
   `;
 
-  const response = await fetchWithTimeout("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: config.from,
-      to: [recipient],
-      subject,
-      text,
-      html,
-    }),
-  }, 15000);
+  let response;
+  let payload = {};
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    response = await fetchWithTimeout("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: config.from,
+        to: [recipient],
+        subject,
+        text,
+        html,
+      }),
+    }, 15000);
+    payload = await response.json().catch(() => ({}));
 
-  const payload = await response.json().catch(() => ({}));
+    if (response.ok || ![429, 500, 502, 503, 504].includes(response.status)) break;
+  }
 
   if (!response.ok) {
     return {
       enabled: true,
       sent: false,
+      recipient,
       error: payload?.message || `email_send_failed_${response.status}`,
     };
   }
@@ -134,6 +141,7 @@ async function sendUserNotificationEmail({ to, subject, title, intro, details, a
     enabled: true,
     sent: true,
     provider: "resend",
+    recipient,
     emailId: payload?.id || null,
   };
 }
@@ -196,6 +204,23 @@ export async function sendInquiryStatusNotification({ to, inquiry, status, statu
       변경일: formatDate(inquiry.updatedAt || inquiry.updated_at),
     },
     actionUrl: `${getEmailConfig().appBaseUrl}/mypage`,
+  });
+}
+
+export async function sendInquiryReplyNotification({ to, inquiry, reply }) {
+  return sendUserNotificationEmail({
+    to,
+    subject: `[FINPLE] 문의에 답변이 등록되었습니다`,
+    title: "문의 답변이 도착했습니다",
+    intro: "담당자가 보내주신 문의에 답변을 등록했습니다.",
+    details: {
+      문의번호: inquiry.id,
+      제목: inquiry.title,
+      답변: reply,
+      답변일: formatDate(new Date()),
+    },
+    actionUrl: `${getEmailConfig().appBaseUrl}/mypage`,
+    actionLabel: "MY PAGE에서 문의 확인",
   });
 }
 
