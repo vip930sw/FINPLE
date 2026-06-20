@@ -37,3 +37,36 @@
     margin-top: 0 !important;
   }
 }
+
+/* Mobile home navigation and hero alignment. Desktop styles stay unchanged. */
+@media screen and (max-width: 768px) {
+  .finpleUnifiedHeader .finpleGlobalNav {
+    order: 2 !important;
+  }
+
+  .finpleUnifiedHeader .finpleHeaderLocalNav {
+    order: 3 !important;
+    justify-content: center !important;
+  }
+
+  .finpleUnifiedHeader .homeRouteSubNav {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  #root > main.page .heroText h1 {
+    text-align: center !important;
+  }
+
+  #root > main.page .heroButtons {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  #root > main.page .heroButtons .primaryButton {
+    min-width: 184px !important;
+    min-height: 52px !important;
+    padding: 14px 28px !important;
+    font-size: 16px !important;
+  }
+}
