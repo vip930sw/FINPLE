@@ -41,7 +41,7 @@ function syncMobileHeaderOffset(header) {
   if (!headerHeight) return;
   document.documentElement.style.setProperty(
     "--finple-mobile-header-offset",
-    `${Math.max(124, headerHeight + 24)}px`,
+    `${Math.max(124, headerHeight + 18)}px`,
   );
 }
 
