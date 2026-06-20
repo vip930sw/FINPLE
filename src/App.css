@@ -11515,6 +11515,260 @@ body,
   gap: 10px;
 }
 
+/* =========================================================
+   Updates worklog
+========================================================= */
+
+.updatesWorklogPage .accountHero {
+  padding-bottom: 42px;
+}
+
+.updateWorklogSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1180px;
+  margin: 0 auto 18px;
+}
+
+.updateWorklogSummary > div {
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.updateWorklogSummary span,
+.updateWorklogSummary strong {
+  display: block;
+}
+
+.updateWorklogSummary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.updateWorklogSummary strong {
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.updateWorklogList {
+  display: grid;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.updateWorklogDay {
+  padding: 24px;
+}
+
+.updateWorklogDay > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.updateWorklogDay h2 {
+  margin: 4px 0 6px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.updateWorklogDay header p:last-child {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.updateWorklogCounts {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.updateWorklogCounts span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.updateWorklogTasks {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.updateWorklogTasks details {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.updateWorklogTasks summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: pointer;
+  list-style: none;
+}
+
+.updateWorklogTasks summary::-webkit-details-marker {
+  display: none;
+}
+
+.updateWorklogTasks summary strong {
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.updateWorklogTasks summary span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.updateWorklogTasks ul {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.updateWorklogTasks li + li {
+  border-top: 1px solid #f1f5f9;
+}
+
+.updateWorklogTasks li a {
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.updateWorklogTasks li a:hover {
+  background: #f8fbff;
+}
+
+.updateWorklogTasks li strong {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.updateReferenceBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.updateReferenceBadge.pr {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.updateReferenceBadge.commit {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.updateRoadmapCard {
+  max-width: 1180px;
+  margin: 18px auto 0;
+}
+
+.updateRoadmapGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.updateRoadmapGrid > section {
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+  background: #f8fbff;
+}
+
+.updateRoadmapGrid h3 {
+  margin: 0 0 10px;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.updateRoadmapGrid ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.updateRoadmapGrid li {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+@media screen and (max-width: 760px) {
+  .updateWorklogSummary,
+  .updateRoadmapGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .updateWorklogDay {
+    padding: 18px;
+  }
+
+  .updateWorklogDay > header {
+    flex-direction: column;
+  }
+
+  .updateWorklogCounts {
+    justify-content: flex-start;
+  }
+
+  .updateWorklogTasks li a {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .updateReferenceBadge {
+    justify-self: start;
+  }
+}
+
 .supportHeaderButton {
   white-space: nowrap;
 }
