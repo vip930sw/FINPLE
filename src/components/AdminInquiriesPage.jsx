@@ -8,8 +8,10 @@ import {
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
   fetchSupportInquiryAttachments,
+  fetchSupportInquiryReplies,
   fetchSupportInquiries,
   getFinpleAdminToken,
+  sendSupportInquiryReply,
   updateSupportInquiryStatus,
 } from "./portfolio/services/serverPortfolioService";
 
@@ -127,6 +129,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [selectedId, setSelectedId] = useState(null);
   const [inquiryAttachments, setInquiryAttachments] = useState({});
   const [attachmentMessages, setAttachmentMessages] = useState({});
+  const [inquiryReplies, setInquiryReplies] = useState({});
+  const [replyMessages, setReplyMessages] = useState({});
+  const [replyDraft, setReplyDraft] = useState("");
+  const [isReplySending, setIsReplySending] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [inquiryMessage, setInquiryMessage] = useState(
     isAdminMode
@@ -157,6 +163,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     ? attachmentMessages[selectedInquiry.id] ||
       (Number(selectedInquiry.attachmentCount || 0) > 0 ? "첨부 사진을 불러오는 중입니다." : "첨부된 사진이 없습니다.")
     : "";
+  const selectedReplies = selectedInquiry ? inquiryReplies[selectedInquiry.id] || [] : [];
+  const selectedReplyMessage = selectedInquiry
+    ? replyMessages[selectedInquiry.id] || ""
+    : "";
 
   const totalMembers = Number(memberData?.summary?.totalMembers || 0);
   const subscriberMembers = Number(memberData?.summary?.subscriberMembers || 0);
@@ -167,6 +177,11 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
 
   function handleNavigateSection(item) {
     onNavigate(item.page);
+  }
+
+  function handleSelectInquiry(inquiryId) {
+    setSelectedId(inquiryId);
+    setReplyDraft("");
   }
 
   function handleClearAdminMode() {
@@ -196,6 +211,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
       const nextInquiries = await fetchSupportInquiries({ scope: "all" });
       setInquiries(nextInquiries);
       setSelectedId(nextInquiries[0]?.id || null);
+      setReplyDraft("");
       setInquiryMessage("문의사항 " + nextInquiries.length + "건을 불러왔습니다.");
     } catch (error) {
       setInquiryMessage(error?.message || "문의사항 목록을 불러오지 못했습니다.");
@@ -229,6 +245,29 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
       active = false;
     };
   }, [selectedInquiry?.id, selectedInquiry?.attachmentCount, inquiryAttachments, isAdminMode]);
+
+  useEffect(() => {
+    if (!selectedInquiry?.id || !isAdminMode || inquiryReplies[selectedInquiry.id]) return;
+    let active = true;
+
+    fetchSupportInquiryReplies(selectedInquiry.id)
+      .then((replies) => {
+        if (!active) return;
+        setInquiryReplies((current) => ({ ...current, [selectedInquiry.id]: replies }));
+        setReplyMessages((current) => ({ ...current, [selectedInquiry.id]: "" }));
+      })
+      .catch((error) => {
+        if (!active) return;
+        setReplyMessages((current) => ({
+          ...current,
+          [selectedInquiry.id]: error?.message || "답변 이력을 불러오지 못했습니다.",
+        }));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedInquiry?.id, inquiryReplies, isAdminMode]);
 
   const handleLoadMembers = useCallback(async function handleLoadMembers() {
     if (!getFinpleAdminToken()) return;
@@ -387,11 +426,48 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
       setInquiries((current) => current.map((inquiry) => (
         inquiry.id === inquiryId ? { ...inquiry, ...updatedInquiry } : inquiry
       )));
-      setInquiryMessage("문의 상태를 “" + (INQUIRY_STATUS_LABELS[status] || status) + "”로 변경했습니다.");
+      const statusLabel = INQUIRY_STATUS_LABELS[status] || status;
+      if (result?.notification?.reason === "status_unchanged") {
+        setInquiryMessage(`이미 “${statusLabel}” 상태입니다. 중복 메일은 발송하지 않았습니다.`);
+      } else if (result?.notification?.sent) {
+        setInquiryMessage(`문의 상태를 “${statusLabel}”로 변경하고 ${result.notification.recipient || "답변 이메일"}로 알림 메일을 발송했습니다.`);
+      } else {
+        setInquiryMessage(`문의 상태는 “${statusLabel}”로 변경됐지만 알림 메일 발송에 실패했습니다: ${result?.notification?.error || result?.notification?.reason || "발송 결과를 확인할 수 없습니다."}`);
+      }
     } catch (error) {
       setInquiryMessage(error?.message || "문의 상태를 변경하지 못했습니다.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleSendReply(inquiryId) {
+    const body = replyDraft.trim();
+    if (!inquiryId || !body) {
+      setInquiryMessage("관리자 답변 내용을 입력해 주세요.");
+      return;
+    }
+
+    setIsReplySending(true);
+    try {
+      const result = await sendSupportInquiryReply(inquiryId, body);
+      if (result?.reply) {
+        setInquiryReplies((current) => ({
+          ...current,
+          [inquiryId]: [...(current[inquiryId] || []), result.reply],
+        }));
+      }
+      setReplyDraft("");
+
+      if (result?.notification?.sent) {
+        setInquiryMessage(`관리자 답변을 저장하고 ${result.notification.recipient || "답변 이메일"}로 발송했습니다.`);
+      } else {
+        setInquiryMessage(`답변은 저장했지만 이메일 발송에 실패했습니다: ${result?.notification?.error || result?.notification?.reason || "발송 결과를 확인할 수 없습니다."}`);
+      }
+    } catch (error) {
+      setInquiryMessage(error?.message || "관리자 답변을 등록하지 못했습니다.");
+    } finally {
+      setIsReplySending(false);
     }
   }
 
@@ -444,14 +520,20 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               selectedInquiry={selectedInquiry}
               selectedAttachments={selectedAttachments}
               attachmentMessage={selectedAttachmentMessage}
+              selectedReplies={selectedReplies}
+              replyMessage={selectedReplyMessage}
+              replyDraft={replyDraft}
+              setReplyDraft={setReplyDraft}
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
-              setSelectedId={setSelectedId}
+              setSelectedId={handleSelectInquiry}
               statusMessage={inquiryMessage}
               isAdminMode={isAdminMode}
               isLoading={isLoading}
+              isReplySending={isReplySending}
               onLoadInquiries={handleLoadInquiries}
               onChangeStatus={handleChangeStatus}
+              onSendReply={handleSendReply}
             />
           ) : null}
 
@@ -530,14 +612,20 @@ function InquiryManagementPanel({
   selectedInquiry,
   selectedAttachments,
   attachmentMessage,
+  selectedReplies,
+  replyMessage,
+  replyDraft,
+  setReplyDraft,
   statusFilter,
   setStatusFilter,
   setSelectedId,
   statusMessage,
   isAdminMode,
   isLoading,
+  isReplySending,
   onLoadInquiries,
   onChangeStatus,
+  onSendReply,
 }) {
   return (
     <section className="accountCard adminManagementPanel adminConsoleInquiryPanel">
@@ -643,6 +731,57 @@ function InquiryManagementPanel({
                       {attachmentMessage || "첨부된 사진이 없습니다."}
                     </p>
                   )}
+                </section>
+                <section className="adminInquiryReplyPanel">
+                  <div className="adminInquiryReplyHeader">
+                    <div>
+                      <span>관리자 답변</span>
+                      <strong>{selectedReplies.length}건</strong>
+                    </div>
+                    <p>답변은 문의자가 입력한 답변 이메일로 발송됩니다.</p>
+                  </div>
+
+                  {selectedReplies.length > 0 ? (
+                    <div className="adminInquiryReplyHistory">
+                      {selectedReplies.map((reply) => (
+                        <article key={reply.id}>
+                          <div>
+                            <strong>{reply.emailSent ? "메일 발송 완료" : "메일 발송 실패"}</strong>
+                            <time>{formatServerDate(reply.createdAt)}</time>
+                          </div>
+                          <p>{reply.body}</p>
+                          <span>
+                            {reply.recipientEmail}
+                            {!reply.emailSent && reply.emailError ? ` · ${reply.emailError}` : ""}
+                          </span>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="adminInquiryReplyEmpty">{replyMessage || "아직 등록된 관리자 답변이 없습니다."}</p>
+                  )}
+
+                  <label className="adminInquiryReplyComposer">
+                    <span>답변 내용</span>
+                    <textarea
+                      value={replyDraft}
+                      onChange={(event) => setReplyDraft(event.target.value)}
+                      maxLength={5000}
+                      placeholder="문의자에게 전달할 답변을 입력해 주세요."
+                      disabled={isReplySending}
+                    />
+                  </label>
+                  <div className="adminInquiryReplyActions">
+                    <span>{replyDraft.length.toLocaleString("ko-KR")} / 5,000자</span>
+                    <button
+                      type="button"
+                      className="primaryButton"
+                      onClick={() => onSendReply(selectedInquiry.id)}
+                      disabled={isReplySending || !replyDraft.trim()}
+                    >
+                      {isReplySending ? "저장 및 발송 중..." : "답변 저장 및 메일 발송"}
+                    </button>
+                  </div>
                 </section>
               </>
             ) : (

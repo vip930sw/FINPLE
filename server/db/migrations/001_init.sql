@@ -128,6 +128,20 @@ CREATE INDEX IF NOT EXISTS idx_asset_price_cache_expires ON asset_price_cache(ex
 CREATE INDEX IF NOT EXISTS idx_api_usage_user_created ON api_usage_logs(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_inquiries_status_created ON inquiries(status, created_at);
 
+CREATE TABLE IF NOT EXISTS inquiry_replies (
+  id UUID PRIMARY KEY,
+  inquiry_id UUID NOT NULL REFERENCES inquiries(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  email_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  email_id TEXT,
+  email_error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_inquiry_replies_inquiry_created
+  ON inquiry_replies(inquiry_id, created_at);
+
 -- 로컬 개발용 데모 사용자입니다. 실제 로그인 도입 후에는 auth provider가 생성합니다.
 INSERT INTO users (id, email, name, nickname, plan)
 VALUES (

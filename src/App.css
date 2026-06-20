@@ -8672,6 +8672,131 @@ body {
   text-align: center;
 }
 
+.adminInquiryReplyPanel {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #eff6ff;
+}
+
+.adminInquiryReplyHeader,
+.adminInquiryReplyActions,
+.adminInquiryReplyHistory article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminInquiryReplyHeader > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.adminInquiryReplyHeader span,
+.adminInquiryReplyComposer > span {
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.adminInquiryReplyHeader strong {
+  color: #2563eb;
+  font-size: 14px;
+}
+
+.adminInquiryReplyHeader p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.adminInquiryReplyHistory {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.adminInquiryReplyHistory article {
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.adminInquiryReplyHistory article strong {
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.adminInquiryReplyHistory article time,
+.adminInquiryReplyHistory article span,
+.adminInquiryReplyActions > span {
+  color: #64748b;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.adminInquiryReplyHistory article p {
+  margin: 8px 0;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.adminInquiryReplyEmpty {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.adminInquiryReplyComposer {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.adminInquiryReplyComposer textarea {
+  width: 100%;
+  min-height: 130px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.adminInquiryReplyComposer textarea:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, 0.12);
+}
+
+.adminInquiryReplyActions {
+  margin-top: 10px;
+}
+
+.adminInquiryReplyActions .primaryButton {
+  min-width: 178px;
+}
+
 .adminInquiryNotice {
   margin: 14px 0 0 !important;
   padding: 10px 12px;
@@ -8702,6 +8827,20 @@ body {
 
   .adminInquiryAttachmentsHeader p {
     text-align: left;
+  }
+
+  .adminInquiryReplyHeader,
+  .adminInquiryReplyActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adminInquiryReplyHeader p {
+    text-align: left;
+  }
+
+  .adminInquiryReplyActions .primaryButton {
+    width: 100%;
   }
 
   .adminInquiryAttachmentGrid {
