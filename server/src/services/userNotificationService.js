@@ -154,12 +154,41 @@ export async function sendInquiryReceivedNotification({ to, inquiry }) {
   });
 }
 
-export async function sendInquiryStatusNotification({ to, inquiry, statusLabel }) {
-  return sendUserNotificationEmail({
-    to,
-    subject: `[FINPLE] 문의 처리 상태가 ${statusLabel}로 변경되었습니다`,
+const INQUIRY_STATUS_EMAIL_COPY = {
+  open: {
+    subject: "문의가 접수되었습니다",
+    title: "문의 접수가 완료되었습니다",
+    intro: "보내주신 문의가 정상적으로 접수되었습니다. 담당자가 내용을 확인한 뒤 다음 진행 상황을 안내드리겠습니다.",
+  },
+  in_progress: {
+    subject: "문의 내용을 확인하고 있습니다",
+    title: "문의 확인이 시작되었습니다",
+    intro: "담당자가 문의 내용을 확인하고 있습니다. 검토 또는 추가 조치가 끝나면 처리 결과를 다시 안내드리겠습니다.",
+  },
+  resolved: {
+    subject: "문의 처리가 완료되었습니다",
+    title: "문의 처리가 완료되었습니다",
+    intro: "요청하신 문의에 대한 확인과 필요한 처리가 완료되었습니다. 추가 확인이나 보완이 필요하면 문의 내역을 통해 알려주세요.",
+  },
+  closed: {
+    subject: "문의가 종료되었습니다",
+    title: "문의가 최종 종료되었습니다",
+    intro: "처리 완료 후 추가 요청이 없어 문의가 최종 종료되었습니다. 새로운 도움이 필요하면 새 문의를 접수해 주세요.",
+  },
+};
+
+export async function sendInquiryStatusNotification({ to, inquiry, status, statusLabel }) {
+  const copy = INQUIRY_STATUS_EMAIL_COPY[status] || {
+    subject: `문의 상태가 ${statusLabel}로 변경되었습니다`,
     title: "문의 처리 상태가 변경되었습니다",
     intro: `문의 처리 상태가 '${statusLabel}'로 변경되었습니다.`,
+  };
+
+  return sendUserNotificationEmail({
+    to,
+    subject: `[FINPLE] ${copy.subject}`,
+    title: copy.title,
+    intro: copy.intro,
     details: {
       문의번호: inquiry.id,
       제목: inquiry.title,

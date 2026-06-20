@@ -253,11 +253,23 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
 
     const status = normalizeStatus(request.body?.status);
     const result = await query(
-      `WITH updated AS (
+      `WITH target AS (
+        SELECT id, status AS previous_status
+          FROM inquiries
+         WHERE id = $1
+      ),
+      updated AS (
         UPDATE inquiries
-          SET status = $2, updated_at = NOW()
-        WHERE id = $1
-        RETURNING id, user_id, category, title, message, status, created_at, updated_at
+          SET status = $2,
+              updated_at = CASE
+                WHEN inquiries.status IS DISTINCT FROM $2 THEN NOW()
+                ELSE inquiries.updated_at
+              END
+          FROM target
+         WHERE inquiries.id = target.id
+        RETURNING inquiries.id, inquiries.user_id, inquiries.category, inquiries.title,
+                  inquiries.message, inquiries.status, inquiries.created_at,
+                  inquiries.updated_at, target.previous_status
       )
       SELECT updated.*, users.email AS user_email
         FROM updated
@@ -274,16 +286,26 @@ router.patch("/:inquiryId/status", async (request, response, next) => {
     }
 
     const row = result.rows[0];
-    await applyInquiryAttachmentRetention(inquiryId, status);
-    const notification = await sendInquiryStatusNotification({
-      to: row.user_email || extractEmailFromText(row.message),
-      inquiry: row,
-      statusLabel: INQUIRY_STATUS_LABELS[status] || status,
-    }).catch((error) => ({
-      enabled: true,
-      sent: false,
-      error: error?.message || "inquiry_status_notification_failed",
-    }));
+    const statusChanged = row.previous_status !== status;
+    if (statusChanged) {
+      await applyInquiryAttachmentRetention(inquiryId, status);
+    }
+    const notification = statusChanged
+      ? await sendInquiryStatusNotification({
+          to: row.user_email || extractEmailFromText(row.message),
+          inquiry: row,
+          status,
+          statusLabel: INQUIRY_STATUS_LABELS[status] || status,
+        }).catch((error) => ({
+          enabled: true,
+          sent: false,
+          error: error?.message || "inquiry_status_notification_failed",
+        }))
+      : {
+          enabled: true,
+          sent: false,
+          reason: "status_unchanged",
+        };
 
     response.json({
       ok: true,
