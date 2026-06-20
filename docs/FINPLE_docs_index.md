@@ -22,6 +22,7 @@
 | FINPLE_step93_beta_share_messages.md | 소수 사용자 공유 메시지 |
 | FINPLE_step94_beta_feedback_runbook.md | 베타 피드백 운영 가이드 |
 | FINPLE_legal_routes_top_button.md | 정책/업데이트 라우터 TOP 버튼 적용 기준 |
+| [FINPLE_ui_visual_rules.md](./FINPLE_ui_visual_rules.md) | 메뉴·카드·섹션 라벨 색상과 내부 여백 공통 기준 |
 | [FINPLE_worklog_handoff_2026_06_20.md](./FINPLE_worklog_handoff_2026_06_20.md) | HOME·푸터·문의·메일·사진 첨부·관리자 답변 작업 이력 및 인수인계 |
 | [FINPLE_updates_worklog_guide.md](./FINPLE_updates_worklog_guide.md) | `/updates` 사용자용 Beta 변경 내역 작성 및 인수인계 기준 |
 
