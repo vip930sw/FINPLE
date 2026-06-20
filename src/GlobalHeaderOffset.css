@@ -40,18 +40,140 @@
 
 /* Mobile home navigation and hero alignment. Desktop styles stay unchanged. */
 @media screen and (max-width: 768px) {
+  .finpleUnifiedHeader {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    padding: 10px 14px 8px !important;
+  }
+
+  .finpleUnifiedHeader .brandLogo {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    min-width: 104px !important;
+  }
+
+  .finpleUnifiedHeader .brandText strong {
+    font-size: 14px !important;
+  }
+
+  .finpleUnifiedHeader .brandText span {
+    display: block !important;
+    font-size: 9px !important;
+  }
+
   .finpleUnifiedHeader .finpleGlobalNav {
-    order: 2 !important;
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, 32px) !important;
+    align-items: center !important;
+    justify-content: end !important;
+    order: initial !important;
+    gap: 2px !important;
+    width: 168px !important;
+    min-width: 168px !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
   }
 
   .finpleUnifiedHeader .finpleHeaderLocalNav {
-    order: 3 !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    order: initial !important;
     justify-content: center !important;
+    padding: 2px 0 0 !important;
   }
 
   .finpleUnifiedHeader .homeRouteSubNav {
     justify-content: center !important;
     width: 100% !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav button {
+    position: relative !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: #20262e !important;
+    font-size: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav button::before {
+    content: "" !important;
+    display: block !important;
+    width: 21px !important;
+    height: 21px !important;
+    background: currentColor !important;
+    -webkit-mask-position: center !important;
+    mask-position: center !important;
+    -webkit-mask-repeat: no-repeat !important;
+    mask-repeat: no-repeat !important;
+    -webkit-mask-size: contain !important;
+    mask-size: contain !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav button::after {
+    display: none !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav button.active {
+    background: #eef2f7 !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/support"] {
+    display: none !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 10.8 12 3l9 7.8V21h-6.4v-6.2H9.4V21H3z'/%3E%3C/svg%3E") !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M3 10.8 12 3l9 7.8V21h-6.4v-6.2H9.4V21H3z'/%3E%3C/svg%3E") !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/start"] {
+    color: #1689ee !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/start"]::before {
+    width: 23px !important;
+    height: 23px !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='8' height='8' rx='2' fill='black'/%3E%3Cpath fill='black' d='M16 1.5 22.5 8 16 14.5 9.5 8z'/%3E%3Cpath fill='black' d='M2 14a2 2 0 0 1 2-2h6v10H4a2 2 0 0 1-2-2zm12 0h8v6a2 2 0 0 1-2 2h-6z'/%3E%3C/svg%3E") !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='8' height='8' rx='2' fill='black'/%3E%3Cpath fill='black' d='M16 1.5 22.5 8 16 14.5 9.5 8z'/%3E%3Cpath fill='black' d='M2 14a2 2 0 0 1 2-2h6v10H4a2 2 0 0 1-2-2zm12 0h8v6a2 2 0 0 1-2 2h-6z'/%3E%3C/svg%3E") !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/pricing"]::before {
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9.5' fill='none' stroke='%2320262e' stroke-width='2'/%3E%3Cpath d='M6.5 8.5 9.4 16l2.6-7.5 2.6 7.5 2.9-7.5M6 11.5h12M6.8 14h10.4' fill='none' stroke='%2320262e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav [data-finple-nav-path="/mypage"]::before {
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7.5' r='3.5' fill='none' stroke='%2320262e' stroke-width='2'/%3E%3Cpath d='M4.5 21c.4-5 3-7.5 7.5-7.5s7.1 2.5 7.5 7.5' fill='none' stroke='%2320262e' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  .finpleUnifiedHeader .finpleGlobalNav .finpleGlobalAuthButton::before {
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='none' stroke='%2320262e' stroke-width='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3M12 14v3' fill='none' stroke='%2320262e' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  #root > main.page .heroText .badge {
+    display: table !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
   }
 
   #root > main.page .heroText h1 {
@@ -68,5 +190,21 @@
     min-height: 52px !important;
     padding: 14px 28px !important;
     font-size: 16px !important;
+  }
+
+  .calendarSection .sectionTopRow h2 {
+    margin: 10px 0 18px !important;
+    font-size: 26px !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.7px !important;
+    white-space: normal !important;
+  }
+
+  .calendarSection .sectionSideText {
+    max-width: 100% !important;
+    color: #475569 !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.65 !important;
   }
 }
