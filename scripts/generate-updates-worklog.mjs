@@ -13,6 +13,18 @@ const todayInKorea = new Intl.DateTimeFormat("en-CA", {
 }).format(new Date());
 const fromDate = process.argv[4] || "2026-05-10";
 const toDate = process.argv[5] || todayInKorea;
+const SUPPLEMENTAL_PR_RECORDS = [
+  {
+    date: "2026-06-20",
+    displayDate: "2026.06.20",
+    category: "문서·운영",
+    type: "pr",
+    number: 214,
+    sha: "",
+    title: "업데이트 페이지를 날짜·PR·작업별 업무일지로 개편",
+    url: `${repositoryUrl}/pull/214`,
+  },
+];
 
 const CATEGORY_RULES = [
   ["교육 계정", /education|교육/i],
@@ -93,6 +105,13 @@ const records = rawLog
         : `${repositoryUrl}/commit/${sha}`,
     };
   });
+
+for (const supplementalRecord of SUPPLEMENTAL_PR_RECORDS) {
+  const alreadyIncluded = records.some(
+    (record) => record.type === "pr" && record.number === supplementalRecord.number
+  );
+  if (!alreadyIncluded) records.push(supplementalRecord);
+}
 
 const days = new Map();
 for (const record of records) {

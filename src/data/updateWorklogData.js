@@ -4,10 +4,10 @@
 export const WORKLOG_META = {
   "fromDate": "2026-05-10",
   "toDate": "2026-06-20",
-  "generatedAt": "2026-06-20T01:38:32.725Z",
+  "generatedAt": "2026-06-20T01:49:11.540Z",
   "sourceRef": "origin/main",
   "totalDays": 31,
-  "totalPullRequests": 173,
+  "totalPullRequests": 174,
   "totalDirectCommits": 497
 };
 
@@ -16,7 +16,7 @@ export const UPDATE_WORKLOG = [
     "date": "2026-06-20",
     "displayDate": "2026.06.20",
     "summary": "문서·운영 · 문의·알림",
-    "prCount": 3,
+    "prCount": 4,
     "commitCount": 0,
     "tasks": [
       {
@@ -31,6 +31,16 @@ export const UPDATE_WORKLOG = [
             "sha": "985672e",
             "title": "Document FINPLE worklog and handoff",
             "url": "https://github.com/vip930sw/FINPLE/pull/213"
+          },
+          {
+            "date": "2026-06-20",
+            "displayDate": "2026.06.20",
+            "category": "문서·운영",
+            "type": "pr",
+            "number": 214,
+            "sha": "",
+            "title": "업데이트 페이지를 날짜·PR·작업별 업무일지로 개편",
+            "url": "https://github.com/vip930sw/FINPLE/pull/214"
           }
         ]
       },
