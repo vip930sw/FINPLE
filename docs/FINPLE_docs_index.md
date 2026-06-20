@@ -23,7 +23,7 @@
 | FINPLE_step94_beta_feedback_runbook.md | 베타 피드백 운영 가이드 |
 | FINPLE_legal_routes_top_button.md | 정책/업데이트 라우터 TOP 버튼 적용 기준 |
 | [FINPLE_worklog_handoff_2026_06_20.md](./FINPLE_worklog_handoff_2026_06_20.md) | HOME·푸터·문의·메일·사진 첨부·관리자 답변 작업 이력 및 인수인계 |
-| [FINPLE_updates_worklog_guide.md](./FINPLE_updates_worklog_guide.md) | `/updates` 날짜·PR·작업별 업무일지 생성 및 인수인계 기준 |
+| [FINPLE_updates_worklog_guide.md](./FINPLE_updates_worklog_guide.md) | `/updates` 사용자용 Beta 변경 내역 작성 및 인수인계 기준 |
 
 ## 전체 문서 목록
 
