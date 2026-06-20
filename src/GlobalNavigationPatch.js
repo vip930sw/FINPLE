@@ -31,7 +31,40 @@ const SPA_NAVIGATION_PATHS = [
 ];
 let globalHeaderPatchTimer = null;
 let globalHeaderObserver = null;
+let globalHeaderResizeObserver = null;
+let observedGlobalHeader = null;
 let isPatchingHeader = false;
+
+function syncMobileHeaderOffset(header) {
+  if (!header) return;
+  const headerHeight = Math.ceil(header.getBoundingClientRect().height);
+  if (!headerHeight) return;
+  document.documentElement.style.setProperty(
+    "--finple-mobile-header-offset",
+    `${Math.max(124, headerHeight + 24)}px`,
+  );
+}
+
+function observeGlobalHeaderSize(header) {
+  if (!header) return;
+
+  if (!globalHeaderResizeObserver && typeof ResizeObserver !== "undefined") {
+    globalHeaderResizeObserver = new ResizeObserver((entries) => {
+      const activeEntry = entries.find((entry) => entry.target === observedGlobalHeader);
+      if (activeEntry) syncMobileHeaderOffset(activeEntry.target);
+    });
+  }
+
+  if (observedGlobalHeader !== header) {
+    if (observedGlobalHeader && globalHeaderResizeObserver) {
+      globalHeaderResizeObserver.unobserve(observedGlobalHeader);
+    }
+    observedGlobalHeader = header;
+    globalHeaderResizeObserver?.observe(header);
+  }
+
+  window.requestAnimationFrame(() => syncMobileHeaderOffset(header));
+}
 
 function normalizePath(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -183,6 +216,7 @@ function patchHeader(header) {
   normalizeBrand(header);
   removeOldRightMenus(header);
   ensureGlobalNav(header);
+  observeGlobalHeaderSize(header);
 }
 
 function restorePageLocalHeader(header) {

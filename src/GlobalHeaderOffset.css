@@ -1,0 +1,30 @@
+/*
+ * Mobile global-header clearance
+ * - Desktop spacing remains governed by the existing page styles.
+ * - On mobile, GlobalNavigationPatch measures the rendered multi-row header.
+ * - Every top-level route starts below that measured height plus 24px.
+ */
+@media screen and (max-width: 960px) {
+  html {
+    scroll-padding-top: var(--finple-mobile-header-offset, 180px) !important;
+  }
+
+  .finpleUnifiedHeader {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+  }
+
+  #root > main {
+    padding-top: var(--finple-mobile-header-offset, 180px) !important;
+  }
+
+  .personalPage .simulatorTabNav.threeStepNav {
+    top: var(--finple-mobile-header-offset, 180px) !important;
+  }
+
+  .loginSimplePage .loginSimpleCard {
+    margin-top: 0 !important;
+  }
+}

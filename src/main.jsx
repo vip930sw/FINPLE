@@ -50,6 +50,7 @@ import './DetailStep3Refactor.css'
 import './DetailStep3PrintCompact.css'
 import './DetailStep3CopySpacing.css'
 import './UiLabelCleanup.css'
+import './GlobalHeaderOffset.css'
 import App from './App.jsx'
 
 if (isBillingResultPath()) {
