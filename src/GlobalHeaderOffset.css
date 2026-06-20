@@ -2,7 +2,9 @@
  * Mobile global-header clearance
  * - Desktop spacing remains governed by the existing page styles.
  * - On mobile, GlobalNavigationPatch measures the rendered multi-row header.
- * - Every top-level route starts below that measured height plus 24px.
+ * - Every top-level route starts below that measured height plus 8px.
+ * - Account/legal heroes use 32px top padding so their combined clearance
+ *   is roughly half of the previous 18px + 76px spacing.
  */
 @media screen and (max-width: 960px) {
   html {
@@ -18,6 +20,13 @@
 
   #root > main {
     padding-top: var(--finple-mobile-header-offset, 180px) !important;
+  }
+
+  #root > main.accountPage > .accountHero,
+  #root > main.accountPage.legalPage > .accountHero,
+  #root > main.legalPage.standaloneLegalPage > .accountHero,
+  #root > main.standaloneLegalPage > .accountHero {
+    padding-top: 32px !important;
   }
 
   .personalPage .simulatorTabNav.threeStepNav {
