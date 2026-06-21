@@ -13,7 +13,7 @@
 }
 
 .siteFooter::after {
-  content: "상호: 핀플FINPLE | 대표자: 이상원 | 사업자등록번호: 550-21-02319\A통신판매업 신고번호: 제2025-서울강남-02127호\A주소: 서울특별시 강남구 테헤란로 70길 12,\A 4층 402-343A호 H타워(대치동)\A이메일: finple_lab@naver.com | 전화번호: 010-3354-1028";
+  content: "상호: 핀플FINPLE | 대표자: 이상원 | 사업자등록번호: 550-21-02319 | 통신판매업 신고번호: 제2025-서울강남-02127호\A주소: 서울특별시 강남구 테헤란로 70길 12, 4층 402-343A호 H타워(대치동)\A이메일: finple_lab@naver.com | 전화번호: 010-3354-1028";
   grid-area: business;
   display: block;
   padding-top: 2px;
@@ -224,5 +224,9 @@
   .siteFooterBusinessInfo {
     font-size: 11px;
     line-height: 1.6;
+  }
+
+  .siteFooter::after {
+    content: "상호: 핀플FINPLE | 대표자: 이상원 | 사업자등록번호: 550-21-02319\A통신판매업 신고번호: 제2025-서울강남-02127호\A주소: 서울특별시 강남구 테헤란로 70길 12,\A 4층 402-343A호 H타워(대치동)\A이메일: finple_lab@naver.com | 전화번호: 010-3354-1028";
   }
 }

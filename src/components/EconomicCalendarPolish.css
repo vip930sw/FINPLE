@@ -18,17 +18,7 @@
   position: relative;
 }
 
-.calendarSection .investingCalendarViewport {
-  width: 100%;
-  height: 720px;
-  overflow: hidden;
-}
-
 .calendarSection .investingCalendarFrame {
-  display: block;
-  width: 100%;
-  height: 720px;
-  border: 0;
   transition: opacity 240ms ease;
 }
 
@@ -87,31 +77,5 @@
 
   .calendarLoadingSpinner {
     animation-duration: 2.4s;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .calendarSection .investingCalendarBox {
-    width: 100%;
-    padding: 12px 8px;
-    overflow: hidden;
-  }
-
-  .calendarSection .investingCalendarViewport {
-    width: 100%;
-    height: var(--calendar-mobile-height, 360px);
-    overflow: hidden;
-  }
-
-  .calendarSection .investingCalendarFrame {
-    width: 650px !important;
-    max-width: none !important;
-    height: 720px !important;
-    transform: scale(var(--calendar-mobile-scale, 0.5));
-    transform-origin: top left;
-  }
-
-  .calendarLoadingOverlay {
-    inset: 12px 8px;
   }
 }
