@@ -608,6 +608,19 @@
     margin-left: auto !important;
   }
 
+  .accountPage > .pricingStatusPanel,
+  .accountPage > .pricingStatusPanel + .accountPlanGrid,
+  .accountPage > .pricingStatusPanel + .accountPlanGrid + .pricingNoticeBox {
+    width: min(calc(100% - 28px), 1120px) !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+  }
+
+  .accountPage > .pricingStatusPanel + .accountPlanGrid {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
   .loginSimpleCard {
     width: min(100% - 28px, 430px) !important;
     margin-top: 40px !important;
