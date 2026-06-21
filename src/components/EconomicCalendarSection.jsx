@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Clock,
     Gauge,
@@ -13,6 +13,36 @@ import {
   
   function EconomicCalendarSection() {
     const [isCalendarLoading, setIsCalendarLoading] = useState(true);
+    const calendarViewportRef = useRef(null);
+
+    useEffect(() => {
+      const viewport = calendarViewportRef.current;
+      if (!viewport) return undefined;
+
+      const mobileQuery = window.matchMedia("(max-width: 768px)");
+      const sourceWidth = 650;
+      const sourceHeight = 720;
+
+      const syncCalendarScale = () => {
+        const availableWidth = viewport.clientWidth;
+        const scale = mobileQuery.matches && availableWidth
+          ? Math.min(1, availableWidth / sourceWidth)
+          : 1;
+
+        viewport.style.setProperty("--calendar-mobile-scale", String(scale));
+        viewport.style.setProperty("--calendar-mobile-height", `${Math.ceil(sourceHeight * scale)}px`);
+      };
+
+      const resizeObserver = new ResizeObserver(syncCalendarScale);
+      resizeObserver.observe(viewport);
+      mobileQuery.addEventListener?.("change", syncCalendarScale);
+      syncCalendarScale();
+
+      return () => {
+        resizeObserver.disconnect();
+        mobileQuery.removeEventListener?.("change", syncCalendarScale);
+      };
+    }, []);
 
     return (
       <section className="section calendarSection">
@@ -35,18 +65,20 @@ import {
                 </div>
               </div>
             ) : null}
-            <iframe
-              className="investingCalendarFrame"
-              src="https://sslecal2.investing.com?ecoDayBackground=%23545454&borderColor=%23545454&columns=exc_flags,exc_actual,exc_forecast,exc_previous&category=_employment,_economicActivity,_inflation,_credit,_centralBanks,_confidenceIndex,_balance,_Bonds&importance=3&features=datepicker&countries=5,11&calType=week&timeZone=88&lang=18"
-              width="100%"
-              height="720"
-              frameBorder="0"
-              allowTransparency="true"
-              marginWidth="0"
-              marginHeight="0"
-              onLoad={() => setIsCalendarLoading(false)}
-              title="Investing.com Economic Calendar"
-            />
+            <div ref={calendarViewportRef} className="investingCalendarViewport">
+              <iframe
+                className="investingCalendarFrame"
+                src="https://sslecal2.investing.com?ecoDayBackground=%23545454&borderColor=%23545454&columns=exc_flags,exc_actual,exc_forecast,exc_previous&category=_employment,_economicActivity,_inflation,_credit,_centralBanks,_confidenceIndex,_balance,_Bonds&importance=3&features=datepicker&countries=5,11&calType=week&timeZone=88&lang=18"
+                width="100%"
+                height="720"
+                frameBorder="0"
+                allowTransparency="true"
+                marginWidth="0"
+                marginHeight="0"
+                onLoad={() => setIsCalendarLoading(false)}
+                title="Investing.com Economic Calendar"
+              />
+            </div>
           </div>
   
           <EconomicIndicatorLinks />
