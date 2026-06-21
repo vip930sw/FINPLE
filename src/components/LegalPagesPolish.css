@@ -600,6 +600,14 @@
     padding: 76px 24px 34px !important;
   }
 
+  .accountPage.legalPage.standaloneLegalPage > .legalDocumentCard,
+  .legalPage.standaloneLegalPage > .legalDocumentCard,
+  .standaloneLegalPage > .legalDocumentCard {
+    width: min(calc(100% - 28px), 1080px) !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+  }
+
   .loginSimpleCard {
     width: min(100% - 28px, 430px) !important;
     margin-top: 40px !important;
