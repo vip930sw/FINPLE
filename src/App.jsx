@@ -691,6 +691,24 @@ function SiteFooter({ onNavigate }) {
         특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
       </p>
       <div className="siteFooterActions">
+        <select
+          className="siteFooterMobileMenu"
+          defaultValue=""
+          aria-label="푸터 메뉴"
+          onChange={(event) => {
+            const page = event.target.value;
+            if (!page) return;
+            onNavigate(page);
+            event.target.value = "";
+          }}
+        >
+          <option value="" disabled>메뉴 선택</option>
+          <option value="updates">업데이트</option>
+          <option value="terms">이용약관</option>
+          <option value="privacy">개인정보처리방침</option>
+          <option value="refund">환불정책</option>
+          <option value="investment-disclaimer">투자 유의사항</option>
+        </select>
         <nav className="siteFooterLinks" aria-label="FINPLE 정책 및 업데이트 링크">
           <a href="/updates" onClick={(event) => handleFooterLink(event, "updates")}>업데이트</a>
           <a href="/terms" onClick={(event) => handleFooterLink(event, "terms")}>이용약관</a>

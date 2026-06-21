@@ -26,6 +26,17 @@
   opacity: 0.16;
 }
 
+@media screen and (min-width: 901px) {
+  .calendarSection {
+    max-width: 1280px;
+  }
+
+  .calendarSection .economicGrid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 32px;
+  }
+}
+
 .calendarLoadingOverlay {
   position: absolute;
   inset: 20px 16px;
