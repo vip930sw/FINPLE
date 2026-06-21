@@ -96,6 +96,20 @@
     width: 100% !important;
   }
 
+  .finpleUnifiedHeader .simulatorRouteSubNav {
+    justify-content: center !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .personalPage .simulatorTabNav.threeStepNav {
+    display: none !important;
+  }
+
+  .personalPage .simulatorSection {
+    padding-top: 20px !important;
+  }
+
   .finpleUnifiedHeader .finpleGlobalNav button {
     position: relative !important;
     width: 32px !important;
