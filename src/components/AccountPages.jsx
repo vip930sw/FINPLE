@@ -274,6 +274,7 @@ export function MyPage({ onNavigate }) {
       title="MY PAGE"
       description="저장 데이터, 계정, 포트폴리오, 요금제 상태를 관리하는 사용자 공간입니다."
       onNavigate={onNavigate}
+      pageClassName="myPage"
     >
       <section className="accountPanelStack" aria-label="계정 및 서버 관리 패널">
         <AccountStatusPanel onNavigate={onNavigate} />

@@ -621,6 +621,18 @@
     padding-left: 0 !important;
   }
 
+  .myPage > .myPageDashboardLayout,
+  .myPage > .accountPanelStack,
+  .myPage > .myPageBetaCompactNotice {
+    width: min(calc(100% - 28px), 1100px) !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+  }
+
+  .myPage > .myPageDashboardLayout .accountPanelStack {
+    width: 100% !important;
+  }
+
   .loginSimpleCard {
     width: min(100% - 28px, 430px) !important;
     margin-top: 40px !important;
