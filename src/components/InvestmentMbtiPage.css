@@ -656,6 +656,21 @@
     grid-template-columns: 1fr;
   }
 
+  .investmentMbtiOptionGrid button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 112px;
+    padding: 18px;
+  }
+
+  .investmentMbtiOptionGrid button span {
+    flex: 0 0 auto;
+    margin-right: 0;
+  }
+
   .investmentMbtiAxisLabels {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -675,18 +690,27 @@
     right: auto;
   }
 
-  .investmentMbtiActions,
   .investmentMbtiResultActions.horizontal,
   .investmentMbtiShareActions,
   .investmentMbtiPresetActions {
     flex-direction: column;
   }
 
-  .investmentMbtiActions button,
   .investmentMbtiResultActions.horizontal button,
   .investmentMbtiShareActions button,
   .investmentMbtiPresetActions button {
     width: 100%;
+  }
+
+  .investmentMbtiActions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .investmentMbtiActions button {
+    width: calc(50% - 6px);
+    min-width: 0;
   }
 
   .investmentMbtiNotice {
