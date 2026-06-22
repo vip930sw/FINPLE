@@ -7056,6 +7056,9 @@ body {
 }
 
 .accountPlanCard {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   padding: 28px;
 }
 
@@ -8205,7 +8208,7 @@ body {
   box-shadow: 0 18px 40px rgba(37, 99, 235, 0.16);
 }
 
-.accountPlanCard.selected::after {
+.accountPlanCard::after {
   content: "현재 선택";
   display: inline-flex;
   align-items: center;
@@ -8218,6 +8221,11 @@ body {
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 950;
+  visibility: hidden;
+}
+
+.accountPlanCard.selected::after {
+  visibility: visible;
 }
 
 .accountPlanCard.featured.selected::after {
@@ -8357,7 +8365,16 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-height: 22px;
   margin-bottom: 8px;
+}
+
+.accountPlanCard > ul {
+  min-height: 160px;
+}
+
+.accountPlanCard .planLimitList {
+  min-height: 188px;
 }
 
 .planCardTopLine p {
@@ -11131,8 +11148,8 @@ body,
 .accountPlanCard.featured {
   background: #ffffff;
   color: #0f172a;
-  border-color: #dbeafe;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+  border-color: #dbe4f0;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.06);
 }
 
 .accountPlanCard.featured h2,
