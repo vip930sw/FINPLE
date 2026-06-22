@@ -25,6 +25,7 @@
 | [FINPLE_ui_visual_rules.md](./FINPLE_ui_visual_rules.md) | 메뉴·카드·섹션 라벨 색상과 내부 여백 공통 기준 |
 | [FINPLE_worklog_handoff_2026_06_20.md](./FINPLE_worklog_handoff_2026_06_20.md) | HOME·푸터·문의·메일·사진 첨부·관리자 답변 작업 이력 및 인수인계 |
 | [FINPLE_updates_worklog_guide.md](./FINPLE_updates_worklog_guide.md) | `/updates` 사용자용 Beta 변경 내역 작성 및 인수인계 기준 |
+| [FINPLE_responsive_ui_handoff_2026_06_22.md](./FINPLE_responsive_ui_handoff_2026_06_22.md) | 모바일 우선 반응형 UI 작업 이력, CSS 우선순위, 검증·배포·회귀 테스트 매뉴얼 |
 
 ## 전체 문서 목록
 
