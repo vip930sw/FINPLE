@@ -1360,7 +1360,10 @@ function AccountStatusPanel({ onNavigate }) {
       <div className="accountWithdrawalZone">
         <div>
           <strong>계정 관리</strong>
-          <p>계정 삭제가 필요한 경우에만 회원탈퇴를 진행해 주세요.</p>
+          <p>
+            <span className="accountWithdrawalDescriptionDesktop">계정 삭제가 필요한 경우에만 회원탈퇴를 진행해 주세요.</span>
+            <span className="accountWithdrawalDescriptionMobile">계정 삭제 시 회원탈퇴를 진행해 주세요.</span>
+          </p>
         </div>
         <button type="button" className="secondaryButton accountWithdrawalButton" onClick={() => setIsWithdrawalOpen(true)} disabled={isLoading || !authUser}>
           회원탈퇴

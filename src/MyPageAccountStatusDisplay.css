@@ -196,6 +196,10 @@
   line-height: 1.5;
 }
 
+.accountWithdrawalDescriptionMobile {
+  display: none;
+}
+
 .accountWithdrawalButton {
   border-color: #fecaca !important;
   color: #991b1b !important;
@@ -355,5 +359,14 @@
   .accountWithdrawalActions button,
   .accountPasswordChangeButton {
     width: 100%;
+  }
+
+  .accountWithdrawalDescriptionDesktop {
+    display: none;
+  }
+
+  .accountWithdrawalDescriptionMobile {
+    display: inline;
+    white-space: nowrap;
   }
 }
