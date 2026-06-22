@@ -609,14 +609,17 @@
   }
 
   .accountPage > .pricingStatusPanel,
+  .accountPage > .pricingStatusPanel + .mobilePricingPlanNav,
   .accountPage > .pricingStatusPanel + .accountPlanGrid,
-  .accountPage > .pricingStatusPanel + .accountPlanGrid + .pricingNoticeBox {
+  .accountPage > .pricingStatusPanel + .mobilePricingPlanNav + .accountPlanGrid,
+  .accountPage > .pricingStatusPanel + .mobilePricingPlanNav + .accountPlanGrid + .pricingNoticeBox {
     width: min(calc(100% - 28px), 1120px) !important;
     margin-right: auto !important;
     margin-left: auto !important;
   }
 
-  .accountPage > .pricingStatusPanel + .accountPlanGrid {
+  .accountPage > .pricingStatusPanel + .accountPlanGrid,
+  .accountPage > .pricingStatusPanel + .mobilePricingPlanNav + .accountPlanGrid {
     padding-right: 0 !important;
     padding-left: 0 !important;
   }

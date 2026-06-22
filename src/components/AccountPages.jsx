@@ -304,6 +304,7 @@ export function MyPage({ onNavigate }) {
 export function PricingPage({ onNavigate }) {
   const [authUser, setAuthUser] = useState(() => getStoredFinpleAuthUser());
   const [selectedPlan, setSelectedPlan] = useState(() => getEffectiveStoredPlanKey());
+  const [visiblePlanKey, setVisiblePlanKey] = useState(() => getEffectiveStoredPlanKey());
   const [statusMessage, setStatusMessage] = useState(() => (
     isEducationAuthUser(getStoredFinpleAuthUser())
       ? "교육용 계정에는 Personal 권한이 적용되어 있습니다. 실제 결제나 구독 변경 없이 수업 기간 동안 사용할 수 있습니다."
@@ -319,11 +320,14 @@ export function PricingPage({ onNavigate }) {
       setAuthUser(nextUser);
       if (isEducationAuthUser(nextUser)) {
         setSelectedPlan("personal");
+        setVisiblePlanKey("personal");
         setStatusMessage("교육용 계정에는 Personal 권한이 적용되어 있습니다. 실제 결제나 구독 변경 없이 수업 기간 동안 사용할 수 있습니다.");
         return;
       }
 
-      setSelectedPlan(getStoredFinplePlan());
+      const nextPlanKey = getStoredFinplePlan();
+      setSelectedPlan(nextPlanKey);
+      setVisiblePlanKey(nextPlanKey);
       setStatusMessage("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다.");
     }
 
@@ -344,6 +348,7 @@ export function PricingPage({ onNavigate }) {
 
     const plan = setStoredFinplePlan(planKey);
     setSelectedPlan(plan.key);
+    setVisiblePlanKey(plan.key);
 
     const authUser = getStoredFinpleAuthUser();
     if (authUser?.id) {
@@ -381,6 +386,20 @@ export function PricingPage({ onNavigate }) {
         <p>{statusMessage}</p>
       </section>
 
+      <nav className="mobilePricingPlanNav" aria-label="모바일 요금제 카드 선택">
+        {plans.map((plan) => (
+          <button
+            key={plan.key}
+            type="button"
+            className={visiblePlanKey === plan.key ? "active" : ""}
+            aria-pressed={visiblePlanKey === plan.key}
+            onClick={() => setVisiblePlanKey(plan.key)}
+          >
+            {plan.label}
+          </button>
+        ))}
+      </nav>
+
       <section className="accountPlanGrid">
         {plans.map((plan) => (
           <article
@@ -389,6 +408,7 @@ export function PricingPage({ onNavigate }) {
               "accountPlanCard",
               plan.featured ? "featured" : "",
               displayPlanKey === plan.key ? "selected" : "",
+              visiblePlanKey === plan.key ? "mobilePlanVisible" : "mobilePlanHidden",
             ].filter(Boolean).join(" ")}
           >
             <div className="planCardTopLine">
