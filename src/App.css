@@ -11152,21 +11152,29 @@ body,
   box-shadow: 0 20px 44px rgba(15, 23, 42, 0.06);
 }
 
-.accountPlanCard.featured h2,
-.accountPlanCard.featured p,
-.accountPlanCard.featured li,
-.accountPlanCard.featured strong {
-  color: #0f172a;
+.accountPlanCard.featured p {
+  color: #2563eb;
+}
+
+.accountPlanCard.featured li {
+  color: #334155;
+  font-weight: 800;
 }
 
 .accountPlanCard.featured .planLimitList span {
   background: #f1f5f9;
-  color: #0f172a;
+  color: #334155;
 }
 
 .accountPlanCard.featured button {
   background: #2563eb;
   color: #ffffff;
+}
+
+@media (min-width: 901px) {
+  .accountPlanCard::after {
+    display: none;
+  }
 }
 
 .priceCard.featured {
