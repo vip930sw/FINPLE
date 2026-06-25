@@ -69,6 +69,12 @@
     - 전체 장기 로드맵 기준 진행률
     - 다음 작업 시작점
 
+11. `FINPLE_AI_ANALYSIS_MOCK_BACKEND.md`
+    - Step 113-3A mock AI backend
+    - `/api/ai/portfolio-analysis` endpoint
+    - request schema와 output validator
+    - 외부 AI API 연결 전 제품 경계
+
 ## 확정된 방향
 
 ```text
@@ -81,11 +87,11 @@
 
 ## 현재 진행 위치
 
-2026-06-25 기준 `Step 113-2B 모델 카드·평가`까지 완료했다.
+2026-06-25 기준 `Step 113-3A mock AI backend`까지 완료했다.
 
-- Step 113 작업 순서 기준: 약 50%
-- 전체 장기 로드맵 기준: 약 25%
-- 다음 작업: `Step 113-3A mock AI backend`
+- Step 113 작업 순서 기준: 약 60%
+- 전체 장기 로드맵 기준: 약 30%
+- 다음 작업: `Step 113-3B output validator`
 
 ## 첫 개발 명령
 

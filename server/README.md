@@ -17,6 +17,16 @@ http://localhost:5050/api/health
 http://localhost:5050/api/assets/QQQ
 ```
 
+## AI 분석 mock endpoint
+
+Step 113-3A 기준 AI 분석은 외부 AI API를 호출하지 않는 mock 모드입니다.
+
+```text
+POST http://localhost:5050/api/ai/portfolio-analysis
+```
+
+필수 입력은 `assets` 배열입니다. 각 자산은 `ticker`, `market`, `weight`를 포함해야 하며 비중 합계는 100% 근처여야 합니다. 응답은 기존 FINPLE 계산값을 재계산하지 않고 포트폴리오 구조와 데이터 한계를 설명합니다.
+
 ## Provider 설정
 
 기본값은 `mock`입니다. 실제 Alpha Vantage 연결을 테스트하려면 `.env`를 아래처럼 수정합니다.

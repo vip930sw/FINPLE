@@ -16,6 +16,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import portfolioDbRoutes from "./routes/portfolioDbRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import aiPortfolioAnalysisRoutes from "./routes/aiPortfolioAnalysisRoutes.js";
 
 import {
   getAssetDataBatch,
@@ -68,6 +69,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiPortfolioAnalysisRoutes);
 
 app.get("/api/health", (request, response) => {
   response.json({
@@ -138,7 +140,11 @@ app.post("/api/assets/batch", async (request, response, next) => {
 
 app.use((error, request, response, next) => {
   const statusCode = Number(error.statusCode || 500);
-  response.status(statusCode).json({ ok: false, message: error.message || "서버 오류가 발생했습니다." });
+  response.status(statusCode).json({
+    ok: false,
+    message: error.message || "서버 오류가 발생했습니다.",
+    ...(statusCode < 500 && Array.isArray(error.details) ? { details: error.details } : {}),
+  });
 });
 
 app.listen(port, () => {
