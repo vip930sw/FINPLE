@@ -1,0 +1,2383 @@
+{
+  "generated_at": "2026-06-25T12:05:59.979440+00:00",
+  "repository": "vip930sw/FINPLE",
+  "scan_dirs": [
+    "src/data/tickers",
+    "data/processed"
+  ],
+  "runtime_flow": {
+    "description": "Current screener/simulator candidate flow inferred from screenerCandidateLoader.js and screenerCandidateOverlay.js.",
+    "runtime_modules": [
+      "src/data/tickers/screenerCandidateLoader.js",
+      "src/data/tickers/screenerCandidateOverlay.js"
+    ],
+    "runtime_imports": {
+      "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv": [
+        "src/data/tickers/screenerCandidateLoader.js"
+      ],
+      "src/data/tickers/finple_app_candidates_2000_final_v1.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "src/data/tickers/kr_etf_dividend_overlay_20260525.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "src/data/tickers/kr_stock_dividend_overlay_20260525.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "src/data/tickers/us_dividend_overlay_20260527.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "src/data/tickers/us_price_metrics_overlay_20260528_app_ready.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ]
+    },
+    "base_candidate_file": "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv",
+    "price_metrics_app_ready_files": [
+      "src/data/tickers/us_price_metrics_overlay_20260528_app_ready.csv",
+      "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv"
+    ],
+    "raw_candidate_count": 6000,
+    "app_ready_price_metric_key_count": 5641,
+    "app_ready_candidate_count": 5641,
+    "excluded_by_missing_price_metrics_count": 359,
+    "app_ready_market_counts": {
+      "US": 2973,
+      "KR": 2668
+    },
+    "candidate_duplicate_summary": {
+      "market_ticker_duplicate_count": 0
+    }
+  },
+  "summary": {
+    "file_count": 32,
+    "csv_count": 23,
+    "json_count": 9,
+    "runtime_imported_file_count": 7,
+    "runtime_imported_files": [
+      "src/data/tickers/finple_app_candidates_2000_final_v1.csv",
+      "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv",
+      "src/data/tickers/kr_etf_dividend_overlay_20260525.csv",
+      "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv",
+      "src/data/tickers/kr_stock_dividend_overlay_20260525.csv",
+      "src/data/tickers/us_dividend_overlay_20260527.csv",
+      "src/data/tickers/us_price_metrics_overlay_20260528_app_ready.csv"
+    ]
+  },
+  "files": [
+    {
+      "path": "src/data/tickers/finple_app_candidates_1000_final_v1.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 320478,
+      "data_dates_from_filename": [],
+      "row_count": 1000,
+      "column_count": 24,
+      "columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "sourceUniverse",
+        "tier",
+        "strategy",
+        "riskLevel",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "displayDividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "metricsSource",
+        "reviewTag",
+        "reviewReason",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "providerSymbol": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "dataStatus": 0,
+        "expectedCagr": 6,
+        "beta": 7,
+        "mdd": 6,
+        "dividendYield": 73
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 500,
+          "KR": 500
+        },
+        "assetType": {
+          "stock": 847,
+          "ETF": 153
+        },
+        "dataStatus": {
+          "ready_with_metrics": 926,
+          "review_required": 74
+        },
+        "reviewTag": {
+          "ready_with_metrics": 926,
+          "review_required": 74
+        },
+        "dividendPolicy": {
+          "dividend_confirmed": 754,
+          "no_dividend": 173,
+          "review_required": 73
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 994,
+          "missing": 6,
+          "zero": 1,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 993,
+          "missing": 7,
+          "zero": 12,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 994,
+          "missing": 6,
+          "zero": 2,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 927,
+          "missing": 73,
+          "zero": 173,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/finple_app_candidates_2000_final_v1.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 675264,
+      "data_dates_from_filename": [],
+      "row_count": 2000,
+      "column_count": 27,
+      "columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "sourceUniverse",
+        "tier",
+        "strategy",
+        "riskLevel",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "displayDividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "metricsSource",
+        "reviewTag",
+        "reviewReason",
+        "notes",
+        "marketCap",
+        "aum",
+        "sizeSource"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "providerSymbol": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "dataStatus": 0,
+        "expectedCagr": 46,
+        "beta": 125,
+        "mdd": 46,
+        "dividendYield": 573
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 1000,
+          "US": 1000
+        },
+        "assetType": {
+          "ETF": 1153,
+          "stock": 847
+        },
+        "dataStatus": {
+          "ready_with_metrics": 1419,
+          "review_required": 581
+        },
+        "reviewTag": {
+          "ready_with_metrics": 1419,
+          "review_required": 581
+        },
+        "dividendPolicy": {
+          "dividend_confirmed": 1158,
+          "review_required": 533,
+          "no_dividend": 269,
+          "(blank)": 40
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 1954,
+          "missing": 46,
+          "zero": 1,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 1875,
+          "missing": 125,
+          "zero": 52,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 1954,
+          "missing": 46,
+          "zero": 4,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 1427,
+          "missing": 573,
+          "zero": 269,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "marketCap": {
+          "present": 413,
+          "missing": 1587,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "aum": {
+          "present": 0,
+          "missing": 2000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateLoader.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [
+        "scripts/build_finple_candidates_6000_v1.py",
+        "scripts/build_kr_price_metrics_overlay_chunked.py",
+        "scripts/build_us_dividend_overlay.py",
+        "scripts/build_us_dividend_overlay_chunked.py",
+        "scripts/build_us_price_metrics_overlay_chunked.py",
+        "scripts/diagnose_finple_candidate_metrics.py",
+        "scripts/finple_csv_audit.py"
+      ],
+      "file_size_bytes": 1958333,
+      "data_dates_from_filename": [],
+      "row_count": 6000,
+      "column_count": 27,
+      "columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "sourceUniverse",
+        "tier",
+        "strategy",
+        "riskLevel",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "displayDividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "metricsSource",
+        "reviewTag",
+        "reviewReason",
+        "notes",
+        "marketCap",
+        "aum",
+        "sizeSource"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "providerSymbol": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "dataStatus": 0,
+        "expectedCagr": 6000,
+        "beta": 6000,
+        "mdd": 6000,
+        "dividendYield": 6000
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 3000,
+          "KR": 3000
+        },
+        "assetType": {
+          "stock": 3550,
+          "ETF": 2450
+        },
+        "dataStatus": {
+          "review_required": 6000
+        },
+        "reviewTag": {
+          "review_required": 6000
+        },
+        "dividendPolicy": {
+          "pending": 6000
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "marketCap": {
+          "present": 4383,
+          "missing": 1617,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "aum": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_csv_quality_report.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 1217,
+      "data_dates_from_filename": [],
+      "json_type": "dict",
+      "top_level_keys": [
+        "assetTypeCounts",
+        "counts",
+        "notes",
+        "sourceFiles",
+        "tickerValidation"
+      ]
+    },
+    {
+      "path": "src/data/tickers/kr_etf_dividend_overlay_20260525.csv",
+      "kind": "dividend_overlay",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 14712,
+      "data_dates_from_filename": [
+        "2026-05-25"
+      ],
+      "row_count": 922,
+      "column_count": 3,
+      "columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 922
+        }
+      },
+      "numeric_presence": {
+        "dividendYield": {
+          "present": 922,
+          "missing": 0,
+          "zero": 2,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv",
+      "kind": "price_metrics_overlay",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 242488,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "row_count": 2668,
+      "column_count": 11,
+      "columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "priceCagr10y",
+        "mdd",
+        "beta",
+        "dataYears",
+        "benchmarkTicker",
+        "metricsStatus",
+        "metricsSource",
+        "reviewReason"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "mdd",
+        "beta",
+        "dataYears",
+        "metricsStatus",
+        "metricsSource"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "expectedCagr": 0,
+        "mdd": 0,
+        "beta": 0,
+        "dataYears": 0,
+        "metricsStatus": 0,
+        "metricsSource": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 2668
+        },
+        "metricsStatus": {
+          "ready": 2322,
+          "short_history": 346
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 2668,
+          "missing": 0,
+          "zero": 2,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "priceCagr10y": {
+          "present": 2668,
+          "missing": 0,
+          "zero": 2,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 2668,
+          "missing": 0,
+          "zero": 57,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 2668,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dataYears": {
+          "present": 2668,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_screener_candidates.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 18797,
+      "data_dates_from_filename": [],
+      "row_count": 87,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 0,
+        "beta": 0,
+        "mdd": 0,
+        "dividendYield": 87
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 87
+        },
+        "assetType": {
+          "ETF": 87
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 87,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 87,
+          "missing": 0,
+          "zero": 4,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 87,
+          "missing": 0,
+          "zero": 3,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 87,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_screener_candidates.sample.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 806,
+      "data_dates_from_filename": [],
+      "row_count": 5,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 0,
+        "beta": 0,
+        "mdd": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 5
+        },
+        "assetType": {
+          "ETF": 3,
+          "stock": 2
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_stock_candidates.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 9596,
+      "data_dates_from_filename": [],
+      "row_count": 53,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 53,
+        "beta": 53,
+        "mdd": 53,
+        "dividendYield": 53
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 53
+        },
+        "assetType": {
+          "stock": 53
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 0,
+          "missing": 53,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 53,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 0,
+          "missing": 53,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 53,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_stock_dividend_overlay_20260525.csv",
+      "kind": "dividend_overlay",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 19023,
+      "data_dates_from_filename": [
+        "2026-05-25"
+      ],
+      "row_count": 1246,
+      "column_count": 3,
+      "columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 1246
+        }
+      },
+      "numeric_presence": {
+        "dividendYield": {
+          "present": 1246,
+          "missing": 0,
+          "zero": 4,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/kr_ticker_master.sample.csv",
+      "kind": "asset_reference",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 610,
+      "data_dates_from_filename": [],
+      "row_count": 5,
+      "column_count": 13,
+      "columns": [
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "nameEn",
+        "market",
+        "exchange",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "sector",
+        "isEtf",
+        "isActive",
+        "notes"
+      ],
+      "required_columns": [],
+      "missing_required_columns": [],
+      "missing_required_values": {},
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 5
+        },
+        "assetType": {
+          "stock": 3,
+          "ETF": 2
+        }
+      },
+      "numeric_presence": {}
+    },
+    {
+      "path": "src/data/tickers/us_csv_quality_report.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 1397,
+      "data_dates_from_filename": [],
+      "json_type": "dict",
+      "top_level_keys": [
+        "assetTypeCounts",
+        "countryCountsTop10",
+        "counts",
+        "etfSourceColumns",
+        "notes",
+        "sourceFiles",
+        "stockSourceColumns"
+      ]
+    },
+    {
+      "path": "src/data/tickers/us_dividend_overlay_20260527.csv",
+      "kind": "dividend_overlay",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [
+        "scripts/build_us_dividend_overlay_chunked.py",
+        "scripts/filter_us_price_metrics_app_ready.py"
+      ],
+      "file_size_bytes": 259784,
+      "data_dates_from_filename": [
+        "2026-05-27"
+      ],
+      "row_count": 3000,
+      "column_count": 7,
+      "columns": [
+        "market",
+        "ticker",
+        "dividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "yieldStatus",
+        "reviewReason"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "dividendYield": 579
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 3000
+        },
+        "dividendPolicy": {
+          "dividend_confirmed": 2285,
+          "dividend_review_required": 711,
+          "no_dividend_confirmed": 4
+        }
+      },
+      "numeric_presence": {
+        "dividendYield": {
+          "present": 2421,
+          "missing": 579,
+          "zero": 6,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_price_metrics_overlay_20260528_app_ready.csv",
+      "kind": "price_metrics_overlay",
+      "runtime_imported_by": [
+        "src/data/tickers/screenerCandidateOverlay.js"
+      ],
+      "is_runtime_imported": true,
+      "likely_generating_scripts": [
+        "scripts/filter_us_price_metrics_app_ready.py"
+      ],
+      "file_size_bytes": 251166,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "row_count": 2973,
+      "column_count": 11,
+      "columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "priceCagr10y",
+        "mdd",
+        "beta",
+        "dataYears",
+        "benchmarkTicker",
+        "metricsStatus",
+        "metricsSource",
+        "reviewReason"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "mdd",
+        "beta",
+        "dataYears",
+        "metricsStatus",
+        "metricsSource"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "expectedCagr": 0,
+        "mdd": 0,
+        "beta": 20,
+        "dataYears": 0,
+        "metricsStatus": 0,
+        "metricsSource": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 2973
+        },
+        "metricsStatus": {
+          "ready": 2480,
+          "short_history": 357,
+          "review_required": 136
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 2973,
+          "missing": 0,
+          "zero": 5,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "priceCagr10y": {
+          "present": 2973,
+          "missing": 0,
+          "zero": 5,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 2953,
+          "missing": 20,
+          "zero": 44,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 2973,
+          "missing": 0,
+          "zero": 1,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dataYears": {
+          "present": 2973,
+          "missing": 0,
+          "zero": 1,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_screener_candidates.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 8410,
+      "data_dates_from_filename": [],
+      "row_count": 40,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 0,
+        "beta": 0,
+        "mdd": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 40
+        },
+        "assetType": {
+          "ETF": 25,
+          "stock": 15
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 40,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 40,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 40,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 40,
+          "missing": 0,
+          "zero": 4,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_screener_candidates.sample.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 807,
+      "data_dates_from_filename": [],
+      "row_count": 5,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 0,
+        "beta": 0,
+        "mdd": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 5
+        },
+        "assetType": {
+          "ETF": 4,
+          "stock": 1
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 5,
+          "missing": 0,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_screener_candidates_expansion.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 1859,
+      "data_dates_from_filename": [],
+      "row_count": 8,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 8,
+        "beta": 8,
+        "mdd": 8,
+        "dividendYield": 8
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 8
+        },
+        "assetType": {
+          "stock": 5,
+          "ETF": 3
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 0,
+          "missing": 8,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 8,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 0,
+          "missing": 8,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 8,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_screener_candidates_extra.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 16198,
+      "data_dates_from_filename": [],
+      "row_count": 91,
+      "column_count": 16,
+      "columns": [
+        "ticker",
+        "nameKr",
+        "market",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "strategy",
+        "riskLevel",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "notes"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [
+        "providerSymbol",
+        "dataStatus"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "expectedCagr": 91,
+        "beta": 91,
+        "mdd": 91,
+        "dividendYield": 91
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 91
+        },
+        "assetType": {
+          "stock": 46,
+          "ETF": 45
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 0,
+          "missing": 91,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 91,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 0,
+          "missing": 91,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 91,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "src/data/tickers/us_ticker_master.sample.csv",
+      "kind": "asset_reference",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 638,
+      "data_dates_from_filename": [],
+      "row_count": 5,
+      "column_count": 13,
+      "columns": [
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "nameEn",
+        "market",
+        "exchange",
+        "currency",
+        "quoteCurrency",
+        "assetType",
+        "sector",
+        "isEtf",
+        "isActive",
+        "notes"
+      ],
+      "required_columns": [],
+      "missing_required_columns": [],
+      "missing_required_values": {},
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 5
+        },
+        "assetType": {
+          "ETF": 3,
+          "stock": 2
+        }
+      },
+      "numeric_presence": {}
+    },
+    {
+      "path": "data/processed/finple_app_candidates_6000_balanced_v1.csv",
+      "kind": "candidate",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [
+        "scripts/build_finple_candidates_6000_v1.py",
+        "scripts/build_kr_price_metrics_overlay_chunked.py",
+        "scripts/build_us_dividend_overlay.py",
+        "scripts/build_us_dividend_overlay_chunked.py",
+        "scripts/build_us_price_metrics_overlay_chunked.py",
+        "scripts/diagnose_finple_candidate_metrics.py",
+        "scripts/finple_csv_audit.py"
+      ],
+      "file_size_bytes": 1958333,
+      "data_dates_from_filename": [],
+      "row_count": 6000,
+      "column_count": 27,
+      "columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "sourceUniverse",
+        "tier",
+        "strategy",
+        "riskLevel",
+        "goals",
+        "beginnerFit",
+        "tags",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield",
+        "displayDividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "metricsSource",
+        "reviewTag",
+        "reviewReason",
+        "notes",
+        "marketCap",
+        "aum",
+        "sizeSource"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "providerSymbol",
+        "nameKr",
+        "assetType",
+        "dataStatus",
+        "expectedCagr",
+        "beta",
+        "mdd",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "providerSymbol": 0,
+        "nameKr": 0,
+        "assetType": 0,
+        "dataStatus": 0,
+        "expectedCagr": 6000,
+        "beta": 6000,
+        "mdd": 6000,
+        "dividendYield": 6000
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 3000,
+          "KR": 3000
+        },
+        "assetType": {
+          "stock": 3550,
+          "ETF": 2450
+        },
+        "dataStatus": {
+          "review_required": 6000
+        },
+        "reviewTag": {
+          "review_required": 6000
+        },
+        "dividendPolicy": {
+          "pending": 6000
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "marketCap": {
+          "present": 4383,
+          "missing": 1617,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "aum": {
+          "present": 0,
+          "missing": 6000,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "data/processed/FINPLE_colab_archive_manifest_20260526.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 4059,
+      "data_dates_from_filename": [
+        "2026-05-26"
+      ],
+      "json_type": "dict",
+      "top_level_keys": [
+        "analysis_date",
+        "key_files",
+        "policy_decisions",
+        "recommended_reference_package",
+        "source_archive"
+      ]
+    },
+    {
+      "path": "data/processed/finple_step108_3_6000_category_counts.csv",
+      "kind": "csv",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [
+        "scripts/build_finple_candidates_6000_v1.py"
+      ],
+      "file_size_bytes": 389,
+      "data_dates_from_filename": [],
+      "row_count": 14,
+      "column_count": 4,
+      "columns": [
+        "market",
+        "category",
+        "count",
+        "previous_step108_3_target"
+      ],
+      "required_columns": [],
+      "missing_required_columns": [],
+      "missing_required_values": {},
+      "duplicate_summary": {
+        "key": null,
+        "duplicate_row_count": null,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 7,
+          "KR": 7
+        }
+      },
+      "numeric_presence": {}
+    },
+    {
+      "path": "data/processed/finple_step108_6_6000_summary.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 2740,
+      "data_dates_from_filename": [],
+      "json_type": "dict",
+      "top_level_keys": [
+        "asset_type_counts",
+        "build",
+        "by_market_asset_type",
+        "category_counts",
+        "created_at",
+        "data_status_counts",
+        "market_counts",
+        "metric_missing",
+        "note",
+        "row_count",
+        "source_files",
+        "tier_counts"
+      ]
+    },
+    {
+      "path": "data/processed/finple_step108_6_upload_manifest.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 1565,
+      "data_dates_from_filename": [],
+      "json_type": "list",
+      "item_count": 9,
+      "first_item_keys": [
+        "path",
+        "sha256",
+        "size"
+      ]
+    },
+    {
+      "path": "data/processed/kr_dividend_yield_override_v2_2_3.csv",
+      "kind": "dividend_overlay",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [
+        "scripts/finple_csv_audit.py"
+      ],
+      "file_size_bytes": 235216,
+      "data_dates_from_filename": [],
+      "row_count": 2168,
+      "column_count": 9,
+      "columns": [
+        "ticker",
+        "assetName",
+        "market",
+        "assetType",
+        "dividendYield",
+        "yieldStatus",
+        "yieldSource",
+        "rawSourceValue",
+        "sourceFile"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "dividendYield": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 2168
+        },
+        "assetType": {
+          "stock": 1246,
+          "ETF": 922
+        }
+      },
+      "numeric_presence": {
+        "dividendYield": {
+          "present": 2168,
+          "missing": 0,
+          "zero": 6,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "data/processed/kr_price_metrics_overlay_20260528_app_ready_summary.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 5992,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "json_type": "dict",
+      "top_level_keys": [
+        "app_ready_policy",
+        "excluded_metricsStatus_counts",
+        "excluded_reason_counts",
+        "excluded_rows",
+        "excluded_tickers",
+        "input_metricsStatus_counts",
+        "input_missing_counts_by_metric",
+        "input_price_rows",
+        "market_counts",
+        "output_metricsStatus_counts",
+        "output_missing_counts_by_metric",
+        "output_runtime_rows",
+        "price_input"
+      ]
+    },
+    {
+      "path": "data/processed/kr_price_metrics_overlay_20260528_excluded_332.csv",
+      "kind": "price_metrics_overlay",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 33007,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "row_count": 332,
+      "column_count": 11,
+      "columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "priceCagr10y",
+        "mdd",
+        "beta",
+        "dataYears",
+        "benchmarkTicker",
+        "metricsStatus",
+        "metricsSource",
+        "reviewReason"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "mdd",
+        "beta",
+        "dataYears",
+        "metricsStatus",
+        "metricsSource"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "expectedCagr": 240,
+        "mdd": 240,
+        "beta": 261,
+        "dataYears": 240,
+        "metricsStatus": 0,
+        "metricsSource": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "KR": 332
+        },
+        "metricsStatus": {
+          "review_required": 332
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 92,
+          "missing": 240,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "priceCagr10y": {
+          "present": 92,
+          "missing": 240,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 71,
+          "missing": 261,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 92,
+          "missing": 240,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dataYears": {
+          "present": 92,
+          "missing": 240,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "data/processed/us_dividend_overlay_20260527_audit.csv",
+      "kind": "dividend_overlay",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 337933,
+      "data_dates_from_filename": [
+        "2026-05-27"
+      ],
+      "row_count": 3000,
+      "column_count": 12,
+      "columns": [
+        "market",
+        "ticker",
+        "yfSymbol",
+        "assetType",
+        "dividendYield",
+        "dividendPolicy",
+        "dividendSource",
+        "yieldStatus",
+        "reviewReason",
+        "latestClose",
+        "ttmDividend",
+        "dividendCount12m"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "dividendYield"
+      ],
+      "missing_required_columns": [],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "dividendYield": 579
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 3000
+        },
+        "assetType": {
+          "ETF": 1593,
+          "stock": 1407
+        },
+        "dividendPolicy": {
+          "dividend_confirmed": 2285,
+          "dividend_review_required": 711,
+          "no_dividend_confirmed": 4
+        }
+      },
+      "numeric_presence": {
+        "dividendYield": {
+          "present": 2421,
+          "missing": 579,
+          "zero": 6,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    },
+    {
+      "path": "data/processed/us_dividend_overlay_20260527_summary.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 642,
+      "data_dates_from_filename": [
+        "2026-05-27"
+      ],
+      "json_type": "dict",
+      "top_level_keys": [
+        "as_of",
+        "audit_row_count_after_dedup",
+        "audit_sha256",
+        "blank_yield_count",
+        "chunk_audit_files",
+        "chunk_runtime_files",
+        "combined_audit_file",
+        "combined_runtime_file",
+        "max_dividend_yield",
+        "min_dividend_yield",
+        "ready_count",
+        "review_required_count",
+        "row_count",
+        "runtime_sha256"
+      ]
+    },
+    {
+      "path": "data/processed/us_dividend_overlay_20260527_validation_report.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [],
+      "file_size_bytes": 5633,
+      "data_dates_from_filename": [
+        "2026-05-27"
+      ],
+      "json_type": "dict",
+      "top_level_keys": [
+        "audit_file",
+        "audit_row_count_after_dedup",
+        "blank_yield_count",
+        "dividend_policy_counts",
+        "duplicate_market_ticker",
+        "market_counts",
+        "max_dividend_yield",
+        "min_dividend_yield",
+        "note",
+        "numeric_yield_count",
+        "ready_count",
+        "review_required_count",
+        "runtime_file",
+        "runtime_row_count",
+        "sample_tickers",
+        "source_uploaded_package",
+        "summary_file",
+        "validated_at",
+        "yield_status_counts"
+      ]
+    },
+    {
+      "path": "data/processed/us_price_metrics_overlay_20260528_app_ready_summary.json",
+      "kind": "json",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [
+        "scripts/filter_us_price_metrics_app_ready.py"
+      ],
+      "file_size_bytes": 1122,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "json_type": "dict",
+      "top_level_keys": [
+        "all_four_missing_tickers",
+        "dividend_input",
+        "excluded_by_missing_combo",
+        "excluded_rows",
+        "excluded_tickers",
+        "input_price_rows",
+        "missing_counts_by_metric",
+        "missing_threshold",
+        "output_runtime_rows",
+        "policy",
+        "price_input"
+      ]
+    },
+    {
+      "path": "data/processed/us_price_metrics_overlay_20260528_excluded_27.csv",
+      "kind": "price_metrics_overlay",
+      "runtime_imported_by": [],
+      "is_runtime_imported": false,
+      "likely_generating_scripts": [
+        "scripts/filter_us_price_metrics_app_ready.py"
+      ],
+      "file_size_bytes": 2853,
+      "data_dates_from_filename": [
+        "2026-05-28"
+      ],
+      "row_count": 27,
+      "column_count": 11,
+      "columns": [
+        "market",
+        "ticker",
+        "missingCount",
+        "missingMetrics",
+        "expectedCagr",
+        "mdd",
+        "beta",
+        "dividendYield",
+        "metricsStatus",
+        "yieldStatus",
+        "reviewReason"
+      ],
+      "required_columns": [
+        "market",
+        "ticker",
+        "expectedCagr",
+        "mdd",
+        "beta",
+        "dataYears",
+        "metricsStatus",
+        "metricsSource"
+      ],
+      "missing_required_columns": [
+        "dataYears",
+        "metricsSource"
+      ],
+      "missing_required_values": {
+        "market": 0,
+        "ticker": 0,
+        "expectedCagr": 3,
+        "mdd": 3,
+        "beta": 27,
+        "metricsStatus": 0
+      },
+      "duplicate_summary": {
+        "key": [
+          "market",
+          "ticker"
+        ],
+        "duplicate_row_count": 0,
+        "duplicate_keys": []
+      },
+      "distribution": {
+        "market": {
+          "US": 27
+        },
+        "metricsStatus": {
+          "review_required": 27
+        }
+      },
+      "numeric_presence": {
+        "expectedCagr": {
+          "present": 24,
+          "missing": 3,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "beta": {
+          "present": 0,
+          "missing": 27,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "mdd": {
+          "present": 24,
+          "missing": 3,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        },
+        "dividendYield": {
+          "present": 2,
+          "missing": 25,
+          "zero": 0,
+          "invalid_numeric": 0,
+          "invalid_examples": []
+        }
+      }
+    }
+  ]
+}
