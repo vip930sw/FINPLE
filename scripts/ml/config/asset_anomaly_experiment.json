@@ -1,0 +1,30 @@
+{
+  "version": "asset-anomaly-experiment-v0",
+  "experiment_version": "step113-2a-20260625",
+  "audited_at": "2026-06-25T00:00:00Z",
+  "algorithm": "robust_mad_baseline",
+  "description": "Dependency-free unsupervised anomaly experiment using grouped median/MAD robust z-scores.",
+  "group_fields": ["market", "assetType"],
+  "feature_fields": [
+    "expectedCagr",
+    "beta",
+    "mdd",
+    "dataYears",
+    "dividendYield"
+  ],
+  "score_top_n_features": 3,
+  "minimum_group_size": 30,
+  "mad_scale": 1.4826,
+  "mad_zero_fallback_z": 6.0,
+  "thresholds": {
+    "watch_score": 2.5,
+    "review_score": 3.5,
+    "review_feature_z": 6.0
+  },
+  "notes": [
+    "This is not a production model.",
+    "Rule output remains separate from ML anomaly output.",
+    "Missing values are imputed with group medians only for scoring and are listed in mlImputedFields.",
+    "No model binary is written."
+  ]
+}

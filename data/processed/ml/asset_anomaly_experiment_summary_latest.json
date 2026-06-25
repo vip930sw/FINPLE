@@ -1,0 +1,308 @@
+{
+  "experimentVersion": "step113-2a-20260625",
+  "algorithm": "robust_mad_baseline",
+  "auditedAt": "2026-06-25T00:00:00Z",
+  "sourceFile": "data/processed/ml/asset_quality_audit_latest.csv",
+  "rowCount": 5641,
+  "statusCounts": {
+    "ml_normal": 4385,
+    "ml_review": 1177,
+    "ml_watch": 79
+  },
+  "levelCounts": {
+    "low": 4385,
+    "high": 1177,
+    "medium": 79
+  },
+  "marketCounts": {
+    "US": 2973,
+    "KR": 2668
+  },
+  "assetTypeCounts": {
+    "ETF": 2214,
+    "stock": 3427
+  },
+  "byMarketStatus": {
+    "US": {
+      "ml_normal": 2424,
+      "ml_review": 487,
+      "ml_watch": 62
+    },
+    "KR": {
+      "ml_normal": 1961,
+      "ml_review": 690,
+      "ml_watch": 17
+    }
+  },
+  "topFeatureCounts": {
+    "mdd": 964,
+    "dividendYield": 983,
+    "dataYears": 1585,
+    "beta": 911,
+    "expectedCagr": 1198
+  },
+  "thresholds": {
+    "watch_score": 2.5,
+    "review_score": 3.5,
+    "review_feature_z": 6.0
+  },
+  "featureFields": [
+    "expectedCagr",
+    "beta",
+    "mdd",
+    "dataYears",
+    "dividendYield"
+  ],
+  "groupFields": [
+    "market",
+    "assetType"
+  ],
+  "topAnomalies": [
+    {
+      "market": "US",
+      "ticker": "MST",
+      "nameKr": "Defiance Leveraged Long + Income MSTR ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 77.1485,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 212.9188,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|BETA_EXTREME|SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "BEX",
+      "nameKr": "Investment Managers Series Trust II Tradr 2X Long BE Daily ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 57.3655,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "expectedCagr",
+      "mlTopFeatureZ": 156.7613,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|BETA_EXTREME|SHORT_HISTORY|PRICE_METRICS_REVIEW_REQUIRED|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_MISSING"
+    },
+    {
+      "market": "US",
+      "ticker": "ICOI",
+      "nameKr": "Bitwise Funds Trust Bitwise COIN Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 40.0118,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 108.1422,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "AMUU",
+      "nameKr": "Direxion Daily AMD Bull 2X ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 37.0305,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "expectedCagr",
+      "mlTopFeatureZ": 101.4542,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|BETA_EXTREME|SHORT_HISTORY|PRICE_METRICS_REVIEW_REQUIRED"
+    },
+    {
+      "market": "US",
+      "ticker": "NLOP",
+      "nameKr": "Net Lease Office Properties Common Shares of Beneficial Interest",
+      "assetType": "stock",
+      "mlAnomalyScore": 32.2751,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 88.6106,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "XBTY",
+      "nameKr": "GraniteShares YieldBOOST Bitcoin ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 29.4597,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 76.3241,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "MSTY",
+      "nameKr": "Tidal Trust II YieldMax MSTR Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 27.6641,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 73.7982,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "APLX",
+      "nameKr": "Tradr 2X Long APLD Daily ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 27.2524,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "expectedCagr",
+      "mlTopFeatureZ": 66.2988,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|BETA_EXTREME|SHORT_HISTORY|PRICE_METRICS_REVIEW_REQUIRED|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_MISSING"
+    },
+    {
+      "market": "US",
+      "ticker": "CONY",
+      "nameKr": "Tidal ETF Trust II YieldMax COIN Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 25.8881,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 67.9997,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "IMST",
+      "nameKr": "Bitwise Funds Trust Bitwise MSTR Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 24.9822,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 63.0236,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "MARO",
+      "nameKr": "Tidal Trust II YieldMax MARA Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 24.1779,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 60.6285,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "SMCY",
+      "nameKr": "Tidal Trust II YieldMax SMCI Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 24.0249,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 60.6594,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "BTF",
+      "nameKr": "CoinShares Bitcoin and Ether ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 23.8669,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 64.6995,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "HOOY",
+      "nameKr": "Tidal Trust II YieldMax HOOD Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 23.2389,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 60.3807,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "AIYY",
+      "nameKr": "Tidal Trust II YieldMax AI Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 22.8638,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 56.7398,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "SITC",
+      "nameKr": "SITE Centers Corp. Common Stock",
+      "assetType": "stock",
+      "mlAnomalyScore": 21.3149,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 60.4713,
+      "ruleStatus": "review",
+      "reasonCodes": "DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "YETH",
+      "nameKr": "Roundhill ETF Trust Roundhill Ether Covered Call Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 18.6059,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 45.6314,
+      "ruleStatus": "review",
+      "reasonCodes": "SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "WNTR",
+      "nameKr": "Tidal Trust II YieldMax  MSTR Short Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 17.5213,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 42.985,
+      "ruleStatus": "review",
+      "reasonCodes": "BETA_EXTREME|SHORT_HISTORY|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "RBLY",
+      "nameKr": "Tidal Trust II YieldMax RBLX Option Income Strategy ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 17.4179,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "dividendYield",
+      "mlTopFeatureZ": 39.3029,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|SHORT_HISTORY|PRICE_METRICS_REVIEW_REQUIRED|DIVIDEND_REVIEW_REQUIRED|DIVIDEND_EXTREME"
+    },
+    {
+      "market": "US",
+      "ticker": "AMDG",
+      "nameKr": "Leverage Shares 2X Long AMD Daily ETF",
+      "assetType": "ETF",
+      "mlAnomalyScore": 16.5337,
+      "mlAnomalyStatus": "ml_review",
+      "mlTopFeature": "expectedCagr",
+      "mlTopFeatureZ": 40.3241,
+      "ruleStatus": "review",
+      "reasonCodes": "CAGR_EXTREME|BETA_EXTREME|SHORT_HISTORY|PRICE_METRICS_REVIEW_REQUIRED"
+    }
+  ],
+  "notes": [
+    "This is not a production model.",
+    "Rule output remains separate from ML anomaly output.",
+    "Missing values are imputed with group medians only for scoring and are listed in mlImputedFields.",
+    "No model binary is written."
+  ]
+}

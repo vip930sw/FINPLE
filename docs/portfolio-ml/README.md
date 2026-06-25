@@ -61,6 +61,14 @@
 첫 개발 작업: Step 113-1A 데이터 인벤토리
 ```
 
+## Step 113-2A update
+
+`FINPLE_DATA_SENTINEL_ANOMALY_EXPERIMENT.md`
+
+- ML anomaly experiment based on `robust_mad_baseline`
+- `ml_normal` / `ml_watch` / `ml_review` result summary
+- Rule output and ML output separation notes
+
 ## 첫 개발 명령
 
 Codex 새 스레드에서 `FINPLE_PORTFOLIO_ML_CODEX_HANDOFF.md`의 `첫 Codex 작업 지시문`을 사용한다.
