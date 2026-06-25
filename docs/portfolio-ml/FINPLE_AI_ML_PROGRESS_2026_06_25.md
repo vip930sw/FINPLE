@@ -4,7 +4,7 @@
 
 ## 현재 위치
 
-현재 진행 위치는 `Step 113-3A mock AI backend` 완료 지점이다.
+현재 진행 위치는 `Step 113-3B output validator` 완료 지점이다.
 
 권장 작업 순서 10개 기준:
 
@@ -16,20 +16,20 @@
 | Step 113-2A 비지도 이상치 실험 | done |
 | Step 113-2B 모델 카드·평가 | done |
 | Step 113-3A mock AI backend | done |
-| Step 113-3B output validator | next |
-| Step 113-4A STEP 4 UI shell | pending |
+| Step 113-3B output validator | done |
+| Step 113-4A STEP 4 UI shell | next |
 | Step 113-4B mock API 연결 | pending |
 | Step 113-4C live provider adapter | pending |
 
 ## 진행률
 
-Step 113 작업 순서 기준 진행률: 약 60%
+Step 113 작업 순서 기준 진행률: 약 70%
 
 ```text
-6 / 10 steps completed
+7 / 10 steps completed
 ```
 
-전체 장기 로드맵 기준 진행률: 약 30%
+전체 장기 로드맵 기준 진행률: 약 35%
 
 장기 로드맵에는 저장·사용량·Personal 연동, 분석 내역, Asset DNA, 운영 안정화가 추가로 남아 있다. 따라서 Step 113 내부 진행률보다 전체 제품화 진행률은 낮게 보는 것이 맞다.
 
@@ -44,19 +44,21 @@ Step 113 작업 순서 기준 진행률: 약 60%
 - 모델 카드
 - mock AI backend endpoint
 - request schema와 기본 output validator
+- output contract snapshot
+- 금지 표현, ticker mention, numeric hallucination 회귀 테스트
 
 ## 다음 작업
 
-다음 작업은 `Step 113-3B output validator`이다.
+다음 작업은 `Step 113-4A STEP 4 UI shell`이다.
 
 목표:
 
-- 금지문구 사전과 schema snapshot을 보강한다.
-- output length, ticker mention, numeric hallucination 실패 케이스를 늘린다.
-- STEP 4 UI 연결 전 API contract를 더 단단히 고정한다.
+- 기존 `/simulator` 안에 STEP 4 AI 분석 shell을 추가한다.
+- 처음에는 API 자동 호출 없이 empty/ready/loading/error 상태 UI를 만든다.
+- 기존 STEP 1~3 계산 흐름과 DetailPanel을 깨지 않는다.
 
 주의:
 
 - OpenAI 또는 외부 provider key를 아직 연결하지 않는다.
 - 투자 조언처럼 보이는 확정적 문구를 만들지 않는다.
-- mock endpoint의 응답 구조를 깨지 않도록 regression test를 유지한다.
+- STEP 4 탭 진입만으로 AI API를 자동 호출하지 않는다.

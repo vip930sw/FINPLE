@@ -88,6 +88,6 @@ mock backend는 다음을 하지 않는다.
 - 사용자별 목표 비중 지시
 - 비밀값을 frontend에 노출
 
-## 다음 단계
+## 후속 상태
 
-다음 작업은 `Step 113-3B output validator`이다. 3A에서 기본 validator를 넣었지만, 다음 단계에서는 UI 연결 전 금지문구 사전, 길이 제한, schema snapshot, 실패 케이스를 더 촘촘하게 확장한다.
+`Step 113-3B output validator`에서 금지문구 사전, 길이 제한, schema snapshot, 실패 케이스를 보강했다. 다음 작업은 `Step 113-4A STEP 4 UI shell`이다.

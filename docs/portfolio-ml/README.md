@@ -75,6 +75,12 @@
     - request schema와 output validator
     - 외부 AI API 연결 전 제품 경계
 
+12. `FINPLE_AI_OUTPUT_VALIDATOR.md`
+    - Step 113-3B output validator
+    - response contract snapshot
+    - 금지 표현, ticker mention, numeric hallucination 차단
+    - STEP 4 UI 연결 전 API 계약 기준
+
 ## 확정된 방향
 
 ```text
@@ -87,11 +93,11 @@
 
 ## 현재 진행 위치
 
-2026-06-25 기준 `Step 113-3A mock AI backend`까지 완료했다.
+2026-06-25 기준 `Step 113-3B output validator`까지 완료했다.
 
-- Step 113 작업 순서 기준: 약 60%
-- 전체 장기 로드맵 기준: 약 30%
-- 다음 작업: `Step 113-3B output validator`
+- Step 113 작업 순서 기준: 약 70%
+- 전체 장기 로드맵 기준: 약 35%
+- 다음 작업: `Step 113-4A STEP 4 UI shell`
 
 ## 첫 개발 명령
 

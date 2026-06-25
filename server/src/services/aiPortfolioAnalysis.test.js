@@ -3,7 +3,10 @@ import test from "node:test";
 
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
 import { runPortfolioAnalysis } from "./aiPortfolioAnalysisService.js";
-import { validateAiPortfolioAnalysisOutput } from "./aiOutputValidator.js";
+import {
+  getAiPortfolioAnalysisOutputContract,
+  validateAiPortfolioAnalysisOutput,
+} from "./aiOutputValidator.js";
 
 function validRequest() {
   return {
@@ -114,5 +117,82 @@ test("validateAiPortfolioAnalysisOutput rejects generated numbers", () => {
   assert.throws(
     () => validateAiPortfolioAnalysisOutput(output, payload),
     (error) => error.details?.some((detail) => detail.includes("numeric value"))
+  );
+});
+
+test("output contract snapshot keeps Step 4 response shape stable", () => {
+  const contract = getAiPortfolioAnalysisOutputContract();
+
+  assert.equal(contract.version, "ai-analysis-output-contract-v1");
+  assert.deepEqual(contract.topLevelFields, [
+    "analysisVersion",
+    "portfolioId",
+    "generatedAt",
+    "mode",
+    "provider",
+    "inputHash",
+    "dataQuality",
+    "portfolioProfile",
+    "diversification",
+    "riskFactors",
+    "assetRoles",
+    "limitations",
+    "disclaimer",
+  ]);
+  assert.deepEqual(contract.enums.severity, ["low", "medium", "high"]);
+  assert.equal(contract.maxTotalTextLength, 6000);
+});
+
+test("validateAiPortfolioAnalysisOutput rejects unexpected top-level fields", async () => {
+  const payload = normalizePortfolioAnalysisRequest(validRequest());
+  const output = await runPortfolioAnalysis(payload);
+
+  assert.throws(
+    () => validateAiPortfolioAnalysisOutput({ ...output, recommendation: "extra" }, payload),
+    (error) => error.details?.some((detail) => detail.includes("recommendation"))
+  );
+});
+
+test("validateAiPortfolioAnalysisOutput rejects ticker mentions outside input", async () => {
+  const payload = normalizePortfolioAnalysisRequest(validRequest());
+  const output = await runPortfolioAnalysis(payload);
+  output.portfolioProfile.summary = "SPY와 함께 비교했다는 표현은 입력 밖 티커를 언급합니다.";
+
+  assert.throws(
+    () => validateAiPortfolioAnalysisOutput(output, payload),
+    (error) => error.details?.some((detail) => detail.includes("SPY"))
+  );
+});
+
+test("validateAiPortfolioAnalysisOutput rejects long generated text", async () => {
+  const payload = normalizePortfolioAnalysisRequest(validRequest());
+  const output = await runPortfolioAnalysis(payload);
+  output.portfolioProfile.summary = "x".repeat(701);
+
+  assert.throws(
+    () => validateAiPortfolioAnalysisOutput(output, payload),
+    (error) => error.details?.some((detail) => detail.includes("characters"))
+  );
+});
+
+test("validateAiPortfolioAnalysisOutput rejects numeric hallucination in text", async () => {
+  const payload = normalizePortfolioAnalysisRequest(validRequest());
+  const output = await runPortfolioAnalysis(payload);
+  output.portfolioProfile.summary = "향후 15% 상승 여력이 있다는 문장은 입력에 없는 숫자를 생성합니다.";
+
+  assert.throws(
+    () => validateAiPortfolioAnalysisOutput(output, payload),
+    (error) => error.details?.some((detail) => detail.includes("output text contains numeric value"))
+  );
+});
+
+test("validateAiPortfolioAnalysisOutput rejects incomplete asset role coverage", async () => {
+  const payload = normalizePortfolioAnalysisRequest(validRequest());
+  const output = await runPortfolioAnalysis(payload);
+  output.assetRoles = output.assetRoles.slice(0, 1);
+
+  assert.throws(
+    () => validateAiPortfolioAnalysisOutput(output, payload),
+    (error) => error.details?.some((detail) => detail.includes("must include input asset"))
   );
 });
