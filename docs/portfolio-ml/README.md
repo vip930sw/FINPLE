@@ -45,6 +45,12 @@
    - 감사 결과 요약
    - 수동 검수와 다음 threshold 조정 기준
 
+7. `FINPLE_DATA_SENTINEL_MANUAL_REVIEW_2026_06_25.md`
+   - Step 113-1C 수동 검수 기록
+   - `DATA_PERIOD_MISMATCH` severity 조정 근거
+   - 배당 결측과 무배당 확정 분리 기준
+   - 다음 threshold 세분화 과제
+
 ## 확정된 방향
 
 ```text

@@ -1,7 +1,7 @@
 # FINPLE Data Sentinel Rule Baseline
 
 작성일: 2026-06-25
-작업: Step 113-1B 규칙형 Data Sentinel baseline
+작업: Step 113-1B 규칙형 Data Sentinel baseline / Step 113-1C 수동 검수 조정
 규칙 파일: `scripts/ml/config/asset_quality_rules.json`
 감사 스크립트: `scripts/ml/audit_asset_metrics.py`
 
@@ -59,8 +59,8 @@ data/processed/ml/asset_quality_manual_review_sample.csv
 
 | 항목 | 값 |
 |---|---|
-| rule version | `data-sentinel-rules-v1` |
-| audit version | `step113-1b-20260625` |
+| rule version | `data-sentinel-rules-v1.1` |
+| audit version | `step113-1c-20260625` |
 | audited at | `2026-06-25T00:00:00Z` |
 
 점수:
@@ -119,7 +119,7 @@ info 1건당 -0
 | `DIVIDEND_MISSING` | review | 배당률 결측이고 무배당 확정이 아님 |
 | `DIVIDEND_REVIEW_REQUIRED` | review | 배당 정책이 review required |
 | `PRICE_METRICS_REVIEW_REQUIRED` | review | 가격지표 상태가 review required |
-| `DATA_PERIOD_MISMATCH` | review | 10년 지표명 대비 dataYears가 부족 |
+| `DATA_PERIOD_MISMATCH` | warning | 10년 지표명 대비 dataYears가 부족하며 기간 한계 경고로 표시 |
 | `SHORT_HISTORY` | warning | dataYears가 5년 미만 |
 | `DIVIDEND_CONFIRMED_ZERO` | info | 무배당 확정 0이며 결측이 아님 |
 
@@ -130,16 +130,16 @@ info 1건당 -0
 | status | count |
 |---|---:|
 | valid | 2568 |
-| warning | 439 |
-| review | 2634 |
+| warning | 1339 |
+| review | 1734 |
 | invalid | 0 |
 
 시장별 상태:
 
 | market | valid | warning | review |
 |---|---:|---:|---:|
-| US | 1506 | 218 | 1249 |
-| KR | 1062 | 221 | 1385 |
+| US | 1506 | 678 | 789 |
+| KR | 1062 | 661 | 945 |
 
 Reason code 분포:
 
@@ -162,7 +162,7 @@ Reason code 분포:
 
 1. `review`는 앱 노출 금지가 아니라 검토 필요 상태다.
 2. `invalid`가 0인 것은 현재 baseline에서 형식 오류나 MDD 치명 오류가 발견되지 않았다는 뜻이다.
-3. `DATA_PERIOD_MISMATCH`는 `priceCagr10y`라는 컬럼명과 실제 `dataYears` 간의 차이를 보수적으로 잡은 규칙이다. 수동 검수 후 severity를 warning으로 낮출 수 있다.
+3. `DATA_PERIOD_MISMATCH`는 `priceCagr10y`라는 컬럼명과 실제 `dataYears` 간의 차이를 보수적으로 잡은 규칙이다. Step 113-1C에서 단독 review가 과도하다고 판단해 warning으로 낮췄다.
 4. `DIVIDEND_MISSING`은 무배당 확정이 아니다. `no_dividend_confirmed`와 별도로 유지해야 한다.
 5. `DIVIDEND_CONFIRMED_ZERO`는 info reason이며 점수를 깎지 않는다.
 6. 극단값 threshold는 첫 baseline이므로 market/assetType별로 조정해야 한다.
@@ -179,11 +179,35 @@ npm.cmd run build
 
 ---
 
-## 10. 다음 단계
+## 10. Step 113-1C 조정 사항
 
-Step 113-1C에서는 다음을 진행한다.
+Step 113-1C에서 `asset_quality_manual_review_sample.csv`의 24개 표본을 확인했다.
 
-1. `asset_quality_manual_review_sample.csv`를 기준으로 최소 20개 표본을 사람이 검수한다.
-2. `DATA_PERIOD_MISMATCH`, `DIVIDEND_MISSING`, `SHORT_HISTORY`의 severity와 threshold를 조정한다.
-3. market/assetType별 threshold 분리를 검토한다.
-4. Data Sentinel 결과를 향후 ML anomaly output과 별도 컬럼으로 유지한다.
+조정 결과:
+
+```text
+DATA_PERIOD_MISMATCH: review → warning
+DIVIDEND_MISSING: review 유지
+DIVIDEND_REVIEW_REQUIRED: review 유지
+SHORT_HISTORY: warning 유지
+```
+
+조정 전후:
+
+| 항목 | Step 113-1B | Step 113-1C |
+|---|---:|---:|
+| valid | 2568 | 2568 |
+| warning | 439 | 1339 |
+| review | 2634 | 1734 |
+| invalid | 0 | 0 |
+
+---
+
+## 11. 다음 단계
+
+Step 113-2A 또는 Step 113-1C 후속 작업에서는 다음을 진행한다.
+
+1. market/assetType별 threshold 분리를 검토한다.
+2. `DIVIDEND_MISSING`과 `DIVIDEND_REVIEW_REQUIRED`를 dividend policy 문서와 맞춘다.
+3. Data Sentinel 결과를 향후 ML anomaly output과 별도 컬럼으로 유지한다.
+4. 비지도 이상치 실험 전, 수동 검수 라벨 형식을 확정한다.

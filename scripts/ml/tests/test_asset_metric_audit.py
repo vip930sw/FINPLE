@@ -53,6 +53,13 @@ class AssetMetricAuditTests(unittest.TestCase):
         self.assertIn("SHORT_HISTORY", result["reasonCodes"])
         self.assertEqual(result["warningCount"], 1)
 
+    def test_data_period_mismatch_is_warning_after_manual_review(self):
+        result = evaluate_asset_row(base_row(dataYears="8.0", metricsStatus="ready"), CONFIG)
+
+        self.assertEqual(result["status"], "warning")
+        self.assertIn("DATA_PERIOD_MISMATCH", result["reasonCodes"])
+        self.assertEqual(result["reviewCount"], 0)
+
     def test_review_asset_collects_missing_beta_and_dividend_review(self):
         codes = self.codes_for(
             base_row(beta="", dividendYield="", dividendPolicy="dividend_review_required")

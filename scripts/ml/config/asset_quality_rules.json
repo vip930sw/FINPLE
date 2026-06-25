@@ -1,6 +1,6 @@
 {
-  "version": "data-sentinel-rules-v1",
-  "audit_version": "step113-1b-20260625",
+  "version": "data-sentinel-rules-v1.1",
+  "audit_version": "step113-1c-20260625",
   "audited_at": "2026-06-25T00:00:00Z",
   "description": "Rule-based FINPLE Data Sentinel baseline for app-ready screener and simulator assets.",
   "score": {
@@ -99,8 +99,8 @@
     },
     {
       "code": "DATA_PERIOD_MISMATCH",
-      "severity": "review",
-      "description": "10-year price metric is present but available data years are below the configured 10-year threshold."
+      "severity": "warning",
+      "description": "10-year price metric is present but available data years are below the configured 10-year threshold; use as a period limitation warning."
     },
     {
       "code": "SHORT_HISTORY",

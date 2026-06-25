@@ -1,6 +1,6 @@
 {
-  "auditVersion": "step113-1b-20260625",
-  "ruleVersion": "data-sentinel-rules-v1",
+  "auditVersion": "step113-1c-20260625",
+  "ruleVersion": "data-sentinel-rules-v1.1",
   "auditedAt": "2026-06-25T00:00:00Z",
   "sourceFiles": {
     "base": "src/data/tickers/finple_app_candidates_6000_balanced_v1.csv",
@@ -13,14 +13,14 @@
   },
   "rowCount": 5641,
   "statusCounts": {
-    "review": 2634,
-    "warning": 439,
-    "valid": 2568
+    "warning": 1339,
+    "valid": 2568,
+    "review": 1734
   },
   "qualityLevelCounts": {
-    "medium": 2137,
-    "high": 3007,
-    "low": 497
+    "high": 3907,
+    "low": 390,
+    "medium": 1344
   },
   "marketCounts": {
     "US": 2973,
@@ -32,14 +32,14 @@
   },
   "byMarketStatus": {
     "US": {
-      "review": 1249,
-      "warning": 218,
-      "valid": 1506
+      "warning": 678,
+      "valid": 1506,
+      "review": 789
     },
     "KR": {
       "valid": 1062,
-      "review": 1385,
-      "warning": 221
+      "warning": 661,
+      "review": 945
     }
   },
   "reasonCodeCounts": {
@@ -77,28 +77,28 @@
       "market": "US",
       "ticker": "GSST",
       "nameKr": "Goldman Sachs Ultra Short Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSJQ",
       "nameKr": "Invesco BulletShares 2026 High Yield Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "CGSD",
       "nameKr": "Capital Group Short Duration Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "DFSD",
       "nameKr": "Dimensional ETF Trust Dimensional Short-Duration Fixed Income",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
@@ -112,28 +112,28 @@
       "market": "US",
       "ticker": "JMST",
       "nameKr": "JPMorgan Ultra-Short Municipal Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "JPST",
       "nameKr": "JPMorgan Ultra-Short Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "YEAR",
       "nameKr": "AB Active ETFs Inc. AB Ultra Short Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "SMIG",
       "nameKr": "Bahl & Gaynor Small/Mid Cap Income Growth ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
@@ -147,133 +147,133 @@
       "market": "US",
       "ticker": "GIGB",
       "nameKr": "Goldman Sachs Access Investment Grade Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "ARKF",
       "nameKr": "ARK Blockchain & Fintech Innovation ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BLOK",
       "nameKr": "Amplify Blockchain Technology ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCR",
       "nameKr": "Invesco BulletShares 2027 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCS",
       "nameKr": "Invesco BulletShares 2028 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCT",
       "nameKr": "Invesco BulletShares 2029 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCU",
       "nameKr": "Invesco BulletShares 2030 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCV",
       "nameKr": "Invesco BulletShares 2031 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BSCW",
       "nameKr": "Invesco BulletShares 2032 Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "PULS",
       "nameKr": "PGIM Ultra Short Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "TBLL",
       "nameKr": "Invesco Short Term Treasury ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "TUA",
       "nameKr": "Simplify Exchange Traded Funds Simplify Short Term Treasury Fu",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "USTB",
       "nameKr": "VictoryShares Short-Term Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "VUSB",
       "nameKr": "Vanguard Ultra-Short Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "AVIG",
       "nameKr": "Avantis Core Fixed Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "BINC",
       "nameKr": "iShares Flexible Income Active ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "CGCP",
       "nameKr": "Capital Group Core Plus Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "CGMS",
       "nameKr": "Capital Group U.S. Multi-Sector Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "CGMU",
       "nameKr": "Capital Group Municipal Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
@@ -287,14 +287,14 @@
       "market": "US",
       "ticker": "CSHI",
       "nameKr": "NEOS Enhanced Income 1-3 Month T-Bill ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "DFCF",
       "nameKr": "Dimensional ETF Trust Dimensional Core Fixed Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
@@ -308,7 +308,7 @@
       "market": "US",
       "ticker": "DIVO",
       "nameKr": "미국 배당 인컴 ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
@@ -322,70 +322,70 @@
       "market": "US",
       "ticker": "FIXD",
       "nameKr": "First Trust Smith Opportunistic Fixed Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "FMHI",
       "nameKr": "First Trust Municipal High Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "FPEI",
       "nameKr": "First Trust Institutional Preferred Securities and Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "HYDB",
       "nameKr": "iShares High Yield Systematic Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "HYGV",
       "nameKr": "FlexShares High Yield Value-Scored Bond Index Fund",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "HYLB",
       "nameKr": "Xtrackers USD High Yield Corporate Bond ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "JEPI",
       "nameKr": "미국 프리미엄 인컴 ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "JEPQ",
       "nameKr": "나스닥100 프리미엄 인컴 ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "JPIE",
       "nameKr": "JPMorgan Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "KNG",
       "nameKr": "FT Vest S&P 500 Dividend Aristocrats Target Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "DATA_PERIOD_MISMATCH"
     },
     {
@@ -399,14 +399,14 @@
       "market": "US",
       "ticker": "RDVI",
       "nameKr": "FT Vest Rising Dividend Achievers Target Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
       "market": "US",
       "ticker": "SPYI",
       "nameKr": "NEOS S&P 500 High Income ETF",
-      "status": "review",
+      "status": "warning",
       "reasonCodes": "SHORT_HISTORY|DATA_PERIOD_MISMATCH"
     },
     {
