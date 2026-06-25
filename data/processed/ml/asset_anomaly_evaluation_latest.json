@@ -1,0 +1,119 @@
+{
+  "evaluationVersion": "step113-2b-20260625",
+  "sourceFile": "data/processed/ml/asset_anomaly_experiment_latest.csv",
+  "rowCount": 5641,
+  "labelPolicy": "proxy_rule_status_not_human_label",
+  "ruleActionableStatuses": [
+    "review",
+    "invalid"
+  ],
+  "mlActionableStatuses": [
+    "ml_watch",
+    "ml_review"
+  ],
+  "counts": {
+    "ruleActionable": 1734,
+    "mlReview": 1177,
+    "mlWatchOrReview": 1256,
+    "ruleAndMlReviewOverlap": 756,
+    "ruleAndMlWatchOrReviewOverlap": 794,
+    "mlFlaggedRuleNonActionable": 462,
+    "ruleActionableMlNormal": 940
+  },
+  "proxyMetrics": {
+    "mlReviewProxyPrecisionVsRuleActionable": 0.6423,
+    "mlReviewProxyRecallVsRuleActionable": 0.436,
+    "mlWatchOrReviewProxyPrecisionVsRuleActionable": 0.6322,
+    "mlWatchOrReviewProxyRecallVsRuleActionable": 0.4579
+  },
+  "statusCounts": {
+    "ruleStatus": {
+      "warning": 1339,
+      "valid": 2568,
+      "review": 1734
+    },
+    "mlAnomalyStatus": {
+      "ml_normal": 4385,
+      "ml_review": 1177,
+      "ml_watch": 79
+    }
+  },
+  "crosstabs": {
+    "ruleStatusByMlAnomalyStatus": {
+      "warning": {
+        "ml_normal": 945,
+        "ml_watch": 14,
+        "ml_review": 380
+      },
+      "valid": {
+        "ml_normal": 2500,
+        "ml_watch": 27,
+        "ml_review": 41
+      },
+      "review": {
+        "ml_review": 756,
+        "ml_normal": 940,
+        "ml_watch": 38
+      }
+    },
+    "marketByMlAnomalyStatus": {
+      "US": {
+        "ml_normal": 2424,
+        "ml_review": 487,
+        "ml_watch": 62
+      },
+      "KR": {
+        "ml_normal": 1961,
+        "ml_review": 690,
+        "ml_watch": 17
+      }
+    },
+    "assetTypeByMlAnomalyStatus": {
+      "ETF": {
+        "ml_normal": 1945,
+        "ml_review": 206,
+        "ml_watch": 63
+      },
+      "stock": {
+        "ml_normal": 2440,
+        "ml_watch": 16,
+        "ml_review": 971
+      }
+    }
+  },
+  "segments": {
+    "market": {
+      "US": {
+        "rowCount": 2973,
+        "ruleActionable": 789,
+        "mlReview": 487,
+        "mlWatchOrReview": 549
+      },
+      "KR": {
+        "rowCount": 2668,
+        "ruleActionable": 945,
+        "mlReview": 690,
+        "mlWatchOrReview": 707
+      }
+    },
+    "assetType": {
+      "ETF": {
+        "rowCount": 2214,
+        "ruleActionable": 415,
+        "mlReview": 206,
+        "mlWatchOrReview": 269
+      },
+      "stock": {
+        "rowCount": 3427,
+        "ruleActionable": 1319,
+        "mlReview": 971,
+        "mlWatchOrReview": 987
+      }
+    }
+  },
+  "notes": [
+    "This evaluation uses rule status as a proxy, not a human-reviewed ground truth label.",
+    "mlFlaggedRuleNonActionable rows are discovery candidates, not false positives by default.",
+    "ruleActionableMlNormal rows should be inspected before using ML output in any blocking workflow."
+  ]
+}

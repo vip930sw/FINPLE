@@ -51,6 +51,24 @@
    - 배당 결측과 무배당 확정 분리 기준
    - 다음 threshold 세분화 과제
 
+8. `FINPLE_DATA_SENTINEL_ANOMALY_EXPERIMENT.md`
+   - Step 113-2A 비지도 이상치 실험
+   - `robust_mad_baseline` scoring logic
+   - `ml_normal` / `ml_watch` / `ml_review` 결과 요약
+   - 규칙 결과와 ML 결과 분리 기준
+
+9. `FINPLE_DATA_SENTINEL_MODEL_CARD.md`
+   - Step 113-2B 모델 카드와 proxy 평가
+   - feature schema와 threshold
+   - 운영 사용 가능/금지 범위
+   - 다음 실험 기준
+
+10. `FINPLE_AI_ML_PROGRESS_2026_06_25.md`
+    - 현재 진행 위치
+    - Step 113 기준 진행률
+    - 전체 장기 로드맵 기준 진행률
+    - 다음 작업 시작점
+
 ## 확정된 방향
 
 ```text
@@ -61,13 +79,13 @@
 첫 개발 작업: Step 113-1A 데이터 인벤토리
 ```
 
-## Step 113-2A update
+## 현재 진행 위치
 
-`FINPLE_DATA_SENTINEL_ANOMALY_EXPERIMENT.md`
+2026-06-25 기준 `Step 113-2B 모델 카드·평가`까지 완료했다.
 
-- ML anomaly experiment based on `robust_mad_baseline`
-- `ml_normal` / `ml_watch` / `ml_review` result summary
-- Rule output and ML output separation notes
+- Step 113 작업 순서 기준: 약 50%
+- 전체 장기 로드맵 기준: 약 25%
+- 다음 작업: `Step 113-3A mock AI backend`
 
 ## 첫 개발 명령
 
