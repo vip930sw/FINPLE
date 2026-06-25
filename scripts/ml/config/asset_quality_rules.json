@@ -1,0 +1,116 @@
+{
+  "version": "data-sentinel-rules-v1",
+  "audit_version": "step113-1b-20260625",
+  "audited_at": "2026-06-25T00:00:00Z",
+  "description": "Rule-based FINPLE Data Sentinel baseline for app-ready screener and simulator assets.",
+  "score": {
+    "start": 100,
+    "error": 30,
+    "review": 15,
+    "warning": 5,
+    "info": 0,
+    "minimum": 0
+  },
+  "thresholds": {
+    "short_history_years": 5,
+    "data_period_mismatch_years": 9.5,
+    "cagr_min": -80,
+    "cagr_max": 80,
+    "beta_min": -1,
+    "beta_max": 4,
+    "mdd_min": -100,
+    "dividend_yield_max": 25
+  },
+  "rules": [
+    {
+      "code": "TICKER_FORMAT",
+      "severity": "error",
+      "description": "Ticker is missing or does not match the expected market format."
+    },
+    {
+      "code": "REQUIRED_MISSING",
+      "severity": "error",
+      "description": "A required identity field is missing."
+    },
+    {
+      "code": "MDD_POSITIVE",
+      "severity": "error",
+      "description": "MDD must not be positive."
+    },
+    {
+      "code": "MDD_OUT_OF_RANGE",
+      "severity": "error",
+      "description": "MDD is outside the configured valid range."
+    },
+    {
+      "code": "METRIC_INVALID_NUMERIC",
+      "severity": "error",
+      "description": "A metric field is present but cannot be parsed as a number."
+    },
+    {
+      "code": "EXPECTED_CAGR_MISSING",
+      "severity": "review",
+      "description": "Expected CAGR is missing after app-ready overlay merge."
+    },
+    {
+      "code": "BETA_MISSING",
+      "severity": "review",
+      "description": "Beta is missing after app-ready overlay merge."
+    },
+    {
+      "code": "MDD_MISSING",
+      "severity": "review",
+      "description": "MDD is missing after app-ready overlay merge."
+    },
+    {
+      "code": "DATA_YEARS_MISSING",
+      "severity": "review",
+      "description": "Data years is missing after app-ready overlay merge."
+    },
+    {
+      "code": "CAGR_EXTREME",
+      "severity": "review",
+      "description": "Expected CAGR is outside the configured review range."
+    },
+    {
+      "code": "BETA_EXTREME",
+      "severity": "review",
+      "description": "Beta is outside the configured review range."
+    },
+    {
+      "code": "DIVIDEND_EXTREME",
+      "severity": "review",
+      "description": "Dividend yield is above the configured review range."
+    },
+    {
+      "code": "DIVIDEND_MISSING",
+      "severity": "review",
+      "description": "Dividend yield is missing and is not confirmed as zero."
+    },
+    {
+      "code": "DIVIDEND_REVIEW_REQUIRED",
+      "severity": "review",
+      "description": "Dividend policy marks the asset as needing review."
+    },
+    {
+      "code": "PRICE_METRICS_REVIEW_REQUIRED",
+      "severity": "review",
+      "description": "Price metrics status marks the asset as needing review."
+    },
+    {
+      "code": "DATA_PERIOD_MISMATCH",
+      "severity": "review",
+      "description": "10-year price metric is present but available data years are below the configured 10-year threshold."
+    },
+    {
+      "code": "SHORT_HISTORY",
+      "severity": "warning",
+      "description": "Available price history is shorter than the configured baseline."
+    },
+    {
+      "code": "DIVIDEND_CONFIRMED_ZERO",
+      "severity": "info",
+      "description": "Dividend yield is confirmed as zero and should not be treated as missing."
+    }
+  ]
+}

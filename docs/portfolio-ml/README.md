@@ -39,6 +39,12 @@
    - app-ready 후보 수와 주요 결측
    - 다음 Data Sentinel 규칙 기준
 
+6. `FINPLE_DATA_SENTINEL_RULES.md`
+   - Step 113-1B 규칙형 Data Sentinel baseline
+   - reason code와 severity
+   - 감사 결과 요약
+   - 수동 검수와 다음 threshold 조정 기준
+
 ## 확정된 방향
 
 ```text
