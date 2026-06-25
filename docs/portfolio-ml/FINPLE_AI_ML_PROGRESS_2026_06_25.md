@@ -1,10 +1,10 @@
 # FINPLE AI/ML Progress
 
-작성일: 2026-06-25
+작성일: 2026-06-26
 
 ## 현재 위치
 
-현재 진행 위치는 `Step 113-3B output validator` 완료 지점이다.
+현재 진행 위치는 `Step 113-4A STEP 4 UI shell` 완료 지점이다.
 
 권장 작업 순서 10개 기준:
 
@@ -17,19 +17,19 @@
 | Step 113-2B 모델 카드·평가 | done |
 | Step 113-3A mock AI backend | done |
 | Step 113-3B output validator | done |
-| Step 113-4A STEP 4 UI shell | next |
-| Step 113-4B mock API 연결 | pending |
+| Step 113-4A STEP 4 UI shell | done |
+| Step 113-4B mock API 연결 | next |
 | Step 113-4C live provider adapter | pending |
 
 ## 진행률
 
-Step 113 작업 순서 기준 진행률: 약 70%
+Step 113 작업 순서 기준 진행률: 약 80%
 
 ```text
-7 / 10 steps completed
+8 / 10 steps completed
 ```
 
-전체 장기 로드맵 기준 진행률: 약 35%
+전체 장기 로드맵 기준 진행률: 약 40%
 
 장기 로드맵에는 저장·사용량·Personal 연동, 분석 내역, Asset DNA, 운영 안정화가 추가로 남아 있다. 따라서 Step 113 내부 진행률보다 전체 제품화 진행률은 낮게 보는 것이 맞다.
 
@@ -46,16 +46,19 @@ Step 113 작업 순서 기준 진행률: 약 70%
 - request schema와 기본 output validator
 - output contract snapshot
 - 금지 표현, ticker mention, numeric hallucination 회귀 테스트
+- STEP 4 AI 분석 UI shell
+- simulator tab nav와 route subnav의 Step 4 연결
 
 ## 다음 작업
 
-다음 작업은 `Step 113-4A STEP 4 UI shell`이다.
+다음 작업은 `Step 113-4B mock API 연결`이다.
 
 목표:
 
-- 기존 `/simulator` 안에 STEP 4 AI 분석 shell을 추가한다.
-- 처음에는 API 자동 호출 없이 empty/ready/loading/error 상태 UI를 만든다.
-- 기존 STEP 1~3 계산 흐름과 DetailPanel을 깨지 않는다.
+- STEP 4 생성 버튼을 mock backend와 연결한다.
+- 요청 payload builder와 frontend service를 추가한다.
+- loading, success, error, stale 상태를 실제 데이터 흐름에 맞게 전환한다.
+- backend validator를 통과한 응답만 렌더링한다.
 
 주의:
 

@@ -41,6 +41,7 @@ const SIMULATOR_STEP_ITEMS = [
   { key: "settings", step: "Step 1" },
   { key: "compare", step: "Step 2" },
   { key: "detail", step: "Step 3" },
+  { key: "ai", step: "Step 4" },
 ];
 
 function scrollWindowTop(delay = 70) {

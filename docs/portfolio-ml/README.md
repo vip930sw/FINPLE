@@ -81,6 +81,12 @@
     - 금지 표현, ticker mention, numeric hallucination 차단
     - STEP 4 UI 연결 전 API 계약 기준
 
+13. `FINPLE_AI_ANALYSIS_STEP4_UI_SHELL.md`
+    - Step 113-4A STEP 4 AI 분석 UI shell
+    - simulator tab nav와 route subnav 연결
+    - API 자동 호출 없는 empty/ready 상태 화면
+    - 다음 mock API 연결 기준
+
 ## 확정된 방향
 
 ```text
@@ -93,11 +99,11 @@
 
 ## 현재 진행 위치
 
-2026-06-25 기준 `Step 113-3B output validator`까지 완료했다.
+2026-06-26 기준 `Step 113-4A STEP 4 UI shell`까지 완료했다.
 
-- Step 113 작업 순서 기준: 약 70%
-- 전체 장기 로드맵 기준: 약 35%
-- 다음 작업: `Step 113-4A STEP 4 UI shell`
+- Step 113 작업 순서 기준: 약 80%
+- 전체 장기 로드맵 기준: 약 40%
+- 다음 작업: `Step 113-4B STEP 4 UI와 mock API 연결`
 
 ## 첫 개발 명령
 

@@ -5,10 +5,11 @@ import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
 import ComparePanel from "./portfolio/components/ComparePanel";
 import SettingsPanel from "./portfolio/components/SettingsPanel";
 import DetailPanel from "./portfolio/components/DetailPanel";
+import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 
-const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail"];
+const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "ai"];
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange } = props || {};
@@ -109,6 +110,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       settings: "settings",
       compare: "compare",
       detail: "detail",
+      ai: "ai-analysis",
     };
 
     const anchorId = anchorMap[nextTab] || "simulator";
@@ -142,12 +144,16 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     [handleSimulatorTabChange, scrollToSimulatorTop]
   );
 
-  const shouldShowFloatingPortfolioDropdown = ["settings", "detail"].includes(
+  const shouldShowFloatingPortfolioDropdown = ["settings", "detail", "ai"].includes(
     effectiveActiveSimulatorTab
   );
 
   const floatingPortfolioContextLabel =
-    effectiveActiveSimulatorTab === "settings" ? "현재 편집 중" : "현재 분석 중";
+    effectiveActiveSimulatorTab === "settings"
+      ? "현재 편집 중"
+      : effectiveActiveSimulatorTab === "ai"
+        ? "AI 분석 대상"
+        : "현재 분석 중";
 
   return (
     <section id="simulator" className="section calculatorSection simulatorSection">
@@ -237,6 +243,19 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             printReport={printReport}
             reportPdfFileName={reportPdfFileName}
             copyReportSummary={copyReportSummary}
+          />
+        </div>
+      )}
+
+      {effectiveActiveSimulatorTab === "ai" && (
+        <div id="ai-analysis" className="simulatorTabAnchor">
+          <AiAnalysisPanel
+            activePortfolio={activePortfolio}
+            assets={assets}
+            result={result}
+            formatNumber={formatNumber}
+            formatPercent={formatPercent}
+            isEmptyAssetRow={isEmptyAssetRow}
           />
         </div>
       )}
