@@ -19,13 +19,22 @@ http://localhost:5050/api/assets/QQQ
 
 ## AI 분석 mock endpoint
 
-Step 113-3A 기준 AI 분석은 외부 AI API를 호출하지 않는 mock 모드입니다.
+Step 113-4B 기준 AI 분석은 외부 AI API를 호출하지 않는 mock 모드이며, 프론트엔드 STEP 4 화면의 버튼으로 호출됩니다.
 
 ```text
 POST http://localhost:5050/api/ai/portfolio-analysis
 ```
 
 필수 입력은 `assets` 배열입니다. 각 자산은 `ticker`, `market`, `weight`를 포함해야 하며 비중 합계는 100% 근처여야 합니다. 응답은 기존 FINPLE 계산값을 재계산하지 않고 포트폴리오 구조와 데이터 한계를 설명합니다.
+
+mock 분석 운영값:
+
+```env
+FINPLE_AI_ANALYSIS_MODE=mock
+FINPLE_AI_ANALYSIS_PROVIDER=none
+```
+
+외부 AI provider key는 아직 필요하지 않으며, 이후 live provider 연결 시에도 서버 전용 환경변수로만 관리합니다.
 
 ## Provider 설정
 

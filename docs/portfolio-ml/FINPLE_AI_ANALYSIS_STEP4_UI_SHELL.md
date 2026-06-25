@@ -44,7 +44,7 @@ STEP 4 shell은 다음 블록으로 구성한다.
 
 ## 다음 단계
 
-다음 작업은 `Step 113-4B STEP 4 UI와 mock API 연결`이다.
+후속 작업 `Step 113-4B STEP 4 UI와 mock API 연결`은 2026-06-26에 완료했다.
 
 4B에서는 다음을 구현한다.
 
@@ -53,3 +53,5 @@ STEP 4 shell은 다음 블록으로 구성한다.
 - 생성 버튼 활성화
 - loading/success/error/stale 실제 상태 전환
 - mock backend 응답 렌더링
+
+이후 live AI provider 연결 기준은 `FINPLE_AI_ANALYSIS_MOCK_API_CONNECTION.md`와 progress 문서를 따른다.

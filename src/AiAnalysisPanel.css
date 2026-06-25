@@ -109,6 +109,19 @@
   white-space: nowrap;
 }
 
+.aiAnalysisActionButton:not(:disabled) {
+  border-color: #0f172a;
+  color: #ffffff;
+  background: #0f172a;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.16);
+  cursor: pointer;
+}
+
+.aiAnalysisActionButton:not(:disabled):hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
 .aiAnalysisActionButton:disabled {
   cursor: not-allowed;
   opacity: 0.82;
@@ -163,6 +176,11 @@
   gap: 12px;
 }
 
+.aiAnalysisStatusItem.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
 .aiAnalysisStatusIcon {
   display: inline-flex;
   align-items: center;
@@ -188,6 +206,39 @@
   font-size: 13px;
   font-weight: 750;
   line-height: 1.55;
+}
+
+.aiAnalysisStateBanner,
+.aiAnalysisErrorBox {
+  margin-top: 18px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.aiAnalysisStateBanner {
+  border: 1px solid #fde68a;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.aiAnalysisErrorBox {
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.aiAnalysisErrorBox strong {
+  display: block;
+  color: #7f1d1d;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.aiAnalysisErrorBox p {
+  margin: 6px 0 0;
 }
 
 .aiAnalysisSectionHeader {
@@ -259,6 +310,142 @@
   font-weight: 760;
 }
 
+.aiAnalysisResultGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.aiAnalysisResultSection {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 17px;
+}
+
+.aiAnalysisResultSectionWide {
+  grid-column: 1 / -1;
+}
+
+.aiAnalysisResultLead {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 780;
+  line-height: 1.62;
+}
+
+.aiAnalysisResultMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.aiAnalysisResultMeta span,
+.aiAnalysisRiskItem div span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.aiAnalysisList,
+.aiAnalysisRiskItem ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.aiAnalysisRiskList,
+.aiAnalysisAssetRoleList {
+  display: grid;
+  gap: 10px;
+}
+
+.aiAnalysisRiskItem {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 13px;
+  background: #f8fafc;
+}
+
+.aiAnalysisRiskItem.medium {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.aiAnalysisRiskItem.high {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.aiAnalysisRiskItem div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aiAnalysisRiskItem strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.aiAnalysisAssetRoleRow {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.aiAnalysisAssetRoleRow:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.aiAnalysisAssetRoleRow span {
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.aiAnalysisAssetRoleRow strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.aiAnalysisAssetRoleRow em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.aiAnalysisDisclaimer {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.62;
+}
+
 @media (max-width: 1100px) {
   .simulatorTabNav.fourStepNav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -291,7 +478,8 @@
   .aiAnalysisHeader,
   .aiAnalysisSubject,
   .aiAnalysisStatusGrid,
-  .aiAnalysisContentGrid {
+  .aiAnalysisContentGrid,
+  .aiAnalysisResultGrid {
     grid-template-columns: 1fr;
   }
 
@@ -301,6 +489,10 @@
 
   .aiAnalysisActionButton {
     width: 100%;
+  }
+
+  .aiAnalysisResultSectionWide {
+    grid-column: auto;
   }
 }
 
@@ -325,5 +517,15 @@
 
   .aiAnalysisAssetRow em {
     white-space: normal;
+  }
+
+  .aiAnalysisRiskItem div,
+  .aiAnalysisAssetRoleRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aiAnalysisRiskItem div {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

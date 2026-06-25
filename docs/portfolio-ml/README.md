@@ -87,6 +87,12 @@
     - API 자동 호출 없는 empty/ready 상태 화면
     - 다음 mock API 연결 기준
 
+14. `FINPLE_AI_ANALYSIS_MOCK_API_CONNECTION.md`
+    - Step 113-4B STEP 4 UI와 mock API 연결
+    - payload builder와 frontend service
+    - loading, success, error, stale 상태 전환
+    - Vercel/Render 환경변수 확인 기준
+
 ## 확정된 방향
 
 ```text
@@ -99,11 +105,11 @@
 
 ## 현재 진행 위치
 
-2026-06-26 기준 `Step 113-4A STEP 4 UI shell`까지 완료했다.
+2026-06-26 기준 `Step 113-4B mock API 연결`까지 완료했다.
 
-- Step 113 작업 순서 기준: 약 80%
-- 전체 장기 로드맵 기준: 약 40%
-- 다음 작업: `Step 113-4B STEP 4 UI와 mock API 연결`
+- Step 113 작업 순서 기준: 약 90%
+- 전체 장기 로드맵 기준: 약 45%
+- 다음 작업: `Step 113-4C live provider adapter`
 
 ## 첫 개발 명령
 
@@ -118,6 +124,7 @@ AI/ML 작업계획 문서화
 → ML anomaly detection
 → Mock AI Analysis backend
 → AI Analysis STEP 4 UI
+→ AI Analysis mock API connection
 → 저장·사용량 정책
 → Asset DNA
 → 운영 안정화

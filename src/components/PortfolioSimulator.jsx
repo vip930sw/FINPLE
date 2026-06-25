@@ -253,6 +253,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
+            settings={settings}
             formatNumber={formatNumber}
             formatPercent={formatPercent}
             isEmptyAssetRow={isEmptyAssetRow}
