@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
-    "prebuild": "node -e \"const fs=require('fs'); for (const path of ['node_modules/.vite','.vite']) fs.rmSync(path,{recursive:true,force:true});\"",
+    "prebuild": "node scripts/verify-ai-analysis-build.cjs prebuild",
     "build": "vite build",
+    "postbuild": "node scripts/verify-ai-analysis-build.cjs postbuild",
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint .",
     "check:frontend": "npm run build"
