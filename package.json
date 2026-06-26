@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
+    "prebuild": "node -e \"const fs=require('fs'); for (const path of ['node_modules/.vite','.vite']) fs.rmSync(path,{recursive:true,force:true});\"",
     "build": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint .",
