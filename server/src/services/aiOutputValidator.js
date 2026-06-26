@@ -424,7 +424,7 @@ export function validateAiPortfolioAnalysisOutput(output, inputPayload) {
   }
 
   if (errors.length > 0) {
-    throw createHttpError(500, "AI 분석 출력 검증에 실패했습니다.", errors);
+    throw createHttpError(422, "AI 분석 출력 검증에 실패했습니다.", errors);
   }
 
   return output;
