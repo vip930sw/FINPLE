@@ -4,7 +4,7 @@ import {
 } from "../utils/portfolioStorageScope";
 
 const AI_ANALYSIS_CACHE_BASE_KEY = "finple-ai-analysis-cache-v1";
-const AI_ANALYSIS_CACHE_SCHEMA_VERSION = 1;
+const AI_ANALYSIS_CACHE_SCHEMA_VERSION = 2;
 
 function normalizeStorageId(value = "") {
   return String(value || "default")
