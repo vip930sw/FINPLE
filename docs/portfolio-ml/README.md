@@ -2,7 +2,7 @@
 
 작성일: 2026-06-23
 
-이 폴더는 FINPLE 포트폴리오 머신러닝과 사용자용 AI 분석 개발의 기준 문서를 보관한다.
+이 폴더는 FINPLE 포트폴리오 머신러닝, 사용자용 AI 분석, 시나리오 분석 개발의 기준 문서를 보관한다.
 
 ## 문서 순서
 
@@ -93,6 +93,27 @@
     - loading, success, error, stale 상태 전환
     - Vercel/Render 환경변수 확인 기준
 
+15. `FINPLE_SCENARIO_ANALYSIS_PRODUCT_SPEC.md`
+    - 기준 CAGR 전망과 확률 시나리오의 역할 구분
+    - 하락확률·손실규모·MDD·회복기간 정의
+    - BETA 중복 반영 방지 원칙
+    - 미국·한국·혼합 시장 벤치마크 정책
+    - 차트·UI·고지·플랜 범위
+
+16. `FINPLE_SCENARIO_ANALYSIS_IMPLEMENTATION_PLAN.md`
+    - 현재 결정론적 계산과 비교차트 감사 결과
+    - 시계열 데이터 요구사항과 등급
+    - 시나리오 백엔드·API·프론트 구조
+    - Rolling 분석, Block Bootstrap, 스트레스 테스트
+    - Step 114 개발순서·PR 분할·검증 기준
+
+17. `FINPLE_SCENARIO_ANALYSIS_CODEX_HANDOFF.md`
+    - Step 114 Codex 작업 규칙
+    - 첫 작업인 시나리오 데이터 소스 감사 지시문
+    - 순수 위험계산 함수 계약
+    - BETA 중복 방지 메타데이터
+    - 테스트·PR·AI 연결 기준
+
 ## 확정된 방향
 
 ```text
@@ -111,9 +132,46 @@
 - 전체 장기 로드맵 기준: 약 45%
 - 다음 작업: `Step 113-4C live provider adapter`
 
+## 시나리오 분석 작업선
+
+2026-06-26 기준 Step 114는 제품·통계·구현 준비문서만 작성된 상태다.
+
+```text
+완료
+- 제품 정의
+- 통계지표 정의
+- BETA 적용 원칙
+- 시장 벤치마크 정책 초안
+- API·UI·테스트 구조 초안
+- Codex 첫 작업 지시문
+
+미착수
+- 월간 시계열 데이터 감사
+- 위험계산 유틸리티
+- Rolling 분석
+- Block Bootstrap
+- 시장 비교선 UI
+- 확률 밴드 UI
+- 스트레스 테스트
+```
+
+시나리오 분석 첫 구현은 다음으로 시작한다.
+
+```text
+Step 114-1A Scenario data source audit
+```
+
 ## 첫 개발 명령
 
-Codex 새 스레드에서 `FINPLE_PORTFOLIO_ML_CODEX_HANDOFF.md`의 `첫 Codex 작업 지시문`을 사용한다.
+Codex 새 스레드에서 해당 작업선에 맞는 인수인계 문서를 사용한다.
+
+```text
+AI/ML 작업:
+FINPLE_PORTFOLIO_ML_CODEX_HANDOFF.md
+
+시나리오 분석 작업:
+FINPLE_SCENARIO_ANALYSIS_CODEX_HANDOFF.md
+```
 
 ## 개발 우선순위
 
@@ -127,5 +185,20 @@ AI/ML 작업계획 문서화
 → AI Analysis mock API connection
 → 저장·사용량 정책
 → Asset DNA
+→ 운영 안정화
+```
+
+시나리오 분석은 별도 작업선으로 진행한다.
+
+```text
+Scenario data audit
+→ Risk metric utilities
+→ Rolling historical baseline
+→ Joint block bootstrap
+→ Scenario API
+→ Market benchmark UI
+→ Probability band and drawdown UI
+→ BETA factor stress test
+→ AI analysis connection
 → 운영 안정화
 ```
