@@ -141,6 +141,12 @@
   - live OpenAI, diagnosticSections, usage persistence, access control 현황
   - 다음 새 채팅 첫 메시지
 
+- `FINPLE_AI_ANALYSIS_OPERATIONS_POLICY_2026_06_27.md`
+  - STEP 4 AI 분석 운영 정책
+  - Personal 전용 전환 QA 기준
+  - usage count, retry, token, 비용 상한 기준
+  - 관리자 사용량 UI와 운영 확인 API
+
 ## 현재 진행 위치
 
 2026-06-26 기준 `Step 113-4B mock API 연결`까지 완료했다.

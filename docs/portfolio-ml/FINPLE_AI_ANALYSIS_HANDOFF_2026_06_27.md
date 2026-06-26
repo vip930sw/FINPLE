@@ -84,6 +84,21 @@
 - 403 응답에도 `access` 정보를 포함하도록 보강했습니다.
 - STEP 4 화면은 `access.allowed === false`일 때 분석 버튼을 막고 Personal 안내 문구를 보여줍니다.
 
+## 이후 추가 진행
+
+커밋 `cf81704 Connect AI usage admin summary`:
+
+- 관리자 콘솔에 `/admin/ai-usage` 메뉴와 AI 사용량 요약 패널을 연결했습니다.
+- `/api/admin/ai-analysis-usage` 응답을 frontend admin UI에서 표시합니다.
+- 403/429 응답의 `access`와 `usage` payload를 STEP 4 frontend service가 보존하도록 보강했습니다.
+- AI 품질 평가셋 v1 fixture를 추가하고 mock output/validator 회귀 테스트에 연결했습니다.
+
+이번 후속 단계:
+
+- Personal 전용 모드에서 guest/free 차단, personal/pro 허용, education entitlement 허용 테스트를 보강했습니다.
+- 비용/사용량 운영 정책을 `FINPLE_AI_ANALYSIS_OPERATIONS_POLICY_2026_06_27.md`로 문서화했습니다.
+- 2026-06-27 기준 STEP 4 AI 분석 운영 안정화 진행률은 약 92%입니다.
+
 ## 현재 운영 확인 포인트
 
 Render backend:
@@ -182,24 +197,18 @@ curl.exe -sS https://finple-api.onrender.com/api/ai/portfolio-analysis/status
 
 ## 다음 채팅에서 우선 진행할 작업
 
-1. 최신 `main` pull 및 Render/Vercel 배포 commit 확인
-2. 이번 문서의 마지막 커밋 이후 status 응답에서 `access` 객체 확인
-3. Personal 전용 모드 전환 전 QA
+1. Personal 전용 환경변수 실제 적용 후 운영 smoke QA
    - guest/free 사용자 차단
    - personal/pro 사용자 허용
    - education entitlement 사용자 허용
-4. 관리자 UI에 `/api/admin/ai-analysis-usage` 요약 노출
-5. AI 품질 평가셋 작성
+2. 관리자 토큰으로 `/admin/ai-usage` 실데이터 화면 확인
+3. live provider 품질 평가셋의 실제 OpenAI 응답 샘플 축적
    - 미국 ETF-only
    - 한국 numeric ticker 포함
    - 배당/현금흐름형
    - 장기채/금/리츠 방어형
    - 데이터 결측/제한 케이스
-6. 비용 정책 확정
-   - public limit
-   - personal/pro limit
-   - retry/token upper bound
-   - 실패 시 usage count 정책
+4. 비용 추이를 본 뒤 public/personal limit 조정 여부 결정
 
 ## 새 채팅 첫 메시지
 
