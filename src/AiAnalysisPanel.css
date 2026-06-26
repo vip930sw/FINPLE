@@ -127,6 +127,10 @@
   opacity: 0.82;
 }
 
+.aiAnalysisButtonSpinner {
+  animation: aiAnalysisLoaderRotate 1.05s steps(12) infinite;
+}
+
 .aiAnalysisMetricGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -151,6 +155,15 @@
   font-weight: 950;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.aiAnalysisUsageHint {
+  justify-self: end;
+  margin: -6px 2px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
 }
 
 .aiAnalysisContentGrid {
@@ -206,6 +219,76 @@
 
 .aiAnalysisErrorBox p {
   margin: 6px 0 0;
+}
+
+.aiAnalysisLoadingState {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin-top: 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #eff6ff;
+  padding: 16px 18px;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+}
+
+.aiAnalysisLoadingState strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.aiAnalysisLoadingState p {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.aiAnalysisLoadingSpinner {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  animation: aiAnalysisLoaderRotate 1.05s steps(12) infinite;
+}
+
+.aiAnalysisLoadingBar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 17px;
+  margin-left: -3px;
+  margin-top: -27px;
+  border-radius: 999px;
+  background: #3b82f6;
+  transform-origin: 3px 27px;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+}
+
+.aiAnalysisLoadingBar:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+.aiAnalysisLoadingBar:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+.aiAnalysisLoadingBar:nth-child(3) { transform: rotate(60deg); opacity: 0.84; }
+.aiAnalysisLoadingBar:nth-child(4) { transform: rotate(90deg); opacity: 0.76; }
+.aiAnalysisLoadingBar:nth-child(5) { transform: rotate(120deg); opacity: 0.68; }
+.aiAnalysisLoadingBar:nth-child(6) { transform: rotate(150deg); opacity: 0.6; }
+.aiAnalysisLoadingBar:nth-child(7) { transform: rotate(180deg); opacity: 0.52; }
+.aiAnalysisLoadingBar:nth-child(8) { transform: rotate(210deg); opacity: 0.44; }
+.aiAnalysisLoadingBar:nth-child(9) { transform: rotate(240deg); opacity: 0.36; }
+.aiAnalysisLoadingBar:nth-child(10) { transform: rotate(270deg); opacity: 0.3; }
+.aiAnalysisLoadingBar:nth-child(11) { transform: rotate(300deg); opacity: 0.24; }
+.aiAnalysisLoadingBar:nth-child(12) { transform: rotate(330deg); opacity: 0.18; }
+
+@keyframes aiAnalysisLoaderRotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .aiAnalysisSectionHeader {
@@ -363,17 +446,19 @@
 .aiAnalysisDiagnosticList {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: #e2e8f0;
+  gap: 12px;
 }
 
 .aiAnalysisDiagnosticItem {
   min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   background: #ffffff;
   padding: 15px;
+}
+
+.aiAnalysisDiagnosticItem:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .aiAnalysisDiagnosticItem strong {
@@ -543,6 +628,15 @@
     width: 100%;
   }
 
+  .aiAnalysisLoadingState {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .aiAnalysisUsageHint {
+    justify-self: start;
+  }
+
   .aiAnalysisResultSectionWide {
     grid-column: auto;
   }
@@ -579,5 +673,12 @@
   .aiAnalysisRiskItem div {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aiAnalysisButtonSpinner,
+  .aiAnalysisLoadingSpinner {
+    animation-duration: 2.4s;
   }
 }

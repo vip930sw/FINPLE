@@ -1,3 +1,5 @@
+import { getStoredFinpleAuthSession } from "../../authClientService";
+
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
 const DEFAULT_AI_ANALYSIS_TIMEOUT_MS = 60000;
 
@@ -50,12 +52,14 @@ async function fetchWithTimeout(url, { timeoutMs, body }) {
   const timerId = timerApi.setTimeout(() => controller.abort("timeout"), timeoutMs);
 
   try {
+    const session = getStoredFinpleAuthSession();
     return await fetch(url, {
       method: "POST",
       signal: controller.signal,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -85,7 +89,7 @@ function createErrorMessage(payload, fallback) {
   return payload?.message || fallback;
 }
 
-export async function requestPortfolioAiAnalysis(payload, options = {}) {
+export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
   const config = getRuntimeAiAnalysisConfig(options);
   const apiBaseUrl = String(config.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   const response = await fetchWithTimeout(`${apiBaseUrl}/ai/portfolio-analysis`, {
@@ -107,5 +111,13 @@ export async function requestPortfolioAiAnalysis(payload, options = {}) {
     throw new Error("AI 분석 응답 형식이 올바르지 않습니다.");
   }
 
-  return responsePayload.analysis;
+  return {
+    analysis: responsePayload.analysis,
+    usage: responsePayload.usage || null,
+  };
+}
+
+export async function requestPortfolioAiAnalysis(payload, options = {}) {
+  const result = await requestPortfolioAiAnalysisResult(payload, options);
+  return result.analysis;
 }

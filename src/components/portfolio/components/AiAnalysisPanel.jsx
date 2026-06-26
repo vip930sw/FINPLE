@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, BrainCircuit, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
 
-import { requestPortfolioAiAnalysis } from "../services/aiAnalysisService";
+import { requestPortfolioAiAnalysisResult } from "../services/aiAnalysisService";
 import { loadAiAnalysisCache, saveAiAnalysisCache } from "../services/aiAnalysisStorageService";
 import {
   buildAiAnalysisPayload,
@@ -75,6 +75,22 @@ function getSeverityLabel(severity) {
     high: "높음",
   };
   return severityMap[severity] || severity || "점검";
+}
+
+function AiAnalysisLoadingState() {
+  return (
+    <section className="aiAnalysisLoadingState" aria-live="polite" aria-busy="true">
+      <div className="aiAnalysisLoadingSpinner" aria-hidden="true">
+        {Array.from({ length: 12 }, (_, index) => (
+          <span key={index} className="aiAnalysisLoadingBar" />
+        ))}
+      </div>
+      <div>
+        <strong>AI가 포트폴리오를 분석하고 있습니다.</strong>
+        <p>자산 구성, 데이터 한계, 주요 위험요인을 정리하는 중입니다. 보통 10~40초 정도 걸릴 수 있습니다.</p>
+      </div>
+    </section>
+  );
 }
 
 function AnalysisResult({ analysis }) {
@@ -207,6 +223,7 @@ export default function AiAnalysisPanel({
   const [analysisStatus, setAnalysisStatus] = useState("empty");
   const [analysis, setAnalysis] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [usageSummary, setUsageSummary] = useState(null);
   const lastSuccessSignatureRef = useRef("");
 
   const activeAssets = useMemo(
@@ -240,6 +257,7 @@ export default function AiAnalysisPanel({
       setAnalysis(null);
       setAnalysisStatus("empty");
       setErrorMessage("");
+      setUsageSummary(null);
       return;
     }
 
@@ -262,6 +280,7 @@ export default function AiAnalysisPanel({
     try {
       setAnalysisStatus("loading");
       setErrorMessage("");
+      setUsageSummary(null);
 
       const payload = buildAiAnalysisPayload({
         activePortfolio,
@@ -269,7 +288,7 @@ export default function AiAnalysisPanel({
         result,
         settings,
       });
-      const nextAnalysis = await requestPortfolioAiAnalysis(payload);
+      const { analysis: nextAnalysis, usage } = await requestPortfolioAiAnalysisResult(payload);
 
       lastSuccessSignatureRef.current = inputSignature;
       setAnalysis(nextAnalysis);
@@ -278,6 +297,7 @@ export default function AiAnalysisPanel({
         inputSignature,
         analysis: nextAnalysis,
       });
+      setUsageSummary(usage);
       setAnalysisStatus("success");
     } catch (error) {
       setErrorMessage(error?.message || "AI 분석 요청에 실패했습니다.");
@@ -312,7 +332,11 @@ export default function AiAnalysisPanel({
             disabled={!canRequestAnalysis}
             onClick={handleCreateAnalysis}
           >
-            {isLoading ? <RefreshCcw size={18} aria-hidden="true" /> : <Sparkles size={18} aria-hidden="true" />}
+            {isLoading ? (
+              <RefreshCcw className="aiAnalysisButtonSpinner" size={18} aria-hidden="true" />
+            ) : (
+              <Sparkles size={18} aria-hidden="true" />
+            )}
             <span>{getActionCopy(analysisStatus)}</span>
           </button>
         </div>
@@ -323,6 +347,11 @@ export default function AiAnalysisPanel({
           <div><span>MDD</span><strong>{simpleMdd}</strong></div>
           <div><span>예상 평가금액</span><strong>{futureValue}원</strong></div>
         </div>
+        {usageSummary && Number.isFinite(Number(usageSummary.remaining)) && (
+          <p className="aiAnalysisUsageHint">
+            오늘 남은 AI 분석 {usageSummary.remaining}회
+          </p>
+        )}
       </div>
 
       {analysisStatus === "stale" && (
@@ -330,6 +359,8 @@ export default function AiAnalysisPanel({
           포트폴리오 입력값이 최근 분석 이후 변경되었습니다. 다시 생성하면 최신 값으로 갱신됩니다.
         </div>
       )}
+
+      {isLoading && <AiAnalysisLoadingState />}
 
       {analysisStatus === "error" && errorMessage ? (
         <div className="aiAnalysisErrorBox" role="alert">

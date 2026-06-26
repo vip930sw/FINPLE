@@ -6,6 +6,7 @@ const DEFAULT_MODEL = "gpt-5.1";
 const DEFAULT_TIMEOUT_MS = 45000;
 const MIN_MAX_OUTPUT_TOKENS = 4200;
 const DEFAULT_MAX_OUTPUT_TOKENS = 4200;
+const DEFAULT_RETRY_COUNT = 1;
 
 const MODEL_OUTPUT_SCHEMA = {
   type: "object",
@@ -111,11 +112,16 @@ function getOpenAiConfig() {
     process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS,
     DEFAULT_MAX_OUTPUT_TOKENS
   );
+
   return {
     apiKey: String(process.env.OPENAI_API_KEY || "").trim(),
     model: String(process.env.FINPLE_AI_OPENAI_MODEL || DEFAULT_MODEL).trim(),
     timeoutMs: toPositiveInteger(process.env.FINPLE_AI_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
     maxOutputTokens: Math.max(configuredMaxOutputTokens, MIN_MAX_OUTPUT_TOKENS),
+    retryCount: Math.min(
+      toPositiveInteger(process.env.FINPLE_AI_OPENAI_RETRY_COUNT, DEFAULT_RETRY_COUNT),
+      3
+    ),
   };
 }
 
@@ -125,7 +131,7 @@ function buildInstructions(payload) {
     "You are FINPLE's portfolio analysis narrator.",
     "Return only the JSON object requested by the schema.",
     "Write all user-facing text in Korean.",
-    "Use polite formal Korean honorific style. Prefer endings such as 입니다, 합니다, 보입니다, 수 있습니다, and 어렵습니다.",
+    "Use polite formal Korean honorific style. Prefer endings such as 입니다, 합니다, 보입니다, 있습니다, and 해석됩니다.",
     "Do not use casual or plain report-style endings such as 있다, 어렵다, 나타낸다, 가진다, or 못한다 in user-facing prose.",
     "Keep the analysis concrete and tied to the submitted assets, metrics, and portfolio structure.",
     "Use diagnosticSections for more detailed interpretation before riskFactors.",
@@ -172,6 +178,39 @@ function extractOutputText(responseBody) {
   return "";
 }
 
+function extractStructuredOutput(responseBody) {
+  if (responseBody?.output_parsed && typeof responseBody.output_parsed === "object") {
+    return responseBody.output_parsed;
+  }
+
+  for (const outputItem of responseBody?.output || []) {
+    for (const contentItem of outputItem?.content || []) {
+      if (contentItem?.parsed && typeof contentItem.parsed === "object") return contentItem.parsed;
+      if (contentItem?.json && typeof contentItem.json === "object") return contentItem.json;
+    }
+  }
+
+  return null;
+}
+
+function parseJsonText(text) {
+  try {
+    return JSON.parse(text);
+  } catch (firstError) {
+    const firstBrace = text.indexOf("{");
+    const lastBrace = text.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const candidate = text.slice(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Keep the original parse error for cleaner provider diagnostics.
+      }
+    }
+    throw firstError;
+  }
+}
+
 function parseModelJson(responseBody) {
   if (responseBody?.status === "incomplete") {
     throw createHttpError(
@@ -181,25 +220,22 @@ function parseModelJson(responseBody) {
     );
   }
 
+  const structuredOutput = extractStructuredOutput(responseBody);
+  if (structuredOutput) return structuredOutput;
+
   const text = extractOutputText(responseBody).trim();
   if (!text) {
     throw createHttpError(502, "AI provider 응답 본문이 비어 있습니다.", ["openai output_text missing"]);
   }
 
   try {
-    return JSON.parse(text);
+    return parseJsonText(text);
   } catch (error) {
     throw createHttpError(502, "AI provider JSON 응답을 해석하지 못했습니다.", [error.message]);
   }
 }
 
-export async function requestOpenAiPortfolioAnalysis(payload) {
-  const config = getOpenAiConfig();
-
-  if (!config.apiKey) {
-    throw createHttpError(503, "OpenAI API key가 설정되지 않았습니다.", ["OPENAI_API_KEY is required"]);
-  }
-
+async function requestOpenAiPortfolioAnalysisOnce(payload, config) {
   const response = await fetchWithTimeout(
     OPENAI_RESPONSES_URL,
     {
@@ -237,4 +273,32 @@ export async function requestOpenAiPortfolioAnalysis(payload) {
   }
 
   return parseModelJson(responseBody);
+}
+
+function isRetryableOpenAiError(error) {
+  const statusCode = Number(error?.statusCode || 0);
+  if (statusCode === 502 || statusCode === 504) return true;
+  return statusCode >= 500 && statusCode < 600;
+}
+
+export async function requestOpenAiPortfolioAnalysis(payload) {
+  const config = getOpenAiConfig();
+
+  if (!config.apiKey) {
+    throw createHttpError(503, "OpenAI API key가 설정되지 않았습니다.", ["OPENAI_API_KEY is required"]);
+  }
+
+  let lastError = null;
+  const attempts = config.retryCount + 1;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await requestOpenAiPortfolioAnalysisOnce(payload, config);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts || !isRetryableOpenAiError(error)) break;
+    }
+  }
+
+  throw lastError;
 }
