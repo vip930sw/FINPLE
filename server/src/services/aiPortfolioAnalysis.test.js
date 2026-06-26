@@ -62,6 +62,118 @@ test("runPortfolioAnalysis returns deterministic mock output", async () => {
   assert.deepEqual(first, second);
 });
 
+test("runPortfolioAnalysis rejects live OpenAI mode without a server API key", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  delete process.env.OPENAI_API_KEY;
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest(validRequest());
+    await assert.rejects(
+      () => runPortfolioAnalysis(payload),
+      /OpenAI API key/
+    );
+  } finally {
+    process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+  }
+});
+
+test("runPortfolioAnalysis validates a live OpenAI provider response", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousFetch = globalThis.fetch;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  process.env.OPENAI_API_KEY = "test-key";
+
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "https://api.openai.com/v1/responses");
+    assert.equal(options.method, "POST");
+    assert.equal(options.headers.Authorization, "Bearer test-key");
+
+    const requestBody = JSON.parse(options.body);
+    assert.equal(requestBody.text.format.type, "json_schema");
+    assert.equal(requestBody.text.format.strict, true);
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        output_text: JSON.stringify({
+          dataQuality: {
+            level: "good",
+            summary: "입력된 계산값과 자산 정보가 분석에 필요한 최소 조건을 충족합니다.",
+            warnings: [],
+          },
+          portfolioProfile: {
+            title: "성장 자산과 현금흐름 자산이 함께 있는 포트폴리오",
+            summary: "입력된 자산 구성은 성장 성격과 현금흐름 성격을 함께 설명할 수 있는 구조입니다.",
+          },
+          diversification: {
+            nominalAssetCount: 2,
+            effectiveDiversificationLevel: "medium",
+            summary: "자산 수는 2개이며 QQQ와 BND로 역할이 나뉘어 있습니다.",
+          },
+          riskFactors: [
+            {
+              code: "concentration",
+              label: "핵심 자산 비중 점검",
+              severity: "medium",
+              evidence: ["BND 입력 비중 60%"],
+            },
+          ],
+          assetRoles: [
+            {
+              ticker: "QQQ",
+              market: "US",
+              weight: 40,
+              role: "growth",
+              rationale: "QQQ는 입력된 성장 지표와 변동성 정보를 기준으로 성장 역할로 해석됩니다.",
+            },
+            {
+              ticker: "BND",
+              market: "US",
+              weight: 60,
+              role: "income",
+              rationale: "BND는 입력된 배당률과 낮은 변동성 정보를 기준으로 현금흐름 역할로 해석됩니다.",
+            },
+          ],
+          limitations: [
+            "본 응답은 입력된 계산값과 자산 상태를 설명하는 용도입니다.",
+            "미래 성과를 보장하지 않습니다.",
+          ],
+          disclaimer: "본 분석은 투자 권유가 아닌 참고자료입니다. 최종 판단은 사용자가 확인해야 합니다.",
+        }),
+      }),
+    };
+  };
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest(validRequest());
+    const output = await runPortfolioAnalysis(payload);
+
+    assert.equal(output.analysisVersion, "ai-analysis-openai-v1");
+    assert.equal(output.mode, "live");
+    assert.equal(output.provider, "openai");
+    assert.equal(output.assetRoles.length, 2);
+  } finally {
+    process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test("normalizePortfolioAnalysisRequest rejects invalid numeric input", () => {
   assert.throws(
     () => normalizePortfolioAnalysisRequest({

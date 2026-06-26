@@ -36,6 +36,26 @@ FINPLE_AI_ANALYSIS_PROVIDER=none
 
 외부 AI provider key는 아직 필요하지 않으며, 이후 live provider 연결 시에도 서버 전용 환경변수로만 관리합니다.
 
+## AI 분석 live provider 준비
+
+Step 113-4C 기준 live provider adapter는 서버에만 연결됩니다. 기본 배포값은 여전히 mock이므로 기존 화면 동작은 바뀌지 않습니다.
+
+```env
+FINPLE_AI_ANALYSIS_MODE=live
+FINPLE_AI_ANALYSIS_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+FINPLE_AI_OPENAI_MODEL=gpt-5.1
+FINPLE_AI_OPENAI_TIMEOUT_MS=20000
+FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=2200
+```
+
+주의:
+
+- `OPENAI_API_KEY`는 Render backend 환경변수에만 저장합니다.
+- Vercel의 `VITE_` 환경변수에는 AI provider key를 넣지 않습니다.
+- live 응답도 서버 validator를 통과해야만 STEP 4 화면에 표시됩니다.
+- 매수, 매도, 보유 추천이나 목표 비중, 목표가, 수익 보장 표현은 계속 차단됩니다.
+
 ## Provider 설정
 
 기본값은 `mock`입니다. 실제 Alpha Vantage 연결을 테스트하려면 `.env`를 아래처럼 수정합니다.

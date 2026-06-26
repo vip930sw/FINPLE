@@ -12,7 +12,7 @@ router.post("/portfolio-analysis", async (request, response, next) => {
 
     response.json({
       ok: true,
-      source: "ai-analysis-mock",
+      source: `ai-analysis-${analysis.mode}`,
       analysis,
     });
   } catch (error) {
