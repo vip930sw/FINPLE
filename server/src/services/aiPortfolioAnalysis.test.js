@@ -103,6 +103,9 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     const requestBody = JSON.parse(options.body);
     assert.equal(requestBody.text.format.type, "json_schema");
     assert.equal(requestBody.text.format.strict, true);
+    assert.match(requestBody.instructions, /polite formal Korean honorific style/);
+    assert.match(requestBody.instructions, /입니다/);
+    assert.match(requestBody.instructions, /plain report-style endings/);
 
     return {
       ok: true,

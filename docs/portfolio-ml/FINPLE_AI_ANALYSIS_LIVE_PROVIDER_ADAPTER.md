@@ -44,6 +44,8 @@ VITE_FINPLE_AI_ANALYSIS_TIMEOUT_MS=60000
 
 - Vercel `VITE_` 변수에는 AI provider key를 넣지 않는다.
 - 모델은 기존 입력값에 없는 숫자, ticker, 투자 추천 표현을 만들면 validator에서 차단된다.
+- 사용자에게 보이는 문장은 존댓말/경어체를 사용하도록 provider prompt에서 고정한다.
+- 평서형 보고서 문체와 모호한 조어를 줄이고, 입력 자산과 계산값에 연결된 관찰 중심 문장만 허용한다.
 - provider 오류, timeout, JSON parse 실패, validator 실패는 STEP 4 error 상태로만 노출된다.
 - live provider 실패가 STEP 1~3 계산과 시뮬레이터 저장 흐름을 중단하지 않는다.
 - 브라우저는 AI 분석 요청에 전용 timeout을 사용하므로 일반 자산조회 timeout과 분리된다.
