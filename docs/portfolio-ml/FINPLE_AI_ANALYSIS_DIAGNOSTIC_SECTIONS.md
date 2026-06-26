@@ -48,6 +48,8 @@ diagnosticSections
 - `cashflow`
 - `data_context`
 
+live OpenAI provider는 JSON 완성 안정성을 위해 기본적으로 정확히 세 개의 section을 요청한다. 각 section은 짧은 요약과 두 개의 관찰 항목으로 제한한다.
+
 ## UI 배치
 
 결과 화면은 다음 위계로 정리했다.
@@ -63,6 +65,8 @@ diagnosticSections
 ## 주의점
 
 - `diagnosticSections`도 validator의 금지 표현, ticker 언급 범위, 숫자 환각 검증을 그대로 통과해야 한다.
+- OpenAI 응답이 길이 제한으로 중단되면 부분 JSON을 그대로 파싱하지 않고 재시도 가능한 오류로 처리한다.
+- `FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS`가 낮게 설정되어 있어도 서버는 최소 출력 토큰 기준을 적용한다.
 - 매수, 매도, 보유 추천과 목표 비중은 계속 금지한다.
 - 텍스트 필드에는 새 숫자를 만들지 않는다.
 - personal plan 제공 여부는 결과 저장, 응답 시간, 분석 품질, 비용 통제가 안정화된 뒤 별도 판단한다.

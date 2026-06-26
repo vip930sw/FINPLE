@@ -106,6 +106,8 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     assert.match(requestBody.instructions, /polite formal Korean honorific style/);
     assert.match(requestBody.instructions, /입니다/);
     assert.match(requestBody.instructions, /plain report-style endings/);
+    assert.match(requestBody.instructions, /exactly three diagnosticSections/);
+    assert.equal(requestBody.max_output_tokens, 4200);
 
     return {
       ok: true,
@@ -193,6 +195,50 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
     if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousApiKey;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("runPortfolioAnalysis raises too-small OpenAI max output token config to schema minimum", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousMaxOutputTokens = process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS;
+  const previousFetch = globalThis.fetch;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  process.env.OPENAI_API_KEY = "test-key";
+  process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS = "1200";
+
+  globalThis.fetch = async (url, options) => {
+    const requestBody = JSON.parse(options.body);
+    assert.equal(requestBody.max_output_tokens, 4200);
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "incomplete",
+        incomplete_details: { reason: "max_output_tokens" },
+        output_text: "{\"dataQuality\":",
+      }),
+    };
+  };
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest(validRequest());
+    await assert.rejects(
+      () => runPortfolioAnalysis(payload),
+      /길이 제한/
+    );
+  } finally {
+    process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+    if (previousMaxOutputTokens === undefined) delete process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS;
+    else process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS = previousMaxOutputTokens;
     globalThis.fetch = previousFetch;
   }
 });

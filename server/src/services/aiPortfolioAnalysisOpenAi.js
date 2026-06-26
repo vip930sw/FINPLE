@@ -4,7 +4,8 @@ import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.1";
 const DEFAULT_TIMEOUT_MS = 45000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 3200;
+const MIN_MAX_OUTPUT_TOKENS = 4200;
+const DEFAULT_MAX_OUTPUT_TOKENS = 4200;
 
 const MODEL_OUTPUT_SCHEMA = {
   type: "object",
@@ -106,11 +107,15 @@ function toPositiveInteger(value, fallback) {
 }
 
 function getOpenAiConfig() {
+  const configuredMaxOutputTokens = toPositiveInteger(
+    process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS,
+    DEFAULT_MAX_OUTPUT_TOKENS
+  );
   return {
     apiKey: String(process.env.OPENAI_API_KEY || "").trim(),
     model: String(process.env.FINPLE_AI_OPENAI_MODEL || DEFAULT_MODEL).trim(),
     timeoutMs: toPositiveInteger(process.env.FINPLE_AI_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
-    maxOutputTokens: toPositiveInteger(process.env.FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
+    maxOutputTokens: Math.max(configuredMaxOutputTokens, MIN_MAX_OUTPUT_TOKENS),
   };
 }
 
@@ -124,8 +129,8 @@ function buildInstructions(payload) {
     "Do not use casual or plain report-style endings such as 있다, 어렵다, 나타낸다, 가진다, or 못한다 in user-facing prose.",
     "Keep the analysis concrete and tied to the submitted assets, metrics, and portfolio structure.",
     "Use diagnosticSections for more detailed interpretation before riskFactors.",
-    "Return three or four diagnosticSections using the allowed keys. Cover portfolio structure, risk balance, cashflow characteristics, and data context when supported by the input.",
-    "Each diagnosticSections item must include a concise title, a summary, and two or three observations.",
+    "Return exactly three diagnosticSections using the allowed keys. Prefer structure, risk_balance, and data_context. Use cashflow instead of data_context only when cashflow is clearly supported by the input.",
+    "Each diagnosticSections item must include a concise title, a concise summary, and exactly two observations.",
     "Make diagnosticSections more specific than the portfolioProfile summary, but do not introduce new facts outside the input.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",
@@ -168,6 +173,14 @@ function extractOutputText(responseBody) {
 }
 
 function parseModelJson(responseBody) {
+  if (responseBody?.status === "incomplete") {
+    throw createHttpError(
+      502,
+      "AI provider 응답 생성이 길이 제한으로 중단되었습니다. 잠시 후 다시 시도해 주세요.",
+      [`openai_incomplete_reason=${responseBody?.incomplete_details?.reason || "unknown"}`]
+    );
+  }
+
   const text = extractOutputText(responseBody).trim();
   if (!text) {
     throw createHttpError(502, "AI provider 응답 본문이 비어 있습니다.", ["openai output_text missing"]);
