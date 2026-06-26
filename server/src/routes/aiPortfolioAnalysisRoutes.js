@@ -4,7 +4,10 @@ import { getUserBySessionToken } from "../db/authRepository.js";
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
 import { getAiAnalysisUsagePolicy, reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
 import { enrichUserWithAiAnalysisEntitlement } from "../services/aiAnalysisEntitlementService.js";
-import { reservePersistentAiAnalysisUsage } from "../services/aiAnalysisUsageRepository.js";
+import {
+  getAiAnalysisUsagePersistenceStatus,
+  reservePersistentAiAnalysisUsage,
+} from "../services/aiAnalysisUsageRepository.js";
 import {
   getAiAnalysisMode,
   getAiAnalysisProvider,
@@ -81,6 +84,7 @@ async function reserveUsage({ request, user, payload }) {
 router.get("/portfolio-analysis/status", async (request, response, next) => {
   try {
     const user = await getOptionalUser(request);
+    const persistence = await getAiAnalysisUsagePersistenceStatus();
     response.json({
       ok: true,
       mode: getAiAnalysisMode(),
@@ -96,10 +100,7 @@ router.get("/portfolio-analysis/status", async (request, response, next) => {
         : null,
       usagePolicy: {
         ...getAiAnalysisUsagePolicy(user),
-        persistence: {
-          preferred: "postgres",
-          fallback: "memory",
-        },
+        persistence,
       },
       checkedAt: new Date().toISOString(),
     });

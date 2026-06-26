@@ -26,6 +26,38 @@ export function buildAiAnalysisUsageMetadata({ payload, mode, provider } = {}) {
   };
 }
 
+export async function getAiAnalysisUsagePersistenceStatus({ queryFn = defaultQuery } = {}) {
+  if (queryFn === defaultQuery && !isDatabaseConfigured()) {
+    return {
+      preferred: "postgres",
+      fallback: "memory",
+      configured: false,
+      available: false,
+      table: "ai_analysis_usage_events",
+    };
+  }
+
+  try {
+    await queryFn("SELECT 1 FROM ai_analysis_usage_events LIMIT 1");
+    return {
+      preferred: "postgres",
+      fallback: "memory",
+      configured: true,
+      available: true,
+      table: "ai_analysis_usage_events",
+    };
+  } catch (error) {
+    return {
+      preferred: "postgres",
+      fallback: "memory",
+      configured: queryFn !== defaultQuery || isDatabaseConfigured(),
+      available: false,
+      table: "ai_analysis_usage_events",
+      reason: "migration_pending",
+    };
+  }
+}
+
 export async function reservePersistentAiAnalysisUsage({
   request,
   user,

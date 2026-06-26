@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { reservePersistentAiAnalysisUsage } from "./aiAnalysisUsageRepository.js";
+import {
+  getAiAnalysisUsagePersistenceStatus,
+  reservePersistentAiAnalysisUsage,
+} from "./aiAnalysisUsageRepository.js";
 
 function mockRequest(ip = "203.0.113.10") {
   return {
@@ -81,4 +84,21 @@ test("reservePersistentAiAnalysisUsage blocks when the rolling DB window is exha
     if (previousWindow === undefined) delete process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS;
     else process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS = previousWindow;
   }
+});
+
+test("getAiAnalysisUsagePersistenceStatus reports pending migration when table is missing", async () => {
+  const status = await getAiAnalysisUsagePersistenceStatus({
+    queryFn: async () => {
+      throw new Error("relation does not exist");
+    },
+  });
+
+  assert.deepEqual(status, {
+    preferred: "postgres",
+    fallback: "memory",
+    configured: true,
+    available: false,
+    table: "ai_analysis_usage_events",
+    reason: "migration_pending",
+  });
 });
