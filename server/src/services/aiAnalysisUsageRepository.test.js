@@ -44,9 +44,9 @@ test("reservePersistentAiAnalysisUsage records reservation and commit through qu
     assert.equal(reservation.remaining, 1);
     await reservation.commit();
 
-    assert.equal(calls.length, 3);
-    assert.match(calls[1].text, /INSERT INTO ai_analysis_usage_events/);
-    assert.match(calls[2].text, /status = 'succeeded'/);
+    assert.ok(calls.some((call) => /CREATE TABLE IF NOT EXISTS ai_analysis_usage_events/.test(call.text)));
+    assert.ok(calls.some((call) => /INSERT INTO ai_analysis_usage_events/.test(call.text)));
+    assert.ok(calls.some((call) => /status = 'succeeded'/.test(call.text)));
   } finally {
     if (previousLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
     else process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = previousLimit;
@@ -101,4 +101,19 @@ test("getAiAnalysisUsagePersistenceStatus reports pending migration when table i
     table: "ai_analysis_usage_events",
     reason: "migration_pending",
   });
+});
+
+test("getAiAnalysisUsagePersistenceStatus reports available when schema can be ensured", async () => {
+  const calls = [];
+  const status = await getAiAnalysisUsagePersistenceStatus({
+    queryFn: async (text) => {
+      calls.push(text);
+      return { rows: [{ "?column?": 1 }] };
+    },
+  });
+
+  assert.equal(status.available, true);
+  assert.equal(status.configured, true);
+  assert.equal(status.table, "ai_analysis_usage_events");
+  assert.ok(calls.some((text) => /CREATE TABLE IF NOT EXISTS ai_analysis_usage_events/.test(text)));
 });
