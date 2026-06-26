@@ -133,6 +133,14 @@
 첫 개발 작업: Step 113-1A 데이터 인벤토리
 ```
 
+## Recent AI Analysis Handoff
+
+- `FINPLE_AI_ANALYSIS_HANDOFF_2026_06_27.md`
+  - STEP 4 AI 분석 고급화 인수인계
+  - 이전 `AI 분석 문서 읽기` 채팅 작업 이력
+  - live OpenAI, diagnosticSections, usage persistence, access control 현황
+  - 다음 새 채팅 첫 메시지
+
 ## 현재 진행 위치
 
 2026-06-26 기준 `Step 113-4B mock API 연결`까지 완료했다.

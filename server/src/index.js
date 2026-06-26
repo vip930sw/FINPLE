@@ -160,6 +160,7 @@ app.use((error, request, response, next) => {
           },
         }
       : {}),
+    ...(statusCode < 500 && error.access ? { access: error.access } : {}),
   });
 });
 

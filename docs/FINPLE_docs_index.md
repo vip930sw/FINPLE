@@ -131,3 +131,6 @@ P0 경쟁력·지표·데이터·기술부채
 - 베타 오류와 개선사항은 Step 90 운영로그에 기록한다.
 - 사용자 피드백은 Step 89 기준에 따라 P0·P1·P2·HOLD로 분류한다.
 - 날짜가 명시된 인수인계 문서는 최신 문서와 충돌할 경우 최신 문서를 우선한다.
+## Recent AI Analysis Handoff
+
+- [FINPLE AI Analysis Handoff 2026-06-27](./portfolio-ml/FINPLE_AI_ANALYSIS_HANDOFF_2026_06_27.md)

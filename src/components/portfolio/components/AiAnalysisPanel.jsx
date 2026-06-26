@@ -254,6 +254,7 @@ export default function AiAnalysisPanel({
   const [analysis, setAnalysis] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [usageSummary, setUsageSummary] = useState(null);
+  const [accessSummary, setAccessSummary] = useState(null);
   const lastSuccessSignatureRef = useRef("");
 
   const activeAssets = useMemo(
@@ -276,7 +277,8 @@ export default function AiAnalysisPanel({
   const futureValue = formatNumber?.(result?.futureValue || 0) || "-";
   const isLoading = analysisStatus === "loading";
   const isStale = analysisStatus === "stale";
-  const canRequestAnalysis = activeAssets.length > 0 && !isLoading;
+  const isAccessBlocked = accessSummary?.allowed === false;
+  const canRequestAnalysis = activeAssets.length > 0 && !isLoading && !isAccessBlocked;
   const statusCopy = getStatusCopy(analysisStatus, readiness);
 
   useEffect(() => {
@@ -312,6 +314,7 @@ export default function AiAnalysisPanel({
       try {
         const status = await requestPortfolioAiAnalysisStatus();
         if (!canceled && status?.usage) setUsageSummary(status.usage);
+        if (!canceled && status?.access) setAccessSummary(status.access);
       } catch {
         // Usage status is informational; analysis requests still handle their own errors.
       }
@@ -347,8 +350,10 @@ export default function AiAnalysisPanel({
         analysis: nextAnalysis,
       });
       setUsageSummary(usage);
+      setAccessSummary((current) => current ? { ...current, allowed: true, reason: null } : current);
       setAnalysisStatus("success");
     } catch (error) {
+      if (error?.access) setAccessSummary(error.access);
       setErrorMessage(error?.message || "AI 분석 요청에 실패했습니다.");
       setAnalysisStatus("error");
     }
@@ -403,6 +408,11 @@ export default function AiAnalysisPanel({
         )}
       </div>
 
+        {isAccessBlocked && (
+          <p className="aiAnalysisAccessHint">
+            AI 분석은 Personal 플랜 이용자에게 제공됩니다. 현재 플랜을 확인한 뒤 다시 시도해주세요.
+          </p>
+        )}
       {isStale && (
         <div className="aiAnalysisStateBanner">
           입력값이 최근 분석 이후 변경되었습니다. 이전 AI 분석 결과는 현재 자산 구성과 일치하지 않아 숨겼습니다.

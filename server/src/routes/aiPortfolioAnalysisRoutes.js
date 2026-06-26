@@ -2,6 +2,12 @@ import express from "express";
 
 import { getUserBySessionToken } from "../db/authRepository.js";
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
+import {
+  assertAiAnalysisAccessAllowed,
+  getAiAnalysisAccessMode,
+  getAiAnalysisAccessState,
+  getAiAnalysisAllowedPlans,
+} from "../services/aiAnalysisAccessControl.js";
 import { getAiAnalysisUsagePolicy, reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
 import { enrichUserWithAiAnalysisEntitlement } from "../services/aiAnalysisEntitlementService.js";
 import {
@@ -16,7 +22,6 @@ import {
 } from "../services/aiPortfolioAnalysisService.js";
 
 const router = express.Router();
-const DEFAULT_ALLOWED_PLANS = ["personal", "pro"];
 
 function getSessionToken(request) {
   const header = request.get("authorization") || "";
@@ -29,30 +34,6 @@ async function getOptionalUser(request) {
   if (!sessionToken) return null;
   const user = await getUserBySessionToken(sessionToken);
   return enrichUserWithAiAnalysisEntitlement(user);
-}
-
-function getAccessMode() {
-  return String(process.env.FINPLE_AI_ANALYSIS_ACCESS_MODE || "public").trim().toLowerCase();
-}
-
-function getAllowedPlans() {
-  return String(process.env.FINPLE_AI_ANALYSIS_ALLOWED_PLANS || DEFAULT_ALLOWED_PLANS.join(","))
-    .split(",")
-    .map((plan) => plan.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function assertAccessAllowed(user) {
-  const accessMode = getAccessMode();
-  if (accessMode !== "personal") return;
-
-  const plan = String(user?.plan || "free").trim().toLowerCase();
-  if (!user?.id || !getAllowedPlans().includes(plan)) {
-    const error = new Error("AI analysis is available for Personal plan users.");
-    error.statusCode = 403;
-    error.details = [`requiredPlans=${getAllowedPlans().join(",")}`];
-    throw error;
-  }
 }
 
 function setUsageHeaders(response, usage) {
@@ -89,12 +70,14 @@ router.get("/portfolio-analysis/status", async (request, response, next) => {
     const usage = persistence.available
       ? await getAiAnalysisUsageSnapshot({ request, user })
       : null;
+    const access = getAiAnalysisAccessState(user);
     response.json({
       ok: true,
       mode: getAiAnalysisMode(),
       provider: getAiAnalysisProvider(),
-      accessMode: getAccessMode(),
-      allowedPlans: getAllowedPlans(),
+      accessMode: getAiAnalysisAccessMode(),
+      allowedPlans: getAiAnalysisAllowedPlans(),
+      access,
       user: user
         ? {
             id: user.id,
@@ -119,7 +102,7 @@ router.post("/portfolio-analysis", async (request, response, next) => {
 
   try {
     const user = await getOptionalUser(request);
-    assertAccessAllowed(user);
+    assertAiAnalysisAccessAllowed(user);
     const payload = normalizePortfolioAnalysisRequest(request.body);
     usage = await reserveUsage({ request, user, payload });
     const analysis = await runPortfolioAnalysis(payload);
