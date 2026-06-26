@@ -38,10 +38,10 @@ function getPathForPersonalView(view) {
 }
 
 const SIMULATOR_STEP_ITEMS = [
-  { key: "settings", step: "Step 1" },
-  { key: "compare", step: "Step 2" },
-  { key: "detail", step: "Step 3" },
-  { key: "ai", step: "Step 4" },
+  { key: "settings", step: "Step 1", label: "시뮬레이터" },
+  { key: "compare", step: "Step 2", label: "포트폴리오" },
+  { key: "detail", step: "Step 3", label: "상세분석" },
+  { key: "ai", step: "Step 4", label: "AI 분석" },
 ];
 
 function scrollWindowTop(delay = 70) {
@@ -144,11 +144,13 @@ function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
           <button
             key={item.key}
             type="button"
+            aria-label={`${item.step} ${item.label}`}
             className={activeSimulatorStep === item.key ? "active" : ""}
             onClick={() => {
               setActiveSimulatorStep(item.key);
               moveToSimulatorTab(item.key);
             }}
+            title={item.label}
           >
             {item.step}
           </button>
