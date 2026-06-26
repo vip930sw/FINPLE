@@ -1,8 +1,8 @@
 # FINPLE Portfolio ML Documentation
 
-작성일: 2026-06-23
+작성일: 2026-06-26
 
-이 폴더는 FINPLE 포트폴리오 머신러닝, 사용자용 AI 분석, 시나리오 분석 개발의 기준 문서를 보관한다.
+이 폴더는 FINPLE 포트폴리오 머신러닝, 사용자용 AI 분석, 시나리오 분석 및 핵심 지표 산정정책의 기준 문서를 보관한다.
 
 ## 문서 순서
 
@@ -114,6 +114,15 @@
     - BETA 중복 방지 메타데이터
     - 테스트·PR·AI 연결 기준
 
+18. `FINPLE_METRICS_CALCULATION_POLICY_AND_AUDIT.md`
+    - CAGR·MDD·BETA·배당·Calmar 산식과 표시기준
+    - 가격수익과 총수익의 분리
+    - Raw 10년 CAGR과 Rolling 10년 CAGR 정책
+    - 한국 대표 ETF Rolling 보정값 덮어쓰기 원인
+    - 미국 대표지수 Rolling 재산출 방향과 잠정 범위
+    - 포트폴리오 근사 MDD와 시계열 직접 MDD의 구분
+    - 신규 overlay 스키마·재산출·회귀테스트 기준
+
 ## 확정된 방향
 
 ```text
@@ -132,14 +141,18 @@
 - 전체 장기 로드맵 기준: 약 45%
 - 다음 작업: `Step 113-4C live provider adapter`
 
-## 시나리오 분석 작업선
+## 시나리오 분석·지표 작업선
 
-2026-06-26 기준 Step 114는 제품·통계·구현 준비문서만 작성된 상태다.
+2026-06-26 기준 Step 114는 제품·통계·지표·구현 준비문서까지 작성된 상태다.
 
 ```text
 완료
 - 제품 정의
 - 통계지표 정의
+- CAGR·MDD·BETA·배당 산정정책
+- Raw와 Rolling CAGR의 역할 구분
+- 한국 대표 ETF Rolling 보정 유실 원인 감사
+- 미국 대표지수 Rolling 재산출 기준
 - BETA 적용 원칙
 - 시장 벤치마크 정책 초안
 - API·UI·테스트 구조 초안
@@ -147,6 +160,8 @@
 
 미착수
 - 월간 시계열 데이터 감사
+- 재현 가능한 지표 재산출 스크립트
+- 신규 가격지표 overlay
 - 위험계산 유틸리티
 - Rolling 분석
 - Block Bootstrap
@@ -161,6 +176,19 @@
 Step 114-1A Scenario data source audit
 ```
 
+지표 정상화 작업은 시나리오 데이터 감사와 함께 다음 항목을 확인한다.
+
+```text
+Raw CAGR
+Rolling CAGR
+MDD
+Rolling MDD
+BETA benchmark
+가격수익 / 총수익
+통화·환율
+proxy 여부
+```
+
 ## 첫 개발 명령
 
 Codex 새 스레드에서 해당 작업선에 맞는 인수인계 문서를 사용한다.
@@ -171,6 +199,9 @@ FINPLE_PORTFOLIO_ML_CODEX_HANDOFF.md
 
 시나리오 분석 작업:
 FINPLE_SCENARIO_ANALYSIS_CODEX_HANDOFF.md
+
+지표 산정정책:
+FINPLE_METRICS_CALCULATION_POLICY_AND_AUDIT.md
 ```
 
 ## 개발 우선순위
@@ -188,10 +219,12 @@ AI/ML 작업계획 문서화
 → 운영 안정화
 ```
 
-시나리오 분석은 별도 작업선으로 진행한다.
+시나리오·지표 작업은 별도 작업선으로 진행한다.
 
 ```text
-Scenario data audit
+Scenario and metric data audit
+→ Reproducible CAGR/MDD/BETA engine
+→ Raw and Rolling overlay regeneration
 → Risk metric utilities
 → Rolling historical baseline
 → Joint block bootstrap
