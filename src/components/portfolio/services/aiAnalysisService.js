@@ -46,7 +46,7 @@ function getTimerApi() {
   };
 }
 
-async function fetchWithTimeout(url, { timeoutMs, body }) {
+async function fetchWithTimeout(url, { timeoutMs, body, method = "POST" }) {
   const controller = new AbortController();
   const timerApi = getTimerApi();
   const timerId = timerApi.setTimeout(() => controller.abort("timeout"), timeoutMs);
@@ -54,14 +54,14 @@ async function fetchWithTimeout(url, { timeoutMs, body }) {
   try {
     const session = getStoredFinpleAuthSession();
     return await fetch(url, {
-      method: "POST",
+      method,
       signal: controller.signal,
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
         ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
       },
-      body: JSON.stringify(body),
+      ...(body ? { body: JSON.stringify(body) } : {}),
     });
   } catch (error) {
     if (controller.signal.aborted) {
@@ -115,6 +115,27 @@ export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
     analysis: responsePayload.analysis,
     usage: responsePayload.usage || null,
   };
+}
+
+export async function requestPortfolioAiAnalysisStatus(options = {}) {
+  const config = getRuntimeAiAnalysisConfig(options);
+  const apiBaseUrl = String(config.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+  const response = await fetchWithTimeout(`${apiBaseUrl}/ai/portfolio-analysis/status`, {
+    timeoutMs: config.aiAnalysisTimeoutMs,
+    method: "GET",
+  });
+  const responsePayload = await readJsonSafely(response);
+
+  if (!response.ok || responsePayload?.ok === false) {
+    throw new Error(
+      createErrorMessage(
+        responsePayload,
+        "AI 분석 상태를 확인하지 못했습니다."
+      )
+    );
+  }
+
+  return responsePayload;
 }
 
 export async function requestPortfolioAiAnalysis(payload, options = {}) {

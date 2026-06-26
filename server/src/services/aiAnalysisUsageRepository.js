@@ -105,6 +105,129 @@ export async function getAiAnalysisUsagePersistenceStatus({ queryFn = defaultQue
   }
 }
 
+export async function getAiAnalysisUsageSnapshot({
+  request,
+  user,
+  now = Date.now(),
+  queryFn = defaultQuery,
+} = {}) {
+  if (isAiAnalysisUsageLimitDisabled()) {
+    return {
+      limited: false,
+      limit: null,
+      used: 0,
+      remaining: null,
+      resetAt: null,
+      storage: "disabled",
+    };
+  }
+  if (queryFn === defaultQuery && !isDatabaseConfigured()) return null;
+
+  const limit = getAiAnalysisUsageLimitForUser(user);
+  const windowMs = getAiAnalysisUsageWindowMs();
+  const actor = getAiAnalysisUsageActor({ request, user });
+  const checkedAt = toIsoDate(now);
+  const windowStartedAt = new Date(checkedAt.getTime() - windowMs);
+
+  await ensureAiAnalysisUsageSchema(queryFn);
+
+  const result = await queryFn(
+    `SELECT COUNT(*)::int AS count, MIN(reserved_at) AS oldest_reserved_at
+     FROM ai_analysis_usage_events
+     WHERE actor_key = $1
+       AND reserved_at >= $2
+       AND status IN ('reserved', 'succeeded')`,
+    [actor.key, windowStartedAt]
+  );
+  const used = Number(result.rows?.[0]?.count || 0);
+  const oldestReservedAt = result.rows?.[0]?.oldest_reserved_at
+    ? new Date(result.rows[0].oldest_reserved_at).getTime()
+    : checkedAt.getTime();
+
+  return {
+    limited: true,
+    limit,
+    used,
+    remaining: Math.max(limit - used, 0),
+    resetAt: oldestReservedAt + windowMs,
+    storage: "postgres",
+  };
+}
+
+export async function getAiAnalysisUsageAdminSummary({ queryFn = defaultQuery } = {}) {
+  if (queryFn === defaultQuery && !isDatabaseConfigured()) {
+    return {
+      configured: false,
+      available: false,
+      total24h: 0,
+      total7d: 0,
+      statusBreakdown24h: [],
+      planBreakdown24h: [],
+      recentEvents: [],
+    };
+  }
+
+  await ensureAiAnalysisUsageSchema(queryFn);
+
+  const [totalsResult, statusResult, planResult, recentResult] = await Promise.all([
+    queryFn(
+      `SELECT
+         COUNT(*) FILTER (WHERE reserved_at >= NOW() - INTERVAL '24 hours')::int AS total_24h,
+         COUNT(*) FILTER (WHERE reserved_at >= NOW() - INTERVAL '7 days')::int AS total_7d
+       FROM ai_analysis_usage_events`
+    ),
+    queryFn(
+      `SELECT status, COUNT(*)::int AS count
+       FROM ai_analysis_usage_events
+       WHERE reserved_at >= NOW() - INTERVAL '24 hours'
+       GROUP BY status
+       ORDER BY count DESC, status ASC`
+    ),
+    queryFn(
+      `SELECT plan, COUNT(*)::int AS count
+       FROM ai_analysis_usage_events
+       WHERE reserved_at >= NOW() - INTERVAL '24 hours'
+       GROUP BY plan
+       ORDER BY count DESC, plan ASC`
+    ),
+    queryFn(
+      `SELECT id, user_id, actor_type, plan, mode, provider, status, reserved_at, completed_at, request_ip
+       FROM ai_analysis_usage_events
+       ORDER BY reserved_at DESC
+       LIMIT 25`
+    ),
+  ]);
+
+  const totals = totalsResult.rows?.[0] || {};
+
+  return {
+    configured: true,
+    available: true,
+    total24h: Number(totals.total_24h || 0),
+    total7d: Number(totals.total_7d || 0),
+    statusBreakdown24h: (statusResult.rows || []).map((row) => ({
+      status: row.status,
+      count: Number(row.count || 0),
+    })),
+    planBreakdown24h: (planResult.rows || []).map((row) => ({
+      plan: row.plan || "guest",
+      count: Number(row.count || 0),
+    })),
+    recentEvents: (recentResult.rows || []).map((row) => ({
+      id: row.id,
+      userId: row.user_id || null,
+      actorType: row.actor_type,
+      plan: row.plan || "guest",
+      mode: row.mode || null,
+      provider: row.provider || null,
+      status: row.status,
+      reservedAt: row.reserved_at,
+      completedAt: row.completed_at || null,
+      requestIp: row.request_ip || null,
+    })),
+  };
+}
+
 export async function reservePersistentAiAnalysisUsage({
   request,
   user,

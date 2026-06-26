@@ -5,6 +5,7 @@ import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysi
 import { getAiAnalysisUsagePolicy, reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
 import { enrichUserWithAiAnalysisEntitlement } from "../services/aiAnalysisEntitlementService.js";
 import {
+  getAiAnalysisUsageSnapshot,
   getAiAnalysisUsagePersistenceStatus,
   reservePersistentAiAnalysisUsage,
 } from "../services/aiAnalysisUsageRepository.js";
@@ -85,6 +86,9 @@ router.get("/portfolio-analysis/status", async (request, response, next) => {
   try {
     const user = await getOptionalUser(request);
     const persistence = await getAiAnalysisUsagePersistenceStatus();
+    const usage = persistence.available
+      ? await getAiAnalysisUsageSnapshot({ request, user })
+      : null;
     response.json({
       ok: true,
       mode: getAiAnalysisMode(),
@@ -102,6 +106,7 @@ router.get("/portfolio-analysis/status", async (request, response, next) => {
         ...getAiAnalysisUsagePolicy(user),
         persistence,
       },
+      usage,
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {

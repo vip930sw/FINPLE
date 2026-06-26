@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, BrainCircuit, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
 
-import { requestPortfolioAiAnalysisResult } from "../services/aiAnalysisService";
+import {
+  requestPortfolioAiAnalysisResult,
+  requestPortfolioAiAnalysisStatus,
+} from "../services/aiAnalysisService";
 import { loadAiAnalysisCache, saveAiAnalysisCache } from "../services/aiAnalysisStorageService";
 import {
   buildAiAnalysisPayload,
@@ -301,6 +304,24 @@ export default function AiAnalysisPanel({
       setAnalysisStatus("stale");
     }
   }, [analysis, analysisStatus, inputSignature]);
+
+  useEffect(() => {
+    let canceled = false;
+
+    async function loadUsageStatus() {
+      try {
+        const status = await requestPortfolioAiAnalysisStatus();
+        if (!canceled && status?.usage) setUsageSummary(status.usage);
+      } catch {
+        // Usage status is informational; analysis requests still handle their own errors.
+      }
+    }
+
+    loadUsageStatus();
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
   async function handleCreateAnalysis() {
     if (!canRequestAnalysis) return;

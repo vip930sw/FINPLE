@@ -13,6 +13,7 @@ import {
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { getAiAnalysisUsageAdminSummary } from "../services/aiAnalysisUsageRepository.js";
 
 const router = express.Router();
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "cancel_at_period_end"];
@@ -176,6 +177,22 @@ router.get("/members", (request, response, next) => {
           members: Number(row.members || 0),
         })),
         members: recentMembersResult.rows.map(mapMemberRow),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.get("/ai-analysis-usage", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+      const usage = await getAiAnalysisUsageAdminSummary();
+      response.json({
+        ok: true,
+        usage,
+        checkedAt: new Date().toISOString(),
       });
     } catch (error) {
       next(error);
