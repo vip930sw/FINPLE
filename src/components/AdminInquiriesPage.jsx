@@ -4,6 +4,7 @@ import {
   deleteAdminEducationAccount,
   deleteAdminEducationAccounts,
   deleteExpiredAdminEducationAccounts,
+  fetchAdminAiAnalysisUsageSummary,
   fetchAdminEducationAccounts,
   fetchAdminMembersSummary,
   fetchAdminSubscriptionsSummary,
@@ -19,6 +20,7 @@ const ADMIN_MENU_ITEMS = [
   { key: "inquiries", page: "admin-inquiries", label: "문의사항 관리", description: "접수·처리 상태" },
   { key: "members", page: "admin-members", label: "회원 관리", description: "가입·구독 전환" },
   { key: "subscriptions", page: "admin-subscriptions", label: "구독 관리", description: "플랜·결제 기간" },
+  { key: "ai-usage", page: "admin-ai-usage", label: "AI 사용량", description: "분석 호출·비용 관찰" },
   { key: "education", page: "admin-education", label: "교육 계정 관리", description: "수업·만료 관리" },
   { key: "clear", page: "admin-clear", label: "관리자 모드 해제", description: "저장 토큰 삭제" },
 ];
@@ -52,6 +54,13 @@ const EDUCATION_STATUS_LABELS = {
   paused: "일시중지",
   expired: "만료",
   revoked: "회수",
+};
+
+const AI_USAGE_STATUS_LABELS = {
+  reserved: "예약",
+  succeeded: "성공",
+  failed: "실패",
+  canceled: "취소",
 };
 
 function formatServerDate(value) {
@@ -107,6 +116,7 @@ function toDateInputValue(value) {
 function getActiveSectionFromPage(page) {
   if (page === "members") return "members";
   if (page === "subscriptions") return "subscriptions";
+  if (page === "ai-usage") return "ai-usage";
   if (page === "education") return "education";
   if (page === "clear") return "clear";
   return "inquiries";
@@ -143,6 +153,8 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const [memberMessage, setMemberMessage] = useState("회원 통계를 불러오면 가입/구독 전환 현황이 표시됩니다.");
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [subscriptionMessage, setSubscriptionMessage] = useState("구독 통계를 불러오면 플랜과 결제 기간이 표시됩니다.");
+  const [aiUsageData, setAiUsageData] = useState(null);
+  const [aiUsageMessage, setAiUsageMessage] = useState("AI 사용량 요약을 불러오면 최근 호출과 상태별 분포가 표시됩니다.");
   const [educationData, setEducationData] = useState(null);
   const [educationMessage, setEducationMessage] = useState("교육 계정 목록을 불러오면 수업별 계정과 만료 상태를 표시합니다.");
   const [educationCredentialsCsv, setEducationCredentialsCsv] = useState("");
@@ -191,6 +203,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setInquiries([]);
     setMemberData(null);
     setSubscriptionData(null);
+    setAiUsageData(null);
     setEducationData(null);
     setEducationCredentialsCsv("");
     autoLoadedSectionsRef.current = {};
@@ -297,6 +310,20 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }, []);
 
+  const handleLoadAiUsage = useCallback(async function handleLoadAiUsage() {
+    if (!getFinpleAdminToken()) return;
+    setIsLoading(true);
+    try {
+      const data = await fetchAdminAiAnalysisUsageSummary();
+      setAiUsageData(data);
+      setAiUsageMessage(`최근 24시간 AI 분석 ${data?.usage?.total24h || 0}건을 확인했습니다.`);
+    } catch (error) {
+      setAiUsageMessage(error?.message || "AI 사용량 요약을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const handleLoadEducationAccounts = useCallback(async function handleLoadEducationAccounts() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
@@ -323,13 +350,15 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
         handleLoadMembers();
       } else if (activeSection === "subscriptions") {
         handleLoadSubscriptions();
+      } else if (activeSection === "ai-usage") {
+        handleLoadAiUsage();
       } else if (activeSection === "education") {
         handleLoadEducationAccounts();
       }
     }, 0);
 
     return () => window.clearTimeout(loadTimer);
-  }, [activeSection, handleLoadEducationAccounts, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
+  }, [activeSection, handleLoadAiUsage, handleLoadEducationAccounts, handleLoadInquiries, handleLoadMembers, handleLoadSubscriptions, isAdminMode]);
 
   async function handleBulkCreateEducationAccounts(input) {
     setIsLoading(true);
@@ -560,6 +589,16 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadSubscriptions}
+            />
+          ) : null}
+
+          {activeSection === "ai-usage" ? (
+            <AiUsageManagementPanel
+              data={aiUsageData}
+              statusMessage={aiUsageMessage}
+              isAdminMode={isAdminMode}
+              isLoading={isLoading}
+              onLoad={handleLoadAiUsage}
             />
           ) : null}
 
@@ -883,6 +922,118 @@ function MemberManagementPanel({
               ))
             ) : (
               <tr><td colSpan="7">회원 통계를 아직 불러오지 않았습니다.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function AiUsageManagementPanel({
+  data,
+  statusMessage,
+  isAdminMode,
+  isLoading,
+  onLoad,
+}) {
+  const usage = data?.usage || {};
+  const statusBreakdown = Array.isArray(usage.statusBreakdown24h) ? usage.statusBreakdown24h : [];
+  const planBreakdown = Array.isArray(usage.planBreakdown24h) ? usage.planBreakdown24h : [];
+  const recentEvents = Array.isArray(usage.recentEvents) ? usage.recentEvents : [];
+  const failed24h = statusBreakdown
+    .filter((item) => item.status === "failed" || item.status === "canceled")
+    .reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const succeeded24h = statusBreakdown
+    .filter((item) => item.status === "succeeded")
+    .reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const total24h = Number(usage.total24h || 0);
+  const successRate = total24h > 0 ? (succeeded24h / total24h) * 100 : 0;
+
+  return (
+    <section className="accountCard adminManagementPanel">
+      <div className="serverStorageHeader">
+        <div>
+          <p className="accountMiniLabel">AI 사용량</p>
+          <h2>AI 분석 사용량</h2>
+          <p>운영 DB에 기록된 STEP 4 AI 분석 호출량, 상태 분포, 최근 이벤트를 확인합니다.</p>
+        </div>
+      </div>
+
+      <div className="accountStatusGrid adminMetricGrid">
+        <AdminMetricCard label="최근 24시간" value={`${total24h}건`} note="reserved 기준" />
+        <AdminMetricCard label="최근 7일" value={`${usage.total7d || 0}건`} note="운영 추세" />
+        <AdminMetricCard label="성공률" value={formatPercent(successRate)} note="24시간 succeeded 비율" />
+        <AdminMetricCard label="실패/취소" value={`${failed24h}건`} note="재시도·비용 점검" />
+        <AdminMetricCard label="저장소" value={usage.available ? "Postgres" : "미연결"} note={usage.configured ? "configured" : "not configured"} />
+        <AdminMetricCard label="최근 이벤트" value={`${recentEvents.length}건`} note="최대 25건" />
+      </div>
+
+      <p className="serverStorageMessage compact">{statusMessage}</p>
+
+      {isAdminMode ? (
+        <div className="serverStorageActions compactActions">
+          <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
+            {isLoading ? "불러오는 중..." : "AI 사용량 새로고침"}
+          </button>
+        </div>
+      ) : null}
+
+      <div className="adminInsightGrid">
+        <article>
+          <strong>상태 분포</strong>
+          {statusBreakdown.length > 0 ? (
+            <div className="adminBreakdownList">
+              {statusBreakdown.map((item) => (
+                <span key={item.status}>
+                  {AI_USAGE_STATUS_LABELS[item.status] || item.status} <b>{item.count}건</b>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p>최근 24시간 AI 사용 이벤트가 없거나 아직 요약을 불러오지 않았습니다.</p>
+          )}
+        </article>
+        <article>
+          <strong>플랜 분포</strong>
+          {planBreakdown.length > 0 ? (
+            <div className="adminBreakdownList">
+              {planBreakdown.map((item) => (
+                <span key={item.plan}>{item.plan || "guest"} <b>{item.count}건</b></span>
+              ))}
+            </div>
+          ) : (
+            <p>플랜별 호출량은 분석 요청이 기록되면 표시됩니다.</p>
+          )}
+        </article>
+      </div>
+
+      <div className="adminTableWrap">
+        <table className="adminDataTable">
+          <thead>
+            <tr>
+              <th>예약 시각</th>
+              <th>상태</th>
+              <th>플랜</th>
+              <th>Provider</th>
+              <th>Actor</th>
+              <th>완료 시각</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentEvents.length > 0 ? (
+              recentEvents.map((event) => (
+                <tr key={event.id}>
+                  <td>{formatServerDate(event.reservedAt)}</td>
+                  <td>{AI_USAGE_STATUS_LABELS[event.status] || event.status || "-"}</td>
+                  <td>{event.plan || "guest"}</td>
+                  <td>{[event.mode, event.provider].filter(Boolean).join(" / ") || "-"}</td>
+                  <td><strong>{event.actorType || "-"}</strong><span>{event.userId ? String(event.userId).slice(0, 8) : event.requestIp || "-"}</span></td>
+                  <td>{formatServerDate(event.completedAt)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="6">최근 AI 분석 이벤트를 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>

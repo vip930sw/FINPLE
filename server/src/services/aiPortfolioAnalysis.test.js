@@ -7,6 +7,10 @@ import {
   getAiPortfolioAnalysisOutputContract,
   validateAiPortfolioAnalysisOutput,
 } from "./aiOutputValidator.js";
+import {
+  AI_ANALYSIS_REGRESSION_FIXTURE_VERSION,
+  AI_ANALYSIS_REGRESSION_FIXTURES,
+} from "./aiAnalysisRegressionFixtures.js";
 
 function validRequest() {
   return {
@@ -262,6 +266,19 @@ test("runPortfolioAnalysis returns deterministic mock output", async () => {
   assert.equal(first.provider, "none");
   assert.equal(first.diversification.nominalAssetCount, 2);
   assert.deepEqual(first, second);
+});
+
+test("AI analysis regression fixtures pass request and mock output validation", async () => {
+  assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v1");
+
+  for (const fixture of AI_ANALYSIS_REGRESSION_FIXTURES) {
+    const normalizedRequest = normalizePortfolioAnalysisRequest(fixture.request);
+    const analysis = await runPortfolioAnalysis(normalizedRequest);
+    const validated = validateAiPortfolioAnalysisOutput(analysis, normalizedRequest);
+
+    assert.equal(validated.portfolioId, fixture.request.portfolioId);
+    assert.equal(validated.diagnosticSections.length, 3, `${fixture.id}: diagnostic section count`);
+  }
 });
 
 test("runPortfolioAnalysis rejects live OpenAI mode without a server API key", async () => {

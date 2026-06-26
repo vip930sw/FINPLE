@@ -254,6 +254,10 @@ export async function fetchAdminSubscriptionsSummary() {
   return requestJson("/admin/subscriptions", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminAiAnalysisUsageSummary() {
+  return requestJson("/admin/ai-analysis-usage", {}, { includeAdminToken: true });
+}
+
 export async function fetchAdminEducationAccounts() {
   return requestJson("/admin/education-accounts", {}, { includeAdminToken: true });
 }

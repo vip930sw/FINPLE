@@ -146,6 +146,7 @@ app.use((error, request, response, next) => {
     response.setHeader("X-Finple-AI-Limit", String(error.usage.limit));
     response.setHeader("X-Finple-AI-Remaining", String(error.usage.remaining));
     response.setHeader("X-Finple-AI-Reset-At", new Date(error.usage.resetAt).toISOString());
+    if (error.usage.storage) response.setHeader("X-Finple-AI-Usage-Storage", error.usage.storage);
   }
   response.status(statusCode).json({
     ok: false,
@@ -157,6 +158,7 @@ app.use((error, request, response, next) => {
             limit: error.usage.limit,
             remaining: error.usage.remaining,
             resetAt: new Date(error.usage.resetAt).toISOString(),
+            storage: error.usage.storage || "memory",
           },
         }
       : {}),

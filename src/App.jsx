@@ -44,6 +44,7 @@ const ROUTE_PATHS = {
   "admin-inquiries": "/admin/inquiries",
   "admin-members": "/admin/members",
   "admin-subscriptions": "/admin/subscriptions",
+  "admin-ai-usage": "/admin/ai-usage",
   "admin-education": "/admin/education",
   "admin-clear": "/admin/clear",
   privacy: "/privacy",
@@ -167,6 +168,7 @@ function getPageForPath(pathname, hash = "") {
   if (normalizedPath === "/admin/inquiries" || normalizedHash === "admin-inquiries") return "admin-inquiries";
   if (normalizedPath === "/admin/members" || normalizedHash === "admin-members") return "admin-members";
   if (normalizedPath === "/admin/subscriptions" || normalizedHash === "admin-subscriptions") return "admin-subscriptions";
+  if (normalizedPath === "/admin/ai-usage" || normalizedHash === "admin-ai-usage") return "admin-ai-usage";
   if (normalizedPath === "/admin/education" || normalizedHash === "admin-education") return "admin-education";
   if (normalizedPath === "/admin/clear" || normalizedHash === "admin-clear") return "admin-clear";
   if (normalizedPath === "/admin" || normalizedHash === "admin") return "admin-login";
@@ -258,7 +260,7 @@ function App() {
       redirectPage = "login";
     }
 
-    if (["admin-inquiries", "admin-members", "admin-subscriptions", "admin-education", "admin-clear"].includes(currentPage) && !hasFinpleAdminToken()) {
+    if (["admin-inquiries", "admin-members", "admin-subscriptions", "admin-ai-usage", "admin-education", "admin-clear"].includes(currentPage) && !hasFinpleAdminToken()) {
       redirectPage = "admin-login";
     }
 
@@ -474,6 +476,7 @@ function App() {
   if (currentPage === "admin-inquiries") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="inquiries" />);
   if (currentPage === "admin-members") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="members" />);
   if (currentPage === "admin-subscriptions") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="subscriptions" />);
+  if (currentPage === "admin-ai-usage") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="ai-usage" />);
   if (currentPage === "admin-education") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="education" />);
   if (currentPage === "admin-clear") return renderShell(<AdminInquiriesPage onNavigate={navigateToPage} initialSection="clear" />);
   if (currentPage === "login") return renderShell(<LoginPage onNavigate={navigateToPage} />);

@@ -61,6 +61,23 @@ function getActionCopy(analysisStatus) {
   return "분석 시작";
 }
 
+function getAccessHintCopy(accessSummary) {
+  const requiredPlans = Array.isArray(accessSummary?.requiredPlans)
+    ? accessSummary.requiredPlans
+    : ["personal", "pro"];
+  const planLabel = requiredPlans
+    .map((plan) => String(plan || "").trim())
+    .filter(Boolean)
+    .map((plan) => plan.charAt(0).toUpperCase() + plan.slice(1))
+    .join(" 또는 ");
+
+  if (accessSummary?.reason === "plan_required") {
+    return `AI 분석은 ${planLabel || "Personal"} 플랜에서 사용할 수 있습니다. 현재 플랜을 확인한 뒤 다시 시도해 주세요.`;
+  }
+
+  return "현재 계정에서는 AI 분석을 사용할 수 없습니다. 플랜과 로그인 상태를 확인한 뒤 다시 시도해 주세요.";
+}
+
 function getRoleLabel(role) {
   const roleMap = {
     core: "핵심",
@@ -354,6 +371,7 @@ export default function AiAnalysisPanel({
       setAnalysisStatus("success");
     } catch (error) {
       if (error?.access) setAccessSummary(error.access);
+      if (error?.usage) setUsageSummary(error.usage);
       setErrorMessage(error?.message || "AI 분석 요청에 실패했습니다.");
       setAnalysisStatus("error");
     }
@@ -410,7 +428,7 @@ export default function AiAnalysisPanel({
 
         {isAccessBlocked && (
           <p className="aiAnalysisAccessHint">
-            AI 분석은 Personal 플랜 이용자에게 제공됩니다. 현재 플랜을 확인한 뒤 다시 시도해주세요.
+            {getAccessHintCopy(accessSummary)}
           </p>
         )}
       {isStale && (

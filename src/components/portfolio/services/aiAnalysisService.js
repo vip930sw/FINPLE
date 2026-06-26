@@ -89,6 +89,13 @@ function createErrorMessage(payload, fallback) {
   return payload?.message || fallback;
 }
 
+function createPayloadError(payload, fallback) {
+  const error = new Error(createErrorMessage(payload, fallback));
+  if (payload?.access) error.access = payload.access;
+  if (payload?.usage) error.usage = payload.usage;
+  return error;
+}
+
 export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
   const config = getRuntimeAiAnalysisConfig(options);
   const apiBaseUrl = String(config.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
@@ -99,11 +106,9 @@ export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
   const responsePayload = await readJsonSafely(response);
 
   if (!response.ok || responsePayload?.ok === false) {
-    throw new Error(
-      createErrorMessage(
-        responsePayload,
-        "AI 분석 요청에 실패했습니다. 백엔드 API 설정과 입력값을 확인해주세요."
-      )
+    throw createPayloadError(
+      responsePayload,
+      "AI 분석 요청에 실패했습니다. 백엔드 API 설정과 입력값을 확인해주세요."
     );
   }
 
@@ -127,12 +132,7 @@ export async function requestPortfolioAiAnalysisStatus(options = {}) {
   const responsePayload = await readJsonSafely(response);
 
   if (!response.ok || responsePayload?.ok === false) {
-    throw new Error(
-      createErrorMessage(
-        responsePayload,
-        "AI 분석 상태를 확인하지 못했습니다."
-      )
-    );
+    throw createPayloadError(responsePayload, "AI 분석 상태를 확인하지 못했습니다.");
   }
 
   return responsePayload;
