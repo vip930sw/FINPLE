@@ -11,7 +11,7 @@ const SOURCE_CHECKS = [
   },
   {
     file: path.join(ROOT, "src", "components", "portfolio", "components", "AiAnalysisPanel.jsx"),
-    token: "AI 분석 생성",
+    token: "분석 시작",
   },
   {
     file: path.join(ROOT, "src", "components", "portfolio", "services", "aiAnalysisService.js"),
@@ -21,7 +21,7 @@ const SOURCE_CHECKS = [
 
 const BUNDLE_TOKENS = [
   "/ai/portfolio-analysis",
-  "AI 분석 생성",
+  "분석 시작",
   "입력값이 최근 분석 이후 변경",
 ];
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, BrainCircuit, CheckCircle2, Clock3, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, BrainCircuit, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
 
 import { requestPortfolioAiAnalysis } from "../services/aiAnalysisService";
 import { loadAiAnalysisCache, saveAiAnalysisCache } from "../services/aiAnalysisStorageService";
@@ -44,38 +44,6 @@ function getReadiness(activeAssets = [], result = {}) {
   return { level: "ready", label: "분석 준비", tone: "ready" };
 }
 
-function getStatusItems(analysisStatus) {
-  return [
-    {
-      key: "empty",
-      icon: CheckCircle2,
-      title: "Empty",
-      text: "분석 결과가 없을 때 현재 포트폴리오 요약과 준비 상태를 표시합니다.",
-    },
-    {
-      key: "loading",
-      icon: Clock3,
-      title: "Loading",
-      text: "생성 요청이 진행 중이며 버튼을 잠시 비활성화합니다.",
-    },
-    {
-      key: "success",
-      icon: ShieldCheck,
-      title: "Ready",
-      text: "백엔드 validator를 통과한 응답만 STEP 4 화면에 표시합니다.",
-    },
-    {
-      key: "error",
-      icon: AlertTriangle,
-      title: "Error",
-      text: "요청 실패나 검증 실패 시 기존 계산 화면을 유지하고 재시도 상태를 표시합니다.",
-    },
-  ].map((item) => ({
-    ...item,
-    active: item.key === analysisStatus || (analysisStatus === "stale" && item.key === "success"),
-  }));
-}
-
 function getStatusCopy(analysisStatus, readiness) {
   if (analysisStatus === "loading") return "분석 생성 중";
   if (analysisStatus === "success") return "분석 완료";
@@ -85,9 +53,9 @@ function getStatusCopy(analysisStatus, readiness) {
 }
 
 function getActionCopy(analysisStatus) {
-  if (analysisStatus === "loading") return "분석 생성 중";
-  if (analysisStatus === "success" || analysisStatus === "stale" || analysisStatus === "error") return "다시 생성";
-  return "AI 분석 생성";
+  if (analysisStatus === "loading") return "분석 중";
+  if (analysisStatus === "success" || analysisStatus === "stale" || analysisStatus === "error") return "새로 분석";
+  return "분석 시작";
 }
 
 function getRoleLabel(role) {
@@ -109,20 +77,13 @@ function getSeverityLabel(severity) {
   return severityMap[severity] || severity || "점검";
 }
 
-function StatusItem({ active, icon: Icon, title, text }) {
-  return (
-    <div className={`aiAnalysisStatusItem ${active ? "active" : ""}`}>
-      <span className="aiAnalysisStatusIcon" aria-hidden="true"><Icon size={18} /></span>
-      <div>
-        <strong>{title}</strong>
-        <p>{text}</p>
-      </div>
-    </div>
-  );
-}
-
 function AnalysisResult({ analysis }) {
   if (!analysis) return null;
+
+  const dataWarnings = Array.isArray(analysis.dataQuality?.warnings)
+    ? analysis.dataQuality.warnings
+    : [];
+  const compactDataWarnings = dataWarnings.slice(0, 2);
 
   return (
     <div className="aiAnalysisResultGrid">
@@ -132,31 +93,27 @@ function AnalysisResult({ analysis }) {
           <strong>{analysis.portfolioProfile?.title || "포트폴리오 구조 점검"}</strong>
         </div>
         <p className="aiAnalysisResultLead">{analysis.portfolioProfile?.summary}</p>
-        <div className="aiAnalysisResultMeta">
-          <span>Mode {analysis.mode || "mock"}</span>
-          <span>Version {analysis.analysisVersion || "-"}</span>
-          <span>분산 {analysis.diversification?.effectiveDiversificationLevel || "-"}</span>
+        <div className="aiAnalysisContextStrip">
+          <div>
+            <span>입력 데이터</span>
+            <p>{analysis.dataQuality?.summary || "현재 입력값을 기준으로 분석했습니다."}</p>
+          </div>
+          <div>
+            <span>확인 사항</span>
+            {compactDataWarnings.length > 0 ? (
+              <ul>
+                {compactDataWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>표시할 데이터 경고가 없습니다.</p>
+            )}
+          </div>
         </div>
       </section>
 
-      <section className="aiAnalysisResultSection">
-        <div className="aiAnalysisSectionHeader">
-          <ShieldCheck size={18} aria-hidden="true" />
-          <strong>데이터 품질</strong>
-        </div>
-        <p className="aiAnalysisResultLead">{analysis.dataQuality?.summary}</p>
-        {Array.isArray(analysis.dataQuality?.warnings) && analysis.dataQuality.warnings.length > 0 ? (
-          <ul className="aiAnalysisList">
-            {analysis.dataQuality.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="aiAnalysisEmptyText">표시할 데이터 경고가 없습니다.</p>
-        )}
-      </section>
-
-      <section className="aiAnalysisResultSection">
+      <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
         <div className="aiAnalysisSectionHeader">
           <AlertTriangle size={18} aria-hidden="true" />
           <strong>위험요인</strong>
@@ -310,8 +267,8 @@ export default function AiAnalysisPanel({
         <div>
           <h3>STEP 4 AI 분석</h3>
           <p>
-            FINPLE 계산값과 Data Sentinel 원칙을 바탕으로 포트폴리오 구조, 데이터 한계,
-            주요 위험요인을 검토합니다.
+            입력하신 자산 구성과 계산 결과를 바탕으로 포트폴리오 구조, 데이터 한계,
+            주요 위험요인을 정리합니다.
           </p>
         </div>
         <span className={`aiAnalysisReadiness ${readiness.tone}`}>{statusCopy}</span>
@@ -355,18 +312,6 @@ export default function AiAnalysisPanel({
           <p>{errorMessage}</p>
         </div>
       ) : null}
-
-      <div className="aiAnalysisStatusGrid" aria-label="AI 분석 상태">
-        {getStatusItems(analysisStatus).map((item) => (
-          <StatusItem
-            key={item.key}
-            active={item.active}
-            icon={item.icon}
-            title={item.title}
-            text={item.text}
-          />
-        ))}
-      </div>
 
       {analysis ? (
         <AnalysisResult analysis={analysis} />
