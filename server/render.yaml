@@ -23,7 +23,7 @@ services:
       - key: FINPLE_AI_OPENAI_MODEL
         value: gpt-5.1
       - key: FINPLE_AI_OPENAI_TIMEOUT_MS
-        value: "20000"
+        value: "45000"
       - key: FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS
         value: "2200"
       - key: ASSET_PRICE_CURRENCY

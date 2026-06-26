@@ -3,7 +3,7 @@ import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.1";
-const DEFAULT_TIMEOUT_MS = 20000;
+const DEFAULT_TIMEOUT_MS = 45000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 2200;
 
 const MODEL_OUTPUT_SCHEMA = {
