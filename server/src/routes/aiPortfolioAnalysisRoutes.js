@@ -3,6 +3,8 @@ import express from "express";
 import { getUserBySessionToken } from "../db/authRepository.js";
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
 import { getAiAnalysisUsagePolicy, reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
+import { enrichUserWithAiAnalysisEntitlement } from "../services/aiAnalysisEntitlementService.js";
+import { reservePersistentAiAnalysisUsage } from "../services/aiAnalysisUsageRepository.js";
 import {
   getAiAnalysisMode,
   getAiAnalysisProvider,
@@ -21,7 +23,8 @@ function getSessionToken(request) {
 async function getOptionalUser(request) {
   const sessionToken = getSessionToken(request);
   if (!sessionToken) return null;
-  return getUserBySessionToken(sessionToken);
+  const user = await getUserBySessionToken(sessionToken);
+  return enrichUserWithAiAnalysisEntitlement(user);
 }
 
 function getAccessMode() {
@@ -53,6 +56,26 @@ function setUsageHeaders(response, usage) {
   response.setHeader("X-Finple-AI-Limit", String(usage.limit));
   response.setHeader("X-Finple-AI-Remaining", String(usage.remaining));
   response.setHeader("X-Finple-AI-Reset-At", new Date(usage.resetAt).toISOString());
+  if (usage.storage) response.setHeader("X-Finple-AI-Usage-Storage", usage.storage);
+}
+
+async function reserveUsage({ request, user, payload }) {
+  try {
+    const persistentUsage = await reservePersistentAiAnalysisUsage({
+      request,
+      user,
+      payload,
+      mode: getAiAnalysisMode(),
+      provider: getAiAnalysisProvider(),
+    });
+    if (persistentUsage) return persistentUsage;
+  } catch (error) {
+    if (error.statusCode === 429) throw error;
+  }
+
+  const memoryUsage = reserveAiAnalysisUsage({ request, user });
+  memoryUsage.storage = "memory";
+  return memoryUsage;
 }
 
 router.get("/portfolio-analysis/status", async (request, response, next) => {
@@ -68,9 +91,16 @@ router.get("/portfolio-analysis/status", async (request, response, next) => {
         ? {
             id: user.id,
             plan: user.plan || "free",
+            planSource: user.aiPlanSource || "user",
           }
         : null,
-      usagePolicy: getAiAnalysisUsagePolicy(user),
+      usagePolicy: {
+        ...getAiAnalysisUsagePolicy(user),
+        persistence: {
+          preferred: "postgres",
+          fallback: "memory",
+        },
+      },
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {
@@ -85,9 +115,9 @@ router.post("/portfolio-analysis", async (request, response, next) => {
     const user = await getOptionalUser(request);
     assertAccessAllowed(user);
     const payload = normalizePortfolioAnalysisRequest(request.body);
-    usage = reserveAiAnalysisUsage({ request, user });
+    usage = await reserveUsage({ request, user, payload });
     const analysis = await runPortfolioAnalysis(payload);
-    usage.commit();
+    await usage.commit();
 
     setUsageHeaders(response, usage);
     response.json({
@@ -98,12 +128,13 @@ router.post("/portfolio-analysis", async (request, response, next) => {
             limit: usage.limit,
             remaining: usage.remaining,
             resetAt: new Date(usage.resetAt).toISOString(),
+            storage: usage.storage || "memory",
           }
         : null,
       analysis,
     });
   } catch (error) {
-    usage?.cancel?.();
+    await usage?.cancel?.(error);
     next(error);
   }
 });

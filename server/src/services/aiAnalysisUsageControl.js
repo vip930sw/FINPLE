@@ -16,7 +16,7 @@ function normalizeIp(value = "") {
     .replace(/[^a-zA-Z0-9:._-]/g, "-") || "unknown";
 }
 
-function getRequestIp(request) {
+export function getAiAnalysisRequestIp(request) {
   return normalizeIp(
     request.get?.("x-forwarded-for") ||
       request.get?.("x-real-ip") ||
@@ -26,7 +26,7 @@ function getRequestIp(request) {
   );
 }
 
-function getLimitForUser(user) {
+export function getAiAnalysisUsageLimitForUser(user) {
   const plan = String(user?.plan || "guest").trim().toLowerCase();
   const envKey =
     plan === "personal" || plan === "pro"
@@ -36,17 +36,31 @@ function getLimitForUser(user) {
   return toPositiveInteger(process.env[envKey], DEFAULT_LIMIT);
 }
 
-function getWindowMs() {
+export function getAiAnalysisUsageWindowMs() {
   return toPositiveInteger(process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS, DEFAULT_WINDOW_MS);
 }
 
-function isLimitDisabled() {
+export function isAiAnalysisUsageLimitDisabled() {
   return String(process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED || "").toLowerCase() === "true";
 }
 
-function getBucketKey({ request, user }) {
-  if (user?.id) return `user:${user.id}`;
-  return `ip:${getRequestIp(request)}`;
+export function getAiAnalysisUsageActor({ request, user }) {
+  if (user?.id) {
+    return {
+      key: `user:${user.id}`,
+      type: "user",
+      userId: user.id,
+      requestIp: getAiAnalysisRequestIp(request),
+    };
+  }
+
+  const requestIp = getAiAnalysisRequestIp(request);
+  return {
+    key: `ip:${requestIp}`,
+    type: "ip",
+    userId: null,
+    requestIp,
+  };
 }
 
 function pruneExpiredBuckets(now = Date.now()) {
@@ -62,7 +76,7 @@ export function assertAiAnalysisUsageAllowed({ request, user, now = Date.now() }
 }
 
 export function reserveAiAnalysisUsage({ request, user, now = Date.now() }) {
-  if (isLimitDisabled()) {
+  if (isAiAnalysisUsageLimitDisabled()) {
     return {
       limited: false,
       remaining: null,
@@ -82,9 +96,9 @@ export function reserveAiAnalysisUsage({ request, user, now = Date.now() }) {
 
   pruneExpiredBuckets(now);
 
-  const limit = getLimitForUser(user);
-  const windowMs = getWindowMs();
-  const key = getBucketKey({ request, user });
+  const limit = getAiAnalysisUsageLimitForUser(user);
+  const windowMs = getAiAnalysisUsageWindowMs();
+  const { key } = getAiAnalysisUsageActor({ request, user });
   const existing = usageBuckets.get(key);
   const bucket =
     existing && existing.resetAt > now
@@ -147,8 +161,8 @@ export function getAiAnalysisUsagePolicy(user = null) {
   pruneExpiredBuckets(now);
 
   return {
-    limited: !isLimitDisabled(),
-    windowMs: getWindowMs(),
+    limited: !isAiAnalysisUsageLimitDisabled(),
+    windowMs: getAiAnalysisUsageWindowMs(),
     publicLimit: toPositiveInteger(
       process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW,
       DEFAULT_LIMIT
@@ -157,7 +171,7 @@ export function getAiAnalysisUsagePolicy(user = null) {
       process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW,
       DEFAULT_LIMIT
     ),
-    effectiveLimit: isLimitDisabled() ? null : getLimitForUser(user),
+    effectiveLimit: isAiAnalysisUsageLimitDisabled() ? null : getAiAnalysisUsageLimitForUser(user),
     bucketCount: usageBuckets.size,
   };
 }
