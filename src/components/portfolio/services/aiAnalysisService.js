@@ -1,5 +1,5 @@
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
-const DEFAULT_BACKEND_TIMEOUT_MS = 12000;
+const DEFAULT_AI_ANALYSIS_TIMEOUT_MS = 60000;
 
 function getBuildTimeEnv() {
   return import.meta?.env || {};
@@ -21,11 +21,11 @@ function getRuntimeAiAnalysisConfig(options = {}) {
       runtimeConfig.apiBaseUrl ||
       buildEnv.VITE_FINPLE_API_BASE_URL ||
       DEFAULT_API_BASE_URL,
-    backendTimeoutMs: readNumber(
-      options.backendTimeoutMs ||
-        runtimeConfig.backendTimeoutMs ||
-        buildEnv.VITE_FINPLE_BACKEND_TIMEOUT_MS,
-      DEFAULT_BACKEND_TIMEOUT_MS
+    aiAnalysisTimeoutMs: readNumber(
+      options.aiAnalysisTimeoutMs ||
+        runtimeConfig.aiAnalysisTimeoutMs ||
+        buildEnv.VITE_FINPLE_AI_ANALYSIS_TIMEOUT_MS,
+      DEFAULT_AI_ANALYSIS_TIMEOUT_MS
     ),
   };
 }
@@ -47,7 +47,7 @@ function getTimerApi() {
 async function fetchWithTimeout(url, { timeoutMs, body }) {
   const controller = new AbortController();
   const timerApi = getTimerApi();
-  const timerId = timerApi.setTimeout(() => controller.abort(), timeoutMs);
+  const timerId = timerApi.setTimeout(() => controller.abort("timeout"), timeoutMs);
 
   try {
     return await fetch(url, {
@@ -59,6 +59,13 @@ async function fetchWithTimeout(url, { timeoutMs, body }) {
       },
       body: JSON.stringify(body),
     });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(
+        "AI 분석 응답 시간이 예상보다 길어지고 있습니다. 잠시 후 다시 생성해주세요."
+      );
+    }
+    throw error;
   } finally {
     timerApi.clearTimeout(timerId);
   }
@@ -82,7 +89,7 @@ export async function requestPortfolioAiAnalysis(payload, options = {}) {
   const config = getRuntimeAiAnalysisConfig(options);
   const apiBaseUrl = String(config.apiBaseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   const response = await fetchWithTimeout(`${apiBaseUrl}/ai/portfolio-analysis`, {
-    timeoutMs: config.backendTimeoutMs,
+    timeoutMs: config.aiAnalysisTimeoutMs,
     body: payload,
   });
   const responsePayload = await readJsonSafely(response);

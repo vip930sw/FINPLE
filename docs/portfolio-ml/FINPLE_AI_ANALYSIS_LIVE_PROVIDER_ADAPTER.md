@@ -16,6 +16,12 @@ FINPLE_AI_OPENAI_TIMEOUT_MS=20000
 FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=2200
 ```
 
+Vercel frontend는 AI 분석 호출만 일반 자산조회보다 길게 기다린다. 기본값은 코드에서 60초이며, 운영에서 명시하려면 아래 값을 추가한다.
+
+```env
+VITE_FINPLE_AI_ANALYSIS_TIMEOUT_MS=60000
+```
+
 ## 구현 파일
 
 - `server/src/services/aiPortfolioAnalysisOpenAi.js`
@@ -40,6 +46,7 @@ FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=2200
 - 모델은 기존 입력값에 없는 숫자, ticker, 투자 추천 표현을 만들면 validator에서 차단된다.
 - provider 오류, timeout, JSON parse 실패, validator 실패는 STEP 4 error 상태로만 노출된다.
 - live provider 실패가 STEP 1~3 계산과 시뮬레이터 저장 흐름을 중단하지 않는다.
+- 브라우저는 AI 분석 요청에 전용 timeout을 사용하므로 일반 자산조회 timeout과 분리된다.
 
 ## 다음 작업
 

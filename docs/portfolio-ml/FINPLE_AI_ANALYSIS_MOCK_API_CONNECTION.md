@@ -42,6 +42,7 @@
 VITE_FINPLE_API_BASE_URL=https://finple-api.onrender.com/api
 VITE_FINPLE_ASSET_PROVIDER=backend
 VITE_FINPLE_BACKEND_TIMEOUT_MS=12000
+VITE_FINPLE_AI_ANALYSIS_TIMEOUT_MS=60000
 ```
 
 주의:
@@ -49,6 +50,7 @@ VITE_FINPLE_BACKEND_TIMEOUT_MS=12000
 - `VITE_` 값은 브라우저에 노출된다.
 - API key, DB URL, 관리자 토큰, service role key는 절대 `VITE_` 변수로 넣지 않는다.
 - `VITE_FINPLE_API_BASE_URL`은 `/api`까지 포함해야 STEP 4 호출 URL이 `/api/ai/portfolio-analysis`로 만들어진다.
+- live AI 분석은 일반 자산조회보다 오래 걸릴 수 있으므로 `VITE_FINPLE_AI_ANALYSIS_TIMEOUT_MS`를 별도로 둔다.
 
 ### Render backend
 
