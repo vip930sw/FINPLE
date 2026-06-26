@@ -119,14 +119,16 @@ function collectNumericValues(value, output = []) {
   return output;
 }
 
-function collectTextNumericValues(value, path = "output", output = []) {
+function collectTextNumericValues(value, path = "output", output = [], allowedTickers = new Set()) {
   if (Array.isArray(value)) {
-    value.forEach((item, index) => collectTextNumericValues(item, `${path}[${index}]`, output));
+    value.forEach((item, index) => collectTextNumericValues(item, `${path}[${index}]`, output, allowedTickers));
     return output;
   }
 
   if (isPlainObject(value)) {
-    Object.entries(value).forEach(([key, item]) => collectTextNumericValues(item, `${path}.${key}`, output));
+    Object.entries(value).forEach(([key, item]) => (
+      collectTextNumericValues(item, `${path}.${key}`, output, allowedTickers)
+    ));
     return output;
   }
 
@@ -135,13 +137,15 @@ function collectTextNumericValues(value, path = "output", output = []) {
     path === "output.generatedAt" ||
     path === "output.inputHash" ||
     path === "output.analysisVersion" ||
-    path === "output.portfolioId"
+    path === "output.portfolioId" ||
+    path.endsWith(".ticker")
   ) {
     return output;
   }
 
   const matches = value.match(/(?<![A-Za-z0-9])-?\d+(?:\.\d+)?%?/g) || [];
   matches.forEach((match) => {
+    if (allowedTickers.has(match.replace("%", "").toUpperCase())) return;
     const number = Number(match.replace("%", ""));
     if (Number.isFinite(number)) {
       output.push({ path, number });
@@ -275,6 +279,7 @@ function validateTickerMentions(output, allowedTickers, errors) {
 
 function validateNumericValues(output, inputPayload, errors) {
   const allowedNumbers = collectInputNumbers(inputPayload);
+  const allowedTickers = collectAllowedTickers(inputPayload);
   const numbers = collectNumericValues(output);
 
   for (const number of numbers) {
@@ -283,7 +288,7 @@ function validateNumericValues(output, inputPayload, errors) {
     }
   }
 
-  for (const item of collectTextNumericValues(output)) {
+  for (const item of collectTextNumericValues(output, "output", [], allowedTickers)) {
     if (!numberIsAllowed(item.number, allowedNumbers)) {
       errors.push(`output text contains numeric value not present in input: ${item.number} at ${item.path}`);
     }

@@ -219,6 +219,7 @@ function buildInstructions(payload) {
     "Explain risk as observations and checks, not as predictions or instructions.",
     "Do not provide investment advice, buy/sell/hold recommendations, target prices, target allocations, or return guarantees.",
     "Do not write digits or percentages in any text field, including title, summary, warnings, code, label, evidence, rationale, limitations, and disclaimer.",
+    "Numeric ticker strings such as Korean six-digit tickers are allowed only when copied exactly from the input tickers.",
     "Only use numeric values in nominalAssetCount and assetRoles.weight, copied exactly from the input payload.",
     "Use lowercase snake_case words without digits for riskFactors.code.",
     `Only mention these input tickers: ${tickers}.`,

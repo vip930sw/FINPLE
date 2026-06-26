@@ -291,6 +291,69 @@
   }
 }
 
+.aiAnalysisStaleState {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #f8fafc;
+  padding: 17px;
+}
+
+.aiAnalysisStaleState p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.62;
+  word-break: keep-all;
+}
+
+.aiAnalysisStaleAssetList {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #dbe4f0;
+}
+
+.aiAnalysisStaleAssetRow {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) 52px auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.aiAnalysisStaleAssetRow span {
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.aiAnalysisStaleAssetRow strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aiAnalysisStaleAssetRow em,
+.aiAnalysisStaleAssetRow small {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .aiAnalysisSectionHeader {
   display: flex;
   align-items: center;
@@ -633,6 +696,14 @@
     justify-items: start;
   }
 
+  .aiAnalysisStaleAssetRow {
+    grid-template-columns: 76px minmax(0, 1fr) 48px;
+  }
+
+  .aiAnalysisStaleAssetRow small {
+    grid-column: 2 / -1;
+  }
+
   .aiAnalysisUsageHint {
     justify-self: start;
   }
@@ -666,8 +737,13 @@
   }
 
   .aiAnalysisRiskItem div,
-  .aiAnalysisAssetRoleRow {
+  .aiAnalysisAssetRoleRow,
+  .aiAnalysisStaleAssetRow {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aiAnalysisStaleAssetRow small {
+    grid-column: auto;
   }
 
   .aiAnalysisRiskItem div {

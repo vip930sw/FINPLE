@@ -93,6 +93,33 @@ function AiAnalysisLoadingState() {
   );
 }
 
+function StaleAnalysisState({ activeAssets, formatNumber }) {
+  const previewAssets = getTopAssets(activeAssets).slice(0, 6);
+
+  return (
+    <section className="aiAnalysisStaleState" aria-live="polite">
+      <div className="aiAnalysisSectionHeader">
+        <RefreshCcw size={18} aria-hidden="true" />
+        <strong>새 분석이 필요합니다.</strong>
+      </div>
+      <p>
+        포트폴리오 입력값이 최근 AI 분석 이후 변경되었습니다. 아래 최신 자산 구성을 기준으로
+        다시 생성하면 한국 자산을 포함한 결과로 갱신됩니다.
+      </p>
+      <div className="aiAnalysisStaleAssetList">
+        {previewAssets.map((asset) => (
+          <div key={asset.id || `${asset.market}-${asset.ticker}`} className="aiAnalysisStaleAssetRow">
+            <span>{asset.ticker || "-"}</span>
+            <strong>{asset.name || asset.ticker || "-"}</strong>
+            <em>{asset.market || "US"}</em>
+            <small>{formatNumber?.(asset.displayValue || 0) || "0"}원</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function AnalysisResult({ analysis }) {
   if (!analysis) return null;
 
@@ -245,6 +272,7 @@ export default function AiAnalysisPanel({
   const simpleMdd = formatPercent?.(result?.simpleMdd || 0) || "-";
   const futureValue = formatNumber?.(result?.futureValue || 0) || "-";
   const isLoading = analysisStatus === "loading";
+  const isStale = analysisStatus === "stale";
   const canRequestAnalysis = activeAssets.length > 0 && !isLoading;
   const statusCopy = getStatusCopy(analysisStatus, readiness);
 
@@ -354,9 +382,10 @@ export default function AiAnalysisPanel({
         )}
       </div>
 
-      {analysisStatus === "stale" && (
+      {isStale && (
         <div className="aiAnalysisStateBanner">
-          포트폴리오 입력값이 최근 분석 이후 변경되었습니다. 다시 생성하면 최신 값으로 갱신됩니다.
+          입력값이 최근 분석 이후 변경되었습니다. 이전 AI 분석 결과는 현재 자산 구성과 일치하지 않아 숨겼습니다.
+          새로 분석하면 최신 입력값으로 갱신됩니다.
         </div>
       )}
 
@@ -369,7 +398,9 @@ export default function AiAnalysisPanel({
         </div>
       ) : null}
 
-      {analysis ? (
+      {isStale ? (
+        <StaleAnalysisState activeAssets={activeAssets} formatNumber={formatNumber} />
+      ) : analysis ? (
         <AnalysisResult analysis={analysis} />
       ) : (
         <div className="aiAnalysisContentGrid">

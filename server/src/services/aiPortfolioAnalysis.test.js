@@ -115,6 +115,131 @@ function validProviderAnalysis() {
   };
 }
 
+function validKoreanAssetRequest() {
+  return {
+    portfolioId: "portfolio-kr-test",
+    metrics: {
+      cagr: 16.76,
+      beta: 0.89,
+      mdd: -36.26,
+      futureValue: 585906171,
+    },
+    assets: [
+      {
+        ticker: "QQQ",
+        market: "US",
+        weight: 65,
+        cagr: 20.82,
+        beta: 1.16,
+        mdd: -35.62,
+        dividendYield: 0.39,
+      },
+      {
+        ticker: "069500",
+        market: "KR",
+        weight: 10,
+        cagr: 18.43,
+        beta: 1.03,
+        mdd: -40.65,
+        dividendYield: 0.67,
+      },
+      {
+        ticker: "TLT",
+        market: "US",
+        weight: 25,
+        cagr: -4.14,
+        beta: -0.12,
+        mdd: -51.76,
+        dividendYield: 4.56,
+      },
+    ],
+  };
+}
+
+function validKoreanProviderAnalysis() {
+  return {
+    dataQuality: {
+      level: "good",
+      summary: "미국 자산과 한국 자산의 핵심 지표가 함께 제공되어 구조 해석이 가능합니다.",
+      warnings: [],
+    },
+    portfolioProfile: {
+      title: "미국 성장 자산과 한국 대표지수 자산을 함께 둔 포트폴리오",
+      summary: "입력된 구성은 미국 성장 자산과 한국 대표지수 자산, 장기채 성격 자산이 함께 있는 구조입니다.",
+    },
+    diversification: {
+      nominalAssetCount: 3,
+      effectiveDiversificationLevel: "medium",
+      summary: "QQQ, 069500, TLT가 서로 다른 시장과 역할을 일부 나누고 있습니다.",
+    },
+    diagnosticSections: [
+      {
+        key: "structure",
+        title: "구조 진단",
+        summary: "미국 성장 자산과 한국 대표지수 자산이 함께 배치된 구조입니다.",
+        observations: [
+          "QQQ는 성장 성격의 핵심 축으로 해석됩니다.",
+          "069500은 한국 대표지수 성격을 더하는 자산으로 해석됩니다.",
+        ],
+      },
+      {
+        key: "risk_balance",
+        title: "위험 균형",
+        summary: "시장별 자산과 장기채 성격 자산의 조합을 함께 점검합니다.",
+        observations: [
+          "성장 자산 비중이 높아 변동성 체감이 커질 수 있습니다.",
+          "TLT는 금리 변화에 따른 가격 변동을 함께 고려해야 합니다.",
+        ],
+      },
+      {
+        key: "data_context",
+        title: "데이터 맥락",
+        summary: "한국 자산이 포함되어 시장 구분을 함께 확인하는 구조입니다.",
+        observations: [
+          "미국과 한국 시장이 함께 포함되어 환율과 시장 국면 차이를 참고해야 합니다.",
+          "입력된 지표 범위 안에서만 구조를 해석합니다.",
+        ],
+      },
+    ],
+    riskFactors: [
+      {
+        code: "growth_concentration",
+        label: "성장 자산 비중 점검",
+        severity: "medium",
+        evidence: ["QQQ 중심의 성장 성격이 크게 반영됩니다."],
+      },
+    ],
+    assetRoles: [
+      {
+        ticker: "QQQ",
+        market: "US",
+        weight: 65,
+        role: "growth",
+        rationale: "QQQ는 입력된 성장 지표를 기준으로 성장 역할로 해석됩니다.",
+      },
+      {
+        ticker: "069500",
+        market: "KR",
+        weight: 10,
+        role: "core",
+        rationale: "069500은 한국 대표지수 성격을 더하는 핵심 보조 역할로 해석됩니다.",
+      },
+      {
+        ticker: "TLT",
+        market: "US",
+        weight: 25,
+        role: "stability",
+        rationale: "TLT는 장기채 성격을 통해 안정 역할로 해석됩니다.",
+      },
+    ],
+    limitations: [
+      "본 응답은 입력된 계산값과 자산 상태를 설명하는 용도입니다.",
+      "환율과 세금, 거래비용은 별도로 반영되지 않았습니다.",
+    ],
+    disclaimer: "본 분석은 투자 권유가 아닌 참고자료입니다. 최종 판단은 사용자가 확인해야 합니다.",
+  };
+}
+
 test("runPortfolioAnalysis returns deterministic mock output", async () => {
   process.env.FINPLE_AI_ANALYSIS_MODE = "mock";
   process.env.FINPLE_AI_ANALYSIS_PROVIDER = "none";
@@ -264,6 +389,49 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     assert.equal(output.mode, "live");
     assert.equal(output.provider, "openai");
     assert.equal(output.assetRoles.length, 2);
+  } finally {
+    process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("runPortfolioAnalysis sends Korean numeric tickers in live OpenAI input", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousFetch = globalThis.fetch;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  process.env.OPENAI_API_KEY = "test-key";
+
+  globalThis.fetch = async (url, options) => {
+    const requestBody = JSON.parse(options.body);
+    const requestInput = JSON.parse(requestBody.input);
+
+    assert.match(requestBody.instructions, /Numeric ticker strings/);
+    assert.match(requestBody.instructions, /069500/);
+    assert.deepEqual(requestInput.derivedFacts.marketWeights, { US: 90, KR: 10 });
+    assert.equal(requestInput.assets[1].ticker, "069500");
+    assert.equal(requestInput.assets[1].market, "KR");
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ output_text: JSON.stringify(validKoreanProviderAnalysis()) }),
+    };
+  };
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest(validKoreanAssetRequest());
+    const output = await runPortfolioAnalysis(payload);
+
+    assert.equal(output.assetRoles.length, 3);
+    assert.equal(output.assetRoles[1].ticker, "069500");
+    assert.equal(output.assetRoles[1].market, "KR");
   } finally {
     process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
     process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
@@ -489,6 +657,21 @@ test("validateAiPortfolioAnalysisOutput rejects numeric hallucination in text", 
     () => validateAiPortfolioAnalysisOutput(output, payload),
     (error) => error.details?.some((detail) => detail.includes("output text contains numeric value"))
   );
+});
+
+test("validateAiPortfolioAnalysisOutput allows numeric Korean tickers from input", () => {
+  const payload = normalizePortfolioAnalysisRequest(validKoreanAssetRequest());
+  const output = {
+    analysisVersion: "ai-analysis-openai-v1",
+    portfolioId: payload.portfolioId,
+    generatedAt: "2026-06-25T00:00:00.000Z",
+    mode: "live",
+    provider: "openai",
+    inputHash: "test-hash",
+    ...validKoreanProviderAnalysis(),
+  };
+
+  assert.equal(validateAiPortfolioAnalysisOutput(output, payload).assetRoles[1].ticker, "069500");
 });
 
 test("validateAiPortfolioAnalysisOutput rejects incomplete asset role coverage", async () => {
