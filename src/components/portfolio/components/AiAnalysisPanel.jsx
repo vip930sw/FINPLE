@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, BrainCircuit, CheckCircle2, Clock3, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
 
 import { requestPortfolioAiAnalysis } from "../services/aiAnalysisService";
+import { loadAiAnalysisCache, saveAiAnalysisCache } from "../services/aiAnalysisStorageService";
 import {
   buildAiAnalysisPayload,
   createAiAnalysisInputSignature,
@@ -235,6 +236,7 @@ export default function AiAnalysisPanel({
     () => createAiAnalysisInputSignature({ activePortfolio, activeAssets, result }),
     [activePortfolio, activeAssets, result]
   );
+  const analysisCachePortfolioId = activePortfolio?.id || "default";
   const readiness = getReadiness(activeAssets, result);
   const portfolioName = activePortfolio?.name || "현재 포트폴리오";
   const expectedCagr = formatPercent?.(result?.expectedCagr || 0) || "-";
@@ -246,6 +248,24 @@ export default function AiAnalysisPanel({
   const isLoading = analysisStatus === "loading";
   const canRequestAnalysis = activeAssets.length > 0 && !isLoading;
   const statusCopy = getStatusCopy(analysisStatus, readiness);
+
+  useEffect(() => {
+    if (analysisStatus === "loading") return;
+
+    const cachedRecord = loadAiAnalysisCache(analysisCachePortfolioId);
+    if (!cachedRecord?.analysis) {
+      lastSuccessSignatureRef.current = "";
+      setAnalysis(null);
+      setAnalysisStatus("empty");
+      setErrorMessage("");
+      return;
+    }
+
+    lastSuccessSignatureRef.current = cachedRecord.inputSignature || "";
+    setAnalysis(cachedRecord.analysis);
+    setErrorMessage("");
+    setAnalysisStatus(cachedRecord.inputSignature === inputSignature ? "success" : "stale");
+  }, [analysisCachePortfolioId, inputSignature]);
 
   useEffect(() => {
     if (!analysis || !lastSuccessSignatureRef.current || analysisStatus === "loading") return;
@@ -271,6 +291,11 @@ export default function AiAnalysisPanel({
 
       lastSuccessSignatureRef.current = inputSignature;
       setAnalysis(nextAnalysis);
+      saveAiAnalysisCache({
+        portfolioId: analysisCachePortfolioId,
+        inputSignature,
+        analysis: nextAnalysis,
+      });
       setAnalysisStatus("success");
     } catch (error) {
       setErrorMessage(error?.message || "AI 분석 요청에 실패했습니다.");
