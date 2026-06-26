@@ -24,6 +24,7 @@ import {
   getSelectedProvider,
   getSupportedTickers,
 } from "./services/assetDataProvider.js";
+import { getDeploymentInfo } from "./services/deploymentInfo.js";
 import {
   getTickerFilterOptions,
   getTickerMasterItem,
@@ -75,6 +76,7 @@ app.get("/api/health", (request, response) => {
   response.json({
     ok: true,
     app: "FINPLE Asset Proxy",
+    deployment: getDeploymentInfo(),
     provider: getSelectedProvider(),
     supportedTickers: getSupportedTickers(),
     checkedAt: new Date().toISOString(),

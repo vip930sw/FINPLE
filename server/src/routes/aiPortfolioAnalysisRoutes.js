@@ -2,8 +2,12 @@ import express from "express";
 
 import { getUserBySessionToken } from "../db/authRepository.js";
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
-import { reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
-import { runPortfolioAnalysis } from "../services/aiPortfolioAnalysisService.js";
+import { getAiAnalysisUsagePolicy, reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
+import {
+  getAiAnalysisMode,
+  getAiAnalysisProvider,
+  runPortfolioAnalysis,
+} from "../services/aiPortfolioAnalysisService.js";
 
 const router = express.Router();
 const DEFAULT_ALLOWED_PLANS = ["personal", "pro"];
@@ -50,6 +54,29 @@ function setUsageHeaders(response, usage) {
   response.setHeader("X-Finple-AI-Remaining", String(usage.remaining));
   response.setHeader("X-Finple-AI-Reset-At", new Date(usage.resetAt).toISOString());
 }
+
+router.get("/portfolio-analysis/status", async (request, response, next) => {
+  try {
+    const user = await getOptionalUser(request);
+    response.json({
+      ok: true,
+      mode: getAiAnalysisMode(),
+      provider: getAiAnalysisProvider(),
+      accessMode: getAccessMode(),
+      allowedPlans: getAllowedPlans(),
+      user: user
+        ? {
+            id: user.id,
+            plan: user.plan || "free",
+          }
+        : null,
+      usagePolicy: getAiAnalysisUsagePolicy(user),
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post("/portfolio-analysis", async (request, response, next) => {
   let usage = null;

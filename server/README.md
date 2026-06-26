@@ -46,7 +46,12 @@ FINPLE_AI_ANALYSIS_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 FINPLE_AI_OPENAI_MODEL=gpt-5.1
 FINPLE_AI_OPENAI_TIMEOUT_MS=45000
-FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=2200
+FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=4200
+FINPLE_AI_OPENAI_RETRY_COUNT=1
+FINPLE_AI_ANALYSIS_VALIDATION_RETRY_COUNT=1
+FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW=20
+FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW=20
+FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS=86400000
 ```
 
 주의:
@@ -54,7 +59,22 @@ FINPLE_AI_OPENAI_MAX_OUTPUT_TOKENS=2200
 - `OPENAI_API_KEY`는 Render backend 환경변수에만 저장합니다.
 - Vercel의 `VITE_` 환경변수에는 AI provider key를 넣지 않습니다.
 - live 응답도 서버 validator를 통과해야만 STEP 4 화면에 표시됩니다.
+- provider 일시 실패나 validator 실패는 사용량 확정 전에 취소되어 사용자 남은 횟수를 차감하지 않습니다.
 - 매수, 매도, 보유 추천이나 목표 비중, 목표가, 수익 보장 표현은 계속 차단됩니다.
+
+운영 상태 확인:
+
+```text
+GET http://localhost:5050/api/ai/portfolio-analysis/status
+```
+
+Render 배포 커밋 확인을 위해 가능하면 backend 환경변수에 현재 커밋 SHA를 주입합니다. 값이 없으면 `/api/health`의 `deployment.commitSha`는 `null`로 내려갑니다.
+
+```env
+FINPLE_DEPLOY_COMMIT_SHA=<current git commit sha>
+FINPLE_DEPLOY_BRANCH=main
+FINPLE_DEPLOY_ENV=production
+```
 
 ## Provider 설정
 

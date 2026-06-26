@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   assertAiAnalysisUsageAllowed,
+  getAiAnalysisUsagePolicy,
   reserveAiAnalysisUsage,
   resetAiAnalysisUsageBuckets,
 } from "./aiAnalysisUsageControl.js";
@@ -124,5 +125,40 @@ test("reserveAiAnalysisUsage keeps the slot after commit", () => {
     resetAiAnalysisUsageBuckets();
     if (previousLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
     else process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = previousLimit;
+  }
+});
+
+test("getAiAnalysisUsagePolicy exposes safe operational limits", () => {
+  const previousPublicLimit = process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+  const previousPersonalLimit = process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW;
+  const previousWindow = process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS;
+  const previousDisabled = process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED;
+
+  process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = "3";
+  process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW = "9";
+  process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS = "60000";
+  delete process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED;
+  resetAiAnalysisUsageBuckets();
+
+  try {
+    const guestPolicy = getAiAnalysisUsagePolicy();
+    const personalPolicy = getAiAnalysisUsagePolicy({ id: "user-a", plan: "personal" });
+
+    assert.equal(guestPolicy.limited, true);
+    assert.equal(guestPolicy.windowMs, 60000);
+    assert.equal(guestPolicy.publicLimit, 3);
+    assert.equal(guestPolicy.personalLimit, 9);
+    assert.equal(guestPolicy.effectiveLimit, 3);
+    assert.equal(personalPolicy.effectiveLimit, 9);
+  } finally {
+    resetAiAnalysisUsageBuckets();
+    if (previousPublicLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+    else process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = previousPublicLimit;
+    if (previousPersonalLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW;
+    else process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW = previousPersonalLimit;
+    if (previousWindow === undefined) delete process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS;
+    else process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS = previousWindow;
+    if (previousDisabled === undefined) delete process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED;
+    else process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED = previousDisabled;
   }
 });

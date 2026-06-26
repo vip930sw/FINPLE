@@ -40,6 +40,10 @@ function getWindowMs() {
   return toPositiveInteger(process.env.FINPLE_AI_ANALYSIS_LIMIT_WINDOW_MS, DEFAULT_WINDOW_MS);
 }
 
+function isLimitDisabled() {
+  return String(process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED || "").toLowerCase() === "true";
+}
+
 function getBucketKey({ request, user }) {
   if (user?.id) return `user:${user.id}`;
   return `ip:${getRequestIp(request)}`;
@@ -58,7 +62,7 @@ export function assertAiAnalysisUsageAllowed({ request, user, now = Date.now() }
 }
 
 export function reserveAiAnalysisUsage({ request, user, now = Date.now() }) {
-  if (String(process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED || "").toLowerCase() === "true") {
+  if (isLimitDisabled()) {
     return {
       limited: false,
       remaining: null,
@@ -136,4 +140,24 @@ export function reserveAiAnalysisUsage({ request, user, now = Date.now() }) {
 
 export function resetAiAnalysisUsageBuckets() {
   usageBuckets.clear();
+}
+
+export function getAiAnalysisUsagePolicy(user = null) {
+  const now = Date.now();
+  pruneExpiredBuckets(now);
+
+  return {
+    limited: !isLimitDisabled(),
+    windowMs: getWindowMs(),
+    publicLimit: toPositiveInteger(
+      process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW,
+      DEFAULT_LIMIT
+    ),
+    personalLimit: toPositiveInteger(
+      process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW,
+      DEFAULT_LIMIT
+    ),
+    effectiveLimit: isLimitDisabled() ? null : getLimitForUser(user),
+    bucketCount: usageBuckets.size,
+  };
 }
