@@ -84,6 +84,9 @@ function AnalysisResult({ analysis }) {
     ? analysis.dataQuality.warnings
     : [];
   const compactDataWarnings = dataWarnings.slice(0, 2);
+  const diagnosticSections = Array.isArray(analysis.diagnosticSections)
+    ? analysis.diagnosticSections
+    : [];
 
   return (
     <div className="aiAnalysisResultGrid">
@@ -112,6 +115,28 @@ function AnalysisResult({ analysis }) {
           </div>
         </div>
       </section>
+
+      {diagnosticSections.length > 0 && (
+        <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
+          <div className="aiAnalysisSectionHeader">
+            <BrainCircuit size={18} aria-hidden="true" />
+            <strong>진단 요약</strong>
+          </div>
+          <div className="aiAnalysisDiagnosticList">
+            {diagnosticSections.map((section) => (
+              <article key={section.key || section.title} className="aiAnalysisDiagnosticItem">
+                <strong>{section.title}</strong>
+                <p>{section.summary}</p>
+                <ul>
+                  {(section.observations || []).map((observation) => (
+                    <li key={observation}>{observation}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
         <div className="aiAnalysisSectionHeader">

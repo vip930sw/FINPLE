@@ -83,6 +83,73 @@ function getDiversification(payload) {
   };
 }
 
+function buildDiagnosticSections(payload) {
+  const topAsset = getTopAsset(payload.assets);
+  const hasIncomeAsset = payload.assets.some((asset) => inferAssetRole(asset) === "income");
+  const hasGrowthAsset = payload.assets.some((asset) => inferAssetRole(asset) === "growth");
+  const hasStabilityAsset = payload.assets.some((asset) => inferAssetRole(asset) === "stability");
+  const warnings = getDataQuality(payload).warnings;
+
+  const structureObservations = [
+    topAsset
+      ? `${topAsset.ticker} 중심으로 포트폴리오의 성격이 크게 결정됩니다.`
+      : "자산 입력이 없어 구조 해석이 제한됩니다.",
+  ];
+  if (hasGrowthAsset) structureObservations.push("성장 자산이 장기 성과 기대의 핵심 축으로 보입니다.");
+  if (hasStabilityAsset) structureObservations.push("안정 자산이 변동성 완화 축으로 함께 배치되어 있습니다.");
+
+  const sections = [
+    {
+      key: "structure",
+      title: "구조 진단",
+      summary: topAsset
+        ? "입력된 자산 중 가장 큰 축을 기준으로 전체 포트폴리오 성격을 확인합니다."
+        : "자산 구성이 비어 있어 구조 진단은 준비 상태로 표시합니다.",
+      observations: structureObservations,
+    },
+    {
+      key: "risk_balance",
+      title: "위험 균형",
+      summary: "성장 자산과 방어 자산의 역할이 함께 작동하는지 점검합니다.",
+      observations: [
+        "변동성이 큰 자산은 상승 국면과 하락 국면에서 전체 체감 위험을 키울 수 있습니다.",
+        "방어 역할 자산이 있어도 시장 충격 구간에서는 상관관계가 높아질 수 있습니다.",
+      ],
+    },
+    {
+      key: "cashflow",
+      title: "현금흐름 성격",
+      summary: hasIncomeAsset
+        ? "배당 또는 이자 성격의 자산이 포트폴리오 해석에 포함되어 있습니다."
+        : "현금흐름 성격은 입력된 성장 또는 안정 자산에 비해 제한적으로 보입니다.",
+      observations: hasIncomeAsset
+        ? [
+            "현금흐름 자산은 가격 변동과 별개로 보조적인 안정감을 줄 수 있습니다.",
+            "분배금 수준은 운용 정책과 시장 금리에 따라 달라질 수 있습니다.",
+          ]
+        : [
+            "정기 현금흐름보다 자본 성장 또는 가격 안정성이 더 중요한 구성으로 보입니다.",
+            "현금흐름 목적이 크다면 별도 목표와 입력 지표 확인이 필요합니다.",
+          ],
+    },
+    {
+      key: "data_context",
+      title: "데이터 맥락",
+      summary: warnings.length > 0
+        ? "일부 입력값은 해석 범위를 좁히는 확인 사항으로 남아 있습니다."
+        : "현재 입력값은 구조 해석에 필요한 기본 맥락을 제공합니다.",
+      observations: warnings.length > 0
+        ? warnings.slice(0, 3)
+        : [
+            "분석은 입력된 계산값과 자산 정보에 기반한 정성 해석입니다.",
+            "시장 환경 변화와 세금, 수수료, 투자 기간은 별도로 반영되지 않습니다.",
+          ],
+    },
+  ];
+
+  return sections;
+}
+
 function buildRiskFactors(payload) {
   const risks = [];
   const topAsset = getTopAsset(payload.assets);
@@ -184,6 +251,7 @@ export function buildMockPortfolioAnalysis(payload) {
     dataQuality: getDataQuality(payload),
     portfolioProfile: getPortfolioProfile(payload),
     diversification: getDiversification(payload),
+    diagnosticSections: buildDiagnosticSections(payload),
     riskFactors: buildRiskFactors(payload),
     assetRoles: buildAssetRoles(payload),
     limitations: getLimitations(payload),

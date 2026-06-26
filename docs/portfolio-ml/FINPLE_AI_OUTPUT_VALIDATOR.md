@@ -17,7 +17,7 @@ Step 113-3B에서는 `POST /api/ai/portfolio-analysis`가 반환하는 AI 분석
 contract version:
 
 ```text
-ai-analysis-output-contract-v1
+ai-analysis-output-contract-v2
 ```
 
 허용 top-level field:
@@ -32,6 +32,7 @@ inputHash
 dataQuality
 portfolioProfile
 diversification
+diagnosticSections
 riskFactors
 assetRoles
 limitations
@@ -46,6 +47,7 @@ extra top-level field는 허용하지 않는다.
 - mode/provider enum
 - dataQuality level enum
 - diversification level enum
+- diagnostic section key enum
 - risk severity enum
 - asset role enum
 - 문자열 최대 길이
@@ -57,6 +59,7 @@ extra top-level field는 허용하지 않는다.
 - 설명 텍스트 안의 미입력 숫자 차단
 - assetRoles가 입력 자산을 모두 포함하는지 검증
 - assetRoles weight가 입력 weight와 일치하는지 검증
+- diagnosticSections는 구조, 위험 균형, 현금흐름, 데이터 맥락 등 허용된 key만 사용하도록 검증
 
 ## 금지 표현
 

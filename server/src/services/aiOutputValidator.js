@@ -10,6 +10,7 @@ const REQUIRED_TOP_LEVEL_FIELDS = [
   "dataQuality",
   "portfolioProfile",
   "diversification",
+  "diagnosticSections",
   "riskFactors",
   "assetRoles",
   "limitations",
@@ -38,10 +39,12 @@ const FORBIDDEN_PATTERNS = [
 ];
 
 const OUTPUT_CONTRACT = {
-  version: "ai-analysis-output-contract-v1",
-  maxTotalTextLength: 6000,
+  version: "ai-analysis-output-contract-v2",
+  maxTotalTextLength: 8500,
   maxStringLength: 700,
   maxArrayItems: {
+    diagnosticSections: 6,
+    observations: 5,
     riskFactors: 8,
     assetRoles: 20,
     limitations: 8,
@@ -53,6 +56,7 @@ const OUTPUT_CONTRACT = {
     provider: ["none", "openai"],
     dataQualityLevel: ["good", "review", "limited"],
     diversificationLevel: ["low", "medium", "high"],
+    diagnosticSectionKey: ["structure", "risk_balance", "cashflow", "data_context"],
     severity: ["low", "medium", "high"],
     assetRole: ["core", "growth", "income", "stability"],
     market: ["US", "KR"],
@@ -325,6 +329,38 @@ function validateDiversification(output, inputPayload, errors) {
   validateString(diversification.summary, "output.diversification.summary", errors);
 }
 
+function validateDiagnosticSections(output, errors) {
+  if (!Array.isArray(output.diagnosticSections)) {
+    errors.push("output.diagnosticSections must be an array.");
+    return;
+  }
+  if (output.diagnosticSections.length > OUTPUT_CONTRACT.maxArrayItems.diagnosticSections) {
+    errors.push(
+      `output.diagnosticSections cannot contain more than ${OUTPUT_CONTRACT.maxArrayItems.diagnosticSections} items.`
+    );
+  }
+  output.diagnosticSections.forEach((section, index) => {
+    if (!isPlainObject(section)) {
+      errors.push(`output.diagnosticSections[${index}] must be an object.`);
+      return;
+    }
+    validateEnum(
+      section.key,
+      OUTPUT_CONTRACT.enums.diagnosticSectionKey,
+      `output.diagnosticSections[${index}].key`,
+      errors
+    );
+    validateString(section.title, `output.diagnosticSections[${index}].title`, errors);
+    validateString(section.summary, `output.diagnosticSections[${index}].summary`, errors);
+    validateStringArray(
+      section.observations,
+      `output.diagnosticSections[${index}].observations`,
+      errors,
+      OUTPUT_CONTRACT.maxArrayItems.observations
+    );
+  });
+}
+
 function validateRiskFactors(output, errors) {
   if (!Array.isArray(output.riskFactors)) {
     errors.push("output.riskFactors must be an array.");
@@ -405,6 +441,7 @@ function validateSchemaContract(output, inputPayload, errors) {
   validateDataQuality(output, errors);
   validatePortfolioProfile(output, errors);
   validateDiversification(output, inputPayload, errors);
+  validateDiagnosticSections(output, errors);
   validateRiskFactors(output, errors);
   validateAssetRoles(output, inputPayload, errors);
   validateLimitations(output, errors);

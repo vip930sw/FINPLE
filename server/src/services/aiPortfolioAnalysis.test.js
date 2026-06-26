@@ -126,6 +126,26 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
             effectiveDiversificationLevel: "medium",
             summary: "자산 수는 2개이며 QQQ와 BND로 역할이 나뉘어 있습니다.",
           },
+          diagnosticSections: [
+            {
+              key: "structure",
+              title: "구조 진단",
+              summary: "성장 자산과 현금흐름 자산이 함께 배치된 구조입니다.",
+              observations: [
+                "QQQ는 성장 성격을 설명하는 축으로 해석됩니다.",
+                "BND는 현금흐름 성격을 보완하는 축으로 해석됩니다.",
+              ],
+            },
+            {
+              key: "risk_balance",
+              title: "위험 균형",
+              summary: "성장 자산과 방어 성격 자산의 조합을 함께 점검합니다.",
+              observations: [
+                "성장 자산은 시장 국면에 따라 체감 변동성을 키울 수 있습니다.",
+                "방어 성격 자산도 특정 구간에서는 완충 효과가 제한될 수 있습니다.",
+              ],
+            },
+          ],
           riskFactors: [
             {
               code: "concentration",
@@ -200,6 +220,7 @@ test("validateAiPortfolioAnalysisOutput rejects forbidden language", () => {
     dataQuality: { level: "good", summary: "ok", warnings: [] },
     portfolioProfile: { title: "bad", summary: "매수 추천 표현" },
     diversification: { nominalAssetCount: 2, effectiveDiversificationLevel: "medium", summary: "ok" },
+    diagnosticSections: [],
     riskFactors: [],
     assetRoles: [],
     limitations: [],
@@ -223,6 +244,7 @@ test("validateAiPortfolioAnalysisOutput rejects generated numbers", () => {
     dataQuality: { level: "good", score: 88, summary: "ok", warnings: [] },
     portfolioProfile: { title: "ok", summary: "ok" },
     diversification: { nominalAssetCount: 2, effectiveDiversificationLevel: "medium", summary: "ok" },
+    diagnosticSections: [],
     riskFactors: [],
     assetRoles: [],
     limitations: [],
@@ -238,7 +260,7 @@ test("validateAiPortfolioAnalysisOutput rejects generated numbers", () => {
 test("output contract snapshot keeps Step 4 response shape stable", () => {
   const contract = getAiPortfolioAnalysisOutputContract();
 
-  assert.equal(contract.version, "ai-analysis-output-contract-v1");
+  assert.equal(contract.version, "ai-analysis-output-contract-v2");
   assert.deepEqual(contract.topLevelFields, [
     "analysisVersion",
     "portfolioId",
@@ -249,13 +271,14 @@ test("output contract snapshot keeps Step 4 response shape stable", () => {
     "dataQuality",
     "portfolioProfile",
     "diversification",
+    "diagnosticSections",
     "riskFactors",
     "assetRoles",
     "limitations",
     "disclaimer",
   ]);
   assert.deepEqual(contract.enums.severity, ["low", "medium", "high"]);
-  assert.equal(contract.maxTotalTextLength, 6000);
+  assert.equal(contract.maxTotalTextLength, 8500);
 });
 
 test("validateAiPortfolioAnalysisOutput rejects unexpected top-level fields", async () => {

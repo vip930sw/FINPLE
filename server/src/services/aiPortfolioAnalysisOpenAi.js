@@ -4,7 +4,7 @@ import { fetchWithTimeout } from "../utils/fetchWithTimeout.js";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.1";
 const DEFAULT_TIMEOUT_MS = 45000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 2200;
+const DEFAULT_MAX_OUTPUT_TOKENS = 3200;
 
 const MODEL_OUTPUT_SCHEMA = {
   type: "object",
@@ -13,6 +13,7 @@ const MODEL_OUTPUT_SCHEMA = {
     "dataQuality",
     "portfolioProfile",
     "diversification",
+    "diagnosticSections",
     "riskFactors",
     "assetRoles",
     "limitations",
@@ -46,6 +47,23 @@ const MODEL_OUTPUT_SCHEMA = {
         nominalAssetCount: { type: "number" },
         effectiveDiversificationLevel: { type: "string", enum: ["low", "medium", "high"] },
         summary: { type: "string" },
+      },
+    },
+    diagnosticSections: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["key", "title", "summary", "observations"],
+        properties: {
+          key: {
+            type: "string",
+            enum: ["structure", "risk_balance", "cashflow", "data_context"],
+          },
+          title: { type: "string" },
+          summary: { type: "string" },
+          observations: { type: "array", items: { type: "string" } },
+        },
       },
     },
     riskFactors: {
@@ -105,6 +123,10 @@ function buildInstructions(payload) {
     "Use polite formal Korean honorific style. Prefer endings such as 입니다, 합니다, 보입니다, 수 있습니다, and 어렵습니다.",
     "Do not use casual or plain report-style endings such as 있다, 어렵다, 나타낸다, 가진다, or 못한다 in user-facing prose.",
     "Keep the analysis concrete and tied to the submitted assets, metrics, and portfolio structure.",
+    "Use diagnosticSections for more detailed interpretation before riskFactors.",
+    "Return three or four diagnosticSections using the allowed keys. Cover portfolio structure, risk balance, cashflow characteristics, and data context when supported by the input.",
+    "Each diagnosticSections item must include a concise title, a summary, and two or three observations.",
+    "Make diagnosticSections more specific than the portfolioProfile summary, but do not introduce new facts outside the input.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",
     "Do not provide investment advice, buy/sell/hold recommendations, target prices, target allocations, or return guarantees.",

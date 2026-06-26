@@ -360,6 +360,49 @@
   line-height: 1.55;
 }
 
+.aiAnalysisDiagnosticList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #e2e8f0;
+}
+
+.aiAnalysisDiagnosticItem {
+  min-width: 0;
+  background: #ffffff;
+  padding: 15px;
+}
+
+.aiAnalysisDiagnosticItem strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.3;
+}
+
+.aiAnalysisDiagnosticItem p {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.58;
+}
+
+.aiAnalysisDiagnosticItem ul {
+  display: grid;
+  gap: 7px;
+  margin: 11px 0 0;
+  padding-left: 18px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 740;
+  line-height: 1.55;
+}
+
 .aiAnalysisList,
 .aiAnalysisRiskItem ul {
   display: grid;
@@ -487,6 +530,7 @@
   .aiAnalysisContentGrid,
   .aiAnalysisResultGrid,
   .aiAnalysisContextStrip,
+  .aiAnalysisDiagnosticList,
   .aiAnalysisResultSectionWide .aiAnalysisRiskList {
     grid-template-columns: 1fr;
   }
