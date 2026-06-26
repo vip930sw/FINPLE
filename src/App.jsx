@@ -515,7 +515,7 @@ function App() {
 
       <section id="pricing" className="section pricingPreviewSection">
         <p className="sectionLabel">Pricing</p><h2>처음에는 무료로 시작하고, 필요한 기능만 확장합니다</h2><p>베타 기간에는 핵심 기능을 가볍게 체험할 수 있도록 구성했습니다.</p>
-        <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "요약 리포트"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "확장 조회"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "업무용 리포트"]} onConfirm={() => navigateToPage("pricing")} /></div>
+        <div className="priceGrid"><PriceCard name="Free" price="0원" items={["기본 시뮬레이션", "브라우저 저장", "AI 분석 제한"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Personal" price="월 9,900원" featured items={["서버 저장", "PDF 리포트", "AI 분석 20회/일"]} onConfirm={() => navigateToPage("pricing")} /><PriceCard name="Pro" price="준비 중" items={["고급 백테스트", "리밸런싱", "AI 운영 한도 확장"]} onConfirm={() => navigateToPage("pricing")} /></div>
       </section>
     </main>,
     {

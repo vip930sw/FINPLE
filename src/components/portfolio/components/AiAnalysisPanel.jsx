@@ -61,21 +61,16 @@ function getActionCopy(analysisStatus) {
   return "분석 시작";
 }
 
-function getAccessHintCopy(accessSummary) {
+function getAccessRequiredPlanCopy(accessSummary) {
   const requiredPlans = Array.isArray(accessSummary?.requiredPlans)
     ? accessSummary.requiredPlans
     : ["personal", "pro"];
-  const planLabel = requiredPlans
+
+  return requiredPlans
     .map((plan) => String(plan || "").trim())
     .filter(Boolean)
     .map((plan) => plan.charAt(0).toUpperCase() + plan.slice(1))
-    .join(" 또는 ");
-
-  if (accessSummary?.reason === "plan_required") {
-    return `AI 분석은 ${planLabel || "Personal"} 플랜에서 사용할 수 있습니다. 현재 플랜을 확인한 뒤 다시 시도해 주세요.`;
-  }
-
-  return "현재 계정에서는 AI 분석을 사용할 수 없습니다. 플랜과 로그인 상태를 확인한 뒤 다시 시도해 주세요.";
+    .join(" 또는 ") || "Personal";
 }
 
 function getRoleLabel(role) {
@@ -95,6 +90,29 @@ function getSeverityLabel(severity) {
     high: "높음",
   };
   return severityMap[severity] || severity || "점검";
+}
+
+function AiAnalysisAccessPanel({ accessSummary, onOpenPricing }) {
+  const planCopy = getAccessRequiredPlanCopy(accessSummary);
+
+  return (
+    <section className="aiAnalysisAccessPanel" role="alert" aria-live="polite">
+      <div className="aiAnalysisAccessIcon" aria-hidden="true">
+        <AlertTriangle size={24} />
+      </div>
+      <div className="aiAnalysisAccessBody">
+        <span>플랜 확인 필요</span>
+        <strong>STEP 4 AI 분석은 {planCopy} 플랜에서 사용할 수 있습니다.</strong>
+        <p>
+          현재 Free 플랜에서는 분석 생성이 차단됩니다. 요금제 화면에서 Personal 권한을 확인한 뒤
+          다시 시도해 주세요.
+        </p>
+        <button type="button" className="aiAnalysisAccessCta" onClick={onOpenPricing}>
+          요금제 확인
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function AiAnalysisLoadingState() {
@@ -377,6 +395,11 @@ export default function AiAnalysisPanel({
     }
   }
 
+  function handleOpenPricing() {
+    if (typeof window === "undefined") return;
+    window.location.href = "/pricing";
+  }
+
   return (
     <div className="simulatorTabPanel aiAnalysisPanel">
       <div className="tabSectionHeader aiAnalysisHeader">
@@ -400,16 +423,16 @@ export default function AiAnalysisPanel({
           </div>
           <button
             type="button"
-            className="aiAnalysisActionButton"
-            disabled={!canRequestAnalysis}
-            onClick={handleCreateAnalysis}
+            className={`aiAnalysisActionButton ${isAccessBlocked ? "upgrade" : ""}`}
+            disabled={isLoading || activeAssets.length === 0}
+            onClick={isAccessBlocked ? handleOpenPricing : handleCreateAnalysis}
           >
             {isLoading ? (
               <RefreshCcw className="aiAnalysisButtonSpinner" size={18} aria-hidden="true" />
             ) : (
               <Sparkles size={18} aria-hidden="true" />
             )}
-            <span>{getActionCopy(analysisStatus)}</span>
+            <span>{isAccessBlocked ? "요금제 확인" : getActionCopy(analysisStatus)}</span>
           </button>
         </div>
 
@@ -426,11 +449,12 @@ export default function AiAnalysisPanel({
         )}
       </div>
 
-        {isAccessBlocked && (
-          <p className="aiAnalysisAccessHint">
-            {getAccessHintCopy(accessSummary)}
-          </p>
-        )}
+      {isAccessBlocked && (
+        <AiAnalysisAccessPanel
+          accessSummary={accessSummary}
+          onOpenPricing={handleOpenPricing}
+        />
+      )}
       {isStale && (
         <div className="aiAnalysisStateBanner">
           입력값이 최근 분석 이후 변경되었습니다. 이전 AI 분석 결과는 현재 자산 구성과 일치하지 않아 숨겼습니다.
@@ -447,7 +471,7 @@ export default function AiAnalysisPanel({
         </div>
       ) : null}
 
-      {isStale ? (
+      {isAccessBlocked ? null : isStale ? (
         <StaleAnalysisState activeAssets={activeAssets} formatNumber={formatNumber} />
       ) : analysis ? (
         <AnalysisResult analysis={analysis} />

@@ -127,6 +127,17 @@
   opacity: 0.82;
 }
 
+.aiAnalysisActionButton.upgrade:not(:disabled) {
+  border-color: #2563eb;
+  background: #2563eb;
+  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.18);
+}
+
+.aiAnalysisActionButton.upgrade:not(:disabled):hover {
+  border-color: #0f172a;
+  background: #0f172a;
+}
+
 .aiAnalysisButtonSpinner {
   animation: aiAnalysisLoaderRotate 1.05s steps(12) infinite;
 }
@@ -166,16 +177,80 @@
   line-height: 1.4;
 }
 
-.aiAnalysisAccessHint {
-  margin: 12px 0 0;
+.aiAnalysisAccessPanel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  max-width: 720px;
+  margin: 22px auto 0;
   border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  background: #eff6ff;
-  color: #1e3a8a;
-  padding: 10px 12px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.92), rgba(255, 255, 255, 0.98));
+  padding: 24px;
+  box-shadow: 0 18px 38px rgba(37, 99, 235, 0.1);
+}
+
+.aiAnalysisAccessIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.aiAnalysisAccessBody {
+  min-width: 0;
+}
+
+.aiAnalysisAccessBody span {
+  display: block;
+  color: #2563eb;
   font-size: 12px;
-  font-weight: 850;
-  line-height: 1.5;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.aiAnalysisAccessBody strong {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1.32;
+}
+
+.aiAnalysisAccessBody p {
+  margin: 10px 0 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 780;
+  line-height: 1.65;
+}
+
+.aiAnalysisAccessCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 18px;
+  border: 1px solid #0f172a;
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #ffffff;
+  background: #0f172a;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.aiAnalysisAccessCta:hover {
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 .aiAnalysisContentGrid {
@@ -708,6 +783,12 @@
     justify-items: start;
   }
 
+  .aiAnalysisAccessPanel {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    max-width: none;
+  }
+
   .aiAnalysisStaleAssetRow {
     grid-template-columns: 76px minmax(0, 1fr) 48px;
   }
@@ -733,6 +814,18 @@
 
   .aiAnalysisPanel {
     padding: 22px;
+  }
+
+  .aiAnalysisAccessPanel {
+    padding: 20px;
+  }
+
+  .aiAnalysisAccessBody strong {
+    font-size: 19px;
+  }
+
+  .aiAnalysisAccessCta {
+    width: 100%;
   }
 
   .aiAnalysisAssetRow {
