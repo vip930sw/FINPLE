@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   assertAiAnalysisUsageAllowed,
+  reserveAiAnalysisUsage,
   resetAiAnalysisUsageBuckets,
 } from "./aiAnalysisUsageControl.js";
 
@@ -73,5 +74,55 @@ test("assertAiAnalysisUsageAllowed gives Personal users their own bucket", () =>
     resetAiAnalysisUsageBuckets();
     if (previousLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW;
     else process.env.FINPLE_AI_ANALYSIS_PERSONAL_LIMIT_PER_WINDOW = previousLimit;
+  }
+});
+
+test("reserveAiAnalysisUsage releases the slot when provider work fails", () => {
+  const previousLimit = process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+  process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = "1";
+  resetAiAnalysisUsageBuckets();
+
+  try {
+    const request = mockRequest();
+    const reservation = reserveAiAnalysisUsage({ request, now: 1000 });
+
+    assert.equal(reservation.remaining, 0);
+    assert.equal(reservation.reserved, true);
+    assert.equal(reservation.committed, false);
+
+    reservation.cancel();
+
+    assert.equal(reservation.canceled, true);
+    assert.equal(reservation.remaining, 1);
+    assert.equal(reserveAiAnalysisUsage({ request, now: 1001 }).remaining, 0);
+  } finally {
+    resetAiAnalysisUsageBuckets();
+    if (previousLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+    else process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = previousLimit;
+  }
+});
+
+test("reserveAiAnalysisUsage keeps the slot after commit", () => {
+  const previousLimit = process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+  process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = "1";
+  resetAiAnalysisUsageBuckets();
+
+  try {
+    const request = mockRequest();
+    const reservation = reserveAiAnalysisUsage({ request, now: 1000 });
+
+    reservation.commit();
+    reservation.cancel();
+
+    assert.equal(reservation.committed, true);
+    assert.equal(reservation.canceled, false);
+    assert.throws(
+      () => reserveAiAnalysisUsage({ request, now: 1001 }),
+      (error) => error.statusCode === 429 && error.usage?.remaining === 0
+    );
+  } finally {
+    resetAiAnalysisUsageBuckets();
+    if (previousLimit === undefined) delete process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW;
+    else process.env.FINPLE_AI_ANALYSIS_PUBLIC_LIMIT_PER_WINDOW = previousLimit;
   }
 });

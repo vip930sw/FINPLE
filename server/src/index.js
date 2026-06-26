@@ -140,10 +140,24 @@ app.post("/api/assets/batch", async (request, response, next) => {
 
 app.use((error, request, response, next) => {
   const statusCode = Number(error.statusCode || 500);
+  if (error.usage?.limited) {
+    response.setHeader("X-Finple-AI-Limit", String(error.usage.limit));
+    response.setHeader("X-Finple-AI-Remaining", String(error.usage.remaining));
+    response.setHeader("X-Finple-AI-Reset-At", new Date(error.usage.resetAt).toISOString());
+  }
   response.status(statusCode).json({
     ok: false,
     message: error.message || "서버 오류가 발생했습니다.",
     ...(statusCode < 500 && Array.isArray(error.details) ? { details: error.details } : {}),
+    ...(statusCode < 500 && error.usage?.limited
+      ? {
+          usage: {
+            limit: error.usage.limit,
+            remaining: error.usage.remaining,
+            resetAt: new Date(error.usage.resetAt).toISOString(),
+          },
+        }
+      : {}),
   });
 });
 

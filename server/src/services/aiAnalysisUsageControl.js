@@ -52,8 +52,28 @@ function pruneExpiredBuckets(now = Date.now()) {
 }
 
 export function assertAiAnalysisUsageAllowed({ request, user, now = Date.now() }) {
+  const reservation = reserveAiAnalysisUsage({ request, user, now });
+  reservation.commit();
+  return reservation;
+}
+
+export function reserveAiAnalysisUsage({ request, user, now = Date.now() }) {
   if (String(process.env.FINPLE_AI_ANALYSIS_LIMIT_DISABLED || "").toLowerCase() === "true") {
-    return { limited: false, remaining: null, resetAt: null, key: "disabled" };
+    return {
+      limited: false,
+      remaining: null,
+      resetAt: null,
+      key: "disabled",
+      reserved: false,
+      committed: true,
+      canceled: false,
+      commit() {
+        return this;
+      },
+      cancel() {
+        return this;
+      },
+    };
   }
 
   pruneExpiredBuckets(now);
@@ -79,12 +99,38 @@ export function assertAiAnalysisUsageAllowed({ request, user, now = Date.now() }
   bucket.count += 1;
   usageBuckets.set(key, bucket);
 
+  let committed = false;
+  let canceled = false;
+
   return {
     limited: true,
     limit,
     remaining: Math.max(limit - bucket.count, 0),
     resetAt: bucket.resetAt,
     key,
+    reserved: true,
+    get committed() {
+      return committed;
+    },
+    get canceled() {
+      return canceled;
+    },
+    commit() {
+      if (!canceled) committed = true;
+      return this;
+    },
+    cancel() {
+      if (committed || canceled) return this;
+
+      const current = usageBuckets.get(key);
+      if (current === bucket && current.count > 0) {
+        current.count -= 1;
+        this.remaining = Math.max(limit - current.count, 0);
+        if (current.count <= 0) usageBuckets.delete(key);
+      }
+      canceled = true;
+      return this;
+    },
   };
 }
 

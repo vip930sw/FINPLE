@@ -125,6 +125,81 @@ function getOpenAiConfig() {
   };
 }
 
+function roundNumber(value, digits = 2) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const factor = 10 ** digits;
+  return Math.round(number * factor) / factor;
+}
+
+function sumWeights(assets, predicate) {
+  return roundNumber(
+    assets
+      .filter(predicate)
+      .reduce((sum, asset) => sum + Number(asset.weight || 0), 0)
+  );
+}
+
+function countAssetsWithNumber(assets, field) {
+  return assets.filter((asset) => Number.isFinite(asset[field])).length;
+}
+
+function hasFiniteMetric(metrics, fields) {
+  return fields.some((field) => Number.isFinite(metrics?.[field]));
+}
+
+function buildDataStatusCounts(assets) {
+  return assets.reduce((counts, asset) => {
+    const status = asset.dataStatus || "unknown";
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function buildDerivedFacts(payload) {
+  const assetsByWeight = [...payload.assets].sort(
+    (left, right) => Number(right.weight || 0) - Number(left.weight || 0)
+  );
+  const topAssets = assetsByWeight.slice(0, 5).map((asset) => ({
+    ticker: asset.ticker,
+    market: asset.market,
+    weight: roundNumber(asset.weight),
+    dataStatus: asset.dataStatus,
+  }));
+
+  return {
+    assetCount: payload.assets.length,
+    totalWeight: roundNumber(
+      payload.assets.reduce((sum, asset) => sum + Number(asset.weight || 0), 0)
+    ),
+    marketWeights: {
+      US: sumWeights(payload.assets, (asset) => asset.market === "US"),
+      KR: sumWeights(payload.assets, (asset) => asset.market === "KR"),
+    },
+    concentration: {
+      largestAsset: topAssets[0] || null,
+      topTwoWeight: roundNumber(
+        assetsByWeight
+          .slice(0, 2)
+          .reduce((sum, asset) => sum + Number(asset.weight || 0), 0)
+      ),
+    },
+    dataCoverage: {
+      dataStatusCounts: buildDataStatusCounts(payload.assets),
+      assetsWithCagr: countAssetsWithNumber(payload.assets, "cagr"),
+      assetsWithBeta: countAssetsWithNumber(payload.assets, "beta"),
+      assetsWithMdd: countAssetsWithNumber(payload.assets, "mdd"),
+      assetsWithDividendYield: countAssetsWithNumber(payload.assets, "dividendYield"),
+    },
+    metricCoverage: {
+      hasPortfolioCagr: hasFiniteMetric(payload.metrics, ["cagr", "expectedCagr"]),
+      hasPortfolioBeta: hasFiniteMetric(payload.metrics, ["beta"]),
+      hasPortfolioMdd: hasFiniteMetric(payload.metrics, ["mdd"]),
+      hasPortfolioDividendYield: hasFiniteMetric(payload.metrics, ["dividendYield"]),
+    },
+  };
+}
+
 function buildInstructions(payload) {
   const tickers = payload.assets.map((asset) => asset.ticker).join(", ");
   return [
@@ -138,6 +213,8 @@ function buildInstructions(payload) {
     "Return exactly three diagnosticSections using the allowed keys. Prefer structure, risk_balance, and data_context. Use cashflow instead of data_context only when cashflow is clearly supported by the input.",
     "Each diagnosticSections item must include a concise title, a concise summary, and exactly two observations.",
     "Make diagnosticSections more specific than the portfolioProfile summary, but do not introduce new facts outside the input.",
+    "Use derivedFacts as deterministic server-calculated context for concentration, market weights, and data coverage.",
+    "When dataCoverage is incomplete, reflect that uncertainty in dataQuality and limitations instead of filling gaps with assumptions.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",
     "Do not provide investment advice, buy/sell/hold recommendations, target prices, target allocations, or return guarantees.",
@@ -156,6 +233,7 @@ function buildInput(payload) {
     analysisContext: payload.analysisContext,
     metrics: payload.metrics,
     assets: payload.assets,
+    derivedFacts: buildDerivedFacts(payload),
     requiredOutputNotes: {
       mode: "live",
       provider: "openai",

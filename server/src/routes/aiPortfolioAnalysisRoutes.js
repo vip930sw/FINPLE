@@ -2,7 +2,7 @@ import express from "express";
 
 import { getUserBySessionToken } from "../db/authRepository.js";
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
-import { assertAiAnalysisUsageAllowed } from "../services/aiAnalysisUsageControl.js";
+import { reserveAiAnalysisUsage } from "../services/aiAnalysisUsageControl.js";
 import { runPortfolioAnalysis } from "../services/aiPortfolioAnalysisService.js";
 
 const router = express.Router();
@@ -52,12 +52,15 @@ function setUsageHeaders(response, usage) {
 }
 
 router.post("/portfolio-analysis", async (request, response, next) => {
+  let usage = null;
+
   try {
     const user = await getOptionalUser(request);
     assertAccessAllowed(user);
     const payload = normalizePortfolioAnalysisRequest(request.body);
-    const usage = assertAiAnalysisUsageAllowed({ request, user });
+    usage = reserveAiAnalysisUsage({ request, user });
     const analysis = await runPortfolioAnalysis(payload);
+    usage.commit();
 
     setUsageHeaders(response, usage);
     response.json({
@@ -73,6 +76,7 @@ router.post("/portfolio-analysis", async (request, response, next) => {
       analysis,
     });
   } catch (error) {
+    usage?.cancel?.();
     next(error);
   }
 });

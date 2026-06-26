@@ -47,6 +47,74 @@ function validRequest() {
   };
 }
 
+function validProviderAnalysis() {
+  return {
+    dataQuality: {
+      level: "good",
+      summary: "입력된 계산값과 자산 정보가 분석에 필요한 최소 조건을 충족합니다.",
+      warnings: [],
+    },
+    portfolioProfile: {
+      title: "성장 자산과 현금흐름 자산이 함께 있는 포트폴리오",
+      summary: "입력된 자산 구성은 성장 성격과 현금흐름 성격을 함께 설명할 수 있는 구조입니다.",
+    },
+    diversification: {
+      nominalAssetCount: 2,
+      effectiveDiversificationLevel: "medium",
+      summary: "QQQ와 BND로 역할이 나뉘어 있는 구성입니다.",
+    },
+    diagnosticSections: [
+      {
+        key: "structure",
+        title: "구조 진단",
+        summary: "성장 자산과 현금흐름 자산이 함께 배치된 구조입니다.",
+        observations: [
+          "QQQ는 성장 성격을 설명하는 축으로 해석됩니다.",
+          "BND는 현금흐름 성격을 보완하는 축으로 해석됩니다.",
+        ],
+      },
+      {
+        key: "risk_balance",
+        title: "위험 균형",
+        summary: "성장 자산과 방어 성격 자산의 조합을 함께 점검합니다.",
+        observations: [
+          "성장 자산은 시장 국면에 따라 체감 변동성을 키울 수 있습니다.",
+          "방어 성격 자산도 특정 구간에서는 완충 효과가 제한될 수 있습니다.",
+        ],
+      },
+    ],
+    riskFactors: [
+      {
+        code: "concentration",
+        label: "핵심 자산 비중 점검",
+        severity: "medium",
+        evidence: ["BND 입력 비중 60%"],
+      },
+    ],
+    assetRoles: [
+      {
+        ticker: "QQQ",
+        market: "US",
+        weight: 40,
+        role: "growth",
+        rationale: "QQQ는 입력된 성장 지표와 변동성 정보를 기준으로 성장 역할로 해석됩니다.",
+      },
+      {
+        ticker: "BND",
+        market: "US",
+        weight: 60,
+        role: "income",
+        rationale: "BND는 입력된 배당률과 낮은 변동성 정보를 기준으로 현금흐름 역할로 해석됩니다.",
+      },
+    ],
+    limitations: [
+      "본 응답은 입력된 계산값과 자산 상태를 설명하는 용도입니다.",
+      "미래 성과를 보장하지 않습니다.",
+    ],
+    disclaimer: "본 분석은 투자 권유가 아닌 참고자료입니다. 최종 판단은 사용자가 확인해야 합니다.",
+  };
+}
+
 test("runPortfolioAnalysis returns deterministic mock output", async () => {
   process.env.FINPLE_AI_ANALYSIS_MODE = "mock";
   process.env.FINPLE_AI_ANALYSIS_PROVIDER = "none";
@@ -107,7 +175,13 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     assert.match(requestBody.instructions, /입니다/);
     assert.match(requestBody.instructions, /plain report-style endings/);
     assert.match(requestBody.instructions, /exactly three diagnosticSections/);
+    assert.match(requestBody.instructions, /derivedFacts/);
     assert.equal(requestBody.max_output_tokens, 4200);
+
+    const requestInput = JSON.parse(requestBody.input);
+    assert.deepEqual(requestInput.derivedFacts.marketWeights, { US: 100, KR: 0 });
+    assert.equal(requestInput.derivedFacts.concentration.largestAsset.ticker, "BND");
+    assert.equal(requestInput.derivedFacts.dataCoverage.assetsWithMdd, 2);
 
     return {
       ok: true,
@@ -195,6 +269,53 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
     if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousApiKey;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("runPortfolioAnalysis retries live OpenAI output when local validation fails", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousValidationRetry = process.env.FINPLE_AI_ANALYSIS_VALIDATION_RETRY_COUNT;
+  const previousFetch = globalThis.fetch;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  process.env.FINPLE_AI_ANALYSIS_VALIDATION_RETRY_COUNT = "1";
+  process.env.OPENAI_API_KEY = "test-key";
+
+  let fetchCount = 0;
+  globalThis.fetch = async () => {
+    fetchCount += 1;
+    const analysis = validProviderAnalysis();
+    if (fetchCount === 1) {
+      analysis.portfolioProfile.summary = "매수 추천 표현이 포함된 응답입니다.";
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ output_text: JSON.stringify(analysis) }),
+    };
+  };
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest(validRequest());
+    const output = await runPortfolioAnalysis(payload);
+
+    assert.equal(fetchCount, 2);
+    assert.equal(output.analysisVersion, "ai-analysis-openai-v1");
+    assert.equal(output.portfolioProfile.summary, validProviderAnalysis().portfolioProfile.summary);
+  } finally {
+    if (previousMode === undefined) delete process.env.FINPLE_AI_ANALYSIS_MODE;
+    else process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    if (previousProvider === undefined) delete process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+    else process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+    if (previousValidationRetry === undefined) delete process.env.FINPLE_AI_ANALYSIS_VALIDATION_RETRY_COUNT;
+    else process.env.FINPLE_AI_ANALYSIS_VALIDATION_RETRY_COUNT = previousValidationRetry;
     globalThis.fetch = previousFetch;
   }
 });
