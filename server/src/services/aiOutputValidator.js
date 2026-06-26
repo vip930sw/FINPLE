@@ -41,6 +41,7 @@ const FORBIDDEN_PATTERNS = [
 const OUTPUT_CONTRACT = {
   version: "ai-analysis-output-contract-v2",
   maxTotalTextLength: 8500,
+  diagnosticSectionCount: 3,
   maxStringLength: 700,
   maxArrayItems: {
     diagnosticSections: 6,
@@ -339,11 +340,17 @@ function validateDiagnosticSections(output, errors) {
     errors.push("output.diagnosticSections must be an array.");
     return;
   }
+  if (output.diagnosticSections.length !== OUTPUT_CONTRACT.diagnosticSectionCount) {
+    errors.push(
+      `output.diagnosticSections must contain exactly ${OUTPUT_CONTRACT.diagnosticSectionCount} items.`
+    );
+  }
   if (output.diagnosticSections.length > OUTPUT_CONTRACT.maxArrayItems.diagnosticSections) {
     errors.push(
       `output.diagnosticSections cannot contain more than ${OUTPUT_CONTRACT.maxArrayItems.diagnosticSections} items.`
     );
   }
+  const seenKeys = new Set();
   output.diagnosticSections.forEach((section, index) => {
     if (!isPlainObject(section)) {
       errors.push(`output.diagnosticSections[${index}] must be an object.`);
@@ -355,6 +362,10 @@ function validateDiagnosticSections(output, errors) {
       `output.diagnosticSections[${index}].key`,
       errors
     );
+    if (seenKeys.has(section.key)) {
+      errors.push(`output.diagnosticSections[${index}].key must be unique.`);
+    }
+    seenKeys.add(section.key);
     validateString(section.title, `output.diagnosticSections[${index}].title`, errors);
     validateString(section.summary, `output.diagnosticSections[${index}].summary`, errors);
     validateStringArray(

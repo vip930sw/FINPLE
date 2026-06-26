@@ -82,6 +82,15 @@ function validProviderAnalysis() {
           "방어 성격 자산도 특정 구간에서는 완충 효과가 제한될 수 있습니다.",
         ],
       },
+      {
+        key: "data_context",
+        title: "입력 데이터 맥락",
+        summary: "입력된 자산 지표와 계산값 범위 안에서 구조를 해석합니다.",
+        observations: [
+          "제공된 지표가 있는 항목만 근거로 사용합니다.",
+          "미래 시장 변화는 별도 가정으로 추가하지 않습니다.",
+        ],
+      },
     ],
     riskFactors: [
       {
@@ -307,6 +316,9 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     assert.deepEqual(requestInput.derivedFacts.marketWeights, { US: 100, KR: 0 });
     assert.equal(requestInput.derivedFacts.concentration.largestAsset.ticker, "BND");
     assert.equal(requestInput.derivedFacts.dataCoverage.assetsWithMdd, 2);
+    assert.equal(requestInput.derivedFacts.cashflow.incomeCandidateWeight, 60);
+    assert.equal(requestInput.derivedFacts.assetRoleHints[0].suggestedRole, "growth");
+    assert.equal(requestInput.derivedFacts.assetRoleHints[1].suggestedRole, "income");
 
     return {
       ok: true,
@@ -344,6 +356,15 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
               observations: [
                 "성장 자산은 시장 국면에 따라 체감 변동성을 키울 수 있습니다.",
                 "방어 성격 자산도 특정 구간에서는 완충 효과가 제한될 수 있습니다.",
+              ],
+            },
+            {
+              key: "data_context",
+              title: "입력 데이터 맥락",
+              summary: "입력된 자산 지표와 계산값 범위 안에서 구조를 해석합니다.",
+              observations: [
+                "제공된 지표가 있는 항목만 근거로 사용합니다.",
+                "미래 시장 변화는 별도 가정으로 추가하지 않습니다.",
               ],
             },
           ],
@@ -417,6 +438,8 @@ test("runPortfolioAnalysis sends Korean numeric tickers in live OpenAI input", a
     assert.deepEqual(requestInput.derivedFacts.marketWeights, { US: 90, KR: 10 });
     assert.equal(requestInput.assets[1].ticker, "069500");
     assert.equal(requestInput.assets[1].market, "KR");
+    assert.equal(requestInput.derivedFacts.assetRoleHints[1].ticker, "069500");
+    assert.equal(requestInput.derivedFacts.assetRoleHints[1].suggestedRole, "growth");
 
     return {
       ok: true,
@@ -614,6 +637,7 @@ test("output contract snapshot keeps Step 4 response shape stable", () => {
   ]);
   assert.deepEqual(contract.enums.severity, ["low", "medium", "high"]);
   assert.equal(contract.maxTotalTextLength, 8500);
+  assert.equal(contract.diagnosticSectionCount, 3);
 });
 
 test("validateAiPortfolioAnalysisOutput rejects unexpected top-level fields", async () => {

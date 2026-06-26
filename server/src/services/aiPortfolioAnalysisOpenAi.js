@@ -53,6 +53,8 @@ const MODEL_OUTPUT_SCHEMA = {
     },
     diagnosticSections: {
       type: "array",
+      minItems: 3,
+      maxItems: 3,
       items: {
         type: "object",
         additionalProperties: false,
@@ -144,6 +146,21 @@ function countAssetsWithNumber(assets, field) {
   return assets.filter((asset) => Number.isFinite(asset[field])).length;
 }
 
+function inferAssetRoleHint(asset) {
+  const cagr = Number(asset.cagr);
+  const beta = Number(asset.beta);
+  const mdd = Number(asset.mdd);
+  const dividendYield = Number(asset.dividendYield);
+
+  if (Number.isFinite(dividendYield) && dividendYield >= 3) return "income";
+  if (Number.isFinite(beta) && beta <= 0.3) return "stability";
+  if (Number.isFinite(mdd) && mdd >= -20) return "stability";
+  if (Number.isFinite(cagr) && cagr >= 10) return "growth";
+  if (Number.isFinite(beta) && beta >= 1) return "growth";
+  if (Number.isFinite(dividendYield) && dividendYield >= 2) return "income";
+  return "core";
+}
+
 function hasFiniteMetric(metrics, fields) {
   return fields.some((field) => Number.isFinite(metrics?.[field]));
 }
@@ -154,6 +171,52 @@ function buildDataStatusCounts(assets) {
     counts[status] = (counts[status] || 0) + 1;
     return counts;
   }, {});
+}
+
+function buildAssetRoleHints(assets) {
+  return assets.map((asset) => ({
+    ticker: asset.ticker,
+    market: asset.market,
+    weight: roundNumber(asset.weight),
+    suggestedRole: inferAssetRoleHint(asset),
+    signals: {
+      hasCagr: Number.isFinite(asset.cagr),
+      hasBeta: Number.isFinite(asset.beta),
+      hasMdd: Number.isFinite(asset.mdd),
+      hasDividendYield: Number.isFinite(asset.dividendYield),
+    },
+  }));
+}
+
+function buildCashflowFacts(payload) {
+  return {
+    portfolioDividendYield: roundNumber(payload.metrics?.dividendYield),
+    dividendDataWeight: sumWeights(payload.assets, (asset) => Number.isFinite(asset.dividendYield)),
+    incomeCandidateWeight: sumWeights(
+      payload.assets,
+      (asset) => Number.isFinite(asset.dividendYield) && asset.dividendYield >= 2
+    ),
+    missingDividendDataWeight: sumWeights(payload.assets, (asset) => !Number.isFinite(asset.dividendYield)),
+  };
+}
+
+function buildRiskSignals(payload) {
+  const largestMdd = payload.assets
+    .filter((asset) => Number.isFinite(asset.mdd))
+    .sort((left, right) => Number(left.mdd) - Number(right.mdd))[0];
+
+  return {
+    portfolioBeta: roundNumber(payload.metrics?.beta),
+    portfolioMdd: roundNumber(payload.metrics?.mdd),
+    deepestDrawdownAsset: largestMdd
+      ? {
+          ticker: largestMdd.ticker,
+          market: largestMdd.market,
+          mdd: roundNumber(largestMdd.mdd),
+          weight: roundNumber(largestMdd.weight),
+        }
+      : null,
+  };
 }
 
 function buildDerivedFacts(payload) {
@@ -197,6 +260,9 @@ function buildDerivedFacts(payload) {
       hasPortfolioMdd: hasFiniteMetric(payload.metrics, ["mdd"]),
       hasPortfolioDividendYield: hasFiniteMetric(payload.metrics, ["dividendYield"]),
     },
+    cashflow: buildCashflowFacts(payload),
+    riskSignals: buildRiskSignals(payload),
+    assetRoleHints: buildAssetRoleHints(payload.assets),
   };
 }
 
@@ -214,6 +280,9 @@ function buildInstructions(payload) {
     "Each diagnosticSections item must include a concise title, a concise summary, and exactly two observations.",
     "Make diagnosticSections more specific than the portfolioProfile summary, but do not introduce new facts outside the input.",
     "Use derivedFacts as deterministic server-calculated context for concentration, market weights, and data coverage.",
+    "Use derivedFacts.assetRoleHints to keep assetRoles consistent with each asset's submitted metrics. Prefer the suggestedRole unless another role is clearly supported by the same input.",
+    "Use derivedFacts.cashflow for dividend and cashflow commentary. If dividend coverage is incomplete, state that as a limitation instead of assuming income strength.",
+    "Use derivedFacts.riskSignals when explaining drawdown or beta risk, especially when one asset carries an unusually deep drawdown.",
     "When dataCoverage is incomplete, reflect that uncertainty in dataQuality and limitations instead of filling gaps with assumptions.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",

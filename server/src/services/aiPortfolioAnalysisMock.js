@@ -147,7 +147,11 @@ function buildDiagnosticSections(payload) {
     },
   ];
 
-  return sections;
+  const selectedKeys = hasIncomeAsset
+    ? new Set(["structure", "risk_balance", "cashflow"])
+    : new Set(["structure", "risk_balance", "data_context"]);
+
+  return sections.filter((section) => selectedKeys.has(section.key));
 }
 
 function buildRiskFactors(payload) {
