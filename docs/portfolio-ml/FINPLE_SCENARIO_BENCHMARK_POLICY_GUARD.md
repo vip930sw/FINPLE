@@ -70,7 +70,7 @@ This step does not:
 
 Step 114 can proceed in one of two safe directions:
 
-1. Add a deterministic monthly-return fixture/cache schema and keep it offline until source licensing and refresh policy are clear.
+1. Add a deterministic monthly-return fixture/cache schema and keep it offline until source licensing and refresh policy are clear. Step 114-1D now provides this header-only schema and validator.
 2. Add a provider-refetch cache job that persists monthly asset, benchmark, dividend, and FX returns with data version metadata.
 
 `Step 114-2B` joint block Bootstrap should wait until one of those inputs exists. Running Bootstrap on summary CAGR, MDD, or BETA would violate the Step 114-1A audit conclusion.

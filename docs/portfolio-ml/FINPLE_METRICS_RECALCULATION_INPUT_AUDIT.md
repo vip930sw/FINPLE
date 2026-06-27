@@ -65,7 +65,7 @@ This document audits whether FINPLE currently has the time-series inputs needed 
 A future overlay or cache should include at least:
 
 ```csv
-market,ticker,month,priceReturn,totalReturn,closePrice,adjustedClose,dividendAmount,benchmarkId,benchmarkReturn,fxReturn,returnBasis,currency,isProxy,proxyTicker,dataSource,sourceVersion
+market,ticker,month,priceReturn,totalReturn,closePrice,adjustedClose,dividendAmount,benchmarkId,benchmarkReturn,fxReturn,returnBasis,currency,isProxy,proxyTicker,dataSource,sourceVersion,seriesQuality,reasonCodes
 ```
 
 For metric summary overlays, preserve both raw and rolling fields:
