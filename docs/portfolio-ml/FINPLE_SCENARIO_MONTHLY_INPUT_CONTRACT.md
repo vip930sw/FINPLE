@@ -37,6 +37,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Step 114 progress report | Implemented in Step 114-1U | Machine-readable overall progress percent and blocker summary for the P0 monthly data readiness path |
 | P0 approval intake checklist | Implemented in Step 114-1V | Provider-group checklist of missing real approval fields before source-policy approval |
 | P0 approval intake template | Implemented in Step 114-1W | Reviewer-facing pending CSV template for real approval input, without pre-approving any provider |
+| P0 approval intake validation | Implemented in Step 114-1X | Validates reviewer-filled intake rows in synthetic fixtures while keeping real provider calls and monthly writes blocked |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -367,6 +368,28 @@ bootstrapStillBlocked=true
 ```
 
 The template intentionally leaves reviewer fields blank and uses `approvalStatusDraft=pending_review`. It is an input surface for future real approval, not an approval artifact.
+
+## P0 Approval Intake Validation
+
+The approval intake validation report lives at:
+
+```text
+data/processed/scenario_p0_approval_intake_validation.json
+```
+
+It checks that the reviewer-facing template has the expected five provider-group rows and that a row can move to `ready_for_source_policy_review` only when all required reviewer fields are present:
+
+```text
+providerGroups=5
+pendingRows=5
+readyRows=0
+rowsWithMissingRequiredFields=5
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove that a fully filled template can be classified as ready for a later source-policy sync dry run, but this validation step still does not approve source policy rows, call providers, or write `scenario_monthly_returns.csv`.
 
 ## Monthly Write Preflight
 

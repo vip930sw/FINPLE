@@ -13,6 +13,7 @@ const EXTERNAL_TERMS_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_
 const OWNER_LEGAL_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_owner_legal_decision_packet_summary.json");
 const APPROVAL_INTAKE_PATH = path.join("data", "processed", "scenario_p0_approval_intake_checklist.json");
 const APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
+const APPROVAL_INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -138,6 +139,7 @@ function buildProgress() {
   const ownerLegal = readJson(OWNER_LEGAL_SUMMARY_PATH);
   const approvalIntake = readJson(APPROVAL_INTAKE_PATH);
   const approvalIntakeTemplate = readJson(APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH);
+  const approvalIntakeValidation = readJson(APPROVAL_INTAKE_VALIDATION_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
@@ -162,8 +164,10 @@ function buildProgress() {
     ownerLegal.rowCounts?.providerCandidates === 5 &&
     approvalIntake.rowCounts?.providerGroups === 5 &&
     approvalIntakeTemplate.rowCounts?.providerGroups === 5 &&
-    approvalIntakeTemplate.rowCounts?.approvedRows === 0;
+    approvalIntakeTemplate.rowCounts?.approvedRows === 0 &&
+    approvalIntakeValidation.rowCounts?.providerGroups === 5;
   const guardrailHarnessComplete =
+    approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
     approvalReadiness.sourceFiles?.sourceApprovalDecisionRecord &&
     approvalReadiness.readiness?.safeToImplementProviderAdapter === false &&
     writePreflight.checks?.monthlyFileExists === false &&
@@ -226,6 +230,7 @@ function buildProgress() {
         providerCandidates: externalTerms.rowCounts?.providerCandidates,
         approvalIntakeProviderGroups: approvalIntake.rowCounts?.providerGroups,
         approvalIntakeTemplateRows: approvalIntakeTemplate.rowCounts?.providerGroups,
+        approvalIntakeValidationReadyRows: approvalIntakeValidation.rowCounts?.readyRows,
       },
     ),
     milestone(
@@ -237,6 +242,7 @@ function buildProgress() {
       {
         safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter,
         safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData,
+        approvalIntakeValidationProviderCallsAllowed: approvalIntakeValidation.readiness?.providerCallsAllowed,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
         writerCanWriteMonthlyData: writerGate.readiness?.canWriteMonthlyData,
       },
@@ -292,6 +298,7 @@ function buildProgress() {
       monthlyReadiness: MONTHLY_READINESS_PATH,
       approvalIntakeChecklist: APPROVAL_INTAKE_PATH,
       approvalIntakeTemplate: APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH,
+      approvalIntakeValidation: APPROVAL_INTAKE_VALIDATION_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,
@@ -315,6 +322,7 @@ function buildProgress() {
       providerCallsAllowed: approvalReadiness.readiness?.providerCallsAllowed === true,
       safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter === true,
       safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData === true,
+      approvalIntakeValidationReady: approvalIntakeValidation.readiness?.allRowsReadyForSourcePolicyReview === true,
       monthlyDataFileWritten: monthlyFileExists,
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,
     },

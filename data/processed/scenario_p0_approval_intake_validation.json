@@ -1,0 +1,179 @@
+{
+  "validationVersion": "scenario-p0-approval-intake-validation-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
+    "approvalIntakeTemplateSummary": "data\\processed\\scenario_p0_approval_intake_template_summary.json"
+  },
+  "outputFiles": {
+    "validation": "data\\processed\\scenario_p0_approval_intake_validation.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerGroups": 5,
+    "pendingRows": 5,
+    "readyRows": 0,
+    "rejectedRows": 0,
+    "rowsWithMissingRequiredFields": 5
+  },
+  "readiness": {
+    "status": "blocked_pending_real_approval_input",
+    "allRowsReadyForSourcePolicyReview": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "fill_real_approval_intake_template_before_source_policy_approval"
+  },
+  "providerGroups": [
+    {
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "namedProviderCandidate": "KRX Data Marketplace or licensed KOSPI 200 ETF proxy",
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
+    },
+    {
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Korea Investment Open API or licensed KR market-data provider",
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
+    },
+    {
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
+    },
+    {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Alpha Vantage",
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
+    },
+    {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "namedProviderCandidate": "FRED DEXKOUS",
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
+    }
+  ]
+}
