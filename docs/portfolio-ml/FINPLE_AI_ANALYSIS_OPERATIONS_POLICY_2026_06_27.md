@@ -2,11 +2,11 @@
 
 작성일: 2026-06-27
 대상 저장소: `vip930sw/FINPLE`
-대상 기능: STEP 4 AI 분석
+대상 기능: 포트폴리오 AI 분석
 
 ## 목적
 
-이 문서는 STEP 4 AI 분석을 live OpenAI provider로 운영할 때의 접근 권한, 사용량 제한, 실패 처리, 비용 상한, 배포 확인 기준을 고정한다. 실제 투자 추천이나 매수/매도 판단을 생성하지 않는 기존 output validator 정책을 전제로 한다.
+이 문서는 포트폴리오 AI 분석을 live OpenAI provider로 운영할 때의 접근 권한, 사용량 제한, 실패 처리, 비용 상한, 배포 확인 기준을 고정한다. 실제 투자 추천이나 매수/매도 판단을 생성하지 않는 기존 output validator 정책을 전제로 한다.
 
 ## 현재 운영 기준
 
@@ -44,7 +44,8 @@ FINPLE_AI_ANALYSIS_ALLOWED_PLANS=personal,pro
 - personal 사용자는 분석 요청이 허용되어야 한다.
 - pro 사용자는 분석 요청이 허용되어야 한다.
 - education entitlement 사용자는 서버에서 `plan = "personal"`로 승격된 뒤 허용되어야 한다.
-- STEP 4 UI는 `access.allowed === false`일 때 분석 버튼을 막고 Personal/Pro 안내 문구를 표시해야 한다.
+- 포트폴리오 AI 분석 UI는 `access.allowed === false`일 때 분석 생성 대신 요금제 확인 안내를 표시해야 한다.
+- free/guest 차단 상태에서는 남은 횟수 문구를 숨겨야 한다.
 
 ## 사용량 카운트 정책
 
@@ -118,6 +119,14 @@ access.allowed = true 또는 false
 access.requiredPlans = ["personal", "pro"]
 ```
 
+반복 smoke 확인:
+
+```powershell
+npm.cmd run check:ai-production -- --commit=<최신 main short sha>
+```
+
+이 스크립트는 Render health, 포트폴리오 AI 분석 status, 관리자 usage endpoint의 토큰 없는 403 정상 응답, Vercel frontend HEAD를 함께 확인한다.
+
 관리자 사용량 요약:
 
 ```text
@@ -142,9 +151,9 @@ live OpenAI 호출은 비용이 발생하므로 사용자가 명시적으로 요
 2026-06-27 기준:
 
 ```text
-STEP 4 AI 분석 운영 안정화: 92%
+포트폴리오 AI 분석 운영 안정화: 99%
 남은 작업:
-- Personal 전용 환경변수 실제 적용 후 운영 smoke QA
-- 관리자 토큰으로 /admin/ai-usage 실데이터 화면 확인
-- live provider 품질 평가셋의 실제 OpenAI 응답 샘플 축적
+- 실제 운영 계정으로 Vercel 화면에서 free/personal/education UX를 최종 육안 확인
+- 관리자 토큰으로 `/admin/ai-usage` 실데이터 화면을 주기적으로 확인
+- live provider 품질 평가셋의 실제 OpenAI 응답 샘플을 누적해 fixture v3 후보 선별
 ```

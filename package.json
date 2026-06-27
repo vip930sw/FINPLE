@@ -9,7 +9,8 @@
     "build": "vite build && node scripts/verify-ai-analysis-build.cjs postbuild",
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint .",
-    "check:frontend": "npm run build"
+    "check:frontend": "npm run build",
+    "check:ai-production": "node scripts/check-ai-analysis-production.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
