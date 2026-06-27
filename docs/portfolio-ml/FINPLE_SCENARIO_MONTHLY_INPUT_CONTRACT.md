@@ -31,6 +31,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 provider candidate review | Implemented in Step 114-1O | Pending review checklist for endpoint/license/proxy/calendar evidence |
 | P0 external provider terms review | Implemented in Step 114-1P | Official-docs-based provider terms blockers before source approval |
 | P0 owner/legal decision packet | Implemented in Step 114-1Q | Owner and legal review questions before provider adapters or cache writes |
+| P0 approval readiness cross-check | Implemented in Step 114-1R | Cross-checks terms, owner/legal, source policy, and writer gate before adapters |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -294,6 +295,30 @@ bootstrapStillBlocked=true
 
 The packet asks for provider selection, commercial-use approval, redistribution policy, raw payload retention or hash policy, internal derived-cache retention, attribution/citation requirements, and display-label policy. It is intentionally a blocker, not an approval: provider adapters and `scenario_monthly_returns.csv` writes remain disallowed until the packet is reviewed and a later source-policy approval step records explicit approvals.
 
+## P0 Approval Readiness Cross-Check
+
+The approval readiness report lives at:
+
+```text
+data/processed/scenario_p0_approval_readiness.json
+```
+
+It cross-checks the source policy matrix, external provider terms review, owner/legal decision packet, and cache writer gate before any provider adapter or monthly cache writer is allowed:
+
+```text
+providerCandidates=5
+sourcePolicyRows=17
+termsApproved=0
+ownerAdapterApproved=0
+ownerMonthlyApproved=0
+sourcePolicyApproved=0
+safeToImplementProviderAdapter=false
+safeToWriteMonthlyData=false
+bootstrapStillBlocked=true
+```
+
+The report fails if provider candidates drift across the gate files, or if the writer gate allows provider calls or monthly writes before terms, owner/legal, and source-policy approvals are complete. This keeps the next implementation boundary explicit: adapters and `scenario_monthly_returns.csv` writes remain blocked until all approval layers agree.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -361,6 +386,7 @@ npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-owner-legal
+npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-p0-writer-gate
 ```
 

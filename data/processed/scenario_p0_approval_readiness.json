@@ -1,0 +1,74 @@
+{
+  "reportVersion": "scenario-p0-approval-readiness-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "sourcePolicySummary": "data\\processed\\scenario_p0_source_policy_matrix_summary.json",
+    "externalTermsReview": "data\\processed\\scenario_p0_external_provider_terms_review.csv",
+    "ownerLegalDecisionPacket": "data\\processed\\scenario_p0_owner_legal_decision_packet.csv",
+    "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
+  },
+  "outputFiles": {
+    "report": "data\\processed\\scenario_p0_approval_readiness.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "providerCandidates": [
+    "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+    "KR_price_total_return_dividend_provider",
+    "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+    "US_price_total_return_dividend_provider",
+    "USD_KRW_fx_provider"
+  ],
+  "rowCounts": {
+    "providerCandidates": 5,
+    "sourcePolicyRows": 17,
+    "externalTermsRows": 5,
+    "ownerLegalRows": 5,
+    "writerGateRows": 17,
+    "termsApproved": 0,
+    "ownerAdapterApproved": 0,
+    "ownerMonthlyApproved": 0,
+    "sourcePolicyApproved": 0
+  },
+  "counts": {
+    "sourcePolicyByStatus": {
+      "blocked_source_policy_review": 17
+    },
+    "termsByApprovalStatus": {
+      "not_approved": 5
+    },
+    "ownerByAdapterApprovalStatus": {
+      "pending_owner_legal_review": 5
+    },
+    "ownerByMonthlyWriteApprovalStatus": {
+      "blocked_pending_owner_legal_review": 5
+    },
+    "writerGateByStatus": {
+      "blocked_source_policy_review": 17
+    },
+    "sourcePolicyByProviderCandidate": {
+      "KOSPI200_TR_primary_or_kospi200_etf_proxy": 1,
+      "KR_price_total_return_dividend_provider": 6,
+      "SP500_TR_primary_or_SPY_adjusted_close_proxy": 1,
+      "US_price_total_return_dividend_provider": 8,
+      "USD_KRW_fx_provider": 1
+    }
+  },
+  "readiness": {
+    "status": "blocked_pending_p0_approvals",
+    "safeToImplementProviderAdapter": false,
+    "safeToWriteMonthlyData": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "blockers": [
+      "external_provider_terms_not_fully_approved",
+      "owner_legal_adapter_approval_not_complete",
+      "owner_legal_monthly_write_approval_not_complete",
+      "source_policy_rows_not_approved",
+      "writer_gate_cannot_write_monthly_data",
+      "writer_gate_provider_calls_not_allowed"
+    ],
+    "nextAllowedStep": "complete_owner_legal_terms_and_source_policy_approvals_before_adapter_or_write"
+  }
+}
