@@ -18,7 +18,8 @@ This step does not add real monthly return data. It adds the schema and validato
 | ML anomaly baseline | Implemented as offline support | `data/processed/ml/asset_anomaly_experiment_latest.csv` |
 | Scenario coverage audit | Implemented | 6,000 rows in `data/processed/scenario_data_coverage.csv`; A=0, B=5,757, C=243 |
 | Scenario monthly time series | Not populated | No committed `scenario_monthly_returns.csv` yet |
-| Monthly input quality gate | Implemented in this step | `npm.cmd run check:scenario-monthly-input` |
+| Monthly input quality gate | Implemented | `npm.cmd run check:scenario-monthly-input` |
+| Monthly input validator regressions | Implemented in Step 114-1E | Good/bad temporary CSV cases in `scripts/verify-scenario-monthly-input.test.cjs` |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
 
@@ -65,6 +66,8 @@ If this file is absent, the validator passes with an explicit "not present yet" 
 - A-grade rows include `totalReturn`, `benchmarkId`, and `benchmarkReturn`
 - non-A rows include `reasonCodes`
 - fields marked missing through reason codes are not filled with `0`
+
+`scripts/verify-scenario-monthly-input.test.cjs` keeps the validator behavior pinned with temporary fixture workspaces. It verifies that the gate accepts the current header-only state, accepts a valid A-grade fixture, rejects duplicate rows, rejects A-grade rows without benchmark returns, rejects zero-filled missing total returns, and rejects schema header drift.
 
 ## Command
 
