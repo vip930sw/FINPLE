@@ -1,7 +1,7 @@
-export const AI_ANALYSIS_REGRESSION_FIXTURE_VERSION = "ai-analysis-regression-fixtures-v2";
+export const AI_ANALYSIS_REGRESSION_FIXTURE_VERSION = "ai-analysis-regression-fixtures-v3";
 
 export const AI_ANALYSIS_EVALUATION_CRITERIA = {
-  minimumFixtureCount: 5,
+  minimumFixtureCount: 6,
   requiredMarkets: ["US", "KR"],
   requiredDataStatuses: ["ready_with_metrics", "short_history", "limited_manual_input"],
   requiredRiskFocus: [
@@ -10,6 +10,7 @@ export const AI_ANALYSIS_EVALUATION_CRITERIA = {
     "cashflow interpretation",
     "duration risk",
     "data warnings",
+    "live sample alignment",
   ],
   requiredOutputChecks: [
     "request schema validation",
@@ -18,6 +19,7 @@ export const AI_ANALYSIS_EVALUATION_CRITERIA = {
     "asset role coverage",
     "forbidden investment language",
     "numeric hallucination guard",
+    "live sample fixture alignment",
   ],
 };
 
@@ -154,6 +156,36 @@ export const AI_ANALYSIS_REGRESSION_FIXTURES = [
         { ticker: "QQQM", market: "US", name: "Invesco NASDAQ 100 ETF", weight: 20, cagr: 11.4, beta: 1.05, mdd: -27.8, dividendYield: 0.7, dataYears: 4, dataStatus: "short_history" },
         { ticker: "CASH", market: "US", name: "Cash", weight: 20, cagr: 0, beta: 0, mdd: 0, dividendYield: 0, dataYears: 0, dataStatus: "limited_manual_input" },
         { ticker: "SCHD", market: "US", name: "Schwab US Dividend Equity ETF", weight: 15, cagr: 9.1, beta: 0.78, mdd: -22.4, dividendYield: 3.4, dataYears: 10, dataStatus: "ready_with_metrics" },
+      ],
+    },
+  },
+  {
+    id: "live-balanced-growth-sample",
+    label: "Live sample balanced growth portfolio",
+    evaluationFocus: {
+      scenario: "운영 live OpenAI 샘플에서 반복 확인된 성장 ETF 중심의 균형형 포트폴리오",
+      mustCheck: ["growth concentration", "cash buffer interpretation", "no repeated generic summary"],
+    },
+    riskFocus: ["live sample alignment", "growth concentration", "duration risk", "cashflow interpretation"],
+    request: {
+      portfolioId: "fixture-live-balanced-growth",
+      metrics: {
+        cagr: 12.46,
+        beta: 0.76,
+        mdd: -32.12,
+        calmar: 0.39,
+        dividendYield: 2.15,
+        futureValue: 867721421,
+        inflationAdjustedFutureValue: 582000000,
+      },
+      assets: [
+        { ticker: "QQQ", market: "US", name: "Invesco QQQ Trust", weight: 45, cagr: 12.1, beta: 1.08, mdd: -35.2, dividendYield: 0.6, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "SCHD", market: "US", name: "Schwab US Dividend Equity ETF", weight: 22, cagr: 9.1, beta: 0.78, mdd: -22.4, dividendYield: 3.4, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "BND", market: "US", name: "Vanguard Total Bond Market ETF", weight: 8, cagr: 2.4, beta: 0.18, mdd: -13.7, dividendYield: 3.3, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "TLT", market: "US", name: "iShares 20+ Year Treasury Bond ETF", weight: 4, cagr: 1.8, beta: 0.35, mdd: -31.5, dividendYield: 3.8, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "VNQ", market: "US", name: "Vanguard Real Estate ETF", weight: 7, cagr: 4.2, beta: 0.92, mdd: -34.5, dividendYield: 4.1, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "GLD", market: "US", name: "SPDR Gold Shares", weight: 8, cagr: 6.2, beta: 0.12, mdd: -18.3, dividendYield: 0, dataYears: 10, dataStatus: "ready_with_metrics" },
+        { ticker: "CASH", market: "US", name: "Cash", weight: 6, cagr: 0, beta: 0, mdd: 0, dividendYield: 0, dataYears: 0, dataStatus: "limited_manual_input" },
       ],
     },
   },

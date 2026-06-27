@@ -168,7 +168,6 @@ function AnalysisResult({ analysis }) {
   const diagnosticSections = Array.isArray(analysis.diagnosticSections)
     ? analysis.diagnosticSections
     : [];
-  const shouldShowDiagnosticScopeCard = diagnosticSections.length === 3;
 
   return (
     <div className="aiAnalysisResultGrid">
@@ -216,16 +215,6 @@ function AnalysisResult({ analysis }) {
                 </ul>
               </article>
             ))}
-            {shouldShowDiagnosticScopeCard && (
-              <article className="aiAnalysisDiagnosticItem aiAnalysisDiagnosticMetaItem">
-                <strong>해석 범위</strong>
-                <p>진단 요약은 입력 지표 범위 안에서 구조, 위험 균형, 데이터 맥락을 압축해 보여줍니다.</p>
-                <ul>
-                  <li>매수·매도 판단이나 목표 비중은 포함하지 않습니다.</li>
-                  <li>추가 점검은 아래 위험요인과 분석 한계에서 이어집니다.</li>
-                </ul>
-              </article>
-            )}
           </div>
         </section>
       )}

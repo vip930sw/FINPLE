@@ -270,7 +270,7 @@ test("runPortfolioAnalysis returns deterministic mock output", async () => {
 });
 
 test("AI analysis regression fixtures pass request and mock output validation", async () => {
-  assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v2");
+  assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v3");
 
   for (const fixture of AI_ANALYSIS_REGRESSION_FIXTURES) {
     const normalizedRequest = normalizePortfolioAnalysisRequest(fixture.request);

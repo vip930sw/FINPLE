@@ -146,14 +146,29 @@ npm.cmd run build
 
 live OpenAI 호출은 비용이 발생하므로 사용자가 명시적으로 요청할 때만 수행한다.
 
+## 품질 평가셋 v3 운영 기준
+
+2026-06-27 기준 regression fixture는 `ai-analysis-regression-fixtures-v3`로 확정한다.
+
+확정 범위:
+
+- 최소 fixture 수: 6개
+- 필수 시장: `US`, `KR`
+- 필수 데이터 상태: `ready_with_metrics`, `short_history`, `limited_manual_input`
+- 필수 위험 초점: 성장 집중, 한국 숫자 ticker, 현금흐름, duration risk, 데이터 경고, live sample alignment
+- 실제 live 화면 QA에서 반복 확인된 균형형 성장 포트폴리오를 deterministic fixture로 흡수
+
+fixture v3의 상세 기준은 `FINPLE_AI_ANALYSIS_QUALITY_FIXTURES_V3.md`를 따른다. live OpenAI 응답 샘플 자체는 비용과 변동성이 있으므로 자동 회귀 테스트에 직접 포함하지 않고, 반복 패턴이 확인된 구성만 mock regression fixture로 고정한다.
+
 ## 현재 진행률
 
 2026-06-27 기준:
 
 ```text
-포트폴리오 AI 분석 운영 안정화: 99%
-남은 작업:
-- 실제 운영 계정으로 Vercel 화면에서 free/personal/education UX를 최종 육안 확인
-- 관리자 토큰으로 `/admin/ai-usage` 실데이터 화면을 주기적으로 확인
-- live provider 품질 평가셋의 실제 OpenAI 응답 샘플을 누적해 fixture v3 후보 선별
+포트폴리오 AI 분석 운영 안정화: 100%
+완료 기준:
+- 실제 운영 계정으로 free/personal/education UX 육안 QA 완료
+- 관리자 `/admin/ai-usage` 실데이터 화면 확인 완료
+- 비용 상한 기본값과 Personal 전용 전환 env 기준 확정
+- live provider 품질 평가셋 v3를 regression fixture로 확정
 ```

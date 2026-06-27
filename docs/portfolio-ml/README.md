@@ -147,13 +147,18 @@
   - usage count, retry, token, 비용 상한 기준
   - 관리자 사용량 UI와 운영 확인 API
 
+- `FINPLE_AI_ANALYSIS_QUALITY_FIXTURES_V3.md`
+  - 포트폴리오 AI 분석 품질 평가셋 v3 기준
+  - live 화면 QA 샘플을 deterministic regression fixture로 흡수한 기준
+  - v4 후보 조건
+
 ## 현재 진행 위치
 
-2026-06-26 기준 `Step 113-4B mock API 연결`까지 완료했다.
+2026-06-27 기준 STEP 4 포트폴리오 AI 분석 운영 안정화까지 완료했다.
 
-- Step 113 작업 순서 기준: 약 90%
-- 전체 장기 로드맵 기준: 약 45%
-- 다음 작업: `Step 113-4C live provider adapter`
+- Step 113 작업 순서 기준: 100%
+- 전체 장기 로드맵 기준: 약 50%
+- 다음 작업: `Step 114-1A Scenario data source audit`
 
 ## 시나리오 분석·지표 작업선
 

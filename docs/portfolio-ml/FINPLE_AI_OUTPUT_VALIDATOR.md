@@ -110,6 +110,8 @@ Node 내장 test runner로 다음 회귀 테스트를 고정했다.
 - long text reject
 - text numeric hallucination reject
 - incomplete asset role coverage reject
+- `ai-analysis-regression-fixtures-v3` request/mock validation
+- fixture coverage for US/KR, data status, risk focus, and live sample alignment
 
 ## 다음 단계
 
