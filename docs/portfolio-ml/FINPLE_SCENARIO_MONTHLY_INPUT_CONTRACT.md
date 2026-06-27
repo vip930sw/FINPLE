@@ -23,6 +23,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Monthly input readiness report | Implemented in Step 114-1F | `data/processed/scenario_monthly_input_readiness.json` |
 | Monthly provider refetch plan | Implemented in Step 114-1G | `data/processed/scenario_monthly_refetch_plan.csv` and summary JSON |
 | P0 monthly cache manifest | Implemented in Step 114-1H | P0 representative, benchmark, and FX subset for first cache writer |
+| P0 cache dry run | Implemented in Step 114-1I | Provider task contract without provider calls or monthly data writes |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
 
@@ -108,6 +109,28 @@ blocked_benchmark_policy=6
 
 This keeps the first data-writing step focused on the required representative assets, `SP500_TR`, `KOSPI200_TR`, and `USD_KRW`. It still does not write `scenario_monthly_returns.csv`; Bootstrap remains blocked.
 
+## P0 Cache Dry Run
+
+The dry-run task contract lives at:
+
+```text
+data/processed/scenario_p0_monthly_cache_dry_run.json
+```
+
+It validates the P0 manifest and monthly schema, then expands each P0 row into a provider task without making provider calls:
+
+```text
+totalTasks=17
+assetTasks=14
+benchmarkTasks=2
+fxTasks=1
+providerCallsMade=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Each task records required source metadata: `providerName`, `providerEndpoint`, `requestedAt`, `rawPayloadHash`, `licensePolicy`, and `sourceVersion`. The next step can replace the `dry_run_only_no_provider_call` action with a provider adapter only after source and license policy are reviewed.
+
 ## Future Data File
 
 The future validated input path is:
@@ -145,6 +168,7 @@ npm.cmd run check:scenario-monthly-input
 npm.cmd run check:scenario-readiness
 npm.cmd run check:scenario-refetch-plan
 npm.cmd run check:scenario-p0-manifest
+npm.cmd run check:scenario-p0-dry-run
 ```
 
 ## Non-Goals

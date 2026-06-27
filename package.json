@@ -16,6 +16,7 @@
     "check:scenario-readiness": "node scripts/generate-scenario-monthly-readiness.cjs --check",
     "check:scenario-refetch-plan": "node scripts/generate-scenario-monthly-refetch-plan.cjs --check",
     "check:scenario-p0-manifest": "node scripts/generate-scenario-p0-monthly-cache-manifest.cjs --check",
+    "check:scenario-p0-dry-run": "node scripts/generate-scenario-p0-cache-dry-run.cjs --check",
     "check:scenario-metrics": "node --test server/src/services/scenario/*.test.js"
   },
   "dependencies": {
