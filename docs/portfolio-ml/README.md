@@ -152,6 +152,11 @@
   - live 화면 QA 샘플을 deterministic regression fixture로 흡수한 기준
   - v4 후보 조건
 
+- `FINPLE_STEP113_AI_ANALYSIS_WORKLOG_AND_NEXT_HANDOFF_2026_06_27.md`
+  - STEP 4 포트폴리오 AI 분석 최종 작업내역
+  - 운영 작업지침과 검증 명령
+  - Issue #221 다음 채팅 첫 대화 문구
+
 ## 현재 진행 위치
 
 2026-06-27 기준 STEP 4 포트폴리오 AI 분석 운영 안정화까지 완료했다.

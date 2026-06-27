@@ -58,6 +58,9 @@ P0 경쟁력·지표·데이터·기술부채
 - [AI 출력 검증기](./portfolio-ml/FINPLE_AI_OUTPUT_VALIDATOR.md)
 - [AI 분석 STEP 4 UI Shell](./portfolio-ml/FINPLE_AI_ANALYSIS_STEP4_UI_SHELL.md)
 - [AI 분석 Mock API 연결](./portfolio-ml/FINPLE_AI_ANALYSIS_MOCK_API_CONNECTION.md)
+- [AI 분석 최종 작업내역·다음 인수인계](./portfolio-ml/FINPLE_STEP113_AI_ANALYSIS_WORKLOG_AND_NEXT_HANDOFF_2026_06_27.md)
+- [AI 분석 운영 정책](./portfolio-ml/FINPLE_AI_ANALYSIS_OPERATIONS_POLICY_2026_06_27.md)
+- [AI 분석 품질 평가셋 v3](./portfolio-ml/FINPLE_AI_ANALYSIS_QUALITY_FIXTURES_V3.md)
 
 ## 시나리오 분석 인수인계
 
