@@ -1,6 +1,6 @@
 # FINPLE Docs Index
 
-작성일: 2026-06-26
+작성일: 2026-06-27
 
 이 문서는 FINPLE 프로젝트 문서를 **현재 실행 우선순위**에 따라 정리한 인덱스다.
 
@@ -65,6 +65,14 @@ P0 경쟁력·지표·데이터·기술부채
 ## 시나리오 분석 인수인계
 
 - [시나리오 분석 Codex 인수인계](./portfolio-ml/FINPLE_SCENARIO_ANALYSIS_CODEX_HANDOFF.md)
+
+## AI Trading Lab·Signal 후속 계획
+
+- [AI Trading Lab 및 Signal 개발 로드맵](./trading/FINPLE_AI_TRADING_SIGNAL_ROADMAP_2026_06_27.md)
+  - Step 114 완료 후 착수할 자기계좌 AI 자율운용
+  - KIS 해외주식·레버리지 ETF·달러·환율 운용
+  - Trading Worker·DB·위험엔진 분리
+  - FINPLE Signal·유사투자자문업·장기 로보어드바이저 확장 기준
 
 ## 인증·결제·MY PAGE
 
@@ -134,6 +142,7 @@ P0 경쟁력·지표·데이터·기술부채
 - 베타 오류와 개선사항은 Step 90 운영로그에 기록한다.
 - 사용자 피드백은 Step 89 기준에 따라 P0·P1·P2·HOLD로 분류한다.
 - 날짜가 명시된 인수인계 문서는 최신 문서와 충돌할 경우 최신 문서를 우선한다.
+
 ## Recent AI Analysis Handoff
 
 - [FINPLE AI Analysis Handoff 2026-06-27](./portfolio-ml/FINPLE_AI_ANALYSIS_HANDOFF_2026_06_27.md)
