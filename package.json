@@ -10,7 +10,8 @@
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint .",
     "check:frontend": "npm run build",
-    "check:ai-production": "node scripts/check-ai-analysis-production.mjs"
+    "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
+    "check:scenario-data": "node scripts/verify-scenario-data-coverage.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

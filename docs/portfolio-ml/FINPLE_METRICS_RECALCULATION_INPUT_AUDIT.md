@@ -85,3 +85,13 @@ market,ticker,rawPriceCagr10y,rollingPriceCagr10yMedian,rollingPriceCagr10yP25,r
 ## Recommended Step 114-1B Boundary
 
 Step 114-1B should create pure metric utilities and fixtures around explicit monthly return arrays. It should wait for a committed monthly data input or controlled provider-refetch fixture before any portfolio scenario API/UI work.
+
+## Required Pre-Flight Check
+
+Before Step 114-1B starts calculating Raw CAGR, Rolling CAGR, MDD, Rolling MDD, or BETA, run:
+
+```powershell
+npm.cmd run check:scenario-data
+```
+
+This check is intentionally stricter than a generic CSV parser. It preserves the current audit conclusions that missing series are not zero-filled, summary metrics are not treated as time-series inputs, KR representative ETF BETA is blocked until the KOSPI 200 benchmark policy is resolved, and short-history representative assets remain marked as insufficient for strict 120-month rolling calculations.

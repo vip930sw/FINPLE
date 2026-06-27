@@ -115,3 +115,13 @@ Use these files as the current overlay inputs for Step 114-1B, with the limitati
 - `data/processed/kr_price_metrics_overlay_20260528_excluded_332.csv`
 
 Step 114-1B should not treat `expectedCagr`, `mdd`, or `beta` as time-series inputs. They are summary outputs. The next calculation PR needs a persisted monthly return input schema or a deterministic provider-refetch cache before Rolling CAGR, Rolling MDD, scenario paths, and benchmark comparisons can be reproduced.
+
+## Data Integrity Gate
+
+Run the scenario data audit gate before any Step 114-1B metric utility or scenario calculation work:
+
+```powershell
+npm.cmd run check:scenario-data
+```
+
+The gate validates the committed coverage CSV shape, 6,000-row universe, A/B/C grade counts, required representative assets, no zero-filled missing series, KR representative ETF benchmark policy findings, and matching inventory/audit documentation. This keeps the current conclusion explicit: no asset is A-grade until a committed monthly total-return series exists.
