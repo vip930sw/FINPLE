@@ -23,6 +23,7 @@
     "check:scenario-p0-source-decision": "node scripts/generate-scenario-p0-source-approval-decision-record.cjs --check",
     "check:scenario-p0-provider-review": "node scripts/generate-scenario-p0-provider-candidate-review.cjs --check",
     "check:scenario-p0-external-terms": "node scripts/generate-scenario-p0-external-provider-terms-review.cjs --check",
+    "check:scenario-p0-owner-legal": "node scripts/generate-scenario-p0-owner-legal-decision-packet.cjs --check",
     "check:scenario-p0-writer-gate": "node scripts/generate-scenario-p0-cache-writer-gate.cjs --check",
     "check:scenario-metrics": "node --test server/src/services/scenario/*.test.js"
   },

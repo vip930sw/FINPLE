@@ -30,6 +30,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source approval decision record | Implemented in Step 114-1M | Pending provider/license decision register for the five P0 source groups |
 | P0 provider candidate review | Implemented in Step 114-1O | Pending review checklist for endpoint/license/proxy/calendar evidence |
 | P0 external provider terms review | Implemented in Step 114-1P | Official-docs-based provider terms blockers before source approval |
+| P0 owner/legal decision packet | Implemented in Step 114-1Q | Owner and legal review questions before provider adapters or cache writes |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -270,6 +271,29 @@ bootstrapStillBlocked=true
 
 The current candidates are Alpha Vantage for US asset/index/proxy review, Korea Investment Open API or licensed KR market-data provider for KR ETF series, KRX Data Marketplace or licensed KOSPI 200 ETF proxy for KR benchmark review, and FRED DEXKOUS for USD/KRW review. These are evidence rows, not approvals; source rows remain blocked until owner/legal review confirms commercial use, redistribution, raw payload, cache, citation, and display-label policy.
 
+## P0 Owner/Legal Decision Packet
+
+The owner/legal decision packet lives at:
+
+```text
+data/processed/scenario_p0_owner_legal_decision_packet.csv
+data/processed/scenario_p0_owner_legal_decision_packet_summary.json
+```
+
+It converts the external provider terms review into explicit owner/legal questions for the five P0 source groups:
+
+```text
+providerCandidates=5
+pendingOwnerLegalReview=5
+approvedForAdapter=0
+approvedForMonthlyWrite=0
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The packet asks for provider selection, commercial-use approval, redistribution policy, raw payload retention or hash policy, internal derived-cache retention, attribution/citation requirements, and display-label policy. It is intentionally a blocker, not an approval: provider adapters and `scenario_monthly_returns.csv` writes remain disallowed until the packet is reviewed and a later source-policy approval step records explicit approvals.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -336,6 +360,7 @@ npm.cmd run check:scenario-p0-source-approval
 npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
+npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-writer-gate
 ```
 

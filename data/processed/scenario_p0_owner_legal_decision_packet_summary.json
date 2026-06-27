@@ -1,0 +1,40 @@
+{
+  "packetVersion": "scenario-p0-owner-legal-decision-packet-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "externalTermsReview": "data\\processed\\scenario_p0_external_provider_terms_review.csv"
+  },
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_p0_owner_legal_decision_packet.csv",
+    "summary": "data\\processed\\scenario_p0_owner_legal_decision_packet_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerCandidates": 5,
+    "pendingOwnerLegalReview": 5,
+    "approvedForAdapter": 0,
+    "approvedForMonthlyWrite": 0
+  },
+  "counts": {
+    "byAdapterApprovalStatus": {
+      "pending_owner_legal_review": 5
+    },
+    "byMonthlyWriteApprovalStatus": {
+      "blocked_pending_owner_legal_review": 5
+    },
+    "byBlocker": {
+      "commercial_use_and_redistribution_terms_not_approved": 1,
+      "fx_source_terms_and_citation_policy_not_approved": 1,
+      "index_or_proxy_license_terms_not_approved": 1,
+      "kospi200_index_or_proxy_terms_not_approved": 1,
+      "kr_market_data_terms_not_approved": 1
+    }
+  },
+  "readiness": {
+    "status": "pending_owner_legal_decision_packet",
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "owner_legal_fill_decision_packet_before_provider_adapter_or_monthly_cache_write"
+  }
+}
