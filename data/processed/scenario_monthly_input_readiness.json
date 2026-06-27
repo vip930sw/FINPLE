@@ -1,0 +1,350 @@
+{
+  "reportVersion": "scenario-monthly-readiness-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "coverage": "data\\processed\\scenario_data_coverage.csv",
+    "monthlySchema": "data\\processed\\scenario_monthly_returns.schema.csv",
+    "monthlyData": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "monthlyInput": {
+    "schemaPath": "data\\processed\\scenario_monthly_returns.schema.csv",
+    "schemaFilePresent": true,
+    "schemaColumnsMatch": true,
+    "schemaColumns": [
+      "market",
+      "ticker",
+      "month",
+      "priceReturn",
+      "totalReturn",
+      "closePrice",
+      "adjustedClose",
+      "dividendAmount",
+      "benchmarkId",
+      "benchmarkReturn",
+      "fxReturn",
+      "returnBasis",
+      "currency",
+      "isProxy",
+      "proxyTicker",
+      "dataSource",
+      "sourceVersion",
+      "seriesQuality",
+      "reasonCodes"
+    ],
+    "dataPath": "data\\processed\\scenario_monthly_returns.csv",
+    "dataFilePresent": false,
+    "dataRowCount": 0,
+    "status": "blocked_missing_monthly_return_file",
+    "requiredColumns": [
+      "market",
+      "ticker",
+      "month",
+      "priceReturn",
+      "totalReturn",
+      "closePrice",
+      "adjustedClose",
+      "dividendAmount",
+      "benchmarkId",
+      "benchmarkReturn",
+      "fxReturn",
+      "returnBasis",
+      "currency",
+      "isProxy",
+      "proxyTicker",
+      "dataSource",
+      "sourceVersion",
+      "seriesQuality",
+      "reasonCodes"
+    ]
+  },
+  "coverage": {
+    "rowCount": 6000,
+    "scenarioGradeCounts": {
+      "B": 5757,
+      "C": 243
+    },
+    "marketGradeCounts": {
+      "KR": {
+        "A": 0,
+        "B": 2760,
+        "C": 240
+      },
+      "US": {
+        "A": 0,
+        "B": 2997,
+        "C": 3
+      }
+    },
+    "metricsStatusCounts": {
+      "ready": 4802,
+      "review_required": 495,
+      "short_history": 703
+    },
+    "reasonCodeCounts": {
+      "benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay": 6,
+      "close_price_metrics_overlay_present": 5757,
+      "dividend_yield_overlay_only_no_dividend_time_series": 4242,
+      "fx_required_for_krw_mode_but_no_fx_series_committed": 3000,
+      "less_than_10_year_overlay_window": 5733,
+      "missing_benchmark_for_beta_recalc": 24,
+      "no_dividend_time_series": 1758,
+      "no_monthly_total_return_series": 6000,
+      "review_reason_abnormal_cagr": 52,
+      "review_reason_missing_close_price_data": 243,
+      "review_reason_price_history_shorter_than_1_year": 200,
+      "review_reason_price_history_shorter_than_3_years": 703,
+      "shorter_than_10y_no_proxy_recorded": 1,
+      "source_series_not_committed_provider_refetch_required": 5757,
+      "summary_or_candidate_row_only_no_price_series_evidence": 243
+    },
+    "recalculationStatusCounts": {
+      "rawCagrRecalcStatus": {
+        "not_supported_no_price_series": 243,
+        "provider_refetch_required": 5757
+      },
+      "rollingCagr10yRecalcStatus": {
+        "insufficient_for_120m_or_requires_proxy": 5733,
+        "not_supported_no_price_series": 243,
+        "provider_refetch_required_monthly_history_not_committed": 24
+      },
+      "mddRecalcStatus": {
+        "not_supported_no_price_series": 243,
+        "provider_refetch_required": 5757
+      },
+      "rollingMdd10yRecalcStatus": {
+        "insufficient_for_120m_or_requires_proxy": 5733,
+        "not_supported_no_price_series": 243,
+        "provider_refetch_required_monthly_history_not_committed": 24
+      },
+      "betaRecalcStatus": {
+        "blocked_missing_beta_or_benchmark": 65,
+        "blocked_policy_benchmark_should_be_kospi200": 6,
+        "not_supported_no_price_series": 243,
+        "provider_refetch_required": 5686
+      },
+      "metricsStatus": {
+        "ready": 4802,
+        "review_required": 495,
+        "short_history": 703
+      }
+    }
+  },
+  "representativeAssets": [
+    {
+      "market": "US",
+      "ticker": "SPY",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "VOO",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "IVV",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "VTI",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "ITOT",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "SCHB",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQ",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQM",
+      "scenarioGrade": "B",
+      "dataYears": "5.62",
+      "benchmarkId": "SPY",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "provider_refetch_required",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|fx_required_for_krw_mode_but_no_fx_series_committed|shorter_than_10y_no_proxy_recorded|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "069500",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "102110",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "148020",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "105190",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "152100",
+      "scenarioGrade": "B",
+      "dataYears": "9.99",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|dividend_yield_overlay_only_no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    },
+    {
+      "market": "KR",
+      "ticker": "278530",
+      "scenarioGrade": "B",
+      "dataYears": "8.51",
+      "benchmarkId": "^KS11",
+      "rawCagrRecalcStatus": "provider_refetch_required",
+      "rollingCagr10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "mddRecalcStatus": "provider_refetch_required",
+      "rollingMdd10yRecalcStatus": "insufficient_for_120m_or_requires_proxy",
+      "betaRecalcStatus": "blocked_policy_benchmark_should_be_kospi200",
+      "metricsStatus": "ready",
+      "reasonCodes": "close_price_metrics_overlay_present|source_series_not_committed_provider_refetch_required|no_monthly_total_return_series|no_dividend_time_series|benchmark_policy_mismatch_kospi200_etf_uses_ks11_overlay|less_than_10_year_overlay_window"
+    }
+  ],
+  "readiness": {
+    "readyForHistoricalRolling": false,
+    "readyForJointBlockBootstrap": false,
+    "readyForScenarioApi": false,
+    "status": "blocked_until_monthly_series_exists",
+    "blockers": [
+      "no_committed_scenario_monthly_returns_csv",
+      "no_a_grade_total_return_series",
+      "benchmark_monthly_returns_not_persisted",
+      "fx_monthly_returns_not_persisted",
+      "dividend_time_series_not_persisted"
+    ],
+    "nextAllowedStep": "provider_refetch_cache_or_controlled_monthly_fixture_generation",
+    "blockedSteps": [
+      "joint_block_bootstrap",
+      "scenario_api",
+      "compare_chart_scenario_bands",
+      "ai_scenario_integration"
+    ]
+  }
+}

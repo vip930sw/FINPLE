@@ -20,6 +20,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Scenario monthly time series | Not populated | No committed `scenario_monthly_returns.csv` yet |
 | Monthly input quality gate | Implemented | `npm.cmd run check:scenario-monthly-input` |
 | Monthly input validator regressions | Implemented in Step 114-1E | Good/bad temporary CSV cases in `scripts/verify-scenario-monthly-input.test.cjs` |
+| Monthly input readiness report | Implemented in Step 114-1F | `data/processed/scenario_monthly_input_readiness.json` |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
 
@@ -38,6 +39,25 @@ market,ticker,month,priceReturn,totalReturn,closePrice,adjustedClose,dividendAmo
 ```
 
 The schema file must remain header-only. It is not sample data and must not be used as a calculation fixture.
+
+## Readiness Report
+
+The machine-readable readiness report lives at:
+
+```text
+data/processed/scenario_monthly_input_readiness.json
+```
+
+It is generated from `scenario_data_coverage.csv` and the monthly schema file. Current status:
+
+```text
+status=blocked_until_monthly_series_exists
+monthlyInput=blocked_missing_monthly_return_file
+readyForJointBlockBootstrap=false
+scenarioGradeCounts: A=0, B=5757, C=243
+```
+
+The report intentionally keeps Bootstrap, scenario API, Compare chart scenario bands, and AI scenario integration blocked until real monthly asset, benchmark, dividend, and FX series exist.
 
 ## Future Data File
 
@@ -73,6 +93,7 @@ If this file is absent, the validator passes with an explicit "not present yet" 
 
 ```powershell
 npm.cmd run check:scenario-monthly-input
+npm.cmd run check:scenario-readiness
 ```
 
 ## Non-Goals
