@@ -12,6 +12,7 @@ const PROVIDER_REVIEW_SUMMARY_PATH = path.join("data", "processed", "scenario_p0
 const EXTERNAL_TERMS_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_external_provider_terms_review_summary.json");
 const OWNER_LEGAL_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_owner_legal_decision_packet_summary.json");
 const APPROVAL_INTAKE_PATH = path.join("data", "processed", "scenario_p0_approval_intake_checklist.json");
+const APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -136,6 +137,7 @@ function buildProgress() {
   const externalTerms = readJson(EXTERNAL_TERMS_SUMMARY_PATH);
   const ownerLegal = readJson(OWNER_LEGAL_SUMMARY_PATH);
   const approvalIntake = readJson(APPROVAL_INTAKE_PATH);
+  const approvalIntakeTemplate = readJson(APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
@@ -158,7 +160,9 @@ function buildProgress() {
     providerReview.rowCounts?.providerGroups === 5 &&
     externalTerms.rowCounts?.providerCandidates === 5 &&
     ownerLegal.rowCounts?.providerCandidates === 5 &&
-    approvalIntake.rowCounts?.providerGroups === 5;
+    approvalIntake.rowCounts?.providerGroups === 5 &&
+    approvalIntakeTemplate.rowCounts?.providerGroups === 5 &&
+    approvalIntakeTemplate.rowCounts?.approvedRows === 0;
   const guardrailHarnessComplete =
     approvalReadiness.sourceFiles?.sourceApprovalDecisionRecord &&
     approvalReadiness.readiness?.safeToImplementProviderAdapter === false &&
@@ -221,6 +225,7 @@ function buildProgress() {
         decisionRows: sourceDecision.rowCounts?.providerGroups,
         providerCandidates: externalTerms.rowCounts?.providerCandidates,
         approvalIntakeProviderGroups: approvalIntake.rowCounts?.providerGroups,
+        approvalIntakeTemplateRows: approvalIntakeTemplate.rowCounts?.providerGroups,
       },
     ),
     milestone(
@@ -286,6 +291,7 @@ function buildProgress() {
       coverageCsv: COVERAGE_CSV_PATH,
       monthlyReadiness: MONTHLY_READINESS_PATH,
       approvalIntakeChecklist: APPROVAL_INTAKE_PATH,
+      approvalIntakeTemplate: APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,

@@ -18,6 +18,7 @@ const PROCESSED_FILES = [
   "scenario_p0_external_provider_terms_review_summary.json",
   "scenario_p0_owner_legal_decision_packet_summary.json",
   "scenario_p0_approval_intake_checklist.json",
+  "scenario_p0_approval_intake_template_summary.json",
   "scenario_p0_approval_readiness.json",
   "scenario_monthly_write_preflight.json",
   "scenario_p0_cache_writer_gate.json",

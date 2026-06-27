@@ -1,0 +1,38 @@
+{
+  "templateVersion": "scenario-p0-approval-intake-template-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourceApprovalDecisionRecord": "data\\processed\\scenario_p0_source_approval_decision_record.csv",
+    "ownerLegalDecisionPacket": "data\\processed\\scenario_p0_owner_legal_decision_packet.csv",
+    "approvalIntakeChecklist": "data\\processed\\scenario_p0_approval_intake_checklist.json"
+  },
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_p0_approval_intake_template.csv",
+    "summary": "data\\processed\\scenario_p0_approval_intake_template_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerGroups": 5,
+    "pendingReviewRows": 5,
+    "approvedRows": 0
+  },
+  "requiredReviewerFields": [
+    "selectedProvider",
+    "selectedEndpoint",
+    "licenseDecision",
+    "rawPayloadPolicy",
+    "redistributionDecision",
+    "reviewOwner",
+    "decisionOwner",
+    "legalReviewer",
+    "reviewedAt",
+    "evidenceUrl"
+  ],
+  "readiness": {
+    "status": "pending_real_approval_input",
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "reviewer_fill_approval_intake_template_before_source_policy_approval"
+  }
+}

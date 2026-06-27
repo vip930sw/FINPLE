@@ -113,6 +113,8 @@ data/processed/scenario_p0_external_provider_terms_review_summary.json
 data/processed/scenario_p0_owner_legal_decision_packet.csv
 data/processed/scenario_p0_owner_legal_decision_packet_summary.json
 data/processed/scenario_p0_approval_intake_checklist.json
+data/processed/scenario_p0_approval_intake_template.csv
+data/processed/scenario_p0_approval_intake_template_summary.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_step114_progress.json
@@ -138,6 +140,8 @@ scripts/generate-scenario-p0-external-provider-terms-review.cjs
 scripts/generate-scenario-p0-owner-legal-decision-packet.cjs
 scripts/generate-scenario-p0-approval-intake-checklist.cjs
 scripts/generate-scenario-p0-approval-intake-checklist.test.cjs
+scripts/generate-scenario-p0-approval-intake-template.cjs
+scripts/generate-scenario-p0-approval-intake-template.test.cjs
 scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
@@ -158,6 +162,7 @@ owner/legal monthly write approved=0
 source policy approved=0
 approval intake completion=0%
 approval intake ready provider groups=0/5
+approval template rows=5 pending, 0 approved
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -205,6 +210,7 @@ npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-intake
+npm.cmd run check:scenario-p0-approval-template
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
@@ -277,6 +283,22 @@ readyForMonthlyDataWrite=false
 ```
 
 The checklist is intended for owner/legal/source reviewers to fill the real decision inputs later. It still does not permit provider calls, provider adapters, or `scenario_monthly_returns.csv` writes.
+
+## Step 114-1W Approval Template Follow-Up
+
+The reviewer-facing approval intake template now provides one pending row for each P0 provider group:
+
+```text
+providerGroups=5
+pendingReviewRows=5
+approvedRows=0
+approvalStatusDraft=pending_review
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The template leaves real approval fields blank and exists only to collect future reviewer input. It does not approve source policy rows.
 
 ## Recommended Next Step
 

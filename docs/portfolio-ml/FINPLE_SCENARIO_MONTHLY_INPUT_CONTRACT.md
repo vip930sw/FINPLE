@@ -36,6 +36,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source approval fixture harness | Implemented in Step 114-1T | Synthetic tests prove approvals require provider, endpoint, license, raw payload, redistribution, owner/legal, reviewed-at, and evidence fields |
 | Step 114 progress report | Implemented in Step 114-1U | Machine-readable overall progress percent and blocker summary for the P0 monthly data readiness path |
 | P0 approval intake checklist | Implemented in Step 114-1V | Provider-group checklist of missing real approval fields before source-policy approval |
+| P0 approval intake template | Implemented in Step 114-1W | Reviewer-facing pending CSV template for real approval input, without pre-approving any provider |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -344,6 +345,28 @@ readyForMonthlyDataWrite=false
 ```
 
 The checklist keeps the next non-runtime action explicit: fill real approval fields for selected provider, selected endpoint, license decision, raw payload policy, redistribution decision, review owner, owner/legal reviewers, review timestamps, and evidence URL. Provider adapters and monthly data writes remain blocked.
+
+## P0 Approval Intake Template
+
+The reviewer-facing approval intake template lives at:
+
+```text
+data/processed/scenario_p0_approval_intake_template.csv
+data/processed/scenario_p0_approval_intake_template_summary.json
+```
+
+It has one pending row for each P0 provider group:
+
+```text
+providerGroups=5
+pendingReviewRows=5
+approvedRows=0
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The template intentionally leaves reviewer fields blank and uses `approvalStatusDraft=pending_review`. It is an input surface for future real approval, not an approval artifact.
 
 ## Monthly Write Preflight
 

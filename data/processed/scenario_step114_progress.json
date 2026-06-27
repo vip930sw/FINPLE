@@ -7,6 +7,7 @@
     "coverageCsv": "data\\processed\\scenario_data_coverage.csv",
     "monthlyReadiness": "data\\processed\\scenario_monthly_input_readiness.json",
     "approvalIntakeChecklist": "data\\processed\\scenario_p0_approval_intake_checklist.json",
+    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template_summary.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
     "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
@@ -81,7 +82,8 @@
         "providerGroups": 5,
         "decisionRows": 5,
         "providerCandidates": 5,
-        "approvalIntakeProviderGroups": 5
+        "approvalIntakeProviderGroups": 5,
+        "approvalIntakeTemplateRows": 5
       },
       "blockers": []
     },
