@@ -58,7 +58,7 @@ validated monthly asset returns
 
 The current implementation exposes `terminalReturnMedian` and `mddMedian` per horizon in `portfolioHistoricalBaseline.js`. A future display-level rolling CAGR should annualize each window's terminal return for the selected horizon before taking the median, instead of reusing `expectedCagr` or raw summary CAGR.
 
-The older app metric policy is separate: Korean representative-index ETFs may use `rollingCagr10yMedian` for `expectedCagr` when raw 10-year price CAGR is distorted by the chosen start/end period. That policy is an asset-card metric policy, not a scenario Bootstrap input policy.
+The older app metric policy started with Korean representative-index ETFs, but the future policy should apply rolling median treatment to representative US and KR assets once monthly series are validated. The machine-readable policy is `data/processed/scenario_rolling_median_policy.json`; it covers SPY / VOO / IVV, VTI / ITOT / SCHB, QQQ / QQQM, and the required KOSPI 200 representative ETFs. This is still an asset-card or metric-summary policy boundary, not permission to derive scenario Bootstrap inputs from summary fields.
 
 ## Validation
 

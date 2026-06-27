@@ -22,6 +22,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Monthly input validator regressions | Implemented in Step 114-1E | Good/bad temporary CSV cases in `scripts/verify-scenario-monthly-input.test.cjs` |
 | Monthly input readiness report | Implemented in Step 114-1F | `data/processed/scenario_monthly_input_readiness.json` |
 | Monthly provider refetch plan | Implemented in Step 114-1G | `data/processed/scenario_monthly_refetch_plan.csv` and summary JSON |
+| Rolling median policy | Implemented in Step 114-1N | US/KR representative assets share the future rolling CAGR/MDD median policy |
 | P0 monthly cache manifest | Implemented in Step 114-1H | P0 representative, benchmark, and FX subset for first cache writer |
 | P0 cache dry run | Implemented in Step 114-1I | Provider task contract without provider calls or monthly data writes |
 | P0 source policy matrix | Implemented in Step 114-1J | Source/license approval gate before provider adapters |
@@ -90,6 +91,28 @@ blocked_no_price_series_evidence=243
 ```
 
 The three system rows are `SP500_TR`, `KOSPI200_TR`, and `USD_KRW`. The monthly data target remains `data/processed/scenario_monthly_returns.csv`.
+
+## Rolling Median Policy
+
+The rolling median policy lives at:
+
+```text
+data/processed/scenario_rolling_median_policy.json
+```
+
+It records that representative US and KR assets should both use rolling 10-year median treatment after validated monthly series exist:
+
+```text
+representatives=14
+usRepresentatives=8
+krRepresentatives=6
+usRollingMedianPolicyApplied=true
+krRollingMedianPolicyApplied=true
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+This policy is intentionally blocked until monthly data exists. It prevents the future overlay from applying rolling median only to KR rows while leaving US representative rows on raw endpoint-sensitive CAGR/MDD.
 
 ## P0 Cache Manifest
 
@@ -259,6 +282,7 @@ If this file is absent, the validator passes with an explicit "not present yet" 
 npm.cmd run check:scenario-monthly-input
 npm.cmd run check:scenario-readiness
 npm.cmd run check:scenario-refetch-plan
+npm.cmd run check:scenario-rolling-median-policy
 npm.cmd run check:scenario-p0-manifest
 npm.cmd run check:scenario-p0-dry-run
 npm.cmd run check:scenario-p0-source-policy

@@ -41,6 +41,29 @@ This document audits whether FINPLE currently has the time-series inputs needed 
 5. Price return and total return data are mixed only at the policy level; the committed overlays are close-price based plus separate dividend-yield summaries.
 6. Short-history ETF proxy use is not recorded in the current overlays. `QQQM` and `278530` need explicit proxy metadata before 10-year rolling treatment.
 
+## US/KR Rolling Median Policy
+
+The future rolling median policy is now intentionally market-neutral for representative assets. It applies to both US and KR representative rows once validated monthly series exist:
+
+```text
+data/processed/scenario_rolling_median_policy.json
+```
+
+Current policy state:
+
+```text
+representatives=14
+usRepresentatives=8
+krRepresentatives=6
+usRollingMedianPolicyApplied=true
+krRollingMedianPolicyApplied=true
+currentStatus=blocked_until_monthly_series_exists
+```
+
+For both markets, future metric summary overlays should keep raw and rolling fields side by side. Representative asset display metrics may use `rollingPriceCagr10yMedian` as the stable CAGR policy input after monthly source validation, while retaining raw CAGR as an audit field. MDD should likewise preserve `mddFullPeriod` and `rollingMdd10yMedian` separately.
+
+This policy does not make the current rows A-grade. US and KR representative assets remain blocked until monthly price, total-return, dividend, benchmark, and FX/proxy metadata pass the monthly input contract.
+
 ## Representative Asset Recalculation Table
 
 | Market | Ticker | Grade | dataYears | Benchmark | Raw CAGR | Rolling CAGR | MDD | Rolling MDD | BETA |
@@ -92,6 +115,7 @@ Before Step 114-1B starts calculating Raw CAGR, Rolling CAGR, MDD, Rolling MDD, 
 
 ```powershell
 npm.cmd run check:scenario-data
+npm.cmd run check:scenario-rolling-median-policy
 ```
 
 This check is intentionally stricter than a generic CSV parser. It preserves the current audit conclusions that missing series are not zero-filled, summary metrics are not treated as time-series inputs, KR representative ETF BETA is blocked until the KOSPI 200 benchmark policy is resolved, and short-history representative assets remain marked as insufficient for strict 120-month rolling calculations.

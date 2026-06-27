@@ -1,0 +1,257 @@
+{
+  "policyVersion": "scenario-rolling-median-policy-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "coverage": "data\\processed\\scenario_data_coverage.csv",
+    "p0Manifest": "data\\processed\\scenario_p0_monthly_cache_manifest.csv"
+  },
+  "outputFiles": {
+    "policy": "data\\processed\\scenario_rolling_median_policy.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "policy": {
+    "scope": "US and KR representative assets",
+    "appliesToMarkets": [
+      "US",
+      "KR"
+    ],
+    "representativeAssetCount": 14,
+    "requiredRollingFields": [
+      "rollingPriceCagr10yMedian",
+      "rollingPriceCagr10yP25",
+      "rollingPriceCagr10yP75",
+      "rollingTotalReturnCagr10yMedian",
+      "rollingMdd10yMedian",
+      "rollingMdd10yWorst",
+      "rollingWindowCount"
+    ],
+    "cagrRule": "Use rolling 10-year median CAGR for representative US and KR assets after validated monthly series exist; keep raw CAGR as a separate audit field.",
+    "mddRule": "Use rolling 10-year median MDD for representative US and KR assets after validated monthly NAV windows exist; keep full-period MDD as a separate audit field.",
+    "noFallbacks": [
+      "do_not_use_expectedCagr_as_rolling_metric",
+      "do_not_use_weighted_asset_mdd_as_portfolio_mdd",
+      "do_not_zero_fill_missing_months",
+      "do_not_apply_rolling_policy_without_source_metadata"
+    ]
+  },
+  "rowCounts": {
+    "representatives": 14,
+    "usRepresentatives": 8,
+    "krRepresentatives": 6
+  },
+  "counts": {
+    "byMarket": {
+      "KR": 6,
+      "US": 8
+    },
+    "byCurrentScenarioGrade": {
+      "B": 14
+    },
+    "byCurrentStatus": {
+      "blocked_until_monthly_series_exists": 14
+    },
+    "byCurrentRollingCagrStatus": {
+      "insufficient_for_120m_or_requires_proxy": 14
+    },
+    "byCurrentRollingMddStatus": {
+      "insufficient_for_120m_or_requires_proxy": 14
+    }
+  },
+  "representatives": [
+    {
+      "market": "US",
+      "ticker": "SPY",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "VOO",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "IVV",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "VTI",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "ITOT",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "SCHB",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQ",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQM",
+      "targetBenchmarkId": "SP500_TR",
+      "dataYears": "5.62",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "069500",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "102110",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "148020",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "105190",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "152100",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "9.99",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    },
+    {
+      "market": "KR",
+      "ticker": "278530",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "dataYears": "8.51",
+      "currentScenarioGrade": "B",
+      "currentRollingCagrStatus": "insufficient_for_120m_or_requires_proxy",
+      "currentRollingMddStatus": "insufficient_for_120m_or_requires_proxy",
+      "appliedCagrPolicy": "rolling_10y_median_after_monthly_series_validation",
+      "appliedMddPolicy": "rolling_10y_median_after_monthly_nav_validation",
+      "policyScope": "US_KR_representative_assets",
+      "currentStatus": "blocked_until_monthly_series_exists"
+    }
+  ],
+  "readiness": {
+    "status": "blocked_until_monthly_series_exists",
+    "marketsCovered": [
+      "KR",
+      "US"
+    ],
+    "usRollingMedianPolicyApplied": true,
+    "krRollingMedianPolicyApplied": true,
+    "monthlyDataFileWritten": false,
+    "providerCallsAllowed": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "populate_monthly_series_before_rolling_median_calculation"
+  }
+}

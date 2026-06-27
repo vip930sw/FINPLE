@@ -15,6 +15,7 @@
     "check:scenario-monthly-input": "node scripts/verify-scenario-monthly-input.cjs && node --test scripts/verify-scenario-monthly-input.test.cjs",
     "check:scenario-readiness": "node scripts/generate-scenario-monthly-readiness.cjs --check",
     "check:scenario-refetch-plan": "node scripts/generate-scenario-monthly-refetch-plan.cjs --check",
+    "check:scenario-rolling-median-policy": "node scripts/generate-scenario-rolling-median-policy.cjs --check",
     "check:scenario-p0-manifest": "node scripts/generate-scenario-p0-monthly-cache-manifest.cjs --check",
     "check:scenario-p0-dry-run": "node scripts/generate-scenario-p0-cache-dry-run.cjs --check",
     "check:scenario-p0-source-policy": "node scripts/generate-scenario-p0-source-policy-matrix.cjs --check",
