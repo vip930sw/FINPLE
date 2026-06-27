@@ -25,6 +25,7 @@
     "check:scenario-p0-external-terms": "node scripts/generate-scenario-p0-external-provider-terms-review.cjs --check",
     "check:scenario-p0-owner-legal": "node scripts/generate-scenario-p0-owner-legal-decision-packet.cjs --check",
     "check:scenario-p0-approval-readiness": "node scripts/generate-scenario-p0-approval-readiness.cjs --check && node --test scripts/generate-scenario-p0-approval-readiness.test.cjs",
+    "check:scenario-monthly-write-preflight": "node scripts/generate-scenario-monthly-write-preflight.cjs --check && node --test scripts/generate-scenario-monthly-write-preflight.test.cjs",
     "check:scenario-p0-writer-gate": "node scripts/generate-scenario-p0-cache-writer-gate.cjs --check",
     "check:scenario-metrics": "node --test server/src/services/scenario/*.test.js"
   },

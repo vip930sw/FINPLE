@@ -1,0 +1,32 @@
+{
+  "preflightVersion": "scenario-monthly-write-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "report": "data\\processed\\scenario_monthly_write_preflight.json"
+  },
+  "checks": {
+    "monthlyFileExists": false,
+    "approvalStatus": "blocked_pending_p0_approvals",
+    "safeToWriteMonthlyData": false,
+    "providerCallsAllowed": false,
+    "canAttemptMonthlyWrite": false,
+    "blockers": [
+      "external_provider_terms_not_fully_approved",
+      "owner_legal_adapter_approval_not_complete",
+      "owner_legal_monthly_write_approval_not_complete",
+      "source_policy_rows_not_approved",
+      "writer_gate_cannot_write_monthly_data",
+      "writer_gate_provider_calls_not_allowed"
+    ]
+  },
+  "readiness": {
+    "status": "blocked_before_monthly_write",
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "complete_p0_approval_readiness_before_monthly_write"
+  }
+}

@@ -32,6 +32,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 external provider terms review | Implemented in Step 114-1P | Official-docs-based provider terms blockers before source approval |
 | P0 owner/legal decision packet | Implemented in Step 114-1Q | Owner and legal review questions before provider adapters or cache writes |
 | P0 approval readiness cross-check | Implemented in Step 114-1R | Cross-checks terms, owner/legal, source policy, and writer gate before adapters |
+| Monthly write preflight | Implemented in Step 114-1S | Blocks `scenario_monthly_returns.csv` before P0 approval readiness allows writes |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -319,6 +320,28 @@ bootstrapStillBlocked=true
 
 The report fails if provider candidates drift across the gate files, or if the writer gate allows provider calls or monthly writes before terms, owner/legal, and source-policy approvals are complete. This keeps the next implementation boundary explicit: adapters and `scenario_monthly_returns.csv` writes remain blocked until all approval layers agree.
 
+## Monthly Write Preflight
+
+The monthly write preflight report lives at:
+
+```text
+data/processed/scenario_monthly_write_preflight.json
+```
+
+It checks the approval readiness report and the future monthly data target before any monthly cache writer is allowed:
+
+```text
+monthlyFileExists=false
+approvalStatus=blocked_pending_p0_approvals
+safeToWriteMonthlyData=false
+providerCallsAllowed=false
+canAttemptMonthlyWrite=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The preflight fails if `data/processed/scenario_monthly_returns.csv` exists while P0 approval readiness is still blocked, or while provider calls are not allowed. This keeps the current repository state explicit: the schema and gates exist, but no monthly return data file should be committed until source-policy, owner/legal, and writer approvals are complete.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -387,6 +410,7 @@ npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-readiness
+npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
 ```
 
