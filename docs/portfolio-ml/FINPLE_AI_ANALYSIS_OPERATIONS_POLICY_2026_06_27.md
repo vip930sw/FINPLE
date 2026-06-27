@@ -122,10 +122,10 @@ access.requiredPlans = ["personal", "pro"]
 반복 smoke 확인:
 
 ```powershell
-npm.cmd run check:ai-production -- --commit=<최신 main short sha>
+npm.cmd run check:ai-production
 ```
 
-이 스크립트는 Render health, 포트폴리오 AI 분석 status, 관리자 usage endpoint의 토큰 없는 403 정상 응답, Vercel frontend HEAD를 함께 확인한다.
+이 스크립트는 Render health, 포트폴리오 AI 분석 status, 관리자 usage endpoint의 토큰 없는 403 정상 응답, Vercel frontend HEAD를 함께 확인한다. 특정 Render backend 배포 commit을 강제 확인할 때만 `-- --commit=<Render에 기대하는 short sha>`를 붙인다. 문서 또는 프론트 전용 커밋은 Render backend commit과 다를 수 있다.
 
 관리자 사용량 요약:
 

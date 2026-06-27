@@ -60,10 +60,10 @@ npm.cmd run build
 ### 포트폴리오 AI 분석 운영 smoke 확인
 
 ```powershell
-npm.cmd run check:ai-production -- --commit=78ea995
+npm.cmd run check:ai-production
 ```
 
-`--commit` 값은 확인하려는 최신 main 커밋의 앞 7자리로 바꿔 실행합니다.
+Render backend 배포 commit까지 고정해 확인해야 할 때만 `-- --commit=<Render에 기대하는 short sha>`를 붙입니다. 문서나 프론트 전용 커밋은 Render backend commit과 다를 수 있습니다.
 
 ### 백엔드
 
