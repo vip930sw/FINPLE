@@ -24,6 +24,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Monthly provider refetch plan | Implemented in Step 114-1G | `data/processed/scenario_monthly_refetch_plan.csv` and summary JSON |
 | P0 monthly cache manifest | Implemented in Step 114-1H | P0 representative, benchmark, and FX subset for first cache writer |
 | P0 cache dry run | Implemented in Step 114-1I | Provider task contract without provider calls or monthly data writes |
+| P0 source policy matrix | Implemented in Step 114-1J | Source/license approval gate before provider adapters |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
 
@@ -131,6 +132,28 @@ bootstrapStillBlocked=true
 
 Each task records required source metadata: `providerName`, `providerEndpoint`, `requestedAt`, `rawPayloadHash`, `licensePolicy`, and `sourceVersion`. The next step can replace the `dry_run_only_no_provider_call` action with a provider adapter only after source and license policy are reviewed.
 
+## P0 Source Policy Matrix
+
+The source policy matrix lives at:
+
+```text
+data/processed/scenario_p0_source_policy_matrix.csv
+data/processed/scenario_p0_source_policy_matrix_summary.json
+```
+
+It does not select a provider or approve data redistribution. It keeps all 17 P0 rows blocked until the source, endpoint, refresh cadence, raw-payload storage, and license policy are approved:
+
+```text
+totalRows=17
+status=blocked_source_policy_review
+providerEndpointSelected=false
+licensePolicyReviewed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+This makes the current data-quality progress explicit: governance, schema, validation, and planning are mostly in place; production-grade monthly return data is still not populated.
+
 ## Future Data File
 
 The future validated input path is:
@@ -169,6 +192,7 @@ npm.cmd run check:scenario-readiness
 npm.cmd run check:scenario-refetch-plan
 npm.cmd run check:scenario-p0-manifest
 npm.cmd run check:scenario-p0-dry-run
+npm.cmd run check:scenario-p0-source-policy
 ```
 
 ## Non-Goals

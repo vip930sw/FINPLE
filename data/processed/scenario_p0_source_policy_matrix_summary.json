@@ -1,0 +1,46 @@
+{
+  "matrixVersion": "scenario-p0-source-policy-matrix-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "dryRun": "data\\processed\\scenario_p0_monthly_cache_dry_run.json"
+  },
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "summary": "data\\processed\\scenario_p0_source_policy_matrix_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "totalRows": 17,
+    "assetRows": 14,
+    "benchmarkRows": 2,
+    "fxRows": 1
+  },
+  "counts": {
+    "byManifestType": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "byProviderCandidate": {
+      "KOSPI200_TR_primary_or_kospi200_etf_proxy": 1,
+      "KR_price_total_return_dividend_provider": 6,
+      "SP500_TR_primary_or_SPY_adjusted_close_proxy": 1,
+      "US_price_total_return_dividend_provider": 8,
+      "USD_KRW_fx_provider": 1
+    },
+    "byStatus": {
+      "blocked_source_policy_review": 17
+    },
+    "byRequiredApproval": {
+      "source_license_refresh_policy": 17
+    }
+  },
+  "readiness": {
+    "status": "blocked_source_policy_review",
+    "providerEndpointSelected": false,
+    "licensePolicyReviewed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "approve_p0_source_policy_before_provider_adapter"
+  }
+}
