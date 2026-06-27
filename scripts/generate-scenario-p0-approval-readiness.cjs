@@ -3,6 +3,7 @@ const path = require("node:path");
 
 const SOURCE_POLICY_CSV_PATH = path.join("data", "processed", "scenario_p0_source_policy_matrix.csv");
 const SOURCE_POLICY_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_source_policy_matrix_summary.json");
+const SOURCE_DECISION_CSV_PATH = path.join("data", "processed", "scenario_p0_source_approval_decision_record.csv");
 const EXTERNAL_TERMS_CSV_PATH = path.join("data", "processed", "scenario_p0_external_provider_terms_review.csv");
 const OWNER_LEGAL_CSV_PATH = path.join("data", "processed", "scenario_p0_owner_legal_decision_packet.csv");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -10,6 +11,27 @@ const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_appr
 
 const REPORT_VERSION = "scenario-p0-approval-readiness-v0.1";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const APPROVED_SOURCE_POLICY = "approved_source_policy";
+const APPROVED_SOURCE_POLICY_RULES = {
+  endpointPolicy: "approved_endpoint_or_documented_proxy",
+  licensePolicy: "approved_internal_monthly_derived_return_cache",
+  rawPayloadStorage: "approved_hash_or_raw_retention_policy",
+  redistributionPolicy: "approved_no_raw_redistribution_monthly_derived_only",
+  requiredApproval: "source_license_refresh_policy",
+  status: APPROVED_SOURCE_POLICY,
+  blocker: "",
+};
+const REQUIRED_DECISION_FIELDS = [
+  "selectedProvider",
+  "selectedEndpoint",
+  "licenseDecision",
+  "rawPayloadPolicy",
+  "redistributionDecision",
+  "reviewOwner",
+  "reviewedAt",
+  "approvalEvidence",
+];
+const REQUIRED_OWNER_LEGAL_FIELDS = ["legalReviewer", "reviewedAt", "evidenceUrl"];
 
 function fail(message) {
   throw new Error(message);
@@ -92,6 +114,73 @@ function arraysEqual(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function indexBy(rows, field, label) {
+  const indexed = new Map();
+  for (const row of rows) {
+    const key = row[field];
+    if (!key) {
+      fail(`${label} has a row without ${field}`);
+    }
+    if (indexed.has(key)) {
+      fail(`${label} has duplicate ${field}: ${key}`);
+    }
+    indexed.set(key, row);
+  }
+  return indexed;
+}
+
+function assertRequiredFields(row, fields, label) {
+  for (const field of fields) {
+    if (!String(row[field] ?? "").trim()) {
+      fail(`${label} missing required ${field}`);
+    }
+  }
+}
+
+function assertApprovedSourcePolicyEvidence(sourcePolicyRows, sourceDecisionRows, externalTermsRows, ownerLegalRows) {
+  const decisionByProvider = indexBy(sourceDecisionRows, "providerCandidate", "source approval decision record");
+  const termsByProvider = indexBy(externalTermsRows, "providerCandidate", "external terms review");
+  const ownerLegalByProvider = indexBy(ownerLegalRows, "providerCandidate", "owner/legal decision packet");
+
+  for (const row of sourcePolicyRows.filter((sourcePolicyRow) => sourcePolicyRow.status === APPROVED_SOURCE_POLICY)) {
+    const sourceLabel = `approved source policy ${row.providerCandidate}:${row.ticker}`;
+    for (const [field, expected] of Object.entries(APPROVED_SOURCE_POLICY_RULES)) {
+      if ((row[field] ?? "") !== expected) {
+        fail(`${sourceLabel} must set ${field}=${expected}`);
+      }
+    }
+
+    const decision = decisionByProvider.get(row.providerCandidate);
+    if (!decision) {
+      fail(`${sourceLabel} missing source approval decision record`);
+    }
+    if (decision.decisionStatus !== APPROVED_SOURCE_POLICY) {
+      fail(`${sourceLabel} requires decisionStatus=${APPROVED_SOURCE_POLICY}`);
+    }
+    assertRequiredFields(decision, REQUIRED_DECISION_FIELDS, `${sourceLabel} decision record`);
+
+    const terms = termsByProvider.get(row.providerCandidate);
+    if (!terms) {
+      fail(`${sourceLabel} missing external terms review`);
+    }
+    if (terms.approvalStatus !== "approved") {
+      fail(`${sourceLabel} requires external terms approvalStatus=approved`);
+    }
+
+    const ownerLegal = ownerLegalByProvider.get(row.providerCandidate);
+    if (!ownerLegal) {
+      fail(`${sourceLabel} missing owner/legal decision packet`);
+    }
+    if (ownerLegal.adapterApprovalStatus !== "approved_for_adapter") {
+      fail(`${sourceLabel} requires adapterApprovalStatus=approved_for_adapter`);
+    }
+    if (ownerLegal.monthlyWriteApprovalStatus !== "approved_for_monthly_write") {
+      fail(`${sourceLabel} requires monthlyWriteApprovalStatus=approved_for_monthly_write`);
+    }
+    assertRequiredFields(ownerLegal, REQUIRED_OWNER_LEGAL_FIELDS, `${sourceLabel} owner/legal packet`);
+  }
+}
+
 function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
@@ -99,16 +188,19 @@ function stableJson(value) {
 function buildReport() {
   const sourcePolicy = readCsv(SOURCE_POLICY_CSV_PATH);
   const sourcePolicySummary = readJson(SOURCE_POLICY_SUMMARY_PATH);
+  const sourceDecision = readCsv(SOURCE_DECISION_CSV_PATH);
   const externalTerms = readCsv(EXTERNAL_TERMS_CSV_PATH);
   const ownerLegal = readCsv(OWNER_LEGAL_CSV_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
 
   const sourceProviderCandidates = uniqueSorted(sourcePolicy.rows.map((row) => row.providerCandidate));
+  const decisionProviderCandidates = uniqueSorted(sourceDecision.rows.map((row) => row.providerCandidate));
   const termsProviderCandidates = uniqueSorted(externalTerms.rows.map((row) => row.providerCandidate));
   const ownerLegalProviderCandidates = uniqueSorted(ownerLegal.rows.map((row) => row.providerCandidate));
   const writerGateProviderCandidates = uniqueSorted(Object.keys(writerGate.counts?.byProviderCandidate ?? {}));
 
   for (const [label, candidates] of [
+    ["source approval decision record", decisionProviderCandidates],
     ["external terms", termsProviderCandidates],
     ["owner/legal packet", ownerLegalProviderCandidates],
     ["writer gate", writerGateProviderCandidates],
@@ -118,12 +210,14 @@ function buildReport() {
     }
   }
 
+  assertApprovedSourcePolicyEvidence(sourcePolicy.rows, sourceDecision.rows, externalTerms.rows, ownerLegal.rows);
+
   const termsApproved = externalTerms.rows.filter((row) => row.approvalStatus === "approved").length;
   const ownerAdapterApproved = ownerLegal.rows.filter((row) => row.adapterApprovalStatus === "approved_for_adapter").length;
   const ownerMonthlyApproved = ownerLegal.rows.filter(
     (row) => row.monthlyWriteApprovalStatus === "approved_for_monthly_write",
   ).length;
-  const sourcePolicyApproved = sourcePolicy.rows.filter((row) => row.status === "approved_source_policy").length;
+  const sourcePolicyApproved = sourcePolicy.rows.filter((row) => row.status === APPROVED_SOURCE_POLICY).length;
   const writerCanWrite = writerGate.readiness?.canWriteMonthlyData === true;
   const writerProviderCallsAllowed = writerGate.readiness?.providerCallsAllowed === true;
 
@@ -167,6 +261,7 @@ function buildReport() {
     sourceFiles: {
       sourcePolicyMatrix: SOURCE_POLICY_CSV_PATH,
       sourcePolicySummary: SOURCE_POLICY_SUMMARY_PATH,
+      sourceApprovalDecisionRecord: SOURCE_DECISION_CSV_PATH,
       externalTermsReview: EXTERNAL_TERMS_CSV_PATH,
       ownerLegalDecisionPacket: OWNER_LEGAL_CSV_PATH,
       writerGate: WRITER_GATE_PATH,
@@ -179,6 +274,7 @@ function buildReport() {
     rowCounts: {
       providerCandidates: sourceProviderCandidates.length,
       sourcePolicyRows: sourcePolicy.rows.length,
+      sourceDecisionRows: sourceDecision.rows.length,
       externalTermsRows: externalTerms.rows.length,
       ownerLegalRows: ownerLegal.rows.length,
       writerGateRows: writerGate.rowCounts?.totalRows ?? null,

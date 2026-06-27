@@ -145,6 +145,7 @@ scripts/generate-scenario-monthly-write-preflight.test.cjs
 ```text
 P0 provider groups=5
 P0 source policy rows=17
+P0 source approval decision rows=5
 external provider terms approved=0
 owner/legal adapter approved=0
 owner/legal monthly write approved=0
@@ -219,15 +220,33 @@ Do not fill missing monthly, FX, benchmark, or total-return fields with 0.
 Do not infer missing data silently.
 ```
 
-## Recommended Next Step
+## Step 114-1T Follow-Up
 
-The safest next implementation step is not data fetching. It is a reviewer-owned approval input step:
+The recommended synthetic source-approval fixture/test harness has been added after this handoff snapshot. The readiness gate now reads the five-row source approval decision record and rejects any `approved_source_policy` row unless the synthetic test workspace provides all required decision, owner/legal, and terms evidence.
+
+This follow-up still does not approve the real committed source rows:
 
 ```text
-Step 114-1T: Add a guarded source-approval fixture/test harness
+external provider terms approved=0
+owner/legal adapter approved=0
+owner/legal monthly write approved=0
+source policy approved=0
+safeToImplementProviderAdapter=false
+safeToWriteMonthlyData=false
+bootstrapStillBlocked=true
 ```
 
-That step should prove that source-policy rows can move from blocked to approved only when all of these are present:
+The fixture remains temporary inside `scripts/generate-scenario-p0-approval-readiness.test.cjs`. It does not call providers and does not write `data/processed/scenario_monthly_returns.csv`.
+
+## Recommended Next Step
+
+The next implementation step is still not data fetching. After Step 114-1T, the remaining blocker is a real reviewer-owned approval input step:
+
+```text
+Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work
+```
+
+Any real source-policy row can move from blocked to approved only when all of these are present:
 
 ```text
 selectedProvider

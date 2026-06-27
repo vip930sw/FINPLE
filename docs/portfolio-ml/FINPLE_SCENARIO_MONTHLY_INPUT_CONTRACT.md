@@ -33,6 +33,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 owner/legal decision packet | Implemented in Step 114-1Q | Owner and legal review questions before provider adapters or cache writes |
 | P0 approval readiness cross-check | Implemented in Step 114-1R | Cross-checks terms, owner/legal, source policy, and writer gate before adapters |
 | Monthly write preflight | Implemented in Step 114-1S | Blocks `scenario_monthly_returns.csv` before P0 approval readiness allows writes |
+| P0 source approval fixture harness | Implemented in Step 114-1T | Synthetic tests prove approvals require provider, endpoint, license, raw payload, redistribution, owner/legal, reviewed-at, and evidence fields |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -304,11 +305,12 @@ The approval readiness report lives at:
 data/processed/scenario_p0_approval_readiness.json
 ```
 
-It cross-checks the source policy matrix, external provider terms review, owner/legal decision packet, and cache writer gate before any provider adapter or monthly cache writer is allowed:
+It cross-checks the source policy matrix, source approval decision record, external provider terms review, owner/legal decision packet, and cache writer gate before any provider adapter or monthly cache writer is allowed:
 
 ```text
 providerCandidates=5
 sourcePolicyRows=17
+sourceDecisionRows=5
 termsApproved=0
 ownerAdapterApproved=0
 ownerMonthlyApproved=0
@@ -318,7 +320,7 @@ safeToWriteMonthlyData=false
 bootstrapStillBlocked=true
 ```
 
-The report fails if provider candidates drift across the gate files, or if the writer gate allows provider calls or monthly writes before terms, owner/legal, and source-policy approvals are complete. This keeps the next implementation boundary explicit: adapters and `scenario_monthly_returns.csv` writes remain blocked until all approval layers agree.
+The report fails if provider candidates drift across the gate files, if any `approved_source_policy` row lacks selected provider, endpoint, license, raw payload, redistribution, owner/legal, review timestamp, or evidence fields, or if the writer gate allows provider calls or monthly writes before terms, owner/legal, and source-policy approvals are complete. This keeps the next implementation boundary explicit: adapters and `scenario_monthly_returns.csv` writes remain blocked until all approval layers agree.
 
 ## Monthly Write Preflight
 
