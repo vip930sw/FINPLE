@@ -1,0 +1,68 @@
+{
+  "reviewVersion": "scenario-p0-external-provider-terms-review-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "candidateReview": "data\\processed\\scenario_p0_provider_candidate_review.csv"
+  },
+  "officialSourcesReviewed": [
+    {
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "namedProviderCandidate": "KRX Data Marketplace or licensed KOSPI 200 ETF proxy",
+      "officialDocsUrl": "https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd",
+      "officialTermsUrl": "https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd"
+    },
+    {
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Korea Investment Open API or licensed KR market-data provider",
+      "officialDocsUrl": "https://apiportal.koreainvestment.com/",
+      "officialTermsUrl": "https://apiportal.koreainvestment.com/"
+    },
+    {
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
+      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
+    },
+    {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Alpha Vantage",
+      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
+      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
+    },
+    {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "namedProviderCandidate": "FRED DEXKOUS",
+      "officialDocsUrl": "https://fred.stlouisfed.org/series/DEXKOUS",
+      "officialTermsUrl": "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+    }
+  ],
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_p0_external_provider_terms_review.csv",
+    "summary": "data\\processed\\scenario_p0_external_provider_terms_review_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerCandidates": 5,
+    "approvedProviders": 0,
+    "blockedProviders": 5
+  },
+  "counts": {
+    "byApprovalStatus": {
+      "not_approved": 5
+    },
+    "byBlocker": {
+      "commercial_use_and_redistribution_terms_not_approved": 1,
+      "fx_source_terms_and_citation_policy_not_approved": 1,
+      "index_or_proxy_license_terms_not_approved": 1,
+      "kospi200_index_or_proxy_terms_not_approved": 1,
+      "kr_market_data_terms_not_approved": 1
+    }
+  },
+  "readiness": {
+    "status": "blocked_external_terms_review",
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "legal_or_owner_review_named_provider_terms_before_source_policy_approval"
+  }
+}

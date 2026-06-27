@@ -29,6 +29,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source approval requirements | Implemented in Step 114-1L | Machine-readable evidence requirements before approving any P0 source row |
 | P0 source approval decision record | Implemented in Step 114-1M | Pending provider/license decision register for the five P0 source groups |
 | P0 provider candidate review | Implemented in Step 114-1O | Pending review checklist for endpoint/license/proxy/calendar evidence |
+| P0 external provider terms review | Implemented in Step 114-1P | Official-docs-based provider terms blockers before source approval |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -247,6 +248,28 @@ bootstrapStillBlocked=true
 
 This file intentionally does not name or approve a provider. A named provider, endpoint URL, license decision, raw payload policy, and redistribution policy must be reviewed before any source row can be approved.
 
+## P0 External Provider Terms Review
+
+The external provider terms review lives at:
+
+```text
+data/processed/scenario_p0_external_provider_terms_review.csv
+data/processed/scenario_p0_external_provider_terms_review_summary.json
+```
+
+It records named provider candidates and official documentation or terms URLs for the five P0 source groups while keeping all candidates unapproved:
+
+```text
+providerCandidates=5
+approvedProviders=0
+blockedProviders=5
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The current candidates are Alpha Vantage for US asset/index/proxy review, Korea Investment Open API or licensed KR market-data provider for KR ETF series, KRX Data Marketplace or licensed KOSPI 200 ETF proxy for KR benchmark review, and FRED DEXKOUS for USD/KRW review. These are evidence rows, not approvals; source rows remain blocked until owner/legal review confirms commercial use, redistribution, raw payload, cache, citation, and display-label policy.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -312,6 +335,7 @@ npm.cmd run check:scenario-p0-source-policy
 npm.cmd run check:scenario-p0-source-approval
 npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-provider-review
+npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-writer-gate
 ```
 
