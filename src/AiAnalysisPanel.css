@@ -110,10 +110,10 @@
 }
 
 .aiAnalysisActionButton:not(:disabled) {
-  border-color: #0f172a;
+  border-color: #2563eb;
   color: #ffffff;
-  background: #0f172a;
-  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.16);
+  background: #2563eb;
+  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.18);
   cursor: pointer;
 }
 
@@ -127,15 +127,12 @@
   opacity: 0.82;
 }
 
-.aiAnalysisActionButton.upgrade:not(:disabled) {
-  border-color: #2563eb;
-  background: #2563eb;
-  box-shadow: 0 14px 24px rgba(37, 99, 235, 0.18);
-}
-
-.aiAnalysisActionButton.upgrade:not(:disabled):hover {
-  border-color: #0f172a;
-  background: #0f172a;
+.aiAnalysisActionButton.blocked:disabled {
+  border-color: #cbd5e1;
+  color: #64748b;
+  background: #ffffff;
+  box-shadow: none;
+  opacity: 1;
 }
 
 .aiAnalysisButtonSpinner {
@@ -145,17 +142,21 @@
 .aiAnalysisMetricGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  gap: 0;
   overflow: hidden;
   border: 1px solid #dbe4f0;
   border-radius: 18px;
-  background: #dbe4f0;
+  background: #ffffff;
 }
 
 .aiAnalysisMetricGrid div {
   min-width: 0;
   background: #ffffff;
   padding: 16px;
+}
+
+.aiAnalysisMetricGrid div + div {
+  border-left: 1px solid #dbe4f0;
 }
 
 .aiAnalysisMetricGrid strong {
@@ -608,6 +609,10 @@
   padding: 15px;
 }
 
+.aiAnalysisDiagnosticMetaItem {
+  background: #f8fafc;
+}
+
 .aiAnalysisDiagnosticItem strong {
   display: block;
   color: #0f172a;
@@ -807,6 +812,11 @@
   .simulatorTabNav.fourStepNav,
   .aiAnalysisMetricGrid {
     grid-template-columns: 1fr;
+  }
+
+  .aiAnalysisMetricGrid div + div {
+    border-top: 1px solid #dbe4f0;
+    border-left: 0;
   }
 
   .aiAnalysisPanel {

@@ -168,6 +168,7 @@ function AnalysisResult({ analysis }) {
   const diagnosticSections = Array.isArray(analysis.diagnosticSections)
     ? analysis.diagnosticSections
     : [];
+  const shouldShowDiagnosticScopeCard = diagnosticSections.length === 3;
 
   return (
     <div className="aiAnalysisResultGrid">
@@ -215,6 +216,16 @@ function AnalysisResult({ analysis }) {
                 </ul>
               </article>
             ))}
+            {shouldShowDiagnosticScopeCard && (
+              <article className="aiAnalysisDiagnosticItem aiAnalysisDiagnosticMetaItem">
+                <strong>해석 범위</strong>
+                <p>진단 요약은 입력 지표 범위 안에서 구조, 위험 균형, 데이터 맥락을 압축해 보여줍니다.</p>
+                <ul>
+                  <li>매수·매도 판단이나 목표 비중은 포함하지 않습니다.</li>
+                  <li>추가 점검은 아래 위험요인과 분석 한계에서 이어집니다.</li>
+                </ul>
+              </article>
+            )}
           </div>
         </section>
       )}
@@ -314,6 +325,8 @@ export default function AiAnalysisPanel({
   const isStale = analysisStatus === "stale";
   const isAccessBlocked = accessSummary?.allowed === false;
   const canRequestAnalysis = activeAssets.length > 0 && !isLoading && !isAccessBlocked;
+  const isActionDisabled = isLoading || activeAssets.length === 0 || isAccessBlocked;
+  const shouldShowReadinessBadge = !isAccessBlocked;
   const statusCopy = getStatusCopy(analysisStatus, readiness);
 
   useEffect(() => {
@@ -411,7 +424,9 @@ export default function AiAnalysisPanel({
             주요 위험요인을 정리합니다.
           </p>
         </div>
-        <span className={`aiAnalysisReadiness ${readiness.tone}`}>{statusCopy}</span>
+        {shouldShowReadinessBadge && (
+          <span className={`aiAnalysisReadiness ${readiness.tone}`}>{statusCopy}</span>
+        )}
       </div>
 
       <div className="aiAnalysisPrimary">
@@ -423,16 +438,16 @@ export default function AiAnalysisPanel({
           </div>
           <button
             type="button"
-            className={`aiAnalysisActionButton ${isAccessBlocked ? "upgrade" : ""}`}
-            disabled={isLoading || activeAssets.length === 0}
-            onClick={isAccessBlocked ? handleOpenPricing : handleCreateAnalysis}
+            className={`aiAnalysisActionButton ${isAccessBlocked ? "blocked" : ""}`}
+            disabled={isActionDisabled}
+            onClick={handleCreateAnalysis}
           >
             {isLoading ? (
               <RefreshCcw className="aiAnalysisButtonSpinner" size={18} aria-hidden="true" />
             ) : (
               <Sparkles size={18} aria-hidden="true" />
             )}
-            <span>{isAccessBlocked ? "요금제 확인" : getActionCopy(analysisStatus)}</span>
+            <span>{isAccessBlocked ? "새로 분석" : getActionCopy(analysisStatus)}</span>
           </button>
         </div>
 
