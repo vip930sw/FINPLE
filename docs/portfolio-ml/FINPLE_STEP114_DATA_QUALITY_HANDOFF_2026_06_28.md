@@ -114,6 +114,7 @@ data/processed/scenario_p0_owner_legal_decision_packet.csv
 data/processed/scenario_p0_owner_legal_decision_packet_summary.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
+data/processed/scenario_step114_progress.json
 ```
 
 Validation scripts and tests:
@@ -138,6 +139,8 @@ scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
 scripts/generate-scenario-monthly-write-preflight.test.cjs
+scripts/generate-scenario-step114-progress.cjs
+scripts/generate-scenario-step114-progress.test.cjs
 ```
 
 ## Current Gate Summary
@@ -155,6 +158,7 @@ safeToWriteMonthlyData=false
 monthlyFileExists=false
 providerCallsAllowed=false
 bootstrapStillBlocked=true
+Step114 P0 monthly data readiness progress=80%
 ```
 
 The gate chain is:
@@ -198,6 +202,7 @@ npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
+npm.cmd run check:scenario-step114-progress
 npm.cmd run check:scenario-metrics
 node --test server/src/services/*.test.js server/src/services/scenario/*.test.js
 git diff --check
@@ -237,6 +242,20 @@ bootstrapStillBlocked=true
 ```
 
 The fixture remains temporary inside `scripts/generate-scenario-p0-approval-readiness.test.cjs`. It does not call providers and does not write `data/processed/scenario_monthly_returns.csv`.
+
+## Step 114-1U Progress Follow-Up
+
+The progress report now records the whole Step 114 P0 monthly data readiness path as:
+
+```text
+overallProgressPercent=80
+auditAndGovernanceFrameworkPercent=100
+realApprovalDecisionsPercent=0
+monthlyDataAndBootstrapPercent=0
+runtimeScenarioImplementationPercent=0
+```
+
+The 80% value is a weighted readiness score for the audit and governance framework, not production scenario implementation. The remaining 20% is blocked by real owner/legal/source approval decisions and the absence of validated `scenario_monthly_returns.csv`.
 
 ## Recommended Next Step
 

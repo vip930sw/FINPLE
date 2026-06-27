@@ -34,6 +34,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 approval readiness cross-check | Implemented in Step 114-1R | Cross-checks terms, owner/legal, source policy, and writer gate before adapters |
 | Monthly write preflight | Implemented in Step 114-1S | Blocks `scenario_monthly_returns.csv` before P0 approval readiness allows writes |
 | P0 source approval fixture harness | Implemented in Step 114-1T | Synthetic tests prove approvals require provider, endpoint, license, raw payload, redistribution, owner/legal, reviewed-at, and evidence fields |
+| Step 114 progress report | Implemented in Step 114-1U | Machine-readable overall progress percent and blocker summary for the P0 monthly data readiness path |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -343,6 +344,26 @@ bootstrapStillBlocked=true
 ```
 
 The preflight fails if `data/processed/scenario_monthly_returns.csv` exists while P0 approval readiness is still blocked, or while provider calls are not allowed. This keeps the current repository state explicit: the schema and gates exist, but no monthly return data file should be committed until source-policy, owner/legal, and writer approvals are complete.
+
+## Step 114 Progress Report
+
+The progress report lives at:
+
+```text
+data/processed/scenario_step114_progress.json
+```
+
+It records the current weighted progress for the P0 monthly scenario data readiness path:
+
+```text
+overallProgressPercent=80
+auditAndGovernanceFrameworkPercent=100
+realApprovalDecisionsPercent=0
+monthlyDataAndBootstrapPercent=0
+runtimeScenarioImplementationPercent=0
+```
+
+This percentage means the audit, schema, P0 planning, governance packets, and guardrail/test harness are complete, while real owner/legal/source approvals, monthly data writes, Bootstrap unlock, and runtime scenario implementation remain blocked. It is intentionally not a signal to implement provider adapters or write `scenario_monthly_returns.csv`.
 
 ## P0 Cache Writer Gate
 
