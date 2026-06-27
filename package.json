@@ -12,7 +12,7 @@
     "check:frontend": "npm run build",
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
     "check:scenario-data": "node scripts/verify-scenario-data-coverage.cjs",
-    "check:scenario-metrics": "node --test server/src/services/scenario/portfolioRiskMetrics.test.js"
+    "check:scenario-metrics": "node --test server/src/services/scenario/*.test.js"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
