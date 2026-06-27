@@ -182,7 +182,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 18px;
   align-items: start;
-  max-width: 720px;
+  width: min(100%, 920px);
+  max-width: 920px;
   margin: 22px auto 0;
   border: 1px solid #bfdbfe;
   border-radius: 18px;
@@ -605,10 +606,6 @@
   border-radius: 14px;
   background: #ffffff;
   padding: 15px;
-}
-
-.aiAnalysisDiagnosticItem:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
 }
 
 .aiAnalysisDiagnosticItem strong {
