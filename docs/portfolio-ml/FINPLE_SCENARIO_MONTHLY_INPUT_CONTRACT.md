@@ -28,6 +28,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source policy matrix | Implemented in Step 114-1J | Source/license approval gate before provider adapters |
 | P0 source approval requirements | Implemented in Step 114-1L | Machine-readable evidence requirements before approving any P0 source row |
 | P0 source approval decision record | Implemented in Step 114-1M | Pending provider/license decision register for the five P0 source groups |
+| P0 provider candidate review | Implemented in Step 114-1O | Pending review checklist for endpoint/license/proxy/calendar evidence |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -224,6 +225,28 @@ bootstrapStillBlocked=true
 
 This record is intentionally not an approval. It is the next input required before the source policy matrix can be changed from `blocked_source_policy_review` to `approved_source_policy`.
 
+## P0 Provider Candidate Review
+
+The provider candidate review lives at:
+
+```text
+data/processed/scenario_p0_provider_candidate_review.csv
+data/processed/scenario_p0_provider_candidate_review_summary.json
+```
+
+It expands the five pending source groups into review requirements for endpoint evidence, license evidence, required data fields, quality checks, proxy rules, calendar rules, and currency rules:
+
+```text
+providerGroups=5
+selectedProviders=0
+pendingReviews=5
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+This file intentionally does not name or approve a provider. A named provider, endpoint URL, license decision, raw payload policy, and redistribution policy must be reviewed before any source row can be approved.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -288,6 +311,7 @@ npm.cmd run check:scenario-p0-dry-run
 npm.cmd run check:scenario-p0-source-policy
 npm.cmd run check:scenario-p0-source-approval
 npm.cmd run check:scenario-p0-source-decision
+npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-writer-gate
 ```
 
