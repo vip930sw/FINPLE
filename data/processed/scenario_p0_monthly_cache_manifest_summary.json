@@ -1,0 +1,158 @@
+{
+  "manifestVersion": "scenario-p0-monthly-cache-manifest-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "refetchPlan": "data\\processed\\scenario_monthly_refetch_plan.csv"
+  },
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_p0_monthly_cache_manifest.csv",
+    "summary": "data\\processed\\scenario_p0_monthly_cache_manifest_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "totalRows": 17,
+    "representativeAssetRows": 14,
+    "benchmarkRows": 2,
+    "fxRows": 1
+  },
+  "counts": {
+    "byManifestType": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "byPriority": {
+      "P0_benchmark": 2,
+      "P0_fx": 1,
+      "P0_representative": 14
+    },
+    "byStatus": {
+      "blocked_benchmark_policy": 6,
+      "provider_refetch_required": 11
+    },
+    "byTargetBenchmarkId": {
+      "KOSPI200_TR": 6,
+      "SP500_TR": 8
+    }
+  },
+  "representativeAssets": [
+    {
+      "market": "KR",
+      "ticker": "069500",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "102110",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "105190",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "148020",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "152100",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "278530",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "US",
+      "ticker": "ITOT",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "IVV",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQ",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQM",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "SCHB",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "SPY",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "VOO",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "VTI",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "requiredSeries": "monthly_price_return|monthly_close_price|monthly_total_return|monthly_dividend_amount|monthly_benchmark_return|monthly_fx_return_usd_krw",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    }
+  ],
+  "readiness": {
+    "status": "p0_manifest_only_no_monthly_data_written",
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "implement_p0_provider_refetch_cache_writer_with_source_metadata"
+  }
+}

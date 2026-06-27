@@ -15,6 +15,7 @@
     "check:scenario-monthly-input": "node scripts/verify-scenario-monthly-input.cjs && node --test scripts/verify-scenario-monthly-input.test.cjs",
     "check:scenario-readiness": "node scripts/generate-scenario-monthly-readiness.cjs --check",
     "check:scenario-refetch-plan": "node scripts/generate-scenario-monthly-refetch-plan.cjs --check",
+    "check:scenario-p0-manifest": "node scripts/generate-scenario-p0-monthly-cache-manifest.cjs --check",
     "check:scenario-metrics": "node --test server/src/services/scenario/*.test.js"
   },
   "dependencies": {
