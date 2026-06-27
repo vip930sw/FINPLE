@@ -102,7 +102,7 @@ function AiAnalysisAccessPanel({ accessSummary, onOpenPricing }) {
       </div>
       <div className="aiAnalysisAccessBody">
         <span>플랜 확인 필요</span>
-        <strong>STEP 4 AI 분석은 {planCopy} 플랜에서 사용할 수 있습니다.</strong>
+        <strong>포트폴리오 AI 분석은 {planCopy} 플랜에서 사용할 수 있습니다.</strong>
         <p>
           현재 Free 플랜에서는 분석 생성이 차단됩니다. 요금제 화면에서 Personal 권한을 확인한 뒤
           다시 시도해 주세요.
@@ -141,7 +141,7 @@ function StaleAnalysisState({ activeAssets, formatNumber }) {
         <strong>새 분석이 필요합니다.</strong>
       </div>
       <p>
-        포트폴리오 입력값이 최근 AI 분석 이후 변경되었습니다. 아래 최신 자산 구성을 기준으로
+        포트폴리오 입력값이 최근 포트폴리오 AI 분석 이후 변경되었습니다. 아래 최신 자산 구성을 기준으로
         다시 생성하면 한국 자산을 포함한 결과로 갱신됩니다.
       </p>
       <div className="aiAnalysisStaleAssetList">
@@ -390,7 +390,7 @@ export default function AiAnalysisPanel({
     } catch (error) {
       if (error?.access) setAccessSummary(error.access);
       if (error?.usage) setUsageSummary(error.usage);
-      setErrorMessage(error?.message || "AI 분석 요청에 실패했습니다.");
+      setErrorMessage(error?.message || "포트폴리오 AI 분석 요청에 실패했습니다.");
       setAnalysisStatus("error");
     }
   }
@@ -403,9 +403,9 @@ export default function AiAnalysisPanel({
   return (
     <div className="simulatorTabPanel aiAnalysisPanel">
       <div className="tabSectionHeader aiAnalysisHeader">
-        <p className="sectionLabel">AI Analysis</p>
+        <p className="sectionLabel">Portfolio AI Analysis</p>
         <div>
-          <h3>STEP 4 AI 분석</h3>
+          <h3>포트폴리오 AI 분석</h3>
           <p>
             입력하신 자산 구성과 계산 결과를 바탕으로 포트폴리오 구조, 데이터 한계,
             주요 위험요인을 정리합니다.
@@ -419,7 +419,7 @@ export default function AiAnalysisPanel({
           <div>
             <span>분석 대상</span>
             <strong>{portfolioName}</strong>
-            <p>{activeAssets.length}개 자산을 기준으로 STEP 4 분석을 준비합니다.</p>
+            <p>{activeAssets.length}개 자산을 기준으로 포트폴리오 AI 분석을 준비합니다.</p>
           </div>
           <button
             type="button"
@@ -436,15 +436,15 @@ export default function AiAnalysisPanel({
           </button>
         </div>
 
-        <div className="aiAnalysisMetricGrid" aria-label="AI 분석 입력 요약">
+        <div className="aiAnalysisMetricGrid" aria-label="포트폴리오 AI 분석 입력 요약">
           <div><span>예상 CAGR</span><strong>{expectedCagr}</strong></div>
           <div><span>예상 Beta</span><strong>{expectedBeta}</strong></div>
           <div><span>MDD</span><strong>{simpleMdd}</strong></div>
           <div><span>예상 평가금액</span><strong>{futureValue}원</strong></div>
         </div>
-        {usageSummary && Number.isFinite(Number(usageSummary.remaining)) && (
+        {!isAccessBlocked && usageSummary && Number.isFinite(Number(usageSummary.remaining)) && (
           <p className="aiAnalysisUsageHint">
-            오늘 남은 AI 분석 {usageSummary.remaining}회
+            오늘 남은 포트폴리오 AI 분석 {usageSummary.remaining}회
           </p>
         )}
       </div>
@@ -457,7 +457,7 @@ export default function AiAnalysisPanel({
       )}
       {isStale && (
         <div className="aiAnalysisStateBanner">
-          입력값이 최근 분석 이후 변경되었습니다. 이전 AI 분석 결과는 현재 자산 구성과 일치하지 않아 숨겼습니다.
+          입력값이 최근 분석 이후 변경되었습니다. 이전 포트폴리오 AI 분석 결과는 현재 자산 구성과 일치하지 않아 숨겼습니다.
           새로 분석하면 최신 입력값으로 갱신됩니다.
         </div>
       )}
@@ -502,7 +502,7 @@ export default function AiAnalysisPanel({
               <strong>표시 경계</strong>
             </div>
             <ul className="aiAnalysisBoundaryList">
-              <li>AI 분석은 기존 계산값을 다시 계산하지 않습니다.</li>
+              <li>포트폴리오 AI 분석은 기존 계산값을 다시 계산하지 않습니다.</li>
               <li>매수, 매도, 보유 추천과 목표 비중을 표시하지 않습니다.</li>
               <li>탭 진입만으로 백엔드 API를 호출하지 않습니다.</li>
             </ul>

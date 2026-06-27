@@ -66,7 +66,7 @@ async function fetchWithTimeout(url, { timeoutMs, body, method = "POST" }) {
   } catch (error) {
     if (controller.signal.aborted) {
       throw new Error(
-        "AI 분석 응답 시간이 예상보다 길어지고 있습니다. 잠시 후 다시 생성해주세요."
+        "포트폴리오 AI 분석 응답 시간이 예상보다 길어지고 있습니다. 잠시 후 다시 생성해주세요."
       );
     }
     throw error;
@@ -108,12 +108,12 @@ export async function requestPortfolioAiAnalysisResult(payload, options = {}) {
   if (!response.ok || responsePayload?.ok === false) {
     throw createPayloadError(
       responsePayload,
-      "AI 분석 요청에 실패했습니다. 백엔드 API 설정과 입력값을 확인해주세요."
+      "포트폴리오 AI 분석 요청에 실패했습니다. 백엔드 API 설정과 입력값을 확인해주세요."
     );
   }
 
   if (!responsePayload?.analysis) {
-    throw new Error("AI 분석 응답 형식이 올바르지 않습니다.");
+    throw new Error("포트폴리오 AI 분석 응답 형식이 올바르지 않습니다.");
   }
 
   return {
@@ -132,7 +132,7 @@ export async function requestPortfolioAiAnalysisStatus(options = {}) {
   const responsePayload = await readJsonSafely(response);
 
   if (!response.ok || responsePayload?.ok === false) {
-    throw createPayloadError(responsePayload, "AI 분석 상태를 확인하지 못했습니다.");
+    throw createPayloadError(responsePayload, "포트폴리오 AI 분석 상태를 확인하지 못했습니다.");
   }
 
   return responsePayload;

@@ -123,11 +123,11 @@ export function buildAiAnalysisPayload({
   settings = {},
 } = {}) {
   if (!Array.isArray(activeAssets) || activeAssets.length === 0) {
-    throw new Error("AI 분석을 생성하려면 STEP 1에서 자산을 1개 이상 입력해주세요.");
+    throw new Error("포트폴리오 AI 분석을 생성하려면 STEP 1에서 자산을 1개 이상 입력해주세요.");
   }
 
   if (activeAssets.length > MAX_AI_ANALYSIS_ASSET_COUNT) {
-    throw new Error(`AI 분석은 최대 ${MAX_AI_ANALYSIS_ASSET_COUNT}개 자산까지 요청할 수 있습니다.`);
+    throw new Error(`포트폴리오 AI 분석은 최대 ${MAX_AI_ANALYSIS_ASSET_COUNT}개 자산까지 요청할 수 있습니다.`);
   }
 
   const assets = getWeightedAssets(activeAssets).map(({ asset, weight }) => buildAssetPayload(asset, weight));

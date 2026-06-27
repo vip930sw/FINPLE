@@ -92,6 +92,7 @@
 - `/api/admin/ai-analysis-usage` 응답을 frontend admin UI에서 표시합니다.
 - 403/429 응답의 `access`와 `usage` payload를 STEP 4 frontend service가 보존하도록 보강했습니다.
 - AI 품질 평가셋 v1 fixture를 추가하고 mock output/validator 회귀 테스트에 연결했습니다.
+- AI 품질 평가셋을 v2로 보강했습니다. fixture별 `evaluationFocus`와 전역 `AI_ANALYSIS_EVALUATION_CRITERIA`를 두어 시장(US/KR), 데이터 상태, 위험 초점, output guard 커버리지를 테스트에서 강제합니다.
 
 이번 후속 단계:
 

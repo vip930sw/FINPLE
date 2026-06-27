@@ -1,9 +1,34 @@
-export const AI_ANALYSIS_REGRESSION_FIXTURE_VERSION = "ai-analysis-regression-fixtures-v1";
+export const AI_ANALYSIS_REGRESSION_FIXTURE_VERSION = "ai-analysis-regression-fixtures-v2";
+
+export const AI_ANALYSIS_EVALUATION_CRITERIA = {
+  minimumFixtureCount: 5,
+  requiredMarkets: ["US", "KR"],
+  requiredDataStatuses: ["ready_with_metrics", "short_history", "limited_manual_input"],
+  requiredRiskFocus: [
+    "growth concentration",
+    "KR ticker validation",
+    "cashflow interpretation",
+    "duration risk",
+    "data warnings",
+  ],
+  requiredOutputChecks: [
+    "request schema validation",
+    "mock output validation",
+    "diagnostic section count",
+    "asset role coverage",
+    "forbidden investment language",
+    "numeric hallucination guard",
+  ],
+};
 
 export const AI_ANALYSIS_REGRESSION_FIXTURES = [
   {
     id: "us-etf-core",
     label: "US ETF-only core portfolio",
+    evaluationFocus: {
+      scenario: "미국 ETF 중심 성장·배당·채권·금 혼합 포트폴리오",
+      mustCheck: ["role coverage", "risk balance", "gold hedge interpretation"],
+    },
     riskFocus: ["growth concentration", "bond ballast", "gold hedge"],
     request: {
       portfolioId: "fixture-us-etf-core",
@@ -27,6 +52,10 @@ export const AI_ANALYSIS_REGRESSION_FIXTURES = [
   {
     id: "kr-numeric-tickers",
     label: "KR numeric ticker portfolio",
+    evaluationFocus: {
+      scenario: "한국 숫자 ticker와 미국식 ticker가 다른 검증 경로를 타는 포트폴리오",
+      mustCheck: ["numeric ticker preservation", "KR market context", "asset role coverage"],
+    },
     riskFocus: ["KR ticker validation", "local equity and bond mix"],
     request: {
       portfolioId: "fixture-kr-numeric",
@@ -50,6 +79,10 @@ export const AI_ANALYSIS_REGRESSION_FIXTURES = [
   {
     id: "income-cashflow",
     label: "Dividend and cashflow portfolio",
+    evaluationFocus: {
+      scenario: "배당률과 현금흐름 해석이 강하게 드러나는 인컴 포트폴리오",
+      mustCheck: ["cashflow interpretation", "income concentration", "no yield recommendation"],
+    },
     riskFocus: ["cashflow interpretation", "income concentration"],
     request: {
       portfolioId: "fixture-income-cashflow",
@@ -73,6 +106,10 @@ export const AI_ANALYSIS_REGRESSION_FIXTURES = [
   {
     id: "defensive-bond-gold-reit",
     label: "Long bond, gold, and REIT defensive portfolio",
+    evaluationFocus: {
+      scenario: "장기채·금·리츠가 함께 있는 방어형 포트폴리오",
+      mustCheck: ["duration risk", "real asset sensitivity", "defensive balance"],
+    },
     riskFocus: ["duration risk", "real asset sensitivity", "defensive balance"],
     request: {
       portfolioId: "fixture-defensive-bond-gold-reit",
@@ -96,6 +133,10 @@ export const AI_ANALYSIS_REGRESSION_FIXTURES = [
   {
     id: "missing-data-review",
     label: "Data-limited review portfolio",
+    evaluationFocus: {
+      scenario: "상장 이력 짧음과 수동 입력 자산이 섞인 데이터 제한 포트폴리오",
+      mustCheck: ["data warnings", "short history", "manual input boundary"],
+    },
     riskFocus: ["data warnings", "limited metrics", "new listing"],
     request: {
       portfolioId: "fixture-missing-data-review",

@@ -41,7 +41,7 @@ const SIMULATOR_STEP_ITEMS = [
   { key: "settings", step: "Step 1", label: "시뮬레이터" },
   { key: "compare", step: "Step 2", label: "포트폴리오" },
   { key: "detail", step: "Step 3", label: "상세분석" },
-  { key: "ai", step: "Step 4", label: "AI 분석" },
+  { key: "ai", step: "Step 4", label: "포트폴리오 AI 분석" },
 ];
 
 function scrollWindowTop(delay = 70) {

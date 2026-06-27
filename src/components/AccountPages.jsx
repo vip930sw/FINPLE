@@ -357,8 +357,8 @@ export function PricingPage({ onNavigate }) {
 
     setStatusMessage(
       plan.key === "free"
-        ? "Free 플랜이 선택되었습니다. 브라우저 저장과 기본 시뮬레이션 중심으로 제공되며 서버 저장, PDF 저장, STEP 4 AI 분석은 제한됩니다."
-        : `${plan.label} 플랜이 선택되었습니다. STEP 4 AI 분석과 서버 저장 기능은 권한 기준에 따라 제공됩니다.`
+        ? "Free 플랜이 선택되었습니다. 브라우저 저장과 기본 시뮬레이션 중심으로 제공되며 서버 저장, PDF 저장, 포트폴리오 AI 분석은 제한됩니다."
+        : `${plan.label} 플랜이 선택되었습니다. 포트폴리오 AI 분석과 서버 저장 기능은 권한 기준에 따라 제공됩니다.`
     );
   }
 
@@ -375,7 +375,7 @@ export function PricingPage({ onNavigate }) {
     <AccountShell
       eyebrow="요금제"
       title="요금제"
-      description="처음에는 가볍게 체험하고, 필요할 때 서버 저장·리포트·STEP 4 AI 분석을 확장할 수 있도록 플랜 기준을 정리했습니다."
+      description="처음에는 가볍게 체험하고, 필요할 때 서버 저장·리포트·포트폴리오 AI 분석을 확장할 수 있도록 플랜 기준을 정리했습니다."
       onNavigate={onNavigate}
     >
       <section className="pricingStatusPanel">

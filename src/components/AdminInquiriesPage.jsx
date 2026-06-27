@@ -316,7 +316,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     try {
       const data = await fetchAdminAiAnalysisUsageSummary();
       setAiUsageData(data);
-      setAiUsageMessage(`최근 24시간 AI 분석 ${data?.usage?.total24h || 0}건을 확인했습니다.`);
+      setAiUsageMessage(`최근 24시간 포트폴리오 AI 분석 ${data?.usage?.total24h || 0}건을 확인했습니다.`);
     } catch (error) {
       setAiUsageMessage(error?.message || "AI 사용량 요약을 불러오지 못했습니다.");
     } finally {
@@ -954,9 +954,9 @@ function AiUsageManagementPanel({
     <section className="accountCard adminManagementPanel">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">AI 사용량</p>
-          <h2>AI 분석 사용량</h2>
-          <p>운영 DB에 기록된 STEP 4 AI 분석 호출량, 상태 분포, 최근 이벤트를 확인합니다.</p>
+          <p className="accountMiniLabel">포트폴리오 AI 사용량</p>
+          <h2>포트폴리오 AI 분석 사용량</h2>
+          <p>운영 DB에 기록된 포트폴리오 AI 분석 호출량, 상태 분포, 최근 이벤트를 확인합니다.</p>
         </div>
       </div>
 
@@ -974,7 +974,7 @@ function AiUsageManagementPanel({
       {isAdminMode ? (
         <div className="serverStorageActions compactActions">
           <button type="button" className="primaryButton" onClick={onLoad} disabled={isLoading}>
-            {isLoading ? "불러오는 중..." : "AI 사용량 새로고침"}
+            {isLoading ? "불러오는 중..." : "포트폴리오 AI 사용량 새로고침"}
           </button>
         </div>
       ) : null}
@@ -991,7 +991,7 @@ function AiUsageManagementPanel({
               ))}
             </div>
           ) : (
-            <p>최근 24시간 AI 사용 이벤트가 없거나 아직 요약을 불러오지 않았습니다.</p>
+            <p>최근 24시간 포트폴리오 AI 사용 이벤트가 없거나 아직 요약을 불러오지 않았습니다.</p>
           )}
         </article>
         <article>
@@ -1033,7 +1033,7 @@ function AiUsageManagementPanel({
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="6">최근 AI 분석 이벤트를 아직 불러오지 않았습니다.</td></tr>
+              <tr><td colSpan="6">최근 포트폴리오 AI 분석 이벤트를 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>

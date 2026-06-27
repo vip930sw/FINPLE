@@ -152,7 +152,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     effectiveActiveSimulatorTab === "settings"
       ? "현재 편집 중"
       : effectiveActiveSimulatorTab === "ai"
-        ? "AI 분석 대상"
+        ? "포트폴리오 AI 분석 대상"
         : "현재 분석 중";
 
   return (

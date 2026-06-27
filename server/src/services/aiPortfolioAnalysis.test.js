@@ -8,6 +8,7 @@ import {
   validateAiPortfolioAnalysisOutput,
 } from "./aiOutputValidator.js";
 import {
+  AI_ANALYSIS_EVALUATION_CRITERIA,
   AI_ANALYSIS_REGRESSION_FIXTURE_VERSION,
   AI_ANALYSIS_REGRESSION_FIXTURES,
 } from "./aiAnalysisRegressionFixtures.js";
@@ -269,7 +270,7 @@ test("runPortfolioAnalysis returns deterministic mock output", async () => {
 });
 
 test("AI analysis regression fixtures pass request and mock output validation", async () => {
-  assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v1");
+  assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v2");
 
   for (const fixture of AI_ANALYSIS_REGRESSION_FIXTURES) {
     const normalizedRequest = normalizePortfolioAnalysisRequest(fixture.request);
@@ -279,6 +280,54 @@ test("AI analysis regression fixtures pass request and mock output validation", 
     assert.equal(validated.portfolioId, fixture.request.portfolioId);
     assert.equal(validated.diagnosticSections.length, 3, `${fixture.id}: diagnostic section count`);
   }
+});
+
+test("AI analysis regression fixtures cover required evaluation scenarios", () => {
+  assert.ok(
+    AI_ANALYSIS_REGRESSION_FIXTURES.length >= AI_ANALYSIS_EVALUATION_CRITERIA.minimumFixtureCount
+  );
+
+  const fixtureIds = new Set();
+  const coveredMarkets = new Set();
+  const coveredDataStatuses = new Set();
+  const coveredRiskFocus = new Set();
+
+  for (const fixture of AI_ANALYSIS_REGRESSION_FIXTURES) {
+    assert.ok(fixture.id, "fixture id is required");
+    assert.equal(fixtureIds.has(fixture.id), false, `${fixture.id}: duplicate fixture id`);
+    fixtureIds.add(fixture.id);
+
+    assert.ok(fixture.evaluationFocus?.scenario, `${fixture.id}: evaluation scenario is required`);
+    assert.ok(
+      Array.isArray(fixture.evaluationFocus?.mustCheck) && fixture.evaluationFocus.mustCheck.length >= 2,
+      `${fixture.id}: at least two evaluation checks are required`
+    );
+
+    for (const asset of fixture.request.assets || []) {
+      if (asset.market) coveredMarkets.add(asset.market);
+      if (asset.dataStatus) coveredDataStatuses.add(asset.dataStatus);
+    }
+
+    for (const focus of fixture.riskFocus || []) {
+      coveredRiskFocus.add(focus);
+    }
+  }
+
+  for (const market of AI_ANALYSIS_EVALUATION_CRITERIA.requiredMarkets) {
+    assert.ok(coveredMarkets.has(market), `missing market coverage: ${market}`);
+  }
+
+  for (const status of AI_ANALYSIS_EVALUATION_CRITERIA.requiredDataStatuses) {
+    assert.ok(coveredDataStatuses.has(status), `missing data status coverage: ${status}`);
+  }
+
+  for (const focus of AI_ANALYSIS_EVALUATION_CRITERIA.requiredRiskFocus) {
+    assert.ok(coveredRiskFocus.has(focus), `missing risk focus coverage: ${focus}`);
+  }
+
+  assert.ok(
+    AI_ANALYSIS_EVALUATION_CRITERIA.requiredOutputChecks.includes("numeric hallucination guard")
+  );
 });
 
 test("runPortfolioAnalysis rejects live OpenAI mode without a server API key", async () => {
