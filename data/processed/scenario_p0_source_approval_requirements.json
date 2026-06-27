@@ -1,0 +1,174 @@
+{
+  "requirementsVersion": "scenario-p0-source-approval-requirements-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
+  },
+  "outputFiles": {
+    "requirements": "data\\processed\\scenario_p0_source_approval_requirements.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "approvalRules": {
+    "endpointPolicy": "approved_endpoint_or_documented_proxy",
+    "licensePolicy": "approved_internal_monthly_derived_return_cache",
+    "rawPayloadStorage": "approved_hash_or_raw_retention_policy",
+    "redistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
+    "requiredApproval": "source_license_refresh_policy",
+    "status": "approved_source_policy",
+    "blocker": ""
+  },
+  "rowCounts": {
+    "totalRows": 17,
+    "approvedRows": 0,
+    "pendingRows": 17,
+    "providerGroups": 5
+  },
+  "counts": {
+    "byManifestType": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "byProviderCandidate": {
+      "KOSPI200_TR_primary_or_kospi200_etf_proxy": 1,
+      "KR_price_total_return_dividend_provider": 6,
+      "SP500_TR_primary_or_SPY_adjusted_close_proxy": 1,
+      "US_price_total_return_dividend_provider": 8,
+      "USD_KRW_fx_provider": 1
+    },
+    "byStatus": {
+      "blocked_source_policy_review": 17
+    },
+    "byRequiredApproval": {
+      "source_license_refresh_policy": 17
+    }
+  },
+  "providerGroups": {
+    "KOSPI200_TR_primary_or_kospi200_etf_proxy": {
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "sourceScope": "KOSPI 200 total-return benchmark or controlled ETF proxy",
+      "rowCount": 1,
+      "tickers": [
+        "KOSPI200_TR"
+      ],
+      "markets": [
+        "KR"
+      ],
+      "currentStatuses": {
+        "blocked_source_policy_review": 1
+      },
+      "minimumEvidence": [
+        "primary total-return benchmark endpoint or proxy rule selected",
+        "proxy limitations documented if an ETF proxy is used",
+        "benchmark return currency and calendar alignment documented",
+        "raw payload hash or retention policy approved",
+        "monthly derived benchmark redistribution approved for internal cache only"
+      ]
+    },
+    "KR_price_total_return_dividend_provider": {
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "sourceScope": "KR ETF close price, distribution, split, and corporate-action time series",
+      "rowCount": 6,
+      "tickers": [
+        "069500",
+        "102110",
+        "105190",
+        "148020",
+        "152100",
+        "278530"
+      ],
+      "markets": [
+        "KR"
+      ],
+      "currentStatuses": {
+        "blocked_source_policy_review": 6
+      },
+      "minimumEvidence": [
+        "provider endpoint selected with KR ticker normalization policy",
+        "distribution and split handling documented",
+        "KRW return basis documented",
+        "raw payload hash or retention policy approved",
+        "monthly derived return redistribution approved for internal cache only"
+      ]
+    },
+    "SP500_TR_primary_or_SPY_adjusted_close_proxy": {
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "sourceScope": "S&P 500 total-return benchmark or controlled SPY adjusted-close proxy",
+      "rowCount": 1,
+      "tickers": [
+        "SP500_TR"
+      ],
+      "markets": [
+        "US"
+      ],
+      "currentStatuses": {
+        "blocked_source_policy_review": 1
+      },
+      "minimumEvidence": [
+        "primary total-return benchmark endpoint or proxy rule selected",
+        "proxy limitations documented if SPY adjusted close is used",
+        "benchmark return currency and calendar alignment documented",
+        "raw payload hash or retention policy approved",
+        "monthly derived benchmark redistribution approved for internal cache only"
+      ]
+    },
+    "US_price_total_return_dividend_provider": {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "sourceScope": "US ETF adjusted close, cash dividend, split, and corporate-action time series",
+      "rowCount": 8,
+      "tickers": [
+        "ITOT",
+        "IVV",
+        "QQQ",
+        "QQQM",
+        "SCHB",
+        "SPY",
+        "VOO",
+        "VTI"
+      ],
+      "markets": [
+        "US"
+      ],
+      "currentStatuses": {
+        "blocked_source_policy_review": 8
+      },
+      "minimumEvidence": [
+        "provider endpoint selected with documented rate limits and backfill window",
+        "adjusted close or total-return reconstruction method documented",
+        "dividend and split handling documented",
+        "raw payload hash or retention policy approved",
+        "monthly derived return redistribution approved for internal cache only"
+      ]
+    },
+    "USD_KRW_fx_provider": {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "sourceScope": "USD/KRW monthly FX return time series",
+      "rowCount": 1,
+      "tickers": [
+        "USD_KRW"
+      ],
+      "markets": [
+        "FX"
+      ],
+      "currentStatuses": {
+        "blocked_source_policy_review": 1
+      },
+      "minimumEvidence": [
+        "FX endpoint selected with fixing convention documented",
+        "month-end calendar and missing-day fallback documented",
+        "return direction documented as USDKRW return",
+        "raw payload hash or retention policy approved",
+        "monthly derived FX return redistribution approved for internal cache only"
+      ]
+    }
+  },
+  "readiness": {
+    "status": "blocked_source_policy_review",
+    "canApproveWriterGate": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "review_and_record_p0_source_license_refresh_policy"
+  }
+}
