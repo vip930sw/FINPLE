@@ -26,6 +26,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 cache dry run | Implemented in Step 114-1I | Provider task contract without provider calls or monthly data writes |
 | P0 source policy matrix | Implemented in Step 114-1J | Source/license approval gate before provider adapters |
 | P0 source approval requirements | Implemented in Step 114-1L | Machine-readable evidence requirements before approving any P0 source row |
+| P0 source approval decision record | Implemented in Step 114-1M | Pending provider/license decision register for the five P0 source groups |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -178,6 +179,28 @@ bootstrapStillBlocked=true
 
 The current provider groups are US asset series, KR asset series, S&P 500 total-return or proxy benchmark, KOSPI 200 total-return or proxy benchmark, and USD/KRW FX. Each group must document endpoint selection, license/redistribution policy, raw payload hash or retention policy, and the monthly derived return basis before the writer gate can be opened.
 
+## P0 Source Approval Decision Record
+
+The source approval decision record lives at:
+
+```text
+data/processed/scenario_p0_source_approval_decision_record.csv
+data/processed/scenario_p0_source_approval_decision_record_summary.json
+```
+
+It is a five-row register for the P0 source groups. It keeps every provider group in `pending_decision` until a reviewer records selected provider, endpoint, license decision, raw payload policy, and redistribution decision:
+
+```text
+providerGroups=5
+decidedGroups=0
+pendingGroups=5
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+This record is intentionally not an approval. It is the next input required before the source policy matrix can be changed from `blocked_source_policy_review` to `approved_source_policy`.
+
 ## P0 Cache Writer Gate
 
 The writer gate lives at:
@@ -240,6 +263,7 @@ npm.cmd run check:scenario-p0-manifest
 npm.cmd run check:scenario-p0-dry-run
 npm.cmd run check:scenario-p0-source-policy
 npm.cmd run check:scenario-p0-source-approval
+npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-writer-gate
 ```
 

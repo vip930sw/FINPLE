@@ -42,6 +42,24 @@ The baseline returns:
 - Windows shorter than the requested horizon return no observations instead of fabricated values.
 - Bootstrap and random sampling remain Step 114-2B, not part of this baseline.
 
+## Rolling Median Timing
+
+Rolling median is applied after validated monthly return series exist and after portfolio monthly returns are built on the common-month intersection. It is not applied to the current 6,000-row asset CSV as a substitute for missing time-series data.
+
+For scenario analysis, the order is:
+
+```text
+validated monthly asset returns
+-> common-month portfolio returns
+-> horizon rolling windows
+-> terminal return median and MDD median
+-> optional annualized CAGR summary for each horizon
+```
+
+The current implementation exposes `terminalReturnMedian` and `mddMedian` per horizon in `portfolioHistoricalBaseline.js`. A future display-level rolling CAGR should annualize each window's terminal return for the selected horizon before taking the median, instead of reusing `expectedCagr` or raw summary CAGR.
+
+The older app metric policy is separate: Korean representative-index ETFs may use `rollingCagr10yMedian` for `expectedCagr` when raw 10-year price CAGR is distorted by the chosen start/end period. That policy is an asset-card metric policy, not a scenario Bootstrap input policy.
+
 ## Validation
 
 Run:
