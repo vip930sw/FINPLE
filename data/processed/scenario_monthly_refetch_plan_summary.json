@@ -1,0 +1,196 @@
+{
+  "planVersion": "scenario-monthly-refetch-plan-v0.1",
+  "auditedAt": "2026-06-27T00:00:00Z",
+  "sourceFiles": {
+    "coverage": "data\\processed\\scenario_data_coverage.csv",
+    "readiness": "data\\processed\\scenario_monthly_input_readiness.json"
+  },
+  "outputFiles": {
+    "csv": "data\\processed\\scenario_monthly_refetch_plan.csv",
+    "summary": "data\\processed\\scenario_monthly_refetch_plan_summary.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "totalPlanRows": 6003,
+    "assetRows": 6000,
+    "systemRows": 3,
+    "representativeAssetRows": 14
+  },
+  "coverageCounts": {
+    "scenarioGrade": {
+      "B": 5757,
+      "C": 243
+    },
+    "metricsStatus": {
+      "ready": 4802,
+      "review_required": 495,
+      "short_history": 703
+    },
+    "betaRecalcStatus": {
+      "blocked_missing_beta_or_benchmark": 65,
+      "blocked_policy_benchmark_should_be_kospi200": 6,
+      "not_supported_no_price_series": 243,
+      "provider_refetch_required": 5686
+    }
+  },
+  "planCounts": {
+    "byPlanType": {
+      "asset": 6000,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "byPriority": {
+      "blocked_no_price_series": 243,
+      "P0_benchmark": 2,
+      "P0_fx": 1,
+      "P0_representative": 14,
+      "P1_ready_overlay": 4788,
+      "P2_short_history": 703,
+      "P3_review_required": 252
+    },
+    "byStatus": {
+      "blocked_benchmark_policy": 6,
+      "blocked_no_price_series_evidence": 243,
+      "provider_refetch_required": 5754
+    },
+    "byTargetBenchmarkId": {
+      "KOSPI200_TR": 6,
+      "KR_BENCHMARK_POLICY_REVIEW": 2994,
+      "SP500_TR": 3000
+    }
+  },
+  "representativeAssets": [
+    {
+      "market": "KR",
+      "ticker": "069500",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "102110",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "105190",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "148020",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "152100",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "KR",
+      "ticker": "278530",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "KOSPI200_TR",
+      "status": "blocked_benchmark_policy",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|kospi200_benchmark_policy"
+    },
+    {
+      "market": "US",
+      "ticker": "ITOT",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "IVV",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQ",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "QQQM",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "SCHB",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "SPY",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "VOO",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    },
+    {
+      "market": "US",
+      "ticker": "VTI",
+      "priority": "P0_representative",
+      "scenarioGrade": "B",
+      "targetBenchmarkId": "SP500_TR",
+      "status": "provider_refetch_required",
+      "blockedSeries": "monthly_total_return|monthly_dividend_amount|monthly_fx_return_usd_krw"
+    }
+  ],
+  "readiness": {
+    "status": "provider_refetch_plan_only_no_data_written",
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "implement_provider_refetch_cache_writer_with_source_metadata"
+  }
+}

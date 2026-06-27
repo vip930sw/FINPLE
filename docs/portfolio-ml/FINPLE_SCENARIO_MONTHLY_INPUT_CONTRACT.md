@@ -21,6 +21,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Monthly input quality gate | Implemented | `npm.cmd run check:scenario-monthly-input` |
 | Monthly input validator regressions | Implemented in Step 114-1E | Good/bad temporary CSV cases in `scripts/verify-scenario-monthly-input.test.cjs` |
 | Monthly input readiness report | Implemented in Step 114-1F | `data/processed/scenario_monthly_input_readiness.json` |
+| Monthly provider refetch plan | Implemented in Step 114-1G | `data/processed/scenario_monthly_refetch_plan.csv` and summary JSON |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
 
@@ -59,6 +60,31 @@ scenarioGradeCounts: A=0, B=5757, C=243
 
 The report intentionally keeps Bootstrap, scenario API, Compare chart scenario bands, and AI scenario integration blocked until real monthly asset, benchmark, dividend, and FX series exist.
 
+## Provider Refetch Plan
+
+The provider refetch plan lives at:
+
+```text
+data/processed/scenario_monthly_refetch_plan.csv
+data/processed/scenario_monthly_refetch_plan_summary.json
+```
+
+It does not fetch or write monthly return data. It translates the current coverage audit into a deterministic collection plan:
+
+```text
+totalPlanRows=6003
+assetRows=6000
+systemRows=3
+P0_representative=14
+P0_benchmark=2
+P0_fx=1
+provider_refetch_required=5754
+blocked_benchmark_policy=6
+blocked_no_price_series_evidence=243
+```
+
+The three system rows are `SP500_TR`, `KOSPI200_TR`, and `USD_KRW`. The monthly data target remains `data/processed/scenario_monthly_returns.csv`.
+
 ## Future Data File
 
 The future validated input path is:
@@ -94,6 +120,7 @@ If this file is absent, the validator passes with an explicit "not present yet" 
 ```powershell
 npm.cmd run check:scenario-monthly-input
 npm.cmd run check:scenario-readiness
+npm.cmd run check:scenario-refetch-plan
 ```
 
 ## Non-Goals
