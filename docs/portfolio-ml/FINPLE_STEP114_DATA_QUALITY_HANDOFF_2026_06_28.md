@@ -112,6 +112,7 @@ data/processed/scenario_p0_external_provider_terms_review.csv
 data/processed/scenario_p0_external_provider_terms_review_summary.json
 data/processed/scenario_p0_owner_legal_decision_packet.csv
 data/processed/scenario_p0_owner_legal_decision_packet_summary.json
+data/processed/scenario_p0_approval_intake_checklist.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_step114_progress.json
@@ -135,6 +136,8 @@ scripts/generate-scenario-p0-source-approval-decision-record.cjs
 scripts/generate-scenario-p0-provider-candidate-review.cjs
 scripts/generate-scenario-p0-external-provider-terms-review.cjs
 scripts/generate-scenario-p0-owner-legal-decision-packet.cjs
+scripts/generate-scenario-p0-approval-intake-checklist.cjs
+scripts/generate-scenario-p0-approval-intake-checklist.test.cjs
 scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
@@ -153,6 +156,8 @@ external provider terms approved=0
 owner/legal adapter approved=0
 owner/legal monthly write approved=0
 source policy approved=0
+approval intake completion=0%
+approval intake ready provider groups=0/5
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -199,6 +204,7 @@ npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-owner-legal
+npm.cmd run check:scenario-p0-approval-intake
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
@@ -256,6 +262,21 @@ runtimeScenarioImplementationPercent=0
 ```
 
 The 80% value is a weighted readiness score for the audit and governance framework, not production scenario implementation. The remaining 20% is blocked by real owner/legal/source approval decisions and the absence of validated `scenario_monthly_returns.csv`.
+
+## Step 114-1V Approval Intake Follow-Up
+
+The approval intake checklist now records provider-group approval blockers without approving any real source:
+
+```text
+providerGroups=5
+readyProviderGroups=0
+blockedProviderGroups=5
+intakeCompletionPercent=0
+readyForProviderAdapter=false
+readyForMonthlyDataWrite=false
+```
+
+The checklist is intended for owner/legal/source reviewers to fill the real decision inputs later. It still does not permit provider calls, provider adapters, or `scenario_monthly_returns.csv` writes.
 
 ## Recommended Next Step
 

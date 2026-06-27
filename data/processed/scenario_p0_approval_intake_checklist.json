@@ -1,0 +1,259 @@
+{
+  "checklistVersion": "scenario-p0-approval-intake-checklist-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "sourceApprovalDecisionRecord": "data\\processed\\scenario_p0_source_approval_decision_record.csv",
+    "externalTermsReview": "data\\processed\\scenario_p0_external_provider_terms_review.csv",
+    "ownerLegalDecisionPacket": "data\\processed\\scenario_p0_owner_legal_decision_packet.csv"
+  },
+  "outputFiles": {
+    "checklist": "data\\processed\\scenario_p0_approval_intake_checklist.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerGroups": 5,
+    "readyProviderGroups": 0,
+    "blockedProviderGroups": 5,
+    "sourcePolicyRows": 17,
+    "approvedSourcePolicyRows": 0,
+    "completedApprovalSlots": 0,
+    "totalApprovalSlots": 37
+  },
+  "completion": {
+    "intakeCompletionPercent": 0,
+    "readyForProviderAdapter": false,
+    "readyForMonthlyDataWrite": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true
+  },
+  "providerGroups": [
+    {
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "namedProviderCandidate": "KRX Data Marketplace or licensed KOSPI 200 ETF proxy",
+      "sourceScope": "KOSPI 200 total-return benchmark or controlled ETF proxy",
+      "sourcePolicyRows": 1,
+      "approvedSourcePolicyRows": 0,
+      "decisionStatus": "pending_decision",
+      "externalTermsApprovalStatus": "not_approved",
+      "adapterApprovalStatus": "pending_owner_legal_review",
+      "monthlyWriteApprovalStatus": "blocked_pending_owner_legal_review",
+      "missingDecisionFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "reviewedAt"
+      ],
+      "missingOwnerLegalFields": [
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "source_decision_not_approved",
+        "external_terms_not_approved",
+        "adapter_not_approved_by_owner_legal",
+        "monthly_write_not_approved_by_owner_legal",
+        "source_policy_rows_not_approved",
+        "missing_decision_selectedProvider",
+        "missing_decision_selectedEndpoint",
+        "missing_decision_licenseDecision",
+        "missing_decision_rawPayloadPolicy",
+        "missing_decision_redistributionDecision",
+        "missing_decision_reviewOwner",
+        "missing_decision_reviewedAt",
+        "missing_owner_legal_decisionOwner",
+        "missing_owner_legal_legalReviewer",
+        "missing_owner_legal_reviewedAt",
+        "missing_owner_legal_evidenceUrl"
+      ],
+      "readyForSourcePolicyApproval": false
+    },
+    {
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Korea Investment Open API or licensed KR market-data provider",
+      "sourceScope": "KR ETF close price, distribution, split, and corporate-action time series",
+      "sourcePolicyRows": 6,
+      "approvedSourcePolicyRows": 0,
+      "decisionStatus": "pending_decision",
+      "externalTermsApprovalStatus": "not_approved",
+      "adapterApprovalStatus": "pending_owner_legal_review",
+      "monthlyWriteApprovalStatus": "blocked_pending_owner_legal_review",
+      "missingDecisionFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "reviewedAt"
+      ],
+      "missingOwnerLegalFields": [
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "source_decision_not_approved",
+        "external_terms_not_approved",
+        "adapter_not_approved_by_owner_legal",
+        "monthly_write_not_approved_by_owner_legal",
+        "source_policy_rows_not_approved",
+        "missing_decision_selectedProvider",
+        "missing_decision_selectedEndpoint",
+        "missing_decision_licenseDecision",
+        "missing_decision_rawPayloadPolicy",
+        "missing_decision_redistributionDecision",
+        "missing_decision_reviewOwner",
+        "missing_decision_reviewedAt",
+        "missing_owner_legal_decisionOwner",
+        "missing_owner_legal_legalReviewer",
+        "missing_owner_legal_reviewedAt",
+        "missing_owner_legal_evidenceUrl"
+      ],
+      "readyForSourcePolicyApproval": false
+    },
+    {
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "sourceScope": "S&P 500 total-return benchmark or controlled SPY adjusted-close proxy",
+      "sourcePolicyRows": 1,
+      "approvedSourcePolicyRows": 0,
+      "decisionStatus": "pending_decision",
+      "externalTermsApprovalStatus": "not_approved",
+      "adapterApprovalStatus": "pending_owner_legal_review",
+      "monthlyWriteApprovalStatus": "blocked_pending_owner_legal_review",
+      "missingDecisionFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "reviewedAt"
+      ],
+      "missingOwnerLegalFields": [
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "source_decision_not_approved",
+        "external_terms_not_approved",
+        "adapter_not_approved_by_owner_legal",
+        "monthly_write_not_approved_by_owner_legal",
+        "source_policy_rows_not_approved",
+        "missing_decision_selectedProvider",
+        "missing_decision_selectedEndpoint",
+        "missing_decision_licenseDecision",
+        "missing_decision_rawPayloadPolicy",
+        "missing_decision_redistributionDecision",
+        "missing_decision_reviewOwner",
+        "missing_decision_reviewedAt",
+        "missing_owner_legal_decisionOwner",
+        "missing_owner_legal_legalReviewer",
+        "missing_owner_legal_reviewedAt",
+        "missing_owner_legal_evidenceUrl"
+      ],
+      "readyForSourcePolicyApproval": false
+    },
+    {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Alpha Vantage",
+      "sourceScope": "US ETF adjusted close, cash dividend, split, and corporate-action time series",
+      "sourcePolicyRows": 8,
+      "approvedSourcePolicyRows": 0,
+      "decisionStatus": "pending_decision",
+      "externalTermsApprovalStatus": "not_approved",
+      "adapterApprovalStatus": "pending_owner_legal_review",
+      "monthlyWriteApprovalStatus": "blocked_pending_owner_legal_review",
+      "missingDecisionFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "reviewedAt"
+      ],
+      "missingOwnerLegalFields": [
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "source_decision_not_approved",
+        "external_terms_not_approved",
+        "adapter_not_approved_by_owner_legal",
+        "monthly_write_not_approved_by_owner_legal",
+        "source_policy_rows_not_approved",
+        "missing_decision_selectedProvider",
+        "missing_decision_selectedEndpoint",
+        "missing_decision_licenseDecision",
+        "missing_decision_rawPayloadPolicy",
+        "missing_decision_redistributionDecision",
+        "missing_decision_reviewOwner",
+        "missing_decision_reviewedAt",
+        "missing_owner_legal_decisionOwner",
+        "missing_owner_legal_legalReviewer",
+        "missing_owner_legal_reviewedAt",
+        "missing_owner_legal_evidenceUrl"
+      ],
+      "readyForSourcePolicyApproval": false
+    },
+    {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "namedProviderCandidate": "FRED DEXKOUS",
+      "sourceScope": "USD/KRW monthly FX return time series",
+      "sourcePolicyRows": 1,
+      "approvedSourcePolicyRows": 0,
+      "decisionStatus": "pending_decision",
+      "externalTermsApprovalStatus": "not_approved",
+      "adapterApprovalStatus": "pending_owner_legal_review",
+      "monthlyWriteApprovalStatus": "blocked_pending_owner_legal_review",
+      "missingDecisionFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "reviewedAt"
+      ],
+      "missingOwnerLegalFields": [
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "source_decision_not_approved",
+        "external_terms_not_approved",
+        "adapter_not_approved_by_owner_legal",
+        "monthly_write_not_approved_by_owner_legal",
+        "source_policy_rows_not_approved",
+        "missing_decision_selectedProvider",
+        "missing_decision_selectedEndpoint",
+        "missing_decision_licenseDecision",
+        "missing_decision_rawPayloadPolicy",
+        "missing_decision_redistributionDecision",
+        "missing_decision_reviewOwner",
+        "missing_decision_reviewedAt",
+        "missing_owner_legal_decisionOwner",
+        "missing_owner_legal_legalReviewer",
+        "missing_owner_legal_reviewedAt",
+        "missing_owner_legal_evidenceUrl"
+      ],
+      "readyForSourcePolicyApproval": false
+    }
+  ],
+  "nextAllowedStep": "fill_real_approval_intake_fields_before_source_policy_approval"
+}

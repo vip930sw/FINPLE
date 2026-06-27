@@ -17,6 +17,7 @@ const PROCESSED_FILES = [
   "scenario_p0_provider_candidate_review_summary.json",
   "scenario_p0_external_provider_terms_review_summary.json",
   "scenario_p0_owner_legal_decision_packet_summary.json",
+  "scenario_p0_approval_intake_checklist.json",
   "scenario_p0_approval_readiness.json",
   "scenario_monthly_write_preflight.json",
   "scenario_p0_cache_writer_gate.json",
@@ -74,12 +75,19 @@ test("reports 80 percent overall progress while real approvals and monthly data 
 
 test("real approval progress moves independently from monthly data progress", () => {
   const workspace = makeWorkspace();
-  mutateJson(workspace, "scenario_p0_approval_readiness.json", (value) => {
-    value.rowCounts.termsApproved = 5;
-    value.rowCounts.ownerAdapterApproved = 5;
-    value.rowCounts.ownerMonthlyApproved = 5;
-    value.rowCounts.sourcePolicyApproved = 17;
-    value.readiness.blockers = ["writer_gate_cannot_write_monthly_data", "writer_gate_provider_calls_not_allowed"];
+  mutateJson(workspace, "scenario_p0_approval_intake_checklist.json", (value) => {
+    value.rowCounts.readyProviderGroups = 5;
+    value.rowCounts.blockedProviderGroups = 0;
+    value.rowCounts.approvedSourcePolicyRows = 17;
+    value.rowCounts.completedApprovalSlots = 37;
+    value.completion.intakeCompletionPercent = 100;
+    value.completion.readyForProviderAdapter = true;
+    value.completion.readyForMonthlyDataWrite = true;
+    value.providerGroups = value.providerGroups.map((row) => ({
+      ...row,
+      readyForSourcePolicyApproval: true,
+      blockers: [],
+    }));
   });
 
   const result = runProgress(workspace, []);

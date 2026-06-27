@@ -35,6 +35,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | Monthly write preflight | Implemented in Step 114-1S | Blocks `scenario_monthly_returns.csv` before P0 approval readiness allows writes |
 | P0 source approval fixture harness | Implemented in Step 114-1T | Synthetic tests prove approvals require provider, endpoint, license, raw payload, redistribution, owner/legal, reviewed-at, and evidence fields |
 | Step 114 progress report | Implemented in Step 114-1U | Machine-readable overall progress percent and blocker summary for the P0 monthly data readiness path |
+| P0 approval intake checklist | Implemented in Step 114-1V | Provider-group checklist of missing real approval fields before source-policy approval |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -322,6 +323,27 @@ bootstrapStillBlocked=true
 ```
 
 The report fails if provider candidates drift across the gate files, if any `approved_source_policy` row lacks selected provider, endpoint, license, raw payload, redistribution, owner/legal, review timestamp, or evidence fields, or if the writer gate allows provider calls or monthly writes before terms, owner/legal, and source-policy approvals are complete. This keeps the next implementation boundary explicit: adapters and `scenario_monthly_returns.csv` writes remain blocked until all approval layers agree.
+
+## P0 Approval Intake Checklist
+
+The approval intake checklist lives at:
+
+```text
+data/processed/scenario_p0_approval_intake_checklist.json
+```
+
+It does not approve any provider. It lists the missing real approval inputs for each P0 provider group before the source policy matrix can move to `approved_source_policy`:
+
+```text
+providerGroups=5
+readyProviderGroups=0
+blockedProviderGroups=5
+intakeCompletionPercent=0
+readyForProviderAdapter=false
+readyForMonthlyDataWrite=false
+```
+
+The checklist keeps the next non-runtime action explicit: fill real approval fields for selected provider, selected endpoint, license decision, raw payload policy, redistribution decision, review owner, owner/legal reviewers, review timestamps, and evidence URL. Provider adapters and monthly data writes remain blocked.
 
 ## Monthly Write Preflight
 

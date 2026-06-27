@@ -6,6 +6,7 @@
   "sourceFiles": {
     "coverageCsv": "data\\processed\\scenario_data_coverage.csv",
     "monthlyReadiness": "data\\processed\\scenario_monthly_input_readiness.json",
+    "approvalIntakeChecklist": "data\\processed\\scenario_p0_approval_intake_checklist.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
     "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
@@ -79,7 +80,8 @@
       "evidence": {
         "providerGroups": 5,
         "decisionRows": 5,
-        "providerCandidates": 5
+        "providerCandidates": 5,
+        "approvalIntakeProviderGroups": 5
       },
       "blockers": []
     },
@@ -110,7 +112,9 @@
         "ownerAdapterApproved": 0,
         "ownerMonthlyApproved": 0,
         "sourcePolicyApproved": 0,
-        "approvalSlots": 32
+        "readyProviderGroups": 0,
+        "completedApprovalSlots": 0,
+        "totalApprovalSlots": 37
       },
       "blockers": [
         "external_provider_terms_not_fully_approved",
@@ -118,7 +122,8 @@
         "owner_legal_monthly_write_approval_not_complete",
         "source_policy_rows_not_approved",
         "writer_gate_cannot_write_monthly_data",
-        "writer_gate_provider_calls_not_allowed"
+        "writer_gate_provider_calls_not_allowed",
+        "approval_intake_provider_groups_not_ready"
       ]
     },
     {
