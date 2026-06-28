@@ -32,7 +32,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 external provider terms review | Implemented in Step 114-1P | Official-docs-based provider terms blockers before source approval |
 | P0 owner/legal decision packet | Implemented in Step 114-1Q | Owner and legal review questions before provider adapters or cache writes |
 | P0 approval readiness cross-check | Implemented in Step 114-1R, hardened in Step 114-2G | Cross-checks terms, owner/legal, source policy, source-policy post-import preflight, and writer gate before adapters |
-| Monthly write preflight | Implemented in Step 114-1S | Blocks `scenario_monthly_returns.csv` before P0 approval readiness allows writes |
+| Monthly write preflight | Implemented in Step 114-1S, hardened in Step 114-2H | Blocks `scenario_monthly_returns.csv` before P0 approval readiness and source-policy post-import validation allow writes |
 | P0 source approval fixture harness | Implemented in Step 114-1T | Synthetic tests prove approvals require provider, endpoint, license, raw payload, redistribution, owner/legal, reviewed-at, and evidence fields |
 | Step 114 progress report | Implemented in Step 114-1U | Machine-readable overall progress percent and blocker summary for the P0 monthly data readiness path |
 | P0 approval intake checklist | Implemented in Step 114-1V | Provider-group checklist of missing real approval fields before source-policy approval |
@@ -603,19 +603,20 @@ The monthly write preflight report lives at:
 data/processed/scenario_monthly_write_preflight.json
 ```
 
-It checks the approval readiness report and the future monthly data target before any monthly cache writer is allowed:
+It checks the approval readiness report, source-policy post-import preflight, and the future monthly data target before any monthly cache writer is allowed:
 
 ```text
 monthlyFileExists=false
 approvalStatus=blocked_pending_p0_approvals
 safeToWriteMonthlyData=false
 providerCallsAllowed=false
+postImportPreflightReady=false
 canAttemptMonthlyWrite=false
 monthlyDataFileWritten=false
 bootstrapStillBlocked=true
 ```
 
-The preflight fails if `data/processed/scenario_monthly_returns.csv` exists while P0 approval readiness is still blocked, or while provider calls are not allowed. This keeps the current repository state explicit: the schema and gates exist, but no monthly return data file should be committed until source-policy, owner/legal, and writer approvals are complete.
+The preflight fails if `data/processed/scenario_monthly_returns.csv` exists while P0 approval readiness is still blocked, while provider calls are not allowed, or before source-policy post-import validation is ready. This keeps the current repository state explicit: the schema and gates exist, but no monthly return data file should be committed until source-policy post-import, owner/legal, and writer approvals are complete.
 
 ## Step 114 Progress Report
 

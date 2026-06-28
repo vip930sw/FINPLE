@@ -2,6 +2,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
+const SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_source_policy_post_import_preflight.json",
+);
 const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 const PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 
@@ -25,11 +30,20 @@ function stableJson(value) {
 
 function buildPreflight() {
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
+  const sourcePolicyPostImportPreflight = readJson(SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH);
   const monthlyFileExists = fs.existsSync(MONTHLY_DATA_PATH);
   const safeToWriteMonthlyData = approvalReadiness.readiness?.safeToWriteMonthlyData === true;
   const providerCallsAllowed = approvalReadiness.readiness?.providerCallsAllowed === true;
+  const postImportPreflightReady =
+    sourcePolicyPostImportPreflight.checks?.safeToUseImportedSourcePolicy === true &&
+    sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === true;
   const approvalStatus = approvalReadiness.readiness?.status || "unknown";
-  const blockers = approvalReadiness.readiness?.blockers ?? [];
+  const blockers = [
+    ...new Set([
+      ...(postImportPreflightReady ? [] : ["source_policy_post_import_preflight_not_ready"]),
+      ...(approvalReadiness.readiness?.blockers ?? []),
+    ]),
+  ];
 
   if (monthlyFileExists && !safeToWriteMonthlyData) {
     fail(`${MONTHLY_DATA_PATH} exists before P0 approval readiness allows monthly writes`);
@@ -37,8 +51,11 @@ function buildPreflight() {
   if (monthlyFileExists && !providerCallsAllowed) {
     fail(`${MONTHLY_DATA_PATH} exists while provider calls are not allowed by P0 approval readiness`);
   }
+  if (monthlyFileExists && !postImportPreflightReady) {
+    fail(`${MONTHLY_DATA_PATH} exists before source-policy post-import preflight is ready`);
+  }
 
-  const canAttemptMonthlyWrite = safeToWriteMonthlyData && providerCallsAllowed;
+  const canAttemptMonthlyWrite = safeToWriteMonthlyData && providerCallsAllowed && postImportPreflightReady;
   const status = monthlyFileExists
     ? "monthly_file_present_after_preflight_approval"
     : canAttemptMonthlyWrite
@@ -50,6 +67,7 @@ function buildPreflight() {
     auditedAt: AUDITED_AT,
     sourceFiles: {
       approvalReadiness: APPROVAL_READINESS_PATH,
+      sourcePolicyPostImportPreflight: SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH,
       monthlyDataTarget: MONTHLY_DATA_PATH,
     },
     outputFiles: {
@@ -60,6 +78,7 @@ function buildPreflight() {
       approvalStatus,
       safeToWriteMonthlyData,
       providerCallsAllowed,
+      postImportPreflightReady,
       canAttemptMonthlyWrite,
       blockers,
     },

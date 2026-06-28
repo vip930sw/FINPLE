@@ -3,6 +3,7 @@
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
+    "sourcePolicyPostImportPreflight": "data\\processed\\scenario_p0_source_policy_post_import_preflight.json",
     "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
   },
   "outputFiles": {
@@ -13,6 +14,7 @@
     "approvalStatus": "blocked_pending_p0_approvals",
     "safeToWriteMonthlyData": false,
     "providerCallsAllowed": false,
+    "postImportPreflightReady": false,
     "canAttemptMonthlyWrite": false,
     "blockers": [
       "source_policy_post_import_preflight_not_ready",

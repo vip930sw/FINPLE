@@ -194,6 +194,7 @@ approval validation rows=5 pending, 0 ready
 real approval import preflight readyForRealApprovalImport=false
 source-policy post-import preflight safeToUseImportedSourcePolicy=false
 approval readiness post-import dependency ready=false
+monthly write post-import dependency ready=false
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
@@ -430,6 +431,23 @@ bootstrapStillBlocked=true
 
 Synthetic tests show that a fully approved fixture can open approval readiness only after the post-import preflight also reports that the imported source-policy rows are safe to use. The gate rejects writer/provider-call openings when post-import validation is still blocked. The committed state still keeps all source rows blocked, performs no provider calls, and writes no monthly data.
 
+## Step 114-2H Monthly Write Post-Import Dependency Follow-Up
+
+The monthly write preflight now also reads the source-policy post-import preflight directly before any future `scenario_monthly_returns.csv` write can be attempted:
+
+```text
+monthlyFileExists=false
+approvalStatus=blocked_pending_p0_approvals
+safeToWriteMonthlyData=false
+providerCallsAllowed=false
+postImportPreflightReady=false
+canAttemptMonthlyWrite=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show that opening approval readiness alone is not enough to permit monthly writes. The monthly write preflight remains blocked until the source-policy post-import preflight is also ready, and it rejects any premature `scenario_monthly_returns.csv` file before post-import validation. The committed state still writes no monthly data and keeps provider calls, Bootstrap, and runtime implementation blocked.
+
 ## Step 114-1Y Source Policy Sync Plan Follow-Up
 
 The source policy sync plan now maps validated approval intake rows to a dry-run source-policy update plan:
@@ -541,7 +559,7 @@ Synthetic tests show the preflight opens only when a temporary monthly CSV exist
 
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2G, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2H, the remaining blocker is a real reviewer-owned approval input step:
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work
