@@ -22,7 +22,7 @@
     "check:scenario-p0-source-approval": "node scripts/generate-scenario-p0-source-approval-requirements.cjs --check && node --test scripts/generate-scenario-p0-source-approval-requirements.test.cjs",
     "check:scenario-p0-source-decision": "node scripts/generate-scenario-p0-source-approval-decision-record.cjs --check && node --test scripts/generate-scenario-p0-source-approval-decision-record.test.cjs",
     "check:scenario-p0-provider-review": "node scripts/generate-scenario-p0-provider-candidate-review.cjs --check && node --test scripts/generate-scenario-p0-provider-candidate-review.test.cjs",
-    "check:scenario-p0-external-terms": "node scripts/generate-scenario-p0-external-provider-terms-review.cjs --check",
+    "check:scenario-p0-external-terms": "node scripts/generate-scenario-p0-external-provider-terms-review.cjs --check && node --test scripts/generate-scenario-p0-external-provider-terms-review.test.cjs",
     "check:scenario-p0-owner-legal": "node scripts/generate-scenario-p0-owner-legal-decision-packet.cjs --check",
     "check:scenario-p0-approval-intake": "node scripts/generate-scenario-p0-approval-intake-checklist.cjs --check && node --test scripts/generate-scenario-p0-approval-intake-checklist.test.cjs",
     "check:scenario-p0-approval-template": "node scripts/generate-scenario-p0-approval-intake-template.cjs --check && node --test scripts/generate-scenario-p0-approval-intake-template.test.cjs",

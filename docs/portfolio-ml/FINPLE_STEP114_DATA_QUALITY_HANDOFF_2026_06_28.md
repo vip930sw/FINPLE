@@ -693,9 +693,23 @@ monthlyDataFileAbsent=true
 
 The `check:scenario-p0-provider-review` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, premature `scenario_monthly_returns.csv`, and stale committed provider candidate review summaries. The committed state still selects no provider, performs no provider calls, writes no monthly data, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2R External Provider Terms Review Integrity Follow-Up
+
+The external provider terms review generator now verifies the P0 terms-review contract before any provider terms can be treated as approved:
+
+```text
+expectedProviderCandidates=5
+approvedProviders=0
+blockedProviders=5
+officialUrlsVerified=true
+monthlyDataFileAbsent=true
+```
+
+The `check:scenario-p0-external-terms` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, premature `scenario_monthly_returns.csv`, stale committed terms summaries, and non-HTTPS official source URLs in generated summaries. The committed state still approves no external terms, selects no provider for adapter work, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2Q, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2R, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 

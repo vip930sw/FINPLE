@@ -1,5 +1,5 @@
 {
-  "reviewVersion": "scenario-p0-external-provider-terms-review-v0.1",
+  "reviewVersion": "scenario-p0-external-provider-terms-review-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "candidateReview": "data\\processed\\scenario_p0_provider_candidate_review.csv"
@@ -57,6 +57,13 @@
       "kospi200_index_or_proxy_terms_not_approved": 1,
       "kr_market_data_terms_not_approved": 1
     }
+  },
+  "termsIntegrity": {
+    "expectedProviderCandidates": 5,
+    "providerSetVerified": true,
+    "officialUrlsVerified": true,
+    "noTermsApproved": true,
+    "monthlyDataFileAbsent": true
   },
   "readiness": {
     "status": "blocked_external_terms_review",

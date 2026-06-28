@@ -16,9 +16,12 @@ const TERMS_REVIEW_SUMMARY_PATH = path.join(
   "processed",
   "scenario_p0_external_provider_terms_review_summary.json",
 );
+const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const REVIEW_VERSION = "scenario-p0-external-provider-terms-review-v0.1";
+const REVIEW_VERSION = "scenario-p0-external-provider-terms-review-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const EXPECTED_PROVIDER_CANDIDATES = 5;
+const NOT_APPROVED_STATUS = "not_approved";
 
 const CSV_COLUMNS = [
   "providerCandidate",
@@ -176,6 +179,22 @@ function countBy(rows, field) {
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
 }
 
+function uniqueSorted(values) {
+  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+}
+
+function assertHttpsUrl(value, label) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    fail(`${label} must be a valid HTTPS URL`);
+  }
+  if (parsed.protocol !== "https:") {
+    fail(`${label} must be a valid HTTPS URL`);
+  }
+}
+
 function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
@@ -196,8 +215,23 @@ function buildTermsReview() {
     };
   });
 
-  if (rows.length !== 5) {
-    fail(`${CANDIDATE_REVIEW_CSV_PATH} must produce 5 external terms rows, got ${rows.length}`);
+  if (rows.length !== EXPECTED_PROVIDER_CANDIDATES) {
+    fail(`${CANDIDATE_REVIEW_CSV_PATH} must produce ${EXPECTED_PROVIDER_CANDIDATES} external terms rows, got ${rows.length}`);
+  }
+  const providerCandidates = uniqueSorted(rows.map((row) => row.providerCandidate));
+  const expectedProviders = uniqueSorted(Object.keys(TERMS_REVIEW));
+  if (providerCandidates.join("|") !== expectedProviders.join("|")) {
+    fail(`${CANDIDATE_REVIEW_CSV_PATH} provider candidates do not match expected P0 terms review set`);
+  }
+  for (const row of rows) {
+    assertHttpsUrl(row.officialDocsUrl, `${row.providerCandidate} officialDocsUrl`);
+    assertHttpsUrl(row.officialTermsUrl, `${row.providerCandidate} officialTermsUrl`);
+  }
+  if (rows.some((row) => row.approvalStatus !== NOT_APPROVED_STATUS)) {
+    fail(`${TERMS_REVIEW_CSV_PATH} must keep all providers not_approved before owner/legal review`);
+  }
+  if (fs.existsSync(MONTHLY_DATA_PATH)) {
+    fail(`${MONTHLY_DATA_PATH} exists before external provider terms are approved`);
   }
 
   return {
@@ -227,6 +261,13 @@ function buildTermsReview() {
       counts: {
         byApprovalStatus: countBy(rows, "approvalStatus"),
         byBlocker: countBy(rows, "blocker"),
+      },
+      termsIntegrity: {
+        expectedProviderCandidates: EXPECTED_PROVIDER_CANDIDATES,
+        providerSetVerified: true,
+        officialUrlsVerified: true,
+        noTermsApproved: true,
+        monthlyDataFileAbsent: true,
       },
       readiness: {
         status: "blocked_external_terms_review",
