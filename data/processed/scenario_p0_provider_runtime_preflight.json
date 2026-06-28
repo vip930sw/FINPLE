@@ -6,6 +6,7 @@
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "providerAdapterPreflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
     "monthlyCacheWriterPreflight": "data\\processed\\scenario_p0_monthly_cache_writer_preflight.json",
+    "kisCapabilityPreflight": "data\\processed\\scenario_p0_kis_capability_preflight.json",
     "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
   },
   "outputFiles": {
@@ -29,6 +30,18 @@
       "missing_env_KIS_APP_SECRET",
       "missing_env_FRED_API_KEY",
       "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+      "missing_or_unreviewed_selectedEndpoint",
+      "missing_or_unreviewed_evidenceUrl",
+      "missing_or_unreviewed_endpointReviewed",
+      "missing_or_unreviewed_termsReviewed",
+      "missing_or_unreviewed_monthlyBackfillReviewed",
+      "missing_or_unreviewed_adjustmentBasisReviewed",
+      "missing_or_unreviewed_rawRedistributionReviewed",
+      "missing_or_unreviewed_reviewOwner",
+      "missing_or_unreviewed_reviewedAt",
+      "missing_or_unreviewed_approvalEvidence",
+      "invalid_or_missing_selectedEndpoint",
+      "invalid_or_missing_evidenceUrl",
       "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
       "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
       "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
@@ -69,8 +82,9 @@
         "KIS_APP_SECRET"
       ],
       "credentialsPresent": false,
+      "requiredCapabilities": [],
       "capabilityVerified": true,
-      "capabilityBlocker": "",
+      "capabilityBlockers": [],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -87,8 +101,9 @@
         "KIS_APP_SECRET"
       ],
       "credentialsPresent": false,
+      "requiredCapabilities": [],
       "capabilityVerified": true,
-      "capabilityBlocker": "",
+      "capabilityBlockers": [],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -105,8 +120,25 @@
         "KIS_APP_SECRET"
       ],
       "credentialsPresent": false,
+      "requiredCapabilities": [
+        "kis_overseas_monthly_adjusted_close_proxy"
+      ],
       "capabilityVerified": false,
-      "capabilityBlocker": "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+      "capabilityBlockers": [
+        "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+        "missing_or_unreviewed_selectedEndpoint",
+        "missing_or_unreviewed_evidenceUrl",
+        "missing_or_unreviewed_endpointReviewed",
+        "missing_or_unreviewed_termsReviewed",
+        "missing_or_unreviewed_monthlyBackfillReviewed",
+        "missing_or_unreviewed_adjustmentBasisReviewed",
+        "missing_or_unreviewed_rawRedistributionReviewed",
+        "missing_or_unreviewed_reviewOwner",
+        "missing_or_unreviewed_reviewedAt",
+        "missing_or_unreviewed_approvalEvidence",
+        "invalid_or_missing_selectedEndpoint",
+        "invalid_or_missing_evidenceUrl"
+      ],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -123,8 +155,25 @@
         "KIS_APP_SECRET"
       ],
       "credentialsPresent": false,
+      "requiredCapabilities": [
+        "kis_overseas_monthly_adjusted_dividend_split"
+      ],
       "capabilityVerified": false,
-      "capabilityBlocker": "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
+      "capabilityBlockers": [
+        "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
+        "missing_or_unreviewed_selectedEndpoint",
+        "missing_or_unreviewed_evidenceUrl",
+        "missing_or_unreviewed_endpointReviewed",
+        "missing_or_unreviewed_termsReviewed",
+        "missing_or_unreviewed_monthlyBackfillReviewed",
+        "missing_or_unreviewed_adjustmentBasisReviewed",
+        "missing_or_unreviewed_rawRedistributionReviewed",
+        "missing_or_unreviewed_reviewOwner",
+        "missing_or_unreviewed_reviewedAt",
+        "missing_or_unreviewed_approvalEvidence",
+        "invalid_or_missing_selectedEndpoint",
+        "invalid_or_missing_evidenceUrl"
+      ],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -139,8 +188,9 @@
         "FRED_API_KEY"
       ],
       "credentialsPresent": false,
+      "requiredCapabilities": [],
       "capabilityVerified": true,
-      "capabilityBlocker": "",
+      "capabilityBlockers": [],
       "readyForRuntimeProviderCalls": false
     }
   ],
@@ -149,6 +199,6 @@
     "runtimeProviderCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write"
+    "nextAllowedStep": "record_official_kis_overseas_monthly_price_dividend_split_endpoint_evidence_before_runtime_provider_calls"
   }
 }

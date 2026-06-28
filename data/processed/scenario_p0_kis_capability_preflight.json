@@ -1,0 +1,105 @@
+{
+  "preflightVersion": "scenario-p0-kis-capability-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
+    "kisCapabilityReview": "data\\processed\\scenario_p0_kis_capability_review.csv",
+    "kisPriceService": "server\\src\\services\\kisPriceService.js",
+    "assetDataProvider": "server\\src\\services\\assetDataProvider.js",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_p0_kis_capability_preflight.json"
+  },
+  "checks": {
+    "providerCallsMade": false,
+    "monthlyFileExists": false,
+    "requiredCapabilities": 2,
+    "verifiedCapabilities": 0,
+    "capabilityReady": false,
+    "blockers": [
+      "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+      "missing_or_unreviewed_selectedEndpoint",
+      "missing_or_unreviewed_evidenceUrl",
+      "missing_or_unreviewed_endpointReviewed",
+      "missing_or_unreviewed_termsReviewed",
+      "missing_or_unreviewed_monthlyBackfillReviewed",
+      "missing_or_unreviewed_adjustmentBasisReviewed",
+      "missing_or_unreviewed_rawRedistributionReviewed",
+      "missing_or_unreviewed_reviewOwner",
+      "missing_or_unreviewed_reviewedAt",
+      "missing_or_unreviewed_approvalEvidence",
+      "invalid_or_missing_selectedEndpoint",
+      "invalid_or_missing_evidenceUrl",
+      "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified"
+    ]
+  },
+  "repoSupport": {
+    "kisServiceExists": true,
+    "assetDataProviderExists": true,
+    "overseasCurrentQuoteImplemented": true,
+    "overseasHistoricalMonthlyAdapterImplemented": false,
+    "overseasDividendSplitAdapterImplemented": true,
+    "existingRuntimeFallsBackToAlpha": true
+  },
+  "capabilities": [
+    {
+      "capabilityId": "kis_overseas_monthly_adjusted_close_proxy",
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "sourceScope": "SPY adjusted-close proxy monthly price source",
+      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
+      "selectedEndpoint": "",
+      "evidenceUrl": "",
+      "status": "pending_review",
+      "capabilityVerified": false,
+      "blockers": [
+        "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+        "missing_or_unreviewed_selectedEndpoint",
+        "missing_or_unreviewed_evidenceUrl",
+        "missing_or_unreviewed_endpointReviewed",
+        "missing_or_unreviewed_termsReviewed",
+        "missing_or_unreviewed_monthlyBackfillReviewed",
+        "missing_or_unreviewed_adjustmentBasisReviewed",
+        "missing_or_unreviewed_rawRedistributionReviewed",
+        "missing_or_unreviewed_reviewOwner",
+        "missing_or_unreviewed_reviewedAt",
+        "missing_or_unreviewed_approvalEvidence",
+        "invalid_or_missing_selectedEndpoint",
+        "invalid_or_missing_evidenceUrl"
+      ]
+    },
+    {
+      "capabilityId": "kis_overseas_monthly_adjusted_dividend_split",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "sourceScope": "US ETF monthly adjusted close dividend split and corporate-action source",
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "",
+      "evidenceUrl": "",
+      "status": "pending_review",
+      "capabilityVerified": false,
+      "blockers": [
+        "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
+        "missing_or_unreviewed_selectedEndpoint",
+        "missing_or_unreviewed_evidenceUrl",
+        "missing_or_unreviewed_endpointReviewed",
+        "missing_or_unreviewed_termsReviewed",
+        "missing_or_unreviewed_monthlyBackfillReviewed",
+        "missing_or_unreviewed_adjustmentBasisReviewed",
+        "missing_or_unreviewed_rawRedistributionReviewed",
+        "missing_or_unreviewed_reviewOwner",
+        "missing_or_unreviewed_reviewedAt",
+        "missing_or_unreviewed_approvalEvidence",
+        "invalid_or_missing_selectedEndpoint",
+        "invalid_or_missing_evidenceUrl"
+      ]
+    }
+  ],
+  "readiness": {
+    "status": "blocked_pending_kis_capability_review",
+    "capabilityReady": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "record_official_kis_overseas_monthly_price_dividend_split_endpoint_evidence_before_runtime_provider_calls"
+  }
+}

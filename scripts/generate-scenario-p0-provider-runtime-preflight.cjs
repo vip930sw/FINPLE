@@ -10,6 +10,7 @@ const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join(
   "scenario_p0_monthly_cache_writer_preflight.json",
 );
 const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
+const KIS_CAPABILITY_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_kis_capability_preflight.json");
 const PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_runtime_preflight.json");
 
 const PREFLIGHT_VERSION = "scenario-p0-provider-runtime-preflight-v0.1";
@@ -26,14 +27,12 @@ const REQUIRED_PROVIDER_GROUPS = {
   SP500_TR_primary_or_SPY_adjusted_close_proxy: {
     providerKind: "korea_investment_open_api",
     requiredEnvVars: ["KIS_APP_KEY", "KIS_APP_SECRET"],
-    capabilityVerified: false,
-    capabilityBlocker: "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+    requiredCapabilityIds: ["kis_overseas_monthly_adjusted_close_proxy"],
   },
   US_price_total_return_dividend_provider: {
     providerKind: "korea_investment_open_api",
     requiredEnvVars: ["KIS_APP_KEY", "KIS_APP_SECRET"],
-    capabilityVerified: false,
-    capabilityBlocker: "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
+    requiredCapabilityIds: ["kis_overseas_monthly_adjusted_dividend_split"],
   },
   USD_KRW_fx_provider: {
     providerKind: "fred",
@@ -117,7 +116,9 @@ function buildPreflight(env = process.env) {
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
   const monthlyCacheWriterPreflight = readJson(MONTHLY_CACHE_WRITER_PREFLIGHT_PATH);
+  const kisCapabilityPreflight = readJson(KIS_CAPABILITY_PREFLIGHT_PATH);
   const monthlyFileExists = fs.existsSync(MONTHLY_DATA_PATH);
+  const capabilityById = new Map((kisCapabilityPreflight.capabilities ?? []).map((capability) => [capability.capabilityId, capability]));
 
   const approvedProviderGroups = approvalIntake.rows.filter((row) => row.approvalStatusDraft === "ready_for_source_policy_review");
   const unknownProviders = approvedProviderGroups
@@ -144,7 +145,16 @@ function buildPreflight(env = process.env) {
     .map((row) => {
       const requirement = REQUIRED_PROVIDER_GROUPS[row.providerCandidate];
       const missingEnvVars = requirement.requiredEnvVars.filter((name) => !hasValue(name, env));
-      const capabilityVerified = requirement.capabilityVerified !== false;
+      const requiredCapabilities = requirement.requiredCapabilityIds ?? [];
+      const capabilityRows = requiredCapabilities.map((capabilityId) => capabilityById.get(capabilityId)).filter(Boolean);
+      const missingCapabilities = requiredCapabilities.filter((capabilityId) => !capabilityById.has(capabilityId));
+      const capabilityVerified =
+        requiredCapabilities.length === 0 ||
+        (missingCapabilities.length === 0 && capabilityRows.every((capability) => capability.capabilityVerified === true));
+      const capabilityBlockers = [
+        ...missingCapabilities.map((capabilityId) => `missing_kis_capability_${capabilityId}`),
+        ...capabilityRows.flatMap((capability) => capability.blockers ?? []),
+      ];
       const credentialsPresent = missingEnvVars.length === 0;
       return {
         providerCandidate: row.providerCandidate,
@@ -154,8 +164,9 @@ function buildPreflight(env = process.env) {
         requiredEnvVars: requirement.requiredEnvVars,
         missingEnvVars,
         credentialsPresent,
+        requiredCapabilities,
         capabilityVerified,
-        capabilityBlocker: capabilityVerified ? "" : requirement.capabilityBlocker,
+        capabilityBlockers: capabilityVerified ? [] : [...new Set(capabilityBlockers)],
         readyForRuntimeProviderCalls: credentialsPresent && capabilityVerified,
       };
     });
@@ -184,7 +195,7 @@ function buildPreflight(env = process.env) {
       ...(optInReady ? [] : ["runtime_provider_calls_not_explicitly_enabled"]),
       ...(monthlyFileExists ? ["scenario_monthly_returns_csv_already_exists"] : []),
       ...providerGroups.flatMap((row) => row.missingEnvVars.map((name) => `missing_env_${name}`)),
-      ...providerGroups.filter((row) => row.capabilityBlocker).map((row) => row.capabilityBlocker),
+      ...providerGroups.flatMap((row) => row.capabilityBlockers ?? []),
       ...optInRows.filter((row) => !row.matchesExpectedValue).map((row) => `missing_or_invalid_env_${row.name}`),
     ]),
   ];
@@ -197,6 +208,7 @@ function buildPreflight(env = process.env) {
       approvalReadiness: APPROVAL_READINESS_PATH,
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
       monthlyCacheWriterPreflight: MONTHLY_CACHE_WRITER_PREFLIGHT_PATH,
+      kisCapabilityPreflight: KIS_CAPABILITY_PREFLIGHT_PATH,
       monthlyDataTarget: MONTHLY_DATA_PATH,
     },
     outputFiles: {
@@ -228,6 +240,8 @@ function buildPreflight(env = process.env) {
       bootstrapStillBlocked: true,
       nextAllowedStep: runtimeProviderCallsAllowed
         ? "run_controlled_monthly_cache_writer_to_create_validated_scenario_monthly_returns"
+        : providerCapabilityReady !== true
+        ? "record_official_kis_overseas_monthly_price_dividend_split_endpoint_evidence_before_runtime_provider_calls"
         : "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write",
     },
   });

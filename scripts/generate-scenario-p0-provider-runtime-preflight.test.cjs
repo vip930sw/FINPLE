@@ -12,6 +12,7 @@ const FIXTURE_FILES = [
   "scenario_p0_approval_readiness.json",
   "scenario_p0_provider_adapter_preflight.json",
   "scenario_p0_monthly_cache_writer_preflight.json",
+  "scenario_p0_kis_capability_preflight.json",
   PREFLIGHT,
 ];
 
@@ -89,6 +90,32 @@ test("keeps KIS replacement blocked until overseas monthly capabilities are veri
   assert.equal(report.checks.runtimeProviderCallsAllowed, false);
   assert.match(report.checks.blockers.join("|"), /runtime_provider_capability_not_verified/);
   assert.match(report.checks.blockers.join("|"), /kis_overseas_monthly_adjusted_dividend_split_capability_not_verified/);
+});
+
+test("opens only when credentials, opt-in, and KIS capability evidence are all present", () => {
+  const workspace = makeWorkspace();
+  const capability = readWorkspaceJson(workspace, "scenario_p0_kis_capability_preflight.json");
+  capability.checks.capabilityReady = true;
+  capability.checks.verifiedCapabilities = 2;
+  capability.checks.blockers = [];
+  capability.capabilities = capability.capabilities.map((row) => ({
+    ...row,
+    status: "ready_for_runtime_preflight",
+    capabilityVerified: true,
+    blockers: [],
+  }));
+  capability.readiness.status = "ready_for_runtime_provider_preflight";
+  capability.readiness.capabilityReady = true;
+  writeWorkspaceJson(workspace, "scenario_p0_kis_capability_preflight.json", capability);
+
+  const result = runPreflight(workspace, [], fullCredentialEnv());
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readWorkspaceJson(workspace, PREFLIGHT);
+  assert.equal(report.checks.providerCredentialsReady, true);
+  assert.equal(report.checks.providerCapabilityReady, true);
+  assert.equal(report.checks.optInReady, true);
+  assert.equal(report.checks.runtimeProviderCallsAllowed, true);
 });
 
 test("stays blocked when one provider credential is missing", () => {
