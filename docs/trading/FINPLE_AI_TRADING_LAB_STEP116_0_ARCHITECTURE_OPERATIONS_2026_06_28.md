@@ -351,6 +351,28 @@ This module composes the trading policy validators into a pure risk gate. It can
 
 It does not call KIS, fetch market data, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data. Even when the risk gate passes, `orderSubmissionAllowed=false` and `providerCallsAllowed=false` remain part of the returned contract.
 
+## Step 116-1D Trading Store Schema Draft
+
+The first machine-readable trading store draft is:
+
+```text
+data/processed/trading_lab_step116_store_schema_draft.json
+scripts/generate-trading-store-schema-draft.cjs
+scripts/generate-trading-store-schema-draft.test.cjs
+npm.cmd run check:trading-store-schema-draft
+```
+
+This is a schema draft and drift check, not a migration. It records the intended logical tables from the architecture section and keeps the current state explicit:
+
+- `draftOnly=true`
+- `ddlGenerated=false`
+- `dbMigrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `publicUiAllowed=false`
+
+The check fails if the committed schema draft drifts, if Step 116 policy/preflight starts allowing DB migration, or if migration artifacts such as `migrations/trading` appear before manual review.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

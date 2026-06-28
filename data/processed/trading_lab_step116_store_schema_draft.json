@@ -1,0 +1,484 @@
+{
+  "schemaVersion": "trading-lab-step116-store-schema-draft-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "step": "Step 116-1D",
+  "scope": "trading_store_schema_draft_only",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "schemaDraft": "data\\processed\\trading_lab_step116_store_schema_draft.json"
+  },
+  "migrationState": {
+    "draftOnly": true,
+    "ddlGenerated": false,
+    "dbMigrationAllowed": false,
+    "tableCreationAllowed": false,
+    "productionDbTouched": false
+  },
+  "tables": [
+    {
+      "name": "trading_modes",
+      "dataClass": "execution_data",
+      "purpose": "mode transition history and default blocked-state audit",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "mode",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "changedBy",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "changedAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_strategy_versions",
+      "dataClass": "execution_data",
+      "purpose": "reviewed strategy version registry",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "strategyName",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "approvedBy",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "approvedAt",
+          "type": "timestamp",
+          "required": false
+        },
+        {
+          "name": "configHash",
+          "type": "text",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_decisions",
+      "dataClass": "execution_data",
+      "purpose": "strategy decisions before any order-intent promotion",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "mode",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "strategyVersionId",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "symbol",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "market",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "decision",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "confidence",
+          "type": "decimal",
+          "required": false
+        },
+        {
+          "name": "inputsHash",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_order_intents",
+      "dataClass": "execution_data",
+      "purpose": "risk-gated intended orders before any provider submission",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "decisionId",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "symbol",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "side",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "estimatedPrice",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "estimatedFxRate",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "notional",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "riskStatus",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "blockedReason",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_order_attempts",
+      "dataClass": "execution_data",
+      "purpose": "future order-provider attempt audit; unavailable in current step",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "intentId",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "requestHash",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "responseHash",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "providerOrderId",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "attemptedAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_executions",
+      "dataClass": "execution_data",
+      "purpose": "future fill reconciliation audit; unavailable in current step",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "attemptId",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "providerOrderId",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "fillPrice",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "fillQuantity",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "fees",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "taxes",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "fxRate",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "filledAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_positions",
+      "dataClass": "execution_data",
+      "purpose": "paper/shadow/live position snapshots after reconciliation",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "symbol",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "averageCost",
+          "type": "decimal",
+          "required": true
+        },
+        {
+          "name": "marketValue",
+          "type": "decimal",
+          "required": false
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "reconciledAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    },
+    {
+      "name": "trading_risk_events",
+      "dataClass": "execution_data",
+      "purpose": "blocked or informational risk gate events",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true
+        },
+        {
+          "name": "severity",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "eventType",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "relatedIntentId",
+          "type": "uuid",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "timestamp",
+          "required": true
+        }
+      ],
+      "writePolicy": {
+        "currentStep": "draft_only",
+        "futureOwner": "private_trading_worker",
+        "publicFrontendWriteAllowed": false,
+        "webBackendWriteAllowed": false
+      }
+    }
+  ],
+  "constraintsDraft": [
+    "mode must be one of paper, shadow, live_guarded, live_blocked",
+    "order attempts and executions are future-only and unavailable before manual approval",
+    "requestHash and responseHash store hashes only, not raw provider secrets or tokens",
+    "risk events must be recorded before any future provider submission",
+    "public frontend cannot write trading store rows"
+  ],
+  "checks": {
+    "draftOnly": true,
+    "requiredTablesReady": true,
+    "requiredFieldsReady": true,
+    "policyStillDisablesDbMigration": true,
+    "preflightStillDisablesDbMigration": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "noMigrationArtifacts": true,
+    "architectureDocStillDraftOnly": true,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false
+  },
+  "evidence": {
+    "requiredTables": [
+      "trading_modes",
+      "trading_strategy_versions",
+      "trading_decisions",
+      "trading_order_intents",
+      "trading_order_attempts",
+      "trading_executions",
+      "trading_positions",
+      "trading_risk_events"
+    ],
+    "missingRequiredTables": [],
+    "missingRequiredFields": [],
+    "forbiddenMigrationArtifacts": [],
+    "scenarioRuntimeStillIndependent": true
+  },
+  "readiness": {
+    "status": "draft_ready_for_future_manual_migration_review",
+    "readyForFutureMigrationReview": true,
+    "dbMigrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "publicUiAllowed": false,
+    "blockers": []
+  }
+}
