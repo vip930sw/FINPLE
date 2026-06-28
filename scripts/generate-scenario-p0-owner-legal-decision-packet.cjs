@@ -16,9 +16,13 @@ const DECISION_PACKET_SUMMARY_PATH = path.join(
   "processed",
   "scenario_p0_owner_legal_decision_packet_summary.json",
 );
+const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const PACKET_VERSION = "scenario-p0-owner-legal-decision-packet-v0.1";
+const PACKET_VERSION = "scenario-p0-owner-legal-decision-packet-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const EXPECTED_PROVIDER_CANDIDATES = 5;
+const PENDING_ADAPTER_STATUS = "pending_owner_legal_review";
+const BLOCKED_MONTHLY_WRITE_STATUS = "blocked_pending_owner_legal_review";
 
 const CSV_COLUMNS = [
   "providerCandidate",
@@ -180,6 +184,22 @@ function countBy(rows, field) {
   return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right)));
 }
 
+function uniqueSorted(values) {
+  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+}
+
+function assertHttpsUrl(value, label) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    fail(`${label} must be a valid HTTPS URL`);
+  }
+  if (parsed.protocol !== "https:") {
+    fail(`${label} must be a valid HTTPS URL`);
+  }
+}
+
 function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
@@ -212,8 +232,8 @@ function buildDecisionPacket() {
       cacheQuestion: details.cacheQuestion,
       attributionQuestion: details.attributionQuestion,
       displayLabelQuestion: details.displayLabelQuestion,
-      adapterApprovalStatus: "pending_owner_legal_review",
-      monthlyWriteApprovalStatus: "blocked_pending_owner_legal_review",
+      adapterApprovalStatus: PENDING_ADAPTER_STATUS,
+      monthlyWriteApprovalStatus: BLOCKED_MONTHLY_WRITE_STATUS,
       decisionOwner: "",
       legalReviewer: "",
       reviewedAt: "",
@@ -223,8 +243,29 @@ function buildDecisionPacket() {
     };
   });
 
-  if (rows.length !== 5) {
-    fail(`${TERMS_REVIEW_CSV_PATH} must produce 5 owner/legal decision rows, got ${rows.length}`);
+  if (rows.length !== EXPECTED_PROVIDER_CANDIDATES) {
+    fail(`${TERMS_REVIEW_CSV_PATH} must produce ${EXPECTED_PROVIDER_CANDIDATES} owner/legal decision rows, got ${rows.length}`);
+  }
+  const providerCandidates = uniqueSorted(rows.map((row) => row.providerCandidate));
+  const expectedProviders = uniqueSorted(Object.keys(DECISION_DETAILS));
+  if (providerCandidates.join("|") !== expectedProviders.join("|")) {
+    fail(`${TERMS_REVIEW_CSV_PATH} provider candidates do not match expected P0 owner/legal decision set`);
+  }
+  for (const row of rows) {
+    assertHttpsUrl(row.officialDocsUrl, `${row.providerCandidate} officialDocsUrl`);
+    assertHttpsUrl(row.officialTermsUrl, `${row.providerCandidate} officialTermsUrl`);
+  }
+  if (rows.some((row) => row.adapterApprovalStatus !== PENDING_ADAPTER_STATUS)) {
+    fail(`${DECISION_PACKET_CSV_PATH} must keep adapterApprovalStatus=${PENDING_ADAPTER_STATUS} before real owner/legal review`);
+  }
+  if (rows.some((row) => row.monthlyWriteApprovalStatus !== BLOCKED_MONTHLY_WRITE_STATUS)) {
+    fail(`${DECISION_PACKET_CSV_PATH} must keep monthlyWriteApprovalStatus=${BLOCKED_MONTHLY_WRITE_STATUS} before real owner/legal review`);
+  }
+  if (rows.some((row) => row.decisionOwner || row.legalReviewer || row.reviewedAt || row.evidenceUrl)) {
+    fail(`${DECISION_PACKET_CSV_PATH} must keep owner/legal reviewer fields blank before real owner/legal review`);
+  }
+  if (fs.existsSync(MONTHLY_DATA_PATH)) {
+    fail(`${MONTHLY_DATA_PATH} exists before owner/legal decisions are approved`);
   }
 
   return {
@@ -243,7 +284,7 @@ function buildDecisionPacket() {
       rowCounts: {
         providerCandidates: rows.length,
         pendingOwnerLegalReview: rows.filter(
-          (row) => row.adapterApprovalStatus === "pending_owner_legal_review",
+          (row) => row.adapterApprovalStatus === PENDING_ADAPTER_STATUS,
         ).length,
         approvedForAdapter: rows.filter((row) => row.adapterApprovalStatus === "approved_for_adapter").length,
         approvedForMonthlyWrite: rows.filter((row) => row.monthlyWriteApprovalStatus === "approved_for_monthly_write")
@@ -253,6 +294,15 @@ function buildDecisionPacket() {
         byAdapterApprovalStatus: countBy(rows, "adapterApprovalStatus"),
         byMonthlyWriteApprovalStatus: countBy(rows, "monthlyWriteApprovalStatus"),
         byBlocker: countBy(rows, "blocker"),
+      },
+      ownerLegalIntegrity: {
+        expectedProviderCandidates: EXPECTED_PROVIDER_CANDIDATES,
+        providerSetVerified: true,
+        officialUrlsVerified: true,
+        noAdapterApproval: true,
+        noMonthlyWriteApproval: true,
+        reviewerFieldsBlank: true,
+        monthlyDataFileAbsent: true,
       },
       readiness: {
         status: "pending_owner_legal_decision_packet",

@@ -707,9 +707,24 @@ monthlyDataFileAbsent=true
 
 The `check:scenario-p0-external-terms` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, premature `scenario_monthly_returns.csv`, stale committed terms summaries, and non-HTTPS official source URLs in generated summaries. The committed state still approves no external terms, selects no provider for adapter work, writes no monthly data, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2S Owner/Legal Decision Packet Integrity Follow-Up
+
+The owner/legal decision packet generator now verifies the P0 owner/legal review contract before any adapter or monthly-write approval can be represented:
+
+```text
+expectedProviderCandidates=5
+pendingOwnerLegalReview=5
+approvedForAdapter=0
+approvedForMonthlyWrite=0
+reviewerFieldsBlank=true
+monthlyDataFileAbsent=true
+```
+
+The `check:scenario-p0-owner-legal` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, terms approval before owner/legal packet review, premature `scenario_monthly_returns.csv`, and stale committed owner/legal summaries. The committed state still has no owner/legal reviewer, no evidence URL, no adapter approval, no monthly-write approval, no provider calls, and no monthly data.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2R, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2S, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 

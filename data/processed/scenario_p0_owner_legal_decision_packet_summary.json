@@ -1,5 +1,5 @@
 {
-  "packetVersion": "scenario-p0-owner-legal-decision-packet-v0.1",
+  "packetVersion": "scenario-p0-owner-legal-decision-packet-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "externalTermsReview": "data\\processed\\scenario_p0_external_provider_terms_review.csv"
@@ -29,6 +29,15 @@
       "kospi200_index_or_proxy_terms_not_approved": 1,
       "kr_market_data_terms_not_approved": 1
     }
+  },
+  "ownerLegalIntegrity": {
+    "expectedProviderCandidates": 5,
+    "providerSetVerified": true,
+    "officialUrlsVerified": true,
+    "noAdapterApproval": true,
+    "noMonthlyWriteApproval": true,
+    "reviewerFieldsBlank": true,
+    "monthlyDataFileAbsent": true
   },
   "readiness": {
     "status": "pending_owner_legal_decision_packet",
