@@ -40,6 +40,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 approval intake validation | Implemented in Step 114-1X | Validates reviewer-filled intake rows in synthetic fixtures while keeping real provider calls and monthly writes blocked |
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
+| P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -438,6 +439,30 @@ bootstrapStillBlocked=true
 ```
 
 The gate rejects premature approved source-policy rows while the sync plan is blocked, and rejects cases where the source policy matrix contains more approved rows than the sync plan allows. It still does not write the source policy matrix.
+
+## P0 Provider Adapter Preflight
+
+The provider adapter preflight lives at:
+
+```text
+data/processed/scenario_p0_provider_adapter_preflight.json
+```
+
+It checks source-policy sync preflight, approval readiness, and writer gate before any provider adapter implementation work:
+
+```text
+sourcePolicySyncReady=false
+sourcePolicyMatrixWritten=false
+approvalReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementProviderAdapter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove the preflight opens only when all source-policy rows are approved, source-policy sync is recorded, approval readiness is safe for adapters, and writer gate allows provider calls. The committed state remains blocked and does not implement an adapter or call a provider.
 
 ## Monthly Write Preflight
 

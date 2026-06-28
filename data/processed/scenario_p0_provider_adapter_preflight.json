@@ -1,0 +1,45 @@
+{
+  "preflightVersion": "scenario-p0-provider-adapter-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicySyncPreflight": "data\\processed\\scenario_p0_source_policy_sync_preflight.json",
+    "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
+    "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "checks": {
+    "sourcePolicySyncReady": false,
+    "sourcePolicyMatrixWritten": false,
+    "approvalReady": false,
+    "writerGateReady": false,
+    "allSourcePolicyRowsApproved": false,
+    "providerCallsAllowed": false,
+    "safeToImplementProviderAdapter": false,
+    "sourcePolicyRows": 17,
+    "approvedSourcePolicyRows": 0,
+    "blockers": [
+      "source_policy_sync_preflight_not_ready",
+      "source_policy_matrix_not_synced",
+      "approval_readiness_not_safe_for_adapter",
+      "writer_gate_not_open_for_provider_calls",
+      "source_policy_rows_not_fully_approved",
+      "external_provider_terms_not_fully_approved",
+      "owner_legal_adapter_approval_not_complete",
+      "owner_legal_monthly_write_approval_not_complete",
+      "source_policy_rows_not_approved",
+      "writer_gate_cannot_write_monthly_data",
+      "writer_gate_provider_calls_not_allowed"
+    ]
+  },
+  "readiness": {
+    "status": "blocked_before_provider_adapter",
+    "safeToImplementProviderAdapter": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "complete_source_policy_sync_and_approval_readiness_before_adapter"
+  }
+}

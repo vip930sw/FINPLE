@@ -118,6 +118,7 @@ data/processed/scenario_p0_approval_intake_template_summary.json
 data/processed/scenario_p0_approval_intake_validation.json
 data/processed/scenario_p0_source_policy_sync_plan.json
 data/processed/scenario_p0_source_policy_sync_preflight.json
+data/processed/scenario_p0_provider_adapter_preflight.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_step114_progress.json
@@ -151,6 +152,8 @@ scripts/generate-scenario-p0-source-policy-sync-plan.cjs
 scripts/generate-scenario-p0-source-policy-sync-plan.test.cjs
 scripts/generate-scenario-p0-source-policy-sync-preflight.cjs
 scripts/generate-scenario-p0-source-policy-sync-preflight.test.cjs
+scripts/generate-scenario-p0-provider-adapter-preflight.cjs
+scripts/generate-scenario-p0-provider-adapter-preflight.test.cjs
 scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
@@ -175,6 +178,7 @@ approval template rows=5 pending, 0 approved
 approval validation rows=5 pending, 0 ready
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
+provider adapter preflight safeToImplementProviderAdapter=false
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -226,6 +230,7 @@ npm.cmd run check:scenario-p0-approval-template
 npm.cmd run check:scenario-p0-approval-validation
 npm.cmd run check:scenario-p0-source-policy-sync
 npm.cmd run check:scenario-p0-source-policy-sync-preflight
+npm.cmd run check:scenario-p0-provider-adapter-preflight
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
@@ -364,6 +369,24 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests prove the preflight can become ready after a complete source-policy sync plan, while still leaving `scenario_p0_source_policy_matrix.csv` untouched. It also rejects premature `approved_source_policy` rows and approved-row counts that exceed the sync plan.
+
+## Step 114-2A Provider Adapter Preflight Follow-Up
+
+The provider adapter preflight now blocks provider adapter implementation until all approval and source-policy gates agree:
+
+```text
+sourcePolicySyncReady=false
+sourcePolicyMatrixWritten=false
+approvalReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementProviderAdapter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show the preflight opens only when source-policy sync is recorded, approval readiness is safe for adapters, writer gate allows provider calls, and all 17 source-policy rows are approved. The committed state still does not implement a provider adapter, call providers, or write monthly returns.
 
 ## Recommended Next Step
 

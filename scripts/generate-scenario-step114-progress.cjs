@@ -16,6 +16,7 @@ const APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "sc
 const APPROVAL_INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
 const SOURCE_POLICY_SYNC_PLAN_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_plan.json");
 const SOURCE_POLICY_SYNC_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_preflight.json");
+const PROVIDER_ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -144,6 +145,7 @@ function buildProgress() {
   const approvalIntakeValidation = readJson(APPROVAL_INTAKE_VALIDATION_PATH);
   const sourcePolicySyncPlan = readJson(SOURCE_POLICY_SYNC_PLAN_PATH);
   const sourcePolicySyncPreflight = readJson(SOURCE_POLICY_SYNC_PREFLIGHT_PATH);
+  const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
@@ -171,13 +173,16 @@ function buildProgress() {
     approvalIntakeTemplate.rowCounts?.approvedRows === 0 &&
     approvalIntakeValidation.rowCounts?.providerGroups === 5 &&
     sourcePolicySyncPlan.rowCounts?.providerGroups === 5 &&
-    sourcePolicySyncPreflight.checks?.totalSourcePolicyRows === 17;
+    sourcePolicySyncPreflight.checks?.totalSourcePolicyRows === 17 &&
+    providerAdapterPreflight.checks?.sourcePolicyRows === 17;
   const guardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
     sourcePolicySyncPlan.readiness?.providerCallsAllowed === false &&
     sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === false &&
     sourcePolicySyncPreflight.readiness?.providerCallsAllowed === false &&
     sourcePolicySyncPreflight.readiness?.sourcePolicyMatrixWritten === false &&
+    providerAdapterPreflight.readiness?.providerCallsAllowed === false &&
+    providerAdapterPreflight.readiness?.safeToImplementProviderAdapter === false &&
     approvalReadiness.sourceFiles?.sourceApprovalDecisionRecord &&
     approvalReadiness.readiness?.safeToImplementProviderAdapter === false &&
     writePreflight.checks?.monthlyFileExists === false &&
@@ -243,6 +248,7 @@ function buildProgress() {
         approvalIntakeValidationReadyRows: approvalIntakeValidation.rowCounts?.readyRows,
         sourcePolicySyncPlannedUpdates: sourcePolicySyncPlan.rowCounts?.plannedSourcePolicyUpdates,
         sourcePolicySyncPreflightCanSync: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy,
+        providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
       },
     ),
     milestone(
@@ -259,6 +265,8 @@ function buildProgress() {
         sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten,
         sourcePolicySyncPreflightProviderCallsAllowed: sourcePolicySyncPreflight.readiness?.providerCallsAllowed,
         sourcePolicySyncPreflightCanSync: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy,
+        providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
+        providerAdapterPreflightProviderCallsAllowed: providerAdapterPreflight.checks?.providerCallsAllowed,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
         writerCanWriteMonthlyData: writerGate.readiness?.canWriteMonthlyData,
       },
@@ -317,6 +325,7 @@ function buildProgress() {
       approvalIntakeValidation: APPROVAL_INTAKE_VALIDATION_PATH,
       sourcePolicySyncPlan: SOURCE_POLICY_SYNC_PLAN_PATH,
       sourcePolicySyncPreflight: SOURCE_POLICY_SYNC_PREFLIGHT_PATH,
+      providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,
@@ -343,6 +352,7 @@ function buildProgress() {
       approvalIntakeValidationReady: approvalIntakeValidation.readiness?.allRowsReadyForSourcePolicyReview === true,
       sourcePolicySyncPlanReady: sourcePolicySyncPlan.readiness?.syncPlanReady === true,
       sourcePolicySyncPreflightReady: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true,
+      providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,
       sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === true,
       monthlyDataFileWritten: monthlyFileExists,
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,
