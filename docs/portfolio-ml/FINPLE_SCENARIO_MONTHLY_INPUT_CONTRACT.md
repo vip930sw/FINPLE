@@ -41,6 +41,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
 | P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
+| P0 monthly cache writer preflight | Implemented in Step 114-2B | Blocks monthly cache writer implementation until adapter, approval, monthly write, and writer gates all agree |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -464,6 +465,30 @@ bootstrapStillBlocked=true
 
 Synthetic tests prove the preflight opens only when all source-policy rows are approved, source-policy sync is recorded, approval readiness is safe for adapters, and writer gate allows provider calls. The committed state remains blocked and does not implement an adapter or call a provider.
 
+## P0 Monthly Cache Writer Preflight
+
+The monthly cache writer preflight lives at:
+
+```text
+data/processed/scenario_p0_monthly_cache_writer_preflight.json
+```
+
+It checks provider adapter preflight, approval readiness, monthly write preflight, and writer gate before any monthly cache writer implementation work:
+
+```text
+adapterReady=false
+approvalReady=false
+monthlyWriteReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementMonthlyCacheWriter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove the preflight opens only when all upstream gates agree and no committed `scenario_monthly_returns.csv` exists yet. It rejects a monthly data file if the writer preflight is not ready. The committed state remains blocked and does not implement a cache writer, call providers, or write monthly returns.
+
 ## Monthly Write Preflight
 
 The monthly write preflight report lives at:
@@ -576,6 +601,7 @@ npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
+npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
 ```
 
 ## Non-Goals
@@ -593,4 +619,4 @@ This step does not:
 
 ## Next Boundary
 
-The safe next data-quality step is a provider-refetch cache or controlled monthly fixture generator that writes `data/processed/scenario_monthly_returns.csv` with source metadata. `Step 114-2B` Bootstrap should remain blocked until that file exists and passes this validator.
+The safe next implementation boundary is still real owner/legal/source approval. A provider-refetch cache or controlled monthly cache writer may write `data/processed/scenario_monthly_returns.csv` only after the provider adapter, approval readiness, monthly write, writer gate, and monthly cache writer preflights all open. Bootstrap should remain blocked until that file exists and passes this validator.

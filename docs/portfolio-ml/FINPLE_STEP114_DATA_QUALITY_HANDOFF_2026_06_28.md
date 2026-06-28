@@ -119,6 +119,7 @@ data/processed/scenario_p0_approval_intake_validation.json
 data/processed/scenario_p0_source_policy_sync_plan.json
 data/processed/scenario_p0_source_policy_sync_preflight.json
 data/processed/scenario_p0_provider_adapter_preflight.json
+data/processed/scenario_p0_monthly_cache_writer_preflight.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_step114_progress.json
@@ -154,6 +155,8 @@ scripts/generate-scenario-p0-source-policy-sync-preflight.cjs
 scripts/generate-scenario-p0-source-policy-sync-preflight.test.cjs
 scripts/generate-scenario-p0-provider-adapter-preflight.cjs
 scripts/generate-scenario-p0-provider-adapter-preflight.test.cjs
+scripts/generate-scenario-p0-monthly-cache-writer-preflight.cjs
+scripts/generate-scenario-p0-monthly-cache-writer-preflight.test.cjs
 scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
@@ -179,6 +182,7 @@ approval validation rows=5 pending, 0 ready
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
+monthly cache writer preflight safeToImplementMonthlyCacheWriter=false
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -203,8 +207,10 @@ coverage audit
 -> external provider terms review
 -> owner/legal decision packet
 -> approval readiness cross-check
+-> provider adapter preflight
 -> monthly write preflight
 -> cache writer gate
+-> monthly cache writer preflight
 ```
 
 ## Required Checks
@@ -234,6 +240,7 @@ npm.cmd run check:scenario-p0-provider-adapter-preflight
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
+npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
 npm.cmd run check:scenario-step114-progress
 npm.cmd run check:scenario-metrics
 node --test server/src/services/*.test.js server/src/services/scenario/*.test.js
@@ -387,6 +394,24 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests show the preflight opens only when source-policy sync is recorded, approval readiness is safe for adapters, writer gate allows provider calls, and all 17 source-policy rows are approved. The committed state still does not implement a provider adapter, call providers, or write monthly returns.
+
+## Step 114-2B Monthly Cache Writer Preflight Follow-Up
+
+The monthly cache writer preflight now blocks cache writer implementation until adapter, approval, monthly write, and writer gates all agree:
+
+```text
+adapterReady=false
+approvalReady=false
+monthlyWriteReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementMonthlyCacheWriter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show the preflight opens only when the provider adapter preflight is safe, P0 approval readiness allows monthly writes, monthly write preflight allows an attempt, writer gate allows provider calls and monthly writes, and all 17 source-policy rows are approved. The committed state still does not implement a monthly cache writer, call providers, or write `scenario_monthly_returns.csv`.
 
 ## Recommended Next Step
 
