@@ -5,9 +5,16 @@ const SOURCE_POLICY_CSV_PATH = path.join("data", "processed", "scenario_p0_sourc
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
 const REQUIREMENTS_PATH = path.join("data", "processed", "scenario_p0_source_approval_requirements.json");
 
-const REQUIREMENTS_VERSION = "scenario-p0-source-approval-requirements-v0.1";
+const REQUIREMENTS_VERSION = "scenario-p0-source-approval-requirements-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
 const APPROVED_STATUS = "approved_source_policy";
+const EXPECTED_PROVIDER_GROUPS = 5;
+const EXPECTED_SOURCE_POLICY_ROWS = 17;
+const EXPECTED_MANIFEST_COUNTS = {
+  asset: 14,
+  benchmark: 2,
+  fx: 1,
+};
 
 const REQUIRED_POLICY_FIELDS = [
   "endpointPolicy",
@@ -121,6 +128,13 @@ function uniqueSorted(values) {
   return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
 }
 
+function assertCount(counts, key, expected, label) {
+  const actual = counts[key] ?? 0;
+  if (actual !== expected) {
+    fail(`${label} expected ${key}=${expected}, got ${actual}`);
+  }
+}
+
 function buildRequirements() {
   if (!fs.existsSync(SOURCE_POLICY_CSV_PATH)) {
     fail(`${SOURCE_POLICY_CSV_PATH} not found`);
@@ -132,8 +146,8 @@ function buildRequirements() {
   const matrix = parseCsv(fs.readFileSync(SOURCE_POLICY_CSV_PATH, "utf8"), SOURCE_POLICY_CSV_PATH);
   const gate = JSON.parse(fs.readFileSync(WRITER_GATE_PATH, "utf8"));
   const rows = matrix.rows;
-  if (rows.length !== 17) {
-    fail(`${SOURCE_POLICY_CSV_PATH} must contain 17 P0 rows, got ${rows.length}`);
+  if (rows.length !== EXPECTED_SOURCE_POLICY_ROWS) {
+    fail(`${SOURCE_POLICY_CSV_PATH} must contain ${EXPECTED_SOURCE_POLICY_ROWS} P0 rows, got ${rows.length}`);
   }
 
   for (const field of REQUIRED_POLICY_FIELDS) {
@@ -147,6 +161,22 @@ function buildRequirements() {
   );
   if (unknownProviders.length > 0) {
     fail(`${SOURCE_POLICY_CSV_PATH} has providers without approval requirements: ${unknownProviders.join(", ")}`);
+  }
+  if (uniqueSorted(rows.map((row) => row.providerCandidate)).length !== EXPECTED_PROVIDER_GROUPS) {
+    fail(`${SOURCE_POLICY_CSV_PATH} must contain ${EXPECTED_PROVIDER_GROUPS} provider groups`);
+  }
+  const manifestCounts = countBy(rows, "manifestType");
+  for (const [manifestType, expected] of Object.entries(EXPECTED_MANIFEST_COUNTS)) {
+    assertCount(manifestCounts, manifestType, expected, "source policy manifest counts");
+  }
+  if (gate.readiness?.canWriteMonthlyData !== false) {
+    fail(`${WRITER_GATE_PATH} must keep canWriteMonthlyData=false before source approval requirements are satisfied`);
+  }
+  if (gate.readiness?.providerCallsAllowed !== false) {
+    fail(`${WRITER_GATE_PATH} must keep providerCallsAllowed=false before source approval requirements are satisfied`);
+  }
+  if (gate.readiness?.monthlyDataFileWritten !== false) {
+    fail(`${WRITER_GATE_PATH} must keep monthlyDataFileWritten=false before source approval requirements are satisfied`);
   }
 
   const approvedRows = rows.filter((row) => row.status === APPROVED_STATUS);
@@ -185,10 +215,19 @@ function buildRequirements() {
       providerGroups: Object.keys(providerGroups).length,
     },
     counts: {
-      byManifestType: countBy(rows, "manifestType"),
+      byManifestType: manifestCounts,
       byProviderCandidate: countBy(rows, "providerCandidate"),
       byStatus: countBy(rows, "status"),
       byRequiredApproval: countBy(rows, "requiredApproval"),
+    },
+    sourceIntegrity: {
+      expectedProviderGroups: EXPECTED_PROVIDER_GROUPS,
+      expectedSourcePolicyRows: EXPECTED_SOURCE_POLICY_ROWS,
+      expectedManifestCounts: EXPECTED_MANIFEST_COUNTS,
+      providerGroupCountVerified: true,
+      sourcePolicyRowsVerified: true,
+      manifestCountsVerified: true,
+      writerGateStillBlocked: true,
     },
     providerGroups,
     readiness: {

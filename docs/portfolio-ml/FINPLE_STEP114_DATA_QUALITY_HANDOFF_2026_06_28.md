@@ -667,6 +667,19 @@ pendingGroups=5
 
 The `check:scenario-p0-source-decision` script now also runs a dedicated Node test suite. Synthetic tests reject provider-group count drift, source-policy row-count drift, and stale committed decision-record summaries. The committed state still has 5 pending decision rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2P Source Approval Requirements Integrity Follow-Up
+
+The source approval requirements generator now verifies the P0 requirements contract before any source approval decision record can be generated:
+
+```text
+expectedProviderGroups=5
+expectedSourcePolicyRows=17
+expectedManifestCounts asset=14, benchmark=2, fx=1
+writerGateStillBlocked=true
+```
+
+The `check:scenario-p0-source-approval` script now also runs a dedicated Node test suite. Synthetic tests reject manifest-count drift, premature writer-gate opening, and stale committed requirements output. The committed state still has 17 blocked P0 source-policy rows, 5 provider groups, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.

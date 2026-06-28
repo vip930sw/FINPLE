@@ -1,5 +1,5 @@
 {
-  "requirementsVersion": "scenario-p0-source-approval-requirements-v0.1",
+  "requirementsVersion": "scenario-p0-source-approval-requirements-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
@@ -43,6 +43,19 @@
     "byRequiredApproval": {
       "source_license_refresh_policy": 17
     }
+  },
+  "sourceIntegrity": {
+    "expectedProviderGroups": 5,
+    "expectedSourcePolicyRows": 17,
+    "expectedManifestCounts": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "providerGroupCountVerified": true,
+    "sourcePolicyRowsVerified": true,
+    "manifestCountsVerified": true,
+    "writerGateStillBlocked": true
   },
   "providerGroups": {
     "KOSPI200_TR_primary_or_kospi200_etf_proxy": {
