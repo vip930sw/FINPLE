@@ -268,6 +268,28 @@ Before any order-capable work:
 - tests must prove live mode cannot be enabled by frontend input
 - tests must prove scenario data gates and trading gates are independent
 
+Step 116-0 now has a machine-readable policy and preflight:
+
+```text
+data/processed/trading_lab_step1160_policy.json
+data/processed/trading_lab_step1160_preflight.json
+scripts/generate-trading-lab-step1160-preflight.cjs
+scripts/generate-trading-lab-step1160-preflight.test.cjs
+npm.cmd run check:trading-lab-step1160
+```
+
+The preflight can open only for pure validator implementation. Even when it is green, the committed readiness state remains:
+
+```text
+orderSubmissionAllowed=false
+providerCallsAllowed=false
+dbMigrationAllowed=false
+publicUiAllowed=false
+liveTradingAllowed=false
+```
+
+The gate also checks that Step 114 scenario runtime remains blocked and that no committed `scenario_monthly_returns.csv` exists.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

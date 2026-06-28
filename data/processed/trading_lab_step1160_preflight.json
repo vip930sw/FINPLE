@@ -1,0 +1,56 @@
+{
+  "preflightVersion": "trading-lab-step1160-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
+    "kisWrittenResponsePreflight": "data\\processed\\scenario_p0_kis_written_response_preflight.json",
+    "scenarioRuntimePreflight": "data\\processed\\scenario_runtime_implementation_preflight.json",
+    "scenarioMonthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json"
+  },
+  "checks": {
+    "defaultSafe": true,
+    "modesReady": true,
+    "killSwitchReady": true,
+    "riskLimitsReady": true,
+    "dataClassesReady": true,
+    "secretBoundaryReady": true,
+    "runtimeArtifactsAbsent": true,
+    "architectureDocReady": true,
+    "scenarioGatesStillBlocked": true,
+    "orderSubmissionAllowed": false,
+    "providerCallsAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "evidence": {
+    "modes": [
+      "paper",
+      "shadow",
+      "live_guarded",
+      "live_blocked"
+    ],
+    "missingModes": [],
+    "missingKillSwitchConditions": [],
+    "missingRiskLimits": [],
+    "missingDataClasses": [],
+    "forbiddenRuntimeArtifacts": [],
+    "scenarioKisResponseReady": false,
+    "scenarioRuntimeAllowed": false,
+    "monthlyDataFileExists": false
+  },
+  "readiness": {
+    "status": "ready_for_step116_pure_validator_implementation",
+    "readyForPureValidatorImplementation": true,
+    "orderSubmissionAllowed": false,
+    "providerCallsAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false,
+    "nextAllowedStep": "implement_trading_domain_types_and_pure_validators_without_provider_calls",
+    "blockers": []
+  }
+}

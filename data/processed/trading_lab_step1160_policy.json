@@ -1,0 +1,109 @@
+{
+  "policyVersion": "trading-lab-step1160-policy-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "step": "Step 116-0",
+  "scope": "private_ai_trading_lab_architecture_and_operations",
+  "status": "draft_baseline_no_runtime_implementation",
+  "defaults": {
+    "mode": "live_blocked",
+    "orderSubmissionAllowed": false,
+    "providerCallsAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "signalProductAllowed": false
+  },
+  "modes": [
+    {
+      "mode": "paper",
+      "externalOrderCall": false,
+      "providerDataCall": false,
+      "requiresManualApproval": false,
+      "description": "simulated orders and fills only"
+    },
+    {
+      "mode": "shadow",
+      "externalOrderCall": false,
+      "providerDataCall": "read_only_future_contract",
+      "requiresManualApproval": true,
+      "description": "records intended orders without submitting them"
+    },
+    {
+      "mode": "live_guarded",
+      "externalOrderCall": true,
+      "providerDataCall": true,
+      "requiresManualApproval": true,
+      "requiresKillSwitchClear": true,
+      "requiresDryRunReplay": true,
+      "description": "future real orders with strict caps and manual controls"
+    },
+    {
+      "mode": "live_blocked",
+      "externalOrderCall": false,
+      "providerDataCall": false,
+      "requiresManualApproval": false,
+      "description": "default emergency no-order mode"
+    }
+  ],
+  "killSwitch": {
+    "required": true,
+    "defaultState": "blocked",
+    "conditions": [
+      "global_trading_disabled",
+      "mode_not_live_guarded",
+      "daily_loss_limit_breached",
+      "daily_order_count_limit_breached",
+      "symbol_not_allowlisted",
+      "stale_quote_or_fx_input",
+      "account_balance_or_position_mismatch",
+      "kis_auth_failure_or_rate_limit",
+      "unreviewed_strategy_version",
+      "missing_audit_logger",
+      "manual_operator_stop"
+    ]
+  },
+  "riskLimitCategories": [
+    "max_account_capital_allocated",
+    "max_cash_depletion_per_day",
+    "max_single_symbol_exposure",
+    "max_single_order_notional",
+    "max_daily_turnover",
+    "max_order_attempts_per_day",
+    "max_consecutive_failed_order_attempts",
+    "max_slippage_tolerance",
+    "allowed_market_sessions",
+    "allowed_symbols_and_exchanges",
+    "blocked_instruments"
+  ],
+  "dataClasses": [
+    "analytics_data",
+    "trading_market_data",
+    "execution_data",
+    "user_product_data",
+    "signal_data"
+  ],
+  "secretBoundary": {
+    "webDataProxyEnv": [
+      "KIS_APP_KEY",
+      "KIS_APP_SECRET"
+    ],
+    "tradingWorkerEnv": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL"
+    ],
+    "separateOrderCapableCredentialsRequired": true,
+    "frontendMayReadTradingSecrets": false
+  },
+  "nonGoals": [
+    "kis_provider_calls",
+    "order_submission",
+    "provider_adapter_implementation",
+    "database_migration",
+    "public_ui",
+    "finple_signal_launch",
+    "paid_user_facing_signal_delivery",
+    "scenario_monthly_data_write",
+    "scenario_runtime_implementation"
+  ]
+}
