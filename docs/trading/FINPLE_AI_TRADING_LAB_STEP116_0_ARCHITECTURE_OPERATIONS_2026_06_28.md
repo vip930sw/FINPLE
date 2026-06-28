@@ -373,6 +373,30 @@ This is a schema draft and drift check, not a migration. It records the intended
 
 The check fails if the committed schema draft drifts, if Step 116 policy/preflight starts allowing DB migration, or if migration artifacts such as `migrations/trading` appear before manual review.
 
+## Step 116-1E Shadow-Mode Read-Only Contract
+
+The first shadow-mode integration contract is:
+
+```text
+data/processed/trading_lab_step116_shadow_mode_contract.json
+scripts/generate-trading-shadow-mode-contract.cjs
+scripts/generate-trading-shadow-mode-contract.test.cjs
+npm.cmd run check:trading-shadow-mode-contract
+```
+
+This is a contract and drift check, not a KIS adapter. It defines future read-only scopes for shadow mode, including account cash, positions, orderable cash, current quotes, FX, market session state, and provider rate-limit state.
+
+Current state remains blocked for runtime integration:
+
+- `manualReadOnlyApprovalRecorded=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+
+The check fails if shadow mode starts allowing external order calls, if required read-only/forbidden-action boundaries drift, or if runtime trading artifacts appear before manual read-only approval.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

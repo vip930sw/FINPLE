@@ -48,7 +48,8 @@
     "check:trading-lab-policy": "node --test server/src/services/tradingLabPolicy.test.js",
     "check:trading-paper-ledger": "node --test server/src/services/tradingPaperLedger.test.js",
     "check:trading-risk-engine": "node --test server/src/services/tradingRiskEngine.test.js",
-    "check:trading-store-schema-draft": "node scripts/generate-trading-store-schema-draft.cjs --check && node --test scripts/generate-trading-store-schema-draft.test.cjs"
+    "check:trading-store-schema-draft": "node scripts/generate-trading-store-schema-draft.cjs --check && node --test scripts/generate-trading-store-schema-draft.test.cjs",
+    "check:trading-shadow-mode-contract": "node scripts/generate-trading-shadow-mode-contract.cjs --check && node --test scripts/generate-trading-shadow-mode-contract.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
