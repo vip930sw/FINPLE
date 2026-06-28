@@ -117,6 +117,7 @@ data/processed/scenario_p0_approval_intake_template.csv
 data/processed/scenario_p0_approval_intake_template_summary.json
 data/processed/scenario_p0_approval_intake_validation.json
 data/processed/scenario_p0_source_policy_sync_plan.json
+data/processed/scenario_p0_real_approval_import_preflight.json
 data/processed/scenario_p0_source_policy_sync_preflight.json
 data/processed/scenario_p0_provider_adapter_preflight.json
 data/processed/scenario_p0_monthly_cache_writer_preflight.json
@@ -151,6 +152,8 @@ scripts/generate-scenario-p0-approval-intake-template.cjs
 scripts/generate-scenario-p0-approval-intake-template.test.cjs
 scripts/generate-scenario-p0-approval-intake-validation.cjs
 scripts/generate-scenario-p0-approval-intake-validation.test.cjs
+scripts/generate-scenario-p0-real-approval-import-preflight.cjs
+scripts/generate-scenario-p0-real-approval-import-preflight.test.cjs
 scripts/generate-scenario-p0-source-policy-sync-plan.cjs
 scripts/generate-scenario-p0-source-policy-sync-plan.test.cjs
 scripts/generate-scenario-p0-source-policy-sync-preflight.cjs
@@ -185,6 +188,7 @@ approval intake completion=0%
 approval intake ready provider groups=0/5
 approval template rows=5 pending, 0 approved
 approval validation rows=5 pending, 0 ready
+real approval import preflight readyForRealApprovalImport=false
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
@@ -215,6 +219,12 @@ coverage audit
 -> external provider terms review
 -> owner/legal decision packet
 -> approval readiness cross-check
+-> approval intake checklist
+-> approval intake template
+-> approval intake validation
+-> source policy sync plan
+-> real approval import preflight
+-> source policy sync preflight
 -> provider adapter preflight
 -> monthly write preflight
 -> cache writer gate
@@ -244,6 +254,7 @@ npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-intake
 npm.cmd run check:scenario-p0-approval-template
 npm.cmd run check:scenario-p0-approval-validation
+npm.cmd run check:scenario-p0-real-approval-import-preflight
 npm.cmd run check:scenario-p0-source-policy-sync
 npm.cmd run check:scenario-p0-source-policy-sync-preflight
 npm.cmd run check:scenario-p0-provider-adapter-preflight
@@ -354,6 +365,25 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests show that fully populated template rows can become `ready_for_source_policy_review`, but even that state only permits a later source-policy sync dry run. It does not approve committed source rows, does not call providers, and does not write `scenario_monthly_returns.csv`.
+
+## Step 114-2E Real Approval Import Preflight Follow-Up
+
+The real approval import preflight now blocks source-policy import until approval intake validation, source-policy sync plan, and source-policy sync preflight all agree:
+
+```text
+providerGroups=5
+readyRows=0
+pendingRows=5
+readyForRealApprovalImport=false
+safeToImportRealApprovalDecisions=false
+sourcePolicyMatrixWriteAllowed=false
+providerCallsAllowed=false
+safeToWriteMonthlyData=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show the preflight opens only when all five provider-group approval rows are ready and all 17 source-policy updates are planned by the sync gate. It rejects partial approvals, inconsistent ready states, and any premature `scenario_monthly_returns.csv` file. The committed state still imports no real approvals and writes no source-policy, provider, monthly, Bootstrap, or runtime artifacts.
 
 ## Step 114-1Y Source Policy Sync Plan Follow-Up
 
@@ -466,7 +496,7 @@ Synthetic tests show the preflight opens only when a temporary monthly CSV exist
 
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2D, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2E, the remaining blocker is a real reviewer-owned approval input step:
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work

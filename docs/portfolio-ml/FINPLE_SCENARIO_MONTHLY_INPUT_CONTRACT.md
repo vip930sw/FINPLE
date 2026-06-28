@@ -38,6 +38,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 approval intake checklist | Implemented in Step 114-1V | Provider-group checklist of missing real approval fields before source-policy approval |
 | P0 approval intake template | Implemented in Step 114-1W | Reviewer-facing pending CSV template for real approval input, without pre-approving any provider |
 | P0 approval intake validation | Implemented in Step 114-1X | Validates reviewer-filled intake rows in synthetic fixtures while keeping real provider calls and monthly writes blocked |
+| P0 real approval import preflight | Implemented in Step 114-2E | Blocks source-policy import until all approval intake rows, sync plan, and sync preflight agree; provider calls and monthly writes remain blocked |
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
 | P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
@@ -397,6 +398,31 @@ bootstrapStillBlocked=true
 
 Synthetic tests prove that a fully filled template can be classified as ready for a later source-policy sync dry run, but this validation step still does not approve source policy rows, call providers, or write `scenario_monthly_returns.csv`.
 
+## P0 Real Approval Import Preflight
+
+The real approval import preflight lives at:
+
+```text
+data/processed/scenario_p0_real_approval_import_preflight.json
+```
+
+It checks the approval intake validation, source-policy sync plan, and source-policy sync preflight before any real approval import or source-policy matrix write:
+
+```text
+providerGroups=5
+readyRows=0
+pendingRows=5
+readyForRealApprovalImport=false
+safeToImportRealApprovalDecisions=false
+sourcePolicyMatrixWriteAllowed=false
+providerCallsAllowed=false
+safeToWriteMonthlyData=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove the preflight opens only when all five approval intake rows are ready and the source-policy sync plan/preflight agree. It rejects partial approval input, inconsistent sync evidence, and any premature `scenario_monthly_returns.csv` file.
+
 ## P0 Source Policy Sync Plan
 
 The source policy sync plan lives at:
@@ -651,6 +677,7 @@ npm.cmd run check:scenario-p0-source-decision
 npm.cmd run check:scenario-p0-provider-review
 npm.cmd run check:scenario-p0-external-terms
 npm.cmd run check:scenario-p0-owner-legal
+npm.cmd run check:scenario-p0-real-approval-import-preflight
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate

@@ -14,6 +14,7 @@ const OWNER_LEGAL_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_own
 const APPROVAL_INTAKE_PATH = path.join("data", "processed", "scenario_p0_approval_intake_checklist.json");
 const APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 const APPROVAL_INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
+const REAL_APPROVAL_IMPORT_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_real_approval_import_preflight.json");
 const SOURCE_POLICY_SYNC_PLAN_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_plan.json");
 const SOURCE_POLICY_SYNC_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_preflight.json");
 const PROVIDER_ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
@@ -146,6 +147,7 @@ function buildProgress() {
   const approvalIntake = readJson(APPROVAL_INTAKE_PATH);
   const approvalIntakeTemplate = readJson(APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH);
   const approvalIntakeValidation = readJson(APPROVAL_INTAKE_VALIDATION_PATH);
+  const realApprovalImportPreflight = readJson(REAL_APPROVAL_IMPORT_PREFLIGHT_PATH);
   const sourcePolicySyncPlan = readJson(SOURCE_POLICY_SYNC_PLAN_PATH);
   const sourcePolicySyncPreflight = readJson(SOURCE_POLICY_SYNC_PREFLIGHT_PATH);
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
@@ -184,6 +186,8 @@ function buildProgress() {
     monthlyCacheWriterPreflight.checks?.sourcePolicyRows === 17;
   const guardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
+    realApprovalImportPreflight.readiness?.safeToImportRealApprovalDecisions === false &&
+    realApprovalImportPreflight.readiness?.safeToWriteMonthlyData === false &&
     sourcePolicySyncPlan.readiness?.providerCallsAllowed === false &&
     sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === false &&
     sourcePolicySyncPreflight.readiness?.providerCallsAllowed === false &&
@@ -274,6 +278,7 @@ function buildProgress() {
         safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter,
         safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData,
         approvalIntakeValidationProviderCallsAllowed: approvalIntakeValidation.readiness?.providerCallsAllowed,
+        realApprovalImportPreflightSafe: realApprovalImportPreflight.checks?.readyForRealApprovalImport,
         sourcePolicySyncPlanProviderCallsAllowed: sourcePolicySyncPlan.readiness?.providerCallsAllowed,
         sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten,
         sourcePolicySyncPreflightProviderCallsAllowed: sourcePolicySyncPreflight.readiness?.providerCallsAllowed,
@@ -341,6 +346,7 @@ function buildProgress() {
       approvalIntakeChecklist: APPROVAL_INTAKE_PATH,
       approvalIntakeTemplate: APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH,
       approvalIntakeValidation: APPROVAL_INTAKE_VALIDATION_PATH,
+      realApprovalImportPreflight: REAL_APPROVAL_IMPORT_PREFLIGHT_PATH,
       sourcePolicySyncPlan: SOURCE_POLICY_SYNC_PLAN_PATH,
       sourcePolicySyncPreflight: SOURCE_POLICY_SYNC_PREFLIGHT_PATH,
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
@@ -371,6 +377,7 @@ function buildProgress() {
       safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter === true,
       safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData === true,
       approvalIntakeValidationReady: approvalIntakeValidation.readiness?.allRowsReadyForSourcePolicyReview === true,
+      realApprovalImportPreflightReady: realApprovalImportPreflight.checks?.readyForRealApprovalImport === true,
       sourcePolicySyncPlanReady: sourcePolicySyncPlan.readiness?.syncPlanReady === true,
       sourcePolicySyncPreflightReady: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true,
       providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,

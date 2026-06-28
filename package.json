@@ -27,6 +27,7 @@
     "check:scenario-p0-approval-intake": "node scripts/generate-scenario-p0-approval-intake-checklist.cjs --check && node --test scripts/generate-scenario-p0-approval-intake-checklist.test.cjs",
     "check:scenario-p0-approval-template": "node scripts/generate-scenario-p0-approval-intake-template.cjs --check && node --test scripts/generate-scenario-p0-approval-intake-template.test.cjs",
     "check:scenario-p0-approval-validation": "node scripts/generate-scenario-p0-approval-intake-validation.cjs --check && node --test scripts/generate-scenario-p0-approval-intake-validation.test.cjs",
+    "check:scenario-p0-real-approval-import-preflight": "node scripts/generate-scenario-p0-real-approval-import-preflight.cjs --check && node --test scripts/generate-scenario-p0-real-approval-import-preflight.test.cjs",
     "check:scenario-p0-source-policy-sync": "node scripts/generate-scenario-p0-source-policy-sync-plan.cjs --check && node --test scripts/generate-scenario-p0-source-policy-sync-plan.test.cjs",
     "check:scenario-p0-source-policy-sync-preflight": "node scripts/generate-scenario-p0-source-policy-sync-preflight.cjs --check && node --test scripts/generate-scenario-p0-source-policy-sync-preflight.test.cjs",
     "check:scenario-p0-provider-adapter-preflight": "node scripts/generate-scenario-p0-provider-adapter-preflight.cjs --check && node --test scripts/generate-scenario-p0-provider-adapter-preflight.test.cjs",
