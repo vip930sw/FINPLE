@@ -6,8 +6,23 @@ const MONTHLY_SCHEMA_PATH = path.join("data", "processed", "scenario_monthly_ret
 const DRY_RUN_PATH = path.join("data", "processed", "scenario_p0_monthly_cache_dry_run.json");
 const MONTHLY_DATA_TARGET = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const DRY_RUN_VERSION = "scenario-p0-monthly-cache-dry-run-v0.1";
+const DRY_RUN_VERSION = "scenario-p0-monthly-cache-dry-run-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const EXPECTED_PROVIDER_TASKS = 17;
+const EXPECTED_MANIFEST_COUNTS = {
+  asset: 14,
+  benchmark: 2,
+  fx: 1,
+};
+const DRY_RUN_ACTION = "dry_run_only_no_provider_call";
+const REQUIRED_SOURCE_METADATA = [
+  "providerName",
+  "providerEndpoint",
+  "requestedAt",
+  "rawPayloadHash",
+  "licensePolicy",
+  "sourceVersion",
+];
 
 const REQUIRED_MANIFEST_COLUMNS = [
   "manifestType",
@@ -67,6 +82,13 @@ function countBy(rows, field) {
   return sortObject(counts);
 }
 
+function assertCount(counts, key, expected, label) {
+  const actual = counts[key] ?? 0;
+  if (actual !== expected) {
+    fail(`${label} expected ${key}=${expected}, got ${actual}`);
+  }
+}
+
 function splitPipe(value) {
   return String(value || "").split("|").filter(Boolean);
 }
@@ -117,16 +139,9 @@ function buildProviderTasks(rows) {
     blockedSeries: splitPipe(row.blockedSeries),
     sourceHint: splitPipe(row.sourceHint),
     status: row.status,
-    action: "dry_run_only_no_provider_call",
+    action: DRY_RUN_ACTION,
     monthlyDataOutput: MONTHLY_DATA_TARGET.replace(/\\/g, "/"),
-    sourceMetadataRequired: [
-      "providerName",
-      "providerEndpoint",
-      "requestedAt",
-      "rawPayloadHash",
-      "licensePolicy",
-      "sourceVersion",
-    ],
+    sourceMetadataRequired: REQUIRED_SOURCE_METADATA,
   }));
 }
 
@@ -148,6 +163,25 @@ function buildDryRun() {
   }
 
   const providerTasks = buildProviderTasks(manifest.rows);
+  if (providerTasks.length !== EXPECTED_PROVIDER_TASKS) {
+    fail(`${MANIFEST_CSV_PATH} must produce ${EXPECTED_PROVIDER_TASKS} dry-run provider tasks`);
+  }
+  const manifestCounts = countBy(providerTasks, "manifestType");
+  for (const [manifestType, expected] of Object.entries(EXPECTED_MANIFEST_COUNTS)) {
+    assertCount(manifestCounts, manifestType, expected, "dry-run manifest counts");
+  }
+  if (providerTasks.some((task) => task.action !== DRY_RUN_ACTION)) {
+    fail(`${DRY_RUN_PATH} must keep every task action=${DRY_RUN_ACTION}`);
+  }
+  if (providerTasks.some((task) => task.monthlyDataOutput !== MONTHLY_DATA_TARGET.replace(/\\/g, "/"))) {
+    fail(`${DRY_RUN_PATH} must point every task to ${MONTHLY_DATA_TARGET.replace(/\\/g, "/")}`);
+  }
+  if (providerTasks.some((task) => task.sourceMetadataRequired.join("|") !== REQUIRED_SOURCE_METADATA.join("|"))) {
+    fail(`${DRY_RUN_PATH} must require source metadata for every provider task`);
+  }
+  if (fs.existsSync(MONTHLY_DATA_TARGET)) {
+    fail(`${MONTHLY_DATA_TARGET} exists before dry-run provider tasks are approved`);
+  }
   return {
     dryRunVersion: DRY_RUN_VERSION,
     auditedAt: AUDITED_AT,
@@ -166,10 +200,19 @@ function buildDryRun() {
       fxTasks: providerTasks.filter((task) => task.manifestType === "fx").length,
     },
     counts: {
-      byManifestType: countBy(providerTasks, "manifestType"),
+      byManifestType: manifestCounts,
       byPriority: countBy(providerTasks, "priority"),
       byStatus: countBy(providerTasks, "status"),
       byTargetBenchmarkId: countBy(providerTasks, "targetBenchmarkId"),
+    },
+    dryRunIntegrity: {
+      expectedProviderTasks: EXPECTED_PROVIDER_TASKS,
+      expectedManifestCounts: EXPECTED_MANIFEST_COUNTS,
+      providerTasksVerified: true,
+      manifestCountsVerified: true,
+      providerCallsMade: false,
+      sourceMetadataRequired: REQUIRED_SOURCE_METADATA,
+      monthlyDataFileAbsent: true,
     },
     monthlySchemaColumns: monthlySchema.headers,
     providerTasks,

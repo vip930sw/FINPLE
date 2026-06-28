@@ -1,5 +1,5 @@
 {
-  "dryRunVersion": "scenario-p0-monthly-cache-dry-run-v0.1",
+  "dryRunVersion": "scenario-p0-monthly-cache-dry-run-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "manifest": "data\\processed\\scenario_p0_monthly_cache_manifest.csv",
@@ -35,6 +35,26 @@
       "KOSPI200_TR": 7,
       "SP500_TR": 9
     }
+  },
+  "dryRunIntegrity": {
+    "expectedProviderTasks": 17,
+    "expectedManifestCounts": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "providerTasksVerified": true,
+    "manifestCountsVerified": true,
+    "providerCallsMade": false,
+    "sourceMetadataRequired": [
+      "providerName",
+      "providerEndpoint",
+      "requestedAt",
+      "rawPayloadHash",
+      "licensePolicy",
+      "sourceVersion"
+    ],
+    "monthlyDataFileAbsent": true
   },
   "monthlySchemaColumns": [
     "market",
