@@ -2,6 +2,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const SOURCE_POLICY_SYNC_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_preflight.json");
+const SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_source_policy_post_import_preflight.json",
+);
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
 const ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
@@ -30,21 +35,31 @@ function unique(values) {
 
 function buildPreflight() {
   const sourcePolicySyncPreflight = readJson(SOURCE_POLICY_SYNC_PREFLIGHT_PATH);
+  const sourcePolicyPostImportPreflight = readJson(SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
 
   const sourcePolicySyncReady = sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true;
   const sourcePolicyMatrixWritten = sourcePolicySyncPreflight.readiness?.sourcePolicyMatrixWritten === true;
+  const postImportPreflightReady =
+    sourcePolicyPostImportPreflight.checks?.safeToUseImportedSourcePolicy === true &&
+    sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === true;
   const approvalReady = approvalReadiness.readiness?.safeToImplementProviderAdapter === true;
   const writerGateReady = writerGate.readiness?.providerCallsAllowed === true && writerGate.readiness?.canWriteMonthlyData === true;
   const allSourcePolicyRowsApproved = writerGate.rowCounts?.approvedRows === writerGate.rowCounts?.totalRows;
   const providerCallsAllowed =
-    sourcePolicySyncReady && sourcePolicyMatrixWritten && approvalReady && writerGateReady && allSourcePolicyRowsApproved;
+    sourcePolicySyncReady &&
+    sourcePolicyMatrixWritten &&
+    postImportPreflightReady &&
+    approvalReady &&
+    writerGateReady &&
+    allSourcePolicyRowsApproved;
   const safeToImplementProviderAdapter = providerCallsAllowed;
 
   const blockers = unique([
     ...(sourcePolicySyncReady ? [] : ["source_policy_sync_preflight_not_ready"]),
     ...(sourcePolicyMatrixWritten ? [] : ["source_policy_matrix_not_synced"]),
+    ...(postImportPreflightReady ? [] : ["source_policy_post_import_preflight_not_ready"]),
     ...(approvalReady ? [] : ["approval_readiness_not_safe_for_adapter"]),
     ...(writerGateReady ? [] : ["writer_gate_not_open_for_provider_calls"]),
     ...(allSourcePolicyRowsApproved ? [] : ["source_policy_rows_not_fully_approved"]),
@@ -56,6 +71,7 @@ function buildPreflight() {
     auditedAt: AUDITED_AT,
     sourceFiles: {
       sourcePolicySyncPreflight: SOURCE_POLICY_SYNC_PREFLIGHT_PATH,
+      sourcePolicyPostImportPreflight: SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       writerGate: WRITER_GATE_PATH,
     },
@@ -66,6 +82,7 @@ function buildPreflight() {
     checks: {
       sourcePolicySyncReady,
       sourcePolicyMatrixWritten,
+      postImportPreflightReady,
       approvalReady,
       writerGateReady,
       allSourcePolicyRowsApproved,

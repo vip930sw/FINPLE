@@ -195,6 +195,7 @@ real approval import preflight readyForRealApprovalImport=false
 source-policy post-import preflight safeToUseImportedSourcePolicy=false
 approval readiness post-import dependency ready=false
 monthly write post-import dependency ready=false
+provider adapter post-import dependency ready=false
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
@@ -448,6 +449,25 @@ bootstrapStillBlocked=true
 
 Synthetic tests show that opening approval readiness alone is not enough to permit monthly writes. The monthly write preflight remains blocked until the source-policy post-import preflight is also ready, and it rejects any premature `scenario_monthly_returns.csv` file before post-import validation. The committed state still writes no monthly data and keeps provider calls, Bootstrap, and runtime implementation blocked.
 
+## Step 114-2I Provider Adapter Post-Import Dependency Follow-Up
+
+The provider adapter preflight now also reads the source-policy post-import preflight directly before any future provider adapter implementation can be reviewed:
+
+```text
+sourcePolicySyncReady=false
+sourcePolicyMatrixWritten=false
+postImportPreflightReady=false
+approvalReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementProviderAdapter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show that source-policy sync, approval readiness, and writer gate readiness are not enough unless the source-policy post-import preflight is also ready. The committed state still implements no provider adapter, performs no provider calls, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Step 114-1Y Source Policy Sync Plan Follow-Up
 
 The source policy sync plan now maps validated approval intake rows to a dry-run source-policy update plan:
@@ -489,6 +509,7 @@ The provider adapter preflight now blocks provider adapter implementation until 
 ```text
 sourcePolicySyncReady=false
 sourcePolicyMatrixWritten=false
+postImportPreflightReady=false
 approvalReady=false
 writerGateReady=false
 allSourcePolicyRowsApproved=false
@@ -498,7 +519,7 @@ monthlyDataFileWritten=false
 bootstrapStillBlocked=true
 ```
 
-Synthetic tests show the preflight opens only when source-policy sync is recorded, approval readiness is safe for adapters, writer gate allows provider calls, and all 17 source-policy rows are approved. The committed state still does not implement a provider adapter, call providers, or write monthly returns.
+Synthetic tests show the preflight opens only when source-policy sync is recorded, source-policy post-import validation is ready, approval readiness is safe for adapters, writer gate allows provider calls, and all 17 source-policy rows are approved. The committed state still does not implement a provider adapter, call providers, or write monthly returns.
 
 ## Step 114-2B Monthly Cache Writer Preflight Follow-Up
 
@@ -559,7 +580,7 @@ Synthetic tests show the preflight opens only when a temporary monthly CSV exist
 
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2H, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2I, the remaining blocker is a real reviewer-owned approval input step:
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work

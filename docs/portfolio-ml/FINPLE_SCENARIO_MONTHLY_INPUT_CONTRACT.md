@@ -42,7 +42,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source-policy post-import preflight | Implemented in Step 114-2F | Validates imported source-policy rows against the approved sync plan before approval readiness can be recalculated |
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
-| P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
+| P0 provider adapter preflight | Implemented in Step 114-2A, hardened in Step 114-2I | Blocks provider adapter implementation until source-policy sync, source-policy post-import validation, approval readiness, and writer gate all agree |
 | P0 monthly cache writer preflight | Implemented in Step 114-2B | Blocks monthly cache writer implementation until adapter, approval, monthly write, and writer gates all agree |
 | Bootstrap unlock preflight | Implemented in Step 114-2C | Blocks joint block Bootstrap until validated monthly data and completed write evidence exist |
 | Scenario runtime implementation preflight | Implemented in Step 114-2D | Blocks Scenario API, Compare chart scenario bands, probability scenario calculations, and `calculatePortfolioResult()` changes until Bootstrap unlock and runtime review gates agree |
@@ -504,11 +504,12 @@ The provider adapter preflight lives at:
 data/processed/scenario_p0_provider_adapter_preflight.json
 ```
 
-It checks source-policy sync preflight, approval readiness, and writer gate before any provider adapter implementation work:
+It checks source-policy sync preflight, source-policy post-import preflight, approval readiness, and writer gate before any provider adapter implementation work:
 
 ```text
 sourcePolicySyncReady=false
 sourcePolicyMatrixWritten=false
+postImportPreflightReady=false
 approvalReady=false
 writerGateReady=false
 allSourcePolicyRowsApproved=false
@@ -518,7 +519,7 @@ monthlyDataFileWritten=false
 bootstrapStillBlocked=true
 ```
 
-Synthetic tests prove the preflight opens only when all source-policy rows are approved, source-policy sync is recorded, approval readiness is safe for adapters, and writer gate allows provider calls. The committed state remains blocked and does not implement an adapter or call a provider.
+Synthetic tests prove the preflight opens only when all source-policy rows are approved, source-policy sync is recorded, source-policy post-import validation is ready, approval readiness is safe for adapters, and writer gate allows provider calls. The committed state remains blocked and does not implement an adapter or call a provider.
 
 ## P0 Monthly Cache Writer Preflight
 
