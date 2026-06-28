@@ -20,7 +20,7 @@
     "check:scenario-p0-dry-run": "node scripts/generate-scenario-p0-cache-dry-run.cjs --check",
     "check:scenario-p0-source-policy": "node scripts/generate-scenario-p0-source-policy-matrix.cjs --check",
     "check:scenario-p0-source-approval": "node scripts/generate-scenario-p0-source-approval-requirements.cjs --check",
-    "check:scenario-p0-source-decision": "node scripts/generate-scenario-p0-source-approval-decision-record.cjs --check",
+    "check:scenario-p0-source-decision": "node scripts/generate-scenario-p0-source-approval-decision-record.cjs --check && node --test scripts/generate-scenario-p0-source-approval-decision-record.test.cjs",
     "check:scenario-p0-provider-review": "node scripts/generate-scenario-p0-provider-candidate-review.cjs --check",
     "check:scenario-p0-external-terms": "node scripts/generate-scenario-p0-external-provider-terms-review.cjs --check",
     "check:scenario-p0-owner-legal": "node scripts/generate-scenario-p0-owner-legal-decision-packet.cjs --check",

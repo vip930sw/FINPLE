@@ -5,9 +5,11 @@ const REQUIREMENTS_PATH = path.join("data", "processed", "scenario_p0_source_app
 const DECISION_CSV_PATH = path.join("data", "processed", "scenario_p0_source_approval_decision_record.csv");
 const DECISION_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_source_approval_decision_record_summary.json");
 
-const DECISION_VERSION = "scenario-p0-source-approval-decision-record-v0.1";
+const DECISION_VERSION = "scenario-p0-source-approval-decision-record-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
 const PENDING_DECISION = "pending_decision";
+const EXPECTED_PROVIDER_GROUPS = 5;
+const EXPECTED_SOURCE_POLICY_ROWS = 17;
 
 const CSV_COLUMNS = [
   "providerCandidate",
@@ -63,6 +65,10 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+function sum(values) {
+  return values.reduce((total, value) => total + value, 0);
+}
+
 function buildDecisionRecord() {
   if (!fs.existsSync(REQUIREMENTS_PATH)) {
     fail(`${REQUIREMENTS_PATH} not found`);
@@ -73,8 +79,23 @@ function buildDecisionRecord() {
   if (!providerGroups || typeof providerGroups !== "object") {
     fail(`${REQUIREMENTS_PATH} missing providerGroups`);
   }
+  const providerGroupRows = Object.values(providerGroups);
+  const providerGroupCount = providerGroupRows.length;
+  const sourcePolicyRows = sum(providerGroupRows.map((group) => Number(group.rowCount) || 0));
+  if (providerGroupCount !== EXPECTED_PROVIDER_GROUPS) {
+    fail(`${REQUIREMENTS_PATH} must contain ${EXPECTED_PROVIDER_GROUPS} provider groups, got ${providerGroupCount}`);
+  }
+  if (requirements.rowCounts?.providerGroups !== providerGroupCount) {
+    fail(`${REQUIREMENTS_PATH} rowCounts.providerGroups does not match providerGroups`);
+  }
+  if (sourcePolicyRows !== EXPECTED_SOURCE_POLICY_ROWS) {
+    fail(`${REQUIREMENTS_PATH} must contain ${EXPECTED_SOURCE_POLICY_ROWS} source policy rows, got ${sourcePolicyRows}`);
+  }
+  if (requirements.rowCounts?.totalRows !== sourcePolicyRows) {
+    fail(`${REQUIREMENTS_PATH} rowCounts.totalRows does not match provider group rowCount total`);
+  }
 
-  const rows = Object.values(providerGroups)
+  const rows = providerGroupRows
     .sort((left, right) => left.providerCandidate.localeCompare(right.providerCandidate))
     .map((group) => ({
       providerCandidate: group.providerCandidate,
@@ -114,8 +135,15 @@ function buildDecisionRecord() {
       },
       rowCounts: {
         providerGroups: rows.length,
+        sourcePolicyRows,
         decidedGroups: rows.filter((row) => row.decisionStatus !== PENDING_DECISION).length,
         pendingGroups: rows.filter((row) => row.decisionStatus === PENDING_DECISION).length,
+      },
+      sourceIntegrity: {
+        expectedProviderGroups: EXPECTED_PROVIDER_GROUPS,
+        expectedSourcePolicyRows: EXPECTED_SOURCE_POLICY_ROWS,
+        providerGroupCountVerified: true,
+        sourcePolicyRowsMatchRequirements: true,
       },
       counts: {
         byDecisionStatus: countBy(rows, "decisionStatus"),

@@ -652,6 +652,21 @@ intakeCompletionPercent=0
 
 Synthetic tests now reject provider-candidate drift between checklist sources and a source-policy matrix that no longer contains the expected 17 P0 rows. The committed state still has 5 blocked provider groups, 0 approved source-policy rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2O Source Approval Decision Record Integrity Follow-Up
+
+The source approval decision record generator now verifies the P0 source-approval requirements before producing reviewer-facing decision rows:
+
+```text
+expectedProviderGroups=5
+expectedSourcePolicyRows=17
+providerGroupCountVerified=true
+sourcePolicyRowsMatchRequirements=true
+decidedGroups=0
+pendingGroups=5
+```
+
+The `check:scenario-p0-source-decision` script now also runs a dedicated Node test suite. Synthetic tests reject provider-group count drift, source-policy row-count drift, and stale committed decision-record summaries. The committed state still has 5 pending decision rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.
