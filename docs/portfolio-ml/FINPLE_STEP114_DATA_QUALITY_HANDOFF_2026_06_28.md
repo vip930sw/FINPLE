@@ -791,6 +791,12 @@ Added `docs/portfolio-ml/FINPLE_STEP114_KIS_TERMS_REVIEW_PACKET_2026_06_28.md` a
 
 The terms packet keeps KIS blocked for FINPLE runtime provider calls because the public customer terms restrict market-data use to the customer's own developed program/personal work and prohibit third-party provision, while the agency terms restrict market-data use to the company's trading customers through Open API service and prohibit other purposes. FINPLE still needs written KIS confirmation or legal/source-owner approval for raw-row cache storage, derived monthly returns, user-facing derived scenario outputs, retention period, attribution, and any required fees or agency onboarding.
 
+## Step 114-3A KIS Confirmation Email Draft
+
+Added `docs/portfolio-ml/FINPLE_STEP114_KIS_CONFIRMATION_EMAIL_DRAFT_2026_06_28.md` with a ready-to-send Korean inquiry for KIS. The draft asks whether FINPLE may use KIS overseas price and rights endpoints for raw-row retention, monthly return derivation, user-facing scenario analytics, commercial use, retention, attribution, rate limits, and any required paid or agency agreement.
+
+If KIS rejects the use case or does not clearly approve raw-row storage and derived user-facing analytics display, keep KIS blocked and evaluate a paid or licensed provider such as Alpha Vantage or another market-data source under the same source-policy approval fields. Do not implement a provider adapter or write `scenario_monthly_returns.csv` until the selected source is approved.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2W, the remaining blocker is a real reviewer-owned approval input step.

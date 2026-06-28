@@ -63,6 +63,9 @@ Until then:
 
 ## Questions To Send To KIS Or Legal
 
+Ready-to-send Korean email draft:
+`docs/portfolio-ml/FINPLE_STEP114_KIS_CONFIRMATION_EMAIL_DRAFT_2026_06_28.md`
+
 ```text
 We are reviewing whether FINPLE may use Korea Investment Open API for portfolio scenario analytics.
 
@@ -81,6 +84,8 @@ Please confirm in writing:
 5. Are additional fees, approvals, contracts, or agency onboarding required?
 6. Are there request-rate or operational limits specific to historical overseas price and rights endpoints?
 ```
+
+If KIS rejects the use case or does not clearly approve raw-row cache storage and derived user-facing analytics display, keep KIS blocked and evaluate a paid or licensed source under the same source-policy approval fields.
 
 ## Source-Policy Requirement Before Unlock
 
