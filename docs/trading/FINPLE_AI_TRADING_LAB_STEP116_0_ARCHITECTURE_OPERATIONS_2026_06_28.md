@@ -450,6 +450,29 @@ Control env names are `FINPLE_TRADING_MODE`, `FINPLE_TRADING_KILL_SWITCH`, `FINP
 
 Future shadow read-only runtime requires `KIS_TRADING_APP_KEY`, `KIS_TRADING_APP_SECRET`, `KIS_TRADING_ACCOUNT_ID`, and `KIS_TRADING_BASE_URL`. Future live-guarded order adapter work additionally requires manual order-permission approval metadata such as `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT` and `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY`.
 
+## Step 116-1H Trading Environment Value Parser
+
+The first trading environment value parser is:
+
+```text
+server/src/services/tradingEnvConfig.js
+server/src/services/tradingEnvConfig.test.js
+npm.cmd run check:trading-env-values
+```
+
+This parser validates future Trading Worker env value shapes without loading secrets into docs, generated JSON, frontend code, provider calls, or order submission. It accepts the virtual-trading `shadow` shape used for Render configuration review, including `FINPLE_TRADING_ALLOWED_MARKETS=KR,US`, `FINPLE_TRADING_ALLOWED_ASSET_TYPES_BY_MARKET=KR:STOCK;US:STOCK,ETF`, wildcard symbols for non-live review, and `https://openapivts.koreainvestment.com:29443`.
+
+Current state remains:
+
+- `valuesStored=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `adapterImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeActivationAllowed=false`
+
+The parser intentionally warns that wildcard symbols must be narrowed before `live_guarded`, production trading base URLs require separate live review, and order permission metadata does not unlock order submission by itself.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
