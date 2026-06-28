@@ -145,3 +145,7 @@ P0 경쟁력·지표·데이터·기술부채
 ## Recent AI Analysis Handoff
 
 - [FINPLE AI Analysis Handoff 2026-06-27](./portfolio-ml/FINPLE_AI_ANALYSIS_HANDOFF_2026_06_27.md)
+
+## Recent AI Trading Lab Baseline
+
+- [FINPLE AI Trading Lab Step 116-0 Architecture And Operations 2026-06-28](./trading/FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md)
