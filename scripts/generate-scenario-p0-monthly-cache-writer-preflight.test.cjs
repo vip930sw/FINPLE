@@ -7,6 +7,7 @@ const { spawnSync } = require("node:child_process");
 
 const SCRIPT_PATH = path.resolve("scripts", "generate-scenario-p0-monthly-cache-writer-preflight.cjs");
 const PROVIDER_ADAPTER_PREFLIGHT = "scenario_p0_provider_adapter_preflight.json";
+const SOURCE_POLICY_POST_IMPORT_PREFLIGHT = "scenario_p0_source_policy_post_import_preflight.json";
 const APPROVAL_READINESS = "scenario_p0_approval_readiness.json";
 const MONTHLY_WRITE_PREFLIGHT = "scenario_monthly_write_preflight.json";
 const WRITER_GATE = "scenario_p0_cache_writer_gate.json";
@@ -38,7 +39,14 @@ function makeWorkspace() {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "finple-scenario-monthly-cache-writer-preflight-"));
   const processedDir = path.join(workspace, "data", "processed");
   fs.mkdirSync(processedDir, { recursive: true });
-  for (const fileName of [PROVIDER_ADAPTER_PREFLIGHT, APPROVAL_READINESS, MONTHLY_WRITE_PREFLIGHT, WRITER_GATE, WRITER_PREFLIGHT]) {
+  for (const fileName of [
+    PROVIDER_ADAPTER_PREFLIGHT,
+    SOURCE_POLICY_POST_IMPORT_PREFLIGHT,
+    APPROVAL_READINESS,
+    MONTHLY_WRITE_PREFLIGHT,
+    WRITER_GATE,
+    WRITER_PREFLIGHT,
+  ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
   return workspace;
@@ -65,6 +73,22 @@ function mutateJson(workspace, fileName, patch) {
   writeWorkspaceJson(workspace, fileName, value);
 }
 
+function makePostImportPreflightReady(workspace) {
+  mutateJson(workspace, SOURCE_POLICY_POST_IMPORT_PREFLIGHT, (value) => {
+    value.checks.safeToUseImportedSourcePolicy = true;
+    value.checks.approvedSourcePolicyRows = 17;
+    value.checks.blockedSourcePolicyRows = 0;
+    value.checks.plannedSourcePolicyUpdates = 17;
+    value.checks.readyProviderGroups = 5;
+    value.checks.realApprovalImportReady = true;
+    value.checks.allSourcePolicyRowsApproved = true;
+    value.checks.approvedRowsMatchPlan = true;
+    value.checks.blockers = [];
+    value.readiness.safeToUseImportedSourcePolicy = true;
+    value.readiness.status = "ready_for_approval_readiness_recalculation_after_source_policy_import";
+  });
+}
+
 function writeMonthlyFile(workspace) {
   const content = [
     HEADER,
@@ -75,6 +99,7 @@ function writeMonthlyFile(workspace) {
 }
 
 function makeWriterReady(workspace) {
+  makePostImportPreflightReady(workspace);
   mutateJson(workspace, PROVIDER_ADAPTER_PREFLIGHT, (value) => {
     value.checks.sourcePolicySyncReady = true;
     value.checks.sourcePolicyMatrixWritten = true;
@@ -159,6 +184,24 @@ test("opens only after adapter, approval, monthly write, and writer gates are al
   assert.equal(report.readiness.status, "ready_for_monthly_cache_writer_implementation_review");
 });
 
+test("stays blocked when source-policy post-import preflight is not ready", () => {
+  const workspace = makeWorkspace();
+  makeWriterReady(workspace);
+  mutateJson(workspace, SOURCE_POLICY_POST_IMPORT_PREFLIGHT, (value) => {
+    value.checks.safeToUseImportedSourcePolicy = false;
+    value.readiness.safeToUseImportedSourcePolicy = false;
+    value.checks.blockers = ["source_policy_post_import_preflight_not_ready"];
+  });
+
+  const result = runPreflight(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readWorkspaceJson(workspace, WRITER_PREFLIGHT);
+  assert.equal(report.checks.safeToImplementMonthlyCacheWriter, false);
+  assert.equal(report.checks.providerCallsAllowed, false);
+  assert.deepEqual(report.checks.blockers, ["source_policy_post_import_preflight_not_ready"]);
+});
+
 test("stays blocked when provider adapter is ready but monthly write preflight is not", () => {
   const workspace = makeWorkspace();
   makeWriterReady(workspace);
@@ -189,6 +232,21 @@ test("rejects monthly file when writer gate is not open", () => {
   makeWriterReady(workspace);
   mutateJson(workspace, WRITER_GATE, (value) => {
     value.readiness.canWriteMonthlyData = false;
+  });
+  writeMonthlyFile(workspace);
+
+  const result = runPreflight(workspace);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scenario_monthly_returns\.csv exists before monthly cache writer preflight is ready/);
+});
+
+test("rejects monthly file before source-policy post-import preflight is ready", () => {
+  const workspace = makeWorkspace();
+  makeWriterReady(workspace);
+  mutateJson(workspace, SOURCE_POLICY_POST_IMPORT_PREFLIGHT, (value) => {
+    value.checks.safeToUseImportedSourcePolicy = false;
+    value.readiness.safeToUseImportedSourcePolicy = false;
   });
   writeMonthlyFile(workspace);
 

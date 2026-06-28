@@ -3,6 +3,7 @@
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "providerAdapterPreflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
+    "sourcePolicyPostImportPreflight": "data\\processed\\scenario_p0_source_policy_post_import_preflight.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
     "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
@@ -13,6 +14,7 @@
   },
   "checks": {
     "adapterReady": false,
+    "postImportPreflightReady": false,
     "approvalReady": false,
     "monthlyWriteReady": false,
     "writerGateReady": false,
@@ -24,13 +26,13 @@
     "approvedSourcePolicyRows": 0,
     "blockers": [
       "provider_adapter_preflight_not_ready",
+      "source_policy_post_import_preflight_not_ready",
       "approval_readiness_not_safe_for_monthly_write",
       "monthly_write_preflight_not_ready",
       "writer_gate_not_open_for_monthly_cache_writer",
       "source_policy_rows_not_fully_approved",
       "source_policy_sync_preflight_not_ready",
       "source_policy_matrix_not_synced",
-      "source_policy_post_import_preflight_not_ready",
       "approval_readiness_not_safe_for_adapter",
       "writer_gate_not_open_for_provider_calls",
       "external_provider_terms_not_fully_approved",

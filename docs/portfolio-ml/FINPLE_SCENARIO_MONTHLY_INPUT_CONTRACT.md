@@ -43,7 +43,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
 | P0 provider adapter preflight | Implemented in Step 114-2A, hardened in Step 114-2I | Blocks provider adapter implementation until source-policy sync, source-policy post-import validation, approval readiness, and writer gate all agree |
-| P0 monthly cache writer preflight | Implemented in Step 114-2B | Blocks monthly cache writer implementation until adapter, approval, monthly write, and writer gates all agree |
+| P0 monthly cache writer preflight | Implemented in Step 114-2B, hardened in Step 114-2J | Blocks monthly cache writer implementation until adapter, source-policy post-import validation, approval, monthly write, and writer gates all agree |
 | Bootstrap unlock preflight | Implemented in Step 114-2C | Blocks joint block Bootstrap until validated monthly data and completed write evidence exist |
 | Scenario runtime implementation preflight | Implemented in Step 114-2D | Blocks Scenario API, Compare chart scenario bands, probability scenario calculations, and `calculatePortfolioResult()` changes until Bootstrap unlock and runtime review gates agree |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
@@ -529,10 +529,11 @@ The monthly cache writer preflight lives at:
 data/processed/scenario_p0_monthly_cache_writer_preflight.json
 ```
 
-It checks provider adapter preflight, approval readiness, monthly write preflight, and writer gate before any monthly cache writer implementation work:
+It checks provider adapter preflight, source-policy post-import preflight, approval readiness, monthly write preflight, and writer gate before any monthly cache writer implementation work:
 
 ```text
 adapterReady=false
+postImportPreflightReady=false
 approvalReady=false
 monthlyWriteReady=false
 writerGateReady=false
@@ -543,7 +544,7 @@ monthlyDataFileWritten=false
 bootstrapStillBlocked=true
 ```
 
-Synthetic tests prove the preflight opens only when all upstream gates agree and no committed `scenario_monthly_returns.csv` exists yet. It rejects a monthly data file if the writer preflight is not ready. The committed state remains blocked and does not implement a cache writer, call providers, or write monthly returns.
+Synthetic tests prove the preflight opens only when all upstream gates agree, source-policy post-import validation is ready, and no committed `scenario_monthly_returns.csv` exists yet. It rejects a monthly data file if the writer preflight or post-import validation is not ready. The committed state remains blocked and does not implement a cache writer, call providers, or write monthly returns.
 
 ## Bootstrap Unlock Preflight
 

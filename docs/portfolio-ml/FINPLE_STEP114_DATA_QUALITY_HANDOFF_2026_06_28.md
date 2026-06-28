@@ -196,6 +196,7 @@ source-policy post-import preflight safeToUseImportedSourcePolicy=false
 approval readiness post-import dependency ready=false
 monthly write post-import dependency ready=false
 provider adapter post-import dependency ready=false
+monthly cache writer post-import dependency ready=false
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
@@ -468,6 +469,25 @@ bootstrapStillBlocked=true
 
 Synthetic tests show that source-policy sync, approval readiness, and writer gate readiness are not enough unless the source-policy post-import preflight is also ready. The committed state still implements no provider adapter, performs no provider calls, writes no monthly data, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2J Monthly Cache Writer Post-Import Dependency Follow-Up
+
+The monthly cache writer preflight now also reads the source-policy post-import preflight directly before any future monthly cache writer implementation can be reviewed:
+
+```text
+adapterReady=false
+postImportPreflightReady=false
+approvalReady=false
+monthlyWriteReady=false
+writerGateReady=false
+allSourcePolicyRowsApproved=false
+providerCallsAllowed=false
+safeToImplementMonthlyCacheWriter=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show that adapter, approval, monthly write, and writer gates are not enough unless the source-policy post-import preflight is also ready. The gate also rejects any premature `scenario_monthly_returns.csv` file before post-import validation. The committed state still implements no monthly cache writer, performs no provider calls, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Step 114-1Y Source Policy Sync Plan Follow-Up
 
 The source policy sync plan now maps validated approval intake rows to a dry-run source-policy update plan:
@@ -523,10 +543,11 @@ Synthetic tests show the preflight opens only when source-policy sync is recorde
 
 ## Step 114-2B Monthly Cache Writer Preflight Follow-Up
 
-The monthly cache writer preflight now blocks cache writer implementation until adapter, approval, monthly write, and writer gates all agree:
+The monthly cache writer preflight now blocks cache writer implementation until adapter, source-policy post-import, approval, monthly write, and writer gates all agree:
 
 ```text
 adapterReady=false
+postImportPreflightReady=false
 approvalReady=false
 monthlyWriteReady=false
 writerGateReady=false
@@ -537,7 +558,7 @@ monthlyDataFileWritten=false
 bootstrapStillBlocked=true
 ```
 
-Synthetic tests show the preflight opens only when the provider adapter preflight is safe, P0 approval readiness allows monthly writes, monthly write preflight allows an attempt, writer gate allows provider calls and monthly writes, and all 17 source-policy rows are approved. The committed state still does not implement a monthly cache writer, call providers, or write `scenario_monthly_returns.csv`.
+Synthetic tests show the preflight opens only when the provider adapter preflight is safe, source-policy post-import validation is ready, P0 approval readiness allows monthly writes, monthly write preflight allows an attempt, writer gate allows provider calls and monthly writes, and all 17 source-policy rows are approved. The committed state still does not implement a monthly cache writer, call providers, or write `scenario_monthly_returns.csv`.
 
 ## Step 114-2C Bootstrap Unlock Preflight Follow-Up
 
@@ -580,7 +601,16 @@ Synthetic tests show the preflight opens only when a temporary monthly CSV exist
 
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2I, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.
+
+There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
+
+```text
+1. Record real owner/legal/source approval decisions
+2. Import approved source-policy rows and rerun post-import gates
+3. Produce validated scenario_monthly_returns.csv with source metadata
+4. Unlock Bootstrap/runtime only after monthly data and explicit runtime review gates pass
+```
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work

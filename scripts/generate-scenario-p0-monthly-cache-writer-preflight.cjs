@@ -2,6 +2,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const PROVIDER_ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
+const SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_source_policy_post_import_preflight.json",
+);
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const MONTHLY_WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -32,6 +37,7 @@ function unique(values) {
 
 function buildPreflight() {
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
+  const sourcePolicyPostImportPreflight = readJson(SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const monthlyWritePreflight = readJson(MONTHLY_WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
@@ -40,16 +46,23 @@ function buildPreflight() {
   const adapterReady =
     providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true &&
     providerAdapterPreflight.checks?.providerCallsAllowed === true;
+  const postImportPreflightReady =
+    sourcePolicyPostImportPreflight.checks?.safeToUseImportedSourcePolicy === true &&
+    sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === true;
   const approvalReady =
     approvalReadiness.readiness?.safeToWriteMonthlyData === true && approvalReadiness.readiness?.providerCallsAllowed === true;
   const monthlyWriteReady = monthlyWritePreflight.checks?.canAttemptMonthlyWrite === true;
   const writerGateReady = writerGate.readiness?.canWriteMonthlyData === true && writerGate.readiness?.providerCallsAllowed === true;
   const allSourcePolicyRowsApproved = writerGate.rowCounts?.approvedRows === writerGate.rowCounts?.totalRows;
-  const providerCallsAllowed = adapterReady && approvalReady && monthlyWriteReady && writerGateReady && allSourcePolicyRowsApproved;
+  const providerCallsAllowed =
+    adapterReady && postImportPreflightReady && approvalReady && monthlyWriteReady && writerGateReady && allSourcePolicyRowsApproved;
   const safeToImplementMonthlyCacheWriter = providerCallsAllowed && !monthlyFileExists;
 
   if (monthlyFileExists && !providerCallsAllowed) {
     fail(`${MONTHLY_DATA_PATH} exists before monthly cache writer preflight is ready`);
+  }
+  if (monthlyFileExists && !postImportPreflightReady) {
+    fail(`${MONTHLY_DATA_PATH} exists before source-policy post-import preflight is ready`);
   }
   if (monthlyFileExists && !writerGateReady) {
     fail(`${MONTHLY_DATA_PATH} exists while writer gate is not open`);
@@ -57,6 +70,7 @@ function buildPreflight() {
 
   const blockers = unique([
     ...(adapterReady ? [] : ["provider_adapter_preflight_not_ready"]),
+    ...(postImportPreflightReady ? [] : ["source_policy_post_import_preflight_not_ready"]),
     ...(approvalReady ? [] : ["approval_readiness_not_safe_for_monthly_write"]),
     ...(monthlyWriteReady ? [] : ["monthly_write_preflight_not_ready"]),
     ...(writerGateReady ? [] : ["writer_gate_not_open_for_monthly_cache_writer"]),
@@ -72,6 +86,7 @@ function buildPreflight() {
     auditedAt: AUDITED_AT,
     sourceFiles: {
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
+      sourcePolicyPostImportPreflight: SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: MONTHLY_WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,
@@ -82,6 +97,7 @@ function buildPreflight() {
     },
     checks: {
       adapterReady,
+      postImportPreflightReady,
       approvalReady,
       monthlyWriteReady,
       writerGateReady,
