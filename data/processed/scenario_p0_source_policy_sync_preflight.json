@@ -1,0 +1,33 @@
+{
+  "preflightVersion": "scenario-p0-source-policy-sync-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "sourcePolicySyncPlan": "data\\processed\\scenario_p0_source_policy_sync_plan.json"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_p0_source_policy_sync_preflight.json",
+    "sourcePolicyMatrixTarget": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "checks": {
+    "totalSourcePolicyRows": 17,
+    "approvedSourcePolicyRows": 0,
+    "plannedSourcePolicyUpdates": 0,
+    "syncPlanReady": false,
+    "canSyncSourcePolicy": false,
+    "sourcePolicyMatrixWritten": false,
+    "blockers": [
+      "source_policy_sync_plan_not_ready",
+      "source_policy_sync_plan_not_complete"
+    ]
+  },
+  "readiness": {
+    "status": "blocked_before_source_policy_sync",
+    "sourcePolicyMatrixWritten": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "complete_ready_approval_intake_and_sync_plan_before_source_policy_write"
+  }
+}

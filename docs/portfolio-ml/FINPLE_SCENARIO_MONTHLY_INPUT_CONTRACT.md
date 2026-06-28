@@ -39,6 +39,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 approval intake template | Implemented in Step 114-1W | Reviewer-facing pending CSV template for real approval input, without pre-approving any provider |
 | P0 approval intake validation | Implemented in Step 114-1X | Validates reviewer-filled intake rows in synthetic fixtures while keeping real provider calls and monthly writes blocked |
 | P0 source policy sync plan | Implemented in Step 114-1Y | Dry-run plan from ready approval intake rows to source-policy row updates, without writing the source policy matrix |
+| P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -414,6 +415,29 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests prove that a fully ready approval intake can plan all 17 source-policy updates, but the committed gate still does not modify `scenario_p0_source_policy_matrix.csv`. A human-owned real approval sync must happen before approval readiness, writer gate, provider adapter, or monthly cache work can open.
+
+## P0 Source Policy Sync Preflight
+
+The source policy sync preflight lives at:
+
+```text
+data/processed/scenario_p0_source_policy_sync_preflight.json
+```
+
+It checks the source-policy sync plan against the current source policy matrix before any row is manually changed to `approved_source_policy`:
+
+```text
+totalSourcePolicyRows=17
+approvedSourcePolicyRows=0
+plannedSourcePolicyUpdates=0
+canSyncSourcePolicy=false
+sourcePolicyMatrixWritten=false
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+The gate rejects premature approved source-policy rows while the sync plan is blocked, and rejects cases where the source policy matrix contains more approved rows than the sync plan allows. It still does not write the source policy matrix.
 
 ## Monthly Write Preflight
 
