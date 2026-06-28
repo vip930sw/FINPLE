@@ -680,9 +680,22 @@ writerGateStillBlocked=true
 
 The `check:scenario-p0-source-approval` script now also runs a dedicated Node test suite. Synthetic tests reject manifest-count drift, premature writer-gate opening, and stale committed requirements output. The committed state still has 17 blocked P0 source-policy rows, 5 provider groups, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2Q Provider Candidate Review Integrity Follow-Up
+
+The provider candidate review generator now verifies the P0 provider review contract before any provider can be selected:
+
+```text
+expectedProviderGroups=5
+pendingReviews=5
+selectedProviders=0
+monthlyDataFileAbsent=true
+```
+
+The `check:scenario-p0-provider-review` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, premature `scenario_monthly_returns.csv`, and stale committed provider candidate review summaries. The committed state still selects no provider, performs no provider calls, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2Q, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 

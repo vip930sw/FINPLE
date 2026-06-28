@@ -16,9 +16,13 @@ const CANDIDATE_REVIEW_SUMMARY_PATH = path.join(
   "processed",
   "scenario_p0_provider_candidate_review_summary.json",
 );
+const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const REVIEW_VERSION = "scenario-p0-provider-candidate-review-v0.1";
+const REVIEW_VERSION = "scenario-p0-provider-candidate-review-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const EXPECTED_PROVIDER_GROUPS = 5;
+const PENDING_REVIEW_STATUS = "pending_external_provider_review";
+const NOT_SELECTED_STATUS = "not_selected";
 
 const CSV_COLUMNS = [
   "providerCandidate",
@@ -194,6 +198,10 @@ function countBy(rows, field) {
   return sortObject(counts);
 }
 
+function uniqueSorted(values) {
+  return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right));
+}
+
 function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
@@ -229,8 +237,22 @@ function buildCandidateReview() {
     };
   });
 
-  if (rows.length !== 5) {
-    fail(`${DECISION_RECORD_CSV_PATH} must produce 5 provider candidate rows, got ${rows.length}`);
+  if (rows.length !== EXPECTED_PROVIDER_GROUPS) {
+    fail(`${DECISION_RECORD_CSV_PATH} must produce ${EXPECTED_PROVIDER_GROUPS} provider candidate rows, got ${rows.length}`);
+  }
+  const providerCandidates = uniqueSorted(rows.map((row) => row.providerCandidate));
+  const expectedProviders = uniqueSorted(Object.keys(GROUP_REVIEW_REQUIREMENTS));
+  if (providerCandidates.join("|") !== expectedProviders.join("|")) {
+    fail(`${DECISION_RECORD_CSV_PATH} provider candidates do not match expected P0 review set`);
+  }
+  if (rows.some((row) => row.reviewStatus !== PENDING_REVIEW_STATUS)) {
+    fail(`${CANDIDATE_REVIEW_CSV_PATH} must keep all provider reviews pending before real provider review`);
+  }
+  if (rows.some((row) => row.selectionStatus !== NOT_SELECTED_STATUS)) {
+    fail(`${CANDIDATE_REVIEW_CSV_PATH} must keep all providers not_selected before real provider review`);
+  }
+  if (fs.existsSync(MONTHLY_DATA_PATH)) {
+    fail(`${MONTHLY_DATA_PATH} exists before provider candidates are reviewed and selected`);
   }
 
   return {
@@ -249,12 +271,19 @@ function buildCandidateReview() {
       rowCounts: {
         providerGroups: rows.length,
         selectedProviders: rows.filter((row) => row.selectionStatus !== "not_selected").length,
-        pendingReviews: rows.filter((row) => row.reviewStatus === "pending_external_provider_review").length,
+        pendingReviews: rows.filter((row) => row.reviewStatus === PENDING_REVIEW_STATUS).length,
       },
       counts: {
         byReviewStatus: countBy(rows, "reviewStatus"),
         bySelectionStatus: countBy(rows, "selectionStatus"),
         byBlocker: countBy(rows, "blocker"),
+      },
+      reviewIntegrity: {
+        expectedProviderGroups: EXPECTED_PROVIDER_GROUPS,
+        providerSetVerified: true,
+        pendingReviewsVerified: true,
+        noProviderSelected: true,
+        monthlyDataFileAbsent: true,
       },
       readiness: {
         status: "pending_external_provider_review",

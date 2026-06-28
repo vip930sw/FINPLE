@@ -1,5 +1,5 @@
 {
-  "reviewVersion": "scenario-p0-provider-candidate-review-v0.1",
+  "reviewVersion": "scenario-p0-provider-candidate-review-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "decisionRecord": "data\\processed\\scenario_p0_source_approval_decision_record.csv"
@@ -24,6 +24,13 @@
     "byBlocker": {
       "provider_endpoint_license_and_redistribution_not_reviewed": 5
     }
+  },
+  "reviewIntegrity": {
+    "expectedProviderGroups": 5,
+    "providerSetVerified": true,
+    "pendingReviewsVerified": true,
+    "noProviderSelected": true,
+    "monthlyDataFileAbsent": true
   },
   "readiness": {
     "status": "pending_external_provider_review",
