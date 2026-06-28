@@ -397,6 +397,31 @@ Current state remains blocked for runtime integration:
 
 The check fails if shadow mode starts allowing external order calls, if required read-only/forbidden-action boundaries drift, or if runtime trading artifacts appear before manual read-only approval.
 
+## Step 116-1F KIS Order Adapter Design Review
+
+The first KIS order adapter design review is:
+
+```text
+data/processed/trading_lab_step116_kis_order_adapter_design_review.json
+scripts/generate-trading-kis-order-adapter-design-review.cjs
+scripts/generate-trading-kis-order-adapter-design-review.test.cjs
+npm.cmd run check:trading-kis-order-adapter-design
+```
+
+This is a design review and drift check, not a KIS order adapter. It defines the future order-adapter boundary for `live_guarded` mode and requires manual operator approval, a clear kill switch, a clear risk gate, reviewed shadow history, dry-run replay, separate order-capable credentials, and an audit logger before any future submission path can be considered.
+
+Current state remains blocked:
+
+- `designReviewOnly=true`
+- `adapterImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
