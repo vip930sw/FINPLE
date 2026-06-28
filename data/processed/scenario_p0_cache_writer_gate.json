@@ -9,7 +9,7 @@
     "gate": "data\\processed\\scenario_p0_cache_writer_gate.json",
     "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
   },
-  "sourcePolicyVersion": "scenario-p0-source-policy-matrix-v0.1",
+  "sourcePolicyVersion": "scenario-p0-source-policy-matrix-v0.2",
   "rowCounts": {
     "totalRows": 17,
     "approvedRows": 0,

@@ -18,7 +18,7 @@
     "check:scenario-rolling-median-policy": "node scripts/generate-scenario-rolling-median-policy.cjs --check",
     "check:scenario-p0-manifest": "node scripts/generate-scenario-p0-monthly-cache-manifest.cjs --check",
     "check:scenario-p0-dry-run": "node scripts/generate-scenario-p0-cache-dry-run.cjs --check",
-    "check:scenario-p0-source-policy": "node scripts/generate-scenario-p0-source-policy-matrix.cjs --check",
+    "check:scenario-p0-source-policy": "node scripts/generate-scenario-p0-source-policy-matrix.cjs --check && node --test scripts/generate-scenario-p0-source-policy-matrix.test.cjs",
     "check:scenario-p0-source-approval": "node scripts/generate-scenario-p0-source-approval-requirements.cjs --check && node --test scripts/generate-scenario-p0-source-approval-requirements.test.cjs",
     "check:scenario-p0-source-decision": "node scripts/generate-scenario-p0-source-approval-decision-record.cjs --check && node --test scripts/generate-scenario-p0-source-approval-decision-record.test.cjs",
     "check:scenario-p0-provider-review": "node scripts/generate-scenario-p0-provider-candidate-review.cjs --check && node --test scripts/generate-scenario-p0-provider-candidate-review.test.cjs",

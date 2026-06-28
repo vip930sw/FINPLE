@@ -1,5 +1,5 @@
 {
-  "matrixVersion": "scenario-p0-source-policy-matrix-v0.1",
+  "matrixVersion": "scenario-p0-source-policy-matrix-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "dryRun": "data\\processed\\scenario_p0_monthly_cache_dry_run.json"
@@ -34,6 +34,19 @@
     "byRequiredApproval": {
       "source_license_refresh_policy": 17
     }
+  },
+  "matrixIntegrity": {
+    "expectedProviderTasks": 17,
+    "expectedManifestCounts": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "providerTasksVerified": true,
+    "manifestCountsVerified": true,
+    "allRowsBlocked": true,
+    "endpointAndLicenseUnselected": true,
+    "monthlyDataFileAbsent": true
   },
   "readiness": {
     "status": "blocked_source_policy_review",

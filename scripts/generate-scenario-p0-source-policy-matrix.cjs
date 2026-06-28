@@ -4,9 +4,18 @@ const path = require("node:path");
 const DRY_RUN_PATH = path.join("data", "processed", "scenario_p0_monthly_cache_dry_run.json");
 const MATRIX_CSV_PATH = path.join("data", "processed", "scenario_p0_source_policy_matrix.csv");
 const MATRIX_JSON_PATH = path.join("data", "processed", "scenario_p0_source_policy_matrix_summary.json");
+const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const MATRIX_VERSION = "scenario-p0-source-policy-matrix-v0.1";
+const MATRIX_VERSION = "scenario-p0-source-policy-matrix-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
+const EXPECTED_PROVIDER_TASKS = 17;
+const EXPECTED_MANIFEST_COUNTS = {
+  asset: 14,
+  benchmark: 2,
+  fx: 1,
+};
+const BLOCKED_STATUS = "blocked_source_policy_review";
+const REQUIRED_APPROVAL = "source_license_refresh_policy";
 
 const CSV_COLUMNS = [
   "manifestType",
@@ -54,6 +63,13 @@ function countBy(rows, field) {
   return sortObject(counts);
 }
 
+function assertCount(counts, key, expected, label) {
+  const actual = counts[key] ?? 0;
+  if (actual !== expected) {
+    fail(`${label} expected ${key}=${expected}, got ${actual}`);
+  }
+}
+
 function providerCandidateForTask(task) {
   if (task.manifestType === "benchmark" && task.market === "US") {
     return "SP500_TR_primary_or_SPY_adjusted_close_proxy";
@@ -83,8 +99,8 @@ function makeMatrixRows(dryRun) {
     licensePolicy: "not_reviewed",
     rawPayloadStorage: "hash_only_until_policy_approved",
     redistributionPolicy: "monthly_derived_returns_only_after_license_review",
-    requiredApproval: "source_license_refresh_policy",
-    status: "blocked_source_policy_review",
+    requiredApproval: REQUIRED_APPROVAL,
+    status: BLOCKED_STATUS,
     blocker: "provider_endpoint_and_license_policy_not_approved",
     sourceMetadataRequired: task.sourceMetadataRequired.join("|"),
   }));
@@ -99,10 +115,26 @@ function buildMatrix() {
     fail(`${DRY_RUN_PATH} not found`);
   }
   const dryRun = JSON.parse(fs.readFileSync(DRY_RUN_PATH, "utf8"));
-  if (!Array.isArray(dryRun.providerTasks) || dryRun.providerTasks.length !== 17) {
-    fail(`${DRY_RUN_PATH} must contain 17 providerTasks`);
+  if (!Array.isArray(dryRun.providerTasks) || dryRun.providerTasks.length !== EXPECTED_PROVIDER_TASKS) {
+    fail(`${DRY_RUN_PATH} must contain ${EXPECTED_PROVIDER_TASKS} providerTasks`);
   }
   const rows = makeMatrixRows(dryRun);
+  const manifestCounts = countBy(rows, "manifestType");
+  for (const [manifestType, expected] of Object.entries(EXPECTED_MANIFEST_COUNTS)) {
+    assertCount(manifestCounts, manifestType, expected, "source policy manifest counts");
+  }
+  if (rows.some((row) => row.status !== BLOCKED_STATUS)) {
+    fail(`${MATRIX_CSV_PATH} must keep every row blocked before source approval`);
+  }
+  if (rows.some((row) => row.endpointPolicy !== "not_selected" || row.licensePolicy !== "not_reviewed")) {
+    fail(`${MATRIX_CSV_PATH} must keep endpoint and license policy unselected before source approval`);
+  }
+  if (rows.some((row) => row.requiredApproval !== REQUIRED_APPROVAL)) {
+    fail(`${MATRIX_CSV_PATH} must require ${REQUIRED_APPROVAL} for every P0 source-policy row`);
+  }
+  if (fs.existsSync(MONTHLY_DATA_PATH)) {
+    fail(`${MONTHLY_DATA_PATH} exists before source policy matrix approval is complete`);
+  }
   return {
     csv: toCsv(rows),
     summary: stableJson({
@@ -123,10 +155,19 @@ function buildMatrix() {
         fxRows: rows.filter((row) => row.manifestType === "fx").length,
       },
       counts: {
-        byManifestType: countBy(rows, "manifestType"),
+        byManifestType: manifestCounts,
         byProviderCandidate: countBy(rows, "providerCandidate"),
         byStatus: countBy(rows, "status"),
         byRequiredApproval: countBy(rows, "requiredApproval"),
+      },
+      matrixIntegrity: {
+        expectedProviderTasks: EXPECTED_PROVIDER_TASKS,
+        expectedManifestCounts: EXPECTED_MANIFEST_COUNTS,
+        providerTasksVerified: true,
+        manifestCountsVerified: true,
+        allRowsBlocked: true,
+        endpointAndLicenseUnselected: true,
+        monthlyDataFileAbsent: true,
       },
       readiness: {
         status: "blocked_source_policy_review",

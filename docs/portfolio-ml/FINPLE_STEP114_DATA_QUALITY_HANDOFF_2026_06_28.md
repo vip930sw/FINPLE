@@ -738,9 +738,23 @@ monthlyDataFileAbsentBeforeApproval=true
 
 The `check:scenario-p0-writer-gate` script now also runs a dedicated Node test suite. Synthetic tests reject source-policy manifest drift, premature `scenario_monthly_returns.csv`, and stale committed writer-gate output. The committed state still keeps provider calls and monthly writes blocked, writes no monthly data, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2U Source Policy Matrix Integrity Follow-Up
+
+The source policy matrix generator now verifies the P0 matrix contract before downstream approval and writer gates can consume it:
+
+```text
+expectedProviderTasks=17
+expectedManifestCounts asset=14, benchmark=2, fx=1
+allRowsBlocked=true
+endpointAndLicenseUnselected=true
+monthlyDataFileAbsent=true
+```
+
+The `check:scenario-p0-source-policy` script now also runs a dedicated Node test suite. Synthetic tests reject provider-task count drift, manifest-count drift, premature `scenario_monthly_returns.csv`, and stale committed source-policy summaries. The committed state still keeps every source-policy row blocked, selects no endpoint, reviews no license policy, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2T, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2U, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 
