@@ -5,10 +5,15 @@ const INTAKE_TEMPLATE_PATH = path.join("data", "processed", "scenario_p0_approva
 const INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 const INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
 
-const VALIDATION_VERSION = "scenario-p0-approval-intake-validation-v0.1";
+const VALIDATION_VERSION = "scenario-p0-approval-intake-validation-v0.2";
 const AUDITED_AT = "2026-06-28T00:00:00Z";
 const ALLOWED_STATUSES = new Set(["pending_review", "ready_for_source_policy_review", "rejected"]);
 const READY_STATUS = "ready_for_source_policy_review";
+const APPROVED_DECISION_VALUES = {
+  licenseDecision: ["approved_internal_monthly_derived_return_cache"],
+  rawPayloadPolicy: ["approved_hash_or_raw_retention_policy"],
+  redistributionDecision: ["approved_no_raw_redistribution_monthly_derived_only"],
+};
 const REQUIRED_REVIEWER_FIELDS = [
   "selectedProvider",
   "selectedEndpoint",
@@ -117,8 +122,8 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-function isHttpUrl(value) {
-  return /^https?:\/\/\S+$/u.test(String(value ?? "").trim());
+function isHttpsUrl(value) {
+  return /^https:\/\/\S+$/u.test(String(value ?? "").trim());
 }
 
 function isIsoTimestamp(value) {
@@ -157,11 +162,18 @@ function validateRows(rows, summary) {
     if (missing.length > 0) {
       blockers.push(...missing.map((field) => `missing_${field}`));
     }
-    if (row.evidenceUrl && !isHttpUrl(row.evidenceUrl)) {
+    if (row.evidenceUrl && !isHttpsUrl(row.evidenceUrl)) {
       blockers.push("invalid_evidence_url");
     }
     if (row.reviewedAt && !isIsoTimestamp(row.reviewedAt)) {
       blockers.push("invalid_reviewed_at");
+    }
+    if (row.approvalStatusDraft === READY_STATUS) {
+      for (const [field, approvedValues] of Object.entries(APPROVED_DECISION_VALUES)) {
+        if (!approvedValues.includes(row[field])) {
+          blockers.push(`invalid_${field}`);
+        }
+      }
     }
 
     if (row.approvalStatusDraft === READY_STATUS && blockers.length > 0) {
@@ -195,6 +207,12 @@ function buildValidation() {
     sourceFiles: {
       approvalIntakeTemplate: INTAKE_TEMPLATE_PATH,
       approvalIntakeTemplateSummary: INTAKE_TEMPLATE_SUMMARY_PATH,
+    },
+    approvalPolicy: {
+      readyStatus: READY_STATUS,
+      requiredReviewerFields: REQUIRED_REVIEWER_FIELDS,
+      approvedDecisionValues: APPROVED_DECISION_VALUES,
+      evidenceUrlPolicy: "https_url_required",
     },
     outputFiles: {
       validation: INTAKE_VALIDATION_PATH,

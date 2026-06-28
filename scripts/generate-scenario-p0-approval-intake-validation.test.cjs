@@ -174,6 +174,29 @@ test("rejects ready intake rows with invalid evidence URL", () => {
   assert.match(result.stderr, /USD_KRW_fx_provider cannot be ready_for_source_policy_review: invalid_evidence_url/);
 });
 
+test("rejects ready intake rows with generic approval decision values", () => {
+  const workspace = makeWorkspace();
+  fillSyntheticReadyTemplate(workspace);
+  updateTemplate(workspace, (row) =>
+    row.providerCandidate === "SP500_TR_primary_or_SPY_adjusted_close_proxy"
+      ? {
+          ...row,
+          licenseDecision: "approved",
+          rawPayloadPolicy: "store_raw",
+          redistributionDecision: "ok",
+        }
+      : row,
+  );
+
+  const result = runValidation(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /SP500_TR_primary_or_SPY_adjusted_close_proxy cannot be ready_for_source_policy_review: invalid_licenseDecision\|invalid_rawPayloadPolicy\|invalid_redistributionDecision/,
+  );
+});
+
 test("rejects duplicate provider candidates", () => {
   const workspace = makeWorkspace();
   updateTemplate(workspace, (row) =>

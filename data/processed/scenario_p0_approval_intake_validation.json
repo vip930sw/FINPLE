@@ -1,9 +1,36 @@
 {
-  "validationVersion": "scenario-p0-approval-intake-validation-v0.1",
+  "validationVersion": "scenario-p0-approval-intake-validation-v0.2",
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
     "approvalIntakeTemplateSummary": "data\\processed\\scenario_p0_approval_intake_template_summary.json"
+  },
+  "approvalPolicy": {
+    "readyStatus": "ready_for_source_policy_review",
+    "requiredReviewerFields": [
+      "selectedProvider",
+      "selectedEndpoint",
+      "licenseDecision",
+      "rawPayloadPolicy",
+      "redistributionDecision",
+      "reviewOwner",
+      "decisionOwner",
+      "legalReviewer",
+      "reviewedAt",
+      "evidenceUrl"
+    ],
+    "approvedDecisionValues": {
+      "licenseDecision": [
+        "approved_internal_monthly_derived_return_cache"
+      ],
+      "rawPayloadPolicy": [
+        "approved_hash_or_raw_retention_policy"
+      ],
+      "redistributionDecision": [
+        "approved_no_raw_redistribution_monthly_derived_only"
+      ]
+    },
+    "evidenceUrlPolicy": "https_url_required"
   },
   "outputFiles": {
     "validation": "data\\processed\\scenario_p0_approval_intake_validation.json",

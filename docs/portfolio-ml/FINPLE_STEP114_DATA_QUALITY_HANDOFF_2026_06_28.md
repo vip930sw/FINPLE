@@ -599,6 +599,19 @@ bootstrapStillBlocked=true
 
 Synthetic tests show the preflight opens only when a temporary monthly CSV exists, the Bootstrap unlock preflight is ready, and all three runtime review flags are explicitly approved. It rejects a Bootstrap-ready report when the monthly CSV is missing. The committed state still does not implement the Scenario API, change Compare chart bands, run probability scenarios, or touch `calculatePortfolioResult()`.
 
+## Step 114-2K Approval Intake Evidence Hardening Follow-Up
+
+The approval intake validation now rejects `ready_for_source_policy_review` rows unless reviewer decisions use the explicit approved policy tokens and the evidence URL is HTTPS:
+
+```text
+licenseDecision=approved_internal_monthly_derived_return_cache
+rawPayloadPolicy=approved_hash_or_raw_retention_policy
+redistributionDecision=approved_no_raw_redistribution_monthly_derived_only
+evidenceUrlPolicy=https_url_required
+```
+
+This prevents a future reviewer row from opening the source-policy review gate with generic strings such as `approved`, `ok`, or an unsecured/non-URL evidence value. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.
