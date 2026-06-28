@@ -21,6 +21,7 @@ const PROCESSED_FILES = [
   "scenario_p0_approval_intake_template_summary.json",
   "scenario_p0_approval_intake_validation.json",
   "scenario_p0_real_approval_import_preflight.json",
+  "scenario_p0_source_policy_post_import_preflight.json",
   "scenario_p0_source_policy_sync_plan.json",
   "scenario_p0_source_policy_sync_preflight.json",
   "scenario_p0_provider_adapter_preflight.json",
@@ -82,6 +83,7 @@ test("reports 80 percent overall progress while real approvals and monthly data 
   assert.equal(progress.guardrails.safeToWriteMonthlyData, false);
   assert.equal(progress.guardrails.approvalIntakeValidationReady, false);
   assert.equal(progress.guardrails.realApprovalImportPreflightReady, false);
+  assert.equal(progress.guardrails.sourcePolicyPostImportPreflightReady, false);
   assert.equal(progress.guardrails.sourcePolicySyncPlanReady, false);
   assert.equal(progress.guardrails.sourcePolicySyncPreflightReady, false);
   assert.equal(progress.guardrails.providerAdapterPreflightReady, false);

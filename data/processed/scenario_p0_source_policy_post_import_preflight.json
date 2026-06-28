@@ -1,0 +1,58 @@
+{
+  "preflightVersion": "scenario-p0-source-policy-post-import-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "realApprovalImportPreflight": "data\\processed\\scenario_p0_real_approval_import_preflight.json",
+    "sourcePolicySyncPlan": "data\\processed\\scenario_p0_source_policy_sync_plan.json",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_p0_source_policy_post_import_preflight.json"
+  },
+  "checks": {
+    "totalSourcePolicyRows": 17,
+    "approvedSourcePolicyRows": 0,
+    "blockedSourcePolicyRows": 17,
+    "plannedSourcePolicyUpdates": 0,
+    "readyProviderGroups": 0,
+    "realApprovalImportReady": false,
+    "allSourcePolicyRowsApproved": false,
+    "approvedRowsMatchPlan": false,
+    "monthlyFileExists": false,
+    "safeToUseImportedSourcePolicy": false,
+    "blockers": [
+      "real_approval_import_preflight_not_ready",
+      "source_policy_sync_plan_provider_groups_not_ready",
+      "source_policy_rows_not_fully_approved",
+      "approved_source_policy_rows_do_not_match_sync_plan",
+      "approval_intake_not_fully_ready",
+      "approval_intake_has_pending_rows",
+      "approval_intake_validation_not_ready",
+      "source_policy_sync_plan_not_ready",
+      "source_policy_sync_preflight_not_ready",
+      "source_policy_sync_plan_not_complete",
+      "missing_selectedProvider",
+      "missing_selectedEndpoint",
+      "missing_licenseDecision",
+      "missing_rawPayloadPolicy",
+      "missing_redistributionDecision",
+      "missing_reviewOwner",
+      "missing_decisionOwner",
+      "missing_legalReviewer",
+      "missing_reviewedAt",
+      "missing_evidenceUrl",
+      "approval_intake_template_not_ready"
+    ]
+  },
+  "readiness": {
+    "status": "blocked_before_source_policy_post_import_validation",
+    "safeToUseImportedSourcePolicy": false,
+    "providerCallsAllowed": false,
+    "safeToImplementProviderAdapter": false,
+    "safeToWriteMonthlyData": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "complete_real_approval_import_and_source_policy_matrix_sync"
+  }
+}
