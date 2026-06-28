@@ -128,7 +128,7 @@ function fillSyntheticReadyWorkspace(workspace) {
   writeWorkspaceFile(workspace, "scenario_p0_approval_intake_validation.json", `${JSON.stringify(validation, null, 2)}\n`);
 }
 
-test("passes with current blocked source policy sync plan", () => {
+test("passes with current source policy sync plan", () => {
   const workspace = makeWorkspace();
   const result = runPlan(workspace);
 
@@ -136,15 +136,16 @@ test("passes with current blocked source policy sync plan", () => {
   assert.match(result.stdout, /scenario_p0_source_policy_sync_plan\.json/);
 });
 
-test("keeps current committed source policy sync plan blocked with no planned updates", () => {
+test("keeps current committed source policy sync plan ready for manual sync", () => {
   const workspace = makeWorkspace();
   const result = runPlan(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_source_policy_sync_plan.json"));
   assert.equal(plan.rowCounts.providerGroups, 5);
-  assert.equal(plan.rowCounts.readyProviderGroups, 0);
-  assert.equal(plan.rowCounts.plannedSourcePolicyUpdates, 0);
+  assert.equal(plan.rowCounts.readyProviderGroups, 5);
+  assert.equal(plan.rowCounts.plannedSourcePolicyUpdates, 17);
+  assert.equal(plan.readiness.syncPlanReady, true);
   assert.equal(plan.readiness.sourcePolicyMatrixWritten, false);
   assert.equal(plan.readiness.providerCallsAllowed, false);
   assert.equal(plan.readiness.monthlyDataFileWritten, false);

@@ -123,7 +123,7 @@ function makeSyncPlanReady(workspace) {
   });
 }
 
-test("passes with current blocked source policy sync preflight", () => {
+test("passes with current source policy sync preflight", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace);
 
@@ -131,7 +131,7 @@ test("passes with current blocked source policy sync preflight", () => {
   assert.match(result.stdout, /scenario_p0_source_policy_sync_preflight\.json/);
 });
 
-test("keeps current committed source policy sync preflight blocked", () => {
+test("keeps current committed source policy sync preflight ready for manual source policy sync", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
@@ -139,7 +139,8 @@ test("keeps current committed source policy sync preflight blocked", () => {
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
   assert.equal(preflight.checks.totalSourcePolicyRows, 17);
   assert.equal(preflight.checks.approvedSourcePolicyRows, 0);
-  assert.equal(preflight.checks.canSyncSourcePolicy, false);
+  assert.equal(preflight.checks.canSyncSourcePolicy, true);
+  assert.equal(preflight.readiness.status, "ready_for_manual_source_policy_sync");
   assert.equal(preflight.readiness.sourcePolicyMatrixWritten, false);
   assert.equal(preflight.readiness.providerCallsAllowed, false);
   assert.equal(preflight.readiness.monthlyDataFileWritten, false);
@@ -163,6 +164,7 @@ test("rejects approved source policy rows before sync plan is ready", () => {
   const workspace = makeWorkspace();
   mutateSyncPlan(workspace, (plan) => {
     plan.rowCounts.plannedSourcePolicyUpdates = 17;
+    plan.readiness.syncPlanReady = false;
   });
   mutateSourcePolicy(workspace, (row) =>
     row.providerCandidate === "USD_KRW_fx_provider" ? { ...row, ...APPROVED_RULES } : row,
@@ -191,7 +193,7 @@ test("rejects more approved source rows than the ready sync plan allows", () => 
 test("rejects stale committed source policy sync preflight", () => {
   const workspace = makeWorkspace();
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
-  preflight.checks.canSyncSourcePolicy = true;
+  preflight.checks.canSyncSourcePolicy = false;
   writeWorkspaceFile(workspace, PREFLIGHT, `${JSON.stringify(preflight, null, 2)}\n`);
 
   const result = runPreflight(workspace);

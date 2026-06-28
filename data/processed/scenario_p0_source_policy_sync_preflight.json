@@ -13,21 +13,18 @@
   "checks": {
     "totalSourcePolicyRows": 17,
     "approvedSourcePolicyRows": 0,
-    "plannedSourcePolicyUpdates": 0,
-    "syncPlanReady": false,
-    "canSyncSourcePolicy": false,
+    "plannedSourcePolicyUpdates": 17,
+    "syncPlanReady": true,
+    "canSyncSourcePolicy": true,
     "sourcePolicyMatrixWritten": false,
-    "blockers": [
-      "source_policy_sync_plan_not_ready",
-      "source_policy_sync_plan_not_complete"
-    ]
+    "blockers": []
   },
   "readiness": {
-    "status": "blocked_before_source_policy_sync",
+    "status": "ready_for_manual_source_policy_sync",
     "sourcePolicyMatrixWritten": false,
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "complete_ready_approval_intake_and_sync_plan_before_source_policy_write"
+    "nextAllowedStep": "manually_sync_source_policy_matrix_then_run_approval_readiness"
   }
 }

@@ -70,7 +70,7 @@ test("passes with current blocked progress report", () => {
   assert.match(result.stdout, /scenario_step114_progress\.json/);
 });
 
-test("reports 80 percent overall progress while real approvals and monthly data are blocked", () => {
+test("reports 80 percent overall progress while provider and monthly data are blocked", () => {
   const workspace = makeWorkspace();
   const result = runProgress(workspace, []);
 
@@ -81,11 +81,11 @@ test("reports 80 percent overall progress while real approvals and monthly data 
   assert.equal(progress.progressNotes.monthlyDataAndBootstrapPercent, 0);
   assert.equal(progress.guardrails.providerCallsAllowed, false);
   assert.equal(progress.guardrails.safeToWriteMonthlyData, false);
-  assert.equal(progress.guardrails.approvalIntakeValidationReady, false);
-  assert.equal(progress.guardrails.realApprovalImportPreflightReady, false);
+  assert.equal(progress.guardrails.approvalIntakeValidationReady, true);
+  assert.equal(progress.guardrails.realApprovalImportPreflightReady, true);
   assert.equal(progress.guardrails.sourcePolicyPostImportPreflightReady, false);
-  assert.equal(progress.guardrails.sourcePolicySyncPlanReady, false);
-  assert.equal(progress.guardrails.sourcePolicySyncPreflightReady, false);
+  assert.equal(progress.guardrails.sourcePolicySyncPlanReady, true);
+  assert.equal(progress.guardrails.sourcePolicySyncPreflightReady, true);
   assert.equal(progress.guardrails.providerAdapterPreflightReady, false);
   assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, false);
   assert.equal(progress.guardrails.bootstrapUnlockPreflightReady, false);

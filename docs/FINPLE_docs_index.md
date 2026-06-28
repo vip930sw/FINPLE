@@ -66,6 +66,14 @@ P0 경쟁력·지표·데이터·기술부채
 
 - [시나리오 분석 Codex 인수인계](./portfolio-ml/FINPLE_SCENARIO_ANALYSIS_CODEX_HANDOFF.md)
 
+## AI Trading Lab·Signal 후속 계획
+
+- [AI Trading Lab 및 Signal 개발 로드맵](./trading/FINPLE_AI_TRADING_SIGNAL_ROADMAP_2026_06_27.md)
+  - Step 114 완료 후 착수할 자기계좌 AI 자율운용
+  - KIS 해외주식·레버리지 ETF·달러·환율 운용
+  - Trading Worker·DB·위험엔진 분리
+  - FINPLE Signal·유사투자자문업·장기 로보어드바이저 확장 기준
+
 ## 인증·결제·MY PAGE
 
 - [인증 운영 체크리스트](./auth-operations-checklist.md)

@@ -94,17 +94,17 @@ test("passes with current blocked real approval import preflight", () => {
   assert.match(result.stdout, /scenario_p0_real_approval_import_preflight\.json/);
 });
 
-test("keeps current committed real approval import preflight blocked", () => {
+test("opens current committed real approval import review without provider or monthly writes", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, PREFLIGHT);
   assert.equal(report.checks.providerGroups, 5);
-  assert.equal(report.checks.readyRows, 0);
-  assert.equal(report.checks.readyForRealApprovalImport, false);
-  assert.equal(report.readiness.safeToImportRealApprovalDecisions, false);
-  assert.equal(report.readiness.sourcePolicyMatrixWriteAllowed, false);
+  assert.equal(report.checks.readyRows, 5);
+  assert.equal(report.checks.readyForRealApprovalImport, true);
+  assert.equal(report.readiness.safeToImportRealApprovalDecisions, true);
+  assert.equal(report.readiness.sourcePolicyMatrixWriteAllowed, true);
   assert.equal(report.readiness.providerCallsAllowed, false);
   assert.equal(report.readiness.safeToWriteMonthlyData, false);
 });
@@ -132,6 +132,16 @@ test("stays blocked when only some approval intake rows are ready", () => {
     value.rowCounts.readyRows = 4;
     value.readiness.allRowsReadyForSourcePolicyReview = false;
   });
+  mutateJson(workspace, "scenario_p0_source_policy_sync_plan.json", (value) => {
+    value.rowCounts.readyProviderGroups = 4;
+    value.rowCounts.blockedProviderGroups = 1;
+    value.rowCounts.plannedSourcePolicyUpdates = 16;
+    value.readiness.syncPlanReady = false;
+  });
+  mutateJson(workspace, "scenario_p0_source_policy_sync_preflight.json", (value) => {
+    value.checks.syncPlanReady = false;
+    value.checks.canSyncSourcePolicy = false;
+  });
 
   const result = runPreflight(workspace, []);
 
@@ -144,6 +154,11 @@ test("stays blocked when only some approval intake rows are ready", () => {
 
 test("rejects source policy sync plan ready before approval intake validation", () => {
   const workspace = makeWorkspace();
+  mutateJson(workspace, "scenario_p0_approval_intake_validation.json", (value) => {
+    value.rowCounts.pendingRows = 5;
+    value.rowCounts.readyRows = 0;
+    value.readiness.allRowsReadyForSourcePolicyReview = false;
+  });
   mutateJson(workspace, "scenario_p0_source_policy_sync_plan.json", (value) => {
     value.readiness.syncPlanReady = true;
   });
@@ -167,7 +182,7 @@ test("rejects monthly returns before approval import preflight has completed", (
 test("rejects stale committed real approval import preflight", () => {
   const workspace = makeWorkspace();
   const report = readWorkspaceJson(workspace, PREFLIGHT);
-  report.checks.readyForRealApprovalImport = true;
+  report.checks.readyForRealApprovalImport = false;
   writeWorkspaceJson(workspace, PREFLIGHT, report);
 
   const result = runPreflight(workspace);

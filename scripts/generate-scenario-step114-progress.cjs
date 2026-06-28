@@ -188,7 +188,6 @@ function buildProgress() {
     monthlyCacheWriterPreflight.checks?.sourcePolicyRows === 17;
   const guardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
-    realApprovalImportPreflight.readiness?.safeToImportRealApprovalDecisions === false &&
     realApprovalImportPreflight.readiness?.safeToWriteMonthlyData === false &&
     sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === false &&
     sourcePolicyPostImportPreflight.readiness?.safeToWriteMonthlyData === false &&

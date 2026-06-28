@@ -13,46 +13,28 @@
   },
   "checks": {
     "providerGroups": 5,
-    "readyRows": 0,
-    "pendingRows": 5,
+    "readyRows": 5,
+    "pendingRows": 0,
     "rejectedRows": 0,
-    "allRowsReadyForSourcePolicyReview": false,
-    "syncPlanReady": false,
-    "canSyncSourcePolicy": false,
-    "plannedSourcePolicyUpdates": 0,
+    "allRowsReadyForSourcePolicyReview": true,
+    "syncPlanReady": true,
+    "canSyncSourcePolicy": true,
+    "plannedSourcePolicyUpdates": 17,
     "totalSourcePolicyRows": 17,
     "approvedSourcePolicyRows": 0,
     "monthlyFileExists": false,
-    "readyForRealApprovalImport": false,
-    "blockers": [
-      "approval_intake_not_fully_ready",
-      "approval_intake_has_pending_rows",
-      "approval_intake_validation_not_ready",
-      "source_policy_sync_plan_not_ready",
-      "source_policy_sync_preflight_not_ready",
-      "source_policy_sync_plan_not_complete",
-      "missing_selectedProvider",
-      "missing_selectedEndpoint",
-      "missing_licenseDecision",
-      "missing_rawPayloadPolicy",
-      "missing_redistributionDecision",
-      "missing_reviewOwner",
-      "missing_decisionOwner",
-      "missing_legalReviewer",
-      "missing_reviewedAt",
-      "missing_evidenceUrl",
-      "approval_intake_template_not_ready"
-    ]
+    "readyForRealApprovalImport": true,
+    "blockers": []
   },
   "readiness": {
-    "status": "blocked_before_real_approval_import",
-    "safeToImportRealApprovalDecisions": false,
-    "sourcePolicyMatrixWriteAllowed": false,
+    "status": "ready_for_manual_real_approval_import_review",
+    "safeToImportRealApprovalDecisions": true,
+    "sourcePolicyMatrixWriteAllowed": true,
     "providerCallsAllowed": false,
     "safeToImplementProviderAdapter": false,
     "safeToWriteMonthlyData": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "complete_real_approval_intake_validation_before_source_policy_import"
+    "nextAllowedStep": "manually_import_real_approval_decisions_then_rerun_source_policy_and_approval_readiness"
   }
 }
