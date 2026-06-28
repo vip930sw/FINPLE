@@ -49,7 +49,6 @@ function fullCredentialEnv() {
   return {
     FINPLE_SCENARIO_PROVIDER_MODE: "live",
     FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS: "1",
-    ALPHA_VANTAGE_API_KEY: "test-alpha-key",
     FRED_API_KEY: "test-fred-key",
     KIS_APP_KEY: "test-kis-app-key",
     KIS_APP_SECRET: "test-kis-app-secret",
@@ -73,20 +72,23 @@ test("keeps current runtime provider calls blocked without credentials and expli
   assert.equal(report.checks.providerCredentialsReady, false);
   assert.equal(report.checks.optInReady, false);
   assert.equal(report.checks.runtimeProviderCallsAllowed, false);
-  assert.match(report.checks.blockers.join("|"), /missing_env_ALPHA_VANTAGE_API_KEY/);
+  assert.doesNotMatch(report.checks.blockers.join("|"), /ALPHA_VANTAGE_API_KEY/);
+  assert.match(report.checks.blockers.join("|"), /missing_env_KIS_APP_KEY/);
   assert.match(report.checks.blockers.join("|"), /missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE/);
 });
 
-test("opens only when credentials and explicit live provider opt-in are present", () => {
+test("keeps KIS replacement blocked until overseas monthly capabilities are verified", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, [], fullCredentialEnv());
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, PREFLIGHT);
   assert.equal(report.checks.providerCredentialsReady, true);
+  assert.equal(report.checks.providerCapabilityReady, false);
   assert.equal(report.checks.optInReady, true);
-  assert.equal(report.checks.runtimeProviderCallsAllowed, true);
-  assert.equal(report.checks.blockers.length, 0);
+  assert.equal(report.checks.runtimeProviderCallsAllowed, false);
+  assert.match(report.checks.blockers.join("|"), /runtime_provider_capability_not_verified/);
+  assert.match(report.checks.blockers.join("|"), /kis_overseas_monthly_adjusted_dividend_split_capability_not_verified/);
 });
 
 test("stays blocked when one provider credential is missing", () => {

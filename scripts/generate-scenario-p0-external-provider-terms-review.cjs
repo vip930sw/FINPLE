@@ -40,10 +40,10 @@ const CSV_COLUMNS = [
 
 const TERMS_REVIEW = {
   US_price_total_return_dividend_provider: {
-    namedProviderCandidate: "Alpha Vantage",
-    officialDocsUrl: "https://www.alphavantage.co/documentation/",
-    officialTermsUrl: "https://www.alphavantage.co/terms_of_service/",
-    candidateUse: "US ETF monthly adjusted price, dividend, and split source candidate",
+    namedProviderCandidate: "Korea Investment Open API overseas US ETF data",
+    officialDocsUrl: "https://apiportal.koreainvestment.com/",
+    officialTermsUrl: "https://apiportal.koreainvestment.com/",
+    candidateUse: "US ETF monthly adjusted price, dividend, and split source candidate via KIS overseas endpoints",
     commercialTermsStatus: "blocked_pending_commercial_license_confirmation",
     redistributionStatus: "blocked_pending_derived_cache_redistribution_review",
     rawPayloadStorageStatus: "pending_hash_only_or_retention_policy",
@@ -53,10 +53,10 @@ const TERMS_REVIEW = {
     nextAction: "confirm_paid_or_written_commercial_terms_before_adapter",
   },
   SP500_TR_primary_or_SPY_adjusted_close_proxy: {
-    namedProviderCandidate: "Alpha Vantage index API or SPY adjusted-close proxy",
-    officialDocsUrl: "https://www.alphavantage.co/documentation/",
-    officialTermsUrl: "https://www.alphavantage.co/terms_of_service/",
-    candidateUse: "S&P 500 total-return/index candidate or SPY adjusted-close proxy candidate",
+    namedProviderCandidate: "Korea Investment Open API overseas SPY adjusted-close proxy",
+    officialDocsUrl: "https://apiportal.koreainvestment.com/",
+    officialTermsUrl: "https://apiportal.koreainvestment.com/",
+    candidateUse: "S&P 500 total-return/index candidate or SPY adjusted-close proxy candidate via KIS overseas endpoints",
     commercialTermsStatus: "blocked_pending_premium_index_and_commercial_terms",
     redistributionStatus: "blocked_pending_index_or_proxy_labeling_review",
     rawPayloadStorageStatus: "pending_hash_only_or_retention_policy",

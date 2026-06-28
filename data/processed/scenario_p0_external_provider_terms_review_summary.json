@@ -19,9 +19,9 @@
     },
     {
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
-      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
-      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
-      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
+      "namedProviderCandidate": "Korea Investment Open API overseas SPY adjusted-close proxy",
+      "officialDocsUrl": "https://apiportal.koreainvestment.com/",
+      "officialTermsUrl": "https://apiportal.koreainvestment.com/"
     },
     {
       "providerCandidate": "USD_KRW_fx_provider",
@@ -31,9 +31,9 @@
     },
     {
       "providerCandidate": "US_price_total_return_dividend_provider",
-      "namedProviderCandidate": "Alpha Vantage",
-      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
-      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
+      "namedProviderCandidate": "Korea Investment Open API overseas US ETF data",
+      "officialDocsUrl": "https://apiportal.koreainvestment.com/",
+      "officialTermsUrl": "https://apiportal.koreainvestment.com/"
     }
   ],
   "outputFiles": {

@@ -72,7 +72,7 @@
     },
     {
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
-      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "namedProviderCandidate": "Korea Investment Open API overseas SPY adjusted-close proxy",
       "approvalStatusDraft": "ready_for_source_policy_review",
       "missingReviewerFields": [],
       "blockers": [],
@@ -80,7 +80,7 @@
     },
     {
       "providerCandidate": "US_price_total_return_dividend_provider",
-      "namedProviderCandidate": "Alpha Vantage",
+      "namedProviderCandidate": "Korea Investment Open API overseas US ETF data",
       "approvalStatusDraft": "ready_for_source_policy_review",
       "missingReviewerFields": [],
       "blockers": [],

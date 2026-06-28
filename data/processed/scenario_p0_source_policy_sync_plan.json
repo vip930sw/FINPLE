@@ -55,14 +55,14 @@
     },
     {
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
-      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "namedProviderCandidate": "Korea Investment Open API overseas SPY adjusted-close proxy",
       "sourcePolicyRows": 1,
       "readyForSourcePolicySync": true,
       "plannedSourcePolicyUpdates": 1,
-      "selectedProvider": "Alpha Vantage SPY adjusted-close proxy",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=SPY&apikey=REDACTED",
+      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
       "reviewedAt": "2026-06-28T10:00:00Z",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info",
       "blockers": []
     },
     {
@@ -79,14 +79,14 @@
     },
     {
       "providerCandidate": "US_price_total_return_dividend_provider",
-      "namedProviderCandidate": "Alpha Vantage",
+      "namedProviderCandidate": "Korea Investment Open API overseas US ETF data",
       "sourcePolicyRows": 8,
       "readyForSourcePolicySync": true,
       "plannedSourcePolicyUpdates": 8,
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
       "reviewedAt": "2026-06-28T10:00:00Z",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info",
       "blockers": []
     }
   ],
@@ -117,9 +117,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage SPY adjusted-close proxy",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=SPY&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "fx",
@@ -237,9 +237,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -252,9 +252,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -267,9 +267,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -282,9 +282,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -297,9 +297,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -312,9 +312,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -327,9 +327,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     },
     {
       "manifestType": "asset",
@@ -342,9 +342,9 @@
       "proposedLicensePolicy": "approved_internal_monthly_derived_return_cache",
       "proposedRawPayloadStorage": "approved_hash_or_raw_retention_policy",
       "proposedRedistributionPolicy": "approved_no_raw_redistribution_monthly_derived_only",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "evidenceUrl": "https://www.alphavantage.co/documentation/"
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://apiportal.koreainvestment.com/provider-info"
     }
   ]
 }

@@ -24,12 +24,16 @@ const REQUIRED_PROVIDER_GROUPS = {
     requiredEnvVars: ["KIS_APP_KEY", "KIS_APP_SECRET"],
   },
   SP500_TR_primary_or_SPY_adjusted_close_proxy: {
-    providerKind: "alpha_vantage",
-    requiredEnvVars: ["ALPHA_VANTAGE_API_KEY"],
+    providerKind: "korea_investment_open_api",
+    requiredEnvVars: ["KIS_APP_KEY", "KIS_APP_SECRET"],
+    capabilityVerified: false,
+    capabilityBlocker: "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
   },
   US_price_total_return_dividend_provider: {
-    providerKind: "alpha_vantage",
-    requiredEnvVars: ["ALPHA_VANTAGE_API_KEY"],
+    providerKind: "korea_investment_open_api",
+    requiredEnvVars: ["KIS_APP_KEY", "KIS_APP_SECRET"],
+    capabilityVerified: false,
+    capabilityBlocker: "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
   },
   USD_KRW_fx_provider: {
     providerKind: "fred",
@@ -140,6 +144,8 @@ function buildPreflight(env = process.env) {
     .map((row) => {
       const requirement = REQUIRED_PROVIDER_GROUPS[row.providerCandidate];
       const missingEnvVars = requirement.requiredEnvVars.filter((name) => !hasValue(name, env));
+      const capabilityVerified = requirement.capabilityVerified !== false;
+      const credentialsPresent = missingEnvVars.length === 0;
       return {
         providerCandidate: row.providerCandidate,
         selectedProvider: row.selectedProvider,
@@ -147,16 +153,26 @@ function buildPreflight(env = process.env) {
         providerKind: requirement.providerKind,
         requiredEnvVars: requirement.requiredEnvVars,
         missingEnvVars,
-        readyForRuntimeProviderCalls: missingEnvVars.length === 0,
+        credentialsPresent,
+        capabilityVerified,
+        capabilityBlocker: capabilityVerified ? "" : requirement.capabilityBlocker,
+        readyForRuntimeProviderCalls: credentialsPresent && capabilityVerified,
       };
     });
 
   const approvalReady = approvalReadiness.readiness?.providerCallsAllowed === true;
   const adapterReady = providerAdapterPreflight.readiness?.providerCallsAllowed === true;
   const writerReady = monthlyCacheWriterPreflight.readiness?.providerCallsAllowed === true;
-  const providerCredentialsReady = providerGroups.length === 5 && providerGroups.every((row) => row.readyForRuntimeProviderCalls);
+  const providerCredentialsReady = providerGroups.length === 5 && providerGroups.every((row) => row.credentialsPresent);
+  const providerCapabilityReady = providerGroups.length === 5 && providerGroups.every((row) => row.capabilityVerified);
   const runtimeProviderCallsAllowed =
-    approvalReady && adapterReady && writerReady && providerCredentialsReady && optInReady && !monthlyFileExists;
+    approvalReady &&
+    adapterReady &&
+    writerReady &&
+    providerCredentialsReady &&
+    providerCapabilityReady &&
+    optInReady &&
+    !monthlyFileExists;
   const blockers = [
     ...new Set([
       ...(approvalReady ? [] : ["approval_readiness_provider_calls_not_allowed"]),
@@ -164,9 +180,11 @@ function buildPreflight(env = process.env) {
       ...(writerReady ? [] : ["monthly_cache_writer_preflight_not_ready"]),
       ...(providerGroups.length === 5 ? [] : ["provider_group_count_mismatch"]),
       ...(providerCredentialsReady ? [] : ["runtime_provider_credentials_missing"]),
+      ...(providerCapabilityReady ? [] : ["runtime_provider_capability_not_verified"]),
       ...(optInReady ? [] : ["runtime_provider_calls_not_explicitly_enabled"]),
       ...(monthlyFileExists ? ["scenario_monthly_returns_csv_already_exists"] : []),
       ...providerGroups.flatMap((row) => row.missingEnvVars.map((name) => `missing_env_${name}`)),
+      ...providerGroups.filter((row) => row.capabilityBlocker).map((row) => row.capabilityBlocker),
       ...optInRows.filter((row) => !row.matchesExpectedValue).map((row) => `missing_or_invalid_env_${row.name}`),
     ]),
   ];
@@ -190,6 +208,7 @@ function buildPreflight(env = process.env) {
       writerReady,
       providerGroups: providerGroups.length,
       providerCredentialsReady,
+      providerCapabilityReady,
       optInReady,
       monthlyFileExists,
       runtimeProviderCallsAllowed,

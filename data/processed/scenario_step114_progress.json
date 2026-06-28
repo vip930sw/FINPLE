@@ -125,11 +125,13 @@
         "providerRuntimePreflightReady": false,
         "providerRuntimeBlockers": [
           "runtime_provider_credentials_missing",
+          "runtime_provider_capability_not_verified",
           "runtime_provider_calls_not_explicitly_enabled",
           "missing_env_KIS_APP_KEY",
           "missing_env_KIS_APP_SECRET",
-          "missing_env_ALPHA_VANTAGE_API_KEY",
           "missing_env_FRED_API_KEY",
+          "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+          "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
           "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
           "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
         ],

@@ -17,16 +17,19 @@
     "writerReady": true,
     "providerGroups": 5,
     "providerCredentialsReady": false,
+    "providerCapabilityReady": false,
     "optInReady": false,
     "monthlyFileExists": false,
     "runtimeProviderCallsAllowed": false,
     "blockers": [
       "runtime_provider_credentials_missing",
+      "runtime_provider_capability_not_verified",
       "runtime_provider_calls_not_explicitly_enabled",
       "missing_env_KIS_APP_KEY",
       "missing_env_KIS_APP_SECRET",
-      "missing_env_ALPHA_VANTAGE_API_KEY",
       "missing_env_FRED_API_KEY",
+      "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
+      "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
       "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
       "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
     ]
@@ -65,6 +68,9 @@
         "KIS_APP_KEY",
         "KIS_APP_SECRET"
       ],
+      "credentialsPresent": false,
+      "capabilityVerified": true,
+      "capabilityBlocker": "",
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -80,32 +86,45 @@
         "KIS_APP_KEY",
         "KIS_APP_SECRET"
       ],
+      "credentialsPresent": false,
+      "capabilityVerified": true,
+      "capabilityBlocker": "",
       "readyForRuntimeProviderCalls": false
     },
     {
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
-      "selectedProvider": "Alpha Vantage SPY adjusted-close proxy",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=SPY&apikey=REDACTED",
-      "providerKind": "alpha_vantage",
+      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "providerKind": "korea_investment_open_api",
       "requiredEnvVars": [
-        "ALPHA_VANTAGE_API_KEY"
+        "KIS_APP_KEY",
+        "KIS_APP_SECRET"
       ],
       "missingEnvVars": [
-        "ALPHA_VANTAGE_API_KEY"
+        "KIS_APP_KEY",
+        "KIS_APP_SECRET"
       ],
+      "credentialsPresent": false,
+      "capabilityVerified": false,
+      "capabilityBlocker": "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
       "readyForRuntimeProviderCalls": false
     },
     {
       "providerCandidate": "US_price_total_return_dividend_provider",
-      "selectedProvider": "Alpha Vantage",
-      "selectedEndpoint": "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol={symbol}&apikey=REDACTED",
-      "providerKind": "alpha_vantage",
+      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "providerKind": "korea_investment_open_api",
       "requiredEnvVars": [
-        "ALPHA_VANTAGE_API_KEY"
+        "KIS_APP_KEY",
+        "KIS_APP_SECRET"
       ],
       "missingEnvVars": [
-        "ALPHA_VANTAGE_API_KEY"
+        "KIS_APP_KEY",
+        "KIS_APP_SECRET"
       ],
+      "credentialsPresent": false,
+      "capabilityVerified": false,
+      "capabilityBlocker": "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -119,6 +138,9 @@
       "missingEnvVars": [
         "FRED_API_KEY"
       ],
+      "credentialsPresent": false,
+      "capabilityVerified": true,
+      "capabilityBlocker": "",
       "readyForRuntimeProviderCalls": false
     }
   ],
