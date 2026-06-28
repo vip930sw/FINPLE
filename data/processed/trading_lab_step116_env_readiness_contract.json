@@ -1,0 +1,200 @@
+{
+  "contractVersion": "trading-lab-step116-env-readiness-contract-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "step": "Step 116-1G",
+  "scope": "trading_env_readiness_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "shadowContract": "data\\processed\\trading_lab_step116_shadow_mode_contract.json",
+    "orderAdapterDesignReview": "data\\processed\\trading_lab_step116_kis_order_adapter_design_review.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_env_readiness_contract.json"
+  },
+  "envGroups": {
+    "control": [
+      "FINPLE_TRADING_MODE",
+      "FINPLE_TRADING_KILL_SWITCH",
+      "FINPLE_TRADING_ALLOWED_SYMBOLS"
+    ],
+    "readOnlyTrading": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL"
+    ],
+    "orderCapableTrading": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY"
+    ],
+    "webDataProxy": [
+      "KIS_APP_KEY",
+      "KIS_APP_SECRET",
+      "KIS_BASE_URL"
+    ],
+    "scenarioProvider": [
+      "FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS",
+      "FINPLE_SCENARIO_PROVIDER_MODE",
+      "FRED_API_KEY"
+    ]
+  },
+  "currentProcessPresence": {
+    "FINPLE_TRADING_MODE": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_TRADING_KILL_SWITCH": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_TRADING_ALLOWED_SYMBOLS": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_TRADING_APP_KEY": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_TRADING_APP_SECRET": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_TRADING_ACCOUNT_ID": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_TRADING_BASE_URL": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_APP_KEY": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_APP_SECRET": {
+      "present": false,
+      "valueStored": false
+    },
+    "KIS_BASE_URL": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS": {
+      "present": false,
+      "valueStored": false
+    },
+    "FINPLE_SCENARIO_PROVIDER_MODE": {
+      "present": false,
+      "valueStored": false
+    },
+    "FRED_API_KEY": {
+      "present": false,
+      "valueStored": false
+    }
+  },
+  "currentState": {
+    "contractOnly": true,
+    "productionSecretsRequiredNow": false,
+    "valuesStoredInContract": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "adapterImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "futureRules": {
+    "requiredBeforeShadowReadOnlyRuntime": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL"
+    ],
+    "requiredBeforeLiveGuardedOrderAdapter": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY"
+    ],
+    "forbiddenCredentialReuse": [
+      {
+        "webEnv": "KIS_APP_KEY",
+        "tradingEnv": "KIS_TRADING_APP_KEY",
+        "rule": "do_not_reuse_web_data_proxy_credentials_as_order_capable_trading_credentials"
+      },
+      {
+        "webEnv": "KIS_APP_SECRET",
+        "tradingEnv": "KIS_TRADING_APP_SECRET",
+        "rule": "do_not_reuse_web_data_proxy_credentials_as_order_capable_trading_credentials"
+      }
+    ],
+    "rotationAndLoggingRules": [
+      "never commit secret values",
+      "never log secret values or full account numbers",
+      "use separately named order-capable credentials",
+      "record manual approval metadata before live_guarded order adapter implementation"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "currentStepRequiresNoProductionSecrets": true,
+    "separateTradingCredentialNamesReady": true,
+    "readOnlyRuntimeStillBlocked": true,
+    "orderAdapterStillBlocked": true,
+    "architectureDocMentionsTradingEnv": true,
+    "valuesStoredInContract": false,
+    "readOnlyEnvConfiguredInCurrentProcess": false,
+    "orderCapableEnvConfiguredInCurrentProcess": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "adapterImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "evidence": {
+    "readOnlyMissingInCurrentProcess": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL"
+    ],
+    "orderCapableMissingInCurrentProcess": [
+      "KIS_TRADING_APP_KEY",
+      "KIS_TRADING_APP_SECRET",
+      "KIS_TRADING_ACCOUNT_ID",
+      "KIS_TRADING_BASE_URL",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT",
+      "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY"
+    ],
+    "scenarioProviderEnvPresentInCurrentProcess": []
+  },
+  "readiness": {
+    "status": "contract_ready_runtime_env_not_required_yet",
+    "readyForCurrentStep": true,
+    "readyForShadowReadOnlyRuntimeInCurrentProcess": false,
+    "readyForLiveGuardedOrderAdapterInCurrentProcess": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "adapterImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "blockers": []
+  }
+}

@@ -422,6 +422,30 @@ Current state remains blocked:
 
 The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
 
+## Step 116-1G Trading Environment Readiness Contract
+
+The first trading environment readiness contract is:
+
+```text
+data/processed/trading_lab_step116_env_readiness_contract.json
+scripts/generate-trading-env-readiness-contract.cjs
+scripts/generate-trading-env-readiness-contract.test.cjs
+npm.cmd run check:trading-env-readiness
+```
+
+This is an environment-name and readiness contract, not a secret loader. It records the env names required for future shadow read-only runtime and future live-guarded order adapter work while keeping the current step secret-free.
+
+Current state remains:
+
+- `productionSecretsRequiredNow=false`
+- `valuesStoredInContract=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `adapterImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+
+Future shadow read-only runtime requires `KIS_TRADING_APP_KEY`, `KIS_TRADING_APP_SECRET`, `KIS_TRADING_ACCOUNT_ID`, and `KIS_TRADING_BASE_URL`. Future live-guarded order adapter work additionally requires manual order-permission approval metadata such as `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT` and `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
