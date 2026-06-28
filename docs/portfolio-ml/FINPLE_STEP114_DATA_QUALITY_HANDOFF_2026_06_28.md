@@ -766,9 +766,13 @@ monthlyDataFileAbsent=true
 
 The `check:scenario-p0-dry-run` script now also runs a dedicated Node test suite. Synthetic tests reject manifest-count drift, premature `scenario_monthly_returns.csv`, and stale committed dry-run output. The committed state still performs no provider calls, writes no monthly data, requires source metadata for every future provider task, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2W Real Approval Input Guide Follow-Up
+
+Added `docs/portfolio-ml/FINPLE_STEP114_REAL_APPROVAL_INPUT_GUIDE_2026_06_28.md` to make the human approval step explicit. The guide explains who must approve, which five provider-group rows must be filled, the exact validator tokens and field formats, the safe approval/import sequence, and the stop conditions that still block provider adapters, provider calls, monthly data writes, Bootstrap, and runtime unlock.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2V, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2W, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 
