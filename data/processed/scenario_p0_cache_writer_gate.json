@@ -1,5 +1,5 @@
 {
-  "gateVersion": "scenario-p0-cache-writer-gate-v0.1",
+  "gateVersion": "scenario-p0-cache-writer-gate-v0.2",
   "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
     "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
@@ -37,6 +37,17 @@
       "US_price_total_return_dividend_provider": 8,
       "USD_KRW_fx_provider": 1
     }
+  },
+  "gateIntegrity": {
+    "expectedSourcePolicyRows": 17,
+    "expectedManifestCounts": {
+      "asset": 14,
+      "benchmark": 2,
+      "fx": 1
+    },
+    "sourcePolicyRowsVerified": true,
+    "manifestCountsVerified": true,
+    "monthlyDataFileAbsentBeforeApproval": true
   },
   "blockedRows": [
     {

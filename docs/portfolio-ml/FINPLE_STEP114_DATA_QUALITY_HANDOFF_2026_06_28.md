@@ -722,9 +722,25 @@ monthlyDataFileAbsent=true
 
 The `check:scenario-p0-owner-legal` script now also runs a dedicated Node test suite. Synthetic tests reject provider candidate set drift, terms approval before owner/legal packet review, premature `scenario_monthly_returns.csv`, and stale committed owner/legal summaries. The committed state still has no owner/legal reviewer, no evidence URL, no adapter approval, no monthly-write approval, no provider calls, and no monthly data.
 
+## Step 114-2T P0 Cache Writer Gate Integrity Follow-Up
+
+The P0 cache writer gate now verifies the source-policy row and manifest contract before it can represent monthly-cache write readiness:
+
+```text
+expectedSourcePolicyRows=17
+expectedManifestCounts asset=14, benchmark=2, fx=1
+approvedRows=0
+blockedRows=17
+canWriteMonthlyData=false
+providerCallsAllowed=false
+monthlyDataFileAbsentBeforeApproval=true
+```
+
+The `check:scenario-p0-writer-gate` script now also runs a dedicated Node test suite. Synthetic tests reject source-policy manifest drift, premature `scenario_monthly_returns.csv`, and stale committed writer-gate output. The committed state still keeps provider calls and monthly writes blocked, writes no monthly data, and keeps Bootstrap/runtime blocked.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2S, the remaining blocker is a real reviewer-owned approval input step.
+The next implementation step is still not data fetching. After Step 114-2T, the remaining blocker is a real reviewer-owned approval input step.
 
 There are no safe production implementation steps left before reviewer input. The remaining work is four real-data/review phases:
 

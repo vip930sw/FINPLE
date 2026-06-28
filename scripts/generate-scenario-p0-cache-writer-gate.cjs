@@ -6,9 +6,15 @@ const SOURCE_POLICY_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_s
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
 const MONTHLY_DATA_TARGET = path.join("data", "processed", "scenario_monthly_returns.csv");
 
-const GATE_VERSION = "scenario-p0-cache-writer-gate-v0.1";
+const GATE_VERSION = "scenario-p0-cache-writer-gate-v0.2";
 const AUDITED_AT = "2026-06-27T00:00:00Z";
 const APPROVED_STATUS = "approved_source_policy";
+const EXPECTED_SOURCE_POLICY_ROWS = 17;
+const EXPECTED_MANIFEST_COUNTS = {
+  asset: 14,
+  benchmark: 2,
+  fx: 1,
+};
 
 function fail(message) {
   throw new Error(message);
@@ -45,6 +51,13 @@ function countBy(rows, field) {
   return sortObject(counts);
 }
 
+function assertCount(counts, key, expected, label) {
+  const actual = counts[key] ?? 0;
+  if (actual !== expected) {
+    fail(`${label} expected ${key}=${expected}, got ${actual}`);
+  }
+}
+
 function buildGate() {
   if (!fs.existsSync(SOURCE_POLICY_CSV_PATH)) {
     fail(`${SOURCE_POLICY_CSV_PATH} not found`);
@@ -56,13 +69,21 @@ function buildGate() {
   const matrix = parseCsv(fs.readFileSync(SOURCE_POLICY_CSV_PATH, "utf8"), SOURCE_POLICY_CSV_PATH);
   const summary = JSON.parse(fs.readFileSync(SOURCE_POLICY_SUMMARY_PATH, "utf8"));
   const rows = matrix.rows;
-  if (rows.length !== 17) {
-    fail(`${SOURCE_POLICY_CSV_PATH} must contain 17 P0 rows, got ${rows.length}`);
+  if (rows.length !== EXPECTED_SOURCE_POLICY_ROWS) {
+    fail(`${SOURCE_POLICY_CSV_PATH} must contain ${EXPECTED_SOURCE_POLICY_ROWS} P0 rows, got ${rows.length}`);
+  }
+  const manifestCounts = countBy(rows, "manifestType");
+  for (const [manifestType, expected] of Object.entries(EXPECTED_MANIFEST_COUNTS)) {
+    assertCount(manifestCounts, manifestType, expected, "source policy manifest counts");
   }
 
   const approvedRows = rows.filter((row) => row.status === APPROVED_STATUS);
   const blockedRows = rows.filter((row) => row.status !== APPROVED_STATUS);
   const canWriteMonthlyData = blockedRows.length === 0;
+  const monthlyDataFileExists = fs.existsSync(MONTHLY_DATA_TARGET);
+  if (!canWriteMonthlyData && monthlyDataFileExists) {
+    fail(`${MONTHLY_DATA_TARGET} exists before P0 source policy approval is complete`);
+  }
 
   return {
     gateVersion: GATE_VERSION,
@@ -85,10 +106,17 @@ function buildGate() {
       fxRows: rows.filter((row) => row.manifestType === "fx").length,
     },
     counts: {
-      byManifestType: countBy(rows, "manifestType"),
+      byManifestType: manifestCounts,
       byStatus: countBy(rows, "status"),
       byBlocker: countBy(rows, "blocker"),
       byProviderCandidate: countBy(rows, "providerCandidate"),
+    },
+    gateIntegrity: {
+      expectedSourcePolicyRows: EXPECTED_SOURCE_POLICY_ROWS,
+      expectedManifestCounts: EXPECTED_MANIFEST_COUNTS,
+      sourcePolicyRowsVerified: true,
+      manifestCountsVerified: true,
+      monthlyDataFileAbsentBeforeApproval: !monthlyDataFileExists,
     },
     blockedRows: blockedRows.map((row) => ({
       manifestType: row.manifestType,
