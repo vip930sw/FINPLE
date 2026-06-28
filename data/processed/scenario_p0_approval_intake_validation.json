@@ -1,5 +1,5 @@
 {
-  "validationVersion": "scenario-p0-approval-intake-validation-v0.2",
+  "validationVersion": "scenario-p0-approval-intake-validation-v0.3",
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
@@ -30,6 +30,8 @@
         "approved_no_raw_redistribution_monthly_derived_only"
       ]
     },
+    "selectedEndpointPolicy": "https_url_required",
+    "reviewerIdentityPolicy": "email_required",
     "evidenceUrlPolicy": "https_url_required"
   },
   "outputFiles": {

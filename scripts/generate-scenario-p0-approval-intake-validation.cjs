@@ -5,7 +5,7 @@ const INTAKE_TEMPLATE_PATH = path.join("data", "processed", "scenario_p0_approva
 const INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 const INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
 
-const VALIDATION_VERSION = "scenario-p0-approval-intake-validation-v0.2";
+const VALIDATION_VERSION = "scenario-p0-approval-intake-validation-v0.3";
 const AUDITED_AT = "2026-06-28T00:00:00Z";
 const ALLOWED_STATUSES = new Set(["pending_review", "ready_for_source_policy_review", "rejected"]);
 const READY_STATUS = "ready_for_source_policy_review";
@@ -126,6 +126,10 @@ function isHttpsUrl(value) {
   return /^https:\/\/\S+$/u.test(String(value ?? "").trim());
 }
 
+function isEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(String(value ?? "").trim());
+}
+
 function isIsoTimestamp(value) {
   const text = String(value ?? "").trim();
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u.test(text) && !Number.isNaN(Date.parse(text));
@@ -164,6 +168,14 @@ function validateRows(rows, summary) {
     }
     if (row.evidenceUrl && !isHttpsUrl(row.evidenceUrl)) {
       blockers.push("invalid_evidence_url");
+    }
+    if (row.selectedEndpoint && !isHttpsUrl(row.selectedEndpoint)) {
+      blockers.push("invalid_selectedEndpoint");
+    }
+    for (const field of ["reviewOwner", "decisionOwner", "legalReviewer"]) {
+      if (row[field] && !isEmail(row[field])) {
+        blockers.push(`invalid_${field}`);
+      }
     }
     if (row.reviewedAt && !isIsoTimestamp(row.reviewedAt)) {
       blockers.push("invalid_reviewed_at");
@@ -212,6 +224,8 @@ function buildValidation() {
       readyStatus: READY_STATUS,
       requiredReviewerFields: REQUIRED_REVIEWER_FIELDS,
       approvedDecisionValues: APPROVED_DECISION_VALUES,
+      selectedEndpointPolicy: "https_url_required",
+      reviewerIdentityPolicy: "email_required",
       evidenceUrlPolicy: "https_url_required",
     },
     outputFiles: {

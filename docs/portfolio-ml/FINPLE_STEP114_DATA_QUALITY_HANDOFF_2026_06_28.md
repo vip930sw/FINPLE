@@ -612,6 +612,20 @@ evidenceUrlPolicy=https_url_required
 
 This prevents a future reviewer row from opening the source-policy review gate with generic strings such as `approved`, `ok`, or an unsecured/non-URL evidence value. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2L Approval Intake Endpoint And Reviewer Identity Hardening Follow-Up
+
+The approval intake validation now also rejects `ready_for_source_policy_review` rows unless the selected provider endpoint is an HTTPS URL and all reviewer identity fields are email-shaped:
+
+```text
+selectedEndpointPolicy=https_url_required
+reviewerIdentityPolicy=email_required
+reviewOwner=email_required
+decisionOwner=email_required
+legalReviewer=email_required
+```
+
+This prevents a future approval row from opening the source-policy review gate with local endpoint labels or free-text reviewer names. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.

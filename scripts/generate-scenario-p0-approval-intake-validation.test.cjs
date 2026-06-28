@@ -174,6 +174,45 @@ test("rejects ready intake rows with invalid evidence URL", () => {
   assert.match(result.stderr, /USD_KRW_fx_provider cannot be ready_for_source_policy_review: invalid_evidence_url/);
 });
 
+test("rejects ready intake rows with invalid selected endpoint URL", () => {
+  const workspace = makeWorkspace();
+  fillSyntheticReadyTemplate(workspace);
+  updateTemplate(workspace, (row) =>
+    row.providerCandidate === "KR_price_total_return_dividend_provider" ? { ...row, selectedEndpoint: "provider-api-v1" } : row,
+  );
+
+  const result = runValidation(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /KR_price_total_return_dividend_provider cannot be ready_for_source_policy_review: invalid_selectedEndpoint/,
+  );
+});
+
+test("rejects ready intake rows with invalid reviewer identities", () => {
+  const workspace = makeWorkspace();
+  fillSyntheticReadyTemplate(workspace);
+  updateTemplate(workspace, (row) =>
+    row.providerCandidate === "KOSPI200_TR_primary_or_kospi200_etf_proxy"
+      ? {
+          ...row,
+          reviewOwner: "data owner",
+          decisionOwner: "product owner",
+          legalReviewer: "legal reviewer",
+        }
+      : row,
+  );
+
+  const result = runValidation(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /KOSPI200_TR_primary_or_kospi200_etf_proxy cannot be ready_for_source_policy_review: invalid_reviewOwner\|invalid_decisionOwner\|invalid_legalReviewer/,
+  );
+});
+
 test("rejects ready intake rows with generic approval decision values", () => {
   const workspace = makeWorkspace();
   fillSyntheticReadyTemplate(workspace);
