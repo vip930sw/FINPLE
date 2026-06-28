@@ -782,6 +782,15 @@ Recorded evidence:
 
 The KIS capability preflight is still intentionally blocked. Endpoint evidence is present, but `termsReviewed` and `rawRedistributionReviewed` remain unapproved. The committed state still performs no provider calls, implements no provider adapter, writes no `scenario_monthly_returns.csv`, and keeps Bootstrap/runtime blocked.
 
+## Step 114-2Z KIS Terms Review Packet
+
+Added `docs/portfolio-ml/FINPLE_STEP114_KIS_TERMS_REVIEW_PACKET_2026_06_28.md` after checking the official KIS Developers terms endpoints:
+
+- `https://apiportal.koreainvestment.com/api/terms/public?termsType=MARKET`
+- `https://apiportal.koreainvestment.com/api/terms/public?termsType=AGENCY`
+
+The terms packet keeps KIS blocked for FINPLE runtime provider calls because the public customer terms restrict market-data use to the customer's own developed program/personal work and prohibit third-party provision, while the agency terms restrict market-data use to the company's trading customers through Open API service and prohibit other purposes. FINPLE still needs written KIS confirmation or legal/source-owner approval for raw-row cache storage, derived monthly returns, user-facing derived scenario outputs, retention period, attribution, and any required fees or agency onboarding.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2W, the remaining blocker is a real reviewer-owned approval input step.

@@ -20,9 +20,14 @@ This audit did not call any provider API, did not implement a provider adapter, 
 Official source repository:
 https://github.com/koreainvestment/open-trading-api
 
+Terms review packet:
+`docs/portfolio-ml/FINPLE_STEP114_KIS_TERMS_REVIEW_PACKET_2026_06_28.md`
+
 ## Still Blocked
 
 The capability preflight remains blocked because endpoint evidence is not the same as legal/source approval.
+
+The KIS terms review packet records that the public customer and agency terms do not independently approve FINPLE's intended raw-row cache, derived monthly-return generation, or user-facing derived scenario display. Written KIS confirmation or FINPLE legal/source-owner approval is still required.
 
 Required before runtime provider calls:
 
