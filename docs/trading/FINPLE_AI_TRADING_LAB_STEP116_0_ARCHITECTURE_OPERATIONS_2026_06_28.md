@@ -330,6 +330,27 @@ This module is intentionally pure and deterministic. It can:
 
 It does not call KIS, fetch market data, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data. If a market price is not supplied by the caller, mark-to-market returns `totalEquity=null` and records the missing symbol instead of fetching or guessing.
 
+## Step 116-1C Risk Engine And Kill Switch Gate
+
+The first risk engine module is:
+
+```text
+server/src/services/tradingRiskEngine.js
+server/src/services/tradingRiskEngine.test.js
+npm.cmd run check:trading-risk-engine
+```
+
+This module composes the trading policy validators into a pure risk gate. It can:
+
+- fail closed when mode, risk config, runtime state, or intent data is missing
+- allow paper-mode fill promotion only after risk checks pass
+- allow shadow-mode intent recording only after risk checks pass
+- mark live-guarded intents as review-eligible only, never directly executable
+- derive runtime breaches for daily loss, cash depletion, turnover, order attempts, consecutive failures, symbol exposure, allocated capital, session, and slippage
+- build deterministic risk-event payloads without writing them to a database
+
+It does not call KIS, fetch market data, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data. Even when the risk gate passes, `orderSubmissionAllowed=false` and `providerCallsAllowed=false` remain part of the returned contract.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
