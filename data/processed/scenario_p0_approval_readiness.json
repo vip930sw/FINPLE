@@ -7,7 +7,8 @@
     "sourceApprovalDecisionRecord": "data\\processed\\scenario_p0_source_approval_decision_record.csv",
     "externalTermsReview": "data\\processed\\scenario_p0_external_provider_terms_review.csv",
     "ownerLegalDecisionPacket": "data\\processed\\scenario_p0_owner_legal_decision_packet.csv",
-    "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
+    "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json",
+    "sourcePolicyPostImportPreflight": "data\\processed\\scenario_p0_source_policy_post_import_preflight.json"
   },
   "outputFiles": {
     "report": "data\\processed\\scenario_p0_approval_readiness.json",
@@ -27,6 +28,7 @@
     "externalTermsRows": 5,
     "ownerLegalRows": 5,
     "writerGateRows": 17,
+    "postImportPreflightReady": false,
     "termsApproved": 0,
     "ownerAdapterApproved": 0,
     "ownerMonthlyApproved": 0,
@@ -64,6 +66,7 @@
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
     "blockers": [
+      "source_policy_post_import_preflight_not_ready",
       "external_provider_terms_not_fully_approved",
       "owner_legal_adapter_approval_not_complete",
       "owner_legal_monthly_write_approval_not_complete",

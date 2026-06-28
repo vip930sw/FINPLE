@@ -32,6 +32,7 @@
       "source_policy_matrix_not_synced",
       "approval_readiness_not_safe_for_adapter",
       "writer_gate_not_open_for_provider_calls",
+      "source_policy_post_import_preflight_not_ready",
       "external_provider_terms_not_fully_approved",
       "owner_legal_adapter_approval_not_complete",
       "owner_legal_monthly_write_approval_not_complete",

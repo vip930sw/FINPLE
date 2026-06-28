@@ -13,6 +13,7 @@ const FIXTURE_FILES = [
   "scenario_p0_external_provider_terms_review.csv",
   "scenario_p0_owner_legal_decision_packet.csv",
   "scenario_p0_cache_writer_gate.json",
+  "scenario_p0_source_policy_post_import_preflight.json",
   "scenario_p0_approval_readiness.json",
 ];
 const APPROVED_SOURCE_POLICY = "approved_source_policy";
@@ -51,6 +52,20 @@ function readWorkspaceFile(workspace, fileName) {
 
 function writeWorkspaceFile(workspace, fileName, content) {
   fs.writeFileSync(path.join(workspace, "data", "processed", fileName), content);
+}
+
+function readWorkspaceJson(workspace, fileName) {
+  return JSON.parse(readWorkspaceFile(workspace, fileName));
+}
+
+function writeWorkspaceJson(workspace, fileName, value) {
+  writeWorkspaceFile(workspace, fileName, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function mutateWorkspaceJson(workspace, fileName, patch) {
+  const value = readWorkspaceJson(workspace, fileName);
+  patch(value);
+  writeWorkspaceJson(workspace, fileName, value);
 }
 
 function parseCsvLine(line) {
@@ -109,6 +124,23 @@ function updateWorkspaceCsv(workspace, fileName, updateRow) {
   writeWorkspaceFile(workspace, fileName, toCsv(parsed.headers, rows));
 }
 
+function makePostImportPreflightReady(workspace) {
+  mutateWorkspaceJson(workspace, "scenario_p0_source_policy_post_import_preflight.json", (preflight) => {
+    preflight.checks.approvedSourcePolicyRows = 17;
+    preflight.checks.blockedSourcePolicyRows = 0;
+    preflight.checks.plannedSourcePolicyUpdates = 17;
+    preflight.checks.readyProviderGroups = 5;
+    preflight.checks.realApprovalImportReady = true;
+    preflight.checks.allSourcePolicyRowsApproved = true;
+    preflight.checks.approvedRowsMatchPlan = true;
+    preflight.checks.safeToUseImportedSourcePolicy = true;
+    preflight.checks.blockers = [];
+    preflight.readiness.status = "ready_for_approval_readiness_recalculation_after_source_policy_import";
+    preflight.readiness.safeToUseImportedSourcePolicy = true;
+    preflight.readiness.nextAllowedStep = "rerun_approval_readiness_and_writer_gate_after_manual_source_policy_import";
+  });
+}
+
 function approveSyntheticFixture(workspace) {
   updateWorkspaceCsv(workspace, "scenario_p0_source_policy_matrix.csv", (row) => ({
     ...row,
@@ -149,18 +181,20 @@ function approveSyntheticFixture(workspace) {
     nextAction: "owner_legal_approved_in_synthetic_fixture",
   }));
 
-  const writerGate = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json"));
-  writerGate.rowCounts.approvedRows = writerGate.rowCounts.totalRows;
-  writerGate.rowCounts.blockedRows = 0;
-  writerGate.counts.byStatus = { approved_source_policy: writerGate.rowCounts.totalRows };
-  writerGate.counts.byBlocker = {};
-  writerGate.blockedRows = [];
-  writerGate.readiness.status = "ready_for_p0_monthly_cache_write";
-  writerGate.readiness.canWriteMonthlyData = true;
-  writerGate.readiness.providerCallsAllowed = true;
-  writerGate.readiness.bootstrapStillBlocked = false;
-  writerGate.readiness.nextAllowedStep = "implement_controlled_p0_provider_adapter_and_monthly_cache_writer";
-  writeWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json", `${JSON.stringify(writerGate, null, 2)}\n`);
+  mutateWorkspaceJson(workspace, "scenario_p0_cache_writer_gate.json", (writerGate) => {
+    writerGate.rowCounts.approvedRows = writerGate.rowCounts.totalRows;
+    writerGate.rowCounts.blockedRows = 0;
+    writerGate.counts.byStatus = { approved_source_policy: writerGate.rowCounts.totalRows };
+    writerGate.counts.byBlocker = {};
+    writerGate.blockedRows = [];
+    writerGate.readiness.status = "ready_for_p0_monthly_cache_write";
+    writerGate.readiness.canWriteMonthlyData = true;
+    writerGate.readiness.providerCallsAllowed = true;
+    writerGate.readiness.bootstrapStillBlocked = false;
+    writerGate.readiness.nextAllowedStep = "implement_controlled_p0_provider_adapter_and_monthly_cache_writer";
+  });
+
+  makePostImportPreflightReady(workspace);
 }
 
 test("passes with current blocked P0 approval fixture", () => {
@@ -179,12 +213,28 @@ test("accepts synthetic source approval only when all approval evidence is prese
 
   assert.equal(result.status, 0, result.stderr);
   const report = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_approval_readiness.json"));
+  assert.equal(report.rowCounts.postImportPreflightReady, true);
   assert.equal(report.rowCounts.termsApproved, 5);
   assert.equal(report.rowCounts.ownerAdapterApproved, 5);
   assert.equal(report.rowCounts.ownerMonthlyApproved, 5);
   assert.equal(report.rowCounts.sourcePolicyApproved, 17);
   assert.equal(report.readiness.safeToImplementProviderAdapter, true);
   assert.equal(report.readiness.safeToWriteMonthlyData, true);
+});
+
+test("rejects open writer gate before source-policy post-import preflight is ready", () => {
+  const workspace = makeWorkspace();
+  approveSyntheticFixture(workspace);
+  mutateWorkspaceJson(workspace, "scenario_p0_source_policy_post_import_preflight.json", (preflight) => {
+    preflight.checks.safeToUseImportedSourcePolicy = false;
+    preflight.readiness.safeToUseImportedSourcePolicy = false;
+    preflight.checks.blockers = ["source_policy_post_import_preflight_not_ready"];
+  });
+
+  const result = runReadiness(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /writer gate allows provider calls before source-policy post-import preflight is ready/);
 });
 
 test("rejects approved source policy without selected provider evidence", () => {
@@ -230,6 +280,7 @@ test("rejects provider candidate drift between gate files", () => {
 
 test("rejects writer gate provider calls before approval layers are complete", () => {
   const workspace = makeWorkspace();
+  makePostImportPreflightReady(workspace);
   const writerGate = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json"));
   writerGate.readiness.providerCallsAllowed = true;
   writeWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json", `${JSON.stringify(writerGate, null, 2)}\n`);
@@ -242,6 +293,7 @@ test("rejects writer gate provider calls before approval layers are complete", (
 
 test("rejects writer gate monthly writes before all approval layers are complete", () => {
   const workspace = makeWorkspace();
+  makePostImportPreflightReady(workspace);
   const writerGate = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json"));
   writerGate.readiness.canWriteMonthlyData = true;
   writeWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json", `${JSON.stringify(writerGate, null, 2)}\n`);

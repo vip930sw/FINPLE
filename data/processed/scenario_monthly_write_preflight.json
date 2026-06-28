@@ -15,6 +15,7 @@
     "providerCallsAllowed": false,
     "canAttemptMonthlyWrite": false,
     "blockers": [
+      "source_policy_post_import_preflight_not_ready",
       "external_provider_terms_not_fully_approved",
       "owner_legal_adapter_approval_not_complete",
       "owner_legal_monthly_write_approval_not_complete",

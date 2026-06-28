@@ -7,6 +7,11 @@ const SOURCE_DECISION_CSV_PATH = path.join("data", "processed", "scenario_p0_sou
 const EXTERNAL_TERMS_CSV_PATH = path.join("data", "processed", "scenario_p0_external_provider_terms_review.csv");
 const OWNER_LEGAL_CSV_PATH = path.join("data", "processed", "scenario_p0_owner_legal_decision_packet.csv");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
+const SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_source_policy_post_import_preflight.json",
+);
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 
 const REPORT_VERSION = "scenario-p0-approval-readiness-v0.1";
@@ -192,6 +197,7 @@ function buildReport() {
   const externalTerms = readCsv(EXTERNAL_TERMS_CSV_PATH);
   const ownerLegal = readCsv(OWNER_LEGAL_CSV_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
+  const sourcePolicyPostImportPreflight = readJson(SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH);
 
   const sourceProviderCandidates = uniqueSorted(sourcePolicy.rows.map((row) => row.providerCandidate));
   const decisionProviderCandidates = uniqueSorted(sourceDecision.rows.map((row) => row.providerCandidate));
@@ -220,8 +226,14 @@ function buildReport() {
   const sourcePolicyApproved = sourcePolicy.rows.filter((row) => row.status === APPROVED_SOURCE_POLICY).length;
   const writerCanWrite = writerGate.readiness?.canWriteMonthlyData === true;
   const writerProviderCallsAllowed = writerGate.readiness?.providerCallsAllowed === true;
+  const postImportPreflightReady =
+    sourcePolicyPostImportPreflight.checks?.safeToUseImportedSourcePolicy === true &&
+    sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === true;
 
   const blockers = [];
+  if (!postImportPreflightReady) {
+    blockers.push("source_policy_post_import_preflight_not_ready");
+  }
   if (termsApproved !== externalTerms.rows.length) {
     blockers.push("external_provider_terms_not_fully_approved");
   }
@@ -242,12 +254,19 @@ function buildReport() {
   }
 
   const safeToImplementProviderAdapter =
+    postImportPreflightReady &&
     termsApproved === externalTerms.rows.length &&
     ownerAdapterApproved === ownerLegal.rows.length &&
     sourcePolicyApproved === sourcePolicy.rows.length;
   const safeToWriteMonthlyData =
     safeToImplementProviderAdapter && ownerMonthlyApproved === ownerLegal.rows.length && writerCanWrite;
 
+  if (!postImportPreflightReady && writerProviderCallsAllowed) {
+    fail("writer gate allows provider calls before source-policy post-import preflight is ready");
+  }
+  if (!postImportPreflightReady && writerCanWrite) {
+    fail("writer gate allows monthly data writes before source-policy post-import preflight is ready");
+  }
   if (!safeToImplementProviderAdapter && writerProviderCallsAllowed) {
     fail("writer gate allows provider calls before terms, owner/legal, and source policy approvals are complete");
   }
@@ -265,6 +284,7 @@ function buildReport() {
       externalTermsReview: EXTERNAL_TERMS_CSV_PATH,
       ownerLegalDecisionPacket: OWNER_LEGAL_CSV_PATH,
       writerGate: WRITER_GATE_PATH,
+      sourcePolicyPostImportPreflight: SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH,
     },
     outputFiles: {
       report: APPROVAL_READINESS_PATH,
@@ -278,6 +298,7 @@ function buildReport() {
       externalTermsRows: externalTerms.rows.length,
       ownerLegalRows: ownerLegal.rows.length,
       writerGateRows: writerGate.rowCounts?.totalRows ?? null,
+      postImportPreflightReady,
       termsApproved,
       ownerAdapterApproved,
       ownerMonthlyApproved,

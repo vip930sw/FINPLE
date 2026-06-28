@@ -193,6 +193,7 @@ approval template rows=5 pending, 0 approved
 approval validation rows=5 pending, 0 ready
 real approval import preflight readyForRealApprovalImport=false
 source-policy post-import preflight safeToUseImportedSourcePolicy=false
+approval readiness post-import dependency ready=false
 source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
@@ -222,7 +223,6 @@ coverage audit
 -> provider candidate review
 -> external provider terms review
 -> owner/legal decision packet
--> approval readiness cross-check
 -> approval intake checklist
 -> approval intake template
 -> approval intake validation
@@ -230,6 +230,7 @@ coverage audit
 -> source policy sync preflight
 -> real approval import preflight
 -> source-policy post-import preflight
+-> approval readiness cross-check
 -> provider adapter preflight
 -> monthly write preflight
 -> cache writer gate
@@ -410,6 +411,25 @@ bootstrapStillBlocked=true
 
 Synthetic tests show the preflight opens only when all 17 source-policy rows are approved with the expected approved policies after the real approval import gate opens. It rejects approved rows before import approval, approved-row policy drift, and premature `scenario_monthly_returns.csv`. The committed state still writes no source-policy approvals and does not permit provider adapters, provider calls, monthly writes, Bootstrap, or runtime implementation.
 
+## Step 114-2G Approval Readiness Post-Import Dependency Follow-Up
+
+The approval readiness cross-check now requires the source-policy post-import preflight before it can become safe for provider adapters or monthly writes:
+
+```text
+postImportPreflightReady=false
+termsApproved=0
+ownerAdapterApproved=0
+ownerMonthlyApproved=0
+sourcePolicyApproved=0
+safeToImplementProviderAdapter=false
+safeToWriteMonthlyData=false
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show that a fully approved fixture can open approval readiness only after the post-import preflight also reports that the imported source-policy rows are safe to use. The gate rejects writer/provider-call openings when post-import validation is still blocked. The committed state still keeps all source rows blocked, performs no provider calls, and writes no monthly data.
+
 ## Step 114-1Y Source Policy Sync Plan Follow-Up
 
 The source policy sync plan now maps validated approval intake rows to a dry-run source-policy update plan:
@@ -521,7 +541,7 @@ Synthetic tests show the preflight opens only when a temporary monthly CSV exist
 
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-2F, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2G, the remaining blocker is a real reviewer-owned approval input step:
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work
