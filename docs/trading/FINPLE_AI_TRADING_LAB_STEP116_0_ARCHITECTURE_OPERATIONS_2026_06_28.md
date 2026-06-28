@@ -290,6 +290,25 @@ liveTradingAllowed=false
 
 The gate also checks that Step 114 scenario runtime remains blocked and that no committed `scenario_monthly_returns.csv` exists.
 
+## Step 116-1A Pure Policy Validators
+
+The first pure validator module is:
+
+```text
+server/src/services/tradingLabPolicy.js
+server/src/services/tradingLabPolicy.test.js
+npm.cmd run check:trading-lab-policy
+```
+
+This module is intentionally not an execution adapter. It contains only deterministic validation helpers:
+
+- trading mode normalization with unknown modes falling back to `live_blocked`
+- kill switch evaluation with fail-closed defaults
+- risk-limit config validation
+- order-intent validation that returns `orderSubmissionAllowed=false` and `providerCallsAllowed=false`
+
+It does not call KIS, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
