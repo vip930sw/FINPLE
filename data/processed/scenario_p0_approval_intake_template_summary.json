@@ -1,5 +1,5 @@
 {
-  "templateVersion": "scenario-p0-approval-intake-template-v0.1",
+  "templateVersion": "scenario-p0-approval-intake-template-v0.2",
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "sourceApprovalDecisionRecord": "data\\processed\\scenario_p0_source_approval_decision_record.csv",
@@ -13,8 +13,13 @@
   },
   "rowCounts": {
     "providerGroups": 5,
+    "sourcePolicyRows": 17,
     "pendingReviewRows": 5,
     "approvedRows": 0
+  },
+  "sourceIntegrity": {
+    "providerCandidateSetVerified": true,
+    "sourcePolicyRowsMatchChecklist": true
   },
   "requiredReviewerFields": [
     "selectedProvider",

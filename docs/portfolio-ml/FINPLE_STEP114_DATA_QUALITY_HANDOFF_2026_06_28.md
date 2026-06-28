@@ -626,6 +626,19 @@ legalReviewer=email_required
 
 This prevents a future approval row from opening the source-policy review gate with local endpoint labels or free-text reviewer names. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2M Approval Intake Template Source Consistency Follow-Up
+
+The approval intake template generator now verifies that the source approval decision record, owner/legal packet, and approval intake checklist all contain the same provider-candidate set before producing reviewer-facing rows. It also records and checks the source-policy row total:
+
+```text
+providerGroups=5
+sourcePolicyRows=17
+providerCandidateSetVerified=true
+sourcePolicyRowsMatchChecklist=true
+```
+
+Synthetic tests now reject provider-candidate drift between template sources and checklist source-policy row-count drift. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.

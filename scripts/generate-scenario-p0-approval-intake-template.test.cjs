@@ -41,6 +41,14 @@ function writeWorkspaceFile(workspace, fileName, content) {
   fs.writeFileSync(path.join(workspace, "data", "processed", fileName), content);
 }
 
+function readWorkspaceJson(workspace, fileName) {
+  return JSON.parse(readWorkspaceFile(workspace, fileName));
+}
+
+function writeWorkspaceJson(workspace, fileName, value) {
+  writeWorkspaceFile(workspace, fileName, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 function parseCsvLine(line) {
   const values = [];
   let current = "";
@@ -105,10 +113,40 @@ test("summary keeps providers and monthly data blocked", () => {
   assert.equal(result.status, 0, result.stderr);
   const summary = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_approval_intake_template_summary.json"));
   assert.equal(summary.rowCounts.providerGroups, 5);
+  assert.equal(summary.rowCounts.sourcePolicyRows, 17);
   assert.equal(summary.rowCounts.approvedRows, 0);
+  assert.equal(summary.sourceIntegrity.providerCandidateSetVerified, true);
+  assert.equal(summary.sourceIntegrity.sourcePolicyRowsMatchChecklist, true);
   assert.equal(summary.readiness.providerCallsAllowed, false);
   assert.equal(summary.readiness.monthlyDataFileWritten, false);
   assert.equal(summary.readiness.bootstrapStillBlocked, true);
+});
+
+test("rejects checklist source-policy row count drift", () => {
+  const workspace = makeWorkspace();
+  const checklist = readWorkspaceJson(workspace, "scenario_p0_approval_intake_checklist.json");
+  checklist.rowCounts.sourcePolicyRows = 18;
+  writeWorkspaceJson(workspace, "scenario_p0_approval_intake_checklist.json", checklist);
+
+  const result = runTemplate(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /sourcePolicyRows does not match approval intake template rows/);
+});
+
+test("rejects provider candidate drift between template sources", () => {
+  const workspace = makeWorkspace();
+  const csv = readWorkspaceFile(workspace, "scenario_p0_owner_legal_decision_packet.csv");
+  writeWorkspaceFile(
+    workspace,
+    "scenario_p0_owner_legal_decision_packet.csv",
+    csv.replace("USD_KRW_fx_provider", "USD_KRW_fx_provider_drifted"),
+  );
+
+  const result = runTemplate(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /providerCandidate set does not match owner\/legal decision packet/);
 });
 
 test("rejects stale committed approval intake template", () => {

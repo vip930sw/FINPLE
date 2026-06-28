@@ -7,7 +7,7 @@ const INTAKE_CHECKLIST_PATH = path.join("data", "processed", "scenario_p0_approv
 const INTAKE_TEMPLATE_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template.csv");
 const INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 
-const TEMPLATE_VERSION = "scenario-p0-approval-intake-template-v0.1";
+const TEMPLATE_VERSION = "scenario-p0-approval-intake-template-v0.2";
 const AUDITED_AT = "2026-06-28T00:00:00Z";
 const REQUIRED_REVIEWER_FIELDS = [
   "selectedProvider",
@@ -141,12 +141,23 @@ function indexBy(rows, field, label) {
   return indexed;
 }
 
+function assertSameKeySet(left, right, leftLabel, rightLabel) {
+  const leftKeys = [...left.keys()].sort();
+  const rightKeys = [...right.keys()].sort();
+  if (leftKeys.join("|") !== rightKeys.join("|")) {
+    fail(`${leftLabel} providerCandidate set does not match ${rightLabel}`);
+  }
+}
+
 function buildTemplate() {
   const decision = readCsv(SOURCE_DECISION_CSV_PATH);
   const ownerLegal = readCsv(OWNER_LEGAL_CSV_PATH);
   const checklist = readJson(INTAKE_CHECKLIST_PATH);
+  const decisionByProvider = indexBy(decision.rows, "providerCandidate", "source approval decision record");
   const ownerByProvider = indexBy(ownerLegal.rows, "providerCandidate", "owner/legal decision packet");
   const checklistByProvider = indexBy(checklist.providerGroups ?? [], "providerCandidate", "approval intake checklist");
+  assertSameKeySet(decisionByProvider, ownerByProvider, "source approval decision record", "owner/legal decision packet");
+  assertSameKeySet(decisionByProvider, checklistByProvider, "source approval decision record", "approval intake checklist");
 
   const rows = decision.rows.map((decisionRow) => {
     const ownerRow = ownerByProvider.get(decisionRow.providerCandidate);
@@ -193,6 +204,16 @@ function buildTemplate() {
   if (rows.length !== 5) {
     fail(`${SOURCE_DECISION_CSV_PATH} must produce 5 approval intake template rows, got ${rows.length}`);
   }
+  const sourcePolicyRows = rows.reduce((total, row) => {
+    const rowCount = Number(row.sourcePolicyRows);
+    if (!Number.isInteger(rowCount) || rowCount < 1) {
+      fail(`invalid sourcePolicyRows for providerCandidate=${row.providerCandidate}`);
+    }
+    return total + rowCount;
+  }, 0);
+  if (sourcePolicyRows !== checklist.rowCounts?.sourcePolicyRows) {
+    fail(`${INTAKE_CHECKLIST_PATH} sourcePolicyRows does not match approval intake template rows`);
+  }
   for (const row of rows) {
     if (row.approvalStatusDraft !== "pending_review") {
       fail(`${INTAKE_TEMPLATE_PATH} must not pre-approve providerCandidate=${row.providerCandidate}`);
@@ -216,8 +237,13 @@ function buildTemplate() {
       },
       rowCounts: {
         providerGroups: rows.length,
+        sourcePolicyRows,
         pendingReviewRows: rows.filter((row) => row.approvalStatusDraft === "pending_review").length,
         approvedRows: rows.filter((row) => row.approvalStatusDraft !== "pending_review").length,
+      },
+      sourceIntegrity: {
+        providerCandidateSetVerified: true,
+        sourcePolicyRowsMatchChecklist: true,
       },
       requiredReviewerFields: REQUIRED_REVIEWER_FIELDS,
       readiness: {
