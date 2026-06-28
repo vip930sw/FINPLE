@@ -1,0 +1,263 @@
+{
+  "contractVersion": "trading-lab-step116-env-risk-gate-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1I",
+  "scope": "trading_env_parser_to_risk_gate_input_contract",
+  "sourceFiles": {
+    "envReadinessContract": "data\\processed\\trading_lab_step116_env_readiness_contract.json",
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "envParser": "server\\src\\services\\tradingEnvConfig.js",
+    "riskEngine": "server\\src\\services\\tradingRiskEngine.js"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "envValuesStored": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false
+  },
+  "parserFixturePresence": {
+    "FINPLE_TRADING_MODE": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_KILL_SWITCH": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_ALLOWED_MARKETS": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_ALLOWED_ASSET_TYPES_BY_MARKET": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_ALLOWED_SYMBOLS": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    },
+    "KIS_TRADING_APP_KEY": {
+      "present": true,
+      "valueStored": false,
+      "secret": true
+    },
+    "KIS_TRADING_APP_SECRET": {
+      "present": true,
+      "valueStored": false,
+      "secret": true
+    },
+    "KIS_TRADING_ACCOUNT_ID": {
+      "present": true,
+      "valueStored": false,
+      "secret": true
+    },
+    "KIS_TRADING_BASE_URL": {
+      "present": true,
+      "valueStored": false,
+      "secret": false
+    }
+  },
+  "parserResult": {
+    "validShape": true,
+    "mode": "shadow",
+    "normalized": {
+      "mode": "shadow",
+      "killSwitchEnabled": true,
+      "allowedMarkets": [
+        "KR",
+        "US"
+      ],
+      "allowedAssetTypesByMarket": {
+        "KR": [
+          "STOCK"
+        ],
+        "US": [
+          "STOCK",
+          "ETF"
+        ]
+      },
+      "allowedSymbols": [
+        "*"
+      ],
+      "wildcardAllowedSymbols": true,
+      "kisTradingAccountIdFormatValid": true,
+      "kisTradingBaseUrlMode": "virtual_trading",
+      "kisTradingBaseUrlHost": "openapivts.koreainvestment.com",
+      "orderPermissionApprovedAt": "2026-06-28T15:00:00.000Z",
+      "orderPermissionApprovedByPresent": true
+    },
+    "shapeReasons": [],
+    "runtimeBlockers": [
+      "runtime_integration_not_implemented",
+      "kill_switch_enabled"
+    ],
+    "warnings": [
+      "wildcard_allowed_symbols_must_be_narrowed_before_live_guarded",
+      "order_permission_metadata_recorded_but_order_submission_still_blocked"
+    ]
+  },
+  "riskGateInputContract": {
+    "mappingRules": [
+      {
+        "from": "validateTradingEnvConfig().mode",
+        "to": "evaluateTradingRiskGate(runtime.mode)",
+        "rule": "normalized mode is passed through; unknown modes remain live_blocked"
+      },
+      {
+        "from": "normalized.killSwitchEnabled",
+        "to": "runtime.globalTradingDisabled",
+        "rule": "true keeps the risk gate blocked"
+      },
+      {
+        "from": "normalized.allowedSymbols",
+        "to": "limits.allowedSymbols and runtime.symbolAllowlisted",
+        "rule": "wildcard is not promoted to risk allowlist; symbols must be narrowed before runtime"
+      },
+      {
+        "from": "normalized.kisTradingBaseUrlMode",
+        "to": "contract evidence only",
+        "rule": "virtual_trading URL does not permit provider calls or order submission"
+      }
+    ],
+    "fixtureInputs": {
+      "intent": {
+        "symbol": "SPY",
+        "side": "buy",
+        "quantity": 1,
+        "estimatedPrice": 400,
+        "estimatedFxRate": 1
+      },
+      "limits": {
+        "maxAccountCapitalAllocated": 10000,
+        "maxCashDepletionPerDay": 1000,
+        "maxSingleSymbolExposure": 3000,
+        "maxSingleOrderNotional": 1000,
+        "maxDailyTurnover": 2000,
+        "maxOrderAttemptsPerDay": 5,
+        "maxConsecutiveFailedOrderAttempts": 2,
+        "maxSlippageTolerance": 0.01,
+        "allowedMarketSessions": [
+          "US_REGULAR"
+        ],
+        "allowedSymbols": [],
+        "blockedInstruments": [
+          "UVXY"
+        ]
+      },
+      "runtime": {
+        "mode": "shadow",
+        "currentSession": "US_REGULAR",
+        "dailyLossAmount": 0,
+        "dailyCashDepletion": 0,
+        "dailyTurnover": 0,
+        "dailyOrderAttempts": 0,
+        "consecutiveFailedOrderAttempts": 0,
+        "allocatedCapital": 1000,
+        "currentSymbolExposure": 500,
+        "estimatedSlippage": 0,
+        "globalTradingDisabled": true,
+        "dailyLossLimitBreached": false,
+        "dailyOrderCountLimitBreached": false,
+        "symbolAllowlisted": false,
+        "quoteFresh": true,
+        "fxFresh": true,
+        "accountStateMatched": true,
+        "kisAuthOk": false,
+        "kisRateLimited": false,
+        "strategyReviewed": true,
+        "auditLoggerReady": true,
+        "manualOperatorStop": false
+      }
+    },
+    "requiredNonEnvInputs": [
+      "risk limits",
+      "market session",
+      "loss and turnover counters",
+      "position and exposure counters",
+      "quote and fx freshness",
+      "strategy review status",
+      "audit logger readiness"
+    ]
+  },
+  "riskGateEvaluation": {
+    "valid": false,
+    "status": "blocked",
+    "mode": "shadow",
+    "reasons": [
+      "risk_missing_allowedSymbols",
+      "kill_switch_global_trading_disabled",
+      "kill_switch_symbol_not_allowlisted"
+    ],
+    "intentPromotionAllowed": false,
+    "paperFillAllowed": false,
+    "shadowRecordAllowed": false,
+    "liveOrderIntentEligible": false,
+    "orderSubmissionAllowed": false,
+    "providerCallsAllowed": false,
+    "riskEvent": {
+      "eventType": "trading_risk_gate",
+      "severity": "block",
+      "status": "blocked",
+      "mode": "shadow",
+      "symbol": "SPY",
+      "side": "buy",
+      "reasons": [
+        "risk_missing_allowedSymbols",
+        "kill_switch_global_trading_disabled",
+        "kill_switch_symbol_not_allowlisted"
+      ],
+      "orderSubmissionAllowed": false,
+      "providerCallsAllowed": false
+    }
+  },
+  "checks": {
+    "contractOnly": true,
+    "envParserShapeValid": true,
+    "envModeFeedsRiskRuntime": true,
+    "killSwitchFeedsGlobalTradingDisabled": true,
+    "wildcardSymbolsFailClosed": true,
+    "virtualTradingBaseUrlDoesNotEnableProviderCalls": true,
+    "riskGateBlocksCurrentShadowFixture": true,
+    "riskGateStillDisablesOrderSubmission": true,
+    "envReadinessStillBlocksRuntime": true,
+    "policyStillBlocksRuntime": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "readiness": {
+    "status": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "readyForCurrentStep": true,
+    "readyForRuntimeRoute": false,
+    "readyForProviderCalls": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "adapterImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "blockers": []
+  }
+}
