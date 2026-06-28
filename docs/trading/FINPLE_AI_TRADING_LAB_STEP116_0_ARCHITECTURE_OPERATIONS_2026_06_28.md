@@ -309,6 +309,27 @@ This module is intentionally not an execution adapter. It contains only determin
 
 It does not call KIS, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data.
 
+## Step 116-1B Paper Trading Ledger
+
+The first paper trading ledger module is:
+
+```text
+server/src/services/tradingPaperLedger.js
+server/src/services/tradingPaperLedger.test.js
+npm.cmd run check:trading-paper-ledger
+```
+
+This module is intentionally pure and deterministic. It can:
+
+- create a normalized paper ledger from supplied cash and positions
+- simulate fills from supplied order intents and supplied fill prices
+- apply buy and sell fills to paper cash and positions
+- reject insufficient cash or insufficient position quantity
+- record fill events, including realized PnL changes for sell fills
+- mark positions to market from caller-supplied prices only
+
+It does not call KIS, fetch market data, submit orders, write DB rows, create API routes, create frontend UI, or touch scenario monthly data. If a market price is not supplied by the caller, mark-to-market returns `totalEquity=null` and records the missing symbol instead of fetching or guessing.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
