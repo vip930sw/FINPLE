@@ -14,6 +14,7 @@
     "sourcePolicySyncPlan": "data\\processed\\scenario_p0_source_policy_sync_plan.json",
     "sourcePolicySyncPreflight": "data\\processed\\scenario_p0_source_policy_sync_preflight.json",
     "providerAdapterPreflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
+    "providerRuntimePreflight": "data\\processed\\scenario_p0_provider_runtime_preflight.json",
     "monthlyCacheWriterPreflight": "data\\processed\\scenario_p0_monthly_cache_writer_preflight.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
@@ -97,6 +98,7 @@
         "sourcePolicySyncPlannedUpdates": 17,
         "sourcePolicySyncPreflightCanSync": true,
         "providerAdapterPreflightSafe": true,
+        "providerRuntimePreflightReady": false,
         "monthlyCacheWriterPreflightSafe": true
       },
       "blockers": []
@@ -120,6 +122,17 @@
         "sourcePolicySyncPreflightCanSync": true,
         "providerAdapterPreflightSafe": true,
         "providerAdapterPreflightProviderCallsAllowed": true,
+        "providerRuntimePreflightReady": false,
+        "providerRuntimeBlockers": [
+          "runtime_provider_credentials_missing",
+          "runtime_provider_calls_not_explicitly_enabled",
+          "missing_env_KIS_APP_KEY",
+          "missing_env_KIS_APP_SECRET",
+          "missing_env_ALPHA_VANTAGE_API_KEY",
+          "missing_env_FRED_API_KEY",
+          "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
+          "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
+        ],
         "monthlyCacheWriterPreflightSafe": true,
         "monthlyCacheWriterPreflightProviderCallsAllowed": true,
         "canAttemptMonthlyWrite": true,
@@ -175,6 +188,7 @@
     "sourcePolicySyncPlanReady": true,
     "sourcePolicySyncPreflightReady": true,
     "providerAdapterPreflightReady": true,
+    "providerRuntimePreflightReady": false,
     "monthlyCacheWriterPreflightReady": true,
     "bootstrapUnlockPreflightReady": false,
     "runtimeImplementationPreflightReady": false,
@@ -182,5 +196,5 @@
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true
   },
-  "nextAllowedStep": "implement_controlled_p0_provider_adapter_and_monthly_cache_writer_then_write_validated_scenario_monthly_returns_with_source_metadata"
+  "nextAllowedStep": "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write"
 }

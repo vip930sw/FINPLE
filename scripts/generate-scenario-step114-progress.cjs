@@ -19,6 +19,7 @@ const SOURCE_POLICY_POST_IMPORT_PREFLIGHT_PATH = path.join("data", "processed", 
 const SOURCE_POLICY_SYNC_PLAN_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_plan.json");
 const SOURCE_POLICY_SYNC_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_preflight.json");
 const PROVIDER_ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
+const PROVIDER_RUNTIME_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_runtime_preflight.json");
 const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_monthly_cache_writer_preflight.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
@@ -153,6 +154,7 @@ function buildProgress() {
   const sourcePolicySyncPlan = readJson(SOURCE_POLICY_SYNC_PLAN_PATH);
   const sourcePolicySyncPreflight = readJson(SOURCE_POLICY_SYNC_PREFLIGHT_PATH);
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
+  const providerRuntimePreflight = readJson(PROVIDER_RUNTIME_PREFLIGHT_PATH);
   const monthlyCacheWriterPreflight = readJson(MONTHLY_CACHE_WRITER_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
@@ -288,6 +290,7 @@ function buildProgress() {
         sourcePolicySyncPlannedUpdates: sourcePolicySyncPlan.rowCounts?.plannedSourcePolicyUpdates,
         sourcePolicySyncPreflightCanSync: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy,
         providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
+        providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
       },
     ),
@@ -309,6 +312,8 @@ function buildProgress() {
         sourcePolicySyncPreflightCanSync: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy,
         providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
         providerAdapterPreflightProviderCallsAllowed: providerAdapterPreflight.checks?.providerCallsAllowed,
+        providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
+        providerRuntimeBlockers: providerRuntimePreflight.checks?.blockers ?? [],
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
         monthlyCacheWriterPreflightProviderCallsAllowed: monthlyCacheWriterPreflight.checks?.providerCallsAllowed,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
@@ -375,6 +380,7 @@ function buildProgress() {
       sourcePolicySyncPlan: SOURCE_POLICY_SYNC_PLAN_PATH,
       sourcePolicySyncPreflight: SOURCE_POLICY_SYNC_PREFLIGHT_PATH,
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
+      providerRuntimePreflight: PROVIDER_RUNTIME_PREFLIGHT_PATH,
       monthlyCacheWriterPreflight: MONTHLY_CACHE_WRITER_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
@@ -412,6 +418,7 @@ function buildProgress() {
       sourcePolicySyncPlanReady: sourcePolicySyncPlan.readiness?.syncPlanReady === true,
       sourcePolicySyncPreflightReady: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true,
       providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,
+      providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed === true,
       monthlyCacheWriterPreflightReady: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter === true,
       bootstrapUnlockPreflightReady: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap === true,
       runtimeImplementationPreflightReady: runtimeImplementationPreflight.checks?.runtimeScenarioImplementationAllowed === true,
@@ -422,7 +429,9 @@ function buildProgress() {
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,
     },
     nextAllowedStep:
-      approvalProgress === 100 && writePreflight.checks?.canAttemptMonthlyWrite === true
+      approvalProgress === 100 && providerRuntimePreflight.checks?.runtimeProviderCallsAllowed !== true
+        ? "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write"
+        : approvalProgress === 100 && writePreflight.checks?.canAttemptMonthlyWrite === true
         ? "implement_controlled_p0_provider_adapter_and_monthly_cache_writer_then_write_validated_scenario_monthly_returns_with_source_metadata"
         : approvalProgress === 100
           ? "run_monthly_write_preflight_before_controlled_cache_writer"
