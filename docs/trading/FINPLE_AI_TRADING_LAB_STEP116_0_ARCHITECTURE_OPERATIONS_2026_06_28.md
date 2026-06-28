@@ -237,6 +237,8 @@ Suggested future env names:
 ```text
 FINPLE_TRADING_MODE=paper|shadow|live_guarded|live_blocked
 FINPLE_TRADING_KILL_SWITCH=1
+FINPLE_TRADING_ALLOWED_MARKETS=...
+FINPLE_TRADING_ALLOWED_ASSET_TYPES_BY_MARKET=...
 FINPLE_TRADING_ALLOWED_SYMBOLS=...
 KIS_TRADING_APP_KEY=...
 KIS_TRADING_APP_SECRET=...
@@ -443,6 +445,8 @@ Current state remains:
 - `adapterImplementationAllowed=false`
 - `providerCallsAllowed=false`
 - `orderSubmissionAllowed=false`
+
+Control env names are `FINPLE_TRADING_MODE`, `FINPLE_TRADING_KILL_SWITCH`, `FINPLE_TRADING_ALLOWED_MARKETS`, `FINPLE_TRADING_ALLOWED_ASSET_TYPES_BY_MARKET`, and `FINPLE_TRADING_ALLOWED_SYMBOLS`.
 
 Future shadow read-only runtime requires `KIS_TRADING_APP_KEY`, `KIS_TRADING_APP_SECRET`, `KIS_TRADING_ACCOUNT_ID`, and `KIS_TRADING_BASE_URL`. Future live-guarded order adapter work additionally requires manual order-permission approval metadata such as `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_AT` and `FINPLE_TRADING_ORDER_PERMISSION_APPROVED_BY`.
 

@@ -70,6 +70,13 @@ test("records required future env names without secret values", () => {
   const workspace = makeWorkspace();
   const report = readJson(workspace);
 
+  assert.deepEqual(report.envGroups.control, [
+    "FINPLE_TRADING_MODE",
+    "FINPLE_TRADING_KILL_SWITCH",
+    "FINPLE_TRADING_ALLOWED_MARKETS",
+    "FINPLE_TRADING_ALLOWED_ASSET_TYPES_BY_MARKET",
+    "FINPLE_TRADING_ALLOWED_SYMBOLS",
+  ]);
   assert.deepEqual(report.envGroups.readOnlyTrading, [
     "KIS_TRADING_APP_KEY",
     "KIS_TRADING_APP_SECRET",
@@ -93,6 +100,7 @@ test("reports readiness when read-only env is supplied to current process", () =
   const report = readJson(workspace);
   assert.equal(report.readiness.readyForShadowReadOnlyRuntimeInCurrentProcess, true);
   assert.equal(report.readiness.readOnlyRuntimeIntegrationAllowed, false);
+  assert.equal(report.currentProcessPresence.FINPLE_TRADING_ALLOWED_MARKETS.valueStored, false);
   assert.equal(report.currentProcessPresence.KIS_TRADING_APP_SECRET.valueStored, false);
 });
 
