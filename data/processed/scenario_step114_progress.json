@@ -16,7 +16,8 @@
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
     "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json",
-    "bootstrapUnlockPreflight": "data\\processed\\scenario_bootstrap_unlock_preflight.json"
+    "bootstrapUnlockPreflight": "data\\processed\\scenario_bootstrap_unlock_preflight.json",
+    "runtimeImplementationPreflight": "data\\processed\\scenario_runtime_implementation_preflight.json"
   },
   "outputFiles": {
     "progress": "data\\processed\\scenario_step114_progress.json",
@@ -119,7 +120,8 @@
         "monthlyCacheWriterPreflightProviderCallsAllowed": false,
         "canAttemptMonthlyWrite": false,
         "writerCanWriteMonthlyData": false,
-        "bootstrapUnlockPreflightSafe": false
+        "bootstrapUnlockPreflightSafe": false,
+        "runtimeScenarioImplementationAllowed": false
       },
       "blockers": []
     },
@@ -177,6 +179,7 @@
     "providerAdapterPreflightReady": false,
     "monthlyCacheWriterPreflightReady": false,
     "bootstrapUnlockPreflightReady": false,
+    "runtimeImplementationPreflightReady": false,
     "sourcePolicyMatrixWritten": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true

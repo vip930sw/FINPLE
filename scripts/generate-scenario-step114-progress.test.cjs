@@ -28,6 +28,7 @@ const PROCESSED_FILES = [
   "scenario_monthly_write_preflight.json",
   "scenario_p0_cache_writer_gate.json",
   "scenario_bootstrap_unlock_preflight.json",
+  "scenario_runtime_implementation_preflight.json",
   "scenario_step114_progress.json",
 ];
 
@@ -84,6 +85,7 @@ test("reports 80 percent overall progress while real approvals and monthly data 
   assert.equal(progress.guardrails.providerAdapterPreflightReady, false);
   assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, false);
   assert.equal(progress.guardrails.bootstrapUnlockPreflightReady, false);
+  assert.equal(progress.guardrails.runtimeImplementationPreflightReady, false);
   assert.equal(progress.guardrails.sourcePolicyMatrixWritten, false);
 });
 

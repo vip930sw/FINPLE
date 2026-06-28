@@ -123,6 +123,7 @@ data/processed/scenario_p0_monthly_cache_writer_preflight.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_bootstrap_unlock_preflight.json
+data/processed/scenario_runtime_implementation_preflight.json
 data/processed/scenario_step114_progress.json
 ```
 
@@ -164,6 +165,8 @@ scripts/generate-scenario-monthly-write-preflight.cjs
 scripts/generate-scenario-monthly-write-preflight.test.cjs
 scripts/generate-scenario-bootstrap-unlock-preflight.cjs
 scripts/generate-scenario-bootstrap-unlock-preflight.test.cjs
+scripts/generate-scenario-runtime-implementation-preflight.cjs
+scripts/generate-scenario-runtime-implementation-preflight.test.cjs
 scripts/generate-scenario-step114-progress.cjs
 scripts/generate-scenario-step114-progress.test.cjs
 ```
@@ -187,6 +190,7 @@ source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
 monthly cache writer preflight safeToImplementMonthlyCacheWriter=false
 bootstrap unlock preflight safeToRunJointBlockBootstrap=false
+runtime implementation preflight runtimeScenarioImplementationAllowed=false
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -216,6 +220,7 @@ coverage audit
 -> cache writer gate
 -> monthly cache writer preflight
 -> bootstrap unlock preflight
+-> runtime implementation preflight
 ```
 
 ## Required Checks
@@ -247,6 +252,7 @@ npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
 npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
 npm.cmd run check:scenario-bootstrap-unlock-preflight
+npm.cmd run check:scenario-runtime-implementation-preflight
 npm.cmd run check:scenario-step114-progress
 npm.cmd run check:scenario-metrics
 node --test server/src/services/*.test.js server/src/services/scenario/*.test.js
@@ -438,9 +444,29 @@ bootstrapStillBlocked=true
 
 Synthetic tests show the preflight opens only when a temporary valid monthly CSV passes the monthly input validator and the monthly readiness, monthly write, and monthly cache writer evidence all agree. It rejects invalid monthly data and monthly files that appear before completed write evidence. The committed state still does not run Bootstrap, modify scenario calculation, change Compare chart bands, or touch `calculatePortfolioResult()`.
 
+## Step 114-2D Scenario Runtime Implementation Preflight Follow-Up
+
+The scenario runtime implementation preflight now blocks Scenario API, Compare chart scenario bands, probability scenario calculations, and `calculatePortfolioResult()` changes until Bootstrap unlock and runtime review gates all agree:
+
+```text
+monthlyFileExists=false
+bootstrapUnlockReady=false
+scenarioApiReviewApproved=false
+compareChartReviewApproved=false
+calculationReviewApproved=false
+runtimeScenarioImplementationAllowed=false
+safeToImplementScenarioApi=false
+safeToImplementCompareChartScenarioBands=false
+safeToModifyCalculatePortfolioResult=false
+probabilityScenarioCalculationAllowed=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show the preflight opens only when a temporary monthly CSV exists, the Bootstrap unlock preflight is ready, and all three runtime review flags are explicitly approved. It rejects a Bootstrap-ready report when the monthly CSV is missing. The committed state still does not implement the Scenario API, change Compare chart bands, run probability scenarios, or touch `calculatePortfolioResult()`.
+
 ## Recommended Next Step
 
-The next implementation step is still not data fetching. After Step 114-1T, the remaining blocker is a real reviewer-owned approval input step:
+The next implementation step is still not data fetching. After Step 114-2D, the remaining blocker is a real reviewer-owned approval input step:
 
 ```text
 Record real owner/legal/source approval decisions before any provider adapter or monthly cache writer work
@@ -490,7 +516,7 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 - safeToWriteMonthlyData=false
 - bootstrapStillBlocked=true
 
-다음 권장 작업은 Step 114-1T: 실제 승인 없이 synthetic fixture/test harness로 source approval 조건을 검증하는 것입니다.
+다음 권장 작업은 실제 owner/legal/source approval 입력입니다. 승인 전에는 추가 synthetic harness만 허용하고, provider adapter, provider 호출, monthly data write, Bootstrap, Scenario API/Compare chart/`calculatePortfolioResult()` 구현은 계속 금지합니다.
 
 주의사항:
 - 런타임 코드, CSS, 라우터, DB 변경 금지

@@ -43,6 +43,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
 | P0 monthly cache writer preflight | Implemented in Step 114-2B | Blocks monthly cache writer implementation until adapter, approval, monthly write, and writer gates all agree |
 | Bootstrap unlock preflight | Implemented in Step 114-2C | Blocks joint block Bootstrap until validated monthly data and completed write evidence exist |
+| Scenario runtime implementation preflight | Implemented in Step 114-2D | Blocks Scenario API, Compare chart scenario bands, probability scenario calculations, and `calculatePortfolioResult()` changes until Bootstrap unlock and runtime review gates agree |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -515,6 +516,32 @@ bootstrapStillBlocked=true
 
 Synthetic tests prove the preflight opens only with a valid temporary monthly CSV and completed upstream write evidence. It rejects invalid monthly data and monthly files that appear before write completion evidence is recorded. The committed state remains blocked and does not run Bootstrap or implement scenario runtime behavior.
 
+## Scenario Runtime Implementation Preflight
+
+The scenario runtime implementation preflight lives at:
+
+```text
+data/processed/scenario_runtime_implementation_preflight.json
+```
+
+It checks the Bootstrap unlock preflight, the future monthly data target, and explicit runtime review flags before any Scenario API, Compare chart scenario band, probability scenario calculation, or `calculatePortfolioResult()` work:
+
+```text
+monthlyFileExists=false
+bootstrapUnlockReady=false
+scenarioApiReviewApproved=false
+compareChartReviewApproved=false
+calculationReviewApproved=false
+runtimeScenarioImplementationAllowed=false
+safeToImplementScenarioApi=false
+safeToImplementCompareChartScenarioBands=false
+safeToModifyCalculatePortfolioResult=false
+probabilityScenarioCalculationAllowed=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove the preflight opens only when a temporary monthly CSV exists, the Bootstrap unlock preflight reports ready, and all runtime review flags are explicitly approved. The committed state remains blocked and does not implement API, UI, DB, chart, Bootstrap, or calculation changes.
+
 ## Monthly Write Preflight
 
 The monthly write preflight report lives at:
@@ -629,6 +656,7 @@ npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
 npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
 npm.cmd run check:scenario-bootstrap-unlock-preflight
+npm.cmd run check:scenario-runtime-implementation-preflight
 ```
 
 ## Non-Goals
@@ -646,4 +674,4 @@ This step does not:
 
 ## Next Boundary
 
-The safe next implementation boundary is still real owner/legal/source approval. A provider-refetch cache or controlled monthly cache writer may write `data/processed/scenario_monthly_returns.csv` only after the provider adapter, approval readiness, monthly write, writer gate, and monthly cache writer preflights all open. Bootstrap should remain blocked until that file exists, passes this validator, and passes the Bootstrap unlock preflight.
+The safe next implementation boundary is still real owner/legal/source approval. A provider-refetch cache or controlled monthly cache writer may write `data/processed/scenario_monthly_returns.csv` only after the provider adapter, approval readiness, monthly write, writer gate, and monthly cache writer preflights all open. Bootstrap should remain blocked until that file exists, passes this validator, and passes the Bootstrap unlock preflight. Runtime Scenario API, Compare chart scenario bands, probability scenario calculations, and `calculatePortfolioResult()` changes should remain blocked until the scenario runtime implementation preflight also opens.
