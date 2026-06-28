@@ -102,7 +102,10 @@ test("passes with current blocked approval and no monthly data file", () => {
 test("rejects monthly data file when P0 approval readiness is blocked", () => {
   const workspace = makeWorkspace();
   writeMonthlyFile(workspace);
-  const result = runPreflight(workspace);
+  mutateApprovalReadiness(workspace, (value) => {
+    value.readiness.safeToWriteMonthlyData = false;
+  });
+  const result = runPreflight(workspace, []);
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /scenario_monthly_returns\.csv exists before P0 approval readiness allows monthly writes/);
@@ -117,7 +120,7 @@ test("rejects monthly data file when provider calls are not allowed", () => {
     value.readiness.providerCallsAllowed = false;
   });
 
-  const result = runPreflight(workspace);
+  const result = runPreflight(workspace, []);
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /scenario_monthly_returns\.csv exists while provider calls are not allowed/);
@@ -125,6 +128,10 @@ test("rejects monthly data file when provider calls are not allowed", () => {
 
 test("stays blocked when approval readiness is opened before source-policy post-import preflight", () => {
   const workspace = makeWorkspace();
+  mutatePostImportPreflight(workspace, (value) => {
+    value.checks.safeToUseImportedSourcePolicy = false;
+    value.readiness.safeToUseImportedSourcePolicy = false;
+  });
   mutateApprovalReadiness(workspace, (value) => {
     value.readiness.status = "ready_for_p0_monthly_cache_write";
     value.readiness.safeToWriteMonthlyData = true;
@@ -165,6 +172,10 @@ test("generates ready-but-missing report after approval readiness and post-impor
 test("rejects monthly data file before source-policy post-import preflight is ready", () => {
   const workspace = makeWorkspace();
   writeMonthlyFile(workspace);
+  mutatePostImportPreflight(workspace, (value) => {
+    value.checks.safeToUseImportedSourcePolicy = false;
+    value.readiness.safeToUseImportedSourcePolicy = false;
+  });
   mutateApprovalReadiness(workspace, (value) => {
     value.readiness.status = "ready_for_p0_monthly_cache_write";
     value.readiness.safeToWriteMonthlyData = true;
@@ -172,7 +183,7 @@ test("rejects monthly data file before source-policy post-import preflight is re
     value.readiness.blockers = [];
   });
 
-  const result = runPreflight(workspace);
+  const result = runPreflight(workspace, []);
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /scenario_monthly_returns\.csv exists before source-policy post-import preflight is ready/);

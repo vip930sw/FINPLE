@@ -155,18 +155,18 @@ test("passes with current blocked monthly cache writer preflight", () => {
   assert.match(result.stdout, /scenario_p0_monthly_cache_writer_preflight\.json/);
 });
 
-test("keeps current committed monthly cache writer preflight blocked", () => {
+test("keeps current committed monthly cache writer preflight ready after approvals", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, WRITER_PREFLIGHT);
-  assert.equal(report.checks.safeToImplementMonthlyCacheWriter, false);
-  assert.equal(report.checks.providerCallsAllowed, false);
+  assert.equal(report.checks.safeToImplementMonthlyCacheWriter, true);
+  assert.equal(report.checks.providerCallsAllowed, true);
   assert.equal(report.checks.monthlyFileExists, false);
   assert.equal(report.readiness.monthlyDataFileWritten, false);
   assert.equal(report.readiness.bootstrapStillBlocked, true);
-  assert.match(report.checks.blockers.join("|"), /provider_adapter_preflight_not_ready/);
+  assert.equal(report.checks.blockers.length, 0);
 });
 
 test("opens only after adapter, approval, monthly write, and writer gates are all ready", () => {
@@ -219,9 +219,13 @@ test("stays blocked when provider adapter is ready but monthly write preflight i
 
 test("rejects monthly file when committed gates are still blocked", () => {
   const workspace = makeWorkspace();
+  mutateJson(workspace, PROVIDER_ADAPTER_PREFLIGHT, (value) => {
+    value.checks.safeToImplementProviderAdapter = false;
+    value.checks.providerCallsAllowed = false;
+  });
   writeMonthlyFile(workspace);
 
-  const result = runPreflight(workspace);
+  const result = runPreflight(workspace, []);
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /scenario_monthly_returns\.csv exists before monthly cache writer preflight is ready/);
@@ -259,7 +263,7 @@ test("rejects monthly file before source-policy post-import preflight is ready",
 test("rejects stale committed monthly cache writer preflight", () => {
   const workspace = makeWorkspace();
   const report = readWorkspaceJson(workspace, WRITER_PREFLIGHT);
-  report.checks.safeToImplementMonthlyCacheWriter = true;
+  report.checks.safeToImplementMonthlyCacheWriter = false;
   writeWorkspaceJson(workspace, WRITER_PREFLIGHT, report);
 
   const result = runPreflight(workspace);

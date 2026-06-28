@@ -21,13 +21,17 @@
     "canSyncSourcePolicy": true,
     "plannedSourcePolicyUpdates": 17,
     "totalSourcePolicyRows": 17,
-    "approvedSourcePolicyRows": 0,
+    "approvedSourcePolicyRows": 17,
+    "importNotYetApplied": false,
+    "importAlreadyApplied": true,
     "monthlyFileExists": false,
     "readyForRealApprovalImport": true,
-    "blockers": []
+    "blockers": [
+      "source_policy_matrix_already_contains_approved_rows"
+    ]
   },
   "readiness": {
-    "status": "ready_for_manual_real_approval_import_review",
+    "status": "real_approval_import_applied",
     "safeToImportRealApprovalDecisions": true,
     "sourcePolicyMatrixWriteAllowed": true,
     "providerCallsAllowed": false,
@@ -35,6 +39,6 @@
     "safeToWriteMonthlyData": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "manually_import_real_approval_decisions_then_rerun_source_policy_and_approval_readiness"
+    "nextAllowedStep": "run_source_policy_post_import_and_approval_readiness"
   }
 }

@@ -1,8 +1,8 @@
 {
-  "reviewVersion": "scenario-p0-external-provider-terms-review-v0.2",
-  "auditedAt": "2026-06-27T00:00:00Z",
+  "reviewVersion": "scenario-p0-real-approval-import-v0.1-external-terms",
+  "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
-    "candidateReview": "data\\processed\\scenario_p0_provider_candidate_review.csv"
+    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv"
   },
   "officialSourcesReviewed": [
     {
@@ -24,16 +24,16 @@
       "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
     },
     {
-      "providerCandidate": "US_price_total_return_dividend_provider",
-      "namedProviderCandidate": "Alpha Vantage",
-      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
-      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
-    },
-    {
       "providerCandidate": "USD_KRW_fx_provider",
       "namedProviderCandidate": "FRED DEXKOUS",
       "officialDocsUrl": "https://fred.stlouisfed.org/series/DEXKOUS",
       "officialTermsUrl": "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+    },
+    {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Alpha Vantage",
+      "officialDocsUrl": "https://www.alphavantage.co/documentation/",
+      "officialTermsUrl": "https://www.alphavantage.co/terms_of_service/"
     }
   ],
   "outputFiles": {
@@ -43,33 +43,29 @@
   },
   "rowCounts": {
     "providerCandidates": 5,
-    "approvedProviders": 0,
-    "blockedProviders": 5
+    "approvedProviders": 5,
+    "blockedProviders": 0
   },
   "counts": {
     "byApprovalStatus": {
-      "not_approved": 5
+      "approved": 5
     },
     "byBlocker": {
-      "commercial_use_and_redistribution_terms_not_approved": 1,
-      "fx_source_terms_and_citation_policy_not_approved": 1,
-      "index_or_proxy_license_terms_not_approved": 1,
-      "kospi200_index_or_proxy_terms_not_approved": 1,
-      "kr_market_data_terms_not_approved": 1
+      "(blank)": 5
     }
   },
   "termsIntegrity": {
     "expectedProviderCandidates": 5,
     "providerSetVerified": true,
     "officialUrlsVerified": true,
-    "noTermsApproved": true,
+    "allTermsApproved": true,
     "monthlyDataFileAbsent": true
   },
   "readiness": {
-    "status": "blocked_external_terms_review",
+    "status": "external_terms_approved_after_real_approval_import",
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "legal_or_owner_review_named_provider_terms_before_source_policy_approval"
+    "nextAllowedStep": "run_approval_readiness_after_external_terms_import"
   }
 }

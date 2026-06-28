@@ -12,37 +12,24 @@
     "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
   },
   "checks": {
-    "sourcePolicySyncReady": false,
-    "sourcePolicyMatrixWritten": false,
-    "postImportPreflightReady": false,
-    "approvalReady": false,
-    "writerGateReady": false,
-    "allSourcePolicyRowsApproved": false,
-    "providerCallsAllowed": false,
-    "safeToImplementProviderAdapter": false,
+    "sourcePolicySyncReady": true,
+    "sourcePolicyMatrixWritten": true,
+    "postImportPreflightReady": true,
+    "approvalReady": true,
+    "writerGateReady": true,
+    "allSourcePolicyRowsApproved": true,
+    "providerCallsAllowed": true,
+    "safeToImplementProviderAdapter": true,
     "sourcePolicyRows": 17,
-    "approvedSourcePolicyRows": 0,
-    "blockers": [
-      "source_policy_sync_preflight_not_ready",
-      "source_policy_matrix_not_synced",
-      "source_policy_post_import_preflight_not_ready",
-      "approval_readiness_not_safe_for_adapter",
-      "writer_gate_not_open_for_provider_calls",
-      "source_policy_rows_not_fully_approved",
-      "external_provider_terms_not_fully_approved",
-      "owner_legal_adapter_approval_not_complete",
-      "owner_legal_monthly_write_approval_not_complete",
-      "source_policy_rows_not_approved",
-      "writer_gate_cannot_write_monthly_data",
-      "writer_gate_provider_calls_not_allowed"
-    ]
+    "approvedSourcePolicyRows": 17,
+    "blockers": []
   },
   "readiness": {
-    "status": "blocked_before_provider_adapter",
-    "safeToImplementProviderAdapter": false,
-    "providerCallsAllowed": false,
+    "status": "ready_for_provider_adapter_implementation_review",
+    "safeToImplementProviderAdapter": true,
+    "providerCallsAllowed": true,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "complete_source_policy_sync_and_approval_readiness_before_adapter"
+    "nextAllowedStep": "implement_controlled_provider_adapter_after_manual_review"
   }
 }

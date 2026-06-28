@@ -131,22 +131,22 @@ test("passes with current source policy sync preflight", () => {
   assert.match(result.stdout, /scenario_p0_source_policy_sync_preflight\.json/);
 });
 
-test("keeps current committed source policy sync preflight ready for manual source policy sync", () => {
+test("keeps current committed source policy sync preflight written after manual source policy sync", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
   assert.equal(preflight.checks.totalSourcePolicyRows, 17);
-  assert.equal(preflight.checks.approvedSourcePolicyRows, 0);
+  assert.equal(preflight.checks.approvedSourcePolicyRows, 17);
   assert.equal(preflight.checks.canSyncSourcePolicy, true);
   assert.equal(preflight.readiness.status, "ready_for_manual_source_policy_sync");
-  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, false);
+  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, true);
   assert.equal(preflight.readiness.providerCallsAllowed, false);
   assert.equal(preflight.readiness.monthlyDataFileWritten, false);
 });
 
-test("reports ready preflight when sync plan is complete but source policy matrix is still untouched", () => {
+test("reports ready preflight when sync plan is complete and source policy matrix is written", () => {
   const workspace = makeWorkspace();
   makeSyncPlanReady(workspace);
 
@@ -155,9 +155,9 @@ test("reports ready preflight when sync plan is complete but source policy matri
   assert.equal(result.status, 0, result.stderr);
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
   assert.equal(preflight.checks.canSyncSourcePolicy, true);
-  assert.equal(preflight.checks.approvedSourcePolicyRows, 0);
+  assert.equal(preflight.checks.approvedSourcePolicyRows, 17);
   assert.equal(preflight.readiness.status, "ready_for_manual_source_policy_sync");
-  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, false);
+  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, true);
 });
 
 test("rejects approved source policy rows before sync plan is ready", () => {

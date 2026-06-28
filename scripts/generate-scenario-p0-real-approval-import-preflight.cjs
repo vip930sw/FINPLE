@@ -48,6 +48,9 @@ function buildPreflight() {
   const approvedSourcePolicyRows = syncPreflight.checks?.approvedSourcePolicyRows ?? 0;
   const plannedSourcePolicyUpdates = syncPlan.rowCounts?.plannedSourcePolicyUpdates ?? 0;
   const totalSourcePolicyRows = syncPreflight.checks?.totalSourcePolicyRows ?? 0;
+  const importNotYetApplied = approvedSourcePolicyRows === 0;
+  const importAlreadyApplied = totalSourcePolicyRows === 17 && approvedSourcePolicyRows === totalSourcePolicyRows;
+  const approvedRowsInValidState = importNotYetApplied || importAlreadyApplied;
 
   if (templateProviderGroups !== providerGroups) {
     fail(`${APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH} providerGroups does not match approval intake validation`);
@@ -72,7 +75,7 @@ function buildPreflight() {
     syncPlanReady &&
     canSyncSourcePolicy &&
     plannedSourcePolicyUpdates === totalSourcePolicyRows &&
-    approvedSourcePolicyRows === 0 &&
+    approvedRowsInValidState &&
     !monthlyFileExists;
   const blockers = unique([
     ...(providerGroups === 5 ? [] : ["approval_intake_validation_provider_group_count_mismatch"]),
@@ -83,7 +86,7 @@ function buildPreflight() {
     ...(syncPlanReady ? [] : ["source_policy_sync_plan_not_ready"]),
     ...(canSyncSourcePolicy ? [] : ["source_policy_sync_preflight_not_ready"]),
     ...(plannedSourcePolicyUpdates === totalSourcePolicyRows ? [] : ["source_policy_sync_plan_not_complete"]),
-    ...(approvedSourcePolicyRows === 0 ? [] : ["source_policy_matrix_already_contains_approved_rows"]),
+    ...(approvedRowsInValidState ? [] : ["source_policy_matrix_contains_partial_approved_rows"]),
     ...(monthlyFileExists ? ["scenario_monthly_returns_csv_written_before_approval_import"] : []),
     ...(validation.providerGroups ?? []).flatMap((row) => row.blockers ?? []),
     ...(syncPlan.providerGroups ?? []).flatMap((row) => row.blockers ?? []),
@@ -114,12 +117,18 @@ function buildPreflight() {
       plannedSourcePolicyUpdates,
       totalSourcePolicyRows,
       approvedSourcePolicyRows,
+      importNotYetApplied,
+      importAlreadyApplied,
       monthlyFileExists,
       readyForRealApprovalImport,
       blockers,
     },
     readiness: {
-      status: readyForRealApprovalImport ? "ready_for_manual_real_approval_import_review" : "blocked_before_real_approval_import",
+      status: readyForRealApprovalImport
+        ? importAlreadyApplied
+          ? "real_approval_import_applied"
+          : "ready_for_manual_real_approval_import_review"
+        : "blocked_before_real_approval_import",
       safeToImportRealApprovalDecisions: readyForRealApprovalImport,
       sourcePolicyMatrixWriteAllowed: readyForRealApprovalImport,
       providerCallsAllowed: false,
@@ -128,7 +137,9 @@ function buildPreflight() {
       monthlyDataFileWritten: false,
       bootstrapStillBlocked: true,
       nextAllowedStep: readyForRealApprovalImport
-        ? "manually_import_real_approval_decisions_then_rerun_source_policy_and_approval_readiness"
+        ? importAlreadyApplied
+          ? "run_source_policy_post_import_and_approval_readiness"
+          : "manually_import_real_approval_decisions_then_rerun_source_policy_and_approval_readiness"
         : "complete_real_approval_intake_validation_before_source_policy_import",
     },
   });

@@ -138,14 +138,14 @@ test("passes with current blocked source-policy post-import preflight", () => {
   assert.match(result.stdout, /scenario_p0_source_policy_post_import_preflight\.json/);
 });
 
-test("keeps current committed source-policy post-import preflight blocked", () => {
+test("keeps current committed source-policy post-import preflight ready after approval import", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, POST_IMPORT_PREFLIGHT);
-  assert.equal(report.checks.approvedSourcePolicyRows, 0);
-  assert.equal(report.checks.safeToUseImportedSourcePolicy, false);
+  assert.equal(report.checks.approvedSourcePolicyRows, 17);
+  assert.equal(report.checks.safeToUseImportedSourcePolicy, true);
   assert.equal(report.readiness.providerCallsAllowed, false);
   assert.equal(report.readiness.safeToImplementProviderAdapter, false);
   assert.equal(report.readiness.safeToWriteMonthlyData, false);
@@ -170,9 +170,11 @@ test("opens only after real approval import and all source-policy rows are appro
 
 test("rejects approved source-policy rows before real approval import preflight is ready", () => {
   const workspace = makeWorkspace();
-  const csv = readWorkspaceCsv(workspace, SOURCE_POLICY);
-  csv.rows[0] = { ...csv.rows[0], ...APPROVED_RULES };
-  writeWorkspaceCsv(workspace, SOURCE_POLICY, csv);
+  mutateJson(workspace, IMPORT_PREFLIGHT, (value) => {
+    value.checks.readyForRealApprovalImport = false;
+    value.readiness.safeToImportRealApprovalDecisions = false;
+    value.readiness.sourcePolicyMatrixWriteAllowed = false;
+  });
 
   const result = runPreflight(workspace, []);
 
@@ -206,7 +208,7 @@ test("rejects monthly returns before source-policy post-import preflight has com
 test("rejects stale committed source-policy post-import preflight", () => {
   const workspace = makeWorkspace();
   const report = readWorkspaceJson(workspace, POST_IMPORT_PREFLIGHT);
-  report.checks.safeToUseImportedSourcePolicy = true;
+  report.checks.safeToUseImportedSourcePolicy = false;
   writeWorkspaceJson(workspace, POST_IMPORT_PREFLIGHT, report);
 
   const result = runPreflight(workspace);

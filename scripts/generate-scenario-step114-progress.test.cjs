@@ -70,27 +70,27 @@ test("passes with current blocked progress report", () => {
   assert.match(result.stdout, /scenario_step114_progress\.json/);
 });
 
-test("reports 80 percent overall progress while provider and monthly data are blocked", () => {
+test("reports 90 percent overall progress after approval import while monthly data is blocked", () => {
   const workspace = makeWorkspace();
   const result = runProgress(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const progress = readProgress(workspace);
-  assert.equal(progress.overallProgressPercent, 80);
-  assert.equal(progress.progressNotes.realApprovalDecisionsPercent, 0);
+  assert.equal(progress.overallProgressPercent, 90);
+  assert.equal(progress.progressNotes.realApprovalDecisionsPercent, 100);
   assert.equal(progress.progressNotes.monthlyDataAndBootstrapPercent, 0);
-  assert.equal(progress.guardrails.providerCallsAllowed, false);
-  assert.equal(progress.guardrails.safeToWriteMonthlyData, false);
+  assert.equal(progress.guardrails.providerCallsAllowed, true);
+  assert.equal(progress.guardrails.safeToWriteMonthlyData, true);
   assert.equal(progress.guardrails.approvalIntakeValidationReady, true);
   assert.equal(progress.guardrails.realApprovalImportPreflightReady, true);
-  assert.equal(progress.guardrails.sourcePolicyPostImportPreflightReady, false);
+  assert.equal(progress.guardrails.sourcePolicyPostImportPreflightReady, true);
   assert.equal(progress.guardrails.sourcePolicySyncPlanReady, true);
   assert.equal(progress.guardrails.sourcePolicySyncPreflightReady, true);
-  assert.equal(progress.guardrails.providerAdapterPreflightReady, false);
-  assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, false);
+  assert.equal(progress.guardrails.providerAdapterPreflightReady, true);
+  assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, true);
   assert.equal(progress.guardrails.bootstrapUnlockPreflightReady, false);
   assert.equal(progress.guardrails.runtimeImplementationPreflightReady, false);
-  assert.equal(progress.guardrails.sourcePolicyMatrixWritten, false);
+  assert.equal(progress.guardrails.sourcePolicyMatrixWritten, true);
 });
 
 test("real approval progress moves independently from monthly data progress", () => {

@@ -25,13 +25,13 @@
     "progress": "data\\processed\\scenario_step114_progress.json",
     "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
   },
-  "overallProgressPercent": 80,
-  "completedWeightedPoints": 80,
+  "overallProgressPercent": 90,
+  "completedWeightedPoints": 90,
   "totalWeight": 100,
-  "status": "blocked_before_real_approvals_and_monthly_data",
+  "status": "blocked_before_monthly_data_write_and_bootstrap",
   "progressNotes": {
     "auditAndGovernanceFrameworkPercent": 100,
-    "realApprovalDecisionsPercent": 0,
+    "realApprovalDecisionsPercent": 100,
     "monthlyDataAndBootstrapPercent": 0,
     "runtimeScenarioImplementationPercent": 0
   },
@@ -96,8 +96,8 @@
         "approvalIntakeValidationReadyRows": 5,
         "sourcePolicySyncPlannedUpdates": 17,
         "sourcePolicySyncPreflightCanSync": true,
-        "providerAdapterPreflightSafe": false,
-        "monthlyCacheWriterPreflightSafe": false
+        "providerAdapterPreflightSafe": true,
+        "monthlyCacheWriterPreflightSafe": true
       },
       "blockers": []
     },
@@ -109,21 +109,21 @@
       "weightedPoints": 15,
       "status": "complete",
       "evidence": {
-        "safeToImplementProviderAdapter": false,
-        "safeToWriteMonthlyData": false,
+        "safeToImplementProviderAdapter": true,
+        "safeToWriteMonthlyData": true,
         "approvalIntakeValidationProviderCallsAllowed": false,
         "realApprovalImportPreflightSafe": true,
-        "sourcePolicyPostImportPreflightSafe": false,
+        "sourcePolicyPostImportPreflightSafe": true,
         "sourcePolicySyncPlanProviderCallsAllowed": false,
         "sourcePolicyMatrixWritten": false,
         "sourcePolicySyncPreflightProviderCallsAllowed": false,
         "sourcePolicySyncPreflightCanSync": true,
-        "providerAdapterPreflightSafe": false,
-        "providerAdapterPreflightProviderCallsAllowed": false,
-        "monthlyCacheWriterPreflightSafe": false,
-        "monthlyCacheWriterPreflightProviderCallsAllowed": false,
-        "canAttemptMonthlyWrite": false,
-        "writerCanWriteMonthlyData": false,
+        "providerAdapterPreflightSafe": true,
+        "providerAdapterPreflightProviderCallsAllowed": true,
+        "monthlyCacheWriterPreflightSafe": true,
+        "monthlyCacheWriterPreflightProviderCallsAllowed": true,
+        "canAttemptMonthlyWrite": true,
+        "writerCanWriteMonthlyData": true,
         "bootstrapUnlockPreflightSafe": false,
         "runtimeScenarioImplementationAllowed": false
       },
@@ -133,28 +133,19 @@
       "id": "real_approval_decisions",
       "label": "Real owner/legal/source approvals for P0 provider groups",
       "weight": 10,
-      "progressPercent": 0,
-      "weightedPoints": 0,
-      "status": "blocked",
+      "progressPercent": 100,
+      "weightedPoints": 10,
+      "status": "complete",
       "evidence": {
-        "termsApproved": 0,
-        "ownerAdapterApproved": 0,
-        "ownerMonthlyApproved": 0,
-        "sourcePolicyApproved": 0,
-        "readyProviderGroups": 0,
-        "completedApprovalSlots": 0,
+        "termsApproved": 5,
+        "ownerAdapterApproved": 5,
+        "ownerMonthlyApproved": 5,
+        "sourcePolicyApproved": 17,
+        "readyProviderGroups": 5,
+        "completedApprovalSlots": 37,
         "totalApprovalSlots": 37
       },
-      "blockers": [
-        "source_policy_post_import_preflight_not_ready",
-        "external_provider_terms_not_fully_approved",
-        "owner_legal_adapter_approval_not_complete",
-        "owner_legal_monthly_write_approval_not_complete",
-        "source_policy_rows_not_approved",
-        "writer_gate_cannot_write_monthly_data",
-        "writer_gate_provider_calls_not_allowed",
-        "approval_intake_provider_groups_not_ready"
-      ]
+      "blockers": []
     },
     {
       "id": "monthly_data_write_and_bootstrap",
@@ -165,7 +156,7 @@
       "status": "blocked",
       "evidence": {
         "monthlyFileExists": false,
-        "canAttemptMonthlyWrite": false,
+        "canAttemptMonthlyWrite": true,
         "bootstrapUnlockPreflightSafe": false,
         "bootstrapStillBlocked": true
       },
@@ -175,21 +166,21 @@
     }
   ],
   "guardrails": {
-    "providerCallsAllowed": false,
-    "safeToImplementProviderAdapter": false,
-    "safeToWriteMonthlyData": false,
+    "providerCallsAllowed": true,
+    "safeToImplementProviderAdapter": true,
+    "safeToWriteMonthlyData": true,
     "approvalIntakeValidationReady": true,
     "realApprovalImportPreflightReady": true,
-    "sourcePolicyPostImportPreflightReady": false,
+    "sourcePolicyPostImportPreflightReady": true,
     "sourcePolicySyncPlanReady": true,
     "sourcePolicySyncPreflightReady": true,
-    "providerAdapterPreflightReady": false,
-    "monthlyCacheWriterPreflightReady": false,
+    "providerAdapterPreflightReady": true,
+    "monthlyCacheWriterPreflightReady": true,
     "bootstrapUnlockPreflightReady": false,
     "runtimeImplementationPreflightReady": false,
-    "sourcePolicyMatrixWritten": false,
+    "sourcePolicyMatrixWritten": true,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true
   },
-  "nextAllowedStep": "record_real_owner_legal_terms_and_source_policy_approvals_before_adapter_or_write"
+  "nextAllowedStep": "implement_controlled_p0_provider_adapter_and_monthly_cache_writer_then_write_validated_scenario_monthly_returns_with_source_metadata"
 }

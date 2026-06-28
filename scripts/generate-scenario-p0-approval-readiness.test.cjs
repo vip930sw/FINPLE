@@ -281,6 +281,9 @@ test("rejects provider candidate drift between gate files", () => {
 test("rejects writer gate provider calls before approval layers are complete", () => {
   const workspace = makeWorkspace();
   makePostImportPreflightReady(workspace);
+  updateWorkspaceCsv(workspace, "scenario_p0_source_approval_decision_record.csv", (row) =>
+    row.providerCandidate === "USD_KRW_fx_provider" ? { ...row, decisionStatus: "pending_decision" } : row,
+  );
   const writerGate = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json"));
   writerGate.readiness.providerCallsAllowed = true;
   writeWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json", `${JSON.stringify(writerGate, null, 2)}\n`);
@@ -288,12 +291,15 @@ test("rejects writer gate provider calls before approval layers are complete", (
   const result = runReadiness(workspace);
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /writer gate allows provider calls before terms, owner\/legal, and source policy approvals/);
+  assert.match(result.stderr, /requires decisionStatus=approved_source_policy/);
 });
 
 test("rejects writer gate monthly writes before all approval layers are complete", () => {
   const workspace = makeWorkspace();
   makePostImportPreflightReady(workspace);
+  updateWorkspaceCsv(workspace, "scenario_p0_source_approval_decision_record.csv", (row) =>
+    row.providerCandidate === "USD_KRW_fx_provider" ? { ...row, decisionStatus: "pending_decision" } : row,
+  );
   const writerGate = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json"));
   writerGate.readiness.canWriteMonthlyData = true;
   writeWorkspaceFile(workspace, "scenario_p0_cache_writer_gate.json", `${JSON.stringify(writerGate, null, 2)}\n`);
@@ -301,5 +307,5 @@ test("rejects writer gate monthly writes before all approval layers are complete
   const result = runReadiness(workspace);
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /writer gate allows monthly data writes before all approval readiness checks are complete/);
+  assert.match(result.stderr, /requires decisionStatus=approved_source_policy/);
 });

@@ -151,7 +151,7 @@ test("passes with current blocked approval intake checklist", () => {
   assert.match(result.stdout, /scenario_p0_approval_intake_checklist\.json/);
 });
 
-test("reports all current provider groups as blocked with zero intake completion", () => {
+test("reports current provider groups as ready after real approval import", () => {
   const workspace = makeWorkspace();
   const result = runChecklist(workspace, []);
 
@@ -159,12 +159,12 @@ test("reports all current provider groups as blocked with zero intake completion
   const checklist = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_approval_intake_checklist.json"));
   assert.equal(checklist.rowCounts.providerGroups, 5);
   assert.equal(checklist.rowCounts.sourcePolicyRows, 17);
-  assert.equal(checklist.rowCounts.readyProviderGroups, 0);
+  assert.equal(checklist.rowCounts.readyProviderGroups, 5);
   assert.equal(checklist.sourceIntegrity.providerCandidateSetVerified, true);
   assert.equal(checklist.sourceIntegrity.expectedProviderGroups, 5);
   assert.equal(checklist.sourceIntegrity.expectedSourcePolicyRows, 17);
-  assert.equal(checklist.completion.intakeCompletionPercent, 0);
-  assert.equal(checklist.completion.readyForProviderAdapter, false);
+  assert.equal(checklist.completion.intakeCompletionPercent, 100);
+  assert.equal(checklist.completion.readyForProviderAdapter, true);
 });
 
 test("accepts complete synthetic approval intake without touching real files", () => {

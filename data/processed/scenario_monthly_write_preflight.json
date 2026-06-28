@@ -11,25 +11,17 @@
   },
   "checks": {
     "monthlyFileExists": false,
-    "approvalStatus": "blocked_pending_p0_approvals",
-    "safeToWriteMonthlyData": false,
-    "providerCallsAllowed": false,
-    "postImportPreflightReady": false,
-    "canAttemptMonthlyWrite": false,
-    "blockers": [
-      "source_policy_post_import_preflight_not_ready",
-      "external_provider_terms_not_fully_approved",
-      "owner_legal_adapter_approval_not_complete",
-      "owner_legal_monthly_write_approval_not_complete",
-      "source_policy_rows_not_approved",
-      "writer_gate_cannot_write_monthly_data",
-      "writer_gate_provider_calls_not_allowed"
-    ]
+    "approvalStatus": "ready_for_p0_monthly_cache_write",
+    "safeToWriteMonthlyData": true,
+    "providerCallsAllowed": true,
+    "postImportPreflightReady": true,
+    "canAttemptMonthlyWrite": true,
+    "blockers": []
   },
   "readiness": {
-    "status": "blocked_before_monthly_write",
+    "status": "ready_for_monthly_write_but_file_missing",
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "complete_p0_approval_readiness_before_monthly_write"
+    "nextAllowedStep": "write_validated_scenario_monthly_returns_with_source_metadata"
   }
 }

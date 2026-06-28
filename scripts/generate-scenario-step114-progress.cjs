@@ -186,7 +186,7 @@ function buildProgress() {
     sourcePolicySyncPreflight.checks?.totalSourcePolicyRows === 17 &&
     providerAdapterPreflight.checks?.sourcePolicyRows === 17 &&
     monthlyCacheWriterPreflight.checks?.sourcePolicyRows === 17;
-  const guardrailHarnessComplete =
+  const preApprovalGuardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
     realApprovalImportPreflight.readiness?.safeToWriteMonthlyData === false &&
     sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === false &&
@@ -207,6 +207,26 @@ function buildProgress() {
     bootstrapUnlockPreflight.readiness?.safeToRunJointBlockBootstrap === false &&
     runtimeImplementationPreflight.readiness?.runtimeScenarioImplementationAllowed === false &&
     runtimeImplementationPreflight.readiness?.safeToModifyCalculatePortfolioResult === false;
+  const postApprovalGuardrailHarnessComplete =
+    approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
+    realApprovalImportPreflight.readiness?.safeToWriteMonthlyData === false &&
+    sourcePolicyPostImportPreflight.readiness?.safeToUseImportedSourcePolicy === true &&
+    sourcePolicyPostImportPreflight.readiness?.safeToWriteMonthlyData === false &&
+    sourcePolicySyncPlan.readiness?.providerCallsAllowed === false &&
+    sourcePolicySyncPreflight.readiness?.providerCallsAllowed === false &&
+    providerAdapterPreflight.readiness?.providerCallsAllowed === true &&
+    providerAdapterPreflight.readiness?.safeToImplementProviderAdapter === true &&
+    monthlyCacheWriterPreflight.readiness?.providerCallsAllowed === true &&
+    monthlyCacheWriterPreflight.readiness?.safeToImplementMonthlyCacheWriter === true &&
+    approvalReadiness.readiness?.safeToImplementProviderAdapter === true &&
+    approvalReadiness.readiness?.safeToWriteMonthlyData === true &&
+    writePreflight.checks?.monthlyFileExists === false &&
+    writePreflight.checks?.canAttemptMonthlyWrite === true &&
+    writerGate.readiness?.canWriteMonthlyData === true &&
+    bootstrapUnlockPreflight.readiness?.safeToRunJointBlockBootstrap === false &&
+    runtimeImplementationPreflight.readiness?.runtimeScenarioImplementationAllowed === false &&
+    runtimeImplementationPreflight.readiness?.safeToModifyCalculatePortfolioResult === false;
+  const guardrailHarnessComplete = preApprovalGuardrailHarnessComplete || postApprovalGuardrailHarnessComplete;
 
   const approvalCounts = approvalReadiness.rowCounts ?? {};
   const approvalProgress = approvalIntake.completion?.intakeCompletionPercent ?? 0;
@@ -369,7 +389,12 @@ function buildProgress() {
     overallProgressPercent,
     completedWeightedPoints,
     totalWeight,
-    status: overallProgressPercent === 100 ? "complete" : "blocked_before_real_approvals_and_monthly_data",
+    status:
+      overallProgressPercent === 100
+        ? "complete"
+        : approvalProgress === 100
+          ? "blocked_before_monthly_data_write_and_bootstrap"
+          : "blocked_before_real_approvals_and_monthly_data",
     progressNotes: {
       auditAndGovernanceFrameworkPercent: 100,
       realApprovalDecisionsPercent: approvalProgress,
@@ -390,13 +415,17 @@ function buildProgress() {
       monthlyCacheWriterPreflightReady: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter === true,
       bootstrapUnlockPreflightReady: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap === true,
       runtimeImplementationPreflightReady: runtimeImplementationPreflight.checks?.runtimeScenarioImplementationAllowed === true,
-      sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === true,
+      sourcePolicyMatrixWritten:
+        sourcePolicySyncPreflight.readiness?.sourcePolicyMatrixWritten === true ||
+        sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === true,
       monthlyDataFileWritten: monthlyFileExists,
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,
     },
     nextAllowedStep:
-      approvalProgress === 100
-        ? "run_monthly_write_preflight_before_controlled_cache_writer"
+      approvalProgress === 100 && writePreflight.checks?.canAttemptMonthlyWrite === true
+        ? "implement_controlled_p0_provider_adapter_and_monthly_cache_writer_then_write_validated_scenario_monthly_returns_with_source_metadata"
+        : approvalProgress === 100
+          ? "run_monthly_write_preflight_before_controlled_cache_writer"
         : "record_real_owner_legal_terms_and_source_policy_approvals_before_adapter_or_write",
   });
 }
