@@ -42,6 +42,7 @@ This step does not add real monthly return data. It adds the schema and validato
 | P0 source policy sync preflight | Implemented in Step 114-1Z | Blocks source-policy matrix writes until the sync plan is ready and prevents premature approved source-policy rows |
 | P0 provider adapter preflight | Implemented in Step 114-2A | Blocks provider adapter implementation until source-policy sync, approval readiness, and writer gate all agree |
 | P0 monthly cache writer preflight | Implemented in Step 114-2B | Blocks monthly cache writer implementation until adapter, approval, monthly write, and writer gates all agree |
+| Bootstrap unlock preflight | Implemented in Step 114-2C | Blocks joint block Bootstrap until validated monthly data and completed write evidence exist |
 | P0 cache writer gate | Implemented in Step 114-1K | Blocks monthly data writes until all source-policy rows are approved |
 
 The data quality framework is now in place, but production-grade scenario inputs are still blocked until real monthly asset, benchmark, total-return, dividend, and FX series are persisted or a controlled provider-refetch cache is added.
@@ -489,6 +490,31 @@ bootstrapStillBlocked=true
 
 Synthetic tests prove the preflight opens only when all upstream gates agree and no committed `scenario_monthly_returns.csv` exists yet. It rejects a monthly data file if the writer preflight is not ready. The committed state remains blocked and does not implement a cache writer, call providers, or write monthly returns.
 
+## Bootstrap Unlock Preflight
+
+The Bootstrap unlock preflight lives at:
+
+```text
+data/processed/scenario_bootstrap_unlock_preflight.json
+```
+
+It checks validated monthly data presence, monthly readiness, monthly write preflight, and monthly cache writer completion evidence before any joint block Bootstrap work:
+
+```text
+monthlyFileExists=false
+monthlyValidatorPassed=false
+monthlyReadinessReady=false
+monthlyWriteComplete=false
+monthlyCacheWriterComplete=false
+safeToRunJointBlockBootstrap=false
+scenarioApiAllowed=false
+compareChartScenarioBandsAllowed=false
+calculatePortfolioResultChangesAllowed=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests prove the preflight opens only with a valid temporary monthly CSV and completed upstream write evidence. It rejects invalid monthly data and monthly files that appear before write completion evidence is recorded. The committed state remains blocked and does not run Bootstrap or implement scenario runtime behavior.
+
 ## Monthly Write Preflight
 
 The monthly write preflight report lives at:
@@ -602,6 +628,7 @@ npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
 npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
+npm.cmd run check:scenario-bootstrap-unlock-preflight
 ```
 
 ## Non-Goals
@@ -619,4 +646,4 @@ This step does not:
 
 ## Next Boundary
 
-The safe next implementation boundary is still real owner/legal/source approval. A provider-refetch cache or controlled monthly cache writer may write `data/processed/scenario_monthly_returns.csv` only after the provider adapter, approval readiness, monthly write, writer gate, and monthly cache writer preflights all open. Bootstrap should remain blocked until that file exists and passes this validator.
+The safe next implementation boundary is still real owner/legal/source approval. A provider-refetch cache or controlled monthly cache writer may write `data/processed/scenario_monthly_returns.csv` only after the provider adapter, approval readiness, monthly write, writer gate, and monthly cache writer preflights all open. Bootstrap should remain blocked until that file exists, passes this validator, and passes the Bootstrap unlock preflight.

@@ -21,6 +21,7 @@ const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join("data", "processed", "scen
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
+const BOOTSTRAP_UNLOCK_PREFLIGHT_PATH = path.join("data", "processed", "scenario_bootstrap_unlock_preflight.json");
 const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 const PROGRESS_PATH = path.join("data", "processed", "scenario_step114_progress.json");
 
@@ -151,6 +152,7 @@ function buildProgress() {
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
+  const bootstrapUnlockPreflight = readJson(BOOTSTRAP_UNLOCK_PREFLIGHT_PATH);
   const monthlyFileExists = fs.existsSync(MONTHLY_DATA_PATH);
 
   const gradeCounts = countBy(coverage.rows, "scenarioGrade");
@@ -192,7 +194,8 @@ function buildProgress() {
     approvalReadiness.readiness?.safeToImplementProviderAdapter === false &&
     writePreflight.checks?.monthlyFileExists === false &&
     writePreflight.checks?.canAttemptMonthlyWrite === false &&
-    writerGate.readiness?.canWriteMonthlyData === false;
+    writerGate.readiness?.canWriteMonthlyData === false &&
+    bootstrapUnlockPreflight.readiness?.safeToRunJointBlockBootstrap === false;
 
   const approvalCounts = approvalReadiness.rowCounts ?? {};
   const approvalProgress = approvalIntake.completion?.intakeCompletionPercent ?? 0;
@@ -277,6 +280,7 @@ function buildProgress() {
         monthlyCacheWriterPreflightProviderCallsAllowed: monthlyCacheWriterPreflight.checks?.providerCallsAllowed,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
         writerCanWriteMonthlyData: writerGate.readiness?.canWriteMonthlyData,
+        bootstrapUnlockPreflightSafe: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap,
       },
     ),
     milestone(
@@ -310,6 +314,7 @@ function buildProgress() {
       {
         monthlyFileExists,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
+        bootstrapUnlockPreflightSafe: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap,
         bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked,
       },
       monthlyFileExists ? [] : ["scenario_monthly_returns_csv_not_written"],
@@ -338,6 +343,7 @@ function buildProgress() {
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,
+      bootstrapUnlockPreflight: BOOTSTRAP_UNLOCK_PREFLIGHT_PATH,
     },
     outputFiles: {
       progress: PROGRESS_PATH,
@@ -363,6 +369,7 @@ function buildProgress() {
       sourcePolicySyncPreflightReady: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true,
       providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,
       monthlyCacheWriterPreflightReady: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter === true,
+      bootstrapUnlockPreflightReady: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap === true,
       sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === true,
       monthlyDataFileWritten: monthlyFileExists,
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,

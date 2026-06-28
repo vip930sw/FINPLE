@@ -122,6 +122,7 @@ data/processed/scenario_p0_provider_adapter_preflight.json
 data/processed/scenario_p0_monthly_cache_writer_preflight.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
+data/processed/scenario_bootstrap_unlock_preflight.json
 data/processed/scenario_step114_progress.json
 ```
 
@@ -161,6 +162,8 @@ scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
 scripts/generate-scenario-monthly-write-preflight.test.cjs
+scripts/generate-scenario-bootstrap-unlock-preflight.cjs
+scripts/generate-scenario-bootstrap-unlock-preflight.test.cjs
 scripts/generate-scenario-step114-progress.cjs
 scripts/generate-scenario-step114-progress.test.cjs
 ```
@@ -183,6 +186,7 @@ source policy sync planned updates=0/17
 source policy sync preflight canSyncSourcePolicy=false
 provider adapter preflight safeToImplementProviderAdapter=false
 monthly cache writer preflight safeToImplementMonthlyCacheWriter=false
+bootstrap unlock preflight safeToRunJointBlockBootstrap=false
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -211,6 +215,7 @@ coverage audit
 -> monthly write preflight
 -> cache writer gate
 -> monthly cache writer preflight
+-> bootstrap unlock preflight
 ```
 
 ## Required Checks
@@ -241,6 +246,7 @@ npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
 npm.cmd run check:scenario-p0-monthly-cache-writer-preflight
+npm.cmd run check:scenario-bootstrap-unlock-preflight
 npm.cmd run check:scenario-step114-progress
 npm.cmd run check:scenario-metrics
 node --test server/src/services/*.test.js server/src/services/scenario/*.test.js
@@ -412,6 +418,25 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests show the preflight opens only when the provider adapter preflight is safe, P0 approval readiness allows monthly writes, monthly write preflight allows an attempt, writer gate allows provider calls and monthly writes, and all 17 source-policy rows are approved. The committed state still does not implement a monthly cache writer, call providers, or write `scenario_monthly_returns.csv`.
+
+## Step 114-2C Bootstrap Unlock Preflight Follow-Up
+
+The Bootstrap unlock preflight now blocks joint block Bootstrap until validated monthly data and completed write evidence exist:
+
+```text
+monthlyFileExists=false
+monthlyValidatorPassed=false
+monthlyReadinessReady=false
+monthlyWriteComplete=false
+monthlyCacheWriterComplete=false
+safeToRunJointBlockBootstrap=false
+scenarioApiAllowed=false
+compareChartScenarioBandsAllowed=false
+calculatePortfolioResultChangesAllowed=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show the preflight opens only when a temporary valid monthly CSV passes the monthly input validator and the monthly readiness, monthly write, and monthly cache writer evidence all agree. It rejects invalid monthly data and monthly files that appear before completed write evidence. The committed state still does not run Bootstrap, modify scenario calculation, change Compare chart bands, or touch `calculatePortfolioResult()`.
 
 ## Recommended Next Step
 

@@ -1,0 +1,58 @@
+{
+  "preflightVersion": "scenario-bootstrap-unlock-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "monthlyReadiness": "data\\processed\\scenario_monthly_input_readiness.json",
+    "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
+    "monthlyCacheWriterPreflight": "data\\processed\\scenario_p0_monthly_cache_writer_preflight.json",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_bootstrap_unlock_preflight.json"
+  },
+  "checks": {
+    "monthlyFileExists": false,
+    "monthlyValidatorPassed": false,
+    "monthlyReadinessReady": false,
+    "monthlyWriteComplete": false,
+    "monthlyCacheWriterComplete": false,
+    "safeToRunJointBlockBootstrap": false,
+    "monthlyDataRows": 0,
+    "blockers": [
+      "scenario_monthly_returns_csv_not_written",
+      "scenario_monthly_input_validator_not_passed",
+      "monthly_readiness_not_ready_for_joint_block_bootstrap",
+      "monthly_write_preflight_not_completed",
+      "monthly_cache_writer_completion_not_recorded",
+      "no_committed_scenario_monthly_returns_csv",
+      "no_a_grade_total_return_series",
+      "benchmark_monthly_returns_not_persisted",
+      "fx_monthly_returns_not_persisted",
+      "dividend_time_series_not_persisted",
+      "external_provider_terms_not_fully_approved",
+      "owner_legal_adapter_approval_not_complete",
+      "owner_legal_monthly_write_approval_not_complete",
+      "source_policy_rows_not_approved",
+      "writer_gate_cannot_write_monthly_data",
+      "writer_gate_provider_calls_not_allowed",
+      "provider_adapter_preflight_not_ready",
+      "approval_readiness_not_safe_for_monthly_write",
+      "monthly_write_preflight_not_ready",
+      "writer_gate_not_open_for_monthly_cache_writer",
+      "source_policy_rows_not_fully_approved",
+      "source_policy_sync_preflight_not_ready",
+      "source_policy_matrix_not_synced",
+      "approval_readiness_not_safe_for_adapter",
+      "writer_gate_not_open_for_provider_calls"
+    ]
+  },
+  "readiness": {
+    "status": "blocked_before_joint_block_bootstrap",
+    "safeToRunJointBlockBootstrap": false,
+    "scenarioApiAllowed": false,
+    "compareChartScenarioBandsAllowed": false,
+    "calculatePortfolioResultChangesAllowed": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "complete_validated_monthly_data_write_before_bootstrap"
+  }
+}
