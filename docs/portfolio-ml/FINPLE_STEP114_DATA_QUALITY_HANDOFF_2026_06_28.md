@@ -770,6 +770,18 @@ The `check:scenario-p0-dry-run` script now also runs a dedicated Node test suite
 
 Added `docs/portfolio-ml/FINPLE_STEP114_REAL_APPROVAL_INPUT_GUIDE_2026_06_28.md` to make the human approval step explicit. The guide explains who must approve, which five provider-group rows must be filled, the exact validator tokens and field formats, the safe approval/import sequence, and the stop conditions that still block provider adapters, provider calls, monthly data writes, Bootstrap, and runtime unlock.
 
+## Step 114-2Y KIS Capability Evidence Follow-Up
+
+Added `docs/portfolio-ml/FINPLE_STEP114_KIS_CAPABILITY_AUDIT_2026_06_28.md` and updated `data/processed/scenario_p0_kis_capability_review.csv` with official Korea Investment Open API sample evidence for overseas price and rights endpoints.
+
+Recorded evidence:
+
+- `dailyprice`: `/uapi/overseas-price/v1/quotations/dailyprice`, TR ID `HHDFS76240000`
+- `period-rights`: `/uapi/overseas-price/v1/quotations/period-rights`, TR ID `CTRGT011R`
+- cross-check candidate `rights-by-ice`: `/uapi/overseas-price/v1/quotations/rights-by-ice`, TR ID `HHDFS78330900`
+
+The KIS capability preflight is still intentionally blocked. Endpoint evidence is present, but `termsReviewed` and `rawRedistributionReviewed` remain unapproved. The committed state still performs no provider calls, implements no provider adapter, writes no `scenario_monthly_returns.csv`, and keeps Bootstrap/runtime blocked.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2W, the remaining blocker is a real reviewer-owned approval input step.

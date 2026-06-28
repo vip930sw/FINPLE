@@ -30,18 +30,8 @@
       "missing_env_KIS_APP_SECRET",
       "missing_env_FRED_API_KEY",
       "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-      "missing_or_unreviewed_selectedEndpoint",
-      "missing_or_unreviewed_evidenceUrl",
-      "missing_or_unreviewed_endpointReviewed",
       "missing_or_unreviewed_termsReviewed",
-      "missing_or_unreviewed_monthlyBackfillReviewed",
-      "missing_or_unreviewed_adjustmentBasisReviewed",
       "missing_or_unreviewed_rawRedistributionReviewed",
-      "missing_or_unreviewed_reviewOwner",
-      "missing_or_unreviewed_reviewedAt",
-      "missing_or_unreviewed_approvalEvidence",
-      "invalid_or_missing_selectedEndpoint",
-      "invalid_or_missing_evidenceUrl",
       "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
       "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
       "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
@@ -126,18 +116,8 @@
       "capabilityVerified": false,
       "capabilityBlockers": [
         "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-        "missing_or_unreviewed_selectedEndpoint",
-        "missing_or_unreviewed_evidenceUrl",
-        "missing_or_unreviewed_endpointReviewed",
         "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_monthlyBackfillReviewed",
-        "missing_or_unreviewed_adjustmentBasisReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed",
-        "missing_or_unreviewed_reviewOwner",
-        "missing_or_unreviewed_reviewedAt",
-        "missing_or_unreviewed_approvalEvidence",
-        "invalid_or_missing_selectedEndpoint",
-        "invalid_or_missing_evidenceUrl"
+        "missing_or_unreviewed_rawRedistributionReviewed"
       ],
       "readyForRuntimeProviderCalls": false
     },
@@ -161,18 +141,8 @@
       "capabilityVerified": false,
       "capabilityBlockers": [
         "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
-        "missing_or_unreviewed_selectedEndpoint",
-        "missing_or_unreviewed_evidenceUrl",
-        "missing_or_unreviewed_endpointReviewed",
         "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_monthlyBackfillReviewed",
-        "missing_or_unreviewed_adjustmentBasisReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed",
-        "missing_or_unreviewed_reviewOwner",
-        "missing_or_unreviewed_reviewedAt",
-        "missing_or_unreviewed_approvalEvidence",
-        "invalid_or_missing_selectedEndpoint",
-        "invalid_or_missing_evidenceUrl"
+        "missing_or_unreviewed_rawRedistributionReviewed"
       ],
       "readyForRuntimeProviderCalls": false
     },

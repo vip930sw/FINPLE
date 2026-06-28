@@ -19,18 +19,8 @@
     "capabilityReady": false,
     "blockers": [
       "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-      "missing_or_unreviewed_selectedEndpoint",
-      "missing_or_unreviewed_evidenceUrl",
-      "missing_or_unreviewed_endpointReviewed",
       "missing_or_unreviewed_termsReviewed",
-      "missing_or_unreviewed_monthlyBackfillReviewed",
-      "missing_or_unreviewed_adjustmentBasisReviewed",
       "missing_or_unreviewed_rawRedistributionReviewed",
-      "missing_or_unreviewed_reviewOwner",
-      "missing_or_unreviewed_reviewedAt",
-      "missing_or_unreviewed_approvalEvidence",
-      "invalid_or_missing_selectedEndpoint",
-      "invalid_or_missing_evidenceUrl",
       "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified"
     ]
   },
@@ -48,24 +38,14 @@
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
       "sourceScope": "SPY adjusted-close proxy monthly price source",
       "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
-      "selectedEndpoint": "",
-      "evidenceUrl": "",
-      "status": "pending_review",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/dailyprice/dailyprice.py",
+      "status": "blocked_pending_terms_raw_redistribution_review",
       "capabilityVerified": false,
       "blockers": [
         "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-        "missing_or_unreviewed_selectedEndpoint",
-        "missing_or_unreviewed_evidenceUrl",
-        "missing_or_unreviewed_endpointReviewed",
         "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_monthlyBackfillReviewed",
-        "missing_or_unreviewed_adjustmentBasisReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed",
-        "missing_or_unreviewed_reviewOwner",
-        "missing_or_unreviewed_reviewedAt",
-        "missing_or_unreviewed_approvalEvidence",
-        "invalid_or_missing_selectedEndpoint",
-        "invalid_or_missing_evidenceUrl"
+        "missing_or_unreviewed_rawRedistributionReviewed"
       ]
     },
     {
@@ -73,24 +53,14 @@
       "providerCandidate": "US_price_total_return_dividend_provider",
       "sourceScope": "US ETF monthly adjusted close dividend split and corporate-action source",
       "selectedProvider": "Korea Investment Open API overseas US ETF data",
-      "selectedEndpoint": "",
-      "evidenceUrl": "",
-      "status": "pending_review",
+      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
+      "evidenceUrl": "https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/period_rights/period_rights.py",
+      "status": "blocked_pending_terms_raw_redistribution_review",
       "capabilityVerified": false,
       "blockers": [
         "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
-        "missing_or_unreviewed_selectedEndpoint",
-        "missing_or_unreviewed_evidenceUrl",
-        "missing_or_unreviewed_endpointReviewed",
         "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_monthlyBackfillReviewed",
-        "missing_or_unreviewed_adjustmentBasisReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed",
-        "missing_or_unreviewed_reviewOwner",
-        "missing_or_unreviewed_reviewedAt",
-        "missing_or_unreviewed_approvalEvidence",
-        "invalid_or_missing_selectedEndpoint",
-        "invalid_or_missing_evidenceUrl"
+        "missing_or_unreviewed_rawRedistributionReviewed"
       ]
     }
   ],

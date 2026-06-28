@@ -59,7 +59,7 @@ test("passes with current blocked KIS capability preflight", () => {
   assert.match(result.stdout, /scenario_p0_kis_capability_preflight\.json/);
 });
 
-test("keeps provider runtime blocked until official KIS endpoint evidence is recorded", () => {
+test("keeps provider runtime blocked until KIS terms and raw redistribution are reviewed", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
@@ -71,6 +71,10 @@ test("keeps provider runtime blocked until official KIS endpoint evidence is rec
   assert.equal(report.repoSupport.overseasCurrentQuoteImplemented, true);
   assert.equal(report.repoSupport.overseasHistoricalMonthlyAdapterImplemented, false);
   assert.match(report.checks.blockers.join("|"), /kis_overseas_monthly_adjusted_close_proxy_capability_not_verified/);
+  assert.match(report.checks.blockers.join("|"), /missing_or_unreviewed_termsReviewed/);
+  assert.match(report.checks.blockers.join("|"), /missing_or_unreviewed_rawRedistributionReviewed/);
+  assert.doesNotMatch(report.checks.blockers.join("|"), /invalid_or_missing_selectedEndpoint/);
+  assert.doesNotMatch(report.checks.blockers.join("|"), /invalid_or_missing_evidenceUrl/);
 });
 
 test("accepts synthetic KIS endpoint evidence without allowing provider calls", () => {
