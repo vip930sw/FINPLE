@@ -7,8 +7,10 @@ const EXTERNAL_TERMS_CSV_PATH = path.join("data", "processed", "scenario_p0_exte
 const OWNER_LEGAL_CSV_PATH = path.join("data", "processed", "scenario_p0_owner_legal_decision_packet.csv");
 const INTAKE_CHECKLIST_PATH = path.join("data", "processed", "scenario_p0_approval_intake_checklist.json");
 
-const CHECKLIST_VERSION = "scenario-p0-approval-intake-checklist-v0.1";
+const CHECKLIST_VERSION = "scenario-p0-approval-intake-checklist-v0.2";
 const AUDITED_AT = "2026-06-28T00:00:00Z";
+const EXPECTED_PROVIDER_GROUPS = 5;
+const EXPECTED_SOURCE_POLICY_ROWS = 17;
 const APPROVED_SOURCE_POLICY = "approved_source_policy";
 const APPROVED_RULES = {
   endpointPolicy: "approved_endpoint_or_documented_proxy",
@@ -106,6 +108,14 @@ function indexBy(rows, field, label) {
   return indexed;
 }
 
+function assertSameKeySet(left, right, leftLabel, rightLabel) {
+  const leftKeys = [...left.keys()].sort();
+  const rightKeys = [...right.keys()].sort();
+  if (leftKeys.join("|") !== rightKeys.join("|")) {
+    fail(`${leftLabel} providerCandidate set does not match ${rightLabel}`);
+  }
+}
+
 function missingFields(row, fields) {
   return fields.filter((field) => !String(row[field] ?? "").trim());
 }
@@ -128,9 +138,19 @@ function buildChecklist() {
   const ownerLegal = readCsv(OWNER_LEGAL_CSV_PATH);
 
   const providerCandidates = uniqueSorted(sourcePolicy.rows.map((row) => row.providerCandidate));
+  const sourcePolicyByProvider = new Map(providerCandidates.map((providerCandidate) => [providerCandidate, true]));
   const decisionByProvider = indexBy(sourceDecision.rows, "providerCandidate", "source approval decision record");
   const termsByProvider = indexBy(externalTerms.rows, "providerCandidate", "external terms review");
   const ownerLegalByProvider = indexBy(ownerLegal.rows, "providerCandidate", "owner/legal decision packet");
+  assertSameKeySet(sourcePolicyByProvider, decisionByProvider, "source policy matrix", "source approval decision record");
+  assertSameKeySet(sourcePolicyByProvider, termsByProvider, "source policy matrix", "external terms review");
+  assertSameKeySet(sourcePolicyByProvider, ownerLegalByProvider, "source policy matrix", "owner/legal decision packet");
+  if (providerCandidates.length !== EXPECTED_PROVIDER_GROUPS) {
+    fail(`expected ${EXPECTED_PROVIDER_GROUPS} provider groups, got ${providerCandidates.length}`);
+  }
+  if (sourcePolicy.rows.length !== EXPECTED_SOURCE_POLICY_ROWS) {
+    fail(`expected ${EXPECTED_SOURCE_POLICY_ROWS} source policy rows, got ${sourcePolicy.rows.length}`);
+  }
 
   const rows = providerCandidates.map((providerCandidate) => {
     const policyRows = sourcePolicy.rows.filter((row) => row.providerCandidate === providerCandidate);
@@ -217,6 +237,11 @@ function buildChecklist() {
       approvedSourcePolicyRows: rows.reduce((sum, row) => sum + row.approvedSourcePolicyRows, 0),
       completedApprovalSlots,
       totalApprovalSlots,
+    },
+    sourceIntegrity: {
+      providerCandidateSetVerified: true,
+      expectedProviderGroups: EXPECTED_PROVIDER_GROUPS,
+      expectedSourcePolicyRows: EXPECTED_SOURCE_POLICY_ROWS,
     },
     completion: {
       intakeCompletionPercent: completionPercent(completedApprovalSlots, totalApprovalSlots),

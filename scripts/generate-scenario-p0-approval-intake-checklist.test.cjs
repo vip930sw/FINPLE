@@ -158,7 +158,11 @@ test("reports all current provider groups as blocked with zero intake completion
   assert.equal(result.status, 0, result.stderr);
   const checklist = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_approval_intake_checklist.json"));
   assert.equal(checklist.rowCounts.providerGroups, 5);
+  assert.equal(checklist.rowCounts.sourcePolicyRows, 17);
   assert.equal(checklist.rowCounts.readyProviderGroups, 0);
+  assert.equal(checklist.sourceIntegrity.providerCandidateSetVerified, true);
+  assert.equal(checklist.sourceIntegrity.expectedProviderGroups, 5);
+  assert.equal(checklist.sourceIntegrity.expectedSourcePolicyRows, 17);
   assert.equal(checklist.completion.intakeCompletionPercent, 0);
   assert.equal(checklist.completion.readyForProviderAdapter, false);
 });
@@ -174,6 +178,29 @@ test("accepts complete synthetic approval intake without touching real files", (
   assert.equal(checklist.completion.intakeCompletionPercent, 100);
   assert.equal(checklist.completion.readyForProviderAdapter, true);
   assert.equal(checklist.completion.monthlyDataFileWritten, false);
+});
+
+test("rejects provider candidate drift between checklist sources", () => {
+  const workspace = makeWorkspace();
+  updateWorkspaceCsv(workspace, "scenario_p0_external_provider_terms_review.csv", (row) =>
+    row.providerCandidate === "USD_KRW_fx_provider" ? { ...row, providerCandidate: "USD_KRW_fx_provider_drifted" } : row,
+  );
+
+  const result = runChecklist(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /source policy matrix providerCandidate set does not match external terms review/);
+});
+
+test("rejects source policy row count drift", () => {
+  const workspace = makeWorkspace();
+  const parsed = parseCsv(readWorkspaceFile(workspace, "scenario_p0_source_policy_matrix.csv"));
+  writeWorkspaceFile(workspace, "scenario_p0_source_policy_matrix.csv", toCsv(parsed.headers, parsed.rows.slice(0, -1)));
+
+  const result = runChecklist(workspace, []);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /expected 17 source policy rows, got 16/);
 });
 
 test("rejects stale committed approval intake checklist", () => {

@@ -1,5 +1,5 @@
 {
-  "checklistVersion": "scenario-p0-approval-intake-checklist-v0.1",
+  "checklistVersion": "scenario-p0-approval-intake-checklist-v0.2",
   "auditedAt": "2026-06-28T00:00:00Z",
   "sourceFiles": {
     "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
@@ -19,6 +19,11 @@
     "approvedSourcePolicyRows": 0,
     "completedApprovalSlots": 0,
     "totalApprovalSlots": 37
+  },
+  "sourceIntegrity": {
+    "providerCandidateSetVerified": true,
+    "expectedProviderGroups": 5,
+    "expectedSourcePolicyRows": 17
   },
   "completion": {
     "intakeCompletionPercent": 0,

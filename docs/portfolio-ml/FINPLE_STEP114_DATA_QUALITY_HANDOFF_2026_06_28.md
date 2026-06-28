@@ -639,6 +639,19 @@ sourcePolicyRowsMatchChecklist=true
 
 Synthetic tests now reject provider-candidate drift between template sources and checklist source-policy row-count drift. The committed state still has 5 pending provider-group rows, 0 ready rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
 
+## Step 114-2N Approval Intake Checklist Source Integrity Follow-Up
+
+The approval intake checklist now verifies that the source-policy matrix, source approval decision record, external terms review, and owner/legal decision packet all contain the same provider-candidate set. It also rejects source-policy row-count drift before reviewer-facing approval intake artifacts can be generated:
+
+```text
+providerCandidateSetVerified=true
+expectedProviderGroups=5
+expectedSourcePolicyRows=17
+intakeCompletionPercent=0
+```
+
+Synthetic tests now reject provider-candidate drift between checklist sources and a source-policy matrix that no longer contains the expected 17 P0 rows. The committed state still has 5 blocked provider groups, 0 approved source-policy rows, no provider calls, no `scenario_monthly_returns.csv`, and `bootstrapStillBlocked=true`.
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2J, the remaining blocker is a real reviewer-owned approval input step.
