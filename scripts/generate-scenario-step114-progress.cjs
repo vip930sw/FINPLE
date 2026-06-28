@@ -14,6 +14,7 @@ const OWNER_LEGAL_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_own
 const APPROVAL_INTAKE_PATH = path.join("data", "processed", "scenario_p0_approval_intake_checklist.json");
 const APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH = path.join("data", "processed", "scenario_p0_approval_intake_template_summary.json");
 const APPROVAL_INTAKE_VALIDATION_PATH = path.join("data", "processed", "scenario_p0_approval_intake_validation.json");
+const SOURCE_POLICY_SYNC_PLAN_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_plan.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
 const WRITE_PREFLIGHT_PATH = path.join("data", "processed", "scenario_monthly_write_preflight.json");
 const WRITER_GATE_PATH = path.join("data", "processed", "scenario_p0_cache_writer_gate.json");
@@ -140,6 +141,7 @@ function buildProgress() {
   const approvalIntake = readJson(APPROVAL_INTAKE_PATH);
   const approvalIntakeTemplate = readJson(APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH);
   const approvalIntakeValidation = readJson(APPROVAL_INTAKE_VALIDATION_PATH);
+  const sourcePolicySyncPlan = readJson(SOURCE_POLICY_SYNC_PLAN_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
   const writePreflight = readJson(WRITE_PREFLIGHT_PATH);
   const writerGate = readJson(WRITER_GATE_PATH);
@@ -165,9 +167,12 @@ function buildProgress() {
     approvalIntake.rowCounts?.providerGroups === 5 &&
     approvalIntakeTemplate.rowCounts?.providerGroups === 5 &&
     approvalIntakeTemplate.rowCounts?.approvedRows === 0 &&
-    approvalIntakeValidation.rowCounts?.providerGroups === 5;
+    approvalIntakeValidation.rowCounts?.providerGroups === 5 &&
+    sourcePolicySyncPlan.rowCounts?.providerGroups === 5;
   const guardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
+    sourcePolicySyncPlan.readiness?.providerCallsAllowed === false &&
+    sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === false &&
     approvalReadiness.sourceFiles?.sourceApprovalDecisionRecord &&
     approvalReadiness.readiness?.safeToImplementProviderAdapter === false &&
     writePreflight.checks?.monthlyFileExists === false &&
@@ -231,6 +236,7 @@ function buildProgress() {
         approvalIntakeProviderGroups: approvalIntake.rowCounts?.providerGroups,
         approvalIntakeTemplateRows: approvalIntakeTemplate.rowCounts?.providerGroups,
         approvalIntakeValidationReadyRows: approvalIntakeValidation.rowCounts?.readyRows,
+        sourcePolicySyncPlannedUpdates: sourcePolicySyncPlan.rowCounts?.plannedSourcePolicyUpdates,
       },
     ),
     milestone(
@@ -243,6 +249,8 @@ function buildProgress() {
         safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter,
         safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData,
         approvalIntakeValidationProviderCallsAllowed: approvalIntakeValidation.readiness?.providerCallsAllowed,
+        sourcePolicySyncPlanProviderCallsAllowed: sourcePolicySyncPlan.readiness?.providerCallsAllowed,
+        sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten,
         canAttemptMonthlyWrite: writePreflight.checks?.canAttemptMonthlyWrite,
         writerCanWriteMonthlyData: writerGate.readiness?.canWriteMonthlyData,
       },
@@ -299,6 +307,7 @@ function buildProgress() {
       approvalIntakeChecklist: APPROVAL_INTAKE_PATH,
       approvalIntakeTemplate: APPROVAL_INTAKE_TEMPLATE_SUMMARY_PATH,
       approvalIntakeValidation: APPROVAL_INTAKE_VALIDATION_PATH,
+      sourcePolicySyncPlan: SOURCE_POLICY_SYNC_PLAN_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
       monthlyWritePreflight: WRITE_PREFLIGHT_PATH,
       writerGate: WRITER_GATE_PATH,
@@ -323,6 +332,8 @@ function buildProgress() {
       safeToImplementProviderAdapter: approvalReadiness.readiness?.safeToImplementProviderAdapter === true,
       safeToWriteMonthlyData: approvalReadiness.readiness?.safeToWriteMonthlyData === true,
       approvalIntakeValidationReady: approvalIntakeValidation.readiness?.allRowsReadyForSourcePolicyReview === true,
+      sourcePolicySyncPlanReady: sourcePolicySyncPlan.readiness?.syncPlanReady === true,
+      sourcePolicyMatrixWritten: sourcePolicySyncPlan.readiness?.sourcePolicyMatrixWritten === true,
       monthlyDataFileWritten: monthlyFileExists,
       bootstrapStillBlocked: writePreflight.readiness?.bootstrapStillBlocked !== false,
     },

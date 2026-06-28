@@ -116,6 +116,7 @@ data/processed/scenario_p0_approval_intake_checklist.json
 data/processed/scenario_p0_approval_intake_template.csv
 data/processed/scenario_p0_approval_intake_template_summary.json
 data/processed/scenario_p0_approval_intake_validation.json
+data/processed/scenario_p0_source_policy_sync_plan.json
 data/processed/scenario_p0_approval_readiness.json
 data/processed/scenario_monthly_write_preflight.json
 data/processed/scenario_step114_progress.json
@@ -145,6 +146,8 @@ scripts/generate-scenario-p0-approval-intake-template.cjs
 scripts/generate-scenario-p0-approval-intake-template.test.cjs
 scripts/generate-scenario-p0-approval-intake-validation.cjs
 scripts/generate-scenario-p0-approval-intake-validation.test.cjs
+scripts/generate-scenario-p0-source-policy-sync-plan.cjs
+scripts/generate-scenario-p0-source-policy-sync-plan.test.cjs
 scripts/generate-scenario-p0-approval-readiness.cjs
 scripts/generate-scenario-p0-approval-readiness.test.cjs
 scripts/generate-scenario-monthly-write-preflight.cjs
@@ -167,6 +170,7 @@ approval intake completion=0%
 approval intake ready provider groups=0/5
 approval template rows=5 pending, 0 approved
 approval validation rows=5 pending, 0 ready
+source policy sync planned updates=0/17
 safeToImplementProviderAdapter=false
 safeToWriteMonthlyData=false
 monthlyFileExists=false
@@ -216,6 +220,7 @@ npm.cmd run check:scenario-p0-owner-legal
 npm.cmd run check:scenario-p0-approval-intake
 npm.cmd run check:scenario-p0-approval-template
 npm.cmd run check:scenario-p0-approval-validation
+npm.cmd run check:scenario-p0-source-policy-sync
 npm.cmd run check:scenario-p0-approval-readiness
 npm.cmd run check:scenario-monthly-write-preflight
 npm.cmd run check:scenario-p0-writer-gate
@@ -320,6 +325,23 @@ bootstrapStillBlocked=true
 ```
 
 Synthetic tests show that fully populated template rows can become `ready_for_source_policy_review`, but even that state only permits a later source-policy sync dry run. It does not approve committed source rows, does not call providers, and does not write `scenario_monthly_returns.csv`.
+
+## Step 114-1Y Source Policy Sync Plan Follow-Up
+
+The source policy sync plan now maps validated approval intake rows to a dry-run source-policy update plan:
+
+```text
+providerGroups=5
+readyProviderGroups=0
+plannedSourcePolicyUpdates=0
+blockedSourcePolicyRows=17
+sourcePolicyMatrixWritten=false
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+Synthetic tests show that fully ready intake rows can plan all 17 source-policy updates, but this gate still does not write `scenario_p0_source_policy_matrix.csv`. It is only a pre-approval dry-run bridge before a real owner/legal/source sync.
 
 ## Recommended Next Step
 

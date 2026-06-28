@@ -1,0 +1,159 @@
+{
+  "planVersion": "scenario-p0-source-policy-sync-plan-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "sourcePolicyMatrix": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
+    "approvalIntakeValidation": "data\\processed\\scenario_p0_approval_intake_validation.json"
+  },
+  "outputFiles": {
+    "syncPlan": "data\\processed\\scenario_p0_source_policy_sync_plan.json",
+    "sourcePolicyMatrixTarget": "data\\processed\\scenario_p0_source_policy_matrix.csv",
+    "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
+  },
+  "rowCounts": {
+    "providerGroups": 5,
+    "readyProviderGroups": 0,
+    "blockedProviderGroups": 5,
+    "totalSourcePolicyRows": 17,
+    "plannedSourcePolicyUpdates": 0,
+    "blockedSourcePolicyRows": 17
+  },
+  "readiness": {
+    "status": "blocked_pending_ready_approval_intake",
+    "syncPlanReady": false,
+    "sourcePolicyMatrixWritten": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "fill_and_validate_real_approval_intake_before_source_policy_sync"
+  },
+  "providerGroups": [
+    {
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "namedProviderCandidate": "KRX Data Marketplace or licensed KOSPI 200 ETF proxy",
+      "sourcePolicyRows": 1,
+      "readyForSourcePolicySync": false,
+      "plannedSourcePolicyUpdates": 0,
+      "selectedProvider": "",
+      "selectedEndpoint": "",
+      "reviewedAt": "",
+      "evidenceUrl": "",
+      "blockers": [
+        "approval_intake_template_not_ready",
+        "approval_intake_validation_not_ready",
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ]
+    },
+    {
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Korea Investment Open API or licensed KR market-data provider",
+      "sourcePolicyRows": 6,
+      "readyForSourcePolicySync": false,
+      "plannedSourcePolicyUpdates": 0,
+      "selectedProvider": "",
+      "selectedEndpoint": "",
+      "reviewedAt": "",
+      "evidenceUrl": "",
+      "blockers": [
+        "approval_intake_template_not_ready",
+        "approval_intake_validation_not_ready",
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ]
+    },
+    {
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "namedProviderCandidate": "Alpha Vantage index API or SPY adjusted-close proxy",
+      "sourcePolicyRows": 1,
+      "readyForSourcePolicySync": false,
+      "plannedSourcePolicyUpdates": 0,
+      "selectedProvider": "",
+      "selectedEndpoint": "",
+      "reviewedAt": "",
+      "evidenceUrl": "",
+      "blockers": [
+        "approval_intake_template_not_ready",
+        "approval_intake_validation_not_ready",
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ]
+    },
+    {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "namedProviderCandidate": "FRED DEXKOUS",
+      "sourcePolicyRows": 1,
+      "readyForSourcePolicySync": false,
+      "plannedSourcePolicyUpdates": 0,
+      "selectedProvider": "",
+      "selectedEndpoint": "",
+      "reviewedAt": "",
+      "evidenceUrl": "",
+      "blockers": [
+        "approval_intake_template_not_ready",
+        "approval_intake_validation_not_ready",
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ]
+    },
+    {
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "namedProviderCandidate": "Alpha Vantage",
+      "sourcePolicyRows": 8,
+      "readyForSourcePolicySync": false,
+      "plannedSourcePolicyUpdates": 0,
+      "selectedProvider": "",
+      "selectedEndpoint": "",
+      "reviewedAt": "",
+      "evidenceUrl": "",
+      "blockers": [
+        "approval_intake_template_not_ready",
+        "approval_intake_validation_not_ready",
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ]
+    }
+  ],
+  "plannedRows": []
+}

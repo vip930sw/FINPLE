@@ -9,6 +9,7 @@
     "approvalIntakeChecklist": "data\\processed\\scenario_p0_approval_intake_checklist.json",
     "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template_summary.json",
     "approvalIntakeValidation": "data\\processed\\scenario_p0_approval_intake_validation.json",
+    "sourcePolicySyncPlan": "data\\processed\\scenario_p0_source_policy_sync_plan.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
     "monthlyWritePreflight": "data\\processed\\scenario_monthly_write_preflight.json",
     "writerGate": "data\\processed\\scenario_p0_cache_writer_gate.json"
@@ -85,7 +86,8 @@
         "providerCandidates": 5,
         "approvalIntakeProviderGroups": 5,
         "approvalIntakeTemplateRows": 5,
-        "approvalIntakeValidationReadyRows": 0
+        "approvalIntakeValidationReadyRows": 0,
+        "sourcePolicySyncPlannedUpdates": 0
       },
       "blockers": []
     },
@@ -100,6 +102,8 @@
         "safeToImplementProviderAdapter": false,
         "safeToWriteMonthlyData": false,
         "approvalIntakeValidationProviderCallsAllowed": false,
+        "sourcePolicySyncPlanProviderCallsAllowed": false,
+        "sourcePolicyMatrixWritten": false,
         "canAttemptMonthlyWrite": false,
         "writerCanWriteMonthlyData": false
       },
@@ -153,6 +157,8 @@
     "safeToImplementProviderAdapter": false,
     "safeToWriteMonthlyData": false,
     "approvalIntakeValidationReady": false,
+    "sourcePolicySyncPlanReady": false,
+    "sourcePolicyMatrixWritten": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true
   },
