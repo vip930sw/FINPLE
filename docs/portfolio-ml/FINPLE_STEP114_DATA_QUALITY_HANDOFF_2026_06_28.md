@@ -797,6 +797,33 @@ Added `docs/portfolio-ml/FINPLE_STEP114_KIS_CONFIRMATION_EMAIL_DRAFT_2026_06_28.
 
 If KIS rejects the use case or does not clearly approve raw-row storage and derived user-facing analytics display, keep KIS blocked and evaluate a paid or licensed provider such as Alpha Vantage or another market-data source under the same source-policy approval fields. Do not implement a provider adapter or write `scenario_monthly_returns.csv` until the selected source is approved.
 
+## Step 114-3B KIS Written Response Gate
+
+Recorded that the KIS confirmation email was sent to `openapi@koreainvestment.com` on 2026-06-28, without treating the sent email as approval.
+
+Added:
+
+```text
+data/processed/scenario_p0_kis_written_response_intake.csv
+data/processed/scenario_p0_kis_written_response_preflight.json
+scripts/generate-scenario-p0-kis-written-response-preflight.cjs
+scripts/generate-scenario-p0-kis-written-response-preflight.test.cjs
+```
+
+The runtime provider preflight now consumes this written-response gate. KIS-backed provider groups remain blocked unless written confirmation is received, reviewed, and recorded with explicit approval for terms, raw-row retention, derived monthly return use, and user-facing derived analytics display.
+
+Current committed state:
+
+```text
+sentToKis=true
+responseStatus=pending_response
+responseReady=false
+providerWrittenResponseReady=false
+runtimeProviderCallsAllowed=false
+scenario_monthly_returns.csv absent
+overallProgressPercent=90
+```
+
 ## Recommended Next Step
 
 The next implementation step is still not data fetching. After Step 114-2W, the remaining blocker is a real reviewer-owned approval input step.

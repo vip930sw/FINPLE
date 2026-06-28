@@ -34,6 +34,7 @@
     "check:scenario-p0-source-policy-sync-preflight": "node scripts/generate-scenario-p0-source-policy-sync-preflight.cjs --check && node --test scripts/generate-scenario-p0-source-policy-sync-preflight.test.cjs",
     "check:scenario-p0-provider-adapter-preflight": "node scripts/generate-scenario-p0-provider-adapter-preflight.cjs --check && node --test scripts/generate-scenario-p0-provider-adapter-preflight.test.cjs",
     "check:scenario-p0-kis-capability-preflight": "node scripts/generate-scenario-p0-kis-capability-preflight.cjs --check && node --test scripts/generate-scenario-p0-kis-capability-preflight.test.cjs",
+    "check:scenario-p0-kis-written-response-preflight": "node scripts/generate-scenario-p0-kis-written-response-preflight.cjs --check && node --test scripts/generate-scenario-p0-kis-written-response-preflight.test.cjs",
     "check:scenario-p0-provider-runtime-preflight": "node scripts/generate-scenario-p0-provider-runtime-preflight.cjs --check && node --test scripts/generate-scenario-p0-provider-runtime-preflight.test.cjs",
     "check:scenario-p0-monthly-cache-writer-preflight": "node scripts/generate-scenario-p0-monthly-cache-writer-preflight.cjs --check && node --test scripts/generate-scenario-p0-monthly-cache-writer-preflight.test.cjs",
     "check:scenario-p0-approval-readiness": "node scripts/generate-scenario-p0-approval-readiness.cjs --check && node --test scripts/generate-scenario-p0-approval-readiness.test.cjs",

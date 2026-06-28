@@ -26,6 +26,7 @@ const PROCESSED_FILES = [
   "scenario_p0_source_policy_sync_preflight.json",
   "scenario_p0_provider_adapter_preflight.json",
   "scenario_p0_kis_capability_preflight.json",
+  "scenario_p0_kis_written_response_preflight.json",
   "scenario_p0_provider_runtime_preflight.json",
   "scenario_p0_monthly_cache_writer_preflight.json",
   "scenario_p0_approval_readiness.json",
@@ -90,6 +91,7 @@ test("reports 90 percent overall progress after approval import while monthly da
   assert.equal(progress.guardrails.sourcePolicySyncPreflightReady, true);
   assert.equal(progress.guardrails.providerAdapterPreflightReady, true);
   assert.equal(progress.guardrails.kisCapabilityPreflightReady, false);
+  assert.equal(progress.guardrails.kisWrittenResponsePreflightReady, false);
   assert.equal(progress.guardrails.providerRuntimePreflightReady, false);
   assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, true);
   assert.equal(progress.guardrails.bootstrapUnlockPreflightReady, false);

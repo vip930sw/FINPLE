@@ -13,6 +13,7 @@ const FIXTURE_FILES = [
   "scenario_p0_provider_adapter_preflight.json",
   "scenario_p0_monthly_cache_writer_preflight.json",
   "scenario_p0_kis_capability_preflight.json",
+  "scenario_p0_kis_written_response_preflight.json",
   PREFLIGHT,
 ];
 
@@ -86,13 +87,15 @@ test("keeps KIS replacement blocked until overseas monthly capabilities are veri
   const report = readWorkspaceJson(workspace, PREFLIGHT);
   assert.equal(report.checks.providerCredentialsReady, true);
   assert.equal(report.checks.providerCapabilityReady, false);
+  assert.equal(report.checks.providerWrittenResponseReady, false);
   assert.equal(report.checks.optInReady, true);
   assert.equal(report.checks.runtimeProviderCallsAllowed, false);
   assert.match(report.checks.blockers.join("|"), /runtime_provider_capability_not_verified/);
+  assert.match(report.checks.blockers.join("|"), /runtime_provider_written_response_not_approved/);
   assert.match(report.checks.blockers.join("|"), /kis_overseas_monthly_adjusted_dividend_split_capability_not_verified/);
 });
 
-test("opens only when credentials, opt-in, and KIS capability evidence are all present", () => {
+test("keeps KIS replacement blocked until written response is approved", () => {
   const workspace = makeWorkspace();
   const capability = readWorkspaceJson(workspace, "scenario_p0_kis_capability_preflight.json");
   capability.checks.capabilityReady = true;
@@ -114,6 +117,59 @@ test("opens only when credentials, opt-in, and KIS capability evidence are all p
   const report = readWorkspaceJson(workspace, PREFLIGHT);
   assert.equal(report.checks.providerCredentialsReady, true);
   assert.equal(report.checks.providerCapabilityReady, true);
+  assert.equal(report.checks.providerWrittenResponseReady, false);
+  assert.equal(report.checks.optInReady, true);
+  assert.equal(report.checks.runtimeProviderCallsAllowed, false);
+  assert.match(report.checks.blockers.join("|"), /kis_written_response_pending/);
+});
+
+test("opens only when credentials, opt-in, KIS capability evidence, and KIS written response are all present", () => {
+  const workspace = makeWorkspace();
+  const capability = readWorkspaceJson(workspace, "scenario_p0_kis_capability_preflight.json");
+  capability.checks.capabilityReady = true;
+  capability.checks.verifiedCapabilities = 2;
+  capability.checks.blockers = [];
+  capability.capabilities = capability.capabilities.map((row) => ({
+    ...row,
+    status: "ready_for_runtime_preflight",
+    capabilityVerified: true,
+    blockers: [],
+  }));
+  capability.readiness.status = "ready_for_runtime_provider_preflight";
+  capability.readiness.capabilityReady = true;
+  writeWorkspaceJson(workspace, "scenario_p0_kis_capability_preflight.json", capability);
+
+  const response = readWorkspaceJson(workspace, "scenario_p0_kis_written_response_preflight.json");
+  response.checks.responseReady = true;
+  response.checks.responseReceived = true;
+  response.checks.responseStatusApproved = true;
+  response.checks.responseEvidenceValid = true;
+  response.checks.termsReviewed = true;
+  response.checks.rawRedistributionReviewed = true;
+  response.checks.approvedUseScopePresent = true;
+  response.checks.requiredAgreementValid = true;
+  response.checks.reviewerFieldsPresent = true;
+  response.checks.statusReady = true;
+  response.checks.blockers = [];
+  response.response.responseStatus = "approved";
+  response.response.responseReceivedAt = "2026-06-29T01:00:00Z";
+  response.response.responseEvidence = "https://mail.example.com/kis-confirmation";
+  response.response.approvedUseScope = "raw_internal_cache_and_derived_monthly_scenario_display";
+  response.response.requiredAgreement = "no_additional_agreement_required";
+  response.response.reviewOwner = "finple_lab@naver.com";
+  response.response.reviewedAt = "2026-06-29T02:00:00Z";
+  response.response.status = "ready_for_runtime_preflight";
+  response.readiness.status = "ready_for_runtime_provider_preflight";
+  response.readiness.responseReady = true;
+  writeWorkspaceJson(workspace, "scenario_p0_kis_written_response_preflight.json", response);
+
+  const result = runPreflight(workspace, [], fullCredentialEnv());
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readWorkspaceJson(workspace, PREFLIGHT);
+  assert.equal(report.checks.providerCredentialsReady, true);
+  assert.equal(report.checks.providerCapabilityReady, true);
+  assert.equal(report.checks.providerWrittenResponseReady, true);
   assert.equal(report.checks.optInReady, true);
   assert.equal(report.checks.runtimeProviderCallsAllowed, true);
 });

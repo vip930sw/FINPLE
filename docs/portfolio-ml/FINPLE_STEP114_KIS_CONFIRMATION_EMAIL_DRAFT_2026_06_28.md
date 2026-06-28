@@ -24,6 +24,28 @@ Until a written answer is received and reviewed, FINPLE keeps:
 - provider adapter implementation blocked
 - `scenario_monthly_returns.csv` absent
 
+## Sent Status
+
+The KIS confirmation email was sent to `openapi@koreainvestment.com` on 2026-06-28.
+
+This is not an approval. The sent-email fact is recorded only as pending evidence in:
+
+- `data/processed/scenario_p0_kis_written_response_intake.csv`
+- `data/processed/scenario_p0_kis_written_response_preflight.json`
+
+Current committed gate state:
+
+```text
+sentToKis=true
+responseStatus=pending_response
+responseReady=false
+providerCallsAllowed=false
+monthlyDataFileWritten=false
+bootstrapStillBlocked=true
+```
+
+No provider calls, provider adapters, raw-row cache writes, monthly data writes, Bootstrap unlocks, or runtime scenario changes are allowed until a written response is received and reviewed.
+
 ## Korean Email Draft
 
 Subject:
@@ -86,9 +108,14 @@ FINPLE
 If KIS approves the use case in writing, record the response before changing any gate:
 
 ```text
+responseStatus=approved
+responseReceivedAt=<ISO timestamp>
+respondent=<KIS respondent or support channel>
+responseEvidence=<KIS ticket/email URL or archived evidence path>
+approvedUseScope=<explicit approved raw-cache and derived-display scope>
+requiredAgreement=<customer_terms_confirmed|agency_terms_confirmed|paid_or_partner_agreement_required|no_additional_agreement_required>
 reviewOwner=<FINPLE reviewer email or owner>
 reviewedAt=<ISO timestamp>
-approvalEvidence=<KIS ticket/email URL or archived evidence path>
 termsReviewed=yes
 rawRedistributionReviewed=yes only if raw cache and derived display are explicitly approved
 status=ready_for_runtime_preflight only if every required capability condition is satisfied
@@ -97,6 +124,7 @@ status=ready_for_runtime_preflight only if every required capability condition i
 If KIS rejects the use case, or does not clearly approve raw-row storage and derived user-facing display:
 
 ```text
+responseStatus=rejected or unclear
 termsReviewed=no
 rawRedistributionReviewed=no
 status=blocked_pending_alternate_licensed_source

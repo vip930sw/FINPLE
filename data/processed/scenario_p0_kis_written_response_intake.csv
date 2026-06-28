@@ -1,0 +1,2 @@
+responseId,providerCandidate,sentTo,sentAt,responseStatus,responseReceivedAt,respondent,responseEvidence,termsReviewed,rawRedistributionReviewed,approvedUseScope,requiredAgreement,reviewOwner,reviewedAt,status,blocker,nextAction
+kis_openapi_written_confirmation,Korea Investment Open API overseas data,openapi@koreainvestment.com,2026-06-28T14:00:00Z,pending_response,,,,no,no,,,,,pending_kis_written_response,kis_written_response_pending,wait_for_kis_written_response_before_runtime_provider_calls

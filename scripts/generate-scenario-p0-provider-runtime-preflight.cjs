@@ -11,6 +11,11 @@ const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join(
 );
 const MONTHLY_DATA_PATH = path.join("data", "processed", "scenario_monthly_returns.csv");
 const KIS_CAPABILITY_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_kis_capability_preflight.json");
+const KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_kis_written_response_preflight.json",
+);
 const PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_runtime_preflight.json");
 
 const PREFLIGHT_VERSION = "scenario-p0-provider-runtime-preflight-v0.1";
@@ -117,8 +122,11 @@ function buildPreflight(env = process.env) {
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
   const monthlyCacheWriterPreflight = readJson(MONTHLY_CACHE_WRITER_PREFLIGHT_PATH);
   const kisCapabilityPreflight = readJson(KIS_CAPABILITY_PREFLIGHT_PATH);
+  const kisWrittenResponsePreflight = readJson(KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH);
   const monthlyFileExists = fs.existsSync(MONTHLY_DATA_PATH);
   const capabilityById = new Map((kisCapabilityPreflight.capabilities ?? []).map((capability) => [capability.capabilityId, capability]));
+  const kisWrittenResponseReady = kisWrittenResponsePreflight.checks?.responseReady === true;
+  const kisWrittenResponseBlockers = kisWrittenResponseReady ? [] : (kisWrittenResponsePreflight.checks?.blockers ?? []);
 
   const approvedProviderGroups = approvalIntake.rows.filter((row) => row.approvalStatusDraft === "ready_for_source_policy_review");
   const unknownProviders = approvedProviderGroups
@@ -155,6 +163,9 @@ function buildPreflight(env = process.env) {
         ...missingCapabilities.map((capabilityId) => `missing_kis_capability_${capabilityId}`),
         ...capabilityRows.flatMap((capability) => capability.blockers ?? []),
       ];
+      const writtenResponseRequired = requirement.providerKind === "korea_investment_open_api";
+      const writtenResponseReady = writtenResponseRequired ? kisWrittenResponseReady : true;
+      const writtenResponseBlockers = writtenResponseRequired && !writtenResponseReady ? kisWrittenResponseBlockers : [];
       const credentialsPresent = missingEnvVars.length === 0;
       return {
         providerCandidate: row.providerCandidate,
@@ -167,7 +178,10 @@ function buildPreflight(env = process.env) {
         requiredCapabilities,
         capabilityVerified,
         capabilityBlockers: capabilityVerified ? [] : [...new Set(capabilityBlockers)],
-        readyForRuntimeProviderCalls: credentialsPresent && capabilityVerified,
+        writtenResponseRequired,
+        writtenResponseReady,
+        writtenResponseBlockers: writtenResponseReady ? [] : [...new Set(writtenResponseBlockers)],
+        readyForRuntimeProviderCalls: credentialsPresent && capabilityVerified && writtenResponseReady,
       };
     });
 
@@ -176,12 +190,14 @@ function buildPreflight(env = process.env) {
   const writerReady = monthlyCacheWriterPreflight.readiness?.providerCallsAllowed === true;
   const providerCredentialsReady = providerGroups.length === 5 && providerGroups.every((row) => row.credentialsPresent);
   const providerCapabilityReady = providerGroups.length === 5 && providerGroups.every((row) => row.capabilityVerified);
+  const providerWrittenResponseReady = providerGroups.length === 5 && providerGroups.every((row) => row.writtenResponseReady);
   const runtimeProviderCallsAllowed =
     approvalReady &&
     adapterReady &&
     writerReady &&
     providerCredentialsReady &&
     providerCapabilityReady &&
+    providerWrittenResponseReady &&
     optInReady &&
     !monthlyFileExists;
   const blockers = [
@@ -192,10 +208,12 @@ function buildPreflight(env = process.env) {
       ...(providerGroups.length === 5 ? [] : ["provider_group_count_mismatch"]),
       ...(providerCredentialsReady ? [] : ["runtime_provider_credentials_missing"]),
       ...(providerCapabilityReady ? [] : ["runtime_provider_capability_not_verified"]),
+      ...(providerWrittenResponseReady ? [] : ["runtime_provider_written_response_not_approved"]),
       ...(optInReady ? [] : ["runtime_provider_calls_not_explicitly_enabled"]),
       ...(monthlyFileExists ? ["scenario_monthly_returns_csv_already_exists"] : []),
       ...providerGroups.flatMap((row) => row.missingEnvVars.map((name) => `missing_env_${name}`)),
       ...providerGroups.flatMap((row) => row.capabilityBlockers ?? []),
+      ...providerGroups.flatMap((row) => row.writtenResponseBlockers ?? []),
       ...optInRows.filter((row) => !row.matchesExpectedValue).map((row) => `missing_or_invalid_env_${row.name}`),
     ]),
   ];
@@ -209,6 +227,7 @@ function buildPreflight(env = process.env) {
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
       monthlyCacheWriterPreflight: MONTHLY_CACHE_WRITER_PREFLIGHT_PATH,
       kisCapabilityPreflight: KIS_CAPABILITY_PREFLIGHT_PATH,
+      kisWrittenResponsePreflight: KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH,
       monthlyDataTarget: MONTHLY_DATA_PATH,
     },
     outputFiles: {
@@ -221,6 +240,7 @@ function buildPreflight(env = process.env) {
       providerGroups: providerGroups.length,
       providerCredentialsReady,
       providerCapabilityReady,
+      providerWrittenResponseReady,
       optInReady,
       monthlyFileExists,
       runtimeProviderCallsAllowed,
@@ -242,6 +262,8 @@ function buildPreflight(env = process.env) {
         ? "run_controlled_monthly_cache_writer_to_create_validated_scenario_monthly_returns"
         : providerCapabilityReady !== true
         ? "record_official_kis_overseas_monthly_price_dividend_split_endpoint_evidence_before_runtime_provider_calls"
+        : providerWrittenResponseReady !== true
+        ? "record_kis_written_terms_response_before_runtime_provider_calls"
         : "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write",
     },
   });

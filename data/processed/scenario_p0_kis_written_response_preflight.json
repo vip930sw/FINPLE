@@ -1,0 +1,63 @@
+{
+  "preflightVersion": "scenario-p0-kis-written-response-preflight-v0.1",
+  "auditedAt": "2026-06-28T00:00:00Z",
+  "sourceFiles": {
+    "kisWrittenResponseIntake": "data\\processed\\scenario_p0_kis_written_response_intake.csv",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "preflight": "data\\processed\\scenario_p0_kis_written_response_preflight.json"
+  },
+  "checks": {
+    "providerCallsMade": false,
+    "monthlyFileExists": false,
+    "sentToKis": true,
+    "sentAtValid": true,
+    "responseReceived": false,
+    "responseStatusApproved": false,
+    "responseEvidenceValid": false,
+    "termsReviewed": false,
+    "rawRedistributionReviewed": false,
+    "approvedUseScopePresent": false,
+    "requiredAgreementValid": false,
+    "reviewerFieldsPresent": false,
+    "statusReady": false,
+    "responseReady": false,
+    "blockers": [
+      "kis_written_response_pending",
+      "kis_written_response_status_pending_response",
+      "kis_written_response_evidence_missing",
+      "kis_terms_not_approved",
+      "kis_raw_redistribution_not_approved",
+      "kis_approved_use_scope_missing",
+      "kis_required_agreement_unclassified",
+      "kis_response_review_owner_or_reviewed_at_missing",
+      "kis_response_status_pending_kis_written_response"
+    ]
+  },
+  "response": {
+    "responseId": "kis_openapi_written_confirmation",
+    "providerCandidate": "Korea Investment Open API overseas data",
+    "sentTo": "openapi@koreainvestment.com",
+    "sentAt": "2026-06-28T14:00:00Z",
+    "responseStatus": "pending_response",
+    "responseReceivedAt": "",
+    "respondent": "",
+    "responseEvidence": "",
+    "approvedUseScope": "",
+    "requiredAgreement": "",
+    "reviewOwner": "",
+    "reviewedAt": "",
+    "status": "pending_kis_written_response",
+    "blocker": "kis_written_response_pending",
+    "nextAction": "wait_for_kis_written_response_before_runtime_provider_calls"
+  },
+  "readiness": {
+    "status": "blocked_pending_kis_written_response",
+    "responseReady": false,
+    "providerCallsAllowed": false,
+    "monthlyDataFileWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "wait_for_kis_written_response_before_runtime_provider_calls"
+  }
+}

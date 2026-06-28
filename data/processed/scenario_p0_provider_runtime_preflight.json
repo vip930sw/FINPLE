@@ -7,6 +7,7 @@
     "providerAdapterPreflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
     "monthlyCacheWriterPreflight": "data\\processed\\scenario_p0_monthly_cache_writer_preflight.json",
     "kisCapabilityPreflight": "data\\processed\\scenario_p0_kis_capability_preflight.json",
+    "kisWrittenResponsePreflight": "data\\processed\\scenario_p0_kis_written_response_preflight.json",
     "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
   },
   "outputFiles": {
@@ -19,12 +20,14 @@
     "providerGroups": 5,
     "providerCredentialsReady": false,
     "providerCapabilityReady": false,
+    "providerWrittenResponseReady": false,
     "optInReady": false,
     "monthlyFileExists": false,
     "runtimeProviderCallsAllowed": false,
     "blockers": [
       "runtime_provider_credentials_missing",
       "runtime_provider_capability_not_verified",
+      "runtime_provider_written_response_not_approved",
       "runtime_provider_calls_not_explicitly_enabled",
       "missing_env_KIS_APP_KEY",
       "missing_env_KIS_APP_SECRET",
@@ -33,6 +36,15 @@
       "missing_or_unreviewed_termsReviewed",
       "missing_or_unreviewed_rawRedistributionReviewed",
       "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
+      "kis_written_response_pending",
+      "kis_written_response_status_pending_response",
+      "kis_written_response_evidence_missing",
+      "kis_terms_not_approved",
+      "kis_raw_redistribution_not_approved",
+      "kis_approved_use_scope_missing",
+      "kis_required_agreement_unclassified",
+      "kis_response_review_owner_or_reviewed_at_missing",
+      "kis_response_status_pending_kis_written_response",
       "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
       "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
     ]
@@ -75,6 +87,19 @@
       "requiredCapabilities": [],
       "capabilityVerified": true,
       "capabilityBlockers": [],
+      "writtenResponseRequired": true,
+      "writtenResponseReady": false,
+      "writtenResponseBlockers": [
+        "kis_written_response_pending",
+        "kis_written_response_status_pending_response",
+        "kis_written_response_evidence_missing",
+        "kis_terms_not_approved",
+        "kis_raw_redistribution_not_approved",
+        "kis_approved_use_scope_missing",
+        "kis_required_agreement_unclassified",
+        "kis_response_review_owner_or_reviewed_at_missing",
+        "kis_response_status_pending_kis_written_response"
+      ],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -94,6 +119,19 @@
       "requiredCapabilities": [],
       "capabilityVerified": true,
       "capabilityBlockers": [],
+      "writtenResponseRequired": true,
+      "writtenResponseReady": false,
+      "writtenResponseBlockers": [
+        "kis_written_response_pending",
+        "kis_written_response_status_pending_response",
+        "kis_written_response_evidence_missing",
+        "kis_terms_not_approved",
+        "kis_raw_redistribution_not_approved",
+        "kis_approved_use_scope_missing",
+        "kis_required_agreement_unclassified",
+        "kis_response_review_owner_or_reviewed_at_missing",
+        "kis_response_status_pending_kis_written_response"
+      ],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -118,6 +156,19 @@
         "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
         "missing_or_unreviewed_termsReviewed",
         "missing_or_unreviewed_rawRedistributionReviewed"
+      ],
+      "writtenResponseRequired": true,
+      "writtenResponseReady": false,
+      "writtenResponseBlockers": [
+        "kis_written_response_pending",
+        "kis_written_response_status_pending_response",
+        "kis_written_response_evidence_missing",
+        "kis_terms_not_approved",
+        "kis_raw_redistribution_not_approved",
+        "kis_approved_use_scope_missing",
+        "kis_required_agreement_unclassified",
+        "kis_response_review_owner_or_reviewed_at_missing",
+        "kis_response_status_pending_kis_written_response"
       ],
       "readyForRuntimeProviderCalls": false
     },
@@ -144,6 +195,19 @@
         "missing_or_unreviewed_termsReviewed",
         "missing_or_unreviewed_rawRedistributionReviewed"
       ],
+      "writtenResponseRequired": true,
+      "writtenResponseReady": false,
+      "writtenResponseBlockers": [
+        "kis_written_response_pending",
+        "kis_written_response_status_pending_response",
+        "kis_written_response_evidence_missing",
+        "kis_terms_not_approved",
+        "kis_raw_redistribution_not_approved",
+        "kis_approved_use_scope_missing",
+        "kis_required_agreement_unclassified",
+        "kis_response_review_owner_or_reviewed_at_missing",
+        "kis_response_status_pending_kis_written_response"
+      ],
       "readyForRuntimeProviderCalls": false
     },
     {
@@ -161,6 +225,9 @@
       "requiredCapabilities": [],
       "capabilityVerified": true,
       "capabilityBlockers": [],
+      "writtenResponseRequired": false,
+      "writtenResponseReady": true,
+      "writtenResponseBlockers": [],
       "readyForRuntimeProviderCalls": false
     }
   ],

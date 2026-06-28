@@ -20,6 +20,11 @@ const SOURCE_POLICY_SYNC_PLAN_PATH = path.join("data", "processed", "scenario_p0
 const SOURCE_POLICY_SYNC_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_source_policy_sync_preflight.json");
 const PROVIDER_ADAPTER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_adapter_preflight.json");
 const KIS_CAPABILITY_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_kis_capability_preflight.json");
+const KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_kis_written_response_preflight.json",
+);
 const PROVIDER_RUNTIME_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_runtime_preflight.json");
 const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_monthly_cache_writer_preflight.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
@@ -156,6 +161,7 @@ function buildProgress() {
   const sourcePolicySyncPreflight = readJson(SOURCE_POLICY_SYNC_PREFLIGHT_PATH);
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
   const kisCapabilityPreflight = readJson(KIS_CAPABILITY_PREFLIGHT_PATH);
+  const kisWrittenResponsePreflight = readJson(KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH);
   const providerRuntimePreflight = readJson(PROVIDER_RUNTIME_PREFLIGHT_PATH);
   const monthlyCacheWriterPreflight = readJson(MONTHLY_CACHE_WRITER_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
@@ -293,6 +299,7 @@ function buildProgress() {
         sourcePolicySyncPreflightCanSync: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy,
         providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
         kisCapabilityPreflightReady: kisCapabilityPreflight.checks?.capabilityReady,
+        kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady,
         providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
       },
@@ -317,6 +324,8 @@ function buildProgress() {
         providerAdapterPreflightProviderCallsAllowed: providerAdapterPreflight.checks?.providerCallsAllowed,
         kisCapabilityPreflightReady: kisCapabilityPreflight.checks?.capabilityReady,
         kisCapabilityBlockers: kisCapabilityPreflight.checks?.blockers ?? [],
+        kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady,
+        kisWrittenResponseBlockers: kisWrittenResponsePreflight.checks?.blockers ?? [],
         providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
         providerRuntimeBlockers: providerRuntimePreflight.checks?.blockers ?? [],
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
@@ -386,6 +395,7 @@ function buildProgress() {
       sourcePolicySyncPreflight: SOURCE_POLICY_SYNC_PREFLIGHT_PATH,
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
       kisCapabilityPreflight: KIS_CAPABILITY_PREFLIGHT_PATH,
+      kisWrittenResponsePreflight: KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH,
       providerRuntimePreflight: PROVIDER_RUNTIME_PREFLIGHT_PATH,
       monthlyCacheWriterPreflight: MONTHLY_CACHE_WRITER_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
@@ -425,6 +435,7 @@ function buildProgress() {
       sourcePolicySyncPreflightReady: sourcePolicySyncPreflight.checks?.canSyncSourcePolicy === true,
       providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,
       kisCapabilityPreflightReady: kisCapabilityPreflight.checks?.capabilityReady === true,
+      kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady === true,
       providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed === true,
       monthlyCacheWriterPreflightReady: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter === true,
       bootstrapUnlockPreflightReady: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap === true,
@@ -438,6 +449,8 @@ function buildProgress() {
     nextAllowedStep:
       approvalProgress === 100 && kisCapabilityPreflight.checks?.capabilityReady !== true
         ? "record_official_kis_overseas_monthly_price_dividend_split_endpoint_evidence_before_runtime_provider_calls"
+        : approvalProgress === 100 && kisWrittenResponsePreflight.checks?.responseReady !== true
+        ? "wait_for_kis_written_response_before_runtime_provider_calls"
         : approvalProgress === 100 && providerRuntimePreflight.checks?.runtimeProviderCallsAllowed !== true
         ? "configure_runtime_provider_credentials_and_explicit_live_call_opt_in_before_monthly_write"
         : approvalProgress === 100 && writePreflight.checks?.canAttemptMonthlyWrite === true

@@ -56,10 +56,26 @@ Until then:
 - `termsReviewed=no`
 - `rawRedistributionReviewed=no`
 - `capabilityReady=false`
+- `responseReady=false`
 - provider calls remain blocked
 - provider adapter implementation remains blocked
 - monthly cache writer remains blocked
 - `scenario_monthly_returns.csv` must not be written
+
+## Written Response Gate
+
+The KIS confirmation email was sent to `openapi@koreainvestment.com` on 2026-06-28, but the committed state is still pending response and blocked:
+
+```text
+data/processed/scenario_p0_kis_written_response_intake.csv
+data/processed/scenario_p0_kis_written_response_preflight.json
+
+responseStatus=pending_response
+responseReady=false
+providerCallsAllowed=false
+```
+
+This gate must remain blocked unless KIS gives written confirmation and FINPLE records the response evidence, reviewer email, reviewed timestamp, approved use scope, agreement classification, `termsReviewed=yes`, and `rawRedistributionReviewed=yes`.
 
 ## Questions To Send To KIS Or Legal
 
