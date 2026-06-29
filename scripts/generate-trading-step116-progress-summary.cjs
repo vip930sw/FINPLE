@@ -54,6 +54,11 @@ const TRACKED_READINESS_CONTRACTS = [
   ["redactedApprovalPacketValidation", "Redacted approval packet validation", "trading_lab_step116_redacted_approval_packet_validation_contract.json"],
   ["redactedApprovalPacketValidationPreflight", "Redacted approval packet validation preflight", "trading_lab_step116_redacted_approval_packet_validation_preflight.json"],
   ["redactedApprovalPacketValidatorFixtures", "Redacted approval packet validator fixtures", "trading_lab_step116_redacted_approval_packet_validator_fixtures.json"],
+  [
+    "privateReadOnlyProviderImplementationPreflight",
+    "Private read-only provider implementation preflight",
+    "trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -107,6 +112,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-redacted-approval-packet-validation-preflight",
   "check:trading-redacted-approval-packet-validator",
   "check:trading-redacted-approval-packet-validator-fixtures",
+  "check:trading-private-read-only-provider-implementation-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -131,7 +137,7 @@ const FORBIDDEN_RUNTIME_ARTIFACTS = [
 const FORBIDDEN_SCENARIO_ARTIFACT = path.join("data", "processed", "scenario_monthly_returns.csv");
 const REMAINING_TRADING_GATES = [
   "owner_redacted_read_only_approval_packet_not_imported",
-  "private_read_only_provider_implementation_review_not_started",
+  "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
   "private_shadow_runtime_implementation_review_not_started",
   "private_operator_access_implementation_review_not_started",
   "db_storage_review_not_started",

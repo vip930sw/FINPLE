@@ -40,7 +40,8 @@
       "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
       "redactedApprovalPacketValidation": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
       "redactedApprovalPacketValidationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
-      "redactedApprovalPacketValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json"
+      "redactedApprovalPacketValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json",
+      "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json"
     }
   },
   "outputFiles": {
@@ -61,10 +62,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 34,
-    "trackedContractsReady": 34,
+    "trackedContractsTotal": 35,
+    "trackedContractsReady": 35,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 50,
+    "requiredNpmScriptsTotal": 51,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -375,11 +376,20 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "privateReadOnlyProviderImplementationPreflight",
+      "title": "Private read-only provider implementation preflight",
+      "filePath": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+      "status": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
     "owner_redacted_read_only_approval_packet_not_imported",
-    "private_read_only_provider_implementation_review_not_started",
+    "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
     "private_shadow_runtime_implementation_review_not_started",
     "private_operator_access_implementation_review_not_started",
     "db_storage_review_not_started",
@@ -425,7 +435,7 @@
     "blockers": [],
     "remainingTradingGates": [
       "owner_redacted_read_only_approval_packet_not_imported",
-      "private_read_only_provider_implementation_review_not_started",
+      "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
       "private_shadow_runtime_implementation_review_not_started",
       "private_operator_access_implementation_review_not_started",
       "db_storage_review_not_started",

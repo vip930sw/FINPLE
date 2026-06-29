@@ -270,28 +270,29 @@ Step 116 should be split into small commits and PR-sized phases:
 18. Redacted approval packet validation preflight.
 19. Redacted approval packet local validator.
 20. Redacted approval packet validator fixtures.
-21. Trading Step 116 progress summary.
-22. Read-only provider request envelope validation contract.
-23. Read-only provider request envelope validation preflight.
-24. Read-only provider request envelope local validator.
-25. Read-only provider request envelope contract.
-26. Read-only provider response envelope contract.
-27. Read-only snapshot normalization contract.
-28. Read-only snapshot risk input contract.
-29. Read-only snapshot risk input local validator.
-30. Private shadow order intent contract.
-31. Private shadow order intent local validator.
-32. Private shadow intent audit event contract.
-33. Private shadow intent audit event local validator.
-34. Private shadow runtime review packet contract.
-35. Private shadow runtime review packet local validator.
-36. Private shadow operator access contract.
-37. Private shadow operator access local validator.
-38. Private shadow runtime preflight.
-39. KIS order adapter design review.
-40. Manual order permission preflight.
-41. Manual order permission local validator.
-42. Live guarded execution only after manual approval.
+21. Private read-only provider implementation preflight.
+22. Trading Step 116 progress summary.
+23. Read-only provider request envelope validation contract.
+24. Read-only provider request envelope validation preflight.
+25. Read-only provider request envelope local validator.
+26. Read-only provider request envelope contract.
+27. Read-only provider response envelope contract.
+28. Read-only snapshot normalization contract.
+29. Read-only snapshot risk input contract.
+30. Read-only snapshot risk input local validator.
+31. Private shadow order intent contract.
+32. Private shadow order intent local validator.
+33. Private shadow intent audit event contract.
+34. Private shadow intent audit event local validator.
+35. Private shadow runtime review packet contract.
+36. Private shadow runtime review packet local validator.
+37. Private shadow operator access contract.
+38. Private shadow operator access local validator.
+39. Private shadow runtime preflight.
+40. KIS order adapter design review.
+41. Manual order permission preflight.
+42. Manual order permission local validator.
+43. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1691,6 +1692,37 @@ Current state remains:
 The validator accepts only redacted, hash-only manual order permission evidence with `mode=live_guarded`, time-boxed approval/expiry timestamps, non-empty allowed symbol hashes, bounded local numeric caps, operator access hash, approval policy hash, order adapter design review hash, kill-switch/risk-gate clearance hashes, order credential boundary hash, replay/history/audit hashes, revocation plan hash, and explicit provider/order/runtime/UI allow flags set to false.
 
 Validator success still does not import permission evidence, implement a KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
+
+The first Trading Private Read-Only Provider Implementation Preflight is:
+
+```text
+data/processed/trading_lab_step116_private_read_only_provider_implementation_preflight.json
+scripts/generate-trading-private-read-only-provider-implementation-preflight.cjs
+scripts/generate-trading-private-read-only-provider-implementation-preflight.test.cjs
+npm run check:trading-private-read-only-provider-implementation-preflight
+```
+
+This is a private_read_only_provider_implementation_preflight contract, not a KIS provider implementation, provider caller, runtime route, DB migration, private dashboard, public UI, approval importer, or order submission path. It records the next implementation-review gate while keeping the owner approval packet import closed.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `ownerPacketGateStillClosed=true`
+- `providerImplementationAllowedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future private read-only provider implementation review remains blocked until owner redacted read-only approval packet import is recorded separately. The preflight requires the redacted approval packet validation preflight, read-only request-envelope validator preflight, request/response envelope contracts, snapshot normalization and risk-input contracts, env risk-gate contract, and private shadow runtime preflight to remain fail-closed.
+
+The boundary allows only a later private-worker, read-only provider implementation review. It forbids default private packet reads, app keys, app secrets, access tokens, full account numbers, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, live order endpoints, scenario monthly return rows, runtime routes, DB writes, public UI, provider calls in this step, and all order submission or cancellation paths.
+
+Preflight success still does not create or import `data/private/trading/read_only_approval.redacted.json`, does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
 
 ## Explicit Non-Goals
 
