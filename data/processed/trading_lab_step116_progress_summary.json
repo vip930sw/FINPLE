@@ -25,6 +25,7 @@
       "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
       "readOnlyProviderRequestEnvelope": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_contract.json",
       "readOnlyProviderRequestEnvelopeValidation": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validation_contract.json",
+      "readOnlyProviderRequestEnvelopeValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validation_preflight.json",
       "readOnlyProviderResponseEnvelope": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_contract.json",
       "readOnlySnapshotNormalization": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
       "readOnlySnapshotRiskInput": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json",
@@ -60,10 +61,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 33,
-    "trackedContractsReady": 33,
+    "trackedContractsTotal": 34,
+    "trackedContractsReady": 34,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 38,
+    "requiredNpmScriptsTotal": 39,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -227,6 +228,15 @@
       "title": "Read-only provider request envelope validation",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validation_contract.json",
       "status": "contract_ready_pending_read_only_provider_request_envelope_validation_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderRequestEnvelopeValidationPreflight",
+      "title": "Read-only provider request envelope validation preflight",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validation_preflight.json",
+      "status": "preflight_ready_pending_pure_local_request_envelope_validator_implementation_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
