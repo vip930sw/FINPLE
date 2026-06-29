@@ -274,14 +274,15 @@ Step 116 should be split into small commits and PR-sized phases:
 22. Read-only provider response envelope contract.
 23. Read-only snapshot normalization contract.
 24. Read-only snapshot risk input contract.
-25. Private shadow order intent contract.
-26. Private shadow intent audit event contract.
-27. Private shadow runtime review packet contract.
-28. Private shadow operator access contract.
-29. Private shadow runtime preflight.
-30. KIS order adapter design review.
-31. Manual order permission preflight.
-32. Live guarded execution only after manual approval.
+25. Read-only snapshot risk input local validator.
+26. Private shadow order intent contract.
+27. Private shadow intent audit event contract.
+28. Private shadow runtime review packet contract.
+29. Private shadow operator access contract.
+30. Private shadow runtime preflight.
+31. KIS order adapter design review.
+32. Manual order permission preflight.
+33. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1283,6 +1284,31 @@ Current state remains:
 Future snapshot risk input review must include order-intent hash, mode, market, symbol, side, quantity, estimated-notional hash, quote snapshot hash, account-state snapshot hash, orderable-cash snapshot hash, position snapshot hash, FX snapshot hash, market-session snapshot hash, provider-rate-limit snapshot hash, freshness status, account-match status, kill-switch/manual-approval state hashes, redaction version, and explicit provider/order allow flags.
 
 The risk input boundary must keep account identifiers, cash values, positions, quote values, and notional estimates hash-only. Missing or stale quote, FX, account-state, market-session, or provider-rate-limit snapshots must block live review. Snapshot risk input success still does not perform provider calls, enable read-only runtime, create DB storage, or approve live order submission.
+
+## Step 116-2P Trading Read-Only Snapshot Risk Input Local Validator
+
+The first Trading Read-Only Snapshot Risk Input Local Validator is:
+
+```text
+scripts/validate-trading-read-only-snapshot-risk-input.cjs
+scripts/validate-trading-read-only-snapshot-risk-input.test.cjs
+npm run check:trading-read-only-snapshot-risk-input-validator
+```
+
+This is a pure local validator script, not a risk-input mapper implementation, KIS reader, provider adapter, runtime route, DB migration, public UI, private approval importer, or order submission path. It requires an explicit `--input <path>` argument and does not read private approval packet paths, environment secrets, provider URLs, or account credentials.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only a shadow-mode, hash-only risk input with fresh quote/account/orderable-cash/position/FX/market-session/rate-limit snapshot hashes, matching account context, bounded quantity, and explicit provider/order allow flags set to false.
+
+Validator success still does not map provider responses, normalize snapshots, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
 
 ## Step 116-1Y Trading Private Shadow Order Intent Contract
 

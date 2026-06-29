@@ -71,6 +71,7 @@
     "check:trading-read-only-provider-response-envelope": "node scripts/generate-trading-read-only-provider-response-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-contract.test.cjs",
     "check:trading-read-only-snapshot-normalization": "node scripts/generate-trading-read-only-snapshot-normalization-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-normalization-contract.test.cjs",
     "check:trading-read-only-snapshot-risk-input": "node scripts/generate-trading-read-only-snapshot-risk-input-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-risk-input-contract.test.cjs",
+    "check:trading-read-only-snapshot-risk-input-validator": "node --test scripts/validate-trading-read-only-snapshot-risk-input.test.cjs",
     "check:trading-private-shadow-order-intent": "node scripts/generate-trading-private-shadow-order-intent-contract.cjs --check && node --test scripts/generate-trading-private-shadow-order-intent-contract.test.cjs",
     "check:trading-private-shadow-intent-audit-event": "node scripts/generate-trading-private-shadow-intent-audit-event-contract.cjs --check && node --test scripts/generate-trading-private-shadow-intent-audit-event-contract.test.cjs",
     "check:trading-private-shadow-runtime-review-packet": "node scripts/generate-trading-private-shadow-runtime-review-packet-contract.cjs --check && node --test scripts/generate-trading-private-shadow-runtime-review-packet-contract.test.cjs",
