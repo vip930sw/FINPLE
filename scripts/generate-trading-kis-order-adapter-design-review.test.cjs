@@ -16,6 +16,7 @@ const DRY_RUN_REPLAY_CONTRACT = "trading_lab_step116_dry_run_replay_contract.jso
 const SHADOW_HISTORY_REVIEW_CONTRACT = "trading_lab_step116_shadow_history_review_contract.json";
 const AUDIT_LOGGER_READINESS_CONTRACT = "trading_lab_step116_audit_logger_readiness_contract.json";
 const MANUAL_OPERATOR_APPROVAL_CONTRACT = "trading_lab_step116_manual_operator_approval_contract.json";
+const KILL_SWITCH_CLEARANCE_CONTRACT = "trading_lab_step116_kill_switch_clearance_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -33,6 +34,7 @@ function makeWorkspace() {
     SHADOW_HISTORY_REVIEW_CONTRACT,
     AUDIT_LOGGER_READINESS_CONTRACT,
     MANUAL_OPERATOR_APPROVAL_CONTRACT,
+    KILL_SWITCH_CLEARANCE_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -205,6 +207,22 @@ test("blocks future adapter review if manual operator approval contract is not r
   assert.equal(report.checks.manualOperatorApprovalContractReady, false);
   assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /manual_operator_approval_contract_not_ready/);
+});
+
+test("blocks future adapter review if kill switch clearance contract is not ready", () => {
+  const workspace = makeWorkspace();
+  const killSwitch = readJson(workspace, KILL_SWITCH_CLEARANCE_CONTRACT);
+  killSwitch.readiness.readyForFutureKillSwitchClearanceImplementationReview = false;
+  killSwitch.readiness.killSwitchRuntimeImplementationAllowed = true;
+  writeJson(workspace, KILL_SWITCH_CLEARANCE_CONTRACT, killSwitch);
+
+  const result = runReview(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.killSwitchClearanceContractReady, false);
+  assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /kill_switch_clearance_contract_not_ready/);
 });
 
 test("blocks future adapter review if order adapter runtime artifacts appear too early", () => {

@@ -614,6 +614,36 @@ Future manual approval must be scoped to one order intent, time-boxed, tied to t
 
 The KIS order adapter design review now also depends on this manual operator approval contract. Future order-adapter implementation review stays blocked if the manual approval contract is not ready, if it enables approval implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
+## Step 116-1O Trading Kill Switch Clearance Contract
+
+The first Trading Kill Switch Clearance Contract is:
+
+```text
+data/processed/trading_lab_step116_kill_switch_clearance_contract.json
+scripts/generate-trading-kill-switch-clearance-contract.cjs
+scripts/generate-trading-kill-switch-clearance-contract.test.cjs
+npm run check:trading-kill-switch-clearance
+```
+
+This is a contract and drift check, not a kill-switch service, runtime route, frontend control, KIS adapter, or order path. It defines the future `kill_switch_clear` gate required before `live_guarded` adapter implementation review can proceed.
+
+Current state remains blocked:
+
+- `contractOnly=true`
+- `killSwitchRuntimeImplementationAllowed=false`
+- `killSwitchClearNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The current Render-style fixture remains fail-closed: `FINPLE_TRADING_KILL_SWITCH=true` maps to `runtime.globalTradingDisabled=true`, the risk gate blocks with `kill_switch_global_trading_disabled`, and both provider calls and order submission stay false.
+
+Future kill-switch clearance must be time-boxed, operator-attributed, audited before any order-intent promotion, and unable to override a failed risk gate or missing manual approval. A cleared kill switch alone still cannot permit provider calls or order submission.
+
+The KIS order adapter design review now also depends on this kill switch clearance contract. Future order-adapter implementation review stays blocked if the kill switch clearance contract is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

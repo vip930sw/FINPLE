@@ -31,13 +31,18 @@ const MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_manual_operator_approval_contract.json",
 );
+const KILL_SWITCH_CLEARANCE_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_kill_switch_clearance_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.6";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.7";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -115,6 +120,7 @@ function buildReview() {
   const shadowHistoryReviewContract = readJson(SHADOW_HISTORY_REVIEW_CONTRACT_PATH);
   const auditLoggerReadinessContract = readJson(AUDIT_LOGGER_READINESS_CONTRACT_PATH);
   const manualOperatorApprovalContract = readJson(MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH);
+  const killSwitchClearanceContract = readJson(KILL_SWITCH_CLEARANCE_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -175,6 +181,13 @@ function buildReview() {
       manualOperatorApprovalContract.readiness?.orderSubmissionAllowed === false &&
       manualOperatorApprovalContract.readiness?.dbMigrationAllowed === false &&
       manualOperatorApprovalContract.readiness?.publicUiAllowed === false,
+    killSwitchClearanceContractReady:
+      killSwitchClearanceContract.readiness?.readyForFutureKillSwitchClearanceImplementationReview === true &&
+      killSwitchClearanceContract.readiness?.killSwitchRuntimeImplementationAllowed === false &&
+      killSwitchClearanceContract.readiness?.providerCallsAllowed === false &&
+      killSwitchClearanceContract.readiness?.orderSubmissionAllowed === false &&
+      killSwitchClearanceContract.readiness?.dbMigrationAllowed === false &&
+      killSwitchClearanceContract.readiness?.publicUiAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -186,7 +199,8 @@ function buildReview() {
       architectureDoc.includes("Trading Dry-Run Replay Contract") &&
       architectureDoc.includes("Trading Shadow History Review Contract") &&
       architectureDoc.includes("Trading Audit Logger Readiness Contract") &&
-      architectureDoc.includes("Trading Manual Operator Approval Contract"),
+      architectureDoc.includes("Trading Manual Operator Approval Contract") &&
+      architectureDoc.includes("Trading Kill Switch Clearance Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -206,6 +220,7 @@ function buildReview() {
     checks.shadowHistoryReviewContractReady &&
     checks.auditLoggerReadinessContractReady &&
     checks.manualOperatorApprovalContractReady &&
+    checks.killSwitchClearanceContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -227,6 +242,7 @@ function buildReview() {
       shadowHistoryReviewContract: SHADOW_HISTORY_REVIEW_CONTRACT_PATH,
       auditLoggerReadinessContract: AUDIT_LOGGER_READINESS_CONTRACT_PATH,
       manualOperatorApprovalContract: MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH,
+      killSwitchClearanceContract: KILL_SWITCH_CLEARANCE_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -284,6 +300,7 @@ function buildReview() {
       shadowHistoryReviewContractStatus: shadowHistoryReviewContract.readiness?.status,
       auditLoggerReadinessContractStatus: auditLoggerReadinessContract.readiness?.status,
       manualOperatorApprovalContractStatus: manualOperatorApprovalContract.readiness?.status,
+      killSwitchClearanceContractStatus: killSwitchClearanceContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -309,6 +326,7 @@ function buildReview() {
         ...(checks.shadowHistoryReviewContractReady ? [] : ["shadow_history_review_contract_not_ready"]),
         ...(checks.auditLoggerReadinessContractReady ? [] : ["audit_logger_readiness_contract_not_ready"]),
         ...(checks.manualOperatorApprovalContractReady ? [] : ["manual_operator_approval_contract_not_ready"]),
+        ...(checks.killSwitchClearanceContractReady ? [] : ["kill_switch_clearance_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),
