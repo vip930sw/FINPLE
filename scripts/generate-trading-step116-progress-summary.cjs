@@ -94,6 +94,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-shadow-operator-access",
   "check:trading-private-shadow-operator-access-validator",
   "check:trading-manual-order-permission",
+  "check:trading-manual-order-permission-validator",
   "check:trading-mock-approval-evidence",
   "check:trading-redacted-read-only-approval-template",
   "check:trading-redacted-approval-hash-helper",

@@ -286,7 +286,8 @@ Step 116 should be split into small commits and PR-sized phases:
 34. Private shadow runtime preflight.
 35. KIS order adapter design review.
 36. Manual order permission preflight.
-37. Live guarded execution only after manual approval.
+37. Manual order permission local validator.
+38. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1556,6 +1557,30 @@ Current state remains:
 Future manual order permission evidence must include permission id, mode, operator/approval hashes, issued/expiry timestamps, operator access hash, order adapter design review hash, kill-switch and risk-gate clearance hashes, order credential boundary hash, dry-run replay hash, shadow history review hash, audit logger readiness hash, allowed symbol hashes, order notional/loss/attempt caps, revocation plan hash, redaction version, and explicit provider/order/runtime/UI allow flags.
 
 The permission boundary must keep operator identity, account identity, session values, order payloads, provider payloads, execution ids, fills, and secrets out of the packet. Permission preflight success still does not import permission evidence, implement a KIS order adapter, create runtime routes, expose UI, call a provider, submit orders, or approve live trading.
+
+## Step 116-2U Trading Manual Order Permission Local Validator
+
+The first Trading Manual Order Permission Local Validator is:
+
+```text
+scripts/validate-trading-manual-order-permission.cjs
+scripts/validate-trading-manual-order-permission.test.cjs
+npm run check:trading-manual-order-permission-validator
+```
+
+This is a pure local validator script, not a permission importer, KIS order adapter, provider caller, runtime route, DB migration, private dashboard, public UI, or order submission path. It requires an explicit `--permission <path>` argument and does not read `data/private/trading/manual_order_permission.redacted.json` by default.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only redacted, hash-only manual order permission evidence with `mode=live_guarded`, time-boxed approval/expiry timestamps, non-empty allowed symbol hashes, bounded local numeric caps, operator access hash, approval policy hash, order adapter design review hash, kill-switch/risk-gate clearance hashes, order credential boundary hash, replay/history/audit hashes, revocation plan hash, and explicit provider/order/runtime/UI allow flags set to false.
+
+Validator success still does not import permission evidence, implement a KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Explicit Non-Goals
 
