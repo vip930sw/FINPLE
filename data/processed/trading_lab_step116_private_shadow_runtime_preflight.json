@@ -1,5 +1,5 @@
 {
-  "contractVersion": "trading-lab-step116-private-shadow-runtime-preflight-v0.7",
+  "contractVersion": "trading-lab-step116-private-shadow-runtime-preflight-v0.8",
   "auditedAt": "2026-06-29T00:00:00Z",
   "step": "Step 116-1R",
   "scope": "private_shadow_runtime_preflight_contract",
@@ -20,6 +20,7 @@
     "readOnlyProviderResponseEnvelopeContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_contract.json",
     "readOnlySnapshotNormalizationContract": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
     "readOnlySnapshotRiskInputContract": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json",
+    "privateShadowOrderIntentContract": "data\\processed\\trading_lab_step116_private_shadow_order_intent_contract.json",
     "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
   },
   "outputFiles": {
@@ -109,6 +110,7 @@
     "readOnlyProviderResponseEnvelopeContractReady": true,
     "readOnlySnapshotNormalizationContractReady": true,
     "readOnlySnapshotRiskInputContractReady": true,
+    "privateShadowOrderIntentContractReady": true,
     "runtimeEvidenceReady": true,
     "runtimeAssertionsReady": true,
     "forbiddenActionsReady": true,
@@ -151,6 +153,7 @@
     "readOnlyProviderResponseEnvelopeContractStatus": "contract_ready_pending_read_only_provider_response_envelope_implementation_review",
     "readOnlySnapshotNormalizationContractStatus": "contract_ready_pending_read_only_snapshot_normalization_implementation_review",
     "readOnlySnapshotRiskInputContractStatus": "contract_ready_pending_read_only_snapshot_risk_input_implementation_review",
+    "privateShadowOrderIntentContractStatus": "contract_ready_pending_private_shadow_order_intent_implementation_review",
     "preflightStatus": "ready_for_step116_pure_validator_implementation"
   },
   "readiness": {

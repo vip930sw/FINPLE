@@ -27,6 +27,8 @@ const READ_ONLY_SNAPSHOT_NORMALIZATION_CONTRACT =
   "trading_lab_step116_read_only_snapshot_normalization_contract.json";
 const READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT =
   "trading_lab_step116_read_only_snapshot_risk_input_contract.json";
+const PRIVATE_SHADOW_ORDER_INTENT_CONTRACT =
+  "trading_lab_step116_private_shadow_order_intent_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -51,6 +53,7 @@ function makeWorkspace() {
     READ_ONLY_PROVIDER_RESPONSE_ENVELOPE_CONTRACT,
     READ_ONLY_SNAPSHOT_NORMALIZATION_CONTRACT,
     READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT,
+    PRIVATE_SHADOW_ORDER_INTENT_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -268,6 +271,22 @@ test("blocks future private shadow runtime review if read-only snapshot risk inp
   assert.equal(report.checks.readOnlySnapshotRiskInputContractReady, false);
   assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /read_only_snapshot_risk_input_contract_not_ready/);
+});
+
+test("blocks future private shadow runtime review if private shadow order intent is not ready", () => {
+  const workspace = makeWorkspace();
+  const orderIntent = readJson(workspace, PRIVATE_SHADOW_ORDER_INTENT_CONTRACT);
+  orderIntent.readiness.readyForFuturePrivateShadowOrderIntentImplementationReview = false;
+  orderIntent.readiness.orderSubmissionAllowed = true;
+  writeJson(workspace, PRIVATE_SHADOW_ORDER_INTENT_CONTRACT, orderIntent);
+
+  const result = runPreflight(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.privateShadowOrderIntentContractReady, false);
+  assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /private_shadow_order_intent_contract_not_ready/);
 });
 
 test("blocks future private shadow runtime review if runtime artifacts appear too early", () => {

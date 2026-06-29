@@ -262,9 +262,10 @@ Step 116 should be split into small commits and PR-sized phases:
 10. Read-only provider response envelope contract.
 11. Read-only snapshot normalization contract.
 12. Read-only snapshot risk input contract.
-13. Private shadow runtime preflight.
-14. KIS order adapter design review.
-15. Live guarded execution only after manual approval.
+13. Private shadow order intent contract.
+14. Private shadow runtime preflight.
+15. KIS order adapter design review.
+16. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -738,7 +739,7 @@ Current state remains:
 
 Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
 
-The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, Trading Read-Only Provider Response Envelope Contract, Trading Read-Only Snapshot Normalization Contract, and Trading Read-Only Snapshot Risk Input Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, Trading Read-Only Provider Response Envelope Contract, Trading Read-Only Snapshot Normalization Contract, Trading Read-Only Snapshot Risk Input Contract, and Trading Private Shadow Order Intent Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
 
 ## Step 116-1S Trading Read-Only Approval Intake Contract
 
@@ -911,6 +912,34 @@ Current state remains:
 Future snapshot risk input review must include order-intent hash, mode, market, symbol, side, quantity, estimated-notional hash, quote snapshot hash, account-state snapshot hash, orderable-cash snapshot hash, position snapshot hash, FX snapshot hash, market-session snapshot hash, provider-rate-limit snapshot hash, freshness status, account-match status, kill-switch/manual-approval state hashes, redaction version, and explicit provider/order allow flags.
 
 The risk input boundary must keep account identifiers, cash values, positions, quote values, and notional estimates hash-only. Missing or stale quote, FX, account-state, market-session, or provider-rate-limit snapshots must block live review. Snapshot risk input success still does not perform provider calls, enable read-only runtime, create DB storage, or approve live order submission.
+
+## Step 116-1Y Trading Private Shadow Order Intent Contract
+
+The first Trading Private Shadow Order Intent Contract is:
+
+```text
+data/processed/trading_lab_step116_private_shadow_order_intent_contract.json
+scripts/generate-trading-private-shadow-order-intent-contract.cjs
+scripts/generate-trading-private-shadow-order-intent-contract.test.cjs
+npm run check:trading-private-shadow-order-intent
+```
+
+This is a private_shadow_order_intent contract, not an order-intent recorder implementation, KIS order adapter, runtime route, storage layer, DB migration, or public UI. It defines the future hash-only shadow order-intent record that can be audited before any private shadow runtime implementation review.
+
+Current state remains:
+
+- `contractOnly=true`
+- `privateShadowOrderIntentImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future shadow order-intent review must include intent identity, mode, strategy/operator hashes, market, symbol, side, order type, quantity, limit-price hash, estimated-notional hash, currency, risk input hash, risk-gate status, quote/account/orderable-cash snapshot hashes, dry-run replay hash, shadow-history reference hash, audit-event hash, idempotency key hash, redaction version, and explicit provider/order allow flags.
+
+The order-intent boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, raw quote/position/cash values, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Shadow order-intent success still does not perform provider calls, submit or cancel orders, create runtime routes, create DB storage, or approve live order submission.
 
 ## Explicit Non-Goals
 
