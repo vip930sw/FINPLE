@@ -268,7 +268,8 @@ Step 116 should be split into small commits and PR-sized phases:
 16. Private shadow operator access contract.
 17. Private shadow runtime preflight.
 18. KIS order adapter design review.
-19. Live guarded execution only after manual approval.
+19. Manual order permission preflight.
+20. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1029,6 +1030,36 @@ Future operator access review must include operator access scope, mode, operator
 The operator access boundary must keep operator identity, role, session, auth context, and access scope hash-only. Operator access success still does not implement authentication or authorization, create runtime routes, expose public UI, perform provider calls, create DB storage, or approve live order submission.
 
 The KIS order adapter design review now also depends on this private shadow operator access contract. Future order-adapter implementation review stays blocked if private operator access evidence is not ready, if it enables access implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+
+## Step 116-2C Trading Manual Order Permission Preflight
+
+The first Trading Manual Order Permission Preflight is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_preflight.json
+scripts/generate-trading-manual-order-permission-preflight.cjs
+scripts/generate-trading-manual-order-permission-preflight.test.cjs
+npm run check:trading-manual-order-permission
+```
+
+This is a manual_order_permission_preflight contract, not a permission importer, KIS order adapter, provider caller, runtime route, DB migration, private dashboard, public UI, or order submission path. It explains the current closed state: future `live_guarded` order submission needs explicit redacted manual order permission evidence before any order-adapter implementation review can continue.
+
+Current state remains:
+
+- `contractOnly=true`
+- `manualOrderPermissionImportedNow=false`
+- `manualOrderPermissionImportImplementationAllowed=false`
+- `orderAdapterImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future manual order permission evidence must include permission id, mode, operator/approval hashes, issued/expiry timestamps, operator access hash, order adapter design review hash, kill-switch and risk-gate clearance hashes, order credential boundary hash, dry-run replay hash, shadow history review hash, audit logger readiness hash, allowed symbol hashes, order notional/loss/attempt caps, revocation plan hash, redaction version, and explicit provider/order/runtime/UI allow flags.
+
+The permission boundary must keep operator identity, account identity, session values, order payloads, provider payloads, execution ids, fills, and secrets out of the packet. Permission preflight success still does not import permission evidence, implement a KIS order adapter, create runtime routes, expose UI, call a provider, submit orders, or approve live trading.
 
 ## Explicit Non-Goals
 

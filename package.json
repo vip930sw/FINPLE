@@ -71,7 +71,8 @@
     "check:trading-private-shadow-order-intent": "node scripts/generate-trading-private-shadow-order-intent-contract.cjs --check && node --test scripts/generate-trading-private-shadow-order-intent-contract.test.cjs",
     "check:trading-private-shadow-intent-audit-event": "node scripts/generate-trading-private-shadow-intent-audit-event-contract.cjs --check && node --test scripts/generate-trading-private-shadow-intent-audit-event-contract.test.cjs",
     "check:trading-private-shadow-runtime-review-packet": "node scripts/generate-trading-private-shadow-runtime-review-packet-contract.cjs --check && node --test scripts/generate-trading-private-shadow-runtime-review-packet-contract.test.cjs",
-    "check:trading-private-shadow-operator-access": "node scripts/generate-trading-private-shadow-operator-access-contract.cjs --check && node --test scripts/generate-trading-private-shadow-operator-access-contract.test.cjs"
+    "check:trading-private-shadow-operator-access": "node scripts/generate-trading-private-shadow-operator-access-contract.cjs --check && node --test scripts/generate-trading-private-shadow-operator-access-contract.test.cjs",
+    "check:trading-manual-order-permission": "node scripts/generate-trading-manual-order-permission-preflight.cjs --check && node --test scripts/generate-trading-manual-order-permission-preflight.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
