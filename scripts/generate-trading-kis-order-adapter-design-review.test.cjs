@@ -20,6 +20,8 @@ const KILL_SWITCH_CLEARANCE_CONTRACT = "trading_lab_step116_kill_switch_clearanc
 const ORDER_CREDENTIAL_BOUNDARY_CONTRACT = "trading_lab_step116_order_credential_boundary_contract.json";
 const RISK_GATE_CLEARANCE_CONTRACT = "trading_lab_step116_risk_gate_clearance_contract.json";
 const PRIVATE_SHADOW_RUNTIME_PREFLIGHT = "trading_lab_step116_private_shadow_runtime_preflight.json";
+const PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT =
+  "trading_lab_step116_private_shadow_operator_access_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -41,6 +43,7 @@ function makeWorkspace() {
     ORDER_CREDENTIAL_BOUNDARY_CONTRACT,
     RISK_GATE_CLEARANCE_CONTRACT,
     PRIVATE_SHADOW_RUNTIME_PREFLIGHT,
+    PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -99,6 +102,7 @@ test("requires manual approval, kill switch, risk gate, and dry-run replay befor
     "env_risk_gate_contract_fail_closed",
     "shadow_history_reviewed",
     "dry_run_replay_passed",
+    "private_shadow_operator_access_reviewed",
     "separate_order_capable_credentials_present",
     "audit_logger_ready",
   ]);
@@ -277,6 +281,22 @@ test("blocks future adapter review if private shadow runtime preflight is not re
   assert.equal(report.checks.privateShadowRuntimePreflightReady, false);
   assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /private_shadow_runtime_preflight_not_ready/);
+});
+
+test("blocks future adapter review if private shadow operator access contract is not ready", () => {
+  const workspace = makeWorkspace();
+  const operatorAccess = readJson(workspace, PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT);
+  operatorAccess.readiness.readyForFuturePrivateShadowOperatorAccessImplementationReview = false;
+  operatorAccess.readiness.publicUiAllowed = true;
+  writeJson(workspace, PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT, operatorAccess);
+
+  const result = runReview(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.privateShadowOperatorAccessContractReady, false);
+  assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /private_shadow_operator_access_contract_not_ready/);
 });
 
 test("blocks future adapter review if order adapter runtime artifacts appear too early", () => {

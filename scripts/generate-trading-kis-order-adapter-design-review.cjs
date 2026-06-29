@@ -51,13 +51,18 @@ const PRIVATE_SHADOW_RUNTIME_PREFLIGHT_PATH = path.join(
   "processed",
   "trading_lab_step116_private_shadow_runtime_preflight.json",
 );
+const PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_private_shadow_operator_access_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.10";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.11";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -139,6 +144,7 @@ function buildReview() {
   const orderCredentialBoundaryContract = readJson(ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH);
   const riskGateClearanceContract = readJson(RISK_GATE_CLEARANCE_CONTRACT_PATH);
   const privateShadowRuntimePreflight = readJson(PRIVATE_SHADOW_RUNTIME_PREFLIGHT_PATH);
+  const privateShadowOperatorAccessContract = readJson(PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -228,6 +234,15 @@ function buildReview() {
       privateShadowRuntimePreflight.readiness?.dbMigrationAllowed === false &&
       privateShadowRuntimePreflight.readiness?.publicUiAllowed === false &&
       privateShadowRuntimePreflight.readiness?.runtimeRouteAllowed === false,
+    privateShadowOperatorAccessContractReady:
+      privateShadowOperatorAccessContract.readiness
+        ?.readyForFuturePrivateShadowOperatorAccessImplementationReview === true &&
+      privateShadowOperatorAccessContract.readiness?.privateShadowOperatorAccessImplementationAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.providerCallsAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.orderSubmissionAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.dbMigrationAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.publicUiAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.runtimeRouteAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -243,7 +258,8 @@ function buildReview() {
       architectureDoc.includes("Trading Kill Switch Clearance Contract") &&
       architectureDoc.includes("Trading Order Credential Boundary Contract") &&
       architectureDoc.includes("Trading Risk Gate Clearance Contract") &&
-      architectureDoc.includes("Trading Private Shadow Runtime Preflight"),
+      architectureDoc.includes("Trading Private Shadow Runtime Preflight") &&
+      architectureDoc.includes("Trading Private Shadow Operator Access Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -267,6 +283,7 @@ function buildReview() {
     checks.orderCredentialBoundaryContractReady &&
     checks.riskGateClearanceContractReady &&
     checks.privateShadowRuntimePreflightReady &&
+    checks.privateShadowOperatorAccessContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -292,6 +309,7 @@ function buildReview() {
       orderCredentialBoundaryContract: ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH,
       riskGateClearanceContract: RISK_GATE_CLEARANCE_CONTRACT_PATH,
       privateShadowRuntimePreflight: PRIVATE_SHADOW_RUNTIME_PREFLIGHT_PATH,
+      privateShadowOperatorAccessContract: PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -320,6 +338,7 @@ function buildReview() {
         "env_risk_gate_contract_fail_closed",
         "shadow_history_reviewed",
         "dry_run_replay_passed",
+        "private_shadow_operator_access_reviewed",
         "separate_order_capable_credentials_present",
         "audit_logger_ready",
       ],
@@ -353,6 +372,7 @@ function buildReview() {
       orderCredentialBoundaryContractStatus: orderCredentialBoundaryContract.readiness?.status,
       riskGateClearanceContractStatus: riskGateClearanceContract.readiness?.status,
       privateShadowRuntimePreflightStatus: privateShadowRuntimePreflight.readiness?.status,
+      privateShadowOperatorAccessContractStatus: privateShadowOperatorAccessContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -382,6 +402,9 @@ function buildReview() {
         ...(checks.orderCredentialBoundaryContractReady ? [] : ["order_credential_boundary_contract_not_ready"]),
         ...(checks.riskGateClearanceContractReady ? [] : ["risk_gate_clearance_contract_not_ready"]),
         ...(checks.privateShadowRuntimePreflightReady ? [] : ["private_shadow_runtime_preflight_not_ready"]),
+        ...(checks.privateShadowOperatorAccessContractReady
+          ? []
+          : ["private_shadow_operator_access_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),

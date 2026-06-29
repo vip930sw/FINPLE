@@ -1028,6 +1028,8 @@ Future operator access review must include operator access scope, mode, operator
 
 The operator access boundary must keep operator identity, role, session, auth context, and access scope hash-only. Operator access success still does not implement authentication or authorization, create runtime routes, expose public UI, perform provider calls, create DB storage, or approve live order submission.
 
+The KIS order adapter design review now also depends on this private shadow operator access contract. Future order-adapter implementation review stays blocked if private operator access evidence is not ready, if it enables access implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
