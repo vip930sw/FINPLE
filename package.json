@@ -80,7 +80,8 @@
     "check:trading-redacted-approval-packet-validation": "node scripts/generate-trading-redacted-approval-packet-validation-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-contract.test.cjs",
     "check:trading-redacted-approval-packet-validation-preflight": "node scripts/generate-trading-redacted-approval-packet-validation-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-preflight.test.cjs",
     "check:trading-redacted-approval-packet-validator": "node --test scripts/validate-trading-redacted-read-only-approval-packet.test.cjs",
-    "check:trading-redacted-approval-packet-validator-fixtures": "node scripts/generate-trading-redacted-approval-packet-validator-fixtures.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validator-fixtures.test.cjs"
+    "check:trading-redacted-approval-packet-validator-fixtures": "node scripts/generate-trading-redacted-approval-packet-validator-fixtures.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validator-fixtures.test.cjs",
+    "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

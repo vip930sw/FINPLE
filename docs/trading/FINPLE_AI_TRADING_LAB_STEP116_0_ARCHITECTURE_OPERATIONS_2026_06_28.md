@@ -266,18 +266,19 @@ Step 116 should be split into small commits and PR-sized phases:
 14. Redacted approval packet validation preflight.
 15. Redacted approval packet local validator.
 16. Redacted approval packet validator fixtures.
-17. Read-only provider request envelope contract.
-18. Read-only provider response envelope contract.
-19. Read-only snapshot normalization contract.
-20. Read-only snapshot risk input contract.
-21. Private shadow order intent contract.
-22. Private shadow intent audit event contract.
-23. Private shadow runtime review packet contract.
-24. Private shadow operator access contract.
-25. Private shadow runtime preflight.
-26. KIS order adapter design review.
-27. Manual order permission preflight.
-28. Live guarded execution only after manual approval.
+17. Trading Step 116 progress summary.
+18. Read-only provider request envelope contract.
+19. Read-only provider response envelope contract.
+20. Read-only snapshot normalization contract.
+21. Read-only snapshot risk input contract.
+22. Private shadow order intent contract.
+23. Private shadow intent audit event contract.
+24. Private shadow runtime review packet contract.
+25. Private shadow operator access contract.
+26. Private shadow runtime preflight.
+27. KIS order adapter design review.
+28. Manual order permission preflight.
+29. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1052,6 +1053,37 @@ Current state remains:
 The fixtures include one valid synthetic redacted packet and invalid synthetic variants for unknown fields, malformed hash fields, expired approval, invalid scope/environment/base URL, enabled provider/order/runtime/UI flags, unknown read scope, and missing required forbidden actions.
 
 Fixture readiness means the validator can be regression-tested without using real account identifiers, real operator names, real evidence text, private pepper values, provider payloads, order payloads, or `data/private/trading/read_only_approval.redacted.json`. It still does not create hashes, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
+
+## Step 116-2L Trading Step 116 Progress Summary
+
+The first Trading Step 116 Progress Summary is:
+
+```text
+data/processed/trading_lab_step116_progress_summary.json
+scripts/generate-trading-step116-progress-summary.cjs
+scripts/generate-trading-step116-progress-summary.test.cjs
+npm run check:trading-step116-progress-summary
+```
+
+This is a local progress/readiness summary, not a provider caller, private runtime, DB migration, runtime route, public UI, private approval importer, or order submission path. It aggregates the existing Step 116 `data/processed` readiness contracts and verifies that the current contract stack remains fail-closed.
+
+Current state remains:
+
+- `summaryOnly=true`
+- `readyForReadOnlyProviderCalls=false`
+- `readyForPrivateShadowRuntime=false`
+- `readyForOrderSubmission=false`
+- `readyForLiveGuardedTrading=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The summary tracks the machine-readable contract stack and required npm checks while recording remaining trading gates such as owner redacted read-only approval packet import, private read-only provider implementation review, private shadow runtime review, manual order permission evidence, kill-switch/risk-gate clearance, and live-guarded order adapter review.
+
+Progress summary readiness means the current private/paper/shadow contract stack is coherent and still locked. It does not call KIS, import private approval evidence, create provider/runtime/DB/UI surfaces, clear the kill switch, clear the risk gate, submit orders, or approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 
