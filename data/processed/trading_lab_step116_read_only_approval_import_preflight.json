@@ -1,0 +1,149 @@
+{
+  "contractVersion": "trading-lab-step116-read-only-approval-import-preflight-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1T",
+  "scope": "trading_read_only_approval_import_preflight",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "shadowContract": "data\\processed\\trading_lab_step116_shadow_mode_contract.json",
+    "envReadinessContract": "data\\processed\\trading_lab_step116_env_readiness_contract.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+    "orderCredentialBoundaryContract": "data\\processed\\trading_lab_step116_order_credential_boundary_contract.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "approvalPacketImportedNow": false,
+    "readOnlyApprovalImportImplementationAllowed": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureReadOnlyApprovalImportBoundary": {
+    "scope": "read_only_approval_import_preflight",
+    "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+    "purpose": "preflight the future redacted approval evidence import before any KIS read-only provider call or private shadow runtime review",
+    "requiredImportValidations": [
+      "packet_matches_intake_required_fields",
+      "approval_scope_is_read_only_shadow",
+      "base_url_is_virtual_trading_only",
+      "live_endpoint_is_forbidden",
+      "approval_is_time_boxed",
+      "approval_is_not_expired",
+      "approval_is_revocable",
+      "account_id_is_hash_only",
+      "secret_values_absent",
+      "allowed_read_scopes_are_subset_of_contract",
+      "forbidden_actions_include_order_submission",
+      "raw_provider_payload_persistence_forbidden",
+      "provider_calls_remain_disabled_after_import_preflight"
+    ],
+    "requiredPacketRejectionReasons": [
+      "missing_required_field",
+      "expired_approval",
+      "live_endpoint_requested",
+      "order_action_requested",
+      "raw_account_identifier_present",
+      "secret_value_present",
+      "unknown_read_scope",
+      "revocation_plan_missing",
+      "redaction_version_missing"
+    ],
+    "forbiddenActions": [
+      "runtime_provider_call",
+      "order_submission",
+      "order_cancellation",
+      "approval_import_write",
+      "production_secret_usage",
+      "raw_provider_response_persistence",
+      "db_migration",
+      "public_ui",
+      "runtime_route",
+      "scenario_monthly_cache_write"
+    ],
+    "packetRules": {
+      "currentStepCreatesPacket": false,
+      "packetMustBeRedacted": true,
+      "accountIdentifierMustBeHashOnly": true,
+      "secretValuesAllowed": false,
+      "rawProviderPayloadAllowed": false,
+      "liveEndpointAllowed": false
+    },
+    "promotionRules": [
+      "import preflight success does not import approval evidence",
+      "import preflight success does not enable provider calls",
+      "import preflight success does not enable read-only runtime",
+      "future import implementation must fail closed on any unknown field or unknown scope"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "shadowModePolicyReady": true,
+    "shadowContractStillRequiresApproval": true,
+    "readOnlyApprovalIntakeContractReady": true,
+    "envReadinessContractStillBlocksRuntime": true,
+    "envRiskGateContractStillFailClosed": true,
+    "orderCredentialBoundaryContractReady": true,
+    "intakeContractDefinesApprovalFields": true,
+    "intakeContractDefinesReadScopes": true,
+    "importValidationsReady": true,
+    "packetRejectionReasonsReady": true,
+    "forbiddenActionsReady": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesDbMigration": true,
+    "architectureDocMentionsReadOnlyApprovalImportPreflight": true,
+    "noRuntimeArtifacts": true,
+    "approvalPacketImportedNow": false,
+    "readOnlyApprovalImportImplementationAllowed": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false
+  },
+  "evidence": {
+    "shadowMode": {
+      "mode": "shadow",
+      "externalOrderCall": false,
+      "providerDataCall": "read_only_future_contract",
+      "requiresManualApproval": true,
+      "description": "records intended orders without submitting them"
+    },
+    "missingImportValidations": [],
+    "missingPacketRejectionReasons": [],
+    "missingForbiddenActions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "shadowContractStatus": "contract_ready_pending_read_only_approval",
+    "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+    "envReadinessContractStatus": "contract_ready_runtime_env_not_required_yet",
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "orderCredentialBoundaryContractStatus": "contract_ready_pending_order_credential_implementation_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "preflight_ready_pending_read_only_approval_import_implementation_review",
+    "readyForFutureReadOnlyApprovalImportImplementationReview": true,
+    "approvalPacketImportedNow": false,
+    "readOnlyApprovalImportImplementationAllowed": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

@@ -45,13 +45,18 @@ const READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_read_only_approval_intake_contract.json",
 );
+const READ_ONLY_APPROVAL_IMPORT_PREFLIGHT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_approval_import_preflight.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const CONTRACT_VERSION = "trading-lab-step116-private-shadow-runtime-preflight-v0.2";
+const CONTRACT_VERSION = "trading-lab-step116-private-shadow-runtime-preflight-v0.3";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_RUNTIME_EVIDENCE = [
   "private_operator_only_access",
@@ -139,6 +144,7 @@ function buildContract() {
   const orderCredentialBoundaryContract = readJson(ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH);
   const riskGateClearanceContract = readJson(RISK_GATE_CLEARANCE_CONTRACT_PATH);
   const readOnlyApprovalIntakeContract = readJson(READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH);
+  const readOnlyApprovalImportPreflight = readJson(READ_ONLY_APPROVAL_IMPORT_PREFLIGHT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const runtimeEvidence = [...REQUIRED_RUNTIME_EVIDENCE];
   const runtimeAssertions = [...REQUIRED_RUNTIME_ASSERTIONS];
@@ -205,6 +211,14 @@ function buildContract() {
       readOnlyApprovalIntakeContract.readiness?.providerCallsAllowed === false &&
       readOnlyApprovalIntakeContract.readiness?.orderSubmissionAllowed === false &&
       readOnlyApprovalIntakeContract.readiness?.runtimeRouteAllowed === false,
+    readOnlyApprovalImportPreflightReady:
+      readOnlyApprovalImportPreflight.readiness?.readyForFutureReadOnlyApprovalImportImplementationReview === true &&
+      readOnlyApprovalImportPreflight.readiness?.approvalPacketImportedNow === false &&
+      readOnlyApprovalImportPreflight.readiness?.readOnlyApprovalImportImplementationAllowed === false &&
+      readOnlyApprovalImportPreflight.readiness?.readOnlyRuntimeIntegrationAllowed === false &&
+      readOnlyApprovalImportPreflight.readiness?.providerCallsAllowed === false &&
+      readOnlyApprovalImportPreflight.readiness?.orderSubmissionAllowed === false &&
+      readOnlyApprovalImportPreflight.readiness?.runtimeRouteAllowed === false,
     runtimeEvidenceReady: missingRuntimeEvidence.length === 0,
     runtimeAssertionsReady: missingRuntimeAssertions.length === 0,
     forbiddenActionsReady: missingForbiddenActions.length === 0,
@@ -214,7 +228,8 @@ function buildContract() {
     architectureDocMentionsPrivateShadowRuntime:
       architectureDoc.includes("Trading Private Shadow Runtime Preflight") &&
       architectureDoc.includes("private_shadow_runtime") &&
-      architectureDoc.includes("Trading Read-Only Approval Intake Contract"),
+      architectureDoc.includes("Trading Read-Only Approval Intake Contract") &&
+      architectureDoc.includes("Trading Read-Only Approval Import Preflight"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     privateShadowRuntimeImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -235,6 +250,7 @@ function buildContract() {
     checks.orderCredentialBoundaryContractReady &&
     checks.riskGateClearanceContractReady &&
     checks.readOnlyApprovalIntakeContractReady &&
+    checks.readOnlyApprovalImportPreflightReady &&
     checks.runtimeEvidenceReady &&
     checks.runtimeAssertionsReady &&
     checks.forbiddenActionsReady &&
@@ -261,6 +277,7 @@ function buildContract() {
       orderCredentialBoundaryContract: ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH,
       riskGateClearanceContract: RISK_GATE_CLEARANCE_CONTRACT_PATH,
       readOnlyApprovalIntakeContract: READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH,
+      readOnlyApprovalImportPreflight: READ_ONLY_APPROVAL_IMPORT_PREFLIGHT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -315,6 +332,7 @@ function buildContract() {
       orderCredentialBoundaryContractStatus: orderCredentialBoundaryContract.readiness?.status,
       riskGateClearanceContractStatus: riskGateClearanceContract.readiness?.status,
       readOnlyApprovalIntakeContractStatus: readOnlyApprovalIntakeContract.readiness?.status,
+      readOnlyApprovalImportPreflightStatus: readOnlyApprovalImportPreflight.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
     readiness: {
@@ -340,6 +358,7 @@ function buildContract() {
         ...(checks.orderCredentialBoundaryContractReady ? [] : ["order_credential_boundary_contract_not_ready"]),
         ...(checks.riskGateClearanceContractReady ? [] : ["risk_gate_clearance_contract_not_ready"]),
         ...(checks.readOnlyApprovalIntakeContractReady ? [] : ["read_only_approval_intake_contract_not_ready"]),
+        ...(checks.readOnlyApprovalImportPreflightReady ? [] : ["read_only_approval_import_preflight_not_ready"]),
         ...missingRuntimeEvidence.map((item) => `missing_runtime_evidence_${item}`),
         ...missingRuntimeAssertions.map((assertion) => `missing_runtime_assertion_${assertion}`),
         ...missingForbiddenActions.map((action) => `missing_forbidden_action_${action}`),
