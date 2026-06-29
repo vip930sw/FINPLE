@@ -87,6 +87,7 @@
     "check:trading-redacted-read-only-approval-template": "node scripts/generate-trading-redacted-read-only-approval-template.cjs --check && node --test scripts/generate-trading-redacted-read-only-approval-template.test.cjs",
     "check:trading-redacted-read-only-approval-template-validator": "node --test scripts/validate-trading-redacted-read-only-approval-template.test.cjs",
     "check:trading-redacted-approval-hash-helper": "node scripts/generate-trading-redacted-approval-hash-helper-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs",
+    "check:trading-redacted-approval-hash-helper-validator": "node --test scripts/validate-trading-redacted-approval-hash-helper-contract.test.cjs",
     "check:trading-redacted-approval-hash-helper-preflight": "node scripts/generate-trading-redacted-approval-hash-helper-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-preflight.test.cjs",
     "check:trading-redacted-approval-packet-validation": "node scripts/generate-trading-redacted-approval-packet-validation-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-contract.test.cjs",
     "check:trading-redacted-approval-packet-validation-preflight": "node scripts/generate-trading-redacted-approval-packet-validation-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-preflight.test.cjs",

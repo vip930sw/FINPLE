@@ -100,6 +100,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-redacted-read-only-approval-template",
   "check:trading-redacted-read-only-approval-template-validator",
   "check:trading-redacted-approval-hash-helper",
+  "check:trading-redacted-approval-hash-helper-validator",
   "check:trading-redacted-approval-hash-helper-preflight",
   "check:trading-redacted-approval-packet-validation",
   "check:trading-redacted-approval-packet-validation-preflight",
