@@ -256,8 +256,9 @@ Step 116 should be split into small commits and PR-sized phases:
 4. Risk engine and kill switch tests.
 5. Trading store migration draft.
 6. Shadow-mode read-only integration contract.
-7. KIS order adapter design review.
-8. Live guarded execution only after manual approval.
+7. Private shadow runtime preflight.
+8. KIS order adapter design review.
+9. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -704,6 +705,34 @@ For `live_guarded`, a clean risk-gate fixture may only return `live_review_requi
 Future risk-gate clearance must include order intent, risk limits, market session, loss/turnover/order-attempt counters, exposure counters, quote/FX freshness, account-state match, strategy review status, and audit logger readiness. It cannot override a kill switch, manual operator stop, missing audit log, stale data, or risk-limit breach.
 
 The KIS order adapter design review now also depends on this risk gate clearance contract. Future order-adapter implementation review stays blocked if risk gate clearance is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
+## Step 116-1R Trading Private Shadow Runtime Preflight
+
+The first Trading Private Shadow Runtime Preflight is:
+
+```text
+data/processed/trading_lab_step116_private_shadow_runtime_preflight.json
+scripts/generate-trading-private-shadow-runtime-preflight.cjs
+scripts/generate-trading-private-shadow-runtime-preflight.test.cjs
+npm run check:trading-private-shadow-runtime-preflight
+```
+
+This is a private_shadow_runtime implementation-review contract, not a runtime service. It defines the evidence required before a future private operator-only shadow runtime can be reviewed. It does not add a route, public UI, DB migration, KIS provider call, or order submission path.
+
+Current state remains:
+
+- `contractOnly=true`
+- `privateShadowRuntimeImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
+
+The KIS order adapter design review now also depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
 
 ## Explicit Non-Goals
 
