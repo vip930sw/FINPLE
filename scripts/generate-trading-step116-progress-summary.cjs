@@ -90,6 +90,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-shadow-intent-audit-event",
   "check:trading-private-shadow-intent-audit-event-validator",
   "check:trading-private-shadow-runtime-review-packet",
+  "check:trading-private-shadow-runtime-review-packet-validator",
   "check:trading-private-shadow-operator-access",
   "check:trading-manual-order-permission",
   "check:trading-mock-approval-evidence",

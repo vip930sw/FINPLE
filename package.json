@@ -77,6 +77,7 @@
     "check:trading-private-shadow-intent-audit-event": "node scripts/generate-trading-private-shadow-intent-audit-event-contract.cjs --check && node --test scripts/generate-trading-private-shadow-intent-audit-event-contract.test.cjs",
     "check:trading-private-shadow-intent-audit-event-validator": "node --test scripts/validate-trading-private-shadow-intent-audit-event.test.cjs",
     "check:trading-private-shadow-runtime-review-packet": "node scripts/generate-trading-private-shadow-runtime-review-packet-contract.cjs --check && node --test scripts/generate-trading-private-shadow-runtime-review-packet-contract.test.cjs",
+    "check:trading-private-shadow-runtime-review-packet-validator": "node --test scripts/validate-trading-private-shadow-runtime-review-packet.test.cjs",
     "check:trading-private-shadow-operator-access": "node scripts/generate-trading-private-shadow-operator-access-contract.cjs --check && node --test scripts/generate-trading-private-shadow-operator-access-contract.test.cjs",
     "check:trading-manual-order-permission": "node scripts/generate-trading-manual-order-permission-preflight.cjs --check && node --test scripts/generate-trading-manual-order-permission-preflight.test.cjs",
     "check:trading-mock-approval-evidence": "node scripts/generate-trading-mock-approval-evidence-receipt.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt.test.cjs",

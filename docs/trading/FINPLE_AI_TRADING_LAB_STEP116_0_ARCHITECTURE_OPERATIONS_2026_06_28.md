@@ -280,11 +280,12 @@ Step 116 should be split into small commits and PR-sized phases:
 28. Private shadow intent audit event contract.
 29. Private shadow intent audit event local validator.
 30. Private shadow runtime review packet contract.
-31. Private shadow operator access contract.
-32. Private shadow runtime preflight.
-33. KIS order adapter design review.
-34. Manual order permission preflight.
-35. Live guarded execution only after manual approval.
+31. Private shadow runtime review packet local validator.
+32. Private shadow operator access contract.
+33. Private shadow runtime preflight.
+34. KIS order adapter design review.
+35. Manual order permission preflight.
+36. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1445,6 +1446,31 @@ Current state remains:
 Future runtime review packet review must include private operator scope hash, read-only approval import preflight hash, env risk-gate hash, snapshot risk input hash, order-intent contract hash, intent audit-event contract hash, risk-gate clearance hash, dry-run replay reference hash, shadow-history review reference hash, audit logger readiness hash, kill-switch/manual-approval state hashes, redaction version, and explicit provider/order/runtime/DB/UI allow flags.
 
 The review packet boundary must keep approval, env, risk, snapshot, order-intent, audit, replay, and shadow-history evidence hash-only. Review packet success still does not import approval evidence, perform provider calls, enable read-only runtime, create runtime routes, create DB storage, or approve live order submission.
+
+## Step 116-2S Trading Private Shadow Runtime Review Packet Local Validator
+
+The first Trading Private Shadow Runtime Review Packet Local Validator is:
+
+```text
+scripts/validate-trading-private-shadow-runtime-review-packet.cjs
+scripts/validate-trading-private-shadow-runtime-review-packet.test.cjs
+npm run check:trading-private-shadow-runtime-review-packet-validator
+```
+
+This is a pure local validator script, not a private shadow runtime implementation, audit logger implementation, KIS reader, provider adapter, runtime route, DB migration, public UI, private approval importer, or order submission path. It requires an explicit `--packet <path>` argument and does not read private approval packet paths, environment secrets, provider URLs, account credentials, or order-capable credentials.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only shadow-mode, hash-only review packets with approval/env/risk/snapshot/order-intent/audit/replay/history/kill-switch/manual-approval evidence hashes and explicit provider/order/runtime/DB/UI allow flags set to false.
+
+Validator success still does not implement private shadow runtime, import private approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2B Trading Private Shadow Operator Access Contract
 
