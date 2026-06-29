@@ -422,7 +422,7 @@ Current state remains blocked:
 - `publicUiAllowed=false`
 - `liveTradingAllowed=false`
 
-The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
+The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight/env-risk gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
 
 ## Step 116-1G Trading Environment Readiness Contract
 
@@ -472,6 +472,35 @@ Current state remains:
 - `runtimeActivationAllowed=false`
 
 The parser intentionally warns that wildcard symbols must be narrowed before `live_guarded`, production trading base URLs require separate live review, and order permission metadata does not unlock order submission by itself.
+
+## Step 116-1I Trading Environment Risk Gate Input Contract
+
+The first Trading Environment Risk Gate Input Contract is:
+
+```text
+data/processed/trading_lab_step116_env_risk_gate_contract.json
+scripts/generate-trading-env-risk-gate-contract.cjs
+scripts/generate-trading-env-risk-gate-contract.test.cjs
+npm.cmd run check:trading-env-risk-gate
+```
+
+This contract maps the trading env parser output into future risk gate input fields without adding a runtime route, KIS call, order adapter, DB migration, or public UI.
+
+Current state remains:
+
+- `contractOnly=true`
+- `envValuesStored=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+
+The current Render-style `shadow` fixture is intentionally fail-closed: `FINPLE_TRADING_KILL_SWITCH=true` maps to `runtime.globalTradingDisabled=true`, wildcard symbols are not promoted into `limits.allowedSymbols`, and the resulting risk gate remains blocked while keeping `providerCallsAllowed=false` and `orderSubmissionAllowed=false`.
+
+## Step 116-1J Order Adapter Review Env-Risk Dependency
+
+The KIS order adapter design review now depends on the Step 116-1I env-risk contract. Future order-adapter implementation review stays blocked if the env parser to risk gate mapping stops failing closed, if wildcard symbols become an implicit order allowlist, or if the env-risk contract starts permitting runtime routes, provider calls, or order submission.
 
 ## Explicit Non-Goals
 

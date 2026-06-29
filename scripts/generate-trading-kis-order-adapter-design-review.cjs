@@ -6,14 +6,19 @@ const POLICY_PATH = path.join("data", "processed", "trading_lab_step1160_policy.
 const PREFLIGHT_PATH = path.join("data", "processed", "trading_lab_step1160_preflight.json");
 const SHADOW_CONTRACT_PATH = path.join("data", "processed", "trading_lab_step116_shadow_mode_contract.json");
 const STORE_SCHEMA_PATH = path.join("data", "processed", "trading_lab_step116_store_schema_draft.json");
+const ENV_RISK_GATE_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_env_risk_gate_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.1";
-const AUDITED_AT = "2026-06-28T00:00:00Z";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.2";
+const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
   "request_signing_boundary",
@@ -85,6 +90,7 @@ function buildReview() {
   const preflight = readJson(PREFLIGHT_PATH);
   const shadowContract = readJson(SHADOW_CONTRACT_PATH);
   const storeSchema = readJson(STORE_SCHEMA_PATH);
+  const envRiskGateContract = readJson(ENV_RISK_GATE_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -109,13 +115,22 @@ function buildReview() {
       shadowContract.readiness?.readOnlyRuntimeIntegrationAllowed === false &&
       shadowContract.readiness?.providerCallsAllowed === false &&
       shadowContract.readiness?.orderSubmissionAllowed === false,
+    envRiskGateContractStillFailClosed:
+      envRiskGateContract.readiness?.readyForCurrentStep === true &&
+      envRiskGateContract.readiness?.readyForRuntimeRoute === false &&
+      envRiskGateContract.readiness?.readyForProviderCalls === false &&
+      envRiskGateContract.readiness?.providerCallsAllowed === false &&
+      envRiskGateContract.readiness?.orderSubmissionAllowed === false &&
+      envRiskGateContract.checks?.wildcardSymbolsFailClosed === true &&
+      envRiskGateContract.checks?.riskGateStillDisablesOrderSubmission === true,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
     architectureDocStillForbidsImplementation:
       architectureDoc.includes("no KIS provider calls") &&
       architectureDoc.includes("no order submission") &&
-      architectureDoc.includes("KIS order adapter design review"),
+      architectureDoc.includes("KIS order adapter design review") &&
+      architectureDoc.includes("Trading Environment Risk Gate Input Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -130,6 +145,7 @@ function buildReview() {
     checks.forbiddenActionsReady &&
     checks.futureStoreTablesReady &&
     checks.shadowContractStillBlocksRuntime &&
+    checks.envRiskGateContractStillFailClosed &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -146,6 +162,7 @@ function buildReview() {
       preflight: PREFLIGHT_PATH,
       shadowContract: SHADOW_CONTRACT_PATH,
       storeSchemaDraft: STORE_SCHEMA_PATH,
+      envRiskGateContract: ENV_RISK_GATE_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -171,6 +188,7 @@ function buildReview() {
         "manual_operator_approval",
         "kill_switch_clear",
         "risk_gate_clear",
+        "env_risk_gate_contract_fail_closed",
         "shadow_history_reviewed",
         "dry_run_replay_passed",
         "separate_order_capable_credentials_present",
@@ -196,6 +214,8 @@ function buildReview() {
       missingFutureTables,
       forbiddenRuntimeArtifacts: forbiddenArtifacts,
       shadowContractStatus: shadowContract.readiness?.status,
+      envRiskGateContractStatus: envRiskGateContract.readiness?.status,
+      envRiskGateContractRiskReasons: envRiskGateContract.riskGateEvaluation?.reasons ?? [],
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -216,6 +236,7 @@ function buildReview() {
         ...missingForbiddenActions.map((action) => `missing_forbidden_action_${action}`),
         ...missingFutureTables.map((table) => `missing_future_table_${table}`),
         ...(checks.shadowContractStillBlocksRuntime ? [] : ["shadow_contract_allows_runtime_too_early"]),
+        ...(checks.envRiskGateContractStillFailClosed ? [] : ["env_risk_gate_contract_not_fail_closed"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),
