@@ -265,32 +265,33 @@ Step 116 should be split into small commits and PR-sized phases:
 13. Redacted approval hash helper contract.
 14. Redacted approval hash helper contract local validator.
 15. Redacted approval hash helper preflight.
-16. Redacted approval packet validation contract.
-17. Redacted approval packet validation preflight.
-18. Redacted approval packet local validator.
-19. Redacted approval packet validator fixtures.
-20. Trading Step 116 progress summary.
-21. Read-only provider request envelope validation contract.
-22. Read-only provider request envelope validation preflight.
-23. Read-only provider request envelope local validator.
-24. Read-only provider request envelope contract.
-25. Read-only provider response envelope contract.
-26. Read-only snapshot normalization contract.
-27. Read-only snapshot risk input contract.
-28. Read-only snapshot risk input local validator.
-29. Private shadow order intent contract.
-30. Private shadow order intent local validator.
-31. Private shadow intent audit event contract.
-32. Private shadow intent audit event local validator.
-33. Private shadow runtime review packet contract.
-34. Private shadow runtime review packet local validator.
-35. Private shadow operator access contract.
-36. Private shadow operator access local validator.
-37. Private shadow runtime preflight.
-38. KIS order adapter design review.
-39. Manual order permission preflight.
-40. Manual order permission local validator.
-41. Live guarded execution only after manual approval.
+16. Redacted approval hash helper preflight local validator.
+17. Redacted approval packet validation contract.
+18. Redacted approval packet validation preflight.
+19. Redacted approval packet local validator.
+20. Redacted approval packet validator fixtures.
+21. Trading Step 116 progress summary.
+22. Read-only provider request envelope validation contract.
+23. Read-only provider request envelope validation preflight.
+24. Read-only provider request envelope local validator.
+25. Read-only provider request envelope contract.
+26. Read-only provider response envelope contract.
+27. Read-only snapshot normalization contract.
+28. Read-only snapshot risk input contract.
+29. Read-only snapshot risk input local validator.
+30. Private shadow order intent contract.
+31. Private shadow order intent local validator.
+32. Private shadow intent audit event contract.
+33. Private shadow intent audit event local validator.
+34. Private shadow runtime review packet contract.
+35. Private shadow runtime review packet local validator.
+36. Private shadow operator access contract.
+37. Private shadow operator access local validator.
+38. Private shadow runtime preflight.
+39. KIS order adapter design review.
+40. Manual order permission preflight.
+41. Manual order permission local validator.
+42. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1025,6 +1026,35 @@ Current state remains:
 Future owner-assisted hash preparation requires an explicit owner request, local-only execution surface, private pepper source outside the repo, stdin/interactive raw input collection, no command-line raw secret arguments, no raw input logs, no raw input file persistence, deterministic labelled hash output, and manual review before approval packet import.
 
 Preflight readiness means the owner can be guided later without guessing how to prepare the hashes. It still does not ask for raw account/operator/evidence/revocation values now, does not create `scripts/create-trading-redacted-approval-hashes.cjs`, does not generate hashes, does not create or import `data/private/trading/read_only_approval.redacted.json`, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
+
+## Step 116-2Y Trading Redacted Approval Hash Helper Preflight Local Validator
+
+The first Trading Redacted Approval Hash Helper Preflight Local Validator is:
+
+```text
+scripts/validate-trading-redacted-approval-hash-helper-preflight.cjs
+scripts/validate-trading-redacted-approval-hash-helper-preflight.test.cjs
+npm run check:trading-redacted-approval-hash-helper-preflight-validator
+```
+
+This is a pure local validator script for the hash helper preflight, not a hash generator, approval packet creator, private pepper request, raw input collection flow, KIS provider call, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--preflight <path>` argument and does not read `data/private/trading/read_only_approval.redacted.json` by default.
+
+Current state remains:
+
+- `ownerHashPreparationDeferred=true`
+- `hashHelperImplementationAllowed=false`
+- `hashGenerationAllowed=false`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator checks that future owner-assisted hash preparation remains deferred, raw inputs and private pepper are not requested now, helper implementation/hash generation/approval packet creation stay disabled, future review inputs and forbidden content lists remain complete, and future helper/approval packet paths stay fixed.
+
+Validator success still does not implement the helper, request raw values, request private pepper values, generate hashes, create approval packets, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2H Trading Redacted Approval Packet Validation Contract
 
