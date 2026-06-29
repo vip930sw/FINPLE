@@ -278,12 +278,13 @@ Step 116 should be split into small commits and PR-sized phases:
 26. Private shadow order intent contract.
 27. Private shadow order intent local validator.
 28. Private shadow intent audit event contract.
-29. Private shadow runtime review packet contract.
-30. Private shadow operator access contract.
-31. Private shadow runtime preflight.
-32. KIS order adapter design review.
-33. Manual order permission preflight.
-34. Live guarded execution only after manual approval.
+29. Private shadow intent audit event local validator.
+30. Private shadow runtime review packet contract.
+31. Private shadow operator access contract.
+32. Private shadow runtime preflight.
+33. KIS order adapter design review.
+34. Manual order permission preflight.
+35. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1391,6 +1392,31 @@ Current state remains:
 Future shadow intent audit event review must include event identity, event type, mode, severity, status, operator/strategy hashes, intent/order-intent hashes, risk input hash, risk-gate status, risk-event hash, market, symbol, side, decision status, snapshot freshness status, kill-switch/manual-approval state hashes, replay/history hashes, payload hash, previous-event hash, redaction version, and explicit provider/order allow flags.
 
 The audit event boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, raw order payloads, raw quote/position/cash values, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Audit event success still does not perform provider calls, submit or cancel orders, create runtime routes, create DB storage, or approve live order submission.
+
+## Step 116-2R Trading Private Shadow Intent Audit Event Local Validator
+
+The first Trading Private Shadow Intent Audit Event Local Validator is:
+
+```text
+scripts/validate-trading-private-shadow-intent-audit-event.cjs
+scripts/validate-trading-private-shadow-intent-audit-event.test.cjs
+npm run check:trading-private-shadow-intent-audit-event-validator
+```
+
+This is a pure local validator script, not an audit logger implementation, order-intent recorder, KIS order adapter, provider adapter, runtime route, DB migration, public UI, private approval importer, or order submission path. It requires an explicit `--event <path>` argument and does not read private approval packet paths, environment secrets, provider URLs, account credentials, or order-capable credentials.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only shadow-mode, hash-only audit events with operator/strategy/intent/risk/snapshot/replay/history/payload hashes, risk gate status limited to `blocked` or `live_review_required`, decision status limited to shadow/blocked outcomes, and explicit provider/order allow flags set to false.
+
+Validator success still does not write audit logs, record order intents, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2A Trading Private Shadow Runtime Review Packet Contract
 
