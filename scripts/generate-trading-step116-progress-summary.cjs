@@ -92,6 +92,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-shadow-runtime-review-packet",
   "check:trading-private-shadow-runtime-review-packet-validator",
   "check:trading-private-shadow-operator-access",
+  "check:trading-private-shadow-operator-access-validator",
   "check:trading-manual-order-permission",
   "check:trading-mock-approval-evidence",
   "check:trading-redacted-read-only-approval-template",

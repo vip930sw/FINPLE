@@ -282,10 +282,11 @@ Step 116 should be split into small commits and PR-sized phases:
 30. Private shadow runtime review packet contract.
 31. Private shadow runtime review packet local validator.
 32. Private shadow operator access contract.
-33. Private shadow runtime preflight.
-34. KIS order adapter design review.
-35. Manual order permission preflight.
-36. Live guarded execution only after manual approval.
+33. Private shadow operator access local validator.
+34. Private shadow runtime preflight.
+35. KIS order adapter design review.
+36. Manual order permission preflight.
+37. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1501,6 +1502,30 @@ Future operator access review must include operator access scope, mode, operator
 The operator access boundary must keep operator identity, role, session, auth context, and access scope hash-only. Operator access success still does not implement authentication or authorization, create runtime routes, expose public UI, perform provider calls, create DB storage, or approve live order submission.
 
 The KIS order adapter design review now also depends on this private shadow operator access contract. Future order-adapter implementation review stays blocked if private operator access evidence is not ready, if it enables access implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+
+## Step 116-2T Trading Private Shadow Operator Access Local Validator
+
+The first Trading Private Shadow Operator Access Local Validator is:
+
+```text
+scripts/validate-trading-private-shadow-operator-access.cjs
+scripts/validate-trading-private-shadow-operator-access.test.cjs
+npm run check:trading-private-shadow-operator-access-validator
+```
+
+This is a pure local validator script, not an authentication implementation, authorization service, private dashboard, runtime route, KIS reader, provider adapter, DB migration, public UI, private approval importer, or order submission path. It requires an explicit `--access <path>` argument and does not read private approval packet paths, environment secrets, provider URLs, account credentials, order-capable credentials, or raw session tokens.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only shadow-mode, hash-only operator access evidence with time-boxed sessions, non-empty allowed/denied action hash arrays, operator/auth/session/policy/review/audit/kill-switch/private-network hashes, and explicit provider/order/runtime/UI allow flags set to false.
+
+Validator success still does not implement authentication or authorization, create private dashboard UI, create runtime routes, import private approval evidence, call KIS, enable provider calls, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2C Trading Manual Order Permission Preflight
 
