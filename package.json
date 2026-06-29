@@ -64,7 +64,8 @@
     "check:trading-private-shadow-runtime-preflight": "node scripts/generate-trading-private-shadow-runtime-preflight.cjs --check && node --test scripts/generate-trading-private-shadow-runtime-preflight.test.cjs",
     "check:trading-read-only-approval-intake": "node scripts/generate-trading-read-only-approval-intake-contract.cjs --check && node --test scripts/generate-trading-read-only-approval-intake-contract.test.cjs",
     "check:trading-read-only-approval-import-preflight": "node scripts/generate-trading-read-only-approval-import-preflight.cjs --check && node --test scripts/generate-trading-read-only-approval-import-preflight.test.cjs",
-    "check:trading-read-only-provider-request-envelope": "node scripts/generate-trading-read-only-provider-request-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-request-envelope-contract.test.cjs"
+    "check:trading-read-only-provider-request-envelope": "node scripts/generate-trading-read-only-provider-request-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-request-envelope-contract.test.cjs",
+    "check:trading-read-only-provider-response-envelope": "node scripts/generate-trading-read-only-provider-response-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-contract.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

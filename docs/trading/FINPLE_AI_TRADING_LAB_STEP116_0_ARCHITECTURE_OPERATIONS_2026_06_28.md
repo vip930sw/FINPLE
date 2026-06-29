@@ -259,9 +259,10 @@ Step 116 should be split into small commits and PR-sized phases:
 7. Read-only approval intake contract.
 8. Read-only approval import preflight.
 9. Read-only provider request envelope contract.
-10. Private shadow runtime preflight.
-11. KIS order adapter design review.
-12. Live guarded execution only after manual approval.
+10. Read-only provider response envelope contract.
+11. Private shadow runtime preflight.
+12. KIS order adapter design review.
+13. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -735,7 +736,7 @@ Current state remains:
 
 Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
 
-The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, and Trading Read-Only Provider Request Envelope Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, and Trading Read-Only Provider Response Envelope Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
 
 ## Step 116-1S Trading Read-Only Approval Intake Contract
 
@@ -824,6 +825,34 @@ Current state remains:
 Future request envelope review must include request identity, shadow mode, approval identifier hash, virtual-trading base URL, method, path template, query/header/body shape, timestamp, idempotency key, request hash, response hash, redaction version, and explicit provider-call allow flag. Allowed endpoint categories are read-only account, quote, FX, market-session, and provider-rate-limit reads only.
 
 The envelope must forbid order submission, order cancellation, position mutation, live order endpoints, persisted token refresh payloads, raw provider payload persistence, and scenario monthly cache writes. Envelope success still does not perform provider calls, enable read-only runtime, or approve live order submission.
+
+## Step 116-1V Trading Read-Only Provider Response Envelope Contract
+
+The first Trading Read-Only Provider Response Envelope Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_contract.json
+scripts/generate-trading-read-only-provider-response-envelope-contract.cjs
+scripts/generate-trading-read-only-provider-response-envelope-contract.test.cjs
+npm run check:trading-read-only-provider-response-envelope
+```
+
+This is a read_only_provider_response_envelope contract, not a KIS reader, response parser implementation, provider adapter, runtime route, DB migration, or public UI. It defines the future read-only response envelope, normalized snapshot hash, raw response hash, and redaction boundary before any provider call implementation review.
+
+Current state remains:
+
+- `contractOnly=true`
+- `responseEnvelopeImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future response envelope review must include request identity, endpoint category, provider status, status-code class, latency bucket, rate-limit state, normalized snapshot type, normalized snapshot hash, raw response hash, redaction version, and explicit provider/order allow flags. Allowed snapshot types are read-only account, quote, FX, market-session, and provider-rate-limit snapshots only.
+
+The response envelope must forbid access tokens, app secrets, full account numbers, raw provider payloads, order confirmations, execution identifiers, live order endpoints, unhashed account identifiers, and scenario monthly return rows. Response envelope success still does not perform provider calls, enable read-only runtime, persist raw provider payloads, or approve live order submission.
 
 ## Explicit Non-Goals
 
