@@ -256,9 +256,10 @@ Step 116 should be split into small commits and PR-sized phases:
 4. Risk engine and kill switch tests.
 5. Trading store migration draft.
 6. Shadow-mode read-only integration contract.
-7. Private shadow runtime preflight.
-8. KIS order adapter design review.
-9. Live guarded execution only after manual approval.
+7. Read-only approval intake contract.
+8. Private shadow runtime preflight.
+9. KIS order adapter design review.
+10. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -732,7 +733,37 @@ Current state remains:
 
 Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
 
-The KIS order adapter design review now also depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+
+## Step 116-1S Trading Read-Only Approval Intake Contract
+
+The first Trading Read-Only Approval Intake Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_intake_contract.json
+scripts/generate-trading-read-only-approval-intake-contract.cjs
+scripts/generate-trading-read-only-approval-intake-contract.test.cjs
+npm run check:trading-read-only-approval-intake
+```
+
+This is a read_only_approval_intake contract, not an approval importer, KIS reader, provider adapter, runtime route, DB migration, or public UI. It defines the evidence packet required before any future KIS read-only provider call or private shadow runtime implementation review.
+
+Current state remains:
+
+- `contractOnly=true`
+- `readOnlyApprovalImportedNow=false`
+- `readOnlyApprovalIntakeImplementationAllowed=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future read-only approval evidence must include approval identity, approver, approved/expiry timestamps, read-only scope, environment, base URL, account identifier hash, allowed read scopes, forbidden actions, evidence ticket, revocation plan, and redaction version. The contract requires virtual-trading base URL scope, no live endpoint, hashed account identifiers only, no stored secrets, no raw provider payload persistence, and time-boxed revocable approval.
+
+Approval intake validation still does not allow provider calls or read-only runtime by itself. A later implementation review must import and validate the approval evidence before any read-only shadow runtime can be considered.
 
 ## Explicit Non-Goals
 

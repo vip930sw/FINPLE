@@ -1,0 +1,149 @@
+{
+  "contractVersion": "trading-lab-step116-read-only-approval-intake-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1S",
+  "scope": "trading_read_only_approval_intake_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "shadowContract": "data\\processed\\trading_lab_step116_shadow_mode_contract.json",
+    "envReadinessContract": "data\\processed\\trading_lab_step116_env_readiness_contract.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "orderCredentialBoundaryContract": "data\\processed\\trading_lab_step116_order_credential_boundary_contract.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "readOnlyApprovalImportedNow": false,
+    "readOnlyApprovalIntakeImplementationAllowed": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureReadOnlyApprovalIntakeBoundary": {
+    "scope": "read_only_approval_intake",
+    "purpose": "define the evidence packet required before any future KIS read-only provider call or private shadow runtime review",
+    "requiredApprovalFields": [
+      "approvalId",
+      "approvedBy",
+      "approvedAt",
+      "expiresAt",
+      "scope",
+      "environment",
+      "baseUrl",
+      "accountIdHash",
+      "allowedReadScopes",
+      "forbiddenActions",
+      "evidenceTicket",
+      "revocationPlan",
+      "redactionVersion"
+    ],
+    "allowedReadScopes": [
+      "account_cash_balance",
+      "account_positions",
+      "orderable_cash",
+      "current_quotes",
+      "fx_rate",
+      "market_session_state",
+      "provider_rate_limit_state"
+    ],
+    "forbiddenActions": [
+      "order_submission",
+      "order_cancellation",
+      "position_mutation",
+      "live_trading_endpoint",
+      "raw_provider_response_persistence",
+      "public_frontend_secret_access",
+      "scenario_monthly_cache_write"
+    ],
+    "requiredApprovalAssertions": [
+      "approval_scope_is_read_only",
+      "virtual_trading_base_url_only",
+      "no_live_endpoint",
+      "account_identifier_is_hashed",
+      "secrets_are_not_persisted",
+      "raw_provider_payload_not_persisted",
+      "approval_is_time_boxed",
+      "approval_is_revocable",
+      "provider_calls_remain_blocked_until_approval_is_imported"
+    ],
+    "secretAndDataRules": [
+      "never store KIS app secret, access token, or full account number",
+      "store account identifiers as hashes only",
+      "store provider request and response hashes only",
+      "approval evidence must be time-boxed and revocable"
+    ],
+    "promotionRules": [
+      "approval intake validation does not perform provider calls",
+      "approval intake validation does not enable read-only runtime by itself",
+      "approval intake validation does not approve order submission",
+      "read-only approval cannot cover live order endpoints"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "shadowModePolicyReady": true,
+    "shadowContractStillRequiresApproval": true,
+    "envReadinessContractStillBlocksRuntime": true,
+    "envRiskGateContractStillFailClosed": true,
+    "orderCredentialBoundaryContractReady": true,
+    "approvalFieldsReady": true,
+    "allowedReadScopesReady": true,
+    "forbiddenActionsReady": true,
+    "approvalAssertionsReady": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesDbMigration": true,
+    "architectureDocMentionsReadOnlyApprovalIntake": true,
+    "noRuntimeArtifacts": true,
+    "readOnlyApprovalIntakeImplementationAllowed": false,
+    "readOnlyApprovalImportedNow": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false
+  },
+  "evidence": {
+    "shadowMode": {
+      "mode": "shadow",
+      "externalOrderCall": false,
+      "providerDataCall": "read_only_future_contract",
+      "requiresManualApproval": true,
+      "description": "records intended orders without submitting them"
+    },
+    "missingApprovalFields": [],
+    "missingAllowedReadScopes": [],
+    "missingForbiddenActions": [],
+    "missingApprovalAssertions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "shadowContractStatus": "contract_ready_pending_read_only_approval",
+    "envReadinessContractStatus": "contract_ready_runtime_env_not_required_yet",
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "orderCredentialBoundaryContractStatus": "contract_ready_pending_order_credential_implementation_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "contract_ready_pending_read_only_approval_evidence_import",
+    "readyForFutureReadOnlyApprovalIntakeValidation": true,
+    "readOnlyApprovalIntakeImplementationAllowed": false,
+    "readOnlyApprovalImportedNow": false,
+    "readOnlyRuntimeIntegrationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
