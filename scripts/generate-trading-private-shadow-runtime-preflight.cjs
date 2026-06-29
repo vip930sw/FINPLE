@@ -85,13 +85,18 @@ const PRIVATE_SHADOW_RUNTIME_REVIEW_PACKET_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_private_shadow_runtime_review_packet_contract.json",
 );
+const PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_private_shadow_operator_access_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const CONTRACT_VERSION = "trading-lab-step116-private-shadow-runtime-preflight-v0.10";
+const CONTRACT_VERSION = "trading-lab-step116-private-shadow-runtime-preflight-v0.11";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_RUNTIME_EVIDENCE = [
   "private_operator_only_access",
@@ -187,6 +192,7 @@ function buildContract() {
   const privateShadowOrderIntentContract = readJson(PRIVATE_SHADOW_ORDER_INTENT_CONTRACT_PATH);
   const privateShadowIntentAuditEventContract = readJson(PRIVATE_SHADOW_INTENT_AUDIT_EVENT_CONTRACT_PATH);
   const privateShadowRuntimeReviewPacketContract = readJson(PRIVATE_SHADOW_RUNTIME_REVIEW_PACKET_CONTRACT_PATH);
+  const privateShadowOperatorAccessContract = readJson(PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const runtimeEvidence = [...REQUIRED_RUNTIME_EVIDENCE];
   const runtimeAssertions = [...REQUIRED_RUNTIME_ASSERTIONS];
@@ -315,6 +321,15 @@ function buildContract() {
       privateShadowRuntimeReviewPacketContract.readiness?.orderSubmissionAllowed === false &&
       privateShadowRuntimeReviewPacketContract.readiness?.dbMigrationAllowed === false &&
       privateShadowRuntimeReviewPacketContract.readiness?.runtimeRouteAllowed === false,
+    privateShadowOperatorAccessContractReady:
+      privateShadowOperatorAccessContract.readiness
+        ?.readyForFuturePrivateShadowOperatorAccessImplementationReview === true &&
+      privateShadowOperatorAccessContract.readiness?.privateShadowOperatorAccessImplementationAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.providerCallsAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.orderSubmissionAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.dbMigrationAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.runtimeRouteAllowed === false &&
+      privateShadowOperatorAccessContract.readiness?.publicUiAllowed === false,
     runtimeEvidenceReady: missingRuntimeEvidence.length === 0,
     runtimeAssertionsReady: missingRuntimeAssertions.length === 0,
     forbiddenActionsReady: missingForbiddenActions.length === 0,
@@ -332,7 +347,8 @@ function buildContract() {
       architectureDoc.includes("Trading Read-Only Snapshot Risk Input Contract") &&
       architectureDoc.includes("Trading Private Shadow Order Intent Contract") &&
       architectureDoc.includes("Trading Private Shadow Intent Audit Event Contract") &&
-      architectureDoc.includes("Trading Private Shadow Runtime Review Packet Contract"),
+      architectureDoc.includes("Trading Private Shadow Runtime Review Packet Contract") &&
+      architectureDoc.includes("Trading Private Shadow Operator Access Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     privateShadowRuntimeImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -361,6 +377,7 @@ function buildContract() {
     checks.privateShadowOrderIntentContractReady &&
     checks.privateShadowIntentAuditEventContractReady &&
     checks.privateShadowRuntimeReviewPacketContractReady &&
+    checks.privateShadowOperatorAccessContractReady &&
     checks.runtimeEvidenceReady &&
     checks.runtimeAssertionsReady &&
     checks.forbiddenActionsReady &&
@@ -395,6 +412,7 @@ function buildContract() {
       privateShadowOrderIntentContract: PRIVATE_SHADOW_ORDER_INTENT_CONTRACT_PATH,
       privateShadowIntentAuditEventContract: PRIVATE_SHADOW_INTENT_AUDIT_EVENT_CONTRACT_PATH,
       privateShadowRuntimeReviewPacketContract: PRIVATE_SHADOW_RUNTIME_REVIEW_PACKET_CONTRACT_PATH,
+      privateShadowOperatorAccessContract: PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -457,6 +475,7 @@ function buildContract() {
       privateShadowOrderIntentContractStatus: privateShadowOrderIntentContract.readiness?.status,
       privateShadowIntentAuditEventContractStatus: privateShadowIntentAuditEventContract.readiness?.status,
       privateShadowRuntimeReviewPacketContractStatus: privateShadowRuntimeReviewPacketContract.readiness?.status,
+      privateShadowOperatorAccessContractStatus: privateShadowOperatorAccessContract.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
     readiness: {
@@ -504,6 +523,9 @@ function buildContract() {
         ...(checks.privateShadowRuntimeReviewPacketContractReady
           ? []
           : ["private_shadow_runtime_review_packet_contract_not_ready"]),
+        ...(checks.privateShadowOperatorAccessContractReady
+          ? []
+          : ["private_shadow_operator_access_contract_not_ready"]),
         ...missingRuntimeEvidence.map((item) => `missing_runtime_evidence_${item}`),
         ...missingRuntimeAssertions.map((assertion) => `missing_runtime_assertion_${assertion}`),
         ...missingForbiddenActions.map((action) => `missing_forbidden_action_${action}`),

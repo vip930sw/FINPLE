@@ -33,6 +33,8 @@ const PRIVATE_SHADOW_INTENT_AUDIT_EVENT_CONTRACT =
   "trading_lab_step116_private_shadow_intent_audit_event_contract.json";
 const PRIVATE_SHADOW_RUNTIME_REVIEW_PACKET_CONTRACT =
   "trading_lab_step116_private_shadow_runtime_review_packet_contract.json";
+const PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT =
+  "trading_lab_step116_private_shadow_operator_access_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -60,6 +62,7 @@ function makeWorkspace() {
     PRIVATE_SHADOW_ORDER_INTENT_CONTRACT,
     PRIVATE_SHADOW_INTENT_AUDIT_EVENT_CONTRACT,
     PRIVATE_SHADOW_RUNTIME_REVIEW_PACKET_CONTRACT,
+    PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -325,6 +328,22 @@ test("blocks future private shadow runtime review if private shadow runtime revi
   assert.equal(report.checks.privateShadowRuntimeReviewPacketContractReady, false);
   assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /private_shadow_runtime_review_packet_contract_not_ready/);
+});
+
+test("blocks future private shadow runtime review if private shadow operator access is not ready", () => {
+  const workspace = makeWorkspace();
+  const access = readJson(workspace, PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT);
+  access.readiness.readyForFuturePrivateShadowOperatorAccessImplementationReview = false;
+  access.readiness.publicUiAllowed = true;
+  writeJson(workspace, PRIVATE_SHADOW_OPERATOR_ACCESS_CONTRACT, access);
+
+  const result = runPreflight(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.privateShadowOperatorAccessContractReady, false);
+  assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /private_shadow_operator_access_contract_not_ready/);
 });
 
 test("blocks future private shadow runtime review if runtime artifacts appear too early", () => {
