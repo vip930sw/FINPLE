@@ -1,0 +1,172 @@
+{
+  "contractVersion": "trading-lab-step116-risk-gate-clearance-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1Q",
+  "scope": "trading_risk_gate_clearance_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "manualOperatorApprovalContract": "data\\processed\\trading_lab_step116_manual_operator_approval_contract.json",
+    "killSwitchClearanceContract": "data\\processed\\trading_lab_step116_kill_switch_clearance_contract.json",
+    "auditLoggerReadinessContract": "data\\processed\\trading_lab_step116_audit_logger_readiness_contract.json",
+    "riskEngine": "server\\src\\services\\tradingRiskEngine.js",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_risk_gate_clearance_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "riskGateClearanceImplementationAllowed": false,
+    "riskGateClearNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureRiskGateClearanceBoundary": {
+    "purpose": "require deterministic risk gate clearance evidence before future live_guarded order-intent review while keeping order submission disabled",
+    "requiredClearanceInputs": [
+      "orderIntent",
+      "riskLimits",
+      "runtimeMode",
+      "marketSession",
+      "dailyLossAmount",
+      "dailyCashDepletion",
+      "dailyTurnover",
+      "dailyOrderAttempts",
+      "consecutiveFailedOrderAttempts",
+      "allocatedCapital",
+      "currentSymbolExposure",
+      "estimatedSlippage",
+      "killSwitchState",
+      "quoteFreshness",
+      "fxFreshness",
+      "accountStateMatch",
+      "strategyReviewStatus",
+      "auditLoggerReady"
+    ],
+    "requiredAssertions": [
+      "all_risk_reasons_empty_before_live_review",
+      "live_guarded_returns_live_review_required_not_order_submission",
+      "blocked_risk_gate_records_risk_event",
+      "risk_gate_clear_cannot_override_kill_switch",
+      "risk_gate_clear_cannot_override_manual_operator_stop",
+      "risk_gate_clear_cannot_enable_provider_calls_by_itself",
+      "risk_gate_clear_cannot_enable_order_submission_by_itself"
+    ],
+    "forbiddenActions": [
+      "runtime_provider_call",
+      "order_submission",
+      "order_cancellation",
+      "production_secret_usage",
+      "raw_provider_response_persistence",
+      "db_migration",
+      "public_ui",
+      "scenario_monthly_cache_write"
+    ],
+    "promotionRules": [
+      "risk gate clear may only produce live_review_required for live_guarded",
+      "risk gate clear cannot override kill switch, manual stop, missing audit log, stale quote, stale fx, or exposure limits",
+      "risk gate clear does not approve provider calls or order submission",
+      "blocked risk gates must emit auditable risk-event reasons"
+    ]
+  },
+  "fixtureEvidence": {
+    "clearLiveGuardedReviewOnly": {
+      "valid": true,
+      "status": "live_review_required",
+      "mode": "live_guarded",
+      "reasons": [],
+      "intentPromotionAllowed": true,
+      "liveOrderIntentEligible": true,
+      "orderSubmissionAllowed": false,
+      "providerCallsAllowed": false,
+      "riskEvent": {
+        "eventType": "trading_risk_gate",
+        "severity": "info",
+        "status": "live_review_required",
+        "reasons": [],
+        "orderSubmissionAllowed": false,
+        "providerCallsAllowed": false
+      }
+    },
+    "blockedByKillSwitch": {
+      "valid": false,
+      "status": "blocked",
+      "mode": "live_guarded",
+      "reasons": [
+        "kill_switch_global_trading_disabled"
+      ],
+      "intentPromotionAllowed": false,
+      "liveOrderIntentEligible": false,
+      "orderSubmissionAllowed": false,
+      "providerCallsAllowed": false,
+      "riskEvent": {
+        "eventType": "trading_risk_gate",
+        "severity": "block",
+        "status": "blocked",
+        "reasons": [
+          "kill_switch_global_trading_disabled"
+        ],
+        "orderSubmissionAllowed": false,
+        "providerCallsAllowed": false
+      }
+    }
+  },
+  "checks": {
+    "contractOnly": true,
+    "liveGuardedPolicyRequiresRiskReview": true,
+    "clearFixtureRequiresLiveReviewOnly": true,
+    "blockedFixtureFailsClosed": true,
+    "envRiskGateContractStillFailClosed": true,
+    "manualOperatorApprovalContractReady": true,
+    "killSwitchClearanceContractReady": true,
+    "auditLoggerReadinessContractReady": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "clearanceInputsReady": true,
+    "clearanceAssertionsReady": true,
+    "forbiddenActionsReady": true,
+    "architectureDocMentionsRiskGateClearance": true,
+    "noRuntimeArtifacts": true,
+    "riskGateClearanceImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "evidence": {
+    "liveGuardedMode": {
+      "mode": "live_guarded",
+      "externalOrderCall": true,
+      "providerDataCall": true,
+      "requiresManualApproval": true,
+      "requiresKillSwitchClear": true,
+      "requiresDryRunReplay": true,
+      "description": "future real orders with strict caps and manual controls"
+    },
+    "missingClearanceInputs": [],
+    "missingClearanceAssertions": [],
+    "missingForbiddenActions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "manualOperatorApprovalContractStatus": "contract_ready_pending_manual_approval_implementation_review",
+    "killSwitchClearanceContractStatus": "contract_ready_pending_kill_switch_clearance_implementation_review",
+    "auditLoggerReadinessContractStatus": "contract_ready_pending_audit_logger_implementation_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "contract_ready_pending_risk_gate_clearance_implementation_review",
+    "readyForFutureRiskGateClearanceImplementationReview": true,
+    "riskGateClearanceImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

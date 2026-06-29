@@ -675,6 +675,36 @@ The current virtual-trading base URL is not live order permission. A future prod
 
 The KIS order adapter design review now also depends on this order credential boundary contract. Future order-adapter implementation review stays blocked if credential boundaries are not ready, if credential-store implementation is enabled too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
+## Step 116-1Q Trading Risk Gate Clearance Contract
+
+The first Trading Risk Gate Clearance Contract is:
+
+```text
+data/processed/trading_lab_step116_risk_gate_clearance_contract.json
+scripts/generate-trading-risk-gate-clearance-contract.cjs
+scripts/generate-trading-risk-gate-clearance-contract.test.cjs
+npm run check:trading-risk-gate-clearance
+```
+
+This is a contract and drift check, not a runtime risk-gate service, KIS adapter, route, public UI, or order path. It defines the future `risk_gate_clear` gate required before `live_guarded` adapter implementation review can proceed.
+
+Current state remains blocked:
+
+- `contractOnly=true`
+- `riskGateClearanceImplementationAllowed=false`
+- `riskGateClearNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+For `live_guarded`, a clean risk-gate fixture may only return `live_review_required`; it still keeps `providerCallsAllowed=false` and `orderSubmissionAllowed=false`. Blocked fixtures must emit auditable risk-event reasons such as `kill_switch_global_trading_disabled`.
+
+Future risk-gate clearance must include order intent, risk limits, market session, loss/turnover/order-attempt counters, exposure counters, quote/FX freshness, account-state match, strategy review status, and audit logger readiness. It cannot override a kill switch, manual operator stop, missing audit log, stale data, or risk-limit breach.
+
+The KIS order adapter design review now also depends on this risk gate clearance contract. Future order-adapter implementation review stays blocked if risk gate clearance is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
