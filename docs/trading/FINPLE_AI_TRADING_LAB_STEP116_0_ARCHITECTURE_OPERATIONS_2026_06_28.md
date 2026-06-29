@@ -263,18 +263,19 @@ Step 116 should be split into small commits and PR-sized phases:
 11. Redacted approval hash helper contract.
 12. Redacted approval hash helper preflight.
 13. Redacted approval packet validation contract.
-14. Read-only provider request envelope contract.
-15. Read-only provider response envelope contract.
-16. Read-only snapshot normalization contract.
-17. Read-only snapshot risk input contract.
-18. Private shadow order intent contract.
-19. Private shadow intent audit event contract.
-20. Private shadow runtime review packet contract.
-21. Private shadow operator access contract.
-22. Private shadow runtime preflight.
-23. KIS order adapter design review.
-24. Manual order permission preflight.
-25. Live guarded execution only after manual approval.
+14. Redacted approval packet validation preflight.
+15. Read-only provider request envelope contract.
+16. Read-only provider response envelope contract.
+17. Read-only snapshot normalization contract.
+18. Read-only snapshot risk input contract.
+19. Private shadow order intent contract.
+20. Private shadow intent audit event contract.
+21. Private shadow runtime review packet contract.
+22. Private shadow operator access contract.
+23. Private shadow runtime preflight.
+24. KIS order adapter design review.
+25. Manual order permission preflight.
+26. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -962,6 +963,37 @@ Current state remains:
 Future packet validation must require the redacted template fields, labelled hash fields, ISO timestamps, `read_only_shadow` scope, `mock` environment, virtual-trading base URL scope, allowed read scopes as a subset of the template, forbidden actions that include order submission, provider/order/runtime/UI flags set to false, unknown-field rejection, secret absence, raw identifier absence, and provider calls remaining disabled after validation.
 
 Validation contract readiness means a future validator can be reviewed without guessing the packet acceptance rules. It still does not create `scripts/validate-trading-redacted-read-only-approval-packet.cjs`, does not create or import `data/private/trading/read_only_approval.redacted.json`, does not ask for hash inputs, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
+
+## Step 116-2I Trading Redacted Approval Packet Validation Preflight
+
+The first Trading Redacted Approval Packet Validation Preflight is:
+
+```text
+data/processed/trading_lab_step116_redacted_approval_packet_validation_preflight.json
+scripts/generate-trading-redacted-approval-packet-validation-preflight.cjs
+scripts/generate-trading-redacted-approval-packet-validation-preflight.test.cjs
+npm run check:trading-redacted-approval-packet-validation-preflight
+```
+
+This is a redacted_approval_packet_validation_preflight contract, not the validator implementation, private approval packet, approval importer, KIS provider call, runtime route, DB migration, public UI, or order submission path. It defines the narrow review boundary for a future pure local packet validator.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `validationImplementationAllowedNow=false`
+- `validationImplementationReviewAllowedLater=true`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future validator implementation review is limited to a pure Node script with deterministic validation output, redacted error messages, no network access, no environment secret loading, no hash generation, no packet writes, no packet import, no runtime route, no database write, and no public UI.
+
+Preflight readiness means a future pure local validator implementation can be reviewed. It still does not create `scripts/validate-trading-redacted-read-only-approval-packet.cjs`, does not read or create `data/private/trading/read_only_approval.redacted.json`, does not import approval evidence, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 
