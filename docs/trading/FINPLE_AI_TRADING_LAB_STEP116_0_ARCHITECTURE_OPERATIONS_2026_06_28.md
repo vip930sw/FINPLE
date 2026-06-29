@@ -260,9 +260,10 @@ Step 116 should be split into small commits and PR-sized phases:
 8. Read-only approval import preflight.
 9. Read-only provider request envelope contract.
 10. Read-only provider response envelope contract.
-11. Private shadow runtime preflight.
-12. KIS order adapter design review.
-13. Live guarded execution only after manual approval.
+11. Read-only snapshot normalization contract.
+12. Private shadow runtime preflight.
+13. KIS order adapter design review.
+14. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -736,7 +737,7 @@ Current state remains:
 
 Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
 
-The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, and Trading Read-Only Provider Response Envelope Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, Trading Read-Only Provider Response Envelope Contract, and Trading Read-Only Snapshot Normalization Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
 
 ## Step 116-1S Trading Read-Only Approval Intake Contract
 
@@ -853,6 +854,34 @@ Current state remains:
 Future response envelope review must include request identity, endpoint category, provider status, status-code class, latency bucket, rate-limit state, normalized snapshot type, normalized snapshot hash, raw response hash, redaction version, and explicit provider/order allow flags. Allowed snapshot types are read-only account, quote, FX, market-session, and provider-rate-limit snapshots only.
 
 The response envelope must forbid access tokens, app secrets, full account numbers, raw provider payloads, order confirmations, execution identifiers, live order endpoints, unhashed account identifiers, and scenario monthly return rows. Response envelope success still does not perform provider calls, enable read-only runtime, persist raw provider payloads, or approve live order submission.
+
+## Step 116-1W Trading Read-Only Snapshot Normalization Contract
+
+The first Trading Read-Only Snapshot Normalization Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_snapshot_normalization_contract.json
+scripts/generate-trading-read-only-snapshot-normalization-contract.cjs
+scripts/generate-trading-read-only-snapshot-normalization-contract.test.cjs
+npm run check:trading-read-only-snapshot-normalization
+```
+
+This is a read_only_snapshot_normalization contract, not a parser implementation, KIS reader, provider adapter, runtime route, storage layer, DB migration, or public UI. It defines future normalized snapshot types, required fields, hash-only values, freshness markers, redaction boundaries, and rejection rules before any snapshot normalizer implementation review.
+
+Current state remains:
+
+- `contractOnly=true`
+- `snapshotNormalizationImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future snapshot normalization review must include snapshot identity, source envelope hash, snapshot type, created timestamp, market/symbol/currency fields, hashed account identifier, value hash, freshness status, provider status, redaction version, raw-payload storage flag, and explicit provider/order allow flags. Allowed snapshot types are read-only account cash, account positions, orderable cash, quotes, FX, market-session state, and provider-rate-limit state only.
+
+The normalization boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Snapshot normalization success still does not perform provider calls, enable read-only runtime, persist raw provider payloads, create DB storage, or approve live order submission.
 
 ## Explicit Non-Goals
 
