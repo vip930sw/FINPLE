@@ -78,7 +78,8 @@
     "check:trading-redacted-approval-hash-helper": "node scripts/generate-trading-redacted-approval-hash-helper-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs",
     "check:trading-redacted-approval-hash-helper-preflight": "node scripts/generate-trading-redacted-approval-hash-helper-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-preflight.test.cjs",
     "check:trading-redacted-approval-packet-validation": "node scripts/generate-trading-redacted-approval-packet-validation-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-contract.test.cjs",
-    "check:trading-redacted-approval-packet-validation-preflight": "node scripts/generate-trading-redacted-approval-packet-validation-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-preflight.test.cjs"
+    "check:trading-redacted-approval-packet-validation-preflight": "node scripts/generate-trading-redacted-approval-packet-validation-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validation-preflight.test.cjs",
+    "check:trading-redacted-approval-packet-validator": "node --test scripts/validate-trading-redacted-read-only-approval-packet.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

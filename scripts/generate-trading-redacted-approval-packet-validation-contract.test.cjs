@@ -59,14 +59,14 @@ test("passes with current redacted approval packet validation contract", () => {
   assert.match(result.stdout, /trading_lab_step116_redacted_approval_packet_validation_contract\.json/);
 });
 
-test("keeps validation implementation, packet import, provider calls, and orders blocked", () => {
+test("keeps packet import, provider calls, and orders blocked", () => {
   const workspace = makeWorkspace();
   const result = runContract(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
   assert.equal(report.currentState.contractOnly, true);
-  assert.equal(report.currentState.validationImplementationAllowed, false);
+  assert.equal(report.currentState.validationImplementationAllowed, true);
   assert.equal(report.futureRedactedApprovalPacketValidationBoundary.currentStepImplementsValidator, false);
   assert.equal(report.futureRedactedApprovalPacketValidationBoundary.currentStepCreatesPacket, false);
   assert.equal(report.readiness.readyForFutureRedactedApprovalPacketValidationImplementationReview, true);
@@ -96,10 +96,10 @@ test("records required field, validation, rejection, and forbidden content bound
   assert.doesNotMatch(serialized, /KIS_TRADING_APP_SECRET|KIS_TRADING_APP_KEY/);
 });
 
-test("rejects stale contract if validation implementation is manually flipped on", () => {
+test("rejects stale contract if packet import is manually flipped on", () => {
   const workspace = makeWorkspace();
   const report = readJson(workspace);
-  report.currentState.validationImplementationAllowed = true;
+  report.currentState.approvalPacketImportedNow = true;
   writeJson(workspace, CONTRACT, report);
 
   const result = runContract(workspace);
@@ -140,10 +140,10 @@ test("blocks readiness if template drops a required packet field", () => {
   assert.match(report.readiness.blockers.join("|"), /missing_template_field_revocationPlanHash/);
 });
 
-test("blocks if private packet or validator implementation appears too early", () => {
+test("blocks if private packet or runtime implementation appears too early", () => {
   const workspace = makeWorkspace();
   const packetPath = path.join(workspace, "data", "private", "trading", "read_only_approval.redacted.json");
-  const validatorPath = path.join(workspace, "scripts", "validate-trading-redacted-read-only-approval-packet.cjs");
+  const validatorPath = path.join(workspace, "server", "src", "services", "tradingRedactedApprovalPacketValidation.js");
   fs.mkdirSync(path.dirname(packetPath), { recursive: true });
   fs.mkdirSync(path.dirname(validatorPath), { recursive: true });
   fs.writeFileSync(packetPath, "{}\n");

@@ -60,16 +60,16 @@ test("passes with current redacted approval packet validation preflight", () => 
   assert.match(result.stdout, /trading_lab_step116_redacted_approval_packet_validation_preflight\.json/);
 });
 
-test("allows only future pure local validator review while keeping runtime paths blocked now", () => {
+test("allows only pure local validator implementation while keeping runtime paths blocked", () => {
   const workspace = makeWorkspace();
   const result = runContract(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
   assert.equal(report.currentState.preflightOnly, true);
-  assert.equal(report.currentState.validationImplementationAllowedNow, false);
+  assert.equal(report.currentState.validationImplementationAllowedNow, true);
   assert.equal(report.currentState.validationImplementationReviewAllowedLater, true);
-  assert.equal(report.futurePureLocalValidatorImplementationBoundary.currentStepImplementsValidator, false);
+  assert.equal(report.futurePureLocalValidatorImplementationBoundary.currentStepImplementsValidator, true);
   assert.equal(report.futurePureLocalValidatorImplementationBoundary.currentStepReadsPrivatePacket, false);
   assert.equal(report.readiness.readyForPureLocalValidatorImplementationReview, true);
   assert.equal(report.readiness.approvalPacketCreatedNow, false);
@@ -97,10 +97,10 @@ test("records implementation review rules without raw account, secret, or provid
   assert.doesNotMatch(serialized, /KIS_TRADING_APP_SECRET|KIS_TRADING_APP_KEY/);
 });
 
-test("rejects stale preflight if validation implementation is manually allowed now", () => {
+test("rejects stale preflight if packet import is manually allowed now", () => {
   const workspace = makeWorkspace();
   const report = readJson(workspace);
-  report.currentState.validationImplementationAllowedNow = true;
+  report.currentState.approvalPacketImportedNow = true;
   writeJson(workspace, CONTRACT, report);
 
   const result = runContract(workspace);
@@ -140,10 +140,10 @@ test("blocks readiness if hash helper preflight starts allowing hash generation"
   assert.match(report.readiness.blockers.join("|"), /redacted_approval_hash_helper_preflight_not_ready/);
 });
 
-test("blocks if validator implementation or private packet appears too early", () => {
+test("blocks if runtime implementation or private packet appears too early", () => {
   const workspace = makeWorkspace();
   const packetPath = path.join(workspace, "data", "private", "trading", "read_only_approval.redacted.json");
-  const validatorPath = path.join(workspace, "scripts", "validate-trading-redacted-read-only-approval-packet.cjs");
+  const validatorPath = path.join(workspace, "server", "src", "services", "tradingRedactedApprovalPacketValidation.js");
   fs.mkdirSync(path.dirname(packetPath), { recursive: true });
   fs.mkdirSync(path.dirname(validatorPath), { recursive: true });
   fs.writeFileSync(packetPath, "{}\n");

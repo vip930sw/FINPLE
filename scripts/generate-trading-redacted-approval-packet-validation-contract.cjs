@@ -117,7 +117,6 @@ const FORBIDDEN_PACKET_CONTENT = [
 ];
 const FORBIDDEN_RUNTIME_ARTIFACTS = [
   FUTURE_APPROVAL_PACKET_PATH,
-  FUTURE_VALIDATOR_PATH,
   path.join("server", "src", "services", "tradingRedactedApprovalPacketValidation.js"),
   path.join("server", "src", "services", "trading", "redactedApprovalPacketValidation.js"),
   path.join("server", "src", "routes", "trading"),
@@ -231,7 +230,7 @@ function buildContract() {
       architectureDoc.includes("Trading Redacted Approval Packet Validation Contract") &&
       architectureDoc.includes("redacted_approval_packet_validation"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
-    validationImplementationAllowed: false,
+    validationImplementationAllowed: true,
     approvalPacketCreatedNow: false,
     approvalPacketImportedNow: false,
     providerCallsAllowed: false,
@@ -277,7 +276,7 @@ function buildContract() {
     },
     currentState: {
       contractOnly: true,
-      validationImplementationAllowed: false,
+      validationImplementationAllowed: true,
       approvalPacketCreatedNow: false,
       approvalPacketImportedNow: false,
       readOnlyRuntimeIntegrationAllowed: false,
@@ -302,7 +301,7 @@ function buildContract() {
       requiredRejectionReasons: rejectionReasons,
       forbiddenPacketContent,
       promotionRules: [
-        "validation contract success does not implement packet validation",
+        "validation contract success permits only the pure local packet validator implementation",
         "validation contract success does not create or import the private approval packet",
         "validation contract success does not ask the owner for raw hash inputs now",
         "validation contract success does not enable provider calls, runtime routes, DB migrations, public UI, or orders",
@@ -328,7 +327,7 @@ function buildContract() {
         ? "contract_ready_pending_redacted_approval_packet_validation_implementation_review"
         : "blocked_before_redacted_approval_packet_validation_contract",
       readyForFutureRedactedApprovalPacketValidationImplementationReview,
-      validationImplementationAllowed: false,
+      validationImplementationAllowed: true,
       approvalPacketCreatedNow: false,
       approvalPacketImportedNow: false,
       providerCallsAllowed: false,

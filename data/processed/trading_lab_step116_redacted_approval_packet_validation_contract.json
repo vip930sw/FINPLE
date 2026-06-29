@@ -17,7 +17,7 @@
   },
   "currentState": {
     "contractOnly": true,
-    "validationImplementationAllowed": false,
+    "validationImplementationAllowed": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
     "readOnlyRuntimeIntegrationAllowed": false,
@@ -126,7 +126,7 @@
       "scenario_monthly_return_row"
     ],
     "promotionRules": [
-      "validation contract success does not implement packet validation",
+      "validation contract success permits only the pure local packet validator implementation",
       "validation contract success does not create or import the private approval packet",
       "validation contract success does not ask the owner for raw hash inputs now",
       "validation contract success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
@@ -151,7 +151,7 @@
     "preflightStillDisablesDbMigration": true,
     "architectureDocMentionsPacketValidation": true,
     "noRuntimeArtifacts": true,
-    "validationImplementationAllowed": false,
+    "validationImplementationAllowed": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
     "providerCallsAllowed": false,
@@ -182,7 +182,7 @@
   "readiness": {
     "status": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
     "readyForFutureRedactedApprovalPacketValidationImplementationReview": true,
-    "validationImplementationAllowed": false,
+    "validationImplementationAllowed": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
     "providerCallsAllowed": false,

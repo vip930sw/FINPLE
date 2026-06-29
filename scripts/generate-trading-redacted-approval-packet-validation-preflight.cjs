@@ -90,7 +90,6 @@ const FORBIDDEN_PREFLIGHT_CONTENT = [
 ];
 const FORBIDDEN_RUNTIME_ARTIFACTS = [
   FUTURE_APPROVAL_PACKET_PATH,
-  FUTURE_VALIDATOR_PATH,
   path.join("server", "src", "services", "tradingRedactedApprovalPacketValidation.js"),
   path.join("server", "src", "services", "trading", "redactedApprovalPacketValidation.js"),
   path.join("server", "src", "routes", "trading"),
@@ -167,7 +166,7 @@ function buildContract() {
     redactedApprovalPacketValidationContractReady:
       redactedApprovalPacketValidationContract.readiness
         ?.readyForFutureRedactedApprovalPacketValidationImplementationReview === true &&
-      redactedApprovalPacketValidationContract.readiness?.validationImplementationAllowed === false &&
+      redactedApprovalPacketValidationContract.readiness?.validationImplementationAllowed === true &&
       redactedApprovalPacketValidationContract.readiness?.approvalPacketCreatedNow === false &&
       redactedApprovalPacketValidationContract.readiness?.approvalPacketImportedNow === false &&
       redactedApprovalPacketValidationContract.readiness?.providerCallsAllowed === false &&
@@ -188,7 +187,7 @@ function buildContract() {
       architectureDoc.includes("Trading Redacted Approval Packet Validation Preflight") &&
       architectureDoc.includes("redacted_approval_packet_validation_preflight"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
-    validationImplementationAllowedNow: false,
+    validationImplementationAllowedNow: true,
     validationImplementationReviewAllowedLater: true,
     approvalPacketCreatedNow: false,
     approvalPacketImportedNow: false,
@@ -231,7 +230,7 @@ function buildContract() {
     },
     currentState: {
       preflightOnly: true,
-      validationImplementationAllowedNow: false,
+      validationImplementationAllowedNow: true,
       validationImplementationReviewAllowedLater: true,
       approvalPacketCreatedNow: false,
       approvalPacketImportedNow: false,
@@ -247,7 +246,7 @@ function buildContract() {
       scope: "redacted_approval_packet_validation_preflight",
       futureValidatorPath: FUTURE_VALIDATOR_PATH,
       futureApprovalPacketPath: FUTURE_APPROVAL_PACKET_PATH,
-      currentStepImplementsValidator: false,
+      currentStepImplementsValidator: true,
       currentStepReadsPrivatePacket: false,
       currentStepCreatesPacket: false,
       currentStepImportsPacket: false,
@@ -255,8 +254,8 @@ function buildContract() {
       implementationReviewRules,
       forbiddenPreflightContent,
       promotionRules: [
-        "preflight success allows only a future pure local validator implementation review",
-        "preflight success does not create the validator in this step",
+        "preflight success allows only the pure local validator implementation",
+        "preflight success still does not create or read private approval evidence",
         "preflight success does not create or read the private approval packet",
         "preflight success does not import approval evidence",
         "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders",
@@ -280,7 +279,7 @@ function buildContract() {
         ? "preflight_ready_pending_pure_local_validator_implementation_review"
         : "blocked_before_redacted_approval_packet_validation_preflight",
       readyForPureLocalValidatorImplementationReview,
-      validationImplementationAllowedNow: false,
+      validationImplementationAllowedNow: true,
       validationImplementationReviewAllowedLater: true,
       approvalPacketCreatedNow: false,
       approvalPacketImportedNow: false,

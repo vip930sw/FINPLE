@@ -17,7 +17,7 @@
   },
   "currentState": {
     "preflightOnly": true,
-    "validationImplementationAllowedNow": false,
+    "validationImplementationAllowedNow": true,
     "validationImplementationReviewAllowedLater": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
@@ -33,7 +33,7 @@
     "scope": "redacted_approval_packet_validation_preflight",
     "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
     "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
-    "currentStepImplementsValidator": false,
+    "currentStepImplementsValidator": true,
     "currentStepReadsPrivatePacket": false,
     "currentStepCreatesPacket": false,
     "currentStepImportsPacket": false,
@@ -83,8 +83,8 @@
       "scenario_monthly_return_row"
     ],
     "promotionRules": [
-      "preflight success allows only a future pure local validator implementation review",
-      "preflight success does not create the validator in this step",
+      "preflight success allows only the pure local validator implementation",
+      "preflight success still does not create or read private approval evidence",
       "preflight success does not create or read the private approval packet",
       "preflight success does not import approval evidence",
       "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
@@ -105,7 +105,7 @@
     "preflightStillDisablesDbMigration": true,
     "architectureDocMentionsPacketValidationPreflight": true,
     "noRuntimeArtifacts": true,
-    "validationImplementationAllowedNow": false,
+    "validationImplementationAllowedNow": true,
     "validationImplementationReviewAllowedLater": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
@@ -135,7 +135,7 @@
   "readiness": {
     "status": "preflight_ready_pending_pure_local_validator_implementation_review",
     "readyForPureLocalValidatorImplementationReview": true,
-    "validationImplementationAllowedNow": false,
+    "validationImplementationAllowedNow": true,
     "validationImplementationReviewAllowedLater": true,
     "approvalPacketCreatedNow": false,
     "approvalPacketImportedNow": false,
