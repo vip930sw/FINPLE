@@ -259,35 +259,36 @@ Step 116 should be split into small commits and PR-sized phases:
 7. Read-only approval intake contract.
 8. Read-only approval import preflight.
 9. Mock approval evidence receipt.
-10. Redacted read-only approval template.
-11. Redacted approval hash helper contract.
-12. Redacted approval hash helper preflight.
-13. Redacted approval packet validation contract.
-14. Redacted approval packet validation preflight.
-15. Redacted approval packet local validator.
-16. Redacted approval packet validator fixtures.
-17. Trading Step 116 progress summary.
-18. Read-only provider request envelope validation contract.
-19. Read-only provider request envelope validation preflight.
-20. Read-only provider request envelope local validator.
-21. Read-only provider request envelope contract.
-22. Read-only provider response envelope contract.
-23. Read-only snapshot normalization contract.
-24. Read-only snapshot risk input contract.
-25. Read-only snapshot risk input local validator.
-26. Private shadow order intent contract.
-27. Private shadow order intent local validator.
-28. Private shadow intent audit event contract.
-29. Private shadow intent audit event local validator.
-30. Private shadow runtime review packet contract.
-31. Private shadow runtime review packet local validator.
-32. Private shadow operator access contract.
-33. Private shadow operator access local validator.
-34. Private shadow runtime preflight.
-35. KIS order adapter design review.
-36. Manual order permission preflight.
-37. Manual order permission local validator.
-38. Live guarded execution only after manual approval.
+10. Mock approval evidence receipt local validator.
+11. Redacted read-only approval template.
+12. Redacted approval hash helper contract.
+13. Redacted approval hash helper preflight.
+14. Redacted approval packet validation contract.
+15. Redacted approval packet validation preflight.
+16. Redacted approval packet local validator.
+17. Redacted approval packet validator fixtures.
+18. Trading Step 116 progress summary.
+19. Read-only provider request envelope validation contract.
+20. Read-only provider request envelope validation preflight.
+21. Read-only provider request envelope local validator.
+22. Read-only provider request envelope contract.
+23. Read-only provider response envelope contract.
+24. Read-only snapshot normalization contract.
+25. Read-only snapshot risk input contract.
+26. Read-only snapshot risk input local validator.
+27. Private shadow order intent contract.
+28. Private shadow order intent local validator.
+29. Private shadow intent audit event contract.
+30. Private shadow intent audit event local validator.
+31. Private shadow runtime review packet contract.
+32. Private shadow runtime review packet local validator.
+33. Private shadow operator access contract.
+34. Private shadow operator access local validator.
+35. Private shadow runtime preflight.
+36. KIS order adapter design review.
+37. Manual order permission preflight.
+38. Manual order permission local validator.
+39. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -853,6 +854,30 @@ Current state remains:
 The receipt must not contain account numbers, app keys, app secrets, access tokens, raw session tokens, raw provider payloads, raw order payloads, order confirmations, execution ids, fills, live order endpoints, or scenario monthly return rows. It may record only presence/confirmation flags, mock base URL scope, shadow mode, kill-switch state, and redaction version.
 
 Receipt success can support a future redacted read-only approval evidence import review, but still does not import `data/private/trading/read_only_approval.redacted.json`, call KIS, enable provider calls, enable runtime routes, create UI, create DB storage, submit orders, or approve live trading.
+
+## Step 116-2V Trading Mock Approval Evidence Receipt Local Validator
+
+The first Trading Mock Approval Evidence Receipt Local Validator is:
+
+```text
+scripts/validate-trading-mock-approval-evidence-receipt.cjs
+scripts/validate-trading-mock-approval-evidence-receipt.test.cjs
+npm run check:trading-mock-approval-evidence-validator
+```
+
+This is a pure local validator script, not an approval packet import, KIS provider call, read-only runtime, KIS order adapter, DB migration, runtime route, private dashboard, public UI, or order submission path. It requires an explicit `--receipt <path>` argument and does not read `data/private/trading/read_only_approval.redacted.json` by default.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only redacted mock approval evidence receipts with owner confirmation date, KIS portal mock application confirmation, Render mock trading env confirmation, virtual-trading base URL scope, `tradingMode=shadow`, enabled kill switch, presence-only account/app-key/app-secret flags, redaction version, and explicit provider/order/runtime/UI allow flags set to false.
+
+Validator success still does not import approval evidence, call KIS, enable provider calls, enable read-only runtime, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2E Trading Redacted Read-Only Approval Template
 

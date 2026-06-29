@@ -96,6 +96,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission",
   "check:trading-manual-order-permission-validator",
   "check:trading-mock-approval-evidence",
+  "check:trading-mock-approval-evidence-validator",
   "check:trading-redacted-read-only-approval-template",
   "check:trading-redacted-approval-hash-helper",
   "check:trading-redacted-approval-hash-helper-preflight",
