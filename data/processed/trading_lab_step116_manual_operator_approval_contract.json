@@ -1,0 +1,144 @@
+{
+  "contractVersion": "trading-lab-step116-manual-operator-approval-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1N",
+  "scope": "trading_manual_operator_approval_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "dryRunReplayContract": "data\\processed\\trading_lab_step116_dry_run_replay_contract.json",
+    "shadowHistoryReviewContract": "data\\processed\\trading_lab_step116_shadow_history_review_contract.json",
+    "auditLoggerReadinessContract": "data\\processed\\trading_lab_step116_audit_logger_readiness_contract.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_manual_operator_approval_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "manualApprovalExistsNow": false,
+    "manualApprovalImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureManualApprovalBoundary": {
+    "purpose": "require explicit, auditable operator approval for one future live_guarded order intent without overriding risk, kill switch, replay, shadow, or audit gates",
+    "requiredApprovalFields": [
+      "approvalId",
+      "approverId",
+      "approvedAt",
+      "expiresAt",
+      "mode",
+      "intentId",
+      "symbol",
+      "side",
+      "quantity",
+      "maxNotional",
+      "riskGateStatus",
+      "killSwitchStatus",
+      "dryRunReplayId",
+      "shadowHistoryReviewId",
+      "auditEventId",
+      "decision",
+      "reasons",
+      "payloadHash"
+    ],
+    "requiredDecisions": [
+      "approve",
+      "reject",
+      "expire",
+      "revoke"
+    ],
+    "requiredAssertions": [
+      "single_order_intent_only",
+      "time_boxed_approval",
+      "cannot_override_kill_switch",
+      "cannot_override_risk_gate",
+      "requires_dry_run_replay_passed",
+      "requires_shadow_history_reviewed",
+      "requires_audit_logger_record",
+      "requires_separate_order_capable_credentials",
+      "rejects_modified_payload_hash"
+    ],
+    "forbiddenActions": [
+      "runtime_provider_call",
+      "order_submission",
+      "order_cancellation",
+      "production_secret_usage",
+      "raw_provider_response_persistence",
+      "db_migration",
+      "public_ui",
+      "scenario_monthly_cache_write"
+    ],
+    "approvalWindow": {
+      "currentStepIssuesApprovals": false,
+      "singleIntentOnly": true,
+      "reusableApprovalAllowed": false,
+      "modifiedPayloadRequiresNewApproval": true
+    },
+    "promotionRules": [
+      "manual approval cannot override kill switch or risk gate failure",
+      "manual approval requires dry-run replay and shadow history evidence",
+      "manual approval requires audit logger evidence before live_guarded adapter implementation review",
+      "manual approval readiness does not approve provider calls or order submission"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "liveGuardedPolicyRequiresManualApproval": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesDbMigration": true,
+    "envRiskGateContractStillFailClosed": true,
+    "dryRunReplayContractReady": true,
+    "shadowHistoryReviewContractReady": true,
+    "auditLoggerReadinessContractReady": true,
+    "approvalFieldsReady": true,
+    "approvalDecisionsReady": true,
+    "approvalAssertionsReady": true,
+    "forbiddenActionsReady": true,
+    "architectureDocMentionsManualApproval": true,
+    "noRuntimeArtifacts": true,
+    "manualApprovalImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "evidence": {
+    "liveGuardedMode": {
+      "mode": "live_guarded",
+      "externalOrderCall": true,
+      "providerDataCall": true,
+      "requiresManualApproval": true,
+      "requiresKillSwitchClear": true,
+      "requiresDryRunReplay": true,
+      "description": "future real orders with strict caps and manual controls"
+    },
+    "missingApprovalFields": [],
+    "missingApprovalDecisions": [],
+    "missingApprovalAssertions": [],
+    "missingForbiddenActions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "dryRunReplayContractStatus": "contract_ready_pending_dry_run_fixture_implementation_review",
+    "shadowHistoryReviewContractStatus": "contract_ready_pending_shadow_history_fixture_implementation_review",
+    "auditLoggerReadinessContractStatus": "contract_ready_pending_audit_logger_implementation_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "contract_ready_pending_manual_approval_implementation_review",
+    "readyForFutureManualApprovalImplementationReview": true,
+    "manualApprovalImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

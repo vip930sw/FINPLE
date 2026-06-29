@@ -26,13 +26,18 @@ const AUDIT_LOGGER_READINESS_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_audit_logger_readiness_contract.json",
 );
+const MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_manual_operator_approval_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.5";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.6";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -109,6 +114,7 @@ function buildReview() {
   const dryRunReplayContract = readJson(DRY_RUN_REPLAY_CONTRACT_PATH);
   const shadowHistoryReviewContract = readJson(SHADOW_HISTORY_REVIEW_CONTRACT_PATH);
   const auditLoggerReadinessContract = readJson(AUDIT_LOGGER_READINESS_CONTRACT_PATH);
+  const manualOperatorApprovalContract = readJson(MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -162,6 +168,13 @@ function buildReview() {
       auditLoggerReadinessContract.readiness?.orderSubmissionAllowed === false &&
       auditLoggerReadinessContract.readiness?.dbMigrationAllowed === false &&
       auditLoggerReadinessContract.readiness?.publicUiAllowed === false,
+    manualOperatorApprovalContractReady:
+      manualOperatorApprovalContract.readiness?.readyForFutureManualApprovalImplementationReview === true &&
+      manualOperatorApprovalContract.readiness?.manualApprovalImplementationAllowed === false &&
+      manualOperatorApprovalContract.readiness?.providerCallsAllowed === false &&
+      manualOperatorApprovalContract.readiness?.orderSubmissionAllowed === false &&
+      manualOperatorApprovalContract.readiness?.dbMigrationAllowed === false &&
+      manualOperatorApprovalContract.readiness?.publicUiAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -172,7 +185,8 @@ function buildReview() {
       architectureDoc.includes("Trading Environment Risk Gate Input Contract") &&
       architectureDoc.includes("Trading Dry-Run Replay Contract") &&
       architectureDoc.includes("Trading Shadow History Review Contract") &&
-      architectureDoc.includes("Trading Audit Logger Readiness Contract"),
+      architectureDoc.includes("Trading Audit Logger Readiness Contract") &&
+      architectureDoc.includes("Trading Manual Operator Approval Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -191,6 +205,7 @@ function buildReview() {
     checks.dryRunReplayContractReady &&
     checks.shadowHistoryReviewContractReady &&
     checks.auditLoggerReadinessContractReady &&
+    checks.manualOperatorApprovalContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -211,6 +226,7 @@ function buildReview() {
       dryRunReplayContract: DRY_RUN_REPLAY_CONTRACT_PATH,
       shadowHistoryReviewContract: SHADOW_HISTORY_REVIEW_CONTRACT_PATH,
       auditLoggerReadinessContract: AUDIT_LOGGER_READINESS_CONTRACT_PATH,
+      manualOperatorApprovalContract: MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -267,6 +283,7 @@ function buildReview() {
       dryRunReplayContractStatus: dryRunReplayContract.readiness?.status,
       shadowHistoryReviewContractStatus: shadowHistoryReviewContract.readiness?.status,
       auditLoggerReadinessContractStatus: auditLoggerReadinessContract.readiness?.status,
+      manualOperatorApprovalContractStatus: manualOperatorApprovalContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -291,6 +308,7 @@ function buildReview() {
         ...(checks.dryRunReplayContractReady ? [] : ["dry_run_replay_contract_not_ready"]),
         ...(checks.shadowHistoryReviewContractReady ? [] : ["shadow_history_review_contract_not_ready"]),
         ...(checks.auditLoggerReadinessContractReady ? [] : ["audit_logger_readiness_contract_not_ready"]),
+        ...(checks.manualOperatorApprovalContractReady ? [] : ["manual_operator_approval_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),

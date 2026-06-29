@@ -586,6 +586,34 @@ The redaction boundary remains strict: no KIS app secret, access token, full acc
 
 The KIS order adapter design review now also depends on this audit logger readiness contract. Future order-adapter implementation review stays blocked if `audit_logger_ready` is not supported by this contract, if the audit logger implementation is enabled too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
+## Step 116-1N Trading Manual Operator Approval Contract
+
+The first Trading Manual Operator Approval Contract is:
+
+```text
+data/processed/trading_lab_step116_manual_operator_approval_contract.json
+scripts/generate-trading-manual-operator-approval-contract.cjs
+scripts/generate-trading-manual-operator-approval-contract.test.cjs
+npm run check:trading-manual-operator-approval
+```
+
+This is a contract and drift check, not an approval service, approval UI, KIS adapter, or order route. It defines the future `manual_operator_approval` gate required before `live_guarded` adapter implementation review can proceed.
+
+Current state remains blocked:
+
+- `contractOnly=true`
+- `manualApprovalExistsNow=false`
+- `manualApprovalImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+Future manual approval must be scoped to one order intent, time-boxed, tied to the exact payload hash, and revocable. It cannot override a kill switch, failed risk gate, missing dry-run replay, missing shadow history review, missing audit record, or missing separate order-capable credentials.
+
+The KIS order adapter design review now also depends on this manual operator approval contract. Future order-adapter implementation review stays blocked if the manual approval contract is not ready, if it enables approval implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
