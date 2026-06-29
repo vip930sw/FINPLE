@@ -556,6 +556,36 @@ Future shadow history review must include shadow order-intent logs, risk event l
 
 The KIS order adapter design review now also depends on this shadow history review contract. Future order-adapter implementation review stays blocked if the shadow history contract is not ready, if it enables history review implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
+## Step 116-1M Trading Audit Logger Readiness Contract
+
+The first Trading Audit Logger Readiness Contract is:
+
+```text
+data/processed/trading_lab_step116_audit_logger_readiness_contract.json
+scripts/generate-trading-audit-logger-readiness-contract.cjs
+scripts/generate-trading-audit-logger-readiness-contract.test.cjs
+npm run check:trading-audit-logger-readiness
+```
+
+This is a contract and drift check, not an audit logger implementation. It defines the event and redaction contract required before future `live_guarded` adapter implementation review can proceed.
+
+Current state remains blocked:
+
+- `contractOnly=true`
+- `auditLoggerExistsNow=false`
+- `auditLoggerImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+Future audit logger review must cover trading risk gates, order intents, blocked intents, dry-run replay, shadow history review, manual operator approval, and kill-switch state changes. Required records must include event identity, mode, severity, status, symbol, side, risk-gate status, order/provider allow flags, redaction version, and payload hash.
+
+The redaction boundary remains strict: no KIS app secret, access token, full account number, or raw provider payload can be logged. Request and response bodies must be represented by hashes before persistence, and secret checks may record presence only.
+
+The KIS order adapter design review now also depends on this audit logger readiness contract. Future order-adapter implementation review stays blocked if `audit_logger_ready` is not supported by this contract, if the audit logger implementation is enabled too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
