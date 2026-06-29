@@ -276,13 +276,14 @@ Step 116 should be split into small commits and PR-sized phases:
 24. Read-only snapshot risk input contract.
 25. Read-only snapshot risk input local validator.
 26. Private shadow order intent contract.
-27. Private shadow intent audit event contract.
-28. Private shadow runtime review packet contract.
-29. Private shadow operator access contract.
-30. Private shadow runtime preflight.
-31. KIS order adapter design review.
-32. Manual order permission preflight.
-33. Live guarded execution only after manual approval.
+27. Private shadow order intent local validator.
+28. Private shadow intent audit event contract.
+29. Private shadow runtime review packet contract.
+30. Private shadow operator access contract.
+31. Private shadow runtime preflight.
+32. KIS order adapter design review.
+33. Manual order permission preflight.
+34. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1337,6 +1338,31 @@ Current state remains:
 Future shadow order-intent review must include intent identity, mode, strategy/operator hashes, market, symbol, side, order type, quantity, limit-price hash, estimated-notional hash, currency, risk input hash, risk-gate status, quote/account/orderable-cash snapshot hashes, dry-run replay hash, shadow-history reference hash, audit-event hash, idempotency key hash, redaction version, and explicit provider/order allow flags.
 
 The order-intent boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, raw quote/position/cash values, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Shadow order-intent success still does not perform provider calls, submit or cancel orders, create runtime routes, create DB storage, or approve live order submission.
+
+## Step 116-2Q Trading Private Shadow Order Intent Local Validator
+
+The first Trading Private Shadow Order Intent Local Validator is:
+
+```text
+scripts/validate-trading-private-shadow-order-intent.cjs
+scripts/validate-trading-private-shadow-order-intent.test.cjs
+npm run check:trading-private-shadow-order-intent-validator
+```
+
+This is a pure local validator script, not an order-intent recorder implementation, KIS order adapter, provider adapter, runtime route, DB migration, public UI, private approval importer, or order submission path. It requires an explicit `--intent <path>` argument and does not read private approval packet paths, environment secrets, provider URLs, account credentials, or order-capable credentials.
+
+Current state remains:
+
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator accepts only shadow-mode, hash-only order intents with strategy/operator/risk-input/snapshot/replay/history/audit/idempotency hashes, bounded quantity, redaction-safe market fields, risk gate status limited to `blocked` or `live_review_required`, and explicit provider/order allow flags set to false.
+
+Validator success still does not record order intents, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-1Z Trading Private Shadow Intent Audit Event Contract
 
