@@ -36,13 +36,18 @@ const KILL_SWITCH_CLEARANCE_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_kill_switch_clearance_contract.json",
 );
+const ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_order_credential_boundary_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.7";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.8";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -121,6 +126,7 @@ function buildReview() {
   const auditLoggerReadinessContract = readJson(AUDIT_LOGGER_READINESS_CONTRACT_PATH);
   const manualOperatorApprovalContract = readJson(MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH);
   const killSwitchClearanceContract = readJson(KILL_SWITCH_CLEARANCE_CONTRACT_PATH);
+  const orderCredentialBoundaryContract = readJson(ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -188,6 +194,13 @@ function buildReview() {
       killSwitchClearanceContract.readiness?.orderSubmissionAllowed === false &&
       killSwitchClearanceContract.readiness?.dbMigrationAllowed === false &&
       killSwitchClearanceContract.readiness?.publicUiAllowed === false,
+    orderCredentialBoundaryContractReady:
+      orderCredentialBoundaryContract.readiness?.readyForFutureOrderCredentialImplementationReview === true &&
+      orderCredentialBoundaryContract.readiness?.credentialStoreImplementationAllowed === false &&
+      orderCredentialBoundaryContract.readiness?.providerCallsAllowed === false &&
+      orderCredentialBoundaryContract.readiness?.orderSubmissionAllowed === false &&
+      orderCredentialBoundaryContract.readiness?.dbMigrationAllowed === false &&
+      orderCredentialBoundaryContract.readiness?.publicUiAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -200,7 +213,8 @@ function buildReview() {
       architectureDoc.includes("Trading Shadow History Review Contract") &&
       architectureDoc.includes("Trading Audit Logger Readiness Contract") &&
       architectureDoc.includes("Trading Manual Operator Approval Contract") &&
-      architectureDoc.includes("Trading Kill Switch Clearance Contract"),
+      architectureDoc.includes("Trading Kill Switch Clearance Contract") &&
+      architectureDoc.includes("Trading Order Credential Boundary Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -221,6 +235,7 @@ function buildReview() {
     checks.auditLoggerReadinessContractReady &&
     checks.manualOperatorApprovalContractReady &&
     checks.killSwitchClearanceContractReady &&
+    checks.orderCredentialBoundaryContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -243,6 +258,7 @@ function buildReview() {
       auditLoggerReadinessContract: AUDIT_LOGGER_READINESS_CONTRACT_PATH,
       manualOperatorApprovalContract: MANUAL_OPERATOR_APPROVAL_CONTRACT_PATH,
       killSwitchClearanceContract: KILL_SWITCH_CLEARANCE_CONTRACT_PATH,
+      orderCredentialBoundaryContract: ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -301,6 +317,7 @@ function buildReview() {
       auditLoggerReadinessContractStatus: auditLoggerReadinessContract.readiness?.status,
       manualOperatorApprovalContractStatus: manualOperatorApprovalContract.readiness?.status,
       killSwitchClearanceContractStatus: killSwitchClearanceContract.readiness?.status,
+      orderCredentialBoundaryContractStatus: orderCredentialBoundaryContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -327,6 +344,7 @@ function buildReview() {
         ...(checks.auditLoggerReadinessContractReady ? [] : ["audit_logger_readiness_contract_not_ready"]),
         ...(checks.manualOperatorApprovalContractReady ? [] : ["manual_operator_approval_contract_not_ready"]),
         ...(checks.killSwitchClearanceContractReady ? [] : ["kill_switch_clearance_contract_not_ready"]),
+        ...(checks.orderCredentialBoundaryContractReady ? [] : ["order_credential_boundary_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),

@@ -644,6 +644,37 @@ Future kill-switch clearance must be time-boxed, operator-attributed, audited be
 
 The KIS order adapter design review now also depends on this kill switch clearance contract. Future order-adapter implementation review stays blocked if the kill switch clearance contract is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
+## Step 116-1P Trading Order Credential Boundary Contract
+
+The first Trading Order Credential Boundary Contract is:
+
+```text
+data/processed/trading_lab_step116_order_credential_boundary_contract.json
+scripts/generate-trading-order-credential-boundary-contract.cjs
+scripts/generate-trading-order-credential-boundary-contract.test.cjs
+npm run check:trading-order-credential-boundary
+```
+
+This is a contract and drift check, not a credential store, KIS adapter, runtime route, or order path. It defines the future `separate_order_capable_credentials_present` gate required before `live_guarded` adapter implementation review can proceed.
+
+Current state remains blocked:
+
+- `contractOnly=true`
+- `credentialValuesStored=false`
+- `credentialStoreImplementationAllowed=false`
+- `orderCapableCredentialsAcceptedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The credential boundary remains separated: web data proxy env vars such as `KIS_APP_KEY` and `KIS_APP_SECRET` do not imply trading permission, and future order-capable work must use `KIS_TRADING_APP_KEY`, `KIS_TRADING_APP_SECRET`, `KIS_TRADING_ACCOUNT_ID`, and `KIS_TRADING_BASE_URL`.
+
+The current virtual-trading base URL is not live order permission. A future production-trading base URL requires separate live review, manual operator approval, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history review, and audit logging before any order adapter implementation review can proceed.
+
+The KIS order adapter design review now also depends on this order credential boundary contract. Future order-adapter implementation review stays blocked if credential boundaries are not ready, if credential-store implementation is enabled too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

@@ -58,7 +58,8 @@
     "check:trading-shadow-history-review": "node scripts/generate-trading-shadow-history-review-contract.cjs --check && node --test scripts/generate-trading-shadow-history-review-contract.test.cjs",
     "check:trading-audit-logger-readiness": "node scripts/generate-trading-audit-logger-readiness-contract.cjs --check && node --test scripts/generate-trading-audit-logger-readiness-contract.test.cjs",
     "check:trading-manual-operator-approval": "node scripts/generate-trading-manual-operator-approval-contract.cjs --check && node --test scripts/generate-trading-manual-operator-approval-contract.test.cjs",
-    "check:trading-kill-switch-clearance": "node scripts/generate-trading-kill-switch-clearance-contract.cjs --check && node --test scripts/generate-trading-kill-switch-clearance-contract.test.cjs"
+    "check:trading-kill-switch-clearance": "node scripts/generate-trading-kill-switch-clearance-contract.cjs --check && node --test scripts/generate-trading-kill-switch-clearance-contract.test.cjs",
+    "check:trading-order-credential-boundary": "node scripts/generate-trading-order-credential-boundary-contract.cjs --check && node --test scripts/generate-trading-order-credential-boundary-contract.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
