@@ -265,18 +265,19 @@ Step 116 should be split into small commits and PR-sized phases:
 13. Redacted approval packet validation contract.
 14. Redacted approval packet validation preflight.
 15. Redacted approval packet local validator.
-16. Read-only provider request envelope contract.
-17. Read-only provider response envelope contract.
-18. Read-only snapshot normalization contract.
-19. Read-only snapshot risk input contract.
-20. Private shadow order intent contract.
-21. Private shadow intent audit event contract.
-22. Private shadow runtime review packet contract.
-23. Private shadow operator access contract.
-24. Private shadow runtime preflight.
-25. KIS order adapter design review.
-26. Manual order permission preflight.
-27. Live guarded execution only after manual approval.
+16. Redacted approval packet validator fixtures.
+17. Read-only provider request envelope contract.
+18. Read-only provider response envelope contract.
+19. Read-only snapshot normalization contract.
+20. Read-only snapshot risk input contract.
+21. Private shadow order intent contract.
+22. Private shadow intent audit event contract.
+23. Private shadow runtime review packet contract.
+24. Private shadow operator access contract.
+25. Private shadow runtime preflight.
+26. KIS order adapter design review.
+27. Manual order permission preflight.
+28. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1022,6 +1023,35 @@ Current state remains:
 The validator checks required redacted packet fields, labelled hashes, ISO timestamps, read-only shadow scope, mock environment, virtual-trading base URL scope, allowed read scopes, required forbidden actions, false provider/order/runtime/UI flags, unknown-field rejection, and secret/raw identifier redaction boundaries. Output is a redacted validation result only.
 
 Validator success still does not create or import `data/private/trading/read_only_approval.redacted.json`, does not generate hashes, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
+
+## Step 116-2K Trading Redacted Approval Packet Validator Fixtures
+
+The first Trading Redacted Approval Packet Validator Fixtures are:
+
+```text
+data/processed/trading_lab_step116_redacted_approval_packet_validator_fixtures.json
+scripts/generate-trading-redacted-approval-packet-validator-fixtures.cjs
+scripts/generate-trading-redacted-approval-packet-validator-fixtures.test.cjs
+npm run check:trading-redacted-approval-packet-validator-fixtures
+```
+
+This is a fixture contract for the pure local validator, not a private approval packet, approval importer, KIS provider call, runtime route, DB migration, public UI, or order submission path. It stores only synthetic redacted fixture packets under `data/processed`.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `privateApprovalPacketCreated=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixtures include one valid synthetic redacted packet and invalid synthetic variants for unknown fields, malformed hash fields, expired approval, invalid scope/environment/base URL, enabled provider/order/runtime/UI flags, unknown read scope, and missing required forbidden actions.
+
+Fixture readiness means the validator can be regression-tested without using real account identifiers, real operator names, real evidence text, private pepper values, provider payloads, order payloads, or `data/private/trading/read_only_approval.redacted.json`. It still does not create hashes, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 

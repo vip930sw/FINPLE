@@ -1,0 +1,632 @@
+{
+  "contractVersion": "trading-lab-step116-redacted-approval-packet-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-2K",
+  "scope": "trading_redacted_approval_packet_validator_fixtures",
+  "sourceFiles": {
+    "validationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+    "validationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
+    "validator": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "privateApprovalPacketCreated": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "now": "2026-06-29T00:00:00.000Z",
+    "redactionBoundary": "synthetic fixtures only; no real account identifiers, operator names, evidence text, private peppers, provider payloads, order payloads, or private approval packet content",
+    "validSyntheticRedactedPacket": {
+      "approvalId": "approval_fixture_valid_001",
+      "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+      "approvedAt": "2026-06-29T00:00:00.000Z",
+      "expiresAt": "2026-07-29T00:00:00.000Z",
+      "scope": "read_only_shadow",
+      "environment": "mock",
+      "baseUrlScope": "virtual_trading_openapivts",
+      "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+      "allowedReadScopes": [
+        "account_cash_balance",
+        "account_positions",
+        "orderable_cash",
+        "current_quotes",
+        "fx_rate",
+        "market_session_state",
+        "provider_rate_limit_state"
+      ],
+      "forbiddenActions": [
+        "order_submission",
+        "order_cancellation",
+        "position_mutation",
+        "live_trading_endpoint",
+        "raw_provider_response_persistence",
+        "public_frontend_secret_access",
+        "scenario_monthly_cache_write"
+      ],
+      "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+      "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+      "redactionVersion": "v1",
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false,
+      "runtimeRouteAllowed": false,
+      "publicUiAllowed": false
+    },
+    "invalidSyntheticFixtures": [
+      {
+        "id": "missing_required_field",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "unknown_field",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false,
+          "unexpected": "redacted_fixture_value"
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "not-a-labelled-hash",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "expired_approval",
+        "expectedErrorCodes": [
+          "expired_approval"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-06-28T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_scope",
+        "expectedErrorCodes": [
+          "invalid_scope"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "live_guarded",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_environment",
+        "expectedErrorCodes": [
+          "invalid_environment"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "production",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_base_url_scope",
+        "expectedErrorCodes": [
+          "invalid_base_url_scope"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "live_trading_endpoint",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "forbidden_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "unknown_array_value",
+        "expectedErrorCodes": [
+          "unknown_array_value"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "order_submission"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "missing_forbidden_action",
+        "expectedErrorCodes": [
+          "missing_forbidden_action"
+        ],
+        "packet": {
+          "approvalId": "approval_fixture_valid_001",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "hmac-sha256:fixture_evidence_hash_123456",
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_required_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "expired_approval",
+          "valid": false,
+          "expectedErrorCodes": [
+            "expired_approval"
+          ],
+          "actualErrorCodes": [
+            "expired_approval",
+            "invalid_time_window"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_scope",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_scope"
+          ],
+          "actualErrorCodes": [
+            "invalid_scope"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_environment",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_environment"
+          ],
+          "actualErrorCodes": [
+            "invalid_environment"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_base_url_scope",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_base_url_scope"
+          ],
+          "actualErrorCodes": [
+            "invalid_base_url_scope"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "forbidden_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_array_value",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_array_value"
+          ],
+          "actualErrorCodes": [
+            "unknown_array_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_action",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_action"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_action"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "validationContractReady": true,
+    "validationPreflightReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsLocalValidator": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "noForbiddenSyntheticPacketContent": true,
+    "noRuntimeArtifacts": true,
+    "privateApprovalPacketCreated": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false
+  },
+  "evidence": {
+    "validationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+    "validationPreflightStatus": "preflight_ready_pending_pure_local_validator_implementation_review",
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenSyntheticPacketContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_redacted_approval_packet_validator_regression",
+    "readyForValidatorFixtureRegression": true,
+    "fixturesOnly": true,
+    "privateApprovalPacketCreated": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
