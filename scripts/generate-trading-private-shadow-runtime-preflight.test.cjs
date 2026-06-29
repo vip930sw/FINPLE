@@ -25,6 +25,8 @@ const READ_ONLY_PROVIDER_RESPONSE_ENVELOPE_CONTRACT =
   "trading_lab_step116_read_only_provider_response_envelope_contract.json";
 const READ_ONLY_SNAPSHOT_NORMALIZATION_CONTRACT =
   "trading_lab_step116_read_only_snapshot_normalization_contract.json";
+const READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT =
+  "trading_lab_step116_read_only_snapshot_risk_input_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -48,6 +50,7 @@ function makeWorkspace() {
     READ_ONLY_PROVIDER_REQUEST_ENVELOPE_CONTRACT,
     READ_ONLY_PROVIDER_RESPONSE_ENVELOPE_CONTRACT,
     READ_ONLY_SNAPSHOT_NORMALIZATION_CONTRACT,
+    READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -249,6 +252,22 @@ test("blocks future private shadow runtime review if read-only snapshot normaliz
   assert.equal(report.checks.readOnlySnapshotNormalizationContractReady, false);
   assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /read_only_snapshot_normalization_contract_not_ready/);
+});
+
+test("blocks future private shadow runtime review if read-only snapshot risk input is not ready", () => {
+  const workspace = makeWorkspace();
+  const snapshotRiskInput = readJson(workspace, READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT);
+  snapshotRiskInput.readiness.readyForFutureReadOnlySnapshotRiskInputImplementationReview = false;
+  snapshotRiskInput.readiness.providerCallsAllowed = true;
+  writeJson(workspace, READ_ONLY_SNAPSHOT_RISK_INPUT_CONTRACT, snapshotRiskInput);
+
+  const result = runPreflight(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.readOnlySnapshotRiskInputContractReady, false);
+  assert.equal(report.readiness.readyForFuturePrivateShadowRuntimeImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /read_only_snapshot_risk_input_contract_not_ready/);
 });
 
 test("blocks future private shadow runtime review if runtime artifacts appear too early", () => {

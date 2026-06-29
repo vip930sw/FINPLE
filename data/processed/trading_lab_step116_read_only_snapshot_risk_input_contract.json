@@ -1,0 +1,158 @@
+{
+  "contractVersion": "trading-lab-step116-read-only-snapshot-risk-input-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1X",
+  "scope": "trading_read_only_snapshot_risk_input_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "auditLoggerReadinessContract": "data\\processed\\trading_lab_step116_audit_logger_readiness_contract.json",
+    "riskGateClearanceContract": "data\\processed\\trading_lab_step116_risk_gate_clearance_contract.json",
+    "readOnlySnapshotNormalizationContract": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "snapshotRiskInputImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureReadOnlySnapshotRiskInputBoundary": {
+    "scope": "read_only_snapshot_risk_input",
+    "purpose": "define future hash-only normalized snapshot inputs required by the risk gate before private shadow runtime or live_guarded review can consider order intent promotion",
+    "requiredRiskInputFields": [
+      "evaluationId",
+      "orderIntentHash",
+      "mode",
+      "generatedAt",
+      "market",
+      "symbol",
+      "side",
+      "quantity",
+      "estimatedNotionalHash",
+      "quoteSnapshotHash",
+      "accountStateSnapshotHash",
+      "orderableCashSnapshotHash",
+      "positionsSnapshotHash",
+      "fxRateSnapshotHash",
+      "marketSessionSnapshotHash",
+      "providerRateLimitSnapshotHash",
+      "snapshotFreshnessStatus",
+      "accountMatchStatus",
+      "providerRateLimitStatus",
+      "killSwitchStateHash",
+      "manualApprovalStateHash",
+      "redactionVersion",
+      "providerCallsAllowed",
+      "orderSubmissionAllowed"
+    ],
+    "requiredRiskInputAssertions": [
+      "quote_snapshot_fresh_required",
+      "fx_snapshot_fresh_required",
+      "account_state_snapshot_required",
+      "market_session_allows_orders_required",
+      "rate_limit_snapshot_not_blocked",
+      "stale_snapshot_blocks_live_review",
+      "missing_snapshot_blocks_live_review",
+      "snapshot_hash_only_risk_input",
+      "raw_payload_never_passed_to_risk_gate",
+      "scenario_monthly_rows_rejected",
+      "risk_input_success_does_not_enable_runtime",
+      "risk_input_success_does_not_approve_live_guarded"
+    ],
+    "forbiddenRiskInputContent": [
+      "access_token",
+      "app_secret",
+      "full_account_number",
+      "raw_provider_payload",
+      "raw_snapshot_value",
+      "order_confirmation",
+      "execution_id",
+      "fill_payload",
+      "live_order_endpoint",
+      "scenario_monthly_return_row"
+    ],
+    "freshnessRules": [
+      "quote, FX, account-state, market-session, and provider-rate-limit snapshots must be present and fresh",
+      "stale or missing snapshots block live_review_required promotion",
+      "account identifiers, cash values, positions, quote values, and notional estimates remain hash-only in this contract",
+      "raw provider payloads and raw normalized snapshot values never enter the risk gate input contract"
+    ],
+    "promotionRules": [
+      "snapshot risk input review does not perform provider calls",
+      "snapshot risk input review does not create a runtime route",
+      "snapshot risk input review does not create DB storage",
+      "snapshot risk input success does not approve live_guarded order submission"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "tradingModesStillReviewGated": true,
+    "readOnlySnapshotNormalizationContractReady": true,
+    "riskGateClearanceContractReady": true,
+    "envRiskGateContractStillFailClosed": true,
+    "auditLoggerReadinessContractReady": true,
+    "riskInputFieldsReady": true,
+    "riskInputAssertionsReady": true,
+    "forbiddenRiskInputContentReady": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesDbMigration": true,
+    "architectureDocMentionsReadOnlySnapshotRiskInput": true,
+    "noRuntimeArtifacts": true,
+    "snapshotRiskInputImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false
+  },
+  "evidence": {
+    "shadowMode": {
+      "mode": "shadow",
+      "externalOrderCall": false,
+      "providerDataCall": "read_only_future_contract",
+      "requiresManualApproval": true,
+      "description": "records intended orders without submitting them"
+    },
+    "liveGuardedMode": {
+      "mode": "live_guarded",
+      "externalOrderCall": true,
+      "providerDataCall": true,
+      "requiresManualApproval": true,
+      "requiresKillSwitchClear": true,
+      "requiresDryRunReplay": true,
+      "description": "future real orders with strict caps and manual controls"
+    },
+    "missingRiskInputFields": [],
+    "missingRiskInputAssertions": [],
+    "missingForbiddenRiskInputContent": [],
+    "forbiddenRuntimeArtifacts": [],
+    "readOnlySnapshotNormalizationContractStatus": "contract_ready_pending_read_only_snapshot_normalization_implementation_review",
+    "riskGateClearanceContractStatus": "contract_ready_pending_risk_gate_clearance_implementation_review",
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "auditLoggerReadinessContractStatus": "contract_ready_pending_audit_logger_implementation_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "contract_ready_pending_read_only_snapshot_risk_input_implementation_review",
+    "readyForFutureReadOnlySnapshotRiskInputImplementationReview": true,
+    "snapshotRiskInputImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

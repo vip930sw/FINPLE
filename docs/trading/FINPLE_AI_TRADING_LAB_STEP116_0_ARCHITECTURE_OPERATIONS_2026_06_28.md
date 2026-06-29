@@ -261,9 +261,10 @@ Step 116 should be split into small commits and PR-sized phases:
 9. Read-only provider request envelope contract.
 10. Read-only provider response envelope contract.
 11. Read-only snapshot normalization contract.
-12. Private shadow runtime preflight.
-13. KIS order adapter design review.
-14. Live guarded execution only after manual approval.
+12. Read-only snapshot risk input contract.
+13. Private shadow runtime preflight.
+14. KIS order adapter design review.
+15. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -737,7 +738,7 @@ Current state remains:
 
 Future private shadow runtime review must prove private operator-only access, shadow/read-only mode, virtual-trading base URL scope, kill switch enabled by default, risk gate evaluation for each intent, audit logger readiness before intent records, dry-run replay references, shadow history review references, quote snapshot hashes, account-state snapshot hashes, order-intent hashes, and no raw provider payload persistence.
 
-The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, Trading Read-Only Provider Response Envelope Contract, and Trading Read-Only Snapshot Normalization Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
+The private shadow runtime preflight now also depends on the Trading Read-Only Approval Intake Contract, Trading Read-Only Approval Import Preflight, Trading Read-Only Provider Request Envelope Contract, Trading Read-Only Provider Response Envelope Contract, Trading Read-Only Snapshot Normalization Contract, and Trading Read-Only Snapshot Risk Input Contract. The KIS order adapter design review depends on this private shadow runtime preflight. Future order-adapter implementation review stays blocked if the private shadow runtime preflight is not ready, if it enables runtime implementation too early, or if it starts permitting provider calls, order submission, DB migration, runtime routes, or public UI.
 
 ## Step 116-1S Trading Read-Only Approval Intake Contract
 
@@ -882,6 +883,34 @@ Current state remains:
 Future snapshot normalization review must include snapshot identity, source envelope hash, snapshot type, created timestamp, market/symbol/currency fields, hashed account identifier, value hash, freshness status, provider status, redaction version, raw-payload storage flag, and explicit provider/order allow flags. Allowed snapshot types are read-only account cash, account positions, orderable cash, quotes, FX, market-session state, and provider-rate-limit state only.
 
 The normalization boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Snapshot normalization success still does not perform provider calls, enable read-only runtime, persist raw provider payloads, create DB storage, or approve live order submission.
+
+## Step 116-1X Trading Read-Only Snapshot Risk Input Contract
+
+The first Trading Read-Only Snapshot Risk Input Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_snapshot_risk_input_contract.json
+scripts/generate-trading-read-only-snapshot-risk-input-contract.cjs
+scripts/generate-trading-read-only-snapshot-risk-input-contract.test.cjs
+npm run check:trading-read-only-snapshot-risk-input
+```
+
+This is a read_only_snapshot_risk_input contract, not a risk-input mapper implementation, KIS reader, provider adapter, runtime route, storage layer, DB migration, or public UI. It defines the future hash-only normalized snapshot inputs that a risk gate must receive before private shadow runtime or live_guarded review can consider order intent promotion.
+
+Current state remains:
+
+- `contractOnly=true`
+- `snapshotRiskInputImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future snapshot risk input review must include order-intent hash, mode, market, symbol, side, quantity, estimated-notional hash, quote snapshot hash, account-state snapshot hash, orderable-cash snapshot hash, position snapshot hash, FX snapshot hash, market-session snapshot hash, provider-rate-limit snapshot hash, freshness status, account-match status, kill-switch/manual-approval state hashes, redaction version, and explicit provider/order allow flags.
+
+The risk input boundary must keep account identifiers, cash values, positions, quote values, and notional estimates hash-only. Missing or stale quote, FX, account-state, market-session, or provider-rate-limit snapshots must block live review. Snapshot risk input success still does not perform provider calls, enable read-only runtime, create DB storage, or approve live order submission.
 
 ## Explicit Non-Goals
 

@@ -66,7 +66,8 @@
     "check:trading-read-only-approval-import-preflight": "node scripts/generate-trading-read-only-approval-import-preflight.cjs --check && node --test scripts/generate-trading-read-only-approval-import-preflight.test.cjs",
     "check:trading-read-only-provider-request-envelope": "node scripts/generate-trading-read-only-provider-request-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-request-envelope-contract.test.cjs",
     "check:trading-read-only-provider-response-envelope": "node scripts/generate-trading-read-only-provider-response-envelope-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-contract.test.cjs",
-    "check:trading-read-only-snapshot-normalization": "node scripts/generate-trading-read-only-snapshot-normalization-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-normalization-contract.test.cjs"
+    "check:trading-read-only-snapshot-normalization": "node scripts/generate-trading-read-only-snapshot-normalization-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-normalization-contract.test.cjs",
+    "check:trading-read-only-snapshot-risk-input": "node scripts/generate-trading-read-only-snapshot-risk-input-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-risk-input-contract.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
