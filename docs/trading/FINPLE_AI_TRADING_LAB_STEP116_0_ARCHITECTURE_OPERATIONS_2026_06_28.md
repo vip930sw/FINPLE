@@ -422,7 +422,7 @@ Current state remains blocked:
 - `publicUiAllowed=false`
 - `liveTradingAllowed=false`
 
-The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight/env-risk gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
+The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight/env-risk/dry-run gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
 
 ## Step 116-1G Trading Environment Readiness Contract
 
@@ -501,6 +501,33 @@ The current Render-style `shadow` fixture is intentionally fail-closed: `FINPLE_
 ## Step 116-1J Order Adapter Review Env-Risk Dependency
 
 The KIS order adapter design review now depends on the Step 116-1I env-risk contract. Future order-adapter implementation review stays blocked if the env parser to risk gate mapping stops failing closed, if wildcard symbols become an implicit order allowlist, or if the env-risk contract starts permitting runtime routes, provider calls, or order submission.
+
+## Step 116-1K Trading Dry-Run Replay Contract
+
+The first Trading Dry-Run Replay Contract is:
+
+```text
+data/processed/trading_lab_step116_dry_run_replay_contract.json
+scripts/generate-trading-dry-run-replay-contract.cjs
+scripts/generate-trading-dry-run-replay-contract.test.cjs
+npm.cmd run check:trading-dry-run-replay
+```
+
+This contract defines the future dry-run replay boundary before any `live_guarded` order adapter implementation review. It is fixture-only and does not implement a replay service, KIS adapter, order submission path, DB migration, or public UI.
+
+Current state remains:
+
+- `contractOnly=true`
+- `fixtureOnly=true`
+- `dryRunReplayImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+
+Future replay review must provide deterministic order-intent fixtures, risk gate fixtures, paper ledger before/after snapshots, market session fixtures, quote/FX fixtures, expected risk events, and expected blocked actions. Replay success is not order approval; it only proves that the future order-intent path can be reproduced without provider calls or order submission.
+
+The KIS order adapter design review now also depends on this dry-run replay contract. Future order-adapter implementation review stays blocked if the dry-run contract is not ready, if it enables replay implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
 ## Explicit Non-Goals
 

@@ -1,5 +1,5 @@
 {
-  "reviewVersion": "trading-lab-step116-kis-order-adapter-design-review-v0.2",
+  "reviewVersion": "trading-lab-step116-kis-order-adapter-design-review-v0.3",
   "auditedAt": "2026-06-29T00:00:00Z",
   "step": "Step 116-1F",
   "scope": "kis_order_adapter_design_review_only",
@@ -9,6 +9,7 @@
     "shadowContract": "data\\processed\\trading_lab_step116_shadow_mode_contract.json",
     "storeSchemaDraft": "data\\processed\\trading_lab_step116_store_schema_draft.json",
     "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "dryRunReplayContract": "data\\processed\\trading_lab_step116_dry_run_replay_contract.json",
     "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
   },
   "outputFiles": {
@@ -81,6 +82,7 @@
     "futureStoreTablesReady": true,
     "shadowContractStillBlocksRuntime": true,
     "envRiskGateContractStillFailClosed": true,
+    "dryRunReplayContractReady": true,
     "preflightStillDisablesOrderSubmission": true,
     "preflightStillDisablesProviderCalls": true,
     "preflightStillDisablesDbMigration": true,
@@ -114,6 +116,7 @@
       "kill_switch_global_trading_disabled",
       "kill_switch_symbol_not_allowlisted"
     ],
+    "dryRunReplayContractStatus": "contract_ready_pending_dry_run_fixture_implementation_review",
     "storeSchemaStatus": "draft_ready_for_future_manual_migration_review",
     "preflightStatus": "ready_for_step116_pure_validator_implementation"
   },

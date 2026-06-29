@@ -1,0 +1,119 @@
+{
+  "contractVersion": "trading-lab-step116-dry-run-replay-contract-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-1K",
+  "scope": "trading_dry_run_replay_contract",
+  "sourceFiles": {
+    "policy": "data\\processed\\trading_lab_step1160_policy.json",
+    "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+    "storeSchemaDraft": "data\\processed\\trading_lab_step116_store_schema_draft.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_dry_run_replay_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "fixtureOnly": true,
+    "dryRunReplayImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "productionSecretsRequiredNow": false
+  },
+  "futureReplayBoundary": {
+    "purpose": "replay deterministic order-intent fixtures through the risk gate and paper ledger before live_guarded review",
+    "requiredReplayInputs": [
+      "order_intent_fixture",
+      "risk_gate_fixture",
+      "paper_ledger_start_snapshot",
+      "paper_ledger_expected_snapshot",
+      "market_session_fixture",
+      "quote_and_fx_fixture",
+      "expected_risk_events",
+      "expected_blocked_actions"
+    ],
+    "requiredReplayAssertions": [
+      "deterministic_replay_id",
+      "risk_gate_recomputed_before_fill",
+      "paper_fill_matches_expected_snapshot",
+      "blocked_intents_record_risk_event",
+      "no_provider_call_attempted",
+      "no_order_submission_attempted",
+      "no_database_write_required",
+      "no_public_ui_required"
+    ],
+    "forbiddenActions": [
+      "runtime_provider_call",
+      "order_submission",
+      "order_cancellation",
+      "production_secret_usage",
+      "raw_provider_response_persistence",
+      "db_migration",
+      "public_ui",
+      "scenario_monthly_cache_write"
+    ],
+    "storageBoundary": {
+      "currentStepWritesDatabase": false,
+      "futureTablesForManualReview": [
+        "trading_order_attempts",
+        "trading_executions",
+        "trading_risk_events"
+      ],
+      "rawProviderPayloadStorageAllowed": false
+    },
+    "promotionRules": [
+      "recompute risk gate from fixtures before every replayed fill",
+      "record blocked risk events before any future live_guarded adapter review",
+      "prove replay determinism before shadow history can be considered reviewed",
+      "do not treat dry-run replay success as order-submission approval"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "policyStillBlocksRuntime": true,
+    "replayInputsReady": true,
+    "replayAssertionsReady": true,
+    "forbiddenActionsReady": true,
+    "futureStoreTablesReady": true,
+    "envRiskGateContractStillFailClosed": true,
+    "preflightStillDisablesOrderSubmission": true,
+    "preflightStillDisablesProviderCalls": true,
+    "preflightStillDisablesDbMigration": true,
+    "architectureDocMentionsDryRunReplay": true,
+    "noRuntimeArtifacts": true,
+    "dryRunReplayImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false
+  },
+  "evidence": {
+    "missingReplayInputs": [],
+    "missingReplayAssertions": [],
+    "missingForbiddenActions": [],
+    "missingStoreTables": [],
+    "forbiddenRuntimeArtifacts": [],
+    "envRiskGateContractStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "envRiskGateContractRiskReasons": [
+      "risk_missing_allowedSymbols",
+      "kill_switch_global_trading_disabled",
+      "kill_switch_symbol_not_allowlisted"
+    ],
+    "storeSchemaStatus": "draft_ready_for_future_manual_migration_review",
+    "preflightStatus": "ready_for_step116_pure_validator_implementation"
+  },
+  "readiness": {
+    "status": "contract_ready_pending_dry_run_fixture_implementation_review",
+    "readyForFutureDryRunReplayImplementationReview": true,
+    "dryRunReplayImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

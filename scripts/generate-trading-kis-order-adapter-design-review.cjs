@@ -11,13 +11,18 @@ const ENV_RISK_GATE_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_env_risk_gate_contract.json",
 );
+const DRY_RUN_REPLAY_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_dry_run_replay_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.2";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.3";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -91,6 +96,7 @@ function buildReview() {
   const shadowContract = readJson(SHADOW_CONTRACT_PATH);
   const storeSchema = readJson(STORE_SCHEMA_PATH);
   const envRiskGateContract = readJson(ENV_RISK_GATE_CONTRACT_PATH);
+  const dryRunReplayContract = readJson(DRY_RUN_REPLAY_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -123,6 +129,13 @@ function buildReview() {
       envRiskGateContract.readiness?.orderSubmissionAllowed === false &&
       envRiskGateContract.checks?.wildcardSymbolsFailClosed === true &&
       envRiskGateContract.checks?.riskGateStillDisablesOrderSubmission === true,
+    dryRunReplayContractReady:
+      dryRunReplayContract.readiness?.readyForFutureDryRunReplayImplementationReview === true &&
+      dryRunReplayContract.readiness?.dryRunReplayImplementationAllowed === false &&
+      dryRunReplayContract.readiness?.providerCallsAllowed === false &&
+      dryRunReplayContract.readiness?.orderSubmissionAllowed === false &&
+      dryRunReplayContract.readiness?.dbMigrationAllowed === false &&
+      dryRunReplayContract.readiness?.publicUiAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -130,7 +143,8 @@ function buildReview() {
       architectureDoc.includes("no KIS provider calls") &&
       architectureDoc.includes("no order submission") &&
       architectureDoc.includes("KIS order adapter design review") &&
-      architectureDoc.includes("Trading Environment Risk Gate Input Contract"),
+      architectureDoc.includes("Trading Environment Risk Gate Input Contract") &&
+      architectureDoc.includes("Trading Dry-Run Replay Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -146,6 +160,7 @@ function buildReview() {
     checks.futureStoreTablesReady &&
     checks.shadowContractStillBlocksRuntime &&
     checks.envRiskGateContractStillFailClosed &&
+    checks.dryRunReplayContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -163,6 +178,7 @@ function buildReview() {
       shadowContract: SHADOW_CONTRACT_PATH,
       storeSchemaDraft: STORE_SCHEMA_PATH,
       envRiskGateContract: ENV_RISK_GATE_CONTRACT_PATH,
+      dryRunReplayContract: DRY_RUN_REPLAY_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -216,6 +232,7 @@ function buildReview() {
       shadowContractStatus: shadowContract.readiness?.status,
       envRiskGateContractStatus: envRiskGateContract.readiness?.status,
       envRiskGateContractRiskReasons: envRiskGateContract.riskGateEvaluation?.reasons ?? [],
+      dryRunReplayContractStatus: dryRunReplayContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -237,6 +254,7 @@ function buildReview() {
         ...missingFutureTables.map((table) => `missing_future_table_${table}`),
         ...(checks.shadowContractStillBlocksRuntime ? [] : ["shadow_contract_allows_runtime_too_early"]),
         ...(checks.envRiskGateContractStillFailClosed ? [] : ["env_risk_gate_contract_not_fail_closed"]),
+        ...(checks.dryRunReplayContractReady ? [] : ["dry_run_replay_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),
