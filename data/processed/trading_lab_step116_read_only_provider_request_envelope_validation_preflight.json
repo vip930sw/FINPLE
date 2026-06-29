@@ -27,7 +27,7 @@
   "futurePureLocalRequestEnvelopeValidatorBoundary": {
     "scope": "read_only_provider_request_envelope_validation_preflight",
     "futureValidatorPath": "scripts\\validate-trading-read-only-provider-request-envelope.cjs",
-    "currentStepImplementsValidator": false,
+    "currentStepImplementsValidator": true,
     "currentStepCreatesProviderRequest": false,
     "currentStepCallsProvider": false,
     "preflightGates": [

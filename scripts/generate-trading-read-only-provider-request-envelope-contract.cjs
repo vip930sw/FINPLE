@@ -44,6 +44,7 @@ const REQUIRED_ENVELOPE_FIELDS = [
   "baseUrl",
   "method",
   "pathTemplate",
+  "endpointCategory",
   "queryShape",
   "headerNames",
   "bodyShape",

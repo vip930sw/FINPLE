@@ -67,7 +67,7 @@ test("allows only future pure local validator review while keeping provider call
   const report = readJson(workspace);
   assert.equal(report.currentState.preflightOnly, true);
   assert.equal(report.currentState.validationImplementationAllowedNow, true);
-  assert.equal(report.futurePureLocalRequestEnvelopeValidatorBoundary.currentStepImplementsValidator, false);
+  assert.equal(report.futurePureLocalRequestEnvelopeValidatorBoundary.currentStepImplementsValidator, true);
   assert.equal(report.futurePureLocalRequestEnvelopeValidatorBoundary.currentStepCreatesProviderRequest, false);
   assert.equal(report.futurePureLocalRequestEnvelopeValidatorBoundary.currentStepCallsProvider, false);
   assert.equal(report.readiness.readyForPureLocalRequestEnvelopeValidatorImplementationReview, true);
@@ -142,16 +142,13 @@ test("blocks readiness if progress summary starts allowing read-only provider ca
   assert.match(report.readiness.blockers.join("|"), /progress_summary_not_locked/);
 });
 
-test("blocks if future validator, provider, route, or scenario monthly artifacts appear too early", () => {
+test("blocks if provider, route, or scenario monthly artifacts appear too early", () => {
   const workspace = makeWorkspace();
-  const validatorPath = path.join(workspace, "scripts", "validate-trading-read-only-provider-request-envelope.cjs");
   const providerPath = path.join(workspace, "server", "src", "services", "tradingReadOnlyProvider.js");
   const routePath = path.join(workspace, "server", "src", "routes", "trading");
   const monthlyPath = path.join(workspace, "data", "processed", "scenario_monthly_returns.csv");
-  fs.mkdirSync(path.dirname(validatorPath), { recursive: true });
   fs.mkdirSync(path.dirname(providerPath), { recursive: true });
   fs.mkdirSync(routePath, { recursive: true });
-  fs.writeFileSync(validatorPath, "module.exports = {};\n");
   fs.writeFileSync(providerPath, "module.exports = {};\n");
   fs.writeFileSync(monthlyPath, "symbol,date,return\n");
 

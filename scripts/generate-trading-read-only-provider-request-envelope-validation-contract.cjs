@@ -178,6 +178,7 @@ function buildContract() {
       requiredEnvelopeFields.includes("baseUrl") &&
       requiredEnvelopeFields.includes("method") &&
       requiredEnvelopeFields.includes("pathTemplate") &&
+      requiredEnvelopeFields.includes("endpointCategory") &&
       requiredEnvelopeFields.includes("providerCallAllowed"),
     allowedReadEndpointCategoriesReady:
       allowedReadEndpointCategories.includes("account_cash_balance_read") &&

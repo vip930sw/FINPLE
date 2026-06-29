@@ -78,7 +78,6 @@ const FORBIDDEN_PREFLIGHT_CONTENT = [
   "scenario_monthly_return_row",
 ];
 const FORBIDDEN_RUNTIME_ARTIFACTS = [
-  FUTURE_VALIDATOR_PATH,
   path.join("server", "src", "services", "tradingReadOnlyProviderRequestEnvelopeValidation.js"),
   path.join("server", "src", "services", "trading", "readOnlyProviderRequestEnvelopeValidation.js"),
   path.join("server", "src", "services", "tradingReadOnlyProvider.js"),
@@ -218,7 +217,7 @@ function buildContract() {
     futurePureLocalRequestEnvelopeValidatorBoundary: {
       scope: "read_only_provider_request_envelope_validation_preflight",
       futureValidatorPath: FUTURE_VALIDATOR_PATH,
-      currentStepImplementsValidator: false,
+      currentStepImplementsValidator: true,
       currentStepCreatesProviderRequest: false,
       currentStepCallsProvider: false,
       preflightGates,

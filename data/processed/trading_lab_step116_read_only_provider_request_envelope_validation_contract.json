@@ -37,6 +37,7 @@
       "baseUrl",
       "method",
       "pathTemplate",
+      "endpointCategory",
       "queryShape",
       "headerNames",
       "bodyShape",
