@@ -261,18 +261,19 @@ Step 116 should be split into small commits and PR-sized phases:
 9. Mock approval evidence receipt.
 10. Redacted read-only approval template.
 11. Redacted approval hash helper contract.
-12. Read-only provider request envelope contract.
-13. Read-only provider response envelope contract.
-14. Read-only snapshot normalization contract.
-15. Read-only snapshot risk input contract.
-16. Private shadow order intent contract.
-17. Private shadow intent audit event contract.
-18. Private shadow runtime review packet contract.
-19. Private shadow operator access contract.
-20. Private shadow runtime preflight.
-21. KIS order adapter design review.
-22. Manual order permission preflight.
-23. Live guarded execution only after manual approval.
+12. Redacted approval hash helper preflight.
+13. Read-only provider request envelope contract.
+14. Read-only provider response envelope contract.
+15. Read-only snapshot normalization contract.
+16. Read-only snapshot risk input contract.
+17. Private shadow order intent contract.
+18. Private shadow intent audit event contract.
+19. Private shadow runtime review packet contract.
+20. Private shadow operator access contract.
+21. Private shadow runtime preflight.
+22. KIS order adapter design review.
+23. Manual order permission preflight.
+24. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -898,6 +899,38 @@ Current state remains:
 Future helper review must require HMAC-SHA256 with a private pepper outside the repo, stdin/interactive-only raw inputs, no logs containing raw input, no command-line raw secrets, no file persistence of raw account/operator/evidence/revocation values, deterministic output labels, and explicit refusal to hash app keys, app secrets, access tokens, provider payloads, order payloads, execution ids, fills, live endpoints, or scenario monthly return rows.
 
 Hash helper readiness means the owner can later be guided through hash preparation safely. It still does not create hashes now, create or import `data/private/trading/read_only_approval.redacted.json`, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
+
+## Step 116-2G Trading Redacted Approval Hash Helper Preflight
+
+The first Trading Redacted Approval Hash Helper Preflight is:
+
+```text
+data/processed/trading_lab_step116_redacted_approval_hash_helper_preflight.json
+scripts/generate-trading-redacted-approval-hash-helper-preflight.cjs
+scripts/generate-trading-redacted-approval-hash-helper-preflight.test.cjs
+npm run check:trading-redacted-approval-hash-helper-preflight
+```
+
+This is a redacted_approval_hash_helper_preflight contract, not a hash generator, private pepper request, raw input collection flow, approval packet creator, KIS provider call, runtime route, DB migration, public UI, or order submission path. It records that owner-assisted hash preparation is deferred until an explicit future request while keeping the local-only helper requirements reviewable.
+
+Current state remains:
+
+- `contractOnly=true`
+- `ownerHashPreparationDeferred=true`
+- `hashHelperImplementationAllowed=false`
+- `hashGenerationAllowed=false`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future owner-assisted hash preparation requires an explicit owner request, local-only execution surface, private pepper source outside the repo, stdin/interactive raw input collection, no command-line raw secret arguments, no raw input logs, no raw input file persistence, deterministic labelled hash output, and manual review before approval packet import.
+
+Preflight readiness means the owner can be guided later without guessing how to prepare the hashes. It still does not ask for raw account/operator/evidence/revocation values now, does not create `scripts/create-trading-redacted-approval-hashes.cjs`, does not generate hashes, does not create or import `data/private/trading/read_only_approval.redacted.json`, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 

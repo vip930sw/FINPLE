@@ -75,7 +75,8 @@
     "check:trading-manual-order-permission": "node scripts/generate-trading-manual-order-permission-preflight.cjs --check && node --test scripts/generate-trading-manual-order-permission-preflight.test.cjs",
     "check:trading-mock-approval-evidence": "node scripts/generate-trading-mock-approval-evidence-receipt.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-redacted-read-only-approval-template": "node scripts/generate-trading-redacted-read-only-approval-template.cjs --check && node --test scripts/generate-trading-redacted-read-only-approval-template.test.cjs",
-    "check:trading-redacted-approval-hash-helper": "node scripts/generate-trading-redacted-approval-hash-helper-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs"
+    "check:trading-redacted-approval-hash-helper": "node scripts/generate-trading-redacted-approval-hash-helper-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs",
+    "check:trading-redacted-approval-hash-helper-preflight": "node scripts/generate-trading-redacted-approval-hash-helper-preflight.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-preflight.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
