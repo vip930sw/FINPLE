@@ -20,6 +20,11 @@ const READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_read_only_approval_intake_contract.json",
 );
+const MOCK_APPROVAL_EVIDENCE_RECEIPT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_mock_approval_evidence_receipt.json",
+);
 const ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH = path.join(
   "data",
   "processed",
@@ -31,7 +36,7 @@ const ARCHITECTURE_DOC_PATH = path.join(
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const CONTRACT_VERSION = "trading-lab-step116-read-only-approval-import-preflight-v0.1";
+const CONTRACT_VERSION = "trading-lab-step116-read-only-approval-import-preflight-v0.2";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const FUTURE_APPROVAL_PACKET_PATH = path.join(
   "data",
@@ -125,6 +130,7 @@ function buildContract() {
   const envReadinessContract = readJson(ENV_READINESS_CONTRACT_PATH);
   const envRiskGateContract = readJson(ENV_RISK_GATE_CONTRACT_PATH);
   const readOnlyApprovalIntakeContract = readJson(READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH);
+  const mockApprovalEvidenceReceipt = readJson(MOCK_APPROVAL_EVIDENCE_RECEIPT_PATH);
   const orderCredentialBoundaryContract = readJson(ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const shadowMode = (policy.modes ?? []).find((mode) => mode.mode === "shadow") ?? {};
@@ -158,6 +164,13 @@ function buildContract() {
       readOnlyApprovalIntakeContract.readiness?.readOnlyApprovalImportedNow === false &&
       readOnlyApprovalIntakeContract.readiness?.providerCallsAllowed === false &&
       readOnlyApprovalIntakeContract.readiness?.orderSubmissionAllowed === false,
+    mockApprovalEvidenceReceiptReady:
+      mockApprovalEvidenceReceipt.readiness?.readyForFutureRedactedReadOnlyApprovalEvidenceImportReview === true &&
+      mockApprovalEvidenceReceipt.readiness?.approvalPacketImportedNow === false &&
+      mockApprovalEvidenceReceipt.readiness?.readOnlyApprovalImportImplementationAllowed === false &&
+      mockApprovalEvidenceReceipt.readiness?.providerCallsAllowed === false &&
+      mockApprovalEvidenceReceipt.readiness?.orderSubmissionAllowed === false &&
+      mockApprovalEvidenceReceipt.readiness?.runtimeRouteAllowed === false,
     envReadinessContractStillBlocksRuntime:
       envReadinessContract.readiness?.readyForCurrentStep === true &&
       envReadinessContract.readiness?.readOnlyRuntimeIntegrationAllowed === false &&
@@ -189,7 +202,8 @@ function buildContract() {
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
     architectureDocMentionsReadOnlyApprovalImportPreflight:
       architectureDoc.includes("Trading Read-Only Approval Import Preflight") &&
-      architectureDoc.includes("read_only_approval_import_preflight"),
+      architectureDoc.includes("read_only_approval_import_preflight") &&
+      architectureDoc.includes("Trading Mock Approval Evidence Receipt"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     approvalPacketImportedNow: false,
     readOnlyApprovalImportImplementationAllowed: false,
@@ -204,6 +218,7 @@ function buildContract() {
     checks.shadowModePolicyReady &&
     checks.shadowContractStillRequiresApproval &&
     checks.readOnlyApprovalIntakeContractReady &&
+    checks.mockApprovalEvidenceReceiptReady &&
     checks.envReadinessContractStillBlocksRuntime &&
     checks.envRiskGateContractStillFailClosed &&
     checks.orderCredentialBoundaryContractReady &&
@@ -230,6 +245,7 @@ function buildContract() {
       envReadinessContract: ENV_READINESS_CONTRACT_PATH,
       envRiskGateContract: ENV_RISK_GATE_CONTRACT_PATH,
       readOnlyApprovalIntakeContract: READ_ONLY_APPROVAL_INTAKE_CONTRACT_PATH,
+      mockApprovalEvidenceReceipt: MOCK_APPROVAL_EVIDENCE_RECEIPT_PATH,
       orderCredentialBoundaryContract: ORDER_CREDENTIAL_BOUNDARY_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
@@ -281,6 +297,7 @@ function buildContract() {
       forbiddenRuntimeArtifacts: forbiddenArtifacts,
       shadowContractStatus: shadowContract.readiness?.status,
       readOnlyApprovalIntakeContractStatus: readOnlyApprovalIntakeContract.readiness?.status,
+      mockApprovalEvidenceReceiptStatus: mockApprovalEvidenceReceipt.readiness?.status,
       envReadinessContractStatus: envReadinessContract.readiness?.status,
       envRiskGateContractStatus: envRiskGateContract.readiness?.status,
       orderCredentialBoundaryContractStatus: orderCredentialBoundaryContract.readiness?.status,
@@ -304,6 +321,7 @@ function buildContract() {
         ...(checks.shadowModePolicyReady ? [] : ["shadow_mode_policy_not_ready"]),
         ...(checks.shadowContractStillRequiresApproval ? [] : ["shadow_contract_no_longer_requires_read_only_approval"]),
         ...(checks.readOnlyApprovalIntakeContractReady ? [] : ["read_only_approval_intake_contract_not_ready"]),
+        ...(checks.mockApprovalEvidenceReceiptReady ? [] : ["mock_approval_evidence_receipt_not_ready"]),
         ...(checks.envReadinessContractStillBlocksRuntime ? [] : ["env_readiness_contract_allows_runtime_too_early"]),
         ...(checks.envRiskGateContractStillFailClosed ? [] : ["env_risk_gate_contract_not_fail_closed"]),
         ...(checks.orderCredentialBoundaryContractReady ? [] : ["order_credential_boundary_contract_not_ready"]),

@@ -13,6 +13,7 @@ const SHADOW_CONTRACT = "trading_lab_step116_shadow_mode_contract.json";
 const ENV_READINESS_CONTRACT = "trading_lab_step116_env_readiness_contract.json";
 const ENV_RISK_GATE_CONTRACT = "trading_lab_step116_env_risk_gate_contract.json";
 const READ_ONLY_APPROVAL_INTAKE_CONTRACT = "trading_lab_step116_read_only_approval_intake_contract.json";
+const MOCK_APPROVAL_EVIDENCE_RECEIPT = "trading_lab_step116_mock_approval_evidence_receipt.json";
 const ORDER_CREDENTIAL_BOUNDARY_CONTRACT = "trading_lab_step116_order_credential_boundary_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
@@ -28,6 +29,7 @@ function makeWorkspace() {
     ENV_READINESS_CONTRACT,
     ENV_RISK_GATE_CONTRACT,
     READ_ONLY_APPROVAL_INTAKE_CONTRACT,
+    MOCK_APPROVAL_EVIDENCE_RECEIPT,
     ORDER_CREDENTIAL_BOUNDARY_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
@@ -130,6 +132,22 @@ test("blocks readiness if intake contract drops required approval fields", () =>
   assert.equal(report.checks.intakeContractDefinesApprovalFields, false);
   assert.equal(report.readiness.readyForFutureReadOnlyApprovalImportImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /intake_contract_missing_approval_fields/);
+});
+
+test("blocks readiness if mock approval evidence receipt is not ready", () => {
+  const workspace = makeWorkspace();
+  const receipt = readJson(workspace, MOCK_APPROVAL_EVIDENCE_RECEIPT);
+  receipt.readiness.readyForFutureRedactedReadOnlyApprovalEvidenceImportReview = false;
+  receipt.readiness.providerCallsAllowed = true;
+  writeJson(workspace, MOCK_APPROVAL_EVIDENCE_RECEIPT, receipt);
+
+  const result = runContract(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.mockApprovalEvidenceReceiptReady, false);
+  assert.equal(report.readiness.readyForFutureReadOnlyApprovalImportImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /mock_approval_evidence_receipt_not_ready/);
 });
 
 test("blocks readiness if a future approval packet appears too early", () => {

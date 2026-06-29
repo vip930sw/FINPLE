@@ -258,18 +258,19 @@ Step 116 should be split into small commits and PR-sized phases:
 6. Shadow-mode read-only integration contract.
 7. Read-only approval intake contract.
 8. Read-only approval import preflight.
-9. Read-only provider request envelope contract.
-10. Read-only provider response envelope contract.
-11. Read-only snapshot normalization contract.
-12. Read-only snapshot risk input contract.
-13. Private shadow order intent contract.
-14. Private shadow intent audit event contract.
-15. Private shadow runtime review packet contract.
-16. Private shadow operator access contract.
-17. Private shadow runtime preflight.
-18. KIS order adapter design review.
-19. Manual order permission preflight.
-20. Live guarded execution only after manual approval.
+9. Mock approval evidence receipt.
+10. Read-only provider request envelope contract.
+11. Read-only provider response envelope contract.
+12. Read-only snapshot normalization contract.
+13. Read-only snapshot risk input contract.
+14. Private shadow order intent contract.
+15. Private shadow intent audit event contract.
+16. Private shadow runtime review packet contract.
+17. Private shadow operator access contract.
+18. Private shadow runtime preflight.
+19. KIS order adapter design review.
+20. Manual order permission preflight.
+21. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -804,6 +805,37 @@ Current state remains:
 Future approval import implementation review must reject missing fields, expired approval, live endpoints, order-capable actions, raw account identifiers, secret values, unknown read scopes, missing revocation plan, and missing redaction version. The future packet must be redacted, time-boxed, revocable, hash account identifiers, and stay limited to virtual-trading read-only scope.
 
 Import preflight success still does not import approval evidence, enable provider calls, enable read-only runtime, or approve live order submission. It only makes the future approval import review fail-closed before private shadow runtime can be considered.
+
+## Step 116-2D Trading Mock Approval Evidence Receipt
+
+The first Trading Mock Approval Evidence Receipt is:
+
+```text
+data/processed/trading_lab_step116_mock_approval_evidence_receipt.json
+scripts/generate-trading-mock-approval-evidence-receipt.cjs
+scripts/generate-trading-mock-approval-evidence-receipt.test.cjs
+npm run check:trading-mock-approval-evidence
+```
+
+This is a mock_approval_evidence_receipt contract, not an approval packet import, KIS provider call, read-only runtime, KIS order adapter, DB migration, runtime route, private dashboard, public UI, or order submission path. It records only the redacted owner confirmation that KIS mock trading application status is OK and Render trading env values are mock-trading scoped.
+
+Current state remains:
+
+- `receiptOnly=true`
+- `mockApprovalEvidenceReceiptRecorded=true`
+- `approvalPacketImportedNow=false`
+- `readOnlyApprovalImportImplementationAllowed=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The receipt must not contain account numbers, app keys, app secrets, access tokens, raw session tokens, raw provider payloads, raw order payloads, order confirmations, execution ids, fills, live order endpoints, or scenario monthly return rows. It may record only presence/confirmation flags, mock base URL scope, shadow mode, kill-switch state, and redaction version.
+
+Receipt success can support a future redacted read-only approval evidence import review, but still does not import `data/private/trading/read_only_approval.redacted.json`, call KIS, enable provider calls, enable runtime routes, create UI, create DB storage, submit orders, or approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 
