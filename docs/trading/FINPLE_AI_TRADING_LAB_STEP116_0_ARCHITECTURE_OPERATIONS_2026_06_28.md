@@ -260,18 +260,19 @@ Step 116 should be split into small commits and PR-sized phases:
 8. Read-only approval import preflight.
 9. Mock approval evidence receipt.
 10. Redacted read-only approval template.
-11. Read-only provider request envelope contract.
-12. Read-only provider response envelope contract.
-13. Read-only snapshot normalization contract.
-14. Read-only snapshot risk input contract.
-15. Private shadow order intent contract.
-16. Private shadow intent audit event contract.
-17. Private shadow runtime review packet contract.
-18. Private shadow operator access contract.
-19. Private shadow runtime preflight.
-20. KIS order adapter design review.
-21. Manual order permission preflight.
-22. Live guarded execution only after manual approval.
+11. Redacted approval hash helper contract.
+12. Read-only provider request envelope contract.
+13. Read-only provider response envelope contract.
+14. Read-only snapshot normalization contract.
+15. Read-only snapshot risk input contract.
+16. Private shadow order intent contract.
+17. Private shadow intent audit event contract.
+18. Private shadow runtime review packet contract.
+19. Private shadow operator access contract.
+20. Private shadow runtime preflight.
+21. KIS order adapter design review.
+22. Manual order permission preflight.
+23. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -867,6 +868,36 @@ Current state remains:
 Future owner-prepared redacted approval evidence should include approval id, approver hash, approved/expiry timestamps, `read_only_shadow` scope, `mock` environment, virtual-trading base URL scope, account id hash, allowed read scopes, forbidden actions, evidence ticket hash, revocation plan hash, redaction version, and explicit provider/order/runtime/UI allow flags set to false.
 
 The packet must never include account numbers, app keys, app secrets, access tokens, raw account identifiers, raw provider payloads, raw order payloads, execution ids, fills, live order endpoints, or scenario monthly return rows. Template readiness lets the owner prepare a redacted packet later; it still does not create or import `data/private/trading/read_only_approval.redacted.json`.
+
+## Step 116-2F Trading Redacted Approval Hash Helper Contract
+
+The first Trading Redacted Approval Hash Helper Contract is:
+
+```text
+data/processed/trading_lab_step116_redacted_approval_hash_helper_contract.json
+scripts/generate-trading-redacted-approval-hash-helper-contract.cjs
+scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs
+npm run check:trading-redacted-approval-hash-helper
+```
+
+This is a redacted_approval_hash_helper contract, not a hash generator that stores private inputs, approval packet creator, KIS provider call, runtime route, DB migration, public UI, or order submission path. It defines the future local-only helper requirements for deriving approval hashes without exposing raw operator, account, evidence ticket, or revocation plan values.
+
+Current state remains:
+
+- `contractOnly=true`
+- `hashHelperImplementationAllowed=false`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future helper review must require HMAC-SHA256 with a private pepper outside the repo, stdin/interactive-only raw inputs, no logs containing raw input, no command-line raw secrets, no file persistence of raw account/operator/evidence/revocation values, deterministic output labels, and explicit refusal to hash app keys, app secrets, access tokens, provider payloads, order payloads, execution ids, fills, live endpoints, or scenario monthly return rows.
+
+Hash helper readiness means the owner can later be guided through hash preparation safely. It still does not create hashes now, create or import `data/private/trading/read_only_approval.redacted.json`, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 
