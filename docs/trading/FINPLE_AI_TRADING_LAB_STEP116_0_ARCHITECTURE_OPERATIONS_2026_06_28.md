@@ -259,18 +259,19 @@ Step 116 should be split into small commits and PR-sized phases:
 7. Read-only approval intake contract.
 8. Read-only approval import preflight.
 9. Mock approval evidence receipt.
-10. Read-only provider request envelope contract.
-11. Read-only provider response envelope contract.
-12. Read-only snapshot normalization contract.
-13. Read-only snapshot risk input contract.
-14. Private shadow order intent contract.
-15. Private shadow intent audit event contract.
-16. Private shadow runtime review packet contract.
-17. Private shadow operator access contract.
-18. Private shadow runtime preflight.
-19. KIS order adapter design review.
-20. Manual order permission preflight.
-21. Live guarded execution only after manual approval.
+10. Redacted read-only approval template.
+11. Read-only provider request envelope contract.
+12. Read-only provider response envelope contract.
+13. Read-only snapshot normalization contract.
+14. Read-only snapshot risk input contract.
+15. Private shadow order intent contract.
+16. Private shadow intent audit event contract.
+17. Private shadow runtime review packet contract.
+18. Private shadow operator access contract.
+19. Private shadow runtime preflight.
+20. KIS order adapter design review.
+21. Manual order permission preflight.
+22. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -836,6 +837,36 @@ Current state remains:
 The receipt must not contain account numbers, app keys, app secrets, access tokens, raw session tokens, raw provider payloads, raw order payloads, order confirmations, execution ids, fills, live order endpoints, or scenario monthly return rows. It may record only presence/confirmation flags, mock base URL scope, shadow mode, kill-switch state, and redaction version.
 
 Receipt success can support a future redacted read-only approval evidence import review, but still does not import `data/private/trading/read_only_approval.redacted.json`, call KIS, enable provider calls, enable runtime routes, create UI, create DB storage, submit orders, or approve live trading.
+
+## Step 116-2E Trading Redacted Read-Only Approval Template
+
+The first Trading Redacted Read-Only Approval Template is:
+
+```text
+data/processed/trading_lab_step116_redacted_read_only_approval_template.json
+scripts/generate-trading-redacted-read-only-approval-template.cjs
+scripts/generate-trading-redacted-read-only-approval-template.test.cjs
+npm run check:trading-redacted-read-only-approval-template
+```
+
+This is a redacted_read_only_approval_template contract, not a private approval packet, KIS provider call, read-only runtime, DB migration, runtime route, public UI, or order submission path. It defines what the owner must prepare later if FINPLE is to import read-only mock trading approval evidence safely.
+
+Current state remains:
+
+- `templateOnly=true`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `readOnlyRuntimeIntegrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Future owner-prepared redacted approval evidence should include approval id, approver hash, approved/expiry timestamps, `read_only_shadow` scope, `mock` environment, virtual-trading base URL scope, account id hash, allowed read scopes, forbidden actions, evidence ticket hash, revocation plan hash, redaction version, and explicit provider/order/runtime/UI allow flags set to false.
+
+The packet must never include account numbers, app keys, app secrets, access tokens, raw account identifiers, raw provider payloads, raw order payloads, execution ids, fills, live order endpoints, or scenario monthly return rows. Template readiness lets the owner prepare a redacted packet later; it still does not create or import `data/private/trading/read_only_approval.redacted.json`.
 
 ## Step 116-1U Trading Read-Only Provider Request Envelope Contract
 
