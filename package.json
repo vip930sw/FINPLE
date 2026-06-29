@@ -54,7 +54,8 @@
     "check:trading-env-readiness": "node scripts/generate-trading-env-readiness-contract.cjs --check && node --test scripts/generate-trading-env-readiness-contract.test.cjs",
     "check:trading-env-values": "node --test server/src/services/tradingEnvConfig.test.js",
     "check:trading-env-risk-gate": "node scripts/generate-trading-env-risk-gate-contract.cjs --check && node --test scripts/generate-trading-env-risk-gate-contract.test.cjs",
-    "check:trading-dry-run-replay": "node scripts/generate-trading-dry-run-replay-contract.cjs --check && node --test scripts/generate-trading-dry-run-replay-contract.test.cjs"
+    "check:trading-dry-run-replay": "node scripts/generate-trading-dry-run-replay-contract.cjs --check && node --test scripts/generate-trading-dry-run-replay-contract.test.cjs",
+    "check:trading-shadow-history-review": "node scripts/generate-trading-shadow-history-review-contract.cjs --check && node --test scripts/generate-trading-shadow-history-review-contract.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

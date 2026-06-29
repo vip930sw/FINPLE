@@ -422,7 +422,7 @@ Current state remains blocked:
 - `publicUiAllowed=false`
 - `liveTradingAllowed=false`
 
-The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight/env-risk/dry-run gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
+The check fails if live-guarded policy stops requiring manual approval/kill switch/dry-run replay, if shadow/preflight/env-risk/dry-run/history gates start allowing runtime calls too early, or if order-adapter runtime artifacts appear before manual review.
 
 ## Step 116-1G Trading Environment Readiness Contract
 
@@ -528,6 +528,33 @@ Current state remains:
 Future replay review must provide deterministic order-intent fixtures, risk gate fixtures, paper ledger before/after snapshots, market session fixtures, quote/FX fixtures, expected risk events, and expected blocked actions. Replay success is not order approval; it only proves that the future order-intent path can be reproduced without provider calls or order submission.
 
 The KIS order adapter design review now also depends on this dry-run replay contract. Future order-adapter implementation review stays blocked if the dry-run contract is not ready, if it enables replay implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
+
+## Step 116-1L Trading Shadow History Review Contract
+
+The first Trading Shadow History Review Contract is:
+
+```text
+data/processed/trading_lab_step116_shadow_history_review_contract.json
+scripts/generate-trading-shadow-history-review-contract.cjs
+scripts/generate-trading-shadow-history-review-contract.test.cjs
+npm.cmd run check:trading-shadow-history-review
+```
+
+This contract defines the future evidence required before shadow history can be reviewed for `live_guarded` order-adapter implementation. It does not claim that shadow history exists now, and it does not implement read-only shadow runtime, provider calls, order submission, DB migration, or public UI.
+
+Current state remains:
+
+- `contractOnly=true`
+- `historyExistsNow=false`
+- `shadowHistoryReviewImplementationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+
+Future shadow history review must include shadow order-intent logs, risk event logs, quote/FX snapshot hashes, account-state snapshot hashes, fill simulation comparison, operator review notes, blocked-intent review, and dry-run replay summary. Review success is not live approval; `live_guarded` remains blocked until manual operator approval, clear kill switch, clear risk gate, dry-run replay, separate credentials, and audit logging are reviewed together.
+
+The KIS order adapter design review now also depends on this shadow history review contract. Future order-adapter implementation review stays blocked if the shadow history contract is not ready, if it enables history review implementation too early, or if it starts permitting provider calls, order submission, DB migration, or public UI.
 
 ## Explicit Non-Goals
 

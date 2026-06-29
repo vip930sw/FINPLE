@@ -16,13 +16,18 @@ const DRY_RUN_REPLAY_CONTRACT_PATH = path.join(
   "processed",
   "trading_lab_step116_dry_run_replay_contract.json",
 );
+const SHADOW_HISTORY_REVIEW_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_shadow_history_review_contract.json",
+);
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
   "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md",
 );
 
-const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.3";
+const REVIEW_VERSION = "trading-lab-step116-kis-order-adapter-design-review-v0.4";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 const REQUIRED_DESIGN_SECTIONS = [
   "credential_boundary",
@@ -97,6 +102,7 @@ function buildReview() {
   const storeSchema = readJson(STORE_SCHEMA_PATH);
   const envRiskGateContract = readJson(ENV_RISK_GATE_CONTRACT_PATH);
   const dryRunReplayContract = readJson(DRY_RUN_REPLAY_CONTRACT_PATH);
+  const shadowHistoryReviewContract = readJson(SHADOW_HISTORY_REVIEW_CONTRACT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
   const liveGuardedMode = (policy.modes ?? []).find((mode) => mode.mode === "live_guarded") ?? {};
   const designSections = [...REQUIRED_DESIGN_SECTIONS];
@@ -136,6 +142,13 @@ function buildReview() {
       dryRunReplayContract.readiness?.orderSubmissionAllowed === false &&
       dryRunReplayContract.readiness?.dbMigrationAllowed === false &&
       dryRunReplayContract.readiness?.publicUiAllowed === false,
+    shadowHistoryReviewContractReady:
+      shadowHistoryReviewContract.readiness?.readyForFutureShadowHistoryReviewImplementation === true &&
+      shadowHistoryReviewContract.readiness?.shadowHistoryReviewImplementationAllowed === false &&
+      shadowHistoryReviewContract.readiness?.providerCallsAllowed === false &&
+      shadowHistoryReviewContract.readiness?.orderSubmissionAllowed === false &&
+      shadowHistoryReviewContract.readiness?.dbMigrationAllowed === false &&
+      shadowHistoryReviewContract.readiness?.publicUiAllowed === false,
     preflightStillDisablesOrderSubmission: preflight.readiness?.orderSubmissionAllowed === false,
     preflightStillDisablesProviderCalls: preflight.readiness?.providerCallsAllowed === false,
     preflightStillDisablesDbMigration: preflight.readiness?.dbMigrationAllowed === false,
@@ -144,7 +157,8 @@ function buildReview() {
       architectureDoc.includes("no order submission") &&
       architectureDoc.includes("KIS order adapter design review") &&
       architectureDoc.includes("Trading Environment Risk Gate Input Contract") &&
-      architectureDoc.includes("Trading Dry-Run Replay Contract"),
+      architectureDoc.includes("Trading Dry-Run Replay Contract") &&
+      architectureDoc.includes("Trading Shadow History Review Contract"),
     noRuntimeArtifacts: forbiddenArtifacts.length === 0,
     adapterImplementationAllowed: false,
     providerCallsAllowed: false,
@@ -161,6 +175,7 @@ function buildReview() {
     checks.shadowContractStillBlocksRuntime &&
     checks.envRiskGateContractStillFailClosed &&
     checks.dryRunReplayContractReady &&
+    checks.shadowHistoryReviewContractReady &&
     checks.preflightStillDisablesOrderSubmission &&
     checks.preflightStillDisablesProviderCalls &&
     checks.preflightStillDisablesDbMigration &&
@@ -179,6 +194,7 @@ function buildReview() {
       storeSchemaDraft: STORE_SCHEMA_PATH,
       envRiskGateContract: ENV_RISK_GATE_CONTRACT_PATH,
       dryRunReplayContract: DRY_RUN_REPLAY_CONTRACT_PATH,
+      shadowHistoryReviewContract: SHADOW_HISTORY_REVIEW_CONTRACT_PATH,
       architectureDoc: ARCHITECTURE_DOC_PATH,
     },
     outputFiles: {
@@ -233,6 +249,7 @@ function buildReview() {
       envRiskGateContractStatus: envRiskGateContract.readiness?.status,
       envRiskGateContractRiskReasons: envRiskGateContract.riskGateEvaluation?.reasons ?? [],
       dryRunReplayContractStatus: dryRunReplayContract.readiness?.status,
+      shadowHistoryReviewContractStatus: shadowHistoryReviewContract.readiness?.status,
       storeSchemaStatus: storeSchema.readiness?.status,
       preflightStatus: preflight.readiness?.status,
     },
@@ -255,6 +272,7 @@ function buildReview() {
         ...(checks.shadowContractStillBlocksRuntime ? [] : ["shadow_contract_allows_runtime_too_early"]),
         ...(checks.envRiskGateContractStillFailClosed ? [] : ["env_risk_gate_contract_not_fail_closed"]),
         ...(checks.dryRunReplayContractReady ? [] : ["dry_run_replay_contract_not_ready"]),
+        ...(checks.shadowHistoryReviewContractReady ? [] : ["shadow_history_review_contract_not_ready"]),
         ...(checks.preflightStillDisablesOrderSubmission ? [] : ["preflight_allows_order_submission"]),
         ...(checks.preflightStillDisablesProviderCalls ? [] : ["preflight_allows_provider_calls"]),
         ...(checks.preflightStillDisablesDbMigration ? [] : ["preflight_allows_db_migration"]),

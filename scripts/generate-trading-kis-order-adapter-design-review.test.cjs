@@ -13,6 +13,7 @@ const SHADOW_CONTRACT = "trading_lab_step116_shadow_mode_contract.json";
 const STORE_SCHEMA = "trading_lab_step116_store_schema_draft.json";
 const ENV_RISK_GATE_CONTRACT = "trading_lab_step116_env_risk_gate_contract.json";
 const DRY_RUN_REPLAY_CONTRACT = "trading_lab_step116_dry_run_replay_contract.json";
+const SHADOW_HISTORY_REVIEW_CONTRACT = "trading_lab_step116_shadow_history_review_contract.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -27,6 +28,7 @@ function makeWorkspace() {
     STORE_SCHEMA,
     ENV_RISK_GATE_CONTRACT,
     DRY_RUN_REPLAY_CONTRACT,
+    SHADOW_HISTORY_REVIEW_CONTRACT,
   ]) {
     fs.copyFileSync(path.join("data", "processed", fileName), path.join(processedDir, fileName));
   }
@@ -151,6 +153,22 @@ test("blocks future adapter review if dry-run replay contract is not ready", () 
   assert.equal(report.checks.dryRunReplayContractReady, false);
   assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
   assert.match(report.readiness.blockers.join("|"), /dry_run_replay_contract_not_ready/);
+});
+
+test("blocks future adapter review if shadow history review contract is not ready", () => {
+  const workspace = makeWorkspace();
+  const shadowHistory = readJson(workspace, SHADOW_HISTORY_REVIEW_CONTRACT);
+  shadowHistory.readiness.readyForFutureShadowHistoryReviewImplementation = false;
+  shadowHistory.readiness.shadowHistoryReviewImplementationAllowed = true;
+  writeJson(workspace, SHADOW_HISTORY_REVIEW_CONTRACT, shadowHistory);
+
+  const result = runReview(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.shadowHistoryReviewContractReady, false);
+  assert.equal(report.readiness.readyForFutureOrderAdapterImplementationReview, false);
+  assert.match(report.readiness.blockers.join("|"), /shadow_history_review_contract_not_ready/);
 });
 
 test("blocks future adapter review if order adapter runtime artifacts appear too early", () => {
