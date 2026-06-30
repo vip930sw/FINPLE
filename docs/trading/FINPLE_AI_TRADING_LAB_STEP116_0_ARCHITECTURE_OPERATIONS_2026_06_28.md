@@ -1959,6 +1959,36 @@ The boundary allows only a later private-worker implementation review. It forbid
 
 Preflight success still does not implement `server/src/services/trading/kisOrderAdapter.js`, import manual order permission evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
+## Step 116-3V Trading Redacted Manual Order Permission Template
+
+The first Trading Redacted Manual Order Permission Template is:
+
+```text
+data/processed/trading_lab_step116_redacted_manual_order_permission_template.json
+scripts/generate-trading-redacted-manual-order-permission-template.cjs
+scripts/generate-trading-redacted-manual-order-permission-template.test.cjs
+npm run check:trading-redacted-manual-order-permission-template
+```
+
+This is a redacted_manual_order_permission_template contract, not a manual order permission packet, permission importer, KIS order adapter, provider caller, runtime route, DB migration, private dashboard, public UI, or order submission path. It records the future hash-only packet shape that an owner/operator can prepare outside committed repo files when the manual permission stage is explicitly opened.
+
+Current state remains:
+
+- `templateOnly=true`
+- `permissionPacketCreatedNow=false`
+- `permissionPacketImportedNow=false`
+- `orderAdapterImplementationAllowedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The template requires `mode=live_guarded`, approved-by hash, operator-access hash, manual-approval policy hash, order-adapter design review hash, kill-switch/risk-gate clearance hashes, order-credential boundary hash, dry-run replay hash, shadow-history review hash, audit-logger readiness hash, symbol hashes, order caps, revocation-plan hash, redaction version, and explicit provider/order/runtime/UI allow flags set to false.
+
+Template success still does not create `data/private/trading/manual_order_permission.redacted.json`, generate hashes, import permission evidence, implement the KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
