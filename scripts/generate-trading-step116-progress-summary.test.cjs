@@ -47,6 +47,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_private_read_only_provider_implementation_preflight.json",
   "trading_lab_step116_private_db_storage_implementation_preflight.json",
   "trading_lab_step116_private_runtime_route_implementation_preflight.json",
+  "trading_lab_step116_private_operator_access_implementation_preflight.json",
 ];
 
 function makeWorkspace() {
@@ -92,8 +93,8 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 37);
-  assert.equal(report.progress.trackedContractsReady, 37);
+  assert.equal(report.progress.trackedContractsTotal, 38);
+  assert.equal(report.progress.trackedContractsReady, 38);
   assert.equal(report.progress.trackedContractsRemaining, 0);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
@@ -107,6 +108,10 @@ test("records remaining trading gates instead of approving provider calls or ord
   const report = readJson(workspace);
 
   assert.match(report.remainingTradingGates.join("|"), /owner_redacted_read_only_approval_packet_not_imported/);
+  assert.match(
+    report.remainingTradingGates.join("|"),
+    /private_operator_access_implementation_review_blocked_pending_private_runtime_review/,
+  );
   assert.match(report.remainingTradingGates.join("|"), /manual_order_permission_packet_not_imported/);
   assert.match(report.remainingTradingGates.join("|"), /live_guarded_order_adapter_implementation_review_not_started/);
   assert.equal(report.readiness.providerCallsAllowed, false);

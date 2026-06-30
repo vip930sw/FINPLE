@@ -273,28 +273,29 @@ Step 116 should be split into small commits and PR-sized phases:
 21. Private read-only provider implementation preflight.
 22. Private DB storage implementation preflight.
 23. Private runtime route implementation preflight.
-24. Trading Step 116 progress summary.
-25. Read-only provider request envelope validation contract.
-26. Read-only provider request envelope validation preflight.
-27. Read-only provider request envelope local validator.
-28. Read-only provider request envelope contract.
-29. Read-only provider response envelope contract.
-30. Read-only snapshot normalization contract.
-31. Read-only snapshot risk input contract.
-32. Read-only snapshot risk input local validator.
-33. Private shadow order intent contract.
-34. Private shadow order intent local validator.
-35. Private shadow intent audit event contract.
-36. Private shadow intent audit event local validator.
-37. Private shadow runtime review packet contract.
-38. Private shadow runtime review packet local validator.
-39. Private shadow operator access contract.
-40. Private shadow operator access local validator.
-41. Private shadow runtime preflight.
-42. KIS order adapter design review.
-43. Manual order permission preflight.
-44. Manual order permission local validator.
-45. Live guarded execution only after manual approval.
+24. Private operator access implementation preflight.
+25. Trading Step 116 progress summary.
+26. Read-only provider request envelope validation contract.
+27. Read-only provider request envelope validation preflight.
+28. Read-only provider request envelope local validator.
+29. Read-only provider request envelope contract.
+30. Read-only provider response envelope contract.
+31. Read-only snapshot normalization contract.
+32. Read-only snapshot risk input contract.
+33. Read-only snapshot risk input local validator.
+34. Private shadow order intent contract.
+35. Private shadow order intent local validator.
+36. Private shadow intent audit event contract.
+37. Private shadow intent audit event local validator.
+38. Private shadow runtime review packet contract.
+39. Private shadow runtime review packet local validator.
+40. Private shadow operator access contract.
+41. Private shadow operator access local validator.
+42. Private shadow runtime preflight.
+43. KIS order adapter design review.
+44. Manual order permission preflight.
+45. Manual order permission local validator.
+46. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1787,6 +1788,38 @@ Future private runtime route implementation review remains blocked until private
 The boundary allows only a later private operator-only, server-side route implementation review. It forbids public UI, provider calls, order submission or cancellation, database writes now, default private packet reads, raw session token logging, raw account identifiers, raw provider payloads, raw order payloads, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows.
 
 Preflight success still does not implement `server/src/routes/trading/privateShadowRuntime.js`, does not expose public UI, does not connect to the database, does not call KIS, does not enable provider calls, does not submit orders, and does not approve live trading.
+
+## Step 116-3C Trading Private Operator Access Implementation Preflight
+
+The first Trading Private Operator Access Implementation Preflight is:
+
+```text
+data/processed/trading_lab_step116_private_operator_access_implementation_preflight.json
+scripts/generate-trading-private-operator-access-implementation-preflight.cjs
+scripts/generate-trading-private-operator-access-implementation-preflight.test.cjs
+npm run check:trading-private-operator-access-implementation-preflight
+```
+
+This is a private_operator_access_implementation_preflight contract, not an authentication implementation, authorization service, private dashboard, runtime route, public UI, provider caller, DB storage implementation, approval importer, or order submission path. It records the operator access implementation review gate while keeping operator access implementation, auth services, session-token reads, routes, public UI, provider calls, DB writes, and orders closed.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `operatorAccessImplementationAllowedNow=false`
+- `authServiceAllowedNow=false`
+- `sessionTokenReadAllowedNow=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `liveTradingAllowed=false`
+
+Future private operator access implementation review remains blocked until private shadow runtime review is handled separately. The preflight requires the private shadow operator access contract, private shadow runtime preflight, private shadow runtime review packet contract, private shadow intent audit event contract, manual operator approval contract, env risk-gate contract, private runtime route implementation preflight, and private DB storage implementation preflight to remain fail-closed.
+
+The boundary allows only a later private-worker, hash-only operator access implementation review. It forbids authentication service creation now, session-token reads, runtime routes, public UI, provider calls, order submission or cancellation, database writes now, raw operator identifiers, raw auth context, raw session tokens, raw account identifiers, raw provider payloads, raw order payloads, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows.
+
+Preflight success still does not implement `server/src/services/trading/privateOperatorAccess.js`, does not create authentication or authorization services, does not read session tokens, does not expose runtime routes or UI, does not connect to the database, does not call KIS, does not enable provider calls, does not submit orders, and does not approve live trading.
 
 ## Explicit Non-Goals
 
