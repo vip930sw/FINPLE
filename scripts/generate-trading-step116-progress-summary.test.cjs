@@ -129,7 +129,7 @@ test("summarizes contract progress while keeping trading locked", () => {
   assert.equal(report.progress.trackedContractsTotal, 71);
   assert.equal(report.progress.trackedContractsReady, 71);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 95);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 96);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
