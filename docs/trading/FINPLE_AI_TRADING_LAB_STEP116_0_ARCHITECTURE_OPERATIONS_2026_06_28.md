@@ -318,28 +318,30 @@ Step 116 should be split into small commits and PR-sized phases:
 66. Manual order permission packet local validator.
 67. Manual order permission packet validator fixtures.
 68. Manual order permission packet validation preflight.
-69. Manual order permission packet validation runbook.
-70. Manual order permission validation result receipt.
-71. Manual order permission validation result receipt local validator.
-72. Manual order permission validation result receipt validator fixtures.
-73. Manual order permission validation result receipt review preflight.
-74. Manual order permission validation result receipt review preflight local validator.
-75. Manual order permission validation result receipt review preflight validator fixtures.
-76. Manual order permission validation result receipt review runbook.
-77. Manual order permission validation result receipt review runbook local validator.
-78. Manual order permission validation result receipt review runbook validator fixtures.
-79. Manual order permission validation result receipt review result contract.
-80. Manual order permission validation result receipt review result local validator.
-81. Manual order permission validation result receipt review result validator fixtures.
-82. Live-guarded order adapter implementation preflight local validator.
-83. Live-guarded order adapter implementation preflight validator fixtures.
-84. Redacted manual order permission template local validator.
-85. Redacted manual order permission template validator fixtures.
-86. Manual order permission hash helper local validator.
-87. Manual order permission hash helper validator fixtures.
-88. Manual order permission hash helper preflight local validator.
-89. Manual order permission hash helper preflight validator fixtures.
-90. Live guarded execution only after manual approval.
+69. Manual order permission packet validation preflight local validator.
+70. Manual order permission packet validation preflight validator fixtures.
+71. Manual order permission packet validation runbook.
+72. Manual order permission validation result receipt.
+73. Manual order permission validation result receipt local validator.
+74. Manual order permission validation result receipt validator fixtures.
+75. Manual order permission validation result receipt review preflight.
+76. Manual order permission validation result receipt review preflight local validator.
+77. Manual order permission validation result receipt review preflight validator fixtures.
+78. Manual order permission validation result receipt review runbook.
+79. Manual order permission validation result receipt review runbook local validator.
+80. Manual order permission validation result receipt review runbook validator fixtures.
+81. Manual order permission validation result receipt review result contract.
+82. Manual order permission validation result receipt review result local validator.
+83. Manual order permission validation result receipt review result validator fixtures.
+84. Live-guarded order adapter implementation preflight local validator.
+85. Live-guarded order adapter implementation preflight validator fixtures.
+86. Redacted manual order permission template local validator.
+87. Redacted manual order permission template validator fixtures.
+88. Manual order permission hash helper local validator.
+89. Manual order permission hash helper validator fixtures.
+90. Manual order permission hash helper preflight local validator.
+91. Manual order permission hash helper preflight validator fixtures.
+92. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2367,6 +2369,31 @@ npm run check:trading-manual-order-permission-packet-validation-preflight
 This is an owner-assisted validation readiness contract, not a private packet reader, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records that a future local validation run must use an explicit owner-supplied packet path; this preflight does not read any default private packet path.
 
 The preflight requires the redacted manual order permission template, packet validator fixtures, import implementation preflight, live-guarded order-adapter preflight, and env risk gate to remain fail-closed. Validation readiness still does not create or import `data/private/trading/manual_order_permission.redacted.json`, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4AF Trading Manual Order Permission Packet Validation Preflight Local Validator
+
+The first local validator for the Trading Manual Order Permission Packet Validation Preflight is:
+
+```text
+scripts/validate-trading-manual-order-permission-packet-validation-preflight.cjs
+scripts/validate-trading-manual-order-permission-packet-validation-preflight.test.cjs
+npm run check:trading-manual-order-permission-packet-validation-preflight-validator
+```
+
+This validates the manual_order_permission_packet_validation_preflight contract shape only. It requires an explicit `--contract` path, checks the future owner-assisted packet path and validator path, required preflight gates, validation rules, forbidden preflight content, and disabled packet-read/provider/order/runtime flags. It does not read private packets, run packet validation, import permission evidence, generate hashes, call providers, submit orders, create runtime routes, write the database, or expose public UI.
+
+## Step 116-4AG Trading Manual Order Permission Packet Validation Preflight Validator Fixtures
+
+The first synthetic fixture regression contract for the manual order permission packet validation preflight validator is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_packet_validation_preflight_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-packet-validation-preflight-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-packet-validation-preflight-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-packet-validation-preflight-validator-fixtures
+```
+
+This is a manual_order_permission_packet_validation_preflight_validator_fixtures contract, not a real private packet reader, permission importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid packet-validation-preflight shapes for local validator regression only.
 
 ## Step 116-4K Trading Manual Order Permission Packet Validation Runbook
 

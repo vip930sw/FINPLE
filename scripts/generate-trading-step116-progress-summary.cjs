@@ -163,6 +163,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_manual_order_permission_packet_validation_preflight.json",
   ],
   [
+    "manualOrderPermissionPacketValidationPreflightValidatorFixtures",
+    "Manual order permission packet validation preflight validator fixtures",
+    "trading_lab_step116_manual_order_permission_packet_validation_preflight_validator_fixtures.json",
+  ],
+  [
     "manualOrderPermissionPacketValidationRunbook",
     "Manual order permission packet validation runbook",
     "trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
@@ -347,6 +352,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-packet-validator",
   "check:trading-manual-order-permission-packet-validator-fixtures",
   "check:trading-manual-order-permission-packet-validation-preflight",
+  "check:trading-manual-order-permission-packet-validation-preflight-validator",
+  "check:trading-manual-order-permission-packet-validation-preflight-validator-fixtures",
   "check:trading-manual-order-permission-packet-validation-runbook",
   "check:trading-manual-order-permission-validation-result-receipt",
   "check:trading-manual-order-permission-validation-result-receipt-validator",
