@@ -36,6 +36,7 @@
       "privateShadowIntentAuditEvent": "data\\processed\\trading_lab_step116_private_shadow_intent_audit_event_contract.json",
       "privateShadowIntentAuditEventValidatorFixtures": "data\\processed\\trading_lab_step116_private_shadow_intent_audit_event_validator_fixtures.json",
       "privateShadowRuntimeReviewPacket": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_contract.json",
+      "privateShadowRuntimeReviewPacketValidatorFixtures": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_validator_fixtures.json",
       "privateShadowOperatorAccess": "data\\processed\\trading_lab_step116_private_shadow_operator_access_contract.json",
       "manualOrderPermissionPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_preflight.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
@@ -77,10 +78,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 50,
-    "trackedContractsReady": 50,
+    "trackedContractsTotal": 51,
+    "trackedContractsReady": 51,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 68,
+    "requiredNpmScriptsTotal": 69,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -343,6 +344,15 @@
       "title": "Private shadow runtime review packet",
       "filePath": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_contract.json",
       "status": "contract_ready_pending_private_shadow_runtime_review_packet_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "privateShadowRuntimeReviewPacketValidatorFixtures",
+      "title": "Private shadow runtime review packet validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_validator_fixtures.json",
+      "status": "fixtures_ready_for_private_shadow_runtime_review_packet_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

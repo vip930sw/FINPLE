@@ -303,13 +303,14 @@ Step 116 should be split into small commits and PR-sized phases:
 51. Private shadow intent audit event validator fixtures.
 52. Private shadow runtime review packet contract.
 53. Private shadow runtime review packet local validator.
-54. Private shadow operator access contract.
-55. Private shadow operator access local validator.
-56. Private shadow runtime preflight.
-57. KIS order adapter design review.
-58. Manual order permission preflight.
-59. Manual order permission local validator.
-60. Live guarded execution only after manual approval.
+54. Private shadow runtime review packet validator fixtures.
+55. Private shadow operator access contract.
+56. Private shadow operator access local validator.
+57. Private shadow runtime preflight.
+58. KIS order adapter design review.
+59. Manual order permission preflight.
+60. Manual order permission local validator.
+61. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1735,6 +1736,34 @@ Current state remains:
 The validator accepts only shadow-mode, hash-only review packets with approval/env/risk/snapshot/order-intent/audit/replay/history/kill-switch/manual-approval evidence hashes and explicit provider/order/runtime/DB/UI allow flags set to false.
 
 Validator success still does not implement private shadow runtime, import private approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-3R Trading Private Shadow Runtime Review Packet Validator Fixtures
+
+The first Trading Private Shadow Runtime Review Packet Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_private_shadow_runtime_review_packet_validator_fixtures.json
+scripts/generate-trading-private-shadow-runtime-review-packet-validator-fixtures.cjs
+scripts/generate-trading-private-shadow-runtime-review-packet-validator-fixtures.test.cjs
+npm run check:trading-private-shadow-runtime-review-packet-validator-fixtures
+```
+
+This is a private_shadow_runtime_review_packet_validator_fixtures contract, not a private shadow runtime implementation, order-intent recorder, KIS order adapter, runtime route, storage layer, DB migration, public UI, provider caller, order submitter, or approval importer. It records synthetic valid/invalid fixture shapes for the local hash-only private shadow runtime review-packet validator.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeImplementationAllowed=false`
+- `liveTradingAllowed=false`
+
+The valid synthetic fixture is a shadow-mode, hash-only runtime review packet with redacted operator, approval-import preflight, env-risk, snapshot-risk, order-intent, audit-event, risk-gate, dry-run, shadow-history, audit-logger, kill-switch, and manual-approval policy hashes. Invalid fixtures cover missing operator scope, live mode, enabled provider/order/runtime/DB/UI flags, malformed hashes, malformed timestamps, and private-path reference fields.
+
+Fixture success still does not implement private shadow runtime, import private approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2B Trading Private Shadow Operator Access Contract
 

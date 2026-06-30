@@ -1,0 +1,553 @@
+{
+  "contractVersion": "trading-lab-step116-private-shadow-runtime-review-packet-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-3R",
+  "scope": "private_shadow_runtime_review_packet_validator_fixtures",
+  "sourceFiles": {
+    "reviewPacketContract": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_contract.json",
+    "intentAuditEventValidatorFixtures": "data\\processed\\trading_lab_step116_private_shadow_intent_audit_event_validator_fixtures.json",
+    "validator": "scripts\\validate-trading-private-shadow-runtime-review-packet.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeImplementationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic private shadow runtime review-packet fixtures only; no real account number, app key, app secret, token, raw provider payload, raw order payload, private paths, runtime routes, DB migrations, or private approval packet content",
+    "validatorPath": "scripts\\validate-trading-private-shadow-runtime-review-packet.cjs",
+    "currentStepCallsProvider": false,
+    "currentStepSubmitsOrder": false,
+    "currentStepCreatesRuntimeRoute": false,
+    "currentStepCreatesDbMigration": false,
+    "currentStepCreatesPublicUi": false,
+    "currentStepImplementsRuntime": false,
+    "validSyntheticReviewPacket": {
+      "reviewPacketId": "review_fixture_shadow_001",
+      "mode": "shadow",
+      "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+      "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+      "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+      "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+      "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+      "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+      "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+      "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+      "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+      "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+      "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+      "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "redactionVersion": "v1",
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false,
+      "runtimeRouteAllowed": false,
+      "dbMigrationAllowed": false,
+      "publicUiAllowed": false
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_operator_scope_hash",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "live_guarded_mode",
+        "expectedErrorCodes": [
+          "invalid_mode"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "live_guarded",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": true,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": true,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "db_migration_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": true,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "public_ui_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": true
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "not-a-labelled-hash",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "malformed_timestamp",
+        "expectedErrorCodes": [
+          "malformed_timestamp"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "private_path_reference_present",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "packet": {
+          "reviewPacketId": "review_fixture_shadow_001",
+          "mode": "shadow",
+          "operatorScopeHash": "hmac-sha256:fixture_operator_scope_hash_123456",
+          "approvalImportPreflightHash": "hmac-sha256:fixture_approval_preflight_hash_123456",
+          "envRiskGateHash": "hmac-sha256:fixture_env_risk_gate_hash_123456",
+          "snapshotRiskInputHash": "hmac-sha256:fixture_snapshot_risk_input_hash_123456",
+          "orderIntentContractHash": "hmac-sha256:fixture_order_intent_contract_hash_123456",
+          "intentAuditEventContractHash": "hmac-sha256:fixture_intent_audit_event_contract_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_clearance_hash_123456",
+          "dryRunReplayReferenceHash": "hmac-sha256:fixture_dry_run_replay_hash_123456",
+          "shadowHistoryReviewReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "killSwitchStateHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_approval_policy_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "dbMigrationAllowed": false,
+          "publicUiAllowed": false,
+          "privatePathReferenceHash": "sha256:fixture_private_reference_hash_123456"
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_operator_scope_hash",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "live_guarded_mode",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_mode"
+          ],
+          "actualErrorCodes": [
+            "invalid_mode"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "db_migration_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "public_ui_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_timestamp",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_timestamp"
+          ],
+          "actualErrorCodes": [
+            "malformed_timestamp"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "private_path_reference_present",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "reviewPacketContractReady": true,
+    "intentAuditEventValidatorFixturesReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsRuntimeReviewPacketValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "validReviewPacketFieldsReady": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeImplementationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "reviewPacketContractStatus": "contract_ready_pending_private_shadow_runtime_review_packet_implementation_review",
+    "intentAuditEventValidatorFixturesStatus": "fixtures_ready_for_private_shadow_intent_audit_event_validator_regression",
+    "validReviewPacketFields": [
+      "reviewPacketId",
+      "mode",
+      "operatorScopeHash",
+      "approvalImportPreflightHash",
+      "envRiskGateHash",
+      "snapshotRiskInputHash",
+      "orderIntentContractHash",
+      "intentAuditEventContractHash",
+      "riskGateClearanceHash",
+      "dryRunReplayReferenceHash",
+      "shadowHistoryReviewReferenceHash",
+      "auditLoggerReadinessHash",
+      "killSwitchStateHash",
+      "manualApprovalPolicyHash",
+      "createdAt",
+      "redactionVersion",
+      "providerCallsAllowed",
+      "orderSubmissionAllowed",
+      "runtimeRouteAllowed",
+      "dbMigrationAllowed",
+      "publicUiAllowed"
+    ],
+    "missingRequiredReviewPacketFields": [],
+    "invalidFixtureIds": [
+      "missing_operator_scope_hash",
+      "live_guarded_mode",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "db_migration_flag_enabled",
+      "public_ui_flag_enabled",
+      "malformed_hash_field",
+      "malformed_timestamp",
+      "private_path_reference_present"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_private_shadow_runtime_review_packet_validator_regression",
+    "readyForPrivateShadowRuntimeReviewPacketFixtureRegression": true,
+    "fixturesOnly": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeImplementationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
