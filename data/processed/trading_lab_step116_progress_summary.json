@@ -94,7 +94,8 @@
       "readOnlyProviderResponseEnvelopeValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validator_fixtures.json",
       "readOnlyProviderResponseEnvelopeValidationResultReceipt": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
       "readOnlyProviderResponseEnvelopeValidationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
-      "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+      "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json",
+      "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_fixtures.json"
     }
   },
   "outputFiles": {
@@ -115,10 +116,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 88,
-    "trackedContractsReady": 88,
+    "trackedContractsTotal": 89,
+    "trackedContractsReady": 89,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 121,
+    "requiredNpmScriptsTotal": 122,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -912,6 +913,15 @@
       "title": "Read-only provider response envelope validation result receipt review preflight",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json",
       "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewPreflightValidatorFixtures",
+      "title": "Read-only provider response envelope validation result receipt review preflight validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_fixtures.json",
+      "status": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

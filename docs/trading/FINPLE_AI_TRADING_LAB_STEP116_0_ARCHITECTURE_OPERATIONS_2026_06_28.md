@@ -3215,6 +3215,19 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 The validator requires an explicit `--contract <path>` argument and does not use a default private receipt path. It fails closed when the review preflight loses required top-level fields, review gates, forbidden-content markers, the fixed future receipt path, or when any current-step flag enables receipt reads/writes, raw response capture, provider payload capture, provider calls, order submission, runtime routes, public UI, DB writes, or live trading.
 
+## Step 116-3L-F Trading Read-Only Provider Response Envelope Validation Result Receipt Review Preflight Validator Fixtures
+
+The first synthetic fixture regression contract for the read-only provider response envelope validation result receipt review preflight validator is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_fixtures.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator-fixtures
+```
+
+This is a synthetic fixture regression contract, not a real validation receipt, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. The fixtures exercise local validator success and fail-closed cases for missing fields, review gate drift, boundary actions, forbidden-content catalog drift, future receipt path drift, allow flags, raw-value-shaped markers, and array-shape regressions.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

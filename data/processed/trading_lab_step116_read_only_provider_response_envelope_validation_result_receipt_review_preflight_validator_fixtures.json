@@ -1,0 +1,1322 @@
+{
+  "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-3L-F",
+  "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_fixtures",
+  "sourceFiles": {
+    "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json",
+    "validator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "rawResponseRecorded": false,
+    "providerPayloadRecorded": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic response review-preflight validator fixtures only; no real validation receipt, response envelope path, raw account, credential, provider payload, response payload, order payload, token, app key, app secret, execution, fill, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.cjs",
+    "validSyntheticValidationResultReceiptReviewPreflight": {
+      "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+      "auditedAt": "2026-06-29T00:00:00Z",
+      "step": "Step 116-3L-D",
+      "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+      "sourceFiles": {
+        "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+        "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+        "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+        "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+        "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+        "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+      },
+      "outputFiles": {
+        "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+      },
+      "currentState": {
+        "preflightOnly": true,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "responseEnvelopePathRecorded": false,
+        "rawResponseRecorded": false,
+        "providerPayloadRecorded": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "futureValidationResultReceiptReviewBoundary": {
+        "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+        "currentStepReadsReceipt": false,
+        "currentStepRecordsReceipt": false,
+        "currentStepCallsProvider": false,
+        "currentStepSubmitsOrder": false,
+        "reviewGates": [
+          "response_validation_result_receipt_contract_ready",
+          "response_validation_result_receipt_validator_ready",
+          "response_validation_result_receipt_validator_fixtures_ready",
+          "explicit_owner_validation_receipt_path_required_later",
+          "no_default_receipt_read",
+          "no_raw_response_payload",
+          "no_provider_payload",
+          "no_provider_call",
+          "no_order_submission",
+          "no_runtime_route",
+          "no_public_ui",
+          "no_database_write_now",
+          "no_live_trading",
+          "requires_separate_provider_call_authorization_review"
+        ],
+        "forbiddenReviewContent": [
+          "app_key",
+          "app_secret",
+          "access_token",
+          "full_account_number",
+          "raw_account_identifier",
+          "raw_provider_payload",
+          "raw_response_payload",
+          "raw_order_payload",
+          "order_confirmation",
+          "execution_id",
+          "fill_payload",
+          "live_order_endpoint",
+          "scenario_monthly_return_row"
+        ],
+        "promotionRules": [
+          "future review requires an explicit owner-supplied response validation result receipt path",
+          "future review must validate the receipt with the local receipt validator before provider authorization review",
+          "future review cannot record the local envelope path, raw response payload, or provider payload",
+          "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+        ]
+      },
+      "checks": {
+        "preflightOnly": true,
+        "receiptContractReady": true,
+        "receiptValidatorFixturesReady": true,
+        "receiptValidatorReady": true,
+        "callAuthorizationStillBlocked": true,
+        "privateProviderImplementationStillBlocked": true,
+        "reviewGateCatalogReady": true,
+        "forbiddenReviewContentReady": true,
+        "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+        "noRuntimeArtifacts": true,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "responseEnvelopePathRecorded": false,
+        "rawResponseRecorded": false,
+        "providerPayloadRecorded": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "runtimeRouteAllowed": false,
+        "publicUiAllowed": false,
+        "dbMigrationAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "evidence": {
+        "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+        "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+        "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+        "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+        "missingReviewGates": [],
+        "missingForbiddenReviewContent": [],
+        "forbiddenRuntimeArtifacts": []
+      },
+      "readiness": {
+        "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+        "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "responseEnvelopePathRecorded": false,
+        "rawResponseRecorded": false,
+        "providerPayloadRecorded": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false,
+        "blockers": []
+      }
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_required_field",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_review_gate",
+        "expectedErrorCodes": [
+          "missing_review_gate"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "boundary_action_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": true,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": true,
+            "currentStepSubmitsOrder": true,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_forbidden_review_content",
+        "expectedErrorCodes": [
+          "missing_forbidden_review_content"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "invalid_future_validation_result_receipt_path",
+        "expectedErrorCodes": [
+          "invalid_future_validation_result_receipt_path"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data/private/trading/live_order_receipt.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "allow_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": true,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": true,
+            "providerPayloadRecorded": true,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": true,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": true,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "forbidden_raw_value",
+        "expectedErrorCodes": [
+          "forbidden_raw_value"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": [
+              "response_validation_result_receipt_contract_ready",
+              "response_validation_result_receipt_validator_ready",
+              "response_validation_result_receipt_validator_fixtures_ready",
+              "explicit_owner_validation_receipt_path_required_later",
+              "no_default_receipt_read",
+              "no_raw_response_payload",
+              "no_provider_payload",
+              "no_provider_call",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui",
+              "no_database_write_now",
+              "no_live_trading",
+              "requires_separate_provider_call_authorization_review"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "syntheticLeakMarker": "app-secret-fixture-value"
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "field_must_be_array",
+        "expectedErrorCodes": [
+          "field_must_be_array"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-read-only-provider-response-envelope-validation-result-receipt-review-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3L-D",
+          "scope": "read_only_provider_response_envelope_validation_result_receipt_review_preflight",
+          "sourceFiles": {
+            "validationResultReceiptContract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json",
+            "validationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
+            "validationResultReceiptValidator": "scripts\\validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs",
+            "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+            "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureValidationResultReceiptReviewBoundary": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\read_only_provider_response_envelope_validation_result_receipt.redacted.json",
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepCallsProvider": false,
+            "currentStepSubmitsOrder": false,
+            "reviewGates": "not-an-array",
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_response_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "future review requires an explicit owner-supplied response validation result receipt path",
+              "future review must validate the receipt with the local receipt validator before provider authorization review",
+              "future review cannot record the local envelope path, raw response payload, or provider payload",
+              "future review success still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "receiptContractReady": true,
+            "receiptValidatorFixturesReady": true,
+            "receiptValidatorReady": true,
+            "callAuthorizationStillBlocked": true,
+            "privateProviderImplementationStillBlocked": true,
+            "reviewGateCatalogReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsResponseValidationResultReceiptReviewPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "receiptContractStatus": "receipt_contract_ready_pending_read_only_provider_response_validation_result_review",
+            "receiptValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_validator_regression",
+            "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+            "privateProviderImplementationPreflightStatus": "preflight_recorded_provider_implementation_blocked_pending_owner_packet_import",
+            "missingReviewGates": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+            "readyForFutureResponseEnvelopeValidationResultReceiptReview": true,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "responseEnvelopePathRecorded": false,
+            "rawResponseRecorded": false,
+            "providerPayloadRecorded": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_required_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_review_gate",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_review_gate"
+          ],
+          "actualErrorCodes": [
+            "missing_review_gate"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "boundary_action_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_review_content",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_review_content"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_review_content"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_future_validation_result_receipt_path",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_validation_result_receipt_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_validation_result_receipt_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "allow_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "forbidden_raw_value",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_raw_value"
+          ],
+          "actualErrorCodes": [
+            "forbidden_raw_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "field_must_be_array",
+          "valid": false,
+          "expectedErrorCodes": [
+            "field_must_be_array"
+          ],
+          "actualErrorCodes": [
+            "field_must_be_array"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "reviewPreflightReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsReviewPreflightValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noRuntimeArtifacts": true,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "rawResponseRecorded": false,
+    "providerPayloadRecorded": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "reviewPreflightStatus": "preflight_ready_for_future_owner_response_validation_result_receipt_review",
+    "invalidFixtureIds": [
+      "missing_required_field",
+      "missing_review_gate",
+      "boundary_action_enabled",
+      "missing_forbidden_review_content",
+      "invalid_future_validation_result_receipt_path",
+      "allow_flag_enabled",
+      "forbidden_raw_value",
+      "field_must_be_array"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_read_only_provider_response_envelope_validation_result_receipt_review_preflight_validator_regression",
+    "readyForResponseEnvelopeValidationResultReceiptReviewPreflightValidatorRegression": true,
+    "fixturesOnly": true,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "rawResponseRecorded": false,
+    "providerPayloadRecorded": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
