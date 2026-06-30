@@ -3203,6 +3203,18 @@ This is a review preflight contract, not a real validation receipt reader, provi
 
 Preflight readiness still does not create or read `data/private/trading/read_only_provider_response_envelope_validation_result_receipt.redacted.json`, does not receive provider responses, does not parse raw KIS payloads, does not call KIS, does not authorize provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-3L-E Trading Read-Only Provider Response Envelope Validation Result Receipt Review Preflight Local Validator
+
+The first local validator for the read-only provider response envelope validation result receipt review preflight is:
+
+```text
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.cjs
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator
+```
+
+The validator requires an explicit `--contract <path>` argument and does not use a default private receipt path. It fails closed when the review preflight loses required top-level fields, review gates, forbidden-content markers, the fixed future receipt path, or when any current-step flag enables receipt reads/writes, raw response capture, provider payload capture, provider calls, order submission, runtime routes, public UI, DB writes, or live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

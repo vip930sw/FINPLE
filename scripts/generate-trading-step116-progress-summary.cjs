@@ -443,6 +443,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-validator",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-validator-fixtures",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight",
+  "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight-validator",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
