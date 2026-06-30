@@ -3253,6 +3253,19 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 The validator requires an explicit `--contract <path>` argument and does not use a default private receipt path. It fails closed when the runbook loses required top-level fields, review assertions, redacted output fields, forbidden-output markers, fixed command templates, the fixed future receipt path, or when any current-step flag enables validator execution, receipt reads/writes, response-path capture, raw response capture, provider payload capture, provider calls, order submission, runtime routes, public UI, DB writes, or live trading.
 
+## Step 116-3L-I Trading Read-Only Provider Response Envelope Validation Result Receipt Review Runbook Validator Fixtures
+
+The first synthetic fixture regression contract for the read-only provider response envelope validation result receipt review runbook validator is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_runbook_validator_fixtures.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-validator-fixtures
+```
+
+This is a synthetic fixture regression contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. The fixtures exercise local runbook-validator success and fail-closed cases for command drift, future receipt path drift, validator execution, receipt reads/writes, provider-call actions, review assertion drift, redacted-output drift, allow flags, raw-value-shaped markers, and forbidden runtime artifacts.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
