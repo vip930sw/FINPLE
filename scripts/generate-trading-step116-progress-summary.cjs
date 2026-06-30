@@ -74,6 +74,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Private operator access implementation preflight",
     "trading_lab_step116_private_operator_access_implementation_preflight.json",
   ],
+  [
+    "privateShadowRuntimeImplementationPreflight",
+    "Private shadow runtime implementation preflight",
+    "trading_lab_step116_private_shadow_runtime_implementation_preflight.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -131,6 +136,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-db-storage-implementation-preflight",
   "check:trading-private-runtime-route-implementation-preflight",
   "check:trading-private-operator-access-implementation-preflight",
+  "check:trading-private-shadow-runtime-implementation-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -146,6 +152,7 @@ const FORBIDDEN_RUNTIME_ARTIFACTS = [
   path.join("data", "private", "trading", "manual_order_permission.redacted.json"),
   path.join("server", "src", "services", "tradingShadowRuntime.js"),
   path.join("server", "src", "services", "trading", "shadowRuntime.js"),
+  path.join("server", "src", "services", "trading", "privateShadowRuntime.js"),
   path.join("server", "src", "services", "trading", "privateOperatorAccess.js"),
   path.join("server", "src", "services", "tradingReadOnlyProvider.js"),
   path.join("server", "src", "routes", "trading"),
@@ -157,7 +164,7 @@ const FORBIDDEN_SCENARIO_ARTIFACT = path.join("data", "processed", "scenario_mon
 const REMAINING_TRADING_GATES = [
   "owner_redacted_read_only_approval_packet_not_imported",
   "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
-  "private_shadow_runtime_implementation_review_not_started",
+  "private_shadow_runtime_implementation_review_blocked_pending_owner_packet_and_operator_access",
   "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
   "db_storage_review_blocked_pending_private_runtime_review",
   "runtime_route_review_blocked_pending_private_runtime_review",
