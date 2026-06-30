@@ -3585,6 +3585,21 @@ This is a synthetic fixture contract for the redacted receipt validator, not a p
 
 Fixture success only proves the local validator regression surface is locked. It still does not record a receipt, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
 
+## Step 116-5M Trading Read-Only Approval Packet Validation Result Receipt Review Preflight
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-preflight.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-preflight.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-preflight
+```
+
+This is a future owner-review preflight for a redacted read-only approval validation-result receipt. It is not a real receipt read, private approval packet read, approval importer, KIS call, Alpha Vantage call, provider call, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval.
+
+The preflight requires the existing receipt contract, receipt validator fixtures, local receipt validator, approval-import implementation block, and private read-only provider implementation block to remain aligned. Passing this preflight only says a later owner-supplied redacted receipt can be reviewed through an explicit path; it still does not record private paths or raw values, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
