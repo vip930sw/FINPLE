@@ -179,6 +179,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-request-envelope-validator-fixtures",
   "check:trading-read-only-provider-response-envelope-validation-preflight",
   "check:trading-read-only-provider-response-envelope-validator-fixtures",
+  "check:trading-read-only-provider-response-envelope-validator",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

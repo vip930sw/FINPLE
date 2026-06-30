@@ -27,8 +27,8 @@
   },
   "validation": {
     "redactionBoundary": "synthetic response-envelope fixtures only; no real account number, app key, app secret, token, raw provider payload, raw order payload, execution content, or private approval packet content",
-    "futureValidatorPath": "scripts\\validate-trading-read-only-provider-response-envelope.cjs",
-    "currentStepImplementsValidator": false,
+    "validatorPath": "scripts\\validate-trading-read-only-provider-response-envelope.cjs",
+    "currentStepImplementsValidator": true,
     "currentStepReceivesProviderResponse": false,
     "currentStepCallsProvider": false,
     "validSyntheticEnvelope": {
@@ -187,7 +187,86 @@
       "fixture_success_does_not_persist_raw_provider_payload",
       "fixture_success_does_not_enable_runtime_route",
       "fixture_success_does_not_enable_order_submission"
-    ]
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_raw_response_hash",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_normalized_snapshot_type",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_normalized_snapshot_type"
+          ],
+          "actualErrorCodes": [
+            "unknown_normalized_snapshot_type"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_endpoint_category",
+          "valid": false,
+          "expectedErrorCodes": [
+            "order_endpoint_category"
+          ],
+          "actualErrorCodes": [
+            "order_endpoint_category"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_provider_payload_shape_present",
+          "valid": false,
+          "expectedErrorCodes": [
+            "raw_provider_payload_shape_present"
+          ],
+          "actualErrorCodes": [
+            "raw_provider_payload_shape_present"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
   },
   "checks": {
     "fixturesOnly": true,
@@ -197,6 +276,9 @@
     "endpointCategoryValidationPreflightReady": true,
     "snapshotNormalizationContractReady": true,
     "callAuthorizationStillBlocked": true,
+    "validatorExportsLocalValidation": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
     "validFixtureFieldsReady": true,
     "invalidFixtureCatalogReady": true,
     "architectureDocMentionsResponseEnvelopeValidatorFixtures": true,
@@ -217,6 +299,7 @@
     "endpointCategoryValidationPreflightStatus": "preflight_ready_endpoint_categories_aligned_provider_calls_blocked",
     "snapshotNormalizationContractStatus": "contract_ready_pending_read_only_snapshot_normalization_implementation_review",
     "callAuthorizationPreflightStatus": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+    "validatorPath": "scripts\\validate-trading-read-only-provider-response-envelope.cjs",
     "validFixtureFields": [
       "requestId",
       "mode",

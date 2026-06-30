@@ -28,8 +28,8 @@
   },
   "futurePureLocalResponseEnvelopeValidatorBoundary": {
     "scope": "read_only_provider_response_envelope_validation_preflight",
-    "futureValidatorPath": "scripts\\validate-trading-read-only-provider-response-envelope.cjs",
-    "currentStepImplementsValidator": false,
+    "validatorPath": "scripts\\validate-trading-read-only-provider-response-envelope.cjs",
+    "currentStepImplementsValidator": true,
     "currentStepReceivesProviderResponse": false,
     "currentStepCallsProvider": false,
     "preflightGates": [

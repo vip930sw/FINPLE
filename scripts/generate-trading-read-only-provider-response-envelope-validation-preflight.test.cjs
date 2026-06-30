@@ -18,6 +18,7 @@ const ENDPOINT_CATEGORY_VALIDATION_PREFLIGHT =
 const SNAPSHOT_NORMALIZATION_CONTRACT = "trading_lab_step116_read_only_snapshot_normalization_contract.json";
 const CALL_AUTHORIZATION_PREFLIGHT = "trading_lab_step116_read_only_provider_call_authorization_preflight.json";
 const ENV_RISK_GATE_CONTRACT = "trading_lab_step116_env_risk_gate_contract.json";
+const VALIDATOR_PATH = path.join("scripts", "validate-trading-read-only-provider-response-envelope.cjs");
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 
 function makeWorkspace() {
@@ -38,6 +39,9 @@ function makeWorkspace() {
   const docTarget = path.join(workspace, DOC_PATH);
   fs.mkdirSync(path.dirname(docTarget), { recursive: true });
   fs.copyFileSync(DOC_PATH, docTarget);
+  const validatorTarget = path.join(workspace, VALIDATOR_PATH);
+  fs.mkdirSync(path.dirname(validatorTarget), { recursive: true });
+  fs.copyFileSync(VALIDATOR_PATH, validatorTarget);
   return workspace;
 }
 
@@ -133,10 +137,9 @@ test("blocks if request fixtures or call authorization open too early", () => {
   assert.match(report.readiness.blockers.join("|"), /provider_call_authorization_not_blocked/);
 });
 
-test("blocks if validator, provider service, route, UI, private packet, or scenario artifacts appear", () => {
+test("blocks if provider service, route, UI, private packet, or scenario artifacts appear", () => {
   const workspace = makeWorkspace();
   const files = [
-    path.join(workspace, "scripts", "validate-trading-read-only-provider-response-envelope.cjs"),
     path.join(workspace, "server", "src", "services", "trading", "kisReadOnlyProvider.js"),
     path.join(workspace, "server", "src", "routes", "trading", "privateShadowRuntime.js"),
     path.join(workspace, "src", "pages", "TradingLab.jsx"),

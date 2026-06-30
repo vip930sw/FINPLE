@@ -282,23 +282,24 @@ Step 116 should be split into small commits and PR-sized phases:
 30. Read-only provider request envelope validator fixtures.
 31. Read-only provider response envelope validation preflight.
 32. Read-only provider response envelope validator fixtures.
-33. Trading Step 116 progress summary.
-34. Read-only provider request envelope validation contract.
-35. Read-only provider request envelope validation preflight.
-36. Read-only provider request envelope local validator.
-37. Read-only provider request envelope contract.
-38. Read-only provider response envelope contract.
-39. Read-only snapshot normalization contract.
-40. Read-only snapshot risk input contract.
-41. Read-only snapshot risk input local validator.
-42. Private shadow order intent contract.
-43. Private shadow order intent local validator.
-44. Private shadow intent audit event contract.
-45. Private shadow intent audit event local validator.
-46. Private shadow runtime review packet contract.
-47. Private shadow runtime review packet local validator.
-48. Private shadow operator access contract.
-49. Private shadow operator access local validator.
+33. Read-only provider response envelope local validator.
+34. Trading Step 116 progress summary.
+35. Read-only provider request envelope validation contract.
+36. Read-only provider request envelope validation preflight.
+37. Read-only provider request envelope local validator.
+38. Read-only provider request envelope contract.
+39. Read-only provider response envelope contract.
+40. Read-only snapshot normalization contract.
+41. Read-only snapshot risk input contract.
+42. Read-only snapshot risk input local validator.
+43. Private shadow order intent contract.
+44. Private shadow order intent local validator.
+45. Private shadow intent audit event contract.
+46. Private shadow intent audit event local validator.
+47. Private shadow runtime review packet contract.
+48. Private shadow runtime review packet local validator.
+49. Private shadow operator access contract.
+50. Private shadow operator access local validator.
 49. Private shadow runtime preflight.
 50. KIS order adapter design review.
 51. Manual order permission preflight.
@@ -2064,6 +2065,30 @@ Current state remains:
 - `liveTradingAllowed=false`
 
 The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not receive provider responses, parse raw KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
+
+## Step 116-3L Trading Read-Only Provider Response Envelope Local Validator
+
+The first Trading Read-Only Provider Response Envelope Local Validator is:
+
+```text
+scripts/validate-trading-read-only-provider-response-envelope.cjs
+scripts/validate-trading-read-only-provider-response-envelope.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validator
+```
+
+This is a pure local JSON validator for explicit response-envelope files, not a response parser, provider fetcher, KIS caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It validates only caller-supplied local JSON via `--envelope` and rejects unknown fields, raw provider payload shapes, order/execution/fill content, enabled provider-call flags, enabled order-submission flags, unknown snapshot types, malformed hashes, and non-shadow modes.
+
+Current state remains:
+
+- `responsePayloadReceivedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+Validator success still does not receive provider responses, parse raw KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Explicit Non-Goals
 

@@ -44,7 +44,7 @@ const ARCHITECTURE_DOC_PATH = path.join(
 
 const CONTRACT_VERSION = "trading-lab-step116-read-only-provider-response-envelope-validation-preflight-v0.1";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
-const FUTURE_VALIDATOR_PATH = path.join("scripts", "validate-trading-read-only-provider-response-envelope.cjs");
+const VALIDATOR_PATH = path.join("scripts", "validate-trading-read-only-provider-response-envelope.cjs");
 const REQUIRED_PREFLIGHT_GATES = [
   "response_envelope_contract_ready",
   "request_envelope_fixtures_ready",
@@ -91,7 +91,6 @@ const FORBIDDEN_PREFLIGHT_CONTENT = [
   "scenario_monthly_return_row",
 ];
 const FORBIDDEN_RUNTIME_ARTIFACTS = [
-  FUTURE_VALIDATOR_PATH,
   path.join("server", "src", "services", "trading", "kisReadOnlyProvider.js"),
   path.join("server", "src", "services", "trading", "readOnlyApprovalImport.js"),
   path.join("server", "src", "services", "trading", "privateShadowRuntime.js"),
@@ -221,8 +220,8 @@ function buildContract() {
     },
     futurePureLocalResponseEnvelopeValidatorBoundary: {
       scope: "read_only_provider_response_envelope_validation_preflight",
-      futureValidatorPath: FUTURE_VALIDATOR_PATH,
-      currentStepImplementsValidator: false,
+      validatorPath: VALIDATOR_PATH,
+      currentStepImplementsValidator: fs.existsSync(VALIDATOR_PATH),
       currentStepReceivesProviderResponse: false,
       currentStepCallsProvider: false,
       preflightGates,

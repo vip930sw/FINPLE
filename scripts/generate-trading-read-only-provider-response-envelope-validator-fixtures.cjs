@@ -36,6 +36,7 @@ const CALL_AUTHORIZATION_PREFLIGHT_PATH = path.join(
   "processed",
   "trading_lab_step116_read_only_provider_call_authorization_preflight.json",
 );
+const VALIDATOR_PATH = path.join("scripts", "validate-trading-read-only-provider-response-envelope.cjs");
 const ARCHITECTURE_DOC_PATH = path.join(
   "docs",
   "trading",
@@ -44,7 +45,6 @@ const ARCHITECTURE_DOC_PATH = path.join(
 
 const CONTRACT_VERSION = "trading-lab-step116-read-only-provider-response-envelope-validator-fixtures-v0.1";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
-const FUTURE_VALIDATOR_PATH = path.join("scripts", "validate-trading-read-only-provider-response-envelope.cjs");
 const REQUIRED_RESPONSE_FIELDS = [
   "requestId",
   "mode",
@@ -86,7 +86,6 @@ const FORBIDDEN_FIXTURE_CONTENT = [
   "64408140",
 ];
 const FORBIDDEN_RUNTIME_ARTIFACTS = [
-  FUTURE_VALIDATOR_PATH,
   path.join("server", "src", "services", "trading", "kisReadOnlyProvider.js"),
   path.join("server", "src", "services", "trading", "readOnlyApprovalImport.js"),
   path.join("server", "src", "services", "trading", "privateShadowRuntime.js"),
@@ -141,6 +140,13 @@ function forbiddenRuntimeArtifacts() {
 function fixtureContainsForbiddenContent(fixture) {
   const serialized = JSON.stringify(fixture);
   return FORBIDDEN_FIXTURE_CONTENT.filter((token) => serialized.includes(token));
+}
+
+function loadValidator() {
+  if (!fs.existsSync(VALIDATOR_PATH)) {
+    return null;
+  }
+  return require(path.resolve(VALIDATOR_PATH));
 }
 
 function validSyntheticEnvelope() {
@@ -220,8 +226,23 @@ function buildContract() {
   const snapshotNormalizationContract = readJson(SNAPSHOT_NORMALIZATION_CONTRACT_PATH);
   const callAuthorizationPreflight = readJson(CALL_AUTHORIZATION_PREFLIGHT_PATH);
   const architectureDoc = readText(ARCHITECTURE_DOC_PATH);
+  const validator = loadValidator();
   const syntheticValidEnvelope = validSyntheticEnvelope();
   const syntheticInvalidFixtures = invalidSyntheticFixtures(syntheticValidEnvelope);
+  const validResult = validator?.validateReadOnlyProviderResponseEnvelope?.(syntheticValidEnvelope) ?? null;
+  const invalidResults = syntheticInvalidFixtures.map((fixture) => {
+    const result = validator?.validateReadOnlyProviderResponseEnvelope?.(fixture.envelope) ?? null;
+    const actualErrorCodes = [...new Set((result?.errors ?? []).map((error) => error.code))].sort();
+    const missingExpectedErrorCodes = fixture.expectedErrorCodes.filter((code) => !actualErrorCodes.includes(code));
+    return {
+      id: fixture.id,
+      valid: result?.valid ?? null,
+      expectedErrorCodes: fixture.expectedErrorCodes,
+      actualErrorCodes,
+      missingExpectedErrorCodes,
+      passed: result?.valid === false && missingExpectedErrorCodes.length === 0,
+    };
+  });
   const validFixtureFields = Object.keys(syntheticValidEnvelope);
   const invalidFixtureIds = syntheticInvalidFixtures.map((fixture) => fixture.id);
   const missingRequiredResponseFields = missingValues(validFixtureFields, REQUIRED_RESPONSE_FIELDS);
@@ -256,6 +277,12 @@ function buildContract() {
     callAuthorizationStillBlocked:
       callAuthorizationPreflight.readiness?.providerCallAuthorizationAllowedNow === false &&
       callAuthorizationPreflight.readiness?.providerCallsAllowed === false,
+    validatorExportsLocalValidation:
+      typeof validator?.validateReadOnlyProviderResponseEnvelope === "function" &&
+      readText(VALIDATOR_PATH).includes("envelope_path_required") &&
+      readText(VALIDATOR_PATH).includes("--envelope"),
+    validFixturePasses: validResult?.valid === true,
+    invalidFixturesFailWithExpectedCodes: invalidResults.every((result) => result.passed),
     validFixtureFieldsReady: missingRequiredResponseFields.length === 0,
     invalidFixtureCatalogReady: missingInvalidFixtureIds.length === 0,
     architectureDocMentionsResponseEnvelopeValidatorFixtures:
@@ -278,6 +305,9 @@ function buildContract() {
     checks.endpointCategoryValidationPreflightReady &&
     checks.snapshotNormalizationContractReady &&
     checks.callAuthorizationStillBlocked &&
+    checks.validatorExportsLocalValidation &&
+    checks.validFixturePasses &&
+    checks.invalidFixturesFailWithExpectedCodes &&
     checks.validFixtureFieldsReady &&
     checks.invalidFixtureCatalogReady &&
     checks.architectureDocMentionsResponseEnvelopeValidatorFixtures &&
@@ -314,8 +344,8 @@ function buildContract() {
     validation: {
       redactionBoundary:
         "synthetic response-envelope fixtures only; no real account number, app key, app secret, token, raw provider payload, raw order payload, execution content, or private approval packet content",
-      futureValidatorPath: FUTURE_VALIDATOR_PATH,
-      currentStepImplementsValidator: false,
+      validatorPath: VALIDATOR_PATH,
+      currentStepImplementsValidator: Boolean(validator),
       currentStepReceivesProviderResponse: false,
       currentStepCallsProvider: false,
       validSyntheticEnvelope: syntheticValidEnvelope,
@@ -327,6 +357,12 @@ function buildContract() {
         "fixture_success_does_not_enable_runtime_route",
         "fixture_success_does_not_enable_order_submission",
       ],
+      evidence: {
+        validFixturePasses: validResult?.valid ?? null,
+        validFixtureErrorCodes: validResult?.errors?.map((error) => error.code) ?? [],
+        invalidFixturesFailWithExpectedCodes: invalidResults.every((result) => result.passed),
+        invalidResults,
+      },
     },
     checks,
     evidence: {
@@ -336,6 +372,7 @@ function buildContract() {
       endpointCategoryValidationPreflightStatus: endpointCategoryValidationPreflight.readiness?.status,
       snapshotNormalizationContractStatus: snapshotNormalizationContract.readiness?.status,
       callAuthorizationPreflightStatus: callAuthorizationPreflight.readiness?.status,
+      validatorPath: VALIDATOR_PATH,
       validFixtureFields,
       missingRequiredResponseFields,
       invalidFixtureIds,
@@ -367,6 +404,9 @@ function buildContract() {
           : ["endpoint_category_validation_preflight_not_ready"]),
         ...(checks.snapshotNormalizationContractReady ? [] : ["snapshot_normalization_contract_not_ready"]),
         ...(checks.callAuthorizationStillBlocked ? [] : ["provider_call_authorization_not_blocked"]),
+        ...(checks.validatorExportsLocalValidation ? [] : ["local_response_envelope_validator_export_not_ready"]),
+        ...(checks.validFixturePasses ? [] : ["valid_synthetic_fixture_does_not_pass"]),
+        ...(checks.invalidFixturesFailWithExpectedCodes ? [] : ["invalid_synthetic_fixtures_do_not_fail_as_expected"]),
         ...missingRequiredResponseFields.map((field) => `missing_required_response_field_${field}`),
         ...missingInvalidFixtureIds.map((id) => `missing_invalid_fixture_${id}`),
         ...(checks.architectureDocMentionsResponseEnvelopeValidatorFixtures
