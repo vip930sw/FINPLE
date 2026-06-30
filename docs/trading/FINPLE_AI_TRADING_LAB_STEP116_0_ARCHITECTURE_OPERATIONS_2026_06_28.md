@@ -3188,6 +3188,21 @@ This is a synthetic fixture regression contract, not a real validation receipt, 
 
 Fixture readiness still does not create or read `data/private/trading/read_only_provider_response_envelope_validation_result_receipt.redacted.json`, does not receive provider responses, does not parse raw KIS payloads, does not call KIS, does not authorize provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-3L-D Trading Read-Only Provider Response Envelope Validation Result Receipt Review Preflight
+
+The first review preflight for a redacted read-only provider response envelope validation result receipt is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight
+```
+
+This is a review preflight contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records the future owner-assisted review gate for an explicit redacted response-validation receipt path while keeping current-step receipt reads/writes, raw response handling, provider calls, runtime routes, UI, DB writes, orders, and live trading closed.
+
+Preflight readiness still does not create or read `data/private/trading/read_only_provider_response_envelope_validation_result_receipt.redacted.json`, does not receive provider responses, does not parse raw KIS payloads, does not call KIS, does not authorize provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

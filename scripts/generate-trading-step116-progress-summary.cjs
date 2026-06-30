@@ -315,6 +315,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only provider response envelope validation result receipt validator fixtures",
     "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json",
   ],
+  [
+    "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewPreflight",
+    "Read-only provider response envelope validation result receipt review preflight",
+    "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_preflight.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -437,6 +442,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-response-envelope-validation-result-receipt",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-validator",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-validator-fixtures",
+  "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
