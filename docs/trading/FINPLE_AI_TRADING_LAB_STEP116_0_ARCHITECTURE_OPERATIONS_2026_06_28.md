@@ -317,7 +317,8 @@ Step 116 should be split into small commits and PR-sized phases:
 65. Manual order permission import implementation preflight validator fixtures.
 66. Manual order permission packet local validator.
 67. Manual order permission packet validator fixtures.
-68. Live guarded execution only after manual approval.
+68. Manual order permission packet validation preflight.
+69. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2230,6 +2231,21 @@ npm run check:trading-manual-order-permission-packet-validator-fixtures
 This is a synthetic fixture contract for local validator regression only, not a private permission packet, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records one redacted valid packet fixture and invalid fixture definitions that must fail locally for missing or unknown fields, malformed hashes, missing symbol hashes, expired permissions, invalid mode, invalid time windows, invalid numeric limits, enabled provider/order/runtime/UI flags, and forbidden secret-shaped strings.
 
 Fixture readiness still does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4J Trading Manual Order Permission Packet Validation Preflight
+
+The first Trading Manual Order Permission Packet Validation Preflight is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_packet_validation_preflight.json
+scripts/generate-trading-manual-order-permission-packet-validation-preflight.cjs
+scripts/generate-trading-manual-order-permission-packet-validation-preflight.test.cjs
+npm run check:trading-manual-order-permission-packet-validation-preflight
+```
+
+This is an owner-assisted validation readiness contract, not a private packet reader, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records that a future local validation run must use an explicit owner-supplied packet path; this preflight does not read any default private packet path.
+
+The preflight requires the redacted manual order permission template, packet validator fixtures, import implementation preflight, live-guarded order-adapter preflight, and env risk gate to remain fail-closed. Validation readiness still does not create or import `data/private/trading/manual_order_permission.redacted.json`, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
