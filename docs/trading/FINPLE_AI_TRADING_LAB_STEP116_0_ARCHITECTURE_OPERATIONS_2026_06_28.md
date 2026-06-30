@@ -3451,6 +3451,21 @@ This is an operational test planning contract, not a paper/shadow runtime execut
 
 Planning the paper/shadow operational test is allowed now; executing it is not. Execution stays blocked until private shadow runtime review, owner evidence import, and operator access review are recorded separately. Test success still cannot approve provider calls, order submission, runtime routes, public UI, DB writes, live-guarded manual testing, or public dashboard/router rollout.
 
+## Step 116-5D Trading Live-Guarded Manual Test Plan
+
+The first Trading Live-Guarded Manual Test Plan contract is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_manual_test_plan_contract.json
+scripts/generate-trading-live-guarded-manual-test-plan-contract.cjs
+scripts/generate-trading-live-guarded-manual-test-plan-contract.test.cjs
+npm run check:trading-live-guarded-manual-test-plan
+```
+
+This is a live-guarded manual test planning contract, not a KIS call, provider call, order submission, private packet import, order adapter implementation, runtime route, dashboard, DB writer, or live trading approval. It records the future `live_guarded_manual_test_plan` evidence: single-intent test plan, tiny notional cap, manual operator approval reference, manual order permission receipt-review reference, kill-switch and risk-gate clearance references, paper/shadow operational test reference, order adapter preflight reference, separate order credential boundary reference, audit logger reference, rollback/cancel limits for this step, and post-test review requirement.
+
+Planning the future live-guarded manual test is allowed now; executing it is not. Execution stays blocked until manual permission evidence, operator approval, kill-switch clearance, risk-gate clearance, private runtime review, and order adapter implementation review are recorded separately. A successful future single manual test still cannot approve automated trading, public dashboard/router rollout, or any broader order submission mode.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

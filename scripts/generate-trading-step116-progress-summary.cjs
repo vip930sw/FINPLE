@@ -380,6 +380,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Paper shadow operational test plan",
     "trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
   ],
+  [
+    "liveGuardedManualTestPlan",
+    "Live-guarded manual test plan",
+    "trading_lab_step116_live_guarded_manual_test_plan_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -521,6 +526,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-launch-readiness-plan",
   "check:trading-rules-and-risk-limits-review",
   "check:trading-paper-shadow-operational-test-plan",
+  "check:trading-live-guarded-manual-test-plan",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -562,6 +568,7 @@ const REMAINING_TRADING_GATES = [
   "live_guarded_order_adapter_implementation_review_not_started",
   "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
   "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
+  "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
   "public_homepage_router_blocked_until_live_guarded_review_complete",
 ];
 

@@ -106,7 +106,8 @@
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResultValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
       "tradingLaunchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
       "tradingRulesAndRiskLimitsReview": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
-      "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json"
+      "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
+      "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json"
     }
   },
   "outputFiles": {
@@ -127,10 +128,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 100,
-    "trackedContractsReady": 100,
+    "trackedContractsTotal": 101,
+    "trackedContractsReady": 101,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 138,
+    "requiredNpmScriptsTotal": 139,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1035,6 +1036,15 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedManualTestPlan",
+      "title": "Live-guarded manual test plan",
+      "filePath": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
+      "status": "live_guarded_manual_test_plan_ready_execution_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
@@ -1052,6 +1062,7 @@
     "live_guarded_order_adapter_implementation_review_not_started",
     "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
     "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
+    "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
     "public_homepage_router_blocked_until_live_guarded_review_complete"
   ],
   "checks": {
@@ -1103,6 +1114,7 @@
       "live_guarded_order_adapter_implementation_review_not_started",
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
+      "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
       "public_homepage_router_blocked_until_live_guarded_review_complete"
     ]
   }

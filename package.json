@@ -182,6 +182,7 @@
     "check:trading-launch-readiness-plan": "node scripts/generate-trading-launch-readiness-plan-contract.cjs --check && node --test scripts/generate-trading-launch-readiness-plan-contract.test.cjs",
     "check:trading-rules-and-risk-limits-review": "node scripts/generate-trading-rules-and-risk-limits-review-contract.cjs --check && node --test scripts/generate-trading-rules-and-risk-limits-review-contract.test.cjs",
     "check:trading-paper-shadow-operational-test-plan": "node scripts/generate-trading-paper-shadow-operational-test-plan-contract.cjs --check && node --test scripts/generate-trading-paper-shadow-operational-test-plan-contract.test.cjs",
+    "check:trading-live-guarded-manual-test-plan": "node scripts/generate-trading-live-guarded-manual-test-plan-contract.cjs --check && node --test scripts/generate-trading-live-guarded-manual-test-plan-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
