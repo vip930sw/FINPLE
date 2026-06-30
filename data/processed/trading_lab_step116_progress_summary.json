@@ -103,7 +103,8 @@
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewRunbook": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_runbook_contract.json",
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_runbook_validator_fixtures.json",
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResult": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_contract.json",
-      "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResultValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json"
+      "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResultValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
+      "tradingLaunchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json"
     }
   },
   "outputFiles": {
@@ -124,10 +125,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 97,
-    "trackedContractsReady": 97,
+    "trackedContractsTotal": 98,
+    "trackedContractsReady": 98,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 135,
+    "requiredNpmScriptsTotal": 136,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1005,6 +1006,15 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "tradingLaunchReadinessPlan",
+      "title": "Trading launch readiness plan",
+      "filePath": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
+      "status": "launch_readiness_plan_ready_trading_execution_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
@@ -1019,7 +1029,8 @@
     "manual_order_permission_packet_not_imported",
     "kill_switch_clearance_not_recorded_for_order_submission",
     "risk_gate_clearance_not_recorded_for_order_submission",
-    "live_guarded_order_adapter_implementation_review_not_started"
+    "live_guarded_order_adapter_implementation_review_not_started",
+    "public_homepage_router_blocked_until_live_guarded_review_complete"
   ],
   "checks": {
     "summaryOnly": true,
@@ -1067,7 +1078,8 @@
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",
-      "live_guarded_order_adapter_implementation_review_not_started"
+      "live_guarded_order_adapter_implementation_review_not_started",
+      "public_homepage_router_blocked_until_live_guarded_review_complete"
     ]
   }
 }

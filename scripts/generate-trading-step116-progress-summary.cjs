@@ -365,6 +365,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only provider response envelope validation result receipt review result validator fixtures",
     "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
   ],
+  [
+    "tradingLaunchReadinessPlan",
+    "Trading launch readiness plan",
+    "trading_lab_step116_launch_readiness_plan_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -503,6 +508,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures",
+  "check:trading-launch-readiness-plan",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -542,6 +548,7 @@ const REMAINING_TRADING_GATES = [
   "kill_switch_clearance_not_recorded_for_order_submission",
   "risk_gate_clearance_not_recorded_for_order_submission",
   "live_guarded_order_adapter_implementation_review_not_started",
+  "public_homepage_router_blocked_until_live_guarded_review_complete",
 ];
 
 function fail(message) {

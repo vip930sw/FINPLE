@@ -3406,6 +3406,21 @@ This is a redacted review-result contract, not a provider caller, token refresh 
 
 Review-result readiness still does not create or read `data/private/trading/read_only_provider_call_authorization_review_result.redacted.json`, does not create provider request envelopes, does not call KIS, does not refresh tokens, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-5A Trading Launch Readiness Plan
+
+The first Trading Launch Readiness Plan contract is:
+
+```text
+data/processed/trading_lab_step116_launch_readiness_plan_contract.json
+scripts/generate-trading-launch-readiness-plan-contract.cjs
+scripts/generate-trading-launch-readiness-plan-contract.test.cjs
+npm run check:trading-launch-readiness-plan
+```
+
+This is a launch sequencing contract, not a provider caller, runtime route, private dashboard, public dashboard, homepage router change, DB migration, order adapter implementation, or live trading approval. It records the expected path from contract readiness through owner evidence import, read-only provider private review, private shadow runtime review, private operator dashboard review, trading rules and risk limits review, paper/shadow operational testing, live-guarded manual testing, and only then `public_dashboard_and_homepage_router_review`.
+
+The homepage router and dashboard work remains blocked now. Planning the future dashboard information architecture is allowed, but changing the homepage router, adding public trading UI, creating trading routes, adding private operator dashboard code, calling KIS, writing DB rows, or submitting orders remains outside the current step.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

@@ -107,6 +107,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_runbook_validator_fixtures.json",
   "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_contract.json",
   "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
+  "trading_lab_step116_launch_readiness_plan_contract.json",
 ];
 
 function makeWorkspace() {
@@ -152,10 +153,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 97);
-  assert.equal(report.progress.trackedContractsReady, 97);
+  assert.equal(report.progress.trackedContractsTotal, 98);
+  assert.equal(report.progress.trackedContractsReady, 98);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 135);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 136);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
@@ -189,6 +190,7 @@ test("records remaining trading gates instead of approving provider calls or ord
   );
   assert.match(report.remainingTradingGates.join("|"), /manual_order_permission_packet_not_imported/);
   assert.match(report.remainingTradingGates.join("|"), /live_guarded_order_adapter_implementation_review_not_started/);
+  assert.match(report.remainingTradingGates.join("|"), /public_homepage_router_blocked_until_live_guarded_review_complete/);
   assert.equal(report.readiness.providerCallsAllowed, false);
   assert.equal(report.readiness.orderSubmissionAllowed, false);
   assert.equal(report.readiness.runtimeRouteAllowed, false);
