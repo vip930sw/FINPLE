@@ -91,6 +91,7 @@
       "readOnlyProviderEndpointAllowlist": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
       "readOnlyProviderEndpointAllowlistValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_validator_fixtures.json",
       "readOnlyProviderEndpointCategoryValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
+      "readOnlyProviderEndpointCategoryValidationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight_validator_fixtures.json",
       "readOnlyProviderRequestEnvelopeValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validator_fixtures.json",
       "readOnlyProviderResponseEnvelopeValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_preflight.json",
       "readOnlyProviderResponseEnvelopeValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validator_fixtures.json",
@@ -122,10 +123,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 95,
-    "trackedContractsReady": 95,
+    "trackedContractsTotal": 96,
+    "trackedContractsReady": 96,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 132,
+    "requiredNpmScriptsTotal": 134,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -883,6 +884,15 @@
       "title": "Read-only provider endpoint category validation preflight",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
       "status": "preflight_ready_endpoint_categories_aligned_provider_calls_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderEndpointCategoryValidationPreflightValidatorFixtures",
+      "title": "Read-only provider endpoint category validation preflight validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight_validator_fixtures.json",
+      "status": "fixtures_ready_for_read_only_provider_endpoint_category_validation_preflight_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

@@ -3081,6 +3081,35 @@ The aligned read-only categories are `account_cash_balance_read`, `account_posit
 
 Preflight success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not map KIS endpoint paths or TR IDs, does not create provider requests, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-3H-A Trading Read-Only Provider Endpoint Category Validation Preflight Local Validator
+
+The first local validator for the Trading Read-Only Provider Endpoint Category Validation Preflight is:
+
+```text
+scripts/validate-trading-read-only-provider-endpoint-category-validation-preflight.cjs
+scripts/validate-trading-read-only-provider-endpoint-category-validation-preflight.test.cjs
+npm run check:trading-read-only-provider-endpoint-category-validation-preflight-validator
+```
+
+This validator checks only the generated `read_only_provider_endpoint_category_validation_preflight` contract. It requires an explicit `--contract` path, requires the aligned read-only endpoint category catalog, rejects unknown allowed categories, requires category evidence alignment between allowlist, request-envelope, and local validator categories, and rejects provider-specific paths, provider transaction ids, credentials, account-shaped values, raw payload markers, runtime route/public UI/DB/order flags, and provider-call flags.
+
+The validator is local-only and synthetic. It does not map KIS endpoint paths or TR IDs, does not create provider requests, does not refresh tokens, does not call KIS, does not implement provider services, does not create runtime routes or UI, does not write `scenario_monthly_returns.csv`, and does not approve live trading.
+
+## Step 116-3H-B Trading Read-Only Provider Endpoint Category Validation Preflight Validator Fixtures
+
+The first validator fixtures for the Trading Read-Only Provider Endpoint Category Validation Preflight are:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_endpoint_category_validation_preflight_validator_fixtures.json
+scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-endpoint-category-validation-preflight-validator-fixtures
+```
+
+This is a `read_only_provider_endpoint_category_validation_preflight_validator_fixtures` contract. It records a synthetic valid fixture copied from the current category validation preflight plus synthetic invalid fixtures for missing categories, unknown categories, missing validation rules, category evidence drift, opened implementation/provider/order/route flags, provider-specific path or transaction-id leakage, and raw-shaped value injection.
+
+The fixture contract remains redacted and fixtures-only. It does not contain account numbers, credentials, tokens, provider-specific URL paths, provider transaction ids, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, private approval packets, provider calls, runtime routes, public UI, DB writes, or scenario monthly return rows.
+
 ## Step 116-3I Trading Read-Only Provider Request Envelope Validator Fixtures
 
 The first Trading Read-Only Provider Request Envelope Validator Fixtures contract is:
