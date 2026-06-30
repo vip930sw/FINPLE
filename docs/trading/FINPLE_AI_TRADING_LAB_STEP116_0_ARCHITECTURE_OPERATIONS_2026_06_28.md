@@ -3526,6 +3526,21 @@ This is an owner-assisted preparation runbook contract, not a hash generator, pr
 
 The runbook is ready as guidance, but it does not request raw inputs now, does not generate hashes, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
 
+## Step 116-5I Trading Read-Only Approval Packet Validation Runbook
+
+The first Trading Read-Only Approval Packet Validation Runbook contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json
+scripts/generate-trading-read-only-approval-packet-validation-runbook-contract.cjs
+scripts/generate-trading-read-only-approval-packet-validation-runbook-contract.test.cjs
+npm run check:trading-read-only-approval-packet-validation-runbook
+```
+
+This is an owner-assisted validation runbook contract, not a packet validator execution, private packet creator, approval importer, KIS call, Alpha Vantage call, provider call, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records the future validation sequence for a redacted read-only approval packet: explicit owner request, packet prepared outside repo commits, explicit owner-supplied local packet path, no default private-packet path read, explicit validation timestamp, redacted status review only, no packet path recording, and no committed private packet.
+
+The runbook is ready as guidance, but it does not run `scripts/validate-trading-redacted-read-only-approval-packet.cjs`, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
