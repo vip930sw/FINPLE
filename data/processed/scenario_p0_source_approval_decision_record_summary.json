@@ -1,9 +1,8 @@
 {
-  "decisionRecordVersion": "scenario-p0-real-approval-import-v0.1-source-decision",
-  "auditedAt": "2026-06-28T00:00:00Z",
+  "decisionRecordVersion": "scenario-p0-source-approval-decision-record-v0.2",
+  "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
-    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv",
-    "approvalIntakeValidation": "data\\processed\\scenario_p0_approval_intake_validation.json"
+    "requirements": "data\\processed\\scenario_p0_source_approval_requirements.json"
   },
   "outputFiles": {
     "csv": "data\\processed\\scenario_p0_source_approval_decision_record.csv",
@@ -13,29 +12,28 @@
   "rowCounts": {
     "providerGroups": 5,
     "sourcePolicyRows": 17,
-    "decidedGroups": 5,
-    "pendingGroups": 0
+    "decidedGroups": 0,
+    "pendingGroups": 5
   },
   "sourceIntegrity": {
     "expectedProviderGroups": 5,
     "expectedSourcePolicyRows": 17,
     "providerGroupCountVerified": true,
-    "sourcePolicyRowsMatchRequirements": true,
-    "monthlyDataFileAbsent": true
+    "sourcePolicyRowsMatchRequirements": true
   },
   "counts": {
     "byDecisionStatus": {
-      "approved_source_policy": 5
+      "pending_decision": 5
     },
     "byBlocker": {
-      "(blank)": 5
+      "source_license_refresh_policy_not_decided": 5
     }
   },
   "readiness": {
-    "status": "source_approval_decisions_imported",
+    "status": "pending_source_approval_decisions",
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "run_approval_readiness_after_real_approval_import"
+    "nextAllowedStep": "fill_decision_record_before_source_policy_matrix_approval"
   }
 }

@@ -12,21 +12,22 @@
   },
   "checks": {
     "totalSourcePolicyRows": 17,
-    "approvedSourcePolicyRows": 17,
-    "plannedSourcePolicyUpdates": 17,
-    "syncPlanReady": true,
-    "canSyncSourcePolicy": true,
-    "sourcePolicyMatrixWritten": true,
+    "approvedSourcePolicyRows": 0,
+    "plannedSourcePolicyUpdates": 0,
+    "syncPlanReady": false,
+    "canSyncSourcePolicy": false,
+    "sourcePolicyMatrixWritten": false,
     "blockers": [
-      "source_policy_matrix_already_contains_approved_rows"
+      "source_policy_sync_plan_not_ready",
+      "source_policy_sync_plan_not_complete"
     ]
   },
   "readiness": {
-    "status": "ready_for_manual_source_policy_sync",
-    "sourcePolicyMatrixWritten": true,
+    "status": "blocked_before_source_policy_sync",
+    "sourcePolicyMatrixWritten": false,
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "manually_sync_source_policy_matrix_then_run_approval_readiness"
+    "nextAllowedStep": "complete_ready_approval_intake_and_sync_plan_before_source_policy_write"
   }
 }

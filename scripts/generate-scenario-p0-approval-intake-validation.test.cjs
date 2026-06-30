@@ -120,16 +120,16 @@ test("passes with current approval intake validation", () => {
   assert.match(result.stdout, /scenario_p0_approval_intake_validation\.json/);
 });
 
-test("classifies current committed template as ready without allowing provider calls", () => {
+test("classifies current committed template as pending without allowing provider calls", () => {
   const workspace = makeWorkspace();
   const result = runValidation(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const validation = JSON.parse(readWorkspaceFile(workspace, "scenario_p0_approval_intake_validation.json"));
   assert.equal(validation.rowCounts.providerGroups, 5);
-  assert.equal(validation.rowCounts.pendingRows, 0);
-  assert.equal(validation.rowCounts.readyRows, 5);
-  assert.equal(validation.readiness.allRowsReadyForSourcePolicyReview, true);
+  assert.equal(validation.rowCounts.pendingRows, 5);
+  assert.equal(validation.rowCounts.readyRows, 0);
+  assert.equal(validation.readiness.allRowsReadyForSourcePolicyReview, false);
   assert.equal(validation.readiness.providerCallsAllowed, false);
   assert.equal(validation.readiness.monthlyDataFileWritten, false);
   assert.equal(validation.readiness.bootstrapStillBlocked, true);

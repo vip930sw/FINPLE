@@ -1,9 +1,8 @@
 {
-  "matrixVersion": "scenario-p0-source-policy-matrix-v0.2-real-approval-import",
-  "auditedAt": "2026-06-28T00:00:00Z",
+  "matrixVersion": "scenario-p0-source-policy-matrix-v0.2",
+  "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
-    "dryRun": "data\\processed\\scenario_p0_monthly_cache_dry_run.json",
-    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv"
+    "dryRun": "data\\processed\\scenario_p0_monthly_cache_dry_run.json"
   },
   "outputFiles": {
     "csv": "data\\processed\\scenario_p0_source_policy_matrix.csv",
@@ -30,7 +29,7 @@
       "USD_KRW_fx_provider": 1
     },
     "byStatus": {
-      "approved_source_policy": 17
+      "blocked_source_policy_review": 17
     },
     "byRequiredApproval": {
       "source_license_refresh_policy": 17
@@ -45,16 +44,16 @@
     },
     "providerTasksVerified": true,
     "manifestCountsVerified": true,
-    "allRowsApproved": true,
-    "endpointAndLicenseApproved": true,
+    "allRowsBlocked": true,
+    "endpointAndLicenseUnselected": true,
     "monthlyDataFileAbsent": true
   },
   "readiness": {
-    "status": "source_policy_approved_after_real_approval_import",
-    "providerEndpointSelected": true,
-    "licensePolicyReviewed": true,
+    "status": "blocked_source_policy_review",
+    "providerEndpointSelected": false,
+    "licensePolicyReviewed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "rerun_approval_readiness_and_writer_gate_after_real_approval_import"
+    "nextAllowedStep": "approve_p0_source_policy_before_provider_adapter"
   }
 }

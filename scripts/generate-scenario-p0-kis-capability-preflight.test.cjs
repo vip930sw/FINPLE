@@ -79,6 +79,12 @@ test("keeps provider runtime blocked until KIS terms and raw redistribution are 
 
 test("accepts synthetic KIS endpoint evidence without allowing provider calls", () => {
   const workspace = makeWorkspace();
+  const intakeHeader = readText(workspace, "scenario_p0_approval_intake_template.csv").split(/\r?\n/)[0];
+  const readyIntakeCsv = `${intakeHeader}
+SP500_TR_primary_or_SPY_adjusted_close_proxy,Korea Investment Open API overseas SPY adjusted-close proxy,SPY proxy,US,SP500_TR,1,ready_for_source_policy_review,Korea Investment Open API SPY adjusted-close proxy,https://apiportal.koreainvestment.com/apiservice-apiservice,approved_internal_monthly_derived_return_cache,approved_hash_or_raw_retention_policy,approved_no_raw_redistribution_monthly_derived_only,finple_lab@naver.com,lsw_28@naver.com,finple_lab@naver.com,2026-06-28T10:00:00Z,https://apiportal.koreainvestment.com/provider-info,synthetic approval evidence,commercial,redistribution,raw,cache,attribution,label,,,synthetic_ready
+US_price_total_return_dividend_provider,Korea Investment Open API overseas US ETF data,US ETF source,US,ITOT|IVV,8,ready_for_source_policy_review,Korea Investment Open API overseas US ETF data,https://apiportal.koreainvestment.com/apiservice-apiservice,approved_internal_monthly_derived_return_cache,approved_hash_or_raw_retention_policy,approved_no_raw_redistribution_monthly_derived_only,finple_lab@naver.com,lsw_28@naver.com,finple_lab@naver.com,2026-06-28T10:00:00Z,https://apiportal.koreainvestment.com/provider-info,synthetic approval evidence,commercial,redistribution,raw,cache,attribution,label,,,synthetic_ready
+`;
+  writeText(workspace, "scenario_p0_approval_intake_template.csv", readyIntakeCsv);
   const header = readText(workspace, "scenario_p0_kis_capability_review.csv").split(/\r?\n/)[0];
   const readyCsv = `${header}
 kis_overseas_monthly_adjusted_close_proxy,SP500_TR_primary_or_SPY_adjusted_close_proxy,SPY adjusted-close proxy monthly price source,Korea Investment Open API SPY adjusted-close proxy,official KIS overseas historical price endpoint|month-end observation rule|adjustment or close-price basis|proxy display label policy,https://apiportal.koreainvestment.com/apiservice-apiservice,https://apiportal.koreainvestment.com/provider-info,yes,yes,yes,yes,yes,finple_lab@naver.com,2026-06-28T10:00:00Z,synthetic endpoint evidence for test,ready_for_runtime_preflight,,synthetic_ready

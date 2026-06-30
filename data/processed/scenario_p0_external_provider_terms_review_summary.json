@@ -1,8 +1,8 @@
 {
-  "reviewVersion": "scenario-p0-real-approval-import-v0.1-external-terms",
-  "auditedAt": "2026-06-28T00:00:00Z",
+  "reviewVersion": "scenario-p0-external-provider-terms-review-v0.2",
+  "auditedAt": "2026-06-27T00:00:00Z",
   "sourceFiles": {
-    "approvalIntakeTemplate": "data\\processed\\scenario_p0_approval_intake_template.csv"
+    "candidateReview": "data\\processed\\scenario_p0_provider_candidate_review.csv"
   },
   "officialSourcesReviewed": [
     {
@@ -24,16 +24,16 @@
       "officialTermsUrl": "https://apiportal.koreainvestment.com/"
     },
     {
-      "providerCandidate": "USD_KRW_fx_provider",
-      "namedProviderCandidate": "FRED DEXKOUS",
-      "officialDocsUrl": "https://fred.stlouisfed.org/series/DEXKOUS",
-      "officialTermsUrl": "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
-    },
-    {
       "providerCandidate": "US_price_total_return_dividend_provider",
       "namedProviderCandidate": "Korea Investment Open API overseas US ETF data",
       "officialDocsUrl": "https://apiportal.koreainvestment.com/",
       "officialTermsUrl": "https://apiportal.koreainvestment.com/"
+    },
+    {
+      "providerCandidate": "USD_KRW_fx_provider",
+      "namedProviderCandidate": "FRED DEXKOUS",
+      "officialDocsUrl": "https://fred.stlouisfed.org/series/DEXKOUS",
+      "officialTermsUrl": "https://fred.stlouisfed.org/docs/api/terms_of_use.html"
     }
   ],
   "outputFiles": {
@@ -43,29 +43,33 @@
   },
   "rowCounts": {
     "providerCandidates": 5,
-    "approvedProviders": 5,
-    "blockedProviders": 0
+    "approvedProviders": 0,
+    "blockedProviders": 5
   },
   "counts": {
     "byApprovalStatus": {
-      "approved": 5
+      "not_approved": 5
     },
     "byBlocker": {
-      "(blank)": 5
+      "commercial_use_and_redistribution_terms_not_approved": 1,
+      "fx_source_terms_and_citation_policy_not_approved": 1,
+      "index_or_proxy_license_terms_not_approved": 1,
+      "kospi200_index_or_proxy_terms_not_approved": 1,
+      "kr_market_data_terms_not_approved": 1
     }
   },
   "termsIntegrity": {
     "expectedProviderCandidates": 5,
     "providerSetVerified": true,
     "officialUrlsVerified": true,
-    "allTermsApproved": true,
+    "noTermsApproved": true,
     "monthlyDataFileAbsent": true
   },
   "readiness": {
-    "status": "external_terms_approved_after_real_approval_import",
+    "status": "blocked_external_terms_review",
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "run_approval_readiness_after_external_terms_import"
+    "nextAllowedStep": "legal_or_owner_review_named_provider_terms_before_source_policy_approval"
   }
 }

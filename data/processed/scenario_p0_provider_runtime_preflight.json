@@ -14,10 +14,10 @@
     "preflight": "data\\processed\\scenario_p0_provider_runtime_preflight.json"
   },
   "checks": {
-    "approvalReady": true,
-    "adapterReady": true,
-    "writerReady": true,
-    "providerGroups": 5,
+    "approvalReady": false,
+    "adapterReady": false,
+    "writerReady": false,
+    "providerGroups": 0,
     "providerCredentialsReady": false,
     "providerCapabilityReady": false,
     "providerWrittenResponseReady": false,
@@ -25,26 +25,14 @@
     "monthlyFileExists": false,
     "runtimeProviderCallsAllowed": false,
     "blockers": [
+      "approval_readiness_provider_calls_not_allowed",
+      "provider_adapter_preflight_not_ready",
+      "monthly_cache_writer_preflight_not_ready",
+      "provider_group_count_mismatch",
       "runtime_provider_credentials_missing",
       "runtime_provider_capability_not_verified",
       "runtime_provider_written_response_not_approved",
       "runtime_provider_calls_not_explicitly_enabled",
-      "missing_env_KIS_APP_KEY",
-      "missing_env_KIS_APP_SECRET",
-      "missing_env_FRED_API_KEY",
-      "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-      "missing_or_unreviewed_termsReviewed",
-      "missing_or_unreviewed_rawRedistributionReviewed",
-      "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
-      "kis_written_response_pending",
-      "kis_written_response_status_pending_response",
-      "kis_written_response_evidence_missing",
-      "kis_terms_not_approved",
-      "kis_raw_redistribution_not_approved",
-      "kis_approved_use_scope_missing",
-      "kis_required_agreement_unclassified",
-      "kis_response_review_owner_or_reviewed_at_missing",
-      "kis_response_status_pending_kis_written_response",
       "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
       "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
     ]
@@ -69,168 +57,7 @@
       }
     ]
   },
-  "providerGroups": [
-    {
-      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
-      "selectedProvider": "KODEX 200 ETF proxy via Korea Investment Open API",
-      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
-      "providerKind": "korea_investment_open_api",
-      "requiredEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "missingEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "credentialsPresent": false,
-      "requiredCapabilities": [],
-      "capabilityVerified": true,
-      "capabilityBlockers": [],
-      "writtenResponseRequired": true,
-      "writtenResponseReady": false,
-      "writtenResponseBlockers": [
-        "kis_written_response_pending",
-        "kis_written_response_status_pending_response",
-        "kis_written_response_evidence_missing",
-        "kis_terms_not_approved",
-        "kis_raw_redistribution_not_approved",
-        "kis_approved_use_scope_missing",
-        "kis_required_agreement_unclassified",
-        "kis_response_review_owner_or_reviewed_at_missing",
-        "kis_response_status_pending_kis_written_response"
-      ],
-      "readyForRuntimeProviderCalls": false
-    },
-    {
-      "providerCandidate": "KR_price_total_return_dividend_provider",
-      "selectedProvider": "Korea Investment Open API",
-      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
-      "providerKind": "korea_investment_open_api",
-      "requiredEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "missingEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "credentialsPresent": false,
-      "requiredCapabilities": [],
-      "capabilityVerified": true,
-      "capabilityBlockers": [],
-      "writtenResponseRequired": true,
-      "writtenResponseReady": false,
-      "writtenResponseBlockers": [
-        "kis_written_response_pending",
-        "kis_written_response_status_pending_response",
-        "kis_written_response_evidence_missing",
-        "kis_terms_not_approved",
-        "kis_raw_redistribution_not_approved",
-        "kis_approved_use_scope_missing",
-        "kis_required_agreement_unclassified",
-        "kis_response_review_owner_or_reviewed_at_missing",
-        "kis_response_status_pending_kis_written_response"
-      ],
-      "readyForRuntimeProviderCalls": false
-    },
-    {
-      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
-      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
-      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
-      "providerKind": "korea_investment_open_api",
-      "requiredEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "missingEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "credentialsPresent": false,
-      "requiredCapabilities": [
-        "kis_overseas_monthly_adjusted_close_proxy"
-      ],
-      "capabilityVerified": false,
-      "capabilityBlockers": [
-        "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
-        "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed"
-      ],
-      "writtenResponseRequired": true,
-      "writtenResponseReady": false,
-      "writtenResponseBlockers": [
-        "kis_written_response_pending",
-        "kis_written_response_status_pending_response",
-        "kis_written_response_evidence_missing",
-        "kis_terms_not_approved",
-        "kis_raw_redistribution_not_approved",
-        "kis_approved_use_scope_missing",
-        "kis_required_agreement_unclassified",
-        "kis_response_review_owner_or_reviewed_at_missing",
-        "kis_response_status_pending_kis_written_response"
-      ],
-      "readyForRuntimeProviderCalls": false
-    },
-    {
-      "providerCandidate": "US_price_total_return_dividend_provider",
-      "selectedProvider": "Korea Investment Open API overseas US ETF data",
-      "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
-      "providerKind": "korea_investment_open_api",
-      "requiredEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "missingEnvVars": [
-        "KIS_APP_KEY",
-        "KIS_APP_SECRET"
-      ],
-      "credentialsPresent": false,
-      "requiredCapabilities": [
-        "kis_overseas_monthly_adjusted_dividend_split"
-      ],
-      "capabilityVerified": false,
-      "capabilityBlockers": [
-        "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
-        "missing_or_unreviewed_termsReviewed",
-        "missing_or_unreviewed_rawRedistributionReviewed"
-      ],
-      "writtenResponseRequired": true,
-      "writtenResponseReady": false,
-      "writtenResponseBlockers": [
-        "kis_written_response_pending",
-        "kis_written_response_status_pending_response",
-        "kis_written_response_evidence_missing",
-        "kis_terms_not_approved",
-        "kis_raw_redistribution_not_approved",
-        "kis_approved_use_scope_missing",
-        "kis_required_agreement_unclassified",
-        "kis_response_review_owner_or_reviewed_at_missing",
-        "kis_response_status_pending_kis_written_response"
-      ],
-      "readyForRuntimeProviderCalls": false
-    },
-    {
-      "providerCandidate": "USD_KRW_fx_provider",
-      "selectedProvider": "FRED DEXKOUS",
-      "selectedEndpoint": "https://api.stlouisfed.org/fred/series/observations?series_id=DEXKOUS&api_key=REDACTED&file_type=json",
-      "providerKind": "fred",
-      "requiredEnvVars": [
-        "FRED_API_KEY"
-      ],
-      "missingEnvVars": [
-        "FRED_API_KEY"
-      ],
-      "credentialsPresent": false,
-      "requiredCapabilities": [],
-      "capabilityVerified": true,
-      "capabilityBlockers": [],
-      "writtenResponseRequired": false,
-      "writtenResponseReady": true,
-      "writtenResponseBlockers": [],
-      "readyForRuntimeProviderCalls": false
-    }
-  ],
+  "providerGroups": [],
   "readiness": {
     "status": "blocked_before_runtime_provider_calls",
     "runtimeProviderCallsAllowed": false,

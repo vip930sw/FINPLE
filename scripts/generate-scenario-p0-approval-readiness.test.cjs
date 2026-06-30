@@ -291,7 +291,7 @@ test("rejects writer gate provider calls before approval layers are complete", (
   const result = runReadiness(workspace);
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /requires decisionStatus=approved_source_policy/);
+  assert.match(result.stderr, /writer gate allows provider calls before terms, owner\/legal, and source policy approvals are complete/);
 });
 
 test("rejects writer gate monthly writes before all approval layers are complete", () => {
@@ -307,5 +307,5 @@ test("rejects writer gate monthly writes before all approval layers are complete
   const result = runReadiness(workspace);
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /requires decisionStatus=approved_source_policy/);
+  assert.match(result.stderr, /writer gate allows monthly data writes before all approval readiness checks are complete/);
 });

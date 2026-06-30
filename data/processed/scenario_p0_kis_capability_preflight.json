@@ -18,9 +18,11 @@
     "verifiedCapabilities": 0,
     "capabilityReady": false,
     "blockers": [
+      "SP500_TR_primary_or_SPY_adjusted_close_proxy_kis_provider_not_selected_in_approval_intake",
       "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
       "missing_or_unreviewed_termsReviewed",
       "missing_or_unreviewed_rawRedistributionReviewed",
+      "US_price_total_return_dividend_provider_kis_provider_not_selected_in_approval_intake",
       "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified"
     ]
   },
@@ -37,12 +39,13 @@
       "capabilityId": "kis_overseas_monthly_adjusted_close_proxy",
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
       "sourceScope": "SPY adjusted-close proxy monthly price source",
-      "selectedProvider": "Korea Investment Open API SPY adjusted-close proxy",
+      "selectedProvider": "",
       "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
       "evidenceUrl": "https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/dailyprice/dailyprice.py",
       "status": "blocked_pending_terms_raw_redistribution_review",
       "capabilityVerified": false,
       "blockers": [
+        "SP500_TR_primary_or_SPY_adjusted_close_proxy_kis_provider_not_selected_in_approval_intake",
         "kis_overseas_monthly_adjusted_close_proxy_capability_not_verified",
         "missing_or_unreviewed_termsReviewed",
         "missing_or_unreviewed_rawRedistributionReviewed"
@@ -52,12 +55,13 @@
       "capabilityId": "kis_overseas_monthly_adjusted_dividend_split",
       "providerCandidate": "US_price_total_return_dividend_provider",
       "sourceScope": "US ETF monthly adjusted close dividend split and corporate-action source",
-      "selectedProvider": "Korea Investment Open API overseas US ETF data",
+      "selectedProvider": "",
       "selectedEndpoint": "https://apiportal.koreainvestment.com/apiservice-apiservice",
       "evidenceUrl": "https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/period_rights/period_rights.py",
       "status": "blocked_pending_terms_raw_redistribution_review",
       "capabilityVerified": false,
       "blockers": [
+        "US_price_total_return_dividend_provider_kis_provider_not_selected_in_approval_intake",
         "kis_overseas_monthly_adjusted_dividend_split_capability_not_verified",
         "missing_or_unreviewed_termsReviewed",
         "missing_or_unreviewed_rawRedistributionReviewed"

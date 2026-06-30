@@ -33,7 +33,23 @@
       "no_a_grade_total_return_series",
       "benchmark_monthly_returns_not_persisted",
       "fx_monthly_returns_not_persisted",
-      "dividend_time_series_not_persisted"
+      "dividend_time_series_not_persisted",
+      "source_policy_post_import_preflight_not_ready",
+      "external_provider_terms_not_fully_approved",
+      "owner_legal_adapter_approval_not_complete",
+      "owner_legal_monthly_write_approval_not_complete",
+      "source_policy_rows_not_approved",
+      "writer_gate_cannot_write_monthly_data",
+      "writer_gate_provider_calls_not_allowed",
+      "provider_adapter_preflight_not_ready",
+      "approval_readiness_not_safe_for_monthly_write",
+      "monthly_write_preflight_not_ready",
+      "writer_gate_not_open_for_monthly_cache_writer",
+      "source_policy_rows_not_fully_approved",
+      "source_policy_sync_preflight_not_ready",
+      "source_policy_matrix_not_synced",
+      "approval_readiness_not_safe_for_adapter",
+      "writer_gate_not_open_for_provider_calls"
     ]
   },
   "readiness": {

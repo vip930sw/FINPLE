@@ -69,22 +69,22 @@ test("passes with current blocked P0 cache writer gate", () => {
   assert.match(result.stdout, /scenario_p0_cache_writer_gate\.json/);
 });
 
-test("summary opens writer gate after source policy approval import", () => {
+test("summary keeps writer gate blocked before source policy approval import", () => {
   const workspace = makeWorkspace();
   const result = runGate(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const gate = readWorkspaceJson(workspace, "scenario_p0_cache_writer_gate.json");
   assert.equal(gate.rowCounts.totalRows, 17);
-  assert.equal(gate.rowCounts.approvedRows, 17);
-  assert.equal(gate.rowCounts.blockedRows, 0);
+  assert.equal(gate.rowCounts.approvedRows, 0);
+  assert.equal(gate.rowCounts.blockedRows, 17);
   assert.deepEqual(gate.counts.byManifestType, { asset: 14, benchmark: 2, fx: 1 });
   assert.equal(gate.gateIntegrity.expectedSourcePolicyRows, 17);
   assert.equal(gate.gateIntegrity.sourcePolicyRowsVerified, true);
   assert.equal(gate.gateIntegrity.manifestCountsVerified, true);
   assert.equal(gate.gateIntegrity.monthlyDataFileAbsentBeforeApproval, true);
-  assert.equal(gate.readiness.canWriteMonthlyData, true);
-  assert.equal(gate.readiness.providerCallsAllowed, true);
+  assert.equal(gate.readiness.canWriteMonthlyData, false);
+  assert.equal(gate.readiness.providerCallsAllowed, false);
   assert.equal(gate.readiness.monthlyDataFileWritten, false);
   assert.equal(gate.readiness.bootstrapStillBlocked, true);
 });
@@ -117,7 +117,7 @@ test("rejects premature monthly data before P0 source approval", () => {
 test("rejects stale committed writer gate", () => {
   const workspace = makeWorkspace();
   const gate = readWorkspaceJson(workspace, "scenario_p0_cache_writer_gate.json");
-  gate.readiness.canWriteMonthlyData = false;
+  gate.readiness.nextAllowedStep = "stale_step";
   writeWorkspaceJson(workspace, "scenario_p0_cache_writer_gate.json", gate);
 
   const result = runGate(workspace);

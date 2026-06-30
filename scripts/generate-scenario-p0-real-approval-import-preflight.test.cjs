@@ -94,17 +94,17 @@ test("passes with current blocked real approval import preflight", () => {
   assert.match(result.stdout, /scenario_p0_real_approval_import_preflight\.json/);
 });
 
-test("opens current committed real approval import review without provider or monthly writes", () => {
+test("keeps current committed real approval import review blocked without provider or monthly writes", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, PREFLIGHT);
   assert.equal(report.checks.providerGroups, 5);
-  assert.equal(report.checks.readyRows, 5);
-  assert.equal(report.checks.readyForRealApprovalImport, true);
-  assert.equal(report.readiness.safeToImportRealApprovalDecisions, true);
-  assert.equal(report.readiness.sourcePolicyMatrixWriteAllowed, true);
+  assert.equal(report.checks.readyRows, 0);
+  assert.equal(report.checks.readyForRealApprovalImport, false);
+  assert.equal(report.readiness.safeToImportRealApprovalDecisions, false);
+  assert.equal(report.readiness.sourcePolicyMatrixWriteAllowed, false);
   assert.equal(report.readiness.providerCallsAllowed, false);
   assert.equal(report.readiness.safeToWriteMonthlyData, false);
 });
@@ -182,7 +182,7 @@ test("rejects monthly returns before approval import preflight has completed", (
 test("rejects stale committed real approval import preflight", () => {
   const workspace = makeWorkspace();
   const report = readWorkspaceJson(workspace, PREFLIGHT);
-  report.checks.readyForRealApprovalImport = false;
+  report.readiness.nextAllowedStep = "stale_step";
   writeWorkspaceJson(workspace, PREFLIGHT, report);
 
   const result = runPreflight(workspace);

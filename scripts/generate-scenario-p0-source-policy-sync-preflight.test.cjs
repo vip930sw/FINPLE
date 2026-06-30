@@ -131,22 +131,22 @@ test("passes with current source policy sync preflight", () => {
   assert.match(result.stdout, /scenario_p0_source_policy_sync_preflight\.json/);
 });
 
-test("keeps current committed source policy sync preflight written after manual source policy sync", () => {
+test("keeps current committed source policy sync preflight blocked before approval input", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
   assert.equal(preflight.checks.totalSourcePolicyRows, 17);
-  assert.equal(preflight.checks.approvedSourcePolicyRows, 17);
-  assert.equal(preflight.checks.canSyncSourcePolicy, true);
-  assert.equal(preflight.readiness.status, "ready_for_manual_source_policy_sync");
-  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, true);
+  assert.equal(preflight.checks.approvedSourcePolicyRows, 0);
+  assert.equal(preflight.checks.canSyncSourcePolicy, false);
+  assert.equal(preflight.readiness.status, "blocked_before_source_policy_sync");
+  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, false);
   assert.equal(preflight.readiness.providerCallsAllowed, false);
   assert.equal(preflight.readiness.monthlyDataFileWritten, false);
 });
 
-test("reports ready preflight when sync plan is complete and source policy matrix is written", () => {
+test("reports ready preflight when sync plan is complete before source policy matrix write", () => {
   const workspace = makeWorkspace();
   makeSyncPlanReady(workspace);
 
@@ -155,9 +155,9 @@ test("reports ready preflight when sync plan is complete and source policy matri
   assert.equal(result.status, 0, result.stderr);
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
   assert.equal(preflight.checks.canSyncSourcePolicy, true);
-  assert.equal(preflight.checks.approvedSourcePolicyRows, 17);
+  assert.equal(preflight.checks.approvedSourcePolicyRows, 0);
   assert.equal(preflight.readiness.status, "ready_for_manual_source_policy_sync");
-  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, true);
+  assert.equal(preflight.readiness.sourcePolicyMatrixWritten, false);
 });
 
 test("rejects approved source policy rows before sync plan is ready", () => {
@@ -193,7 +193,7 @@ test("rejects more approved source rows than the ready sync plan allows", () => 
 test("rejects stale committed source policy sync preflight", () => {
   const workspace = makeWorkspace();
   const preflight = JSON.parse(readWorkspaceFile(workspace, PREFLIGHT));
-  preflight.checks.canSyncSourcePolicy = false;
+  preflight.readiness.nextAllowedStep = "stale_step";
   writeWorkspaceFile(workspace, PREFLIGHT, `${JSON.stringify(preflight, null, 2)}\n`);
 
   const result = runPreflight(workspace);

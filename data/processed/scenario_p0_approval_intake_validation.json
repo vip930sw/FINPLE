@@ -40,59 +40,169 @@
   },
   "rowCounts": {
     "providerGroups": 5,
-    "pendingRows": 0,
-    "readyRows": 5,
+    "pendingRows": 5,
+    "readyRows": 0,
     "rejectedRows": 0,
-    "rowsWithMissingRequiredFields": 0
+    "rowsWithMissingRequiredFields": 5
   },
   "readiness": {
-    "status": "ready_for_source_policy_sync_dry_run",
-    "allRowsReadyForSourcePolicyReview": true,
+    "status": "blocked_pending_real_approval_input",
+    "allRowsReadyForSourcePolicyReview": false,
     "providerCallsAllowed": false,
     "monthlyDataFileWritten": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "sync_real_decision_files_then_run_approval_readiness_before_adapter"
+    "nextAllowedStep": "fill_real_approval_intake_template_before_source_policy_approval"
   },
   "providerGroups": [
     {
       "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
       "namedProviderCandidate": "KRX Data Marketplace or licensed KOSPI 200 ETF proxy",
-      "approvalStatusDraft": "ready_for_source_policy_review",
-      "missingReviewerFields": [],
-      "blockers": [],
-      "readyForSourcePolicyReview": true
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
     },
     {
       "providerCandidate": "KR_price_total_return_dividend_provider",
       "namedProviderCandidate": "Korea Investment Open API or licensed KR market-data provider",
-      "approvalStatusDraft": "ready_for_source_policy_review",
-      "missingReviewerFields": [],
-      "blockers": [],
-      "readyForSourcePolicyReview": true
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
     },
     {
       "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
       "namedProviderCandidate": "Korea Investment Open API overseas SPY adjusted-close proxy",
-      "approvalStatusDraft": "ready_for_source_policy_review",
-      "missingReviewerFields": [],
-      "blockers": [],
-      "readyForSourcePolicyReview": true
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
     },
     {
       "providerCandidate": "US_price_total_return_dividend_provider",
       "namedProviderCandidate": "Korea Investment Open API overseas US ETF data",
-      "approvalStatusDraft": "ready_for_source_policy_review",
-      "missingReviewerFields": [],
-      "blockers": [],
-      "readyForSourcePolicyReview": true
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
     },
     {
       "providerCandidate": "USD_KRW_fx_provider",
       "namedProviderCandidate": "FRED DEXKOUS",
-      "approvalStatusDraft": "ready_for_source_policy_review",
-      "missingReviewerFields": [],
-      "blockers": [],
-      "readyForSourcePolicyReview": true
+      "approvalStatusDraft": "pending_review",
+      "missingReviewerFields": [
+        "selectedProvider",
+        "selectedEndpoint",
+        "licenseDecision",
+        "rawPayloadPolicy",
+        "redistributionDecision",
+        "reviewOwner",
+        "decisionOwner",
+        "legalReviewer",
+        "reviewedAt",
+        "evidenceUrl"
+      ],
+      "blockers": [
+        "missing_selectedProvider",
+        "missing_selectedEndpoint",
+        "missing_licenseDecision",
+        "missing_rawPayloadPolicy",
+        "missing_redistributionDecision",
+        "missing_reviewOwner",
+        "missing_decisionOwner",
+        "missing_legalReviewer",
+        "missing_reviewedAt",
+        "missing_evidenceUrl"
+      ],
+      "readyForSourcePolicyReview": false
     }
   ]
 }

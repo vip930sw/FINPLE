@@ -108,17 +108,17 @@ test("passes with current blocked provider adapter preflight", () => {
   assert.match(result.stdout, /scenario_p0_provider_adapter_preflight\.json/);
 });
 
-test("keeps current committed provider adapter preflight ready after approvals", () => {
+test("keeps current committed provider adapter preflight blocked before approvals", () => {
   const workspace = makeWorkspace();
   const result = runPreflight(workspace, []);
 
   assert.equal(result.status, 0, result.stderr);
   const report = readWorkspaceJson(workspace, ADAPTER_PREFLIGHT);
-  assert.equal(report.checks.safeToImplementProviderAdapter, true);
-  assert.equal(report.checks.providerCallsAllowed, true);
+  assert.equal(report.checks.safeToImplementProviderAdapter, false);
+  assert.equal(report.checks.providerCallsAllowed, false);
   assert.equal(report.readiness.monthlyDataFileWritten, false);
   assert.equal(report.readiness.bootstrapStillBlocked, true);
-  assert.equal(report.checks.blockers.length, 0);
+  assert.match(report.checks.blockers.join("|"), /source_policy_post_import_preflight_not_ready/);
 });
 
 test("opens only when source policy, approval readiness, and writer gate are all ready", () => {
@@ -187,7 +187,7 @@ test("stays blocked when writer gate does not allow provider calls", () => {
 test("rejects stale committed provider adapter preflight", () => {
   const workspace = makeWorkspace();
   const report = readWorkspaceJson(workspace, ADAPTER_PREFLIGHT);
-  report.checks.safeToImplementProviderAdapter = false;
+  report.readiness.nextAllowedStep = "stale_step";
   writeWorkspaceJson(workspace, ADAPTER_PREFLIGHT, report);
 
   const result = runPreflight(workspace);

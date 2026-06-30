@@ -151,10 +151,10 @@ function buildPreflight() {
     if (!intakeRow) {
       fail(`${APPROVAL_INTAKE_TEMPLATE_PATH} missing providerCandidate=${requirement.providerCandidate}`);
     }
-    if (!String(intakeRow.selectedProvider ?? "").includes("Korea Investment")) {
-      fail(`${requirement.providerCandidate} must use Korea Investment provider before KIS capability preflight`);
-    }
-    if (/alpha/i.test(intakeRow.selectedProvider) || /alphavantage/i.test(intakeRow.selectedEndpoint)) {
+    const selectedProvider = String(intakeRow.selectedProvider ?? "");
+    const selectedEndpoint = String(intakeRow.selectedEndpoint ?? "");
+    const intakeUsesKisProvider = selectedProvider.includes("Korea Investment");
+    if (/alpha/i.test(selectedProvider) || /alphavantage/i.test(selectedEndpoint)) {
       fail(`${requirement.providerCandidate} still references Alpha Vantage in selected provider or endpoint`);
     }
 
@@ -167,12 +167,14 @@ function buildPreflight() {
     const endpointValid = isHttpsUrl(reviewRow.selectedEndpoint);
     const evidenceValid = isHttpsUrl(reviewRow.evidenceUrl);
     const capabilityVerified =
+      intakeUsesKisProvider &&
       reviewRow.status === READY_STATUS &&
       missingFields.length === 0 &&
       endpointValid &&
       evidenceValid &&
       !monthlyFileExists;
     const blockers = [
+      ...(intakeUsesKisProvider ? [] : [`${requirement.providerCandidate}_kis_provider_not_selected_in_approval_intake`]),
       ...(capabilityVerified ? [] : [requirement.blocker]),
       ...missingFields.map((field) => `missing_or_unreviewed_${field}`),
       ...(endpointValid ? [] : ["invalid_or_missing_selectedEndpoint"]),
@@ -184,7 +186,7 @@ function buildPreflight() {
       capabilityId: requirement.capabilityId,
       providerCandidate: requirement.providerCandidate,
       sourceScope: reviewRow.sourceScope,
-      selectedProvider: intakeRow.selectedProvider,
+      selectedProvider,
       selectedEndpoint: reviewRow.selectedEndpoint,
       evidenceUrl: reviewRow.evidenceUrl,
       status: reviewRow.status,

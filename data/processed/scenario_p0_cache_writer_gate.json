@@ -9,11 +9,11 @@
     "gate": "data\\processed\\scenario_p0_cache_writer_gate.json",
     "monthlyDataTarget": "data/processed/scenario_monthly_returns.csv"
   },
-  "sourcePolicyVersion": "scenario-p0-source-policy-matrix-v0.2-real-approval-import",
+  "sourcePolicyVersion": "scenario-p0-source-policy-matrix-v0.2",
   "rowCounts": {
     "totalRows": 17,
-    "approvedRows": 17,
-    "blockedRows": 0,
+    "approvedRows": 0,
+    "blockedRows": 17,
     "assetRows": 14,
     "benchmarkRows": 2,
     "fxRows": 1
@@ -25,10 +25,10 @@
       "fx": 1
     },
     "byStatus": {
-      "approved_source_policy": 17
+      "blocked_source_policy_review": 17
     },
     "byBlocker": {
-      "(blank)": 17
+      "provider_endpoint_and_license_policy_not_approved": 17
     },
     "byProviderCandidate": {
       "KOSPI200_TR_primary_or_kospi200_etf_proxy": 1,
@@ -49,13 +49,167 @@
     "manifestCountsVerified": true,
     "monthlyDataFileAbsentBeforeApproval": true
   },
-  "blockedRows": [],
+  "blockedRows": [
+    {
+      "manifestType": "benchmark",
+      "market": "KR",
+      "ticker": "KOSPI200_TR",
+      "providerCandidate": "KOSPI200_TR_primary_or_kospi200_etf_proxy",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "benchmark",
+      "market": "US",
+      "ticker": "SP500_TR",
+      "providerCandidate": "SP500_TR_primary_or_SPY_adjusted_close_proxy",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "fx",
+      "market": "FX",
+      "ticker": "USD_KRW",
+      "providerCandidate": "USD_KRW_fx_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "069500",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "102110",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "105190",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "148020",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "152100",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "KR",
+      "ticker": "278530",
+      "providerCandidate": "KR_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "ITOT",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "IVV",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "QQQ",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "QQQM",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "SCHB",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "SPY",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "VOO",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    },
+    {
+      "manifestType": "asset",
+      "market": "US",
+      "ticker": "VTI",
+      "providerCandidate": "US_price_total_return_dividend_provider",
+      "status": "blocked_source_policy_review",
+      "blocker": "provider_endpoint_and_license_policy_not_approved",
+      "requiredApproval": "source_license_refresh_policy"
+    }
+  ],
   "readiness": {
-    "status": "ready_to_write_p0_monthly_cache",
-    "canWriteMonthlyData": true,
+    "status": "blocked_source_policy_review",
+    "canWriteMonthlyData": false,
     "monthlyDataFileWritten": false,
-    "providerCallsAllowed": true,
+    "providerCallsAllowed": false,
     "bootstrapStillBlocked": true,
-    "nextAllowedStep": "implement_provider_adapter_and_write_p0_monthly_cache"
+    "nextAllowedStep": "approve_p0_source_policy_before_provider_adapter"
   }
 }
