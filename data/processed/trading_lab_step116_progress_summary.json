@@ -60,6 +60,7 @@
       "manualOrderPermissionValidationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
       "manualOrderPermissionValidationResultReceiptReviewRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json",
       "manualOrderPermissionValidationResultReceiptReviewRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures.json",
+      "manualOrderPermissionValidationResultReceiptReviewResult": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_result_contract.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -99,10 +100,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 72,
-    "trackedContractsReady": 72,
+    "trackedContractsTotal": 73,
+    "trackedContractsReady": 73,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 97,
+    "requiredNpmScriptsTotal": 98,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -581,6 +582,15 @@
       "title": "Manual order permission validation result receipt review runbook validator fixtures",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures.json",
       "status": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_runbook_validator_regression",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionValidationResultReceiptReviewResult",
+      "title": "Manual order permission validation result receipt review result",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_result_contract.json",
+      "status": "review_result_contract_ready_pending_owner_validation_result_receipt_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
