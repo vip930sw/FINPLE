@@ -12,6 +12,7 @@ const CONTRACT_VERSION = "trading-lab-step116-progress-summary-v0.1";
 const AUDITED_AT = "2026-06-29T00:00:00Z";
 
 const TRACKED_READINESS_CONTRACTS = [
+  ["step1160Policy", "Step 116-0 policy baseline", "trading_lab_step1160_policy.json"],
   ["step1160Preflight", "Step 116-0 preflight", "trading_lab_step1160_preflight.json"],
   ["storeSchemaDraft", "Trading store schema draft", "trading_lab_step116_store_schema_draft.json"],
   ["shadowMode", "Shadow-mode read-only contract", "trading_lab_step116_shadow_mode_contract.json"],
@@ -501,9 +502,44 @@ function getAllowFlagViolations(report) {
   );
 }
 
+function summarizePolicyBaseline(id, title, filePath, report) {
+  const defaults = report.defaults ?? {};
+  const nonGoals = Array.isArray(report.nonGoals) ? report.nonGoals : [];
+  const requiredNonGoals = [
+    "kis_provider_calls",
+    "order_submission",
+    "provider_adapter_implementation",
+    "database_migration",
+    "public_ui",
+    "scenario_monthly_data_write",
+    "scenario_runtime_implementation",
+  ];
+  const blockers = [
+    ...(report.status === "draft_baseline_no_runtime_implementation" ? [] : ["policy_status_not_fail_closed_draft"]),
+    ...(defaults.providerCallsAllowed === false ? [] : ["policy_provider_calls_not_blocked"]),
+    ...(defaults.orderSubmissionAllowed === false ? [] : ["policy_order_submission_not_blocked"]),
+    ...(defaults.dbMigrationAllowed === false ? [] : ["policy_db_migration_not_blocked"]),
+    ...(defaults.publicUiAllowed === false ? [] : ["policy_public_ui_not_blocked"]),
+    ...missingValues(nonGoals, requiredNonGoals).map((nonGoal) => `policy_missing_non_goal_${nonGoal}`),
+  ];
+
+  return {
+    id,
+    title,
+    filePath,
+    status: report.status ?? null,
+    ready: blockers.length === 0,
+    blockers,
+    allowFlagViolations: [],
+  };
+}
+
 function summarizeContract([id, title, fileName]) {
   const filePath = path.join("data", "processed", fileName);
   const report = readJson(filePath);
+  if (id === "step1160Policy") {
+    return summarizePolicyBaseline(id, title, filePath, report);
+  }
   const readiness = report.readiness ?? {};
   const blockers = Array.isArray(readiness.blockers) ? readiness.blockers : [];
   const allowFlagViolations = getAllowFlagViolations(report);

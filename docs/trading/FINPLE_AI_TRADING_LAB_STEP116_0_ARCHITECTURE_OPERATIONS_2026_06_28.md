@@ -1399,7 +1399,7 @@ scripts/generate-trading-step116-progress-summary.test.cjs
 npm run check:trading-step116-progress-summary
 ```
 
-This is a local progress/readiness summary, not a provider caller, private runtime, DB migration, runtime route, public UI, private approval importer, or order submission path. It aggregates the existing Step 116 `data/processed` readiness contracts and verifies that the current contract stack remains fail-closed.
+This is a local progress/readiness summary, not a provider caller, private runtime, DB migration, runtime route, public UI, private approval importer, or order submission path. It aggregates the existing Step 116 `data/processed` policy baseline plus readiness contracts and verifies that the current contract stack remains fail-closed.
 
 Current state remains:
 
@@ -1415,7 +1415,7 @@ Current state remains:
 - `runtimeRouteAllowed=false`
 - `liveTradingAllowed=false`
 
-The summary tracks the machine-readable contract stack and required npm checks while recording remaining trading gates such as owner redacted read-only approval packet import, private read-only provider implementation review, private shadow runtime review, manual order permission evidence, kill-switch/risk-gate clearance, and live-guarded order adapter review.
+The summary tracks the machine-readable policy/contract stack and required npm checks while recording remaining trading gates such as owner redacted read-only approval packet import, private read-only provider implementation review, private shadow runtime review, manual order permission evidence, kill-switch/risk-gate clearance, and live-guarded order adapter review.
 
 Progress summary readiness means the current private/paper/shadow contract stack is coherent and still locked. It does not call KIS, import private approval evidence, create provider/runtime/DB/UI surfaces, clear the kill switch, clear the risk gate, submit orders, or approve live trading.
 

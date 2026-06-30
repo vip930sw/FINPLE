@@ -10,6 +10,7 @@ const CONTRACT = "trading_lab_step116_progress_summary.json";
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
 const TRACKED_CONTRACTS = [
   CONTRACT,
+  "trading_lab_step1160_policy.json",
   "trading_lab_step1160_preflight.json",
   "trading_lab_step116_store_schema_draft.json",
   "trading_lab_step116_shadow_mode_contract.json",
@@ -139,8 +140,8 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 84);
-  assert.equal(report.progress.trackedContractsReady, 84);
+  assert.equal(report.progress.trackedContractsTotal, 85);
+  assert.equal(report.progress.trackedContractsReady, 85);
   assert.equal(report.progress.trackedContractsRemaining, 0);
   assert.equal(report.progress.requiredNpmScriptsTotal, 116);
   assert.equal(report.readiness.contractStackReady, true);
