@@ -48,6 +48,7 @@
       "manualOrderPermissionHashHelperImplementationReview": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
       "manualOrderPermissionHashHelperImplementationReviewValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json",
       "manualOrderPermissionHashPreparationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json",
+      "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -87,10 +88,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 60,
-    "trackedContractsReady": 60,
+    "trackedContractsTotal": 61,
+    "trackedContractsReady": 61,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 80,
+    "requiredNpmScriptsTotal": 81,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -461,6 +462,15 @@
       "title": "Manual order permission hash preparation runbook",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json",
       "status": "contract_ready_pending_owner_assisted_manual_order_hash_preparation_runbook_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionHashPreparationRunbookValidatorFixtures",
+      "title": "Manual order permission hash preparation runbook validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
+      "status": "fixtures_ready_for_manual_order_permission_hash_preparation_runbook_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

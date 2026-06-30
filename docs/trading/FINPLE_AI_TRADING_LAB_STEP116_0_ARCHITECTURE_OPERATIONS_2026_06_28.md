@@ -311,7 +311,8 @@ Step 116 should be split into small commits and PR-sized phases:
 59. KIS order adapter design review.
 60. Manual order permission preflight.
 61. Manual order permission local validator.
-62. Live guarded execution only after manual approval.
+62. Manual order permission hash preparation runbook validator fixtures.
+63. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2134,6 +2135,21 @@ npm run check:trading-manual-order-permission-hash-preparation-runbook-validator
 This is a pure local validator for the hash preparation runbook contract, not a hash helper implementation, helper execution, hash generator, private pepper request, raw input collection flow, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--contract <path>` argument and does not read private permission packets, environment secrets, provider URLs, account credentials, order credentials, or raw session tokens.
 
 The validator checks that the future helper path and permission packet path stay fixed, current-step helper/raw-input/pepper/hash-output/packet actions remain disabled, runbook steps/output labels/forbidden content lists remain complete, and provider/order/runtime/UI allow flags stay false.
+
+## Step 116-4D Trading Manual Order Permission Hash Preparation Runbook Validator Fixtures
+
+The first Trading Manual Order Permission Hash Preparation Runbook Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-hash-preparation-runbook-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-hash-preparation-runbook-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-hash-preparation-runbook-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the local hash-preparation runbook validator, not a hash helper implementation, helper execution, hash generation run, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records one redacted valid runbook-contract fixture and invalid fixture definitions that must fail locally for helper creation/run, raw input or pepper requests, hash-output capture, permission-packet creation, missing runbook steps/output labels/forbidden-content entries, changed future paths, numeric raw-value shapes, and enabled provider/order/runtime flags.
+
+Fixture readiness still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, does not run any helper, does not request raw account/operator/order/provider values, does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not call KIS, and does not enable provider calls, runtime routes, UI, DB writes, order submission, or live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
