@@ -312,7 +312,8 @@ Step 116 should be split into small commits and PR-sized phases:
 60. Manual order permission preflight.
 61. Manual order permission local validator.
 62. Manual order permission hash preparation runbook validator fixtures.
-63. Live guarded execution only after manual approval.
+63. Manual order permission import implementation preflight.
+64. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2150,6 +2151,23 @@ npm run check:trading-manual-order-permission-hash-preparation-runbook-validator
 This is a synthetic fixture regression contract for the local hash-preparation runbook validator, not a hash helper implementation, helper execution, hash generation run, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records one redacted valid runbook-contract fixture and invalid fixture definitions that must fail locally for helper creation/run, raw input or pepper requests, hash-output capture, permission-packet creation, missing runbook steps/output labels/forbidden-content entries, changed future paths, numeric raw-value shapes, and enabled provider/order/runtime flags.
 
 Fixture readiness still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, does not run any helper, does not request raw account/operator/order/provider values, does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not call KIS, and does not enable provider calls, runtime routes, UI, DB writes, order submission, or live trading.
+
+## Step 116-4E Trading Manual Order Permission Import Implementation Preflight
+
+The first Trading Manual Order Permission Import Implementation Preflight is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_import_implementation_preflight.json
+scripts/generate-trading-manual-order-permission-import-implementation-preflight.cjs
+scripts/generate-trading-manual-order-permission-import-implementation-preflight.test.cjs
+npm run check:trading-manual-order-permission-import-implementation-preflight
+```
+
+This is a manual_order_permission_import_implementation_preflight contract, not a permission importer, permission packet reader, hash generator, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records that a future private-worker permission import implementation review remains blocked until the owner supplies a redacted manual order permission packet through a separate local review.
+
+The boundary requires the manual order permission preflight, validator fixtures, redacted manual permission template, hash-preparation runbook, runbook validator fixtures, live-guarded order-adapter preflight, private shadow runtime implementation preflight, private operator access implementation preflight, and env risk gate to remain fail-closed. It forbids default private packet reads, packet writes now, packet import now, hash generation now, provider calls, order submission, order adapter implementation now, runtime routes, public UI, database writes now, raw account/operator/session values, raw provider/order payloads, live order endpoints, and scenario monthly return rows.
+
+Preflight success still does not create `server/src/services/trading/manualOrderPermissionImport.js`, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
