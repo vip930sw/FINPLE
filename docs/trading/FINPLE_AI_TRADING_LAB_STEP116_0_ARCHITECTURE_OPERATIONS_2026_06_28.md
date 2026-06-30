@@ -279,28 +279,29 @@ Step 116 should be split into small commits and PR-sized phases:
 27. Read-only provider call authorization preflight.
 28. Read-only provider endpoint allowlist contract.
 29. Read-only provider endpoint category validation preflight.
-30. Trading Step 116 progress summary.
-31. Read-only provider request envelope validation contract.
-32. Read-only provider request envelope validation preflight.
-33. Read-only provider request envelope local validator.
-34. Read-only provider request envelope contract.
-35. Read-only provider response envelope contract.
-36. Read-only snapshot normalization contract.
-37. Read-only snapshot risk input contract.
-38. Read-only snapshot risk input local validator.
-39. Private shadow order intent contract.
-40. Private shadow order intent local validator.
-41. Private shadow intent audit event contract.
-42. Private shadow intent audit event local validator.
-43. Private shadow runtime review packet contract.
-44. Private shadow runtime review packet local validator.
-45. Private shadow operator access contract.
-46. Private shadow operator access local validator.
-47. Private shadow runtime preflight.
-48. KIS order adapter design review.
-49. Manual order permission preflight.
-50. Manual order permission local validator.
-51. Live guarded execution only after manual approval.
+30. Read-only provider request envelope validator fixtures.
+31. Trading Step 116 progress summary.
+32. Read-only provider request envelope validation contract.
+33. Read-only provider request envelope validation preflight.
+34. Read-only provider request envelope local validator.
+35. Read-only provider request envelope contract.
+36. Read-only provider response envelope contract.
+37. Read-only snapshot normalization contract.
+38. Read-only snapshot risk input contract.
+39. Read-only snapshot risk input local validator.
+40. Private shadow order intent contract.
+41. Private shadow order intent local validator.
+42. Private shadow intent audit event contract.
+43. Private shadow intent audit event local validator.
+44. Private shadow runtime review packet contract.
+45. Private shadow runtime review packet local validator.
+46. Private shadow operator access contract.
+47. Private shadow operator access local validator.
+48. Private shadow runtime preflight.
+49. KIS order adapter design review.
+50. Manual order permission preflight.
+51. Manual order permission local validator.
+52. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1982,6 +1983,32 @@ Current state remains:
 The aligned read-only categories are `account_cash_balance_read`, `account_positions_read`, `orderable_cash_read`, `current_quotes_read`, `fx_rate_read`, `market_session_state_read`, and `provider_rate_limit_state_read`. Any drift between the allowlist, request envelope contract, and local validator must block the preflight. Unknown, order, cancel, execution, confirmation, token, and scenario monthly categories remain fail-closed.
 
 Preflight success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not map KIS endpoint paths or TR IDs, does not create provider requests, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
+## Step 116-3I Trading Read-Only Provider Request Envelope Validator Fixtures
+
+The first Trading Read-Only Provider Request Envelope Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_request_envelope_validator_fixtures.json
+scripts/generate-trading-read-only-provider-request-envelope-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-request-envelope-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-request-envelope-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the local request-envelope validator, not a provider request generator, KIS caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records one redacted valid fixture and invalid fixtures that must fail locally for missing required fields, unknown endpoint categories, provider-call flags, unsafe paths, live base URLs, malformed hashes, and secret-shaped keys.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerRequestCreatedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not create provider requests, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Explicit Non-Goals
 

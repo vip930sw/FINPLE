@@ -53,6 +53,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_read_only_provider_call_authorization_preflight.json",
   "trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
   "trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
+  "trading_lab_step116_read_only_provider_request_envelope_validator_fixtures.json",
 ];
 
 function makeWorkspace() {
@@ -98,8 +99,8 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 43);
-  assert.equal(report.progress.trackedContractsReady, 43);
+  assert.equal(report.progress.trackedContractsTotal, 44);
+  assert.equal(report.progress.trackedContractsReady, 44);
   assert.equal(report.progress.trackedContractsRemaining, 0);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);

@@ -49,7 +49,8 @@
       "readOnlyApprovalImportImplementationPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_implementation_preflight.json",
       "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
       "readOnlyProviderEndpointAllowlist": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
-      "readOnlyProviderEndpointCategoryValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json"
+      "readOnlyProviderEndpointCategoryValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
+      "readOnlyProviderRequestEnvelopeValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validator_fixtures.json"
     }
   },
   "outputFiles": {
@@ -70,10 +71,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 43,
-    "trackedContractsReady": 43,
+    "trackedContractsTotal": 44,
+    "trackedContractsReady": 44,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 59,
+    "requiredNpmScriptsTotal": 60,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -462,6 +463,15 @@
       "title": "Read-only provider endpoint category validation preflight",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
       "status": "preflight_ready_endpoint_categories_aligned_provider_calls_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderRequestEnvelopeValidatorFixtures",
+      "title": "Read-only provider request envelope validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validator_fixtures.json",
+      "status": "fixtures_ready_for_read_only_provider_request_envelope_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
