@@ -2049,6 +2049,36 @@ Current state remains:
 
 Preflight success still does not implement the helper, request raw values or private pepper, generate hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
 
+## Step 116-3Y Trading Manual Order Permission Hash Helper Implementation Review Contract
+
+The first Trading Manual Order Permission Hash Helper Implementation Review Contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json
+scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-contract.cjs
+scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-implementation-review
+```
+
+This is a manual_order_permission_hash_helper_implementation_review_contract, not a helper implementation, hash generation run, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records the local-only review criteria that a future helper must satisfy before any owner-assisted hash preparation step can be considered.
+
+Current state remains:
+
+- `contractOnly=true`
+- `helperImplementationCreatedNow=false`
+- `hashHelperImplementationAllowed=false`
+- `hashGenerationAllowed=false`
+- `permissionPacketCreatedNow=false`
+- `permissionPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Review contract success still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, request raw values or private pepper, generate hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:

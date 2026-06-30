@@ -45,6 +45,7 @@
       "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
       "manualOrderPermissionHashHelper": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
       "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+      "manualOrderPermissionHashHelperImplementationReview": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -84,10 +85,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 57,
-    "trackedContractsReady": 57,
+    "trackedContractsTotal": 58,
+    "trackedContractsReady": 58,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 75,
+    "requiredNpmScriptsTotal": 76,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -431,6 +432,15 @@
       "title": "Manual order permission hash helper preflight",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
       "status": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionHashHelperImplementationReview",
+      "title": "Manual order permission hash helper implementation review",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
+      "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
