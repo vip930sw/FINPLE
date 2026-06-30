@@ -337,7 +337,9 @@ Step 116 should be split into small commits and PR-sized phases:
 85. Redacted manual order permission template validator fixtures.
 86. Manual order permission hash helper local validator.
 87. Manual order permission hash helper validator fixtures.
-88. Live guarded execution only after manual approval.
+88. Manual order permission hash helper preflight local validator.
+89. Manual order permission hash helper preflight validator fixtures.
+90. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2149,6 +2151,31 @@ Current state remains:
 - `liveTradingAllowed=false`
 
 Preflight success still does not implement the helper, request raw values or private pepper, generate hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
+
+## Step 116-4AD Trading Manual Order Permission Hash Helper Preflight Local Validator
+
+The first local validator for the Trading Manual Order Permission Hash Helper Preflight is:
+
+```text
+scripts/validate-trading-manual-order-permission-hash-helper-preflight.cjs
+scripts/validate-trading-manual-order-permission-hash-helper-preflight.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-preflight-validator
+```
+
+This validates the manual_order_permission_hash_helper_preflight contract shape only. It requires an explicit `--contract` path, checks the future helper path and private packet path, required preflight checks, future review inputs, forbidden preflight content, and disabled provider/order/runtime flags. It does not implement the hash helper, request raw values or private pepper, generate hashes, create private packets, import permission evidence, call providers, submit orders, create runtime routes, write the database, or expose public UI.
+
+## Step 116-4AE Trading Manual Order Permission Hash Helper Preflight Validator Fixtures
+
+The first synthetic fixture regression contract for the manual order permission hash helper preflight validator is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_helper_preflight_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-hash-helper-preflight-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-hash-helper-preflight-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-preflight-validator-fixtures
+```
+
+This is a manual_order_permission_hash_helper_preflight_validator_fixtures contract, not a real hash helper implementation, permission packet writer/importer, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid hash-helper-preflight shapes for local validator regression only.
 
 ## Step 116-3Y Trading Manual Order Permission Hash Helper Implementation Review Contract
 

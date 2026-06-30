@@ -118,6 +118,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
   ],
   [
+    "manualOrderPermissionHashHelperPreflightValidatorFixtures",
+    "Manual order permission hash helper preflight validator fixtures",
+    "trading_lab_step116_manual_order_permission_hash_helper_preflight_validator_fixtures.json",
+  ],
+  [
     "manualOrderPermissionHashHelperImplementationReview",
     "Manual order permission hash helper implementation review",
     "trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
@@ -328,6 +333,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-hash-helper-validator",
   "check:trading-manual-order-permission-hash-helper-validator-fixtures",
   "check:trading-manual-order-permission-hash-helper-preflight",
+  "check:trading-manual-order-permission-hash-helper-preflight-validator",
+  "check:trading-manual-order-permission-hash-helper-preflight-validator-fixtures",
   "check:trading-manual-order-permission-hash-helper-implementation-review",
   "check:trading-manual-order-permission-hash-helper-implementation-review-validator",
   "check:trading-manual-order-permission-hash-helper-implementation-review-validator-fixtures",
