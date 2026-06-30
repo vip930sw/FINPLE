@@ -395,6 +395,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Public dashboard and homepage router review plan",
     "trading_lab_step116_public_dashboard_router_review_plan_contract.json",
   ],
+  [
+    "alphaKrMarketBoundary",
+    "Alpha KR market boundary",
+    "trading_lab_step116_alpha_kr_market_boundary_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -539,6 +544,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-paper-shadow-operational-test-plan",
   "check:trading-live-guarded-manual-test-plan",
   "check:trading-public-dashboard-router-review-plan",
+  "check:trading-alpha-kr-market-boundary",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

@@ -109,7 +109,8 @@
       "tradingRulesAndRiskLimitsReview": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
       "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
       "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
-      "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json"
+      "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
+      "alphaKrMarketBoundary": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json"
     }
   },
   "outputFiles": {
@@ -130,10 +131,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 103,
-    "trackedContractsReady": 103,
+    "trackedContractsTotal": 104,
+    "trackedContractsReady": 104,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 141,
+    "requiredNpmScriptsTotal": 142,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1062,6 +1063,15 @@
       "title": "Public dashboard and homepage router review plan",
       "filePath": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
       "status": "public_dashboard_router_review_plan_ready_public_runtime_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "alphaKrMarketBoundary",
+      "title": "Alpha KR market boundary",
+      "filePath": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
+      "status": "alpha_kr_market_boundary_ready_provider_calls_still_blocked",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

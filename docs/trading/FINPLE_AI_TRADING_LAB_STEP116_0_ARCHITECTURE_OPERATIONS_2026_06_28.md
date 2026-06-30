@@ -3496,6 +3496,21 @@ This is an owner-facing action queue contract, not a private packet creator, has
 
 The queue is ready for owner guidance, but it does not request raw inputs now, does not create `data/private/trading/read_only_approval.redacted.json`, does not implement a hash helper, does not generate hashes, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, and live trading remain blocked until separate owner-assisted reviews are completed.
 
+## Step 116-5G Trading Alpha KR Market Boundary
+
+The first Trading Alpha KR Market Boundary contract is:
+
+```text
+data/processed/trading_lab_step116_alpha_kr_market_boundary_contract.json
+scripts/generate-trading-alpha-kr-market-boundary-contract.cjs
+scripts/generate-trading-alpha-kr-market-boundary-contract.test.cjs
+npm run check:trading-alpha-kr-market-boundary
+```
+
+This is a provider-boundary contract, not an Alpha Vantage call, KIS call, Korean stock validation call, provider adapter implementation, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records that the existing Alpha Vantage asset proxy is not a Step 116 trading provider, not an account snapshot source, and not a shortcut around KIS read-only approval, KIS endpoint review, owner packet import, provider-call authorization, or Step 114 source-policy approval.
+
+The boundary allows future review of Korean market data provider choices, but it does not assume Alpha Vantage Korean symbol coverage and does not treat asset proxy `supportedTickers` as a trading allowlist. Korean trading read-only work remains on the KIS mock-to-reviewed-read-only path, and `scenario_monthly_returns.csv` remains blocked by the separate Step 114 source-policy and writer gates.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

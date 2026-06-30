@@ -185,6 +185,7 @@
     "check:trading-paper-shadow-operational-test-plan": "node scripts/generate-trading-paper-shadow-operational-test-plan-contract.cjs --check && node --test scripts/generate-trading-paper-shadow-operational-test-plan-contract.test.cjs",
     "check:trading-live-guarded-manual-test-plan": "node scripts/generate-trading-live-guarded-manual-test-plan-contract.cjs --check && node --test scripts/generate-trading-live-guarded-manual-test-plan-contract.test.cjs",
     "check:trading-public-dashboard-router-review-plan": "node scripts/generate-trading-public-dashboard-router-review-plan-contract.cjs --check && node --test scripts/generate-trading-public-dashboard-router-review-plan-contract.test.cjs",
+    "check:trading-alpha-kr-market-boundary": "node scripts/generate-trading-alpha-kr-market-boundary-contract.cjs --check && node --test scripts/generate-trading-alpha-kr-market-boundary-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {

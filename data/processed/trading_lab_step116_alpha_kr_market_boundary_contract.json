@@ -1,0 +1,130 @@
+{
+  "contractVersion": "trading-lab-step116-alpha-kr-market-boundary-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-5G",
+  "scope": "alpha_kr_market_boundary",
+  "sourceFiles": {
+    "progressSummary": "data\\processed\\trading_lab_step116_progress_summary.json",
+    "launchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
+    "endpointAllowlist": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
+    "endpointCategoryPreflight": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
+    "assetDataProvider": "server\\src\\services\\assetDataProvider.js",
+    "serverIndex": "server\\src\\index.js",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "alphaKrStockCallValidationAllowedNow": false,
+    "kisProviderCallsAllowedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "alphaKrMarketBoundary": {
+    "scope": "alpha_kr_market_boundary",
+    "purpose": "record that the existing Alpha Vantage asset proxy cannot be used to bypass KIS read-only approval, KIS endpoint review, owner packet import, provider call authorization, or Step 114 source-policy approval for Korean market data",
+    "currentFinpleAssetProxyObservation": {
+      "providerName": "alpha_vantage",
+      "assetProxyMayServeConfiguredQuoteFallback": true,
+      "assetProxyIsTradingProvider": false,
+      "assetProxySupportedTickersAreTradingAllowlist": false,
+      "productionHealthSupportedTickersObservedExternally": [
+        "GLD",
+        "QQQ",
+        "SCHD",
+        "TLT"
+      ]
+    },
+    "krTradingReadOnlyBoundary": {
+      "intendedPrivateProviderFamily": "kis_mock_then_kis_reviewed_read_only",
+      "alphaAllowedForAccountCashBalanceRead": false,
+      "alphaAllowedForAccountPositionsRead": false,
+      "alphaAllowedForOrderableCashRead": false,
+      "alphaAllowedForOrderEndpoints": false,
+      "alphaAllowedForScenarioMonthlyData": false,
+      "alphaAllowedForKrStockCallValidationNow": false
+    },
+    "requiredBoundaryAssertions": [
+      "alpha_vantage_asset_proxy_is_not_trading_provider",
+      "alpha_vantage_global_quote_is_not_account_snapshot_source",
+      "alpha_vantage_korean_symbol_support_is_not_assumed",
+      "kr_trading_read_only_source_remains_kis_mock_until_owner_review",
+      "asset_proxy_supported_tickers_are_not_trading_allowlist",
+      "no_alpha_provider_call_for_kr_stock_validation_now",
+      "no_kis_provider_call_for_boundary_validation_now",
+      "no_scenario_monthly_data_download_or_write",
+      "no_order_submission_or_order_endpoint_mapping",
+      "future_kr_market_data_provider_requires_separate_terms_and_owner_review"
+    ],
+    "blockedShortcuts": [
+      "using_alpha_as_kis_account_balance_provider",
+      "using_alpha_as_kis_positions_provider",
+      "using_alpha_as_orderable_cash_provider",
+      "using_alpha_global_quote_to_unlock_read_only_provider_calls",
+      "using_alpha_symbol_search_to_unblock_kr_trading",
+      "using_asset_proxy_health_supported_tickers_as_trading_scope",
+      "using_alpha_or_any_market_data_provider_to_write_scenario_monthly_returns"
+    ],
+    "promotionRules": [
+      "this contract does not prove Alpha Vantage Korean symbol coverage",
+      "Alpha Vantage symbol availability cannot authorize KIS account, position, orderable cash, or order endpoints",
+      "any future Korean market data provider requires source terms, owner approval, endpoint mapping, response validation, and provider-call authorization review",
+      "Step 114 monthly scenario data remains blocked until its separate source-policy and writer gates are satisfied"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "progressSummaryFailClosed": true,
+    "launchPlanStillKeepsProviderCallsBlocked": true,
+    "endpointAllowlistStillProviderAgnostic": true,
+    "endpointCategoryPreflightStillProviderAgnostic": true,
+    "assetDataProviderSeparatesKisAndAlpha": true,
+    "assetProxySupportedTickersRemainMockUniverse": true,
+    "boundaryAssertionsReady": true,
+    "blockedShortcutsReady": true,
+    "architectureDocMentionsAlphaKrMarketBoundary": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "missingAssertions": [],
+    "missingBlockedShortcuts": [],
+    "forbiddenRuntimeArtifacts": [],
+    "progressSummaryStatus": "summary_ready_contract_stack_fail_closed_pending_private_trading_reviews",
+    "launchReadinessStatus": "launch_readiness_plan_ready_trading_execution_still_blocked",
+    "endpointAllowlistStatus": "contract_ready_pending_read_only_provider_endpoint_allowlist_implementation_review",
+    "endpointCategoryPreflightStatus": "preflight_ready_endpoint_categories_aligned_provider_calls_blocked"
+  },
+  "readiness": {
+    "status": "alpha_kr_market_boundary_ready_provider_calls_still_blocked",
+    "readyForFutureAlphaKrMarketBoundaryReview": true,
+    "alphaKrStockCallValidationAllowedNow": false,
+    "kisProviderCallsAllowedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": [],
+    "remainingTradingGates": [
+      "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
+      "read_only_provider_call_authorization_review_result_not_owner_supplied",
+      "kis_read_only_provider_endpoint_mapping_blocked_pending_private_review",
+      "kr_market_data_provider_terms_review_blocked_pending_owner_review",
+      "scenario_monthly_returns_csv_blocked_pending_step114_source_policy",
+      "order_submission_blocked_pending_manual_permission_and_risk_clearance"
+    ]
+  }
+}
