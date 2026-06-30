@@ -3173,6 +3173,21 @@ The validator accepts only redacted receipt objects with opaque receipt id, vali
 
 Validator success still does not receive provider responses, parse raw KIS payloads, call KIS, authorize provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
+## Step 116-3L-C Trading Read-Only Provider Response Envelope Validation Result Receipt Validator Fixtures
+
+The first synthetic fixture regression contract for the read-only provider response envelope validation result receipt validator is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_validator_fixtures.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-validator-fixtures
+```
+
+This is a synthetic fixture regression contract, not a real validation receipt, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records one redacted valid receipt fixture and invalid fixtures for missing fields, unknown fields, malformed hashes, enabled allow flags, private path markers, raw response/provider markers, and secret-shaped values.
+
+Fixture readiness still does not create or read `data/private/trading/read_only_provider_response_envelope_validation_result_receipt.redacted.json`, does not receive provider responses, does not parse raw KIS payloads, does not call KIS, does not authorize provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
