@@ -291,6 +291,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
   ],
   [
+    "readOnlyProviderEndpointAllowlistValidatorFixtures",
+    "Read-only provider endpoint allowlist validator fixtures",
+    "trading_lab_step116_read_only_provider_endpoint_allowlist_validator_fixtures.json",
+  ],
+  [
     "readOnlyProviderEndpointCategoryValidationPreflight",
     "Read-only provider endpoint category validation preflight",
     "trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json",
@@ -466,6 +471,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-call-authorization-preflight-validator",
   "check:trading-read-only-provider-call-authorization-preflight-validator-fixtures",
   "check:trading-read-only-provider-endpoint-allowlist",
+  "check:trading-read-only-provider-endpoint-allowlist-validator",
+  "check:trading-read-only-provider-endpoint-allowlist-validator-fixtures",
   "check:trading-read-only-provider-endpoint-category-validation-preflight",
   "check:trading-read-only-provider-request-envelope-validator-fixtures",
   "check:trading-read-only-provider-response-envelope-validation-preflight",

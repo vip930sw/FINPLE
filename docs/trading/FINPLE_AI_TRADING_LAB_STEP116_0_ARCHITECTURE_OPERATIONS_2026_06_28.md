@@ -3022,6 +3022,35 @@ The boundary forbids provider-specific endpoint paths, provider transaction ids,
 
 Contract success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not map KIS endpoint paths or TR IDs, does not create or read `data/private/trading/read_only_approval.redacted.json`, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-3G-A Trading Read-Only Provider Endpoint Allowlist Local Validator
+
+The first local validator for the Trading Read-Only Provider Endpoint Allowlist Contract is:
+
+```text
+scripts/validate-trading-read-only-provider-endpoint-allowlist-contract.cjs
+scripts/validate-trading-read-only-provider-endpoint-allowlist-contract.test.cjs
+npm run check:trading-read-only-provider-endpoint-allowlist-validator
+```
+
+This validator checks only the generated `read_only_provider_endpoint_allowlist_contract`. It requires an explicit `--contract` path, requires the read-only allowed category catalog, requires the forbidden category and endpoint-rule catalogs, rejects unknown allowed categories and allowed/forbidden category overlap, and rejects provider-specific paths, provider transaction ids, credentials, account-shaped values, raw payload markers, runtime route/public UI/DB/order flags, and provider-call flags.
+
+The validator is local-only and synthetic. It does not map KIS endpoint paths or TR IDs, does not refresh tokens, does not call KIS, does not implement provider services, does not create runtime routes or UI, does not write `scenario_monthly_returns.csv`, and does not approve live trading.
+
+## Step 116-3G-B Trading Read-Only Provider Endpoint Allowlist Validator Fixtures
+
+The first validator fixtures for the Trading Read-Only Provider Endpoint Allowlist Contract are:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_endpoint_allowlist_validator_fixtures.json
+scripts/generate-trading-read-only-provider-endpoint-allowlist-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-endpoint-allowlist-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-endpoint-allowlist-validator-fixtures
+```
+
+This is a `read_only_provider_endpoint_allowlist_validator_fixtures` contract. It records a synthetic valid fixture copied from the current allowlist contract plus synthetic invalid fixtures for missing categories, unknown allowed categories, allowed/forbidden overlap, missing rules, missing forbidden-content entries, provider-specific path or transaction-id leakage, opened implementation/provider/order/route flags, and raw-shaped value injection.
+
+The fixture contract remains redacted and fixtures-only. It does not contain account numbers, credentials, tokens, provider-specific URL paths, provider transaction ids, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, private approval packets, provider calls, runtime routes, public UI, DB writes, or scenario monthly return rows.
+
 ## Step 116-3H Trading Read-Only Provider Endpoint Category Validation Preflight
 
 The first Trading Read-Only Provider Endpoint Category Validation Preflight is:
