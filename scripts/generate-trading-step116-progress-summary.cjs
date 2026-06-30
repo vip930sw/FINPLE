@@ -241,6 +241,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-hash-helper-implementation-review-validator",
   "check:trading-manual-order-permission-hash-helper-implementation-review-validator-fixtures",
   "check:trading-manual-order-permission-hash-preparation-runbook",
+  "check:trading-manual-order-permission-hash-preparation-runbook-validator",
   "check:trading-mock-approval-evidence",
   "check:trading-mock-approval-evidence-validator",
   "check:trading-redacted-read-only-approval-template",

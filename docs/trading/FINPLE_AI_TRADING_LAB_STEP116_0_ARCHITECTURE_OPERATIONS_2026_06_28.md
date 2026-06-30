@@ -2121,6 +2121,20 @@ This is a runbook contract for a future owner-assisted local hash preparation st
 
 Runbook readiness still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, does not run any helper, does not request raw account/operator/order/provider values, does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not call KIS, and does not enable provider calls, runtime routes, UI, DB writes, order submission, or live trading.
 
+## Step 116-4C Trading Manual Order Permission Hash Preparation Runbook Local Validator
+
+The first Trading Manual Order Permission Hash Preparation Runbook Local Validator is:
+
+```text
+scripts/validate-trading-manual-order-permission-hash-preparation-runbook-contract.cjs
+scripts/validate-trading-manual-order-permission-hash-preparation-runbook-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-preparation-runbook-validator
+```
+
+This is a pure local validator for the hash preparation runbook contract, not a hash helper implementation, helper execution, hash generator, private pepper request, raw input collection flow, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--contract <path>` argument and does not read private permission packets, environment secrets, provider URLs, account credentials, order credentials, or raw session tokens.
+
+The validator checks that the future helper path and permission packet path stay fixed, current-step helper/raw-input/pepper/hash-output/packet actions remain disabled, runbook steps/output labels/forbidden content lists remain complete, and provider/order/runtime/UI allow flags stay false.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
