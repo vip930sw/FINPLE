@@ -320,7 +320,8 @@ Step 116 should be split into small commits and PR-sized phases:
 68. Manual order permission packet validation preflight.
 69. Manual order permission packet validation runbook.
 70. Manual order permission validation result receipt.
-71. Live guarded execution only after manual approval.
+71. Manual order permission validation result receipt local validator.
+72. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2280,6 +2281,20 @@ This is a manual_order_permission_validation_result_receipt contract, not a priv
 The receipt boundary requires redacted-only fields such as receipt id, validation status, validator version hash, packet shape hash, error code hashes, redaction version, and explicit false allow flags. It forbids recording the private packet path, raw packet values, account identifiers, operator identifiers, provider payloads, order payloads, live endpoint content, execution or fill payloads, and scenario monthly return rows.
 
 Receipt readiness still does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4M Trading Manual Order Permission Validation Result Receipt Local Validator
+
+The first local validator for a redacted manual order permission validation result receipt is:
+
+```text
+scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs
+scripts/validate-trading-manual-order-permission-validation-result-receipt.test.cjs
+npm run check:trading-manual-order-permission-validation-result-receipt-validator
+```
+
+The validator requires an explicit `--receipt <path>` argument and does not use a default private packet path. It accepts only a redacted receipt object with opaque receipt id, validation status, validation timestamp, validator version hash, packet shape hash, error code hashes, `redactionVersion=v1`, and explicit packet-path/raw-value/import/provider/order/runtime/UI flags set to false.
+
+Validator success still does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
