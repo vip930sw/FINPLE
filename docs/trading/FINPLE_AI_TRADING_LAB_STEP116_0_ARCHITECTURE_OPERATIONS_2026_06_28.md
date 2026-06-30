@@ -3126,6 +3126,37 @@ Current state remains:
 
 Validator success still does not receive provider responses, parse raw KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
+## Step 116-3L-A Trading Read-Only Provider Response Envelope Validation Result Receipt
+
+The first Trading Read-Only Provider Response Envelope Validation Result Receipt contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt
+```
+
+This is a read_only_provider_response_envelope_validation_result_receipt contract, not a provider response reader, response parser, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records only the future redacted receipt shape for a local response-envelope validation result.
+
+Current state remains:
+
+- `receiptContractOnly=true`
+- `validationReceiptRecordedNow=false`
+- `responseEnvelopePathRecorded=false`
+- `rawResponseRecorded=false`
+- `providerPayloadRecorded=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The receipt boundary allows only opaque receipt id, validation status, validation timestamp, validator version hash, response-envelope shape hash, error-code hashes, redaction version, and explicit false allow flags. It forbids recording local response-envelope paths, raw response payloads, raw provider payloads, app keys, app secrets, access tokens, account numbers, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows.
+
+Receipt contract success still does not receive provider responses, parse raw KIS payloads, call KIS, authorize provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
