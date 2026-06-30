@@ -105,6 +105,7 @@
     "check:trading-read-only-provider-endpoint-category-validation-preflight": "node scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.cjs --check && node --test scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.test.cjs",
     "check:trading-read-only-provider-request-envelope-validator-fixtures": "node scripts/generate-trading-read-only-provider-request-envelope-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-provider-request-envelope-validator-fixtures.test.cjs",
     "check:trading-read-only-provider-response-envelope-validation-preflight": "node scripts/generate-trading-read-only-provider-response-envelope-validation-preflight.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-validation-preflight.test.cjs",
+    "check:trading-read-only-provider-response-envelope-validator-fixtures": "node scripts/generate-trading-read-only-provider-response-envelope-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-validator-fixtures.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {

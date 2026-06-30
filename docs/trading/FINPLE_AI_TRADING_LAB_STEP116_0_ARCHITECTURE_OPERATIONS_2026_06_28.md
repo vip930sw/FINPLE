@@ -281,23 +281,24 @@ Step 116 should be split into small commits and PR-sized phases:
 29. Read-only provider endpoint category validation preflight.
 30. Read-only provider request envelope validator fixtures.
 31. Read-only provider response envelope validation preflight.
-32. Trading Step 116 progress summary.
-33. Read-only provider request envelope validation contract.
-34. Read-only provider request envelope validation preflight.
-35. Read-only provider request envelope local validator.
-36. Read-only provider request envelope contract.
-37. Read-only provider response envelope contract.
-38. Read-only snapshot normalization contract.
-39. Read-only snapshot risk input contract.
-40. Read-only snapshot risk input local validator.
-41. Private shadow order intent contract.
-42. Private shadow order intent local validator.
-43. Private shadow intent audit event contract.
-44. Private shadow intent audit event local validator.
-45. Private shadow runtime review packet contract.
-46. Private shadow runtime review packet local validator.
-47. Private shadow operator access contract.
-48. Private shadow operator access local validator.
+32. Read-only provider response envelope validator fixtures.
+33. Trading Step 116 progress summary.
+34. Read-only provider request envelope validation contract.
+35. Read-only provider request envelope validation preflight.
+36. Read-only provider request envelope local validator.
+37. Read-only provider request envelope contract.
+38. Read-only provider response envelope contract.
+39. Read-only snapshot normalization contract.
+40. Read-only snapshot risk input contract.
+41. Read-only snapshot risk input local validator.
+42. Private shadow order intent contract.
+43. Private shadow order intent local validator.
+44. Private shadow intent audit event contract.
+45. Private shadow intent audit event local validator.
+46. Private shadow runtime review packet contract.
+47. Private shadow runtime review packet local validator.
+48. Private shadow operator access contract.
+49. Private shadow operator access local validator.
 49. Private shadow runtime preflight.
 50. KIS order adapter design review.
 51. Manual order permission preflight.
@@ -2037,6 +2038,32 @@ Current state remains:
 - `liveTradingAllowed=false`
 
 Preflight success still does not receive provider responses, parse raw KIS payloads, refresh tokens, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading. The future validator must read only an explicit local candidate response-envelope path and must reject raw provider payloads, order/execution/fill content, live order endpoints, and scenario monthly rows.
+
+## Step 116-3K Trading Read-Only Provider Response Envelope Validator Fixtures
+
+The first Trading Read-Only Provider Response Envelope Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validator_fixtures.json
+scripts/generate-trading-read-only-provider-response-envelope-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for a future local response-envelope validator, not a response parser, KIS caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records one redacted valid response envelope and invalid fixture definitions for missing raw-response hashes, unknown snapshot types, provider-call flags, order categories, raw payload shapes, and malformed hashes.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `responsePayloadReceivedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not receive provider responses, parse raw KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Explicit Non-Goals
 
