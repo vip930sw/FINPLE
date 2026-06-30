@@ -1,0 +1,2677 @@
+{
+  "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-4T",
+  "scope": "manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures",
+  "sourceFiles": {
+    "validationResultReceiptReviewRunbookContract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json",
+    "validator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-runbook-contract.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "currentStepRunsValidator": false,
+    "currentStepReadsReceipt": false,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic review-runbook validator fixtures only; no real validation receipt, private packet, account, operator, credential, provider payload, order payload, token, app key, app secret, execution, fill, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-runbook-contract.cjs",
+    "validSyntheticReviewRunbookContract": {
+      "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+      "auditedAt": "2026-06-29T00:00:00Z",
+      "step": "Step 116-4R",
+      "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+      "sourceFiles": {
+        "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+        "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+        "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+        "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+        "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+      },
+      "outputFiles": {
+        "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+      },
+      "currentState": {
+        "runbookOnly": true,
+        "currentStepRunsValidator": false,
+        "currentStepReadsReceipt": false,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "packetPathRecorded": false,
+        "rawValuesRecorded": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+        "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+        "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+        "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+        "currentStepRunsValidator": false,
+        "currentStepReadsReceipt": false,
+        "currentStepRecordsReceipt": false,
+        "currentStepImportsPermissionPacket": false,
+        "requiredReviewAssertions": [
+          "review_uses_explicit_owner_supplied_receipt_path_later",
+          "review_runs_local_receipt_validator_later",
+          "review_does_not_record_receipt_path",
+          "review_does_not_record_raw_values",
+          "review_does_not_import_permission_packet",
+          "review_does_not_enable_provider_calls",
+          "review_does_not_enable_order_submission",
+          "review_does_not_create_runtime_route",
+          "review_does_not_create_public_ui",
+          "review_does_not_write_database",
+          "review_requires_separate_permission_import_review"
+        ],
+        "redactedReviewOutputFields": [
+          "validationReceiptReviewId",
+          "reviewStatus",
+          "reviewedAt",
+          "receiptShapeHash",
+          "validatorVersionHash",
+          "reviewErrorCodeHashes",
+          "redactionVersion",
+          "receiptPathRecorded",
+          "rawValuesRecorded",
+          "permissionPacketImportedNow",
+          "providerCallsAllowed",
+          "orderSubmissionAllowed",
+          "runtimeRouteAllowed",
+          "publicUiAllowed"
+        ],
+        "forbiddenReviewOutputContent": [
+          "app_key",
+          "app_secret",
+          "access_token",
+          "full_account_number",
+          "raw_account_identifier",
+          "raw_operator_identifier",
+          "raw_session_token",
+          "raw_order_payload",
+          "raw_provider_payload",
+          "order_confirmation",
+          "execution_id",
+          "fill_payload",
+          "live_order_endpoint",
+          "scenario_monthly_return_row"
+        ],
+        "safetyNotes": [
+          "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+          "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+          "successful receipt review is not permission packet import clearance",
+          "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+        ]
+      },
+      "checks": {
+        "runbookOnly": true,
+        "reviewPreflightReady": true,
+        "reviewPreflightValidatorFixturesReady": true,
+        "reviewPreflightValidatorReady": true,
+        "receiptValidatorReady": true,
+        "reviewAssertionCatalogReady": true,
+        "redactedReviewOutputCatalogReady": true,
+        "forbiddenReviewOutputContentReady": true,
+        "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+        "noRuntimeArtifacts": true,
+        "currentStepRunsValidator": false,
+        "currentStepReadsReceipt": false,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "packetPathRecorded": false,
+        "rawValuesRecorded": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "runtimeRouteAllowed": false,
+        "publicUiAllowed": false,
+        "dbMigrationAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "evidence": {
+        "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+        "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+        "missingReviewAssertions": [],
+        "missingRedactedReviewOutputFields": [],
+        "missingForbiddenReviewOutputContent": [],
+        "forbiddenRuntimeArtifacts": []
+      },
+      "readiness": {
+        "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+        "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+        "runbookOnly": true,
+        "currentStepRunsValidator": false,
+        "currentStepReadsReceipt": false,
+        "validationReceiptRecordedNow": false,
+        "validationReceiptReadAllowedNow": false,
+        "packetPathRecorded": false,
+        "rawValuesRecorded": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false,
+        "blockers": []
+      }
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_output_files",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "validator_run_enabled",
+        "expectedErrorCodes": [
+          "runbook_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": true,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "receipt_read_enabled",
+        "expectedErrorCodes": [
+          "runbook_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": true,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "receipt_record_enabled",
+        "expectedErrorCodes": [
+          "runbook_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": true,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "permission_import_enabled",
+        "expectedErrorCodes": [
+          "runbook_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": true,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_review_assertion",
+        "expectedErrorCodes": [
+          "missing_review_assertion"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_redacted_review_output_field",
+        "expectedErrorCodes": [
+          "missing_redacted_review_output_field"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_forbidden_review_output_content",
+        "expectedErrorCodes": [
+          "missing_forbidden_review_output_content"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_future_receipt_path",
+        "expectedErrorCodes": [
+          "invalid_future_validation_result_receipt_path"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data/private/trading/live_order_receipt.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_validator_command",
+        "expectedErrorCodes": [
+          "invalid_validator_command_template"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_review_preflight_command",
+        "expectedErrorCodes": [
+          "invalid_review_preflight_validator_command_template"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": true,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": true,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": true,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": []
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "numeric_raw_value_shape_injected",
+        "expectedErrorCodes": [
+          "forbidden_raw_value"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-review-runbook-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-4R",
+          "scope": "manual_order_permission_validation_result_receipt_review_runbook",
+          "sourceFiles": {
+            "validationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "validationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures.json",
+            "validationResultReceiptReviewPreflightValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs",
+            "validationResultReceiptValidator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json"
+          },
+          "currentState": {
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureOwnerAssistedValidationResultReceiptReviewRunbook": {
+            "futureValidationResultReceiptPath": "data\\private\\trading\\manual_order_permission_validation_result_receipt.redacted.json",
+            "validatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt.cjs --receipt <owner-supplied-redacted-validation-result-receipt-path>",
+            "reviewPreflightValidatorCommandTemplate": "node scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs --contract data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "currentStepRecordsReceipt": false,
+            "currentStepImportsPermissionPacket": false,
+            "requiredReviewAssertions": [
+              "review_uses_explicit_owner_supplied_receipt_path_later",
+              "review_runs_local_receipt_validator_later",
+              "review_does_not_record_receipt_path",
+              "review_does_not_record_raw_values",
+              "review_does_not_import_permission_packet",
+              "review_does_not_enable_provider_calls",
+              "review_does_not_enable_order_submission",
+              "review_does_not_create_runtime_route",
+              "review_does_not_create_public_ui",
+              "review_does_not_write_database",
+              "review_requires_separate_permission_import_review"
+            ],
+            "redactedReviewOutputFields": [
+              "validationReceiptReviewId",
+              "reviewStatus",
+              "reviewedAt",
+              "receiptShapeHash",
+              "validatorVersionHash",
+              "reviewErrorCodeHashes",
+              "redactionVersion",
+              "receiptPathRecorded",
+              "rawValuesRecorded",
+              "permissionPacketImportedNow",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "forbiddenReviewOutputContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_order_payload",
+              "raw_provider_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "safetyNotes": [
+              "the owner-supplied redacted validation result receipt path is provided later and is not read by this contract",
+              "review output may record hashes and redacted status later, but must not record receipt paths or raw values",
+              "successful receipt review is not permission packet import clearance",
+              "successful receipt review is not provider call, order adapter, runtime route, UI, DB, order, or live trading clearance"
+            ]
+          },
+          "checks": {
+            "runbookOnly": true,
+            "reviewPreflightReady": true,
+            "reviewPreflightValidatorFixturesReady": true,
+            "reviewPreflightValidatorReady": true,
+            "receiptValidatorReady": true,
+            "reviewAssertionCatalogReady": true,
+            "redactedReviewOutputCatalogReady": true,
+            "forbiddenReviewOutputContentReady": true,
+            "architectureDocMentionsValidationResultReceiptReviewRunbook": true,
+            "noRuntimeArtifacts": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "dbMigrationAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "reviewPreflightStatus": "preflight_ready_for_future_owner_validation_result_receipt_review",
+            "reviewPreflightValidatorFixturesStatus": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_preflight_validator_regression",
+            "missingReviewAssertions": [],
+            "missingRedactedReviewOutputFields": [],
+            "missingForbiddenReviewOutputContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "syntheticNumericRawValueShape": "12345678"
+          },
+          "readiness": {
+            "status": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+            "readyForOwnerAssistedValidationResultReceiptReviewRunbookReview": true,
+            "runbookOnly": true,
+            "currentStepRunsValidator": false,
+            "currentStepReadsReceipt": false,
+            "validationReceiptRecordedNow": false,
+            "validationReceiptReadAllowedNow": false,
+            "packetPathRecorded": false,
+            "rawValuesRecorded": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_output_files",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "validator_run_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "receipt_read_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "receipt_record_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "permission_import_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "runbook_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_review_assertion",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_review_assertion"
+          ],
+          "actualErrorCodes": [
+            "missing_review_assertion"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_redacted_review_output_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_redacted_review_output_field"
+          ],
+          "actualErrorCodes": [
+            "missing_redacted_review_output_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_review_output_content",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_review_output_content"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_review_output_content"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_future_receipt_path",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_validation_result_receipt_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_validation_result_receipt_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_validator_command",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_validator_command_template"
+          ],
+          "actualErrorCodes": [
+            "invalid_validator_command_template"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_review_preflight_command",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_review_preflight_validator_command_template"
+          ],
+          "actualErrorCodes": [
+            "invalid_review_preflight_validator_command_template"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "numeric_raw_value_shape_injected",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_raw_value"
+          ],
+          "actualErrorCodes": [
+            "forbidden_raw_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "runbookContractReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "currentStepRunsValidator": false,
+    "currentStepReadsReceipt": false,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "runbookContractStatus": "runbook_ready_for_owner_assisted_validation_result_receipt_review",
+    "invalidFixtureIds": [
+      "missing_output_files",
+      "validator_run_enabled",
+      "receipt_read_enabled",
+      "receipt_record_enabled",
+      "permission_import_enabled",
+      "missing_review_assertion",
+      "missing_redacted_review_output_field",
+      "missing_forbidden_review_output_content",
+      "changed_future_receipt_path",
+      "changed_validator_command",
+      "changed_review_preflight_command",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "numeric_raw_value_shape_injected"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenFixtureContent": [],
+    "forbiddenRuntimeArtifacts": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_manual_order_permission_validation_result_receipt_review_runbook_validator_regression",
+    "readyForReviewRunbookValidatorFixtureRegression": true,
+    "fixturesOnly": true,
+    "currentStepRunsValidator": false,
+    "currentStepReadsReceipt": false,
+    "validationReceiptRecordedNow": false,
+    "validationReceiptReadAllowedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

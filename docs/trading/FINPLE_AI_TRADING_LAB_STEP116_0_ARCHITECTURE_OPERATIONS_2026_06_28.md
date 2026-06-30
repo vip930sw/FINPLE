@@ -327,7 +327,8 @@ Step 116 should be split into small commits and PR-sized phases:
 75. Manual order permission validation result receipt review preflight validator fixtures.
 76. Manual order permission validation result receipt review runbook.
 77. Manual order permission validation result receipt review runbook local validator.
-78. Live guarded execution only after manual approval.
+78. Manual order permission validation result receipt review runbook validator fixtures.
+79. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2383,6 +2384,19 @@ npm run check:trading-manual-order-permission-validation-result-receipt-review-r
 ```
 
 This validates the manual_order_permission_validation_result_receipt_review_runbook contract shape only. It requires an explicit `--contract` path, checks the redacted review command shape and required review assertions, rejects raw-value-shaped strings and enabled trading allow flags, and does not read private receipts, import permission packets, call providers, submit orders, create runtime routes, write the database, or expose public UI.
+
+## Step 116-4T Trading Manual Order Permission Validation Result Receipt Review Runbook Validator Fixtures
+
+The first synthetic fixture regression contract for the validation result receipt review runbook validator is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-validation-result-receipt-review-runbook-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-validation-result-receipt-review-runbook-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-validation-result-receipt-review-runbook-validator-fixtures
+```
+
+This is a manual_order_permission_validation_result_receipt_review_runbook_validator_fixtures contract, not a real validation receipt, private packet reader, permission importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid review-runbook shapes for local validator regression only.
 
 Fixture readiness still does not create or read `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
