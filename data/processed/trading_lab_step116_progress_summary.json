@@ -30,6 +30,7 @@
       "readOnlySnapshotNormalization": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
       "readOnlySnapshotNormalizationValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_validator_fixtures.json",
       "readOnlySnapshotRiskInput": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json",
+      "readOnlySnapshotRiskInputValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_validator_fixtures.json",
       "privateShadowOrderIntent": "data\\processed\\trading_lab_step116_private_shadow_order_intent_contract.json",
       "privateShadowIntentAuditEvent": "data\\processed\\trading_lab_step116_private_shadow_intent_audit_event_contract.json",
       "privateShadowRuntimeReviewPacket": "data\\processed\\trading_lab_step116_private_shadow_runtime_review_packet_contract.json",
@@ -74,10 +75,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 47,
-    "trackedContractsReady": 47,
+    "trackedContractsTotal": 48,
+    "trackedContractsReady": 48,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 65,
+    "requiredNpmScriptsTotal": 66,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -286,6 +287,15 @@
       "title": "Read-only snapshot risk input",
       "filePath": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json",
       "status": "contract_ready_pending_read_only_snapshot_risk_input_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlySnapshotRiskInputValidatorFixtures",
+      "title": "Read-only snapshot risk input validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_validator_fixtures.json",
+      "status": "fixtures_ready_for_read_only_snapshot_risk_input_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

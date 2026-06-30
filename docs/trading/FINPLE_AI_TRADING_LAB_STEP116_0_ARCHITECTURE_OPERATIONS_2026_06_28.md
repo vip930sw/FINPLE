@@ -294,14 +294,15 @@ Step 116 should be split into small commits and PR-sized phases:
 42. Read-only snapshot normalization validator fixtures.
 43. Read-only snapshot risk input contract.
 44. Read-only snapshot risk input local validator.
-45. Private shadow order intent contract.
-46. Private shadow order intent local validator.
-47. Private shadow intent audit event contract.
-48. Private shadow intent audit event local validator.
-49. Private shadow runtime review packet contract.
-50. Private shadow runtime review packet local validator.
-51. Private shadow operator access contract.
-52. Private shadow operator access local validator.
+45. Read-only snapshot risk input validator fixtures.
+46. Private shadow order intent contract.
+47. Private shadow order intent local validator.
+48. Private shadow intent audit event contract.
+49. Private shadow intent audit event local validator.
+50. Private shadow runtime review packet contract.
+51. Private shadow runtime review packet local validator.
+52. Private shadow operator access contract.
+53. Private shadow operator access local validator.
 49. Private shadow runtime preflight.
 50. KIS order adapter design review.
 51. Manual order permission preflight.
@@ -1489,6 +1490,31 @@ Current state remains:
 The validator accepts only a shadow-mode, hash-only risk input with fresh quote/account/orderable-cash/position/FX/market-session/rate-limit snapshot hashes, matching account context, bounded quantity, and explicit provider/order allow flags set to false.
 
 Validator success still does not map provider responses, normalize snapshots, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit orders, or approve live trading.
+
+## Step 116-3O Trading Read-Only Snapshot Risk Input Validator Fixtures
+
+The first Trading Read-Only Snapshot Risk Input Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_snapshot_risk_input_validator_fixtures.json
+scripts/generate-trading-read-only-snapshot-risk-input-validator-fixtures.cjs
+scripts/generate-trading-read-only-snapshot-risk-input-validator-fixtures.test.cjs
+npm run check:trading-read-only-snapshot-risk-input-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the local snapshot-risk-input validator, not a KIS reader, provider adapter, runtime route, storage layer, DB migration, public UI, or order submission path. It records one redacted valid risk input and invalid fixture definitions for missing snapshot hashes, live_guarded mode, stale snapshots, account mismatch, provider rate-limit blocks, provider-call flags, order-submission flags, malformed hashes, unsafe symbols, and raw snapshot shapes.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Step 116-1Y Trading Private Shadow Order Intent Contract
 

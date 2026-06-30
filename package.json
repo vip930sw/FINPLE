@@ -74,6 +74,7 @@
     "check:trading-read-only-snapshot-normalization-validator-fixtures": "node scripts/generate-trading-read-only-snapshot-normalization-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-snapshot-normalization-validator-fixtures.test.cjs",
     "check:trading-read-only-snapshot-risk-input": "node scripts/generate-trading-read-only-snapshot-risk-input-contract.cjs --check && node --test scripts/generate-trading-read-only-snapshot-risk-input-contract.test.cjs",
     "check:trading-read-only-snapshot-risk-input-validator": "node --test scripts/validate-trading-read-only-snapshot-risk-input.test.cjs",
+    "check:trading-read-only-snapshot-risk-input-validator-fixtures": "node scripts/generate-trading-read-only-snapshot-risk-input-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-snapshot-risk-input-validator-fixtures.test.cjs",
     "check:trading-private-shadow-order-intent": "node scripts/generate-trading-private-shadow-order-intent-contract.cjs --check && node --test scripts/generate-trading-private-shadow-order-intent-contract.test.cjs",
     "check:trading-private-shadow-order-intent-validator": "node --test scripts/validate-trading-private-shadow-order-intent.test.cjs",
     "check:trading-private-shadow-intent-audit-event": "node scripts/generate-trading-private-shadow-intent-audit-event-contract.cjs --check && node --test scripts/generate-trading-private-shadow-intent-audit-event-contract.test.cjs",
