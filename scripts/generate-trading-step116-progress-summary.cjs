@@ -238,6 +238,11 @@ const TRACKED_READINESS_CONTRACTS = [
   ],
   ["redactedApprovalPacketValidation", "Redacted approval packet validation", "trading_lab_step116_redacted_approval_packet_validation_contract.json"],
   ["redactedApprovalPacketValidationPreflight", "Redacted approval packet validation preflight", "trading_lab_step116_redacted_approval_packet_validation_preflight.json"],
+  [
+    "redactedApprovalPacketValidationPreflightValidatorFixtures",
+    "Redacted approval packet validation preflight validator fixtures",
+    "trading_lab_step116_redacted_approval_packet_validation_preflight_validator_fixtures.json",
+  ],
   ["redactedApprovalPacketValidatorFixtures", "Redacted approval packet validator fixtures", "trading_lab_step116_redacted_approval_packet_validator_fixtures.json"],
   [
     "privateReadOnlyProviderImplementationPreflight",
@@ -402,6 +407,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-redacted-approval-packet-validation",
   "check:trading-redacted-approval-packet-validation-preflight",
   "check:trading-redacted-approval-packet-validation-preflight-validator",
+  "check:trading-redacted-approval-packet-validation-preflight-validator-fixtures",
   "check:trading-redacted-approval-packet-validator",
   "check:trading-redacted-approval-packet-validator-fixtures",
   "check:trading-private-read-only-provider-implementation-preflight",

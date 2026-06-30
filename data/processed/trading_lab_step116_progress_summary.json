@@ -77,6 +77,7 @@
       "redactedApprovalHashHelperPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight_validator_fixtures.json",
       "redactedApprovalPacketValidation": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
       "redactedApprovalPacketValidationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
+      "redactedApprovalPacketValidationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight_validator_fixtures.json",
       "redactedApprovalPacketValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json",
       "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
       "privateDbStorageImplementationPreflight": "data\\processed\\trading_lab_step116_private_db_storage_implementation_preflight.json",
@@ -110,10 +111,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 83,
-    "trackedContractsReady": 83,
+    "trackedContractsTotal": 84,
+    "trackedContractsReady": 84,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 115,
+    "requiredNpmScriptsTotal": 116,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -745,6 +746,15 @@
       "title": "Redacted approval packet validation preflight",
       "filePath": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
       "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "redactedApprovalPacketValidationPreflightValidatorFixtures",
+      "title": "Redacted approval packet validation preflight validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight_validator_fixtures.json",
+      "status": "fixtures_ready_for_redacted_approval_packet_validation_preflight_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

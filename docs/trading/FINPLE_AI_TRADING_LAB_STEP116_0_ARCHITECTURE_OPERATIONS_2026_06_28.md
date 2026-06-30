@@ -272,80 +272,81 @@ Step 116 should be split into small commits and PR-sized phases:
 20. Redacted approval hash helper preflight validator fixtures.
 21. Redacted approval packet validation contract.
 22. Redacted approval packet validation preflight.
-23. Redacted approval packet local validator.
-24. Redacted approval packet validator fixtures.
-25. Private read-only provider implementation preflight.
-26. Private DB storage implementation preflight.
-27. Private runtime route implementation preflight.
-28. Private operator access implementation preflight.
-29. Private shadow runtime implementation preflight.
-30. Read-only approval import implementation preflight.
-31. Read-only provider call authorization preflight.
-32. Read-only provider endpoint allowlist contract.
-33. Read-only provider endpoint category validation preflight.
-34. Read-only provider request envelope validator fixtures.
-35. Read-only provider response envelope validation preflight.
-36. Read-only provider response envelope validator fixtures.
-37. Read-only provider response envelope local validator.
-38. Trading Step 116 progress summary.
-39. Read-only provider request envelope validation contract.
-40. Read-only provider request envelope validation preflight.
-41. Read-only provider request envelope local validator.
-42. Read-only provider request envelope contract.
-43. Read-only provider response envelope contract.
-44. Read-only snapshot normalization contract.
-45. Read-only snapshot normalization local validator.
-46. Read-only snapshot normalization validator fixtures.
-47. Read-only snapshot risk input contract.
-48. Read-only snapshot risk input local validator.
-49. Read-only snapshot risk input validator fixtures.
-50. Private shadow order intent contract.
-51. Private shadow order intent local validator.
-52. Private shadow order intent validator fixtures.
-53. Private shadow intent audit event contract.
-54. Private shadow intent audit event local validator.
-55. Private shadow intent audit event validator fixtures.
-56. Private shadow runtime review packet contract.
-57. Private shadow runtime review packet local validator.
-58. Private shadow runtime review packet validator fixtures.
-59. Private shadow operator access contract.
-60. Private shadow operator access local validator.
-61. Private shadow operator access validator fixtures.
-62. Private shadow runtime preflight.
-63. KIS order adapter design review.
-64. Manual order permission preflight.
-65. Manual order permission local validator.
-66. Manual order permission hash preparation runbook validator fixtures.
-67. Manual order permission import implementation preflight.
-68. Manual order permission import implementation preflight local validator.
-69. Manual order permission import implementation preflight validator fixtures.
-70. Manual order permission packet local validator.
-71. Manual order permission packet validator fixtures.
-72. Manual order permission packet validation preflight.
-73. Manual order permission packet validation preflight local validator.
-74. Manual order permission packet validation preflight validator fixtures.
-75. Manual order permission packet validation runbook.
-76. Manual order permission validation result receipt.
-77. Manual order permission validation result receipt local validator.
-78. Manual order permission validation result receipt validator fixtures.
-79. Manual order permission validation result receipt review preflight.
-80. Manual order permission validation result receipt review preflight local validator.
-81. Manual order permission validation result receipt review preflight validator fixtures.
-82. Manual order permission validation result receipt review runbook.
-83. Manual order permission validation result receipt review runbook local validator.
-84. Manual order permission validation result receipt review runbook validator fixtures.
-85. Manual order permission validation result receipt review result contract.
-86. Manual order permission validation result receipt review result local validator.
-87. Manual order permission validation result receipt review result validator fixtures.
-88. Live-guarded order adapter implementation preflight local validator.
-89. Live-guarded order adapter implementation preflight validator fixtures.
-90. Redacted manual order permission template local validator.
-91. Redacted manual order permission template validator fixtures.
-92. Manual order permission hash helper local validator.
-93. Manual order permission hash helper validator fixtures.
-94. Manual order permission hash helper preflight local validator.
-95. Manual order permission hash helper preflight validator fixtures.
-96. Live guarded execution only after manual approval.
+23. Redacted approval packet validation preflight validator fixtures.
+24. Redacted approval packet local validator.
+25. Redacted approval packet validator fixtures.
+26. Private read-only provider implementation preflight.
+27. Private DB storage implementation preflight.
+28. Private runtime route implementation preflight.
+29. Private operator access implementation preflight.
+30. Private shadow runtime implementation preflight.
+31. Read-only approval import implementation preflight.
+32. Read-only provider call authorization preflight.
+33. Read-only provider endpoint allowlist contract.
+34. Read-only provider endpoint category validation preflight.
+35. Read-only provider request envelope validator fixtures.
+36. Read-only provider response envelope validation preflight.
+37. Read-only provider response envelope validator fixtures.
+38. Read-only provider response envelope local validator.
+39. Trading Step 116 progress summary.
+40. Read-only provider request envelope validation contract.
+41. Read-only provider request envelope validation preflight.
+42. Read-only provider request envelope local validator.
+43. Read-only provider request envelope contract.
+44. Read-only provider response envelope contract.
+45. Read-only snapshot normalization contract.
+46. Read-only snapshot normalization local validator.
+47. Read-only snapshot normalization validator fixtures.
+48. Read-only snapshot risk input contract.
+49. Read-only snapshot risk input local validator.
+50. Read-only snapshot risk input validator fixtures.
+51. Private shadow order intent contract.
+52. Private shadow order intent local validator.
+53. Private shadow order intent validator fixtures.
+54. Private shadow intent audit event contract.
+55. Private shadow intent audit event local validator.
+56. Private shadow intent audit event validator fixtures.
+57. Private shadow runtime review packet contract.
+58. Private shadow runtime review packet local validator.
+59. Private shadow runtime review packet validator fixtures.
+60. Private shadow operator access contract.
+61. Private shadow operator access local validator.
+62. Private shadow operator access validator fixtures.
+63. Private shadow runtime preflight.
+64. KIS order adapter design review.
+65. Manual order permission preflight.
+66. Manual order permission local validator.
+67. Manual order permission hash preparation runbook validator fixtures.
+68. Manual order permission import implementation preflight.
+69. Manual order permission import implementation preflight local validator.
+70. Manual order permission import implementation preflight validator fixtures.
+71. Manual order permission packet local validator.
+72. Manual order permission packet validator fixtures.
+73. Manual order permission packet validation preflight.
+74. Manual order permission packet validation preflight local validator.
+75. Manual order permission packet validation preflight validator fixtures.
+76. Manual order permission packet validation runbook.
+77. Manual order permission validation result receipt.
+78. Manual order permission validation result receipt local validator.
+79. Manual order permission validation result receipt validator fixtures.
+80. Manual order permission validation result receipt review preflight.
+81. Manual order permission validation result receipt review preflight local validator.
+82. Manual order permission validation result receipt review preflight validator fixtures.
+83. Manual order permission validation result receipt review runbook.
+84. Manual order permission validation result receipt review runbook local validator.
+85. Manual order permission validation result receipt review runbook validator fixtures.
+86. Manual order permission validation result receipt review result contract.
+87. Manual order permission validation result receipt review result local validator.
+88. Manual order permission validation result receipt review result validator fixtures.
+89. Live-guarded order adapter implementation preflight local validator.
+90. Live-guarded order adapter implementation preflight validator fixtures.
+91. Redacted manual order permission template local validator.
+92. Redacted manual order permission template validator fixtures.
+93. Manual order permission hash helper local validator.
+94. Manual order permission hash helper validator fixtures.
+95. Manual order permission hash helper preflight local validator.
+96. Manual order permission hash helper preflight validator fixtures.
+97. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1300,6 +1301,36 @@ Current state remains:
 The validator checks that only the pure local packet validator implementation is allowed, future validator and approval packet paths stay fixed, private packet reads/writes/imports remain disabled, preflight gates and implementation review rules remain complete, forbidden content remains listed, and provider/order/runtime/UI/live flags remain false.
 
 Validator success still does not read or create `data/private/trading/read_only_approval.redacted.json`, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-2I-B Trading Redacted Approval Packet Validation Preflight Validator Fixtures
+
+The first Trading Redacted Approval Packet Validation Preflight Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_redacted_approval_packet_validation_preflight_validator_fixtures.json
+scripts/generate-trading-redacted-approval-packet-validation-preflight-validator-fixtures.cjs
+scripts/generate-trading-redacted-approval-packet-validation-preflight-validator-fixtures.test.cjs
+npm run check:trading-redacted-approval-packet-validation-preflight-validator-fixtures
+```
+
+This is a redacted_approval_packet_validation_preflight_validator_fixtures contract, not a private approval packet, approval importer, KIS provider call, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid preflight shapes for local validator regression only.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `validationImplementationAllowedNow=true`
+- `validationImplementationReviewAllowedLater=true`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixture catalog proves the valid preflight still passes, while synthetic invalid shapes fail for disabled validator implementation allowance, private packet reads, packet writes, packet imports, missing preflight gates, missing implementation rules, changed future paths, and prematurely enabled provider/order/runtime/UI flags.
+
+Fixture success still does not read or create `data/private/trading/read_only_approval.redacted.json`, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2J Trading Redacted Approval Packet Local Validator
 

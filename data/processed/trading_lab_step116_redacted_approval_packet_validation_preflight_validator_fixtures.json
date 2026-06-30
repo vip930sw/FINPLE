@@ -1,0 +1,2598 @@
+{
+  "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-2I-B",
+  "scope": "redacted_approval_packet_validation_preflight_validator_fixtures",
+  "sourceFiles": {
+    "redactedApprovalPacketValidationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
+    "validator": "scripts\\validate-trading-redacted-approval-packet-validation-preflight.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "validationImplementationAllowedNow": true,
+    "validationImplementationReviewAllowedLater": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic redacted approval packet validation preflight validator fixtures only; no private packet, raw account, credential, provider payload, order payload, execution, fill, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-redacted-approval-packet-validation-preflight.cjs",
+    "validSyntheticRedactedApprovalPacketValidationPreflight": {
+      "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+      "auditedAt": "2026-06-29T00:00:00Z",
+      "step": "Step 116-2I",
+      "scope": "trading_redacted_approval_packet_validation_preflight",
+      "sourceFiles": {
+        "policy": "data\\processed\\trading_lab_step1160_policy.json",
+        "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+        "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+        "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+        "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+        "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+        "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+      },
+      "outputFiles": {
+        "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+      },
+      "currentState": {
+        "preflightOnly": true,
+        "validationImplementationAllowedNow": true,
+        "validationImplementationReviewAllowedLater": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "readOnlyRuntimeIntegrationAllowed": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "futurePureLocalValidatorImplementationBoundary": {
+        "scope": "redacted_approval_packet_validation_preflight",
+        "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+        "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+        "currentStepImplementsValidator": true,
+        "currentStepReadsPrivatePacket": false,
+        "currentStepCreatesPacket": false,
+        "currentStepImportsPacket": false,
+        "preflightGates": [
+          "validation_contract_ready",
+          "hash_preparation_still_deferred",
+          "validator_implementation_not_created_now",
+          "private_packet_not_created_now",
+          "private_packet_not_imported_now",
+          "validator_has_no_provider_dependency",
+          "validator_has_no_runtime_route_dependency",
+          "validator_has_no_db_dependency",
+          "validator_has_no_ui_dependency",
+          "provider_calls_remain_disabled",
+          "order_submission_remains_disabled"
+        ],
+        "implementationReviewRules": [
+          "pure_node_script_only",
+          "reads_candidate_packet_from_explicit_local_path_later",
+          "no_default_private_packet_path_read",
+          "no_network_access",
+          "no_environment_secret_loading",
+          "no_hash_generation",
+          "no_packet_write",
+          "no_packet_import",
+          "no_runtime_route",
+          "no_database_write",
+          "no_public_ui",
+          "deterministic_validation_result",
+          "redacted_error_messages_only"
+        ],
+        "forbiddenPreflightContent": [
+          "app_key",
+          "app_secret",
+          "access_token",
+          "full_account_number",
+          "raw_account_identifier",
+          "raw_operator_name",
+          "raw_evidence_text",
+          "raw_revocation_plan",
+          "raw_provider_payload",
+          "raw_order_payload",
+          "order_confirmation",
+          "execution_id",
+          "fill_payload",
+          "live_order_endpoint",
+          "scenario_monthly_return_row"
+        ],
+        "promotionRules": [
+          "preflight success allows only the pure local validator implementation",
+          "preflight success still does not create or read private approval evidence",
+          "preflight success does not create or read the private approval packet",
+          "preflight success does not import approval evidence",
+          "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+        ]
+      },
+      "checks": {
+        "preflightOnly": true,
+        "shadowModePolicyReady": true,
+        "mockApprovalEvidenceReceiptReady": true,
+        "redactedApprovalHashHelperPreflightReady": true,
+        "redactedApprovalPacketValidationContractReady": true,
+        "readOnlyApprovalImportPreflightReady": true,
+        "preflightGatesReady": true,
+        "implementationReviewRulesReady": true,
+        "forbiddenPreflightContentReady": true,
+        "preflightStillDisablesOrderSubmission": true,
+        "preflightStillDisablesProviderCalls": true,
+        "preflightStillDisablesDbMigration": true,
+        "architectureDocMentionsPacketValidationPreflight": true,
+        "noRuntimeArtifacts": true,
+        "validationImplementationAllowedNow": true,
+        "validationImplementationReviewAllowedLater": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "runtimeRouteAllowed": false,
+        "publicUiAllowed": false
+      },
+      "evidence": {
+        "shadowMode": {
+          "mode": "shadow",
+          "externalOrderCall": false,
+          "providerDataCall": "read_only_future_contract",
+          "requiresManualApproval": true,
+          "description": "records intended orders without submitting them"
+        },
+        "missingPreflightGates": [],
+        "missingImplementationReviewRules": [],
+        "missingForbiddenPreflightContent": [],
+        "forbiddenRuntimeArtifacts": [],
+        "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+        "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+        "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+        "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+        "preflightStatus": "ready_for_step116_pure_validator_implementation"
+      },
+      "readiness": {
+        "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+        "readyForPureLocalValidatorImplementationReview": true,
+        "validationImplementationAllowedNow": true,
+        "validationImplementationReviewAllowedLater": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false,
+        "blockers": []
+      }
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_output_files",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "validator_implementation_disallowed",
+        "expectedErrorCodes": [
+          "validator_implementation_not_allowed",
+          "validation_allow_flag_disabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": false,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": false,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "private_packet_read_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": true,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "private_packet_creation_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": true,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "private_packet_import_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": true,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_preflight_gate",
+        "expectedErrorCodes": [
+          "missing_preflight_gate"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_implementation_review_rule",
+        "expectedErrorCodes": [
+          "missing_implementation_review_rule"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_forbidden_preflight_content",
+        "expectedErrorCodes": [
+          "missing_forbidden_preflight_content"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_future_validator_path",
+        "expectedErrorCodes": [
+          "invalid_future_validator_path"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-live-order-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_future_approval_packet_path",
+        "expectedErrorCodes": [
+          "invalid_future_approval_packet_path"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\live_order_permission.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": true,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": true,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": true,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "public_ui_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "preflight": {
+          "contractVersion": "trading-lab-step116-redacted-approval-packet-validation-preflight-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2I",
+          "scope": "trading_redacted_approval_packet_validation_preflight",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+            "redactedApprovalPacketValidationContract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json"
+          },
+          "currentState": {
+            "preflightOnly": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futurePureLocalValidatorImplementationBoundary": {
+            "scope": "redacted_approval_packet_validation_preflight",
+            "futureValidatorPath": "scripts\\validate-trading-redacted-read-only-approval-packet.cjs",
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepImplementsValidator": true,
+            "currentStepReadsPrivatePacket": false,
+            "currentStepCreatesPacket": false,
+            "currentStepImportsPacket": false,
+            "preflightGates": [
+              "validation_contract_ready",
+              "hash_preparation_still_deferred",
+              "validator_implementation_not_created_now",
+              "private_packet_not_created_now",
+              "private_packet_not_imported_now",
+              "validator_has_no_provider_dependency",
+              "validator_has_no_runtime_route_dependency",
+              "validator_has_no_db_dependency",
+              "validator_has_no_ui_dependency",
+              "provider_calls_remain_disabled",
+              "order_submission_remains_disabled"
+            ],
+            "implementationReviewRules": [
+              "pure_node_script_only",
+              "reads_candidate_packet_from_explicit_local_path_later",
+              "no_default_private_packet_path_read",
+              "no_network_access",
+              "no_environment_secret_loading",
+              "no_hash_generation",
+              "no_packet_write",
+              "no_packet_import",
+              "no_runtime_route",
+              "no_database_write",
+              "no_public_ui",
+              "deterministic_validation_result",
+              "redacted_error_messages_only"
+            ],
+            "forbiddenPreflightContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_name",
+              "raw_evidence_text",
+              "raw_revocation_plan",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "promotionRules": [
+              "preflight success allows only the pure local validator implementation",
+              "preflight success still does not create or read private approval evidence",
+              "preflight success does not create or read the private approval packet",
+              "preflight success does not import approval evidence",
+              "preflight success does not enable provider calls, runtime routes, DB migrations, public UI, or orders"
+            ]
+          },
+          "checks": {
+            "preflightOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "redactedApprovalHashHelperPreflightReady": true,
+            "redactedApprovalPacketValidationContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "preflightGatesReady": true,
+            "implementationReviewRulesReady": true,
+            "forbiddenPreflightContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsPacketValidationPreflight": true,
+            "noRuntimeArtifacts": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingPreflightGates": [],
+            "missingImplementationReviewRules": [],
+            "missingForbiddenPreflightContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "redactedApprovalHashHelperPreflightStatus": "preflight_ready_hash_preparation_deferred_until_owner_request",
+            "redactedApprovalPacketValidationContractStatus": "contract_ready_pending_redacted_approval_packet_validation_implementation_review",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "preflight_ready_pending_pure_local_validator_implementation_review",
+            "readyForPureLocalValidatorImplementationReview": true,
+            "validationImplementationAllowedNow": true,
+            "validationImplementationReviewAllowedLater": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": true,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_output_files",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "validator_implementation_disallowed",
+          "valid": false,
+          "expectedErrorCodes": [
+            "validator_implementation_not_allowed",
+            "validation_allow_flag_disabled"
+          ],
+          "actualErrorCodes": [
+            "validation_allow_flag_disabled",
+            "validator_implementation_not_allowed"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "private_packet_read_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "private_packet_creation_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "private_packet_import_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_preflight_gate",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_preflight_gate"
+          ],
+          "actualErrorCodes": [
+            "missing_preflight_gate"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_implementation_review_rule",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_implementation_review_rule"
+          ],
+          "actualErrorCodes": [
+            "missing_implementation_review_rule"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_preflight_content",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_preflight_content"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_preflight_content"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_future_validator_path",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_validator_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_validator_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_future_approval_packet_path",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_approval_packet_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_approval_packet_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "public_ui_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "validationPreflightReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "validationImplementationAllowedNow": true,
+    "validationImplementationReviewAllowedLater": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "redactedApprovalPacketValidationPreflightStatus": "preflight_ready_pending_pure_local_validator_implementation_review",
+    "invalidFixtureIds": [
+      "missing_output_files",
+      "validator_implementation_disallowed",
+      "private_packet_read_enabled",
+      "private_packet_creation_enabled",
+      "private_packet_import_enabled",
+      "missing_preflight_gate",
+      "missing_implementation_review_rule",
+      "missing_forbidden_preflight_content",
+      "changed_future_validator_path",
+      "changed_future_approval_packet_path",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "public_ui_flag_enabled"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_redacted_approval_packet_validation_preflight_validator_regression",
+    "readyForRedactedApprovalPacketValidationPreflightValidatorRegression": true,
+    "fixturesOnly": true,
+    "validationImplementationAllowedNow": true,
+    "validationImplementationReviewAllowedLater": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
