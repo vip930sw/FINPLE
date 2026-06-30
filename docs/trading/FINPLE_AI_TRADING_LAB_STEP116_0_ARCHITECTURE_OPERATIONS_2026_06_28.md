@@ -297,17 +297,18 @@ Step 116 should be split into small commits and PR-sized phases:
 45. Read-only snapshot risk input validator fixtures.
 46. Private shadow order intent contract.
 47. Private shadow order intent local validator.
-48. Private shadow intent audit event contract.
-49. Private shadow intent audit event local validator.
-50. Private shadow runtime review packet contract.
-51. Private shadow runtime review packet local validator.
-52. Private shadow operator access contract.
-53. Private shadow operator access local validator.
-49. Private shadow runtime preflight.
-50. KIS order adapter design review.
-51. Manual order permission preflight.
-52. Manual order permission local validator.
-53. Live guarded execution only after manual approval.
+48. Private shadow order intent validator fixtures.
+49. Private shadow intent audit event contract.
+50. Private shadow intent audit event local validator.
+51. Private shadow runtime review packet contract.
+52. Private shadow runtime review packet local validator.
+53. Private shadow operator access contract.
+54. Private shadow operator access local validator.
+55. Private shadow runtime preflight.
+56. KIS order adapter design review.
+57. Manual order permission preflight.
+58. Manual order permission local validator.
+59. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1568,6 +1569,35 @@ Current state remains:
 The validator accepts only shadow-mode, hash-only order intents with strategy/operator/risk-input/snapshot/replay/history/audit/idempotency hashes, bounded quantity, redaction-safe market fields, risk gate status limited to `blocked` or `live_review_required`, and explicit provider/order allow flags set to false.
 
 Validator success still does not record order intents, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-3P Trading Private Shadow Order Intent Validator Fixtures
+
+The first Trading Private Shadow Order Intent Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_private_shadow_order_intent_validator_fixtures.json
+scripts/generate-trading-private-shadow-order-intent-validator-fixtures.cjs
+scripts/generate-trading-private-shadow-order-intent-validator-fixtures.test.cjs
+npm run check:trading-private-shadow-order-intent-validator-fixtures
+```
+
+This is a private_shadow_order_intent_validator_fixtures contract, not an order-intent recorder, KIS order adapter, runtime route, storage layer, DB migration, public UI, provider caller, order submitter, or order cancellation path. It records synthetic valid/invalid fixture shapes for the local hash-only private shadow order-intent validator.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `orderCancellationAllowed=false`
+- `orderIntentRecordingAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The valid synthetic fixture is a shadow-mode, hash-only order intent with redacted strategy/operator/risk-input/snapshot/replay/history/audit/idempotency hashes and explicit provider/order flags set to false. Invalid fixtures cover missing risk-input hash, live mode, cleared risk gate, enabled provider calls, enabled order submission, malformed hashes, unsafe symbols/order types, raw order shape fields, and order confirmation content.
+
+Fixture success still does not write order intents, call KIS, import private approval evidence, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-1Z Trading Private Shadow Intent Audit Event Contract
 

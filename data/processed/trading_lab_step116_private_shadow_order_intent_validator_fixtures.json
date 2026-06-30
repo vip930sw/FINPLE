@@ -1,0 +1,603 @@
+{
+  "contractVersion": "trading-lab-step116-private-shadow-order-intent-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-3P",
+  "scope": "private_shadow_order_intent_validator_fixtures",
+  "sourceFiles": {
+    "orderIntentContract": "data\\processed\\trading_lab_step116_private_shadow_order_intent_contract.json",
+    "snapshotRiskInputValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_validator_fixtures.json",
+    "validator": "scripts\\validate-trading-private-shadow-order-intent.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_private_shadow_order_intent_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "orderCancellationAllowed": false,
+    "orderIntentRecordingAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic private shadow order-intent fixtures only; no real account number, app key, app secret, token, raw provider payload, raw order payload, execution content, fill payload, or private approval packet content",
+    "validatorPath": "scripts\\validate-trading-private-shadow-order-intent.cjs",
+    "currentStepCallsProvider": false,
+    "currentStepSubmitsOrder": false,
+    "currentStepCancelsOrder": false,
+    "currentStepRecordsIntent": false,
+    "validSyntheticOrderIntent": {
+      "intentId": "intent_fixture_shadow_001",
+      "mode": "shadow",
+      "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+      "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "market": "KR",
+      "symbol": "005930",
+      "side": "BUY",
+      "orderType": "MARKET",
+      "quantity": 1,
+      "limitPriceHash": "not_applicable",
+      "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+      "currency": "KRW",
+      "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+      "riskGateStatus": "live_review_required",
+      "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+      "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+      "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+      "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+      "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+      "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+      "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+      "redactionVersion": "v1",
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_risk_input_hash",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "live_guarded_mode",
+        "expectedErrorCodes": [
+          "invalid_mode"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "live_guarded",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "clear_risk_gate_status",
+        "expectedErrorCodes": [
+          "invalid_risk_gate_status"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "clear",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "provider_call_flag_enabled"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "order_submission_flag_enabled"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": true
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "not-a-labelled-hash",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "unsafe_symbol",
+        "expectedErrorCodes": [
+          "invalid_symbol"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930;DROP",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "unsafe_order_type",
+        "expectedErrorCodes": [
+          "invalid_order_type"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "ORDER_CASH",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "raw_order_shape_present",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "rawOrderShape": "redacted_marker"
+        }
+      },
+      {
+        "id": "order_confirmation_present",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "intent": {
+          "intentId": "intent_fixture_shadow_001",
+          "mode": "shadow",
+          "strategyIdHash": "hmac-sha256:fixture_strategy_hash_123456",
+          "operatorIdHash": "hmac-sha256:fixture_operator_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": "005930",
+          "side": "BUY",
+          "orderType": "MARKET",
+          "quantity": 1,
+          "limitPriceHash": "not_applicable",
+          "estimatedNotionalHash": "hmac-sha256:fixture_notional_hash_123456",
+          "currency": "KRW",
+          "riskInputHash": "hmac-sha256:fixture_risk_input_hash_123456",
+          "riskGateStatus": "live_review_required",
+          "quoteSnapshotHash": "hmac-sha256:fixture_quote_snapshot_hash_123456",
+          "accountStateSnapshotHash": "hmac-sha256:fixture_account_state_hash_123456",
+          "orderableCashSnapshotHash": "hmac-sha256:fixture_cash_snapshot_hash_123456",
+          "dryRunReplayIdHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReferenceHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditEventHash": "hmac-sha256:fixture_audit_event_hash_123456",
+          "idempotencyKeyHash": "hmac-sha256:fixture_idempotency_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "orderConfirmationHash": "sha256:fixture_confirm_hash_123456"
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_risk_input_hash",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "live_guarded_mode",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_mode"
+          ],
+          "actualErrorCodes": [
+            "invalid_mode"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "clear_risk_gate_status",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_risk_gate_status"
+          ],
+          "actualErrorCodes": [
+            "invalid_risk_gate_status"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "order_submission_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "order_submission_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unsafe_symbol",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_symbol"
+          ],
+          "actualErrorCodes": [
+            "invalid_symbol"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unsafe_order_type",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_order_type"
+          ],
+          "actualErrorCodes": [
+            "invalid_order_type"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_order_shape_present",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_confirmation_present",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "orderIntentContractReady": true,
+    "snapshotRiskInputValidatorFixturesReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsOrderIntentValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "validIntentFieldsReady": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "orderCancellationAllowed": false,
+    "orderIntentRecordingAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "orderIntentContractStatus": "contract_ready_pending_private_shadow_order_intent_implementation_review",
+    "snapshotRiskInputValidatorFixturesStatus": "fixtures_ready_for_read_only_snapshot_risk_input_validator_regression",
+    "validIntentFields": [
+      "intentId",
+      "mode",
+      "strategyIdHash",
+      "operatorIdHash",
+      "createdAt",
+      "market",
+      "symbol",
+      "side",
+      "orderType",
+      "quantity",
+      "limitPriceHash",
+      "estimatedNotionalHash",
+      "currency",
+      "riskInputHash",
+      "riskGateStatus",
+      "quoteSnapshotHash",
+      "accountStateSnapshotHash",
+      "orderableCashSnapshotHash",
+      "dryRunReplayIdHash",
+      "shadowHistoryReferenceHash",
+      "auditEventHash",
+      "idempotencyKeyHash",
+      "redactionVersion",
+      "providerCallsAllowed",
+      "orderSubmissionAllowed"
+    ],
+    "missingRequiredIntentFields": [],
+    "invalidFixtureIds": [
+      "missing_risk_input_hash",
+      "live_guarded_mode",
+      "clear_risk_gate_status",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "malformed_hash_field",
+      "unsafe_symbol",
+      "unsafe_order_type",
+      "raw_order_shape_present",
+      "order_confirmation_present"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_private_shadow_order_intent_validator_regression",
+    "readyForPrivateShadowOrderIntentFixtureRegression": true,
+    "fixturesOnly": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "orderCancellationAllowed": false,
+    "orderIntentRecordingAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
