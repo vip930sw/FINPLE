@@ -331,7 +331,9 @@ Step 116 should be split into small commits and PR-sized phases:
 79. Manual order permission validation result receipt review result contract.
 80. Manual order permission validation result receipt review result local validator.
 81. Manual order permission validation result receipt review result validator fixtures.
-82. Live guarded execution only after manual approval.
+82. Live-guarded order adapter implementation preflight local validator.
+83. Live-guarded order adapter implementation preflight validator fixtures.
+84. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1978,6 +1980,31 @@ Current state remains:
 The boundary allows only a later private-worker implementation review. It forbids default private packet reads, runtime routes, public UI, DB migrations now, scenario cache writes, raw account identifiers, raw operator identifiers, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, live endpoint content, provider calls in this step, and all order submission or cancellation paths.
 
 Preflight success still does not implement `server/src/services/trading/kisOrderAdapter.js`, import manual order permission evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-4X Trading Live-Guarded Order Adapter Implementation Preflight Local Validator
+
+The first local validator for the Trading Live-Guarded Order Adapter Implementation Preflight is:
+
+```text
+scripts/validate-trading-live-guarded-order-adapter-implementation-preflight.cjs
+scripts/validate-trading-live-guarded-order-adapter-implementation-preflight.test.cjs
+npm run check:trading-live-guarded-order-adapter-implementation-preflight-validator
+```
+
+This validates the live_guarded_order_adapter_implementation_preflight contract shape only. It requires an explicit `--contract` path, checks the future private-worker adapter path, required review gates, and implementation rules, rejects raw-value-shaped strings and enabled trading allow flags, and does not read private permission packets, call providers, submit orders, create runtime routes, write the database, or expose public UI.
+
+## Step 116-4Y Trading Live-Guarded Order Adapter Implementation Preflight Validator Fixtures
+
+The first synthetic fixture regression contract for the live-guarded order adapter implementation preflight validator is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_order_adapter_implementation_preflight_validator_fixtures.json
+scripts/generate-trading-live-guarded-order-adapter-implementation-preflight-validator-fixtures.cjs
+scripts/generate-trading-live-guarded-order-adapter-implementation-preflight-validator-fixtures.test.cjs
+npm run check:trading-live-guarded-order-adapter-implementation-preflight-validator-fixtures
+```
+
+This is a live_guarded_order_adapter_implementation_preflight_validator_fixtures contract, not a KIS caller, provider caller, order adapter, permission importer, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid preflight shapes for local validator regression only.
 
 ## Step 116-3V Trading Redacted Manual Order Permission Template
 
