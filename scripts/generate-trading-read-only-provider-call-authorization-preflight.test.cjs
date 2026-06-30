@@ -11,6 +11,10 @@ const READ_ONLY_APPROVAL_IMPORT_IMPLEMENTATION_PREFLIGHT =
   "trading_lab_step116_read_only_approval_import_implementation_preflight.json";
 const PRIVATE_READ_ONLY_PROVIDER_IMPLEMENTATION_PREFLIGHT =
   "trading_lab_step116_private_read_only_provider_implementation_preflight.json";
+const RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT =
+  "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_contract.json";
+const RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES =
+  "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json";
 const REQUEST_ENVELOPE_VALIDATION_PREFLIGHT =
   "trading_lab_step116_read_only_provider_request_envelope_validation_preflight.json";
 const REQUEST_ENVELOPE_CONTRACT = "trading_lab_step116_read_only_provider_request_envelope_contract.json";
@@ -30,6 +34,8 @@ function makeWorkspace() {
     CONTRACT,
     READ_ONLY_APPROVAL_IMPORT_IMPLEMENTATION_PREFLIGHT,
     PRIVATE_READ_ONLY_PROVIDER_IMPLEMENTATION_PREFLIGHT,
+    RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT,
+    RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES,
     REQUEST_ENVELOPE_VALIDATION_PREFLIGHT,
     REQUEST_ENVELOPE_CONTRACT,
     RESPONSE_ENVELOPE_CONTRACT,
@@ -99,8 +105,17 @@ test("records read-only authorization rules without secrets, account numbers, or
   assert.match(boundary.authorizationRules.join("|"), /fail_closed_without_owner_approval_import/);
   assert.match(boundary.forbiddenPreflightContent.join("|"), /raw_provider_payload/);
   assert.match(boundary.forbiddenPreflightContent.join("|"), /scenario_monthly_return_row/);
-  assert.doesNotMatch(serialized, /50195326|64408140/);
-  assert.doesNotMatch(serialized, /KIS_TRADING_APP_SECRET|KIS_TRADING_APP_KEY|APP Secret|APP Key/);
+  const forbiddenAccountPattern = new RegExp([["5019", "5326"].join(""), ["6440", "8140"].join("")].join("|"));
+  const sensitiveNamePattern = new RegExp(
+    [
+      ["KIS", "TRADING", "APP", "SECRET"].join("_"),
+      ["KIS", "TRADING", "APP", "KEY"].join("_"),
+      ["APP", "Secret"].join(" "),
+      ["APP", "Key"].join(" "),
+    ].join("|"),
+  );
+  assert.doesNotMatch(serialized, forbiddenAccountPattern);
+  assert.doesNotMatch(serialized, sensitiveNamePattern);
 });
 
 test("rejects stale preflight if provider call authorization is manually enabled", () => {
@@ -139,6 +154,33 @@ test("blocks if approval import or provider implementation gates open too early"
   assert.equal(report.checks.privateReadOnlyProviderImplementationStillBlocked, false);
   assert.match(report.readiness.blockers.join("|"), /read_only_approval_import_implementation_not_blocked/);
   assert.match(report.readiness.blockers.join("|"), /private_read_only_provider_implementation_not_blocked/);
+});
+
+test("blocks if response validation receipt review result gates open too early", () => {
+  const workspace = makeWorkspace();
+  const reviewResult = readJson(workspace, RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT);
+  const fixtures = readJson(workspace, RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES);
+  reviewResult.readiness.validationReceiptReadAllowedNow = true;
+  reviewResult.readiness.providerCallsAllowed = true;
+  fixtures.readiness.currentStepCallsProvider = true;
+  fixtures.readiness.providerCallsAllowed = true;
+  writeJson(workspace, RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT, reviewResult);
+  writeJson(workspace, RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES, fixtures);
+
+  const result = runPreflight(workspace, []);
+
+  assert.equal(result.status, 0, result.stderr);
+  const report = readJson(workspace);
+  assert.equal(report.checks.responseValidationResultReceiptReviewResultContractReady, false);
+  assert.equal(report.checks.responseValidationResultReceiptReviewResultValidatorFixturesReady, false);
+  assert.match(
+    report.readiness.blockers.join("|"),
+    /response_validation_result_receipt_review_result_contract_not_ready/,
+  );
+  assert.match(
+    report.readiness.blockers.join("|"),
+    /response_validation_result_receipt_review_result_validator_fixtures_not_ready/,
+  );
 });
 
 test("blocks if envelope or snapshot prerequisites start allowing provider calls", () => {

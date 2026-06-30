@@ -16,6 +16,16 @@ const PRIVATE_READ_ONLY_PROVIDER_IMPLEMENTATION_PREFLIGHT_PATH = path.join(
   "processed",
   "trading_lab_step116_private_read_only_provider_implementation_preflight.json",
 );
+const RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_contract.json",
+);
+const RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
+);
 const REQUEST_ENVELOPE_VALIDATION_PREFLIGHT_PATH = path.join(
   "data",
   "processed",
@@ -69,6 +79,8 @@ const FUTURE_PROVIDER_CALL_SERVICE_PATH = path.join(
 const REQUIRED_REVIEW_GATES = [
   "owner_read_only_approval_import_still_blocked",
   "private_read_only_provider_implementation_still_blocked",
+  "response_validation_result_receipt_review_result_contract_ready",
+  "response_validation_result_receipt_review_result_validator_fixtures_ready",
   "request_envelope_validation_preflight_ready",
   "request_envelope_contract_ready",
   "response_envelope_contract_ready",
@@ -153,6 +165,12 @@ function forbiddenRuntimeArtifacts() {
 function buildContract() {
   const approvalImportImplementationPreflight = readJson(READ_ONLY_APPROVAL_IMPORT_IMPLEMENTATION_PREFLIGHT_PATH);
   const privateReadOnlyProviderImplementationPreflight = readJson(PRIVATE_READ_ONLY_PROVIDER_IMPLEMENTATION_PREFLIGHT_PATH);
+  const responseValidationResultReceiptReviewResultContract = readJson(
+    RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT_PATH,
+  );
+  const responseValidationResultReceiptReviewResultValidatorFixtures = readJson(
+    RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES_PATH,
+  );
   const requestEnvelopeValidationPreflight = readJson(REQUEST_ENVELOPE_VALIDATION_PREFLIGHT_PATH);
   const requestEnvelopeContract = readJson(REQUEST_ENVELOPE_CONTRACT_PATH);
   const responseEnvelopeContract = readJson(RESPONSE_ENVELOPE_CONTRACT_PATH);
@@ -180,6 +198,22 @@ function buildContract() {
       privateReadOnlyProviderImplementationPreflight.readiness?.ownerPacketGateStillClosed === true &&
       privateReadOnlyProviderImplementationPreflight.readiness?.providerImplementationAllowedNow === false &&
       privateReadOnlyProviderImplementationPreflight.readiness?.providerCallsAllowed === false,
+    responseValidationResultReceiptReviewResultContractReady:
+      responseValidationResultReceiptReviewResultContract.readiness
+        ?.readyForFutureResponseValidationResultReceiptReviewResult === true &&
+      responseValidationResultReceiptReviewResultContract.readiness?.validationReceiptReviewRecordedNow === false &&
+      responseValidationResultReceiptReviewResultContract.readiness?.validationReceiptReadAllowedNow === false &&
+      responseValidationResultReceiptReviewResultContract.readiness?.providerPayloadRecorded === false &&
+      responseValidationResultReceiptReviewResultContract.readiness?.providerCallsAllowed === false &&
+      responseValidationResultReceiptReviewResultContract.readiness?.orderSubmissionAllowed === false,
+    responseValidationResultReceiptReviewResultValidatorFixturesReady:
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness
+        ?.readyForResponseReviewResultValidatorFixtureRegression === true &&
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.currentStepReadsReceipt === false &&
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.currentStepCallsProvider === false &&
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.providerPayloadRecorded === false &&
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.providerCallsAllowed === false &&
+      responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.orderSubmissionAllowed === false,
     requestEnvelopeValidationPreflightReady:
       requestEnvelopeValidationPreflight.readiness?.readyForPureLocalRequestEnvelopeValidatorImplementationReview ===
         true &&
@@ -230,6 +264,9 @@ function buildContract() {
     sourceFiles: {
       readOnlyApprovalImportImplementationPreflight: READ_ONLY_APPROVAL_IMPORT_IMPLEMENTATION_PREFLIGHT_PATH,
       privateReadOnlyProviderImplementationPreflight: PRIVATE_READ_ONLY_PROVIDER_IMPLEMENTATION_PREFLIGHT_PATH,
+      responseValidationResultReceiptReviewResultContract: RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_CONTRACT_PATH,
+      responseValidationResultReceiptReviewResultValidatorFixtures:
+        RESPONSE_VALIDATION_RESULT_RECEIPT_REVIEW_RESULT_VALIDATOR_FIXTURES_PATH,
       requestEnvelopeValidationPreflight: REQUEST_ENVELOPE_VALIDATION_PREFLIGHT_PATH,
       requestEnvelopeContract: REQUEST_ENVELOPE_CONTRACT_PATH,
       responseEnvelopeContract: RESPONSE_ENVELOPE_CONTRACT_PATH,
@@ -266,6 +303,7 @@ function buildContract() {
       forbiddenPreflightContent,
       promotionRules: [
         "this preflight does not authorize read-only provider calls",
+        "response validation receipt review result readiness is only a prerequisite and does not authorize provider calls",
         "provider calls remain blocked until owner approval import and provider implementation reviews are recorded separately",
         "future provider call review must remain read-only, private-worker-only, and fail-closed on unknown endpoint categories",
         "read-only provider call success still does not approve live_guarded order submission",
@@ -280,6 +318,10 @@ function buildContract() {
       readOnlyApprovalImportImplementationPreflightStatus: approvalImportImplementationPreflight.readiness?.status,
       privateReadOnlyProviderImplementationPreflightStatus:
         privateReadOnlyProviderImplementationPreflight.readiness?.status,
+      responseValidationResultReceiptReviewResultContractStatus:
+        responseValidationResultReceiptReviewResultContract.readiness?.status,
+      responseValidationResultReceiptReviewResultValidatorFixturesStatus:
+        responseValidationResultReceiptReviewResultValidatorFixtures.readiness?.status,
       requestEnvelopeValidationPreflightStatus: requestEnvelopeValidationPreflight.readiness?.status,
       requestEnvelopeContractStatus: requestEnvelopeContract.readiness?.status,
       responseEnvelopeContractStatus: responseEnvelopeContract.readiness?.status,
@@ -306,6 +348,12 @@ function buildContract() {
         ...(checks.privateReadOnlyProviderImplementationStillBlocked
           ? []
           : ["private_read_only_provider_implementation_not_blocked"]),
+        ...(checks.responseValidationResultReceiptReviewResultContractReady
+          ? []
+          : ["response_validation_result_receipt_review_result_contract_not_ready"]),
+        ...(checks.responseValidationResultReceiptReviewResultValidatorFixturesReady
+          ? []
+          : ["response_validation_result_receipt_review_result_validator_fixtures_not_ready"]),
         ...(checks.requestEnvelopeValidationPreflightReady
           ? []
           : ["request_envelope_validation_preflight_not_ready"]),
