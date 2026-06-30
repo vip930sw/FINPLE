@@ -111,6 +111,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
   "trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
   "trading_lab_step116_live_guarded_manual_test_plan_contract.json",
+  "trading_lab_step116_public_dashboard_router_review_plan_contract.json",
 ];
 
 function makeWorkspace() {
@@ -156,10 +157,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 101);
-  assert.equal(report.progress.trackedContractsReady, 101);
+  assert.equal(report.progress.trackedContractsTotal, 102);
+  assert.equal(report.progress.trackedContractsReady, 102);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 139);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 140);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
@@ -199,6 +200,11 @@ test("records remaining trading gates instead of approving provider calls or ord
     report.remainingTradingGates.join("|"),
     /live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance/,
   );
+  assert.match(
+    report.remainingTradingGates.join("|"),
+    /public_dashboard_router_review_blocked_until_live_guarded_review_complete/,
+  );
+  assert.match(report.remainingTradingGates.join("|"), /homepage_router_change_blocked_until_public_dashboard_review/);
   assert.match(report.remainingTradingGates.join("|"), /public_homepage_router_blocked_until_live_guarded_review_complete/);
   assert.equal(report.readiness.providerCallsAllowed, false);
   assert.equal(report.readiness.orderSubmissionAllowed, false);

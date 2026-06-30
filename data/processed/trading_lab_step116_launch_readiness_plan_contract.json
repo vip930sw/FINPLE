@@ -229,6 +229,8 @@
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
       "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
+      "public_dashboard_router_review_blocked_until_live_guarded_review_complete",
+      "homepage_router_change_blocked_until_public_dashboard_review",
       "public_homepage_router_blocked_until_live_guarded_review_complete"
     ],
     "callAuthorizationReviewStatus": "review_result_contract_ready_pending_owner_provider_call_authorization_review",

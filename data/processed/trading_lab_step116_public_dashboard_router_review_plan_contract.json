@@ -1,0 +1,147 @@
+{
+  "contractVersion": "trading-lab-step116-public-dashboard-router-review-plan-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-5E",
+  "scope": "public_dashboard_and_homepage_router_review_plan",
+  "sourceFiles": {
+    "launchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
+    "progressSummary": "data\\processed\\trading_lab_step116_progress_summary.json",
+    "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
+    "privateRuntimeRouteImplementationPreflight": "data\\processed\\trading_lab_step116_private_runtime_route_implementation_preflight.json",
+    "privateOperatorAccessImplementationPreflight": "data\\processed\\trading_lab_step116_private_operator_access_implementation_preflight.json",
+    "privateShadowRuntimeImplementationPreflight": "data\\processed\\trading_lab_step116_private_shadow_runtime_implementation_preflight.json",
+    "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json"
+  },
+  "currentState": {
+    "planOnly": true,
+    "homepageRouterChangeAllowedNow": false,
+    "publicDashboardAllowedNow": false,
+    "privateOperatorDashboardAllowedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "publicDashboardAndHomepageRouterReviewPlan": {
+    "scope": "public_dashboard_and_homepage_router_review_plan",
+    "mayPlanFuturePublicDashboardNow": true,
+    "mayChangeHomepageRouterNow": false,
+    "mayCreatePublicDashboardNow": false,
+    "mayCreatePrivateOperatorDashboardNow": false,
+    "mayCreateRuntimeRouteNow": false,
+    "mayExposeOrderControlsNow": false,
+    "requiredReviewPlanItems": [
+      "public_information_architecture_only",
+      "private_operator_dashboard_boundary_reference",
+      "homepage_router_change_review_reference",
+      "no_public_order_controls",
+      "no_live_trading_claims",
+      "no_account_or_operator_identifiers",
+      "risk_status_summary_copy_review",
+      "paper_shadow_status_summary_copy_review",
+      "live_guarded_manual_test_status_reference",
+      "support_and_revocation_notice_copy_review",
+      "post_live_guarded_review_dependency",
+      "rollback_and_feature_flag_plan_reference"
+    ],
+    "requiredAssertions": [
+      "router_plan_does_not_change_homepage_route_now",
+      "router_plan_does_not_create_public_dashboard_now",
+      "router_plan_does_not_create_private_operator_dashboard_now",
+      "router_plan_does_not_create_runtime_route_now",
+      "router_plan_does_not_call_kis_now",
+      "router_plan_does_not_submit_orders_now",
+      "router_plan_does_not_write_database_now",
+      "router_plan_does_not_expose_order_controls_now",
+      "router_plan_success_cannot_approve_live_trading"
+    ],
+    "futureInformationArchitectureBoundary": {
+      "audience": "public_finple_users_after_separate_live_guarded_review",
+      "publicDashboardEarliestPhase": "public_dashboard_and_homepage_router_review",
+      "allowedFutureContentKinds": [
+        "mode_status_summary",
+        "paper_shadow_status_summary",
+        "risk_and_kill_switch_status_copy",
+        "manual_test_review_status_copy",
+        "support_and_revocation_notice"
+      ],
+      "forbiddenFutureContentKinds": [
+        "order_entry_controls",
+        "raw_account_identifiers",
+        "raw_operator_identifiers",
+        "raw_provider_payloads",
+        "execution_ids",
+        "fill_payloads",
+        "live_trading_profit_claims"
+      ]
+    },
+    "promotionRules": [
+      "this review plan does not change homepage routing",
+      "public dashboard work remains blocked until live-guarded review is separately complete",
+      "private operator dashboard work remains blocked until private runtime and operator access reviews are complete",
+      "public copy cannot imply live trading availability or order submission readiness"
+    ]
+  },
+  "checks": {
+    "planOnly": true,
+    "launchPlanIncludesPublicDashboardRouterReview": true,
+    "progressSummaryFailClosed": true,
+    "liveGuardedManualTestPlanStillBlocked": true,
+    "privateRuntimeRouteStillBlocked": true,
+    "privateOperatorAccessStillBlocked": true,
+    "privateShadowRuntimeStillBlocked": true,
+    "liveGuardedOrderAdapterStillBlocked": true,
+    "reviewPlanItemsReady": true,
+    "assertionsReady": true,
+    "architectureDocMentionsPublicDashboardRouterReviewPlan": true,
+    "noRuntimeArtifacts": true,
+    "homepageRouterChangeAllowedNow": false,
+    "publicDashboardAllowedNow": false,
+    "privateOperatorDashboardAllowedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "missingReviewPlanItems": [],
+    "missingAssertions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "launchPlanStatus": "launch_readiness_plan_ready_trading_execution_still_blocked",
+    "progressSummaryStatus": "summary_ready_contract_stack_fail_closed_pending_private_trading_reviews",
+    "liveGuardedManualTestPlanStatus": "live_guarded_manual_test_plan_ready_execution_blocked",
+    "privateRuntimeRouteStatus": "preflight_recorded_runtime_route_review_blocked_pending_private_runtime_review",
+    "privateOperatorAccessStatus": "preflight_recorded_operator_access_review_blocked_pending_private_runtime_review",
+    "privateShadowRuntimeStatus": "preflight_recorded_private_shadow_runtime_review_blocked_pending_owner_packet_and_operator_access",
+    "liveGuardedOrderAdapterPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+  },
+  "readiness": {
+    "status": "public_dashboard_router_review_plan_ready_public_runtime_blocked",
+    "readyForFuturePublicDashboardRouterReviewPlan": true,
+    "homepageRouterChangeAllowedNow": false,
+    "publicDashboardAllowedNow": false,
+    "privateOperatorDashboardAllowedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": [],
+    "remainingTradingGates": [
+      "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
+      "private_operator_dashboard_review_blocked_pending_private_runtime_review",
+      "public_dashboard_router_review_blocked_until_live_guarded_review_complete",
+      "homepage_router_change_blocked_until_public_dashboard_review",
+      "public_order_controls_blocked_until_separate_live_trading_approval"
+    ]
+  }
+}

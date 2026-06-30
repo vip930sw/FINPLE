@@ -107,7 +107,8 @@
       "tradingLaunchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
       "tradingRulesAndRiskLimitsReview": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
       "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
-      "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json"
+      "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
+      "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json"
     }
   },
   "outputFiles": {
@@ -128,10 +129,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 101,
-    "trackedContractsReady": 101,
+    "trackedContractsTotal": 102,
+    "trackedContractsReady": 102,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 139,
+    "requiredNpmScriptsTotal": 140,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1045,6 +1046,15 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "publicDashboardRouterReviewPlan",
+      "title": "Public dashboard and homepage router review plan",
+      "filePath": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
+      "status": "public_dashboard_router_review_plan_ready_public_runtime_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
@@ -1063,6 +1073,8 @@
     "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
     "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
     "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
+    "public_dashboard_router_review_blocked_until_live_guarded_review_complete",
+    "homepage_router_change_blocked_until_public_dashboard_review",
     "public_homepage_router_blocked_until_live_guarded_review_complete"
   ],
   "checks": {
@@ -1115,6 +1127,8 @@
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
       "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
+      "public_dashboard_router_review_blocked_until_live_guarded_review_complete",
+      "homepage_router_change_blocked_until_public_dashboard_review",
       "public_homepage_router_blocked_until_live_guarded_review_complete"
     ]
   }

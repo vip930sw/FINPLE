@@ -3466,6 +3466,21 @@ This is a live-guarded manual test planning contract, not a KIS call, provider c
 
 Planning the future live-guarded manual test is allowed now; executing it is not. Execution stays blocked until manual permission evidence, operator approval, kill-switch clearance, risk-gate clearance, private runtime review, and order adapter implementation review are recorded separately. A successful future single manual test still cannot approve automated trading, public dashboard/router rollout, or any broader order submission mode.
 
+## Step 116-5E Trading Public Dashboard And Homepage Router Review Plan
+
+The first Trading Public Dashboard And Homepage Router Review Plan contract is:
+
+```text
+data/processed/trading_lab_step116_public_dashboard_router_review_plan_contract.json
+scripts/generate-trading-public-dashboard-router-review-plan-contract.cjs
+scripts/generate-trading-public-dashboard-router-review-plan-contract.test.cjs
+npm run check:trading-public-dashboard-router-review-plan
+```
+
+This is a public dashboard and homepage router review planning contract, not a homepage router change, public dashboard implementation, private operator dashboard, runtime route, KIS call, provider call, DB writer, order adapter implementation, order submission, or live trading approval. It records the future `public_dashboard_and_homepage_router_review_plan` evidence: information architecture only, private operator boundary reference, homepage router change review reference, no public order controls, no live trading claims, no account/operator identifiers, risk-status copy review, paper/shadow status copy review, live-guarded manual test status reference, support/revocation notice copy review, post-live-guarded review dependency, and rollback/feature-flag plan reference.
+
+Planning the future public dashboard and router review is allowed now; changing the homepage router or adding dashboard UI is not. Public dashboard work remains blocked until live-guarded review is separately complete, and any public copy must avoid implying live trading availability, order submission readiness, or user-facing order controls.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

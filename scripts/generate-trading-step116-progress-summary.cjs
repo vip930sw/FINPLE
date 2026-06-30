@@ -385,6 +385,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Live-guarded manual test plan",
     "trading_lab_step116_live_guarded_manual_test_plan_contract.json",
   ],
+  [
+    "publicDashboardRouterReviewPlan",
+    "Public dashboard and homepage router review plan",
+    "trading_lab_step116_public_dashboard_router_review_plan_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -527,6 +532,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-rules-and-risk-limits-review",
   "check:trading-paper-shadow-operational-test-plan",
   "check:trading-live-guarded-manual-test-plan",
+  "check:trading-public-dashboard-router-review-plan",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -569,6 +575,8 @@ const REMAINING_TRADING_GATES = [
   "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
   "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
   "live_guarded_manual_test_execution_blocked_pending_manual_permission_and_operator_clearance",
+  "public_dashboard_router_review_blocked_until_live_guarded_review_complete",
+  "homepage_router_change_blocked_until_public_dashboard_review",
   "public_homepage_router_blocked_until_live_guarded_review_complete",
 ];
 
