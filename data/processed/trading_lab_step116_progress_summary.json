@@ -47,7 +47,8 @@
       "privateOperatorAccessImplementationPreflight": "data\\processed\\trading_lab_step116_private_operator_access_implementation_preflight.json",
       "privateShadowRuntimeImplementationPreflight": "data\\processed\\trading_lab_step116_private_shadow_runtime_implementation_preflight.json",
       "readOnlyApprovalImportImplementationPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_implementation_preflight.json",
-      "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json"
+      "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+      "readOnlyProviderEndpointAllowlist": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json"
     }
   },
   "outputFiles": {
@@ -68,10 +69,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 41,
-    "trackedContractsReady": 41,
+    "trackedContractsTotal": 42,
+    "trackedContractsReady": 42,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 57,
+    "requiredNpmScriptsTotal": 58,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -442,6 +443,15 @@
       "title": "Read-only provider call authorization preflight",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
       "status": "preflight_recorded_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderEndpointAllowlist",
+      "title": "Read-only provider endpoint allowlist",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
+      "status": "contract_ready_pending_read_only_provider_endpoint_allowlist_implementation_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

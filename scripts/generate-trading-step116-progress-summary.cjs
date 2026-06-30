@@ -89,6 +89,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only provider call authorization preflight",
     "trading_lab_step116_read_only_provider_call_authorization_preflight.json",
   ],
+  [
+    "readOnlyProviderEndpointAllowlist",
+    "Read-only provider endpoint allowlist",
+    "trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -149,6 +154,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-shadow-runtime-implementation-preflight",
   "check:trading-read-only-approval-import-implementation-preflight",
   "check:trading-read-only-provider-call-authorization-preflight",
+  "check:trading-read-only-provider-endpoint-allowlist",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
