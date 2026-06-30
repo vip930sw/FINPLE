@@ -2961,6 +2961,35 @@ The boundary allows only a later private-worker, read-only provider call authori
 
 Preflight success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not create or read `data/private/trading/read_only_approval.redacted.json`, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
+## Step 116-3F-A Trading Read-Only Provider Call Authorization Preflight Local Validator
+
+The first local validator for the Trading Read-Only Provider Call Authorization Preflight is:
+
+```text
+scripts/validate-trading-read-only-provider-call-authorization-preflight.cjs
+scripts/validate-trading-read-only-provider-call-authorization-preflight.test.cjs
+npm run check:trading-read-only-provider-call-authorization-preflight-validator
+```
+
+This validator checks only the already generated `read_only_provider_call_authorization_preflight` contract. It requires an explicit `--contract` path, verifies the future provider service path remains fixed, requires the review gate, authorization rule, and forbidden-content catalogs, and rejects any current-step boundary flag that would authorize provider calls, provider request creation, token refresh, DB writes, runtime routes, public UI, order submission, or live trading.
+
+The validator is local-only and synthetic. It does not read private packets, does not call KIS, does not refresh tokens, does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not create runtime routes or UI, does not connect to the database, does not write `scenario_monthly_returns.csv`, and does not approve live trading.
+
+## Step 116-3F-B Trading Read-Only Provider Call Authorization Preflight Validator Fixtures
+
+The first validator fixtures for the Trading Read-Only Provider Call Authorization Preflight are:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_call_authorization_preflight_validator_fixtures.json
+scripts/generate-trading-read-only-provider-call-authorization-preflight-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-call-authorization-preflight-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-call-authorization-preflight-validator-fixtures
+```
+
+This is a `read_only_provider_call_authorization_preflight_validator_fixtures` contract. It records a synthetic valid fixture copied from the current preflight plus synthetic invalid fixtures for missing required fields, opened provider-call actions, opened fail-closed flags, missing review gates, missing authorization rules, missing forbidden-content catalog entries, changed future provider service paths, and raw-shaped value injection.
+
+The fixture contract remains redacted and fixtures-only. It does not contain account numbers, credentials, tokens, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, private approval packets, provider calls, runtime routes, public UI, DB writes, or scenario monthly return rows.
+
 ## Step 116-3G Trading Read-Only Provider Endpoint Allowlist Contract
 
 The first Trading Read-Only Provider Endpoint Allowlist Contract is:
