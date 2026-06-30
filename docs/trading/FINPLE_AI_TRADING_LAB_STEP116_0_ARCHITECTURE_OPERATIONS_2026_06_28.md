@@ -315,7 +315,9 @@ Step 116 should be split into small commits and PR-sized phases:
 63. Manual order permission import implementation preflight.
 64. Manual order permission import implementation preflight local validator.
 65. Manual order permission import implementation preflight validator fixtures.
-66. Live guarded execution only after manual approval.
+66. Manual order permission packet local validator.
+67. Manual order permission packet validator fixtures.
+68. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2199,6 +2201,35 @@ npm run check:trading-manual-order-permission-import-implementation-preflight-va
 This is a synthetic fixture contract for local validator regression only, not a permission importer, permission packet reader/writer, permission packet import, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records one redacted valid preflight fixture and invalid fixture definitions that must fail locally for private-packet reads/writes/imports, hash generation, provider calls, order submission, order adapter implementation, runtime route creation, DB writes, missing gates/rules/forbidden markers, changed future paths, enabled runtime flags, and numeric raw-value shapes.
 
 Fixture readiness still does not create `server/src/services/trading/manualOrderPermissionImport.js`, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4H Trading Manual Order Permission Packet Local Validator
+
+The first local validator for a redacted manual order permission packet is:
+
+```text
+scripts/validate-trading-manual-order-permission-packet.cjs
+scripts/validate-trading-manual-order-permission-packet.test.cjs
+npm run check:trading-manual-order-permission-packet-validator
+```
+
+This is a local packet validator, not a packet creator, packet importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--packet` path and intentionally has no default private packet path to read.
+
+The validator checks the redacted packet shape only: opaque permission id, `live_guarded` mode, labelled hashes, ISO approval/expiry window, non-empty allowed symbol hashes, positive numeric risk limits, `redactionVersion=v1`, and provider/order/runtime/UI allow flags set to false. It rejects unknown fields, raw account/operator/session/provider/order value shapes, app keys, app secrets, tokens, order confirmations, live order endpoint markers, and scenario monthly return markers without echoing the raw value in the error output.
+
+## Step 116-4I Trading Manual Order Permission Packet Validator Fixtures
+
+The first synthetic fixture regression contract for the manual order permission packet validator is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_packet_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-packet-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-packet-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-packet-validator-fixtures
+```
+
+This is a synthetic fixture contract for local validator regression only, not a private permission packet, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records one redacted valid packet fixture and invalid fixture definitions that must fail locally for missing or unknown fields, malformed hashes, missing symbol hashes, expired permissions, invalid mode, invalid time windows, invalid numeric limits, enabled provider/order/runtime/UI flags, and forbidden secret-shaped strings.
+
+Fixture readiness still does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 

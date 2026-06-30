@@ -51,6 +51,7 @@
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
+      "manualOrderPermissionPacketValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validator_fixtures.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -90,10 +91,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 63,
-    "trackedContractsReady": 63,
+    "trackedContractsTotal": 64,
+    "trackedContractsReady": 64,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 84,
+    "requiredNpmScriptsTotal": 86,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -491,6 +492,15 @@
       "title": "Manual order permission import implementation preflight validator fixtures",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
       "status": "fixtures_ready_for_manual_order_permission_import_implementation_preflight_validator_regression",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionPacketValidatorFixtures",
+      "title": "Manual order permission packet validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validator_fixtures.json",
+      "status": "fixtures_ready_for_manual_order_permission_packet_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

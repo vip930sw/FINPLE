@@ -1,0 +1,814 @@
+{
+  "contractVersion": "trading-lab-step116-manual-order-permission-packet-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-4I",
+  "scope": "manual_order_permission_packet_validator_fixtures",
+  "sourceFiles": {
+    "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+    "importImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
+    "validator": "scripts\\validate-trading-manual-order-permission-packet.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic manual-order-permission packet fixtures only; no real operator, account, credential, order, provider payload, token, app key, app secret, private packet, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-manual-order-permission-packet.cjs",
+    "validationNow": "2026-06-29T00:00:00.000Z",
+    "validSyntheticManualOrderPermissionPacket": {
+      "permissionId": "permission_fixture_valid_001",
+      "mode": "live_guarded",
+      "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+      "approvedAt": "2026-06-29T00:00:00.000Z",
+      "expiresAt": "2026-07-29T00:00:00.000Z",
+      "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+      "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+      "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+      "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+      "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+      "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+      "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+      "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+      "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+      "allowedSymbolHashes": [
+        "hmac-sha256:fixture_symbol_hash_123456"
+      ],
+      "maxOrderNotional": 100000,
+      "dailyLossLimit": 10000,
+      "orderAttemptLimit": 3,
+      "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+      "redactionVersion": "v1",
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false,
+      "runtimeRouteAllowed": false,
+      "publicUiAllowed": false
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_required_field",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "unknown_field",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false,
+          "unexpected": "redacted_fixture_value"
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "not-a-labelled-hash",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "empty_allowed_symbol_hashes",
+        "expectedErrorCodes": [
+          "allowed_symbol_hashes_required"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "malformed_symbol_hash",
+        "expectedErrorCodes": [
+          "malformed_symbol_hash"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "not-a-labelled-hash"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "expired_permission",
+        "expectedErrorCodes": [
+          "expired_permission"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-06-28T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_mode",
+        "expectedErrorCodes": [
+          "invalid_mode"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "paper",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_time_window",
+        "expectedErrorCodes": [
+          "invalid_time_window"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-07-29T00:00:00.000Z",
+          "expiresAt": "2026-07-01T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_numeric_limit",
+        "expectedErrorCodes": [
+          "invalid_numeric_limit"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 0,
+          "dailyLossLimit": -1,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_order_attempt_limit",
+        "expectedErrorCodes": [
+          "invalid_order_attempt_limit"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 1.5,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": true,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": true,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "public_ui_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:fixture_revocation_hash_123456",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": true
+        }
+      },
+      {
+        "id": "forbidden_secret_value",
+        "expectedErrorCodes": [
+          "forbidden_string_value"
+        ],
+        "packet": {
+          "permissionId": "permission_fixture_valid_001",
+          "mode": "live_guarded",
+          "approvedByHash": "hmac-sha256:fixture_operator_hash_123456",
+          "approvedAt": "2026-06-29T00:00:00.000Z",
+          "expiresAt": "2026-07-29T00:00:00.000Z",
+          "operatorAccessHash": "hmac-sha256:fixture_operator_access_hash_123456",
+          "manualApprovalPolicyHash": "hmac-sha256:fixture_manual_policy_hash_123456",
+          "orderAdapterDesignReviewHash": "hmac-sha256:fixture_order_adapter_review_hash_123456",
+          "killSwitchClearanceHash": "hmac-sha256:fixture_kill_switch_hash_123456",
+          "riskGateClearanceHash": "hmac-sha256:fixture_risk_gate_hash_123456",
+          "orderCredentialBoundaryHash": "hmac-sha256:fixture_order_credential_hash_123456",
+          "dryRunReplayHash": "hmac-sha256:fixture_dry_run_hash_123456",
+          "shadowHistoryReviewHash": "hmac-sha256:fixture_shadow_history_hash_123456",
+          "auditLoggerReadinessHash": "hmac-sha256:fixture_audit_logger_hash_123456",
+          "allowedSymbolHashes": [
+            "hmac-sha256:fixture_symbol_hash_123456"
+          ],
+          "maxOrderNotional": 100000,
+          "dailyLossLimit": 10000,
+          "orderAttemptLimit": 3,
+          "revocationPlanHash": "hmac-sha256:APP_SECRET_VALUE",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_required_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "empty_allowed_symbol_hashes",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allowed_symbol_hashes_required"
+          ],
+          "actualErrorCodes": [
+            "allowed_symbol_hashes_required"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_symbol_hash",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_symbol_hash"
+          ],
+          "actualErrorCodes": [
+            "malformed_symbol_hash"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "expired_permission",
+          "valid": false,
+          "expectedErrorCodes": [
+            "expired_permission"
+          ],
+          "actualErrorCodes": [
+            "expired_permission",
+            "invalid_time_window"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_mode",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_mode"
+          ],
+          "actualErrorCodes": [
+            "invalid_mode"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_time_window",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_time_window"
+          ],
+          "actualErrorCodes": [
+            "invalid_time_window"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_numeric_limit",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_numeric_limit"
+          ],
+          "actualErrorCodes": [
+            "invalid_numeric_limit"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_order_attempt_limit",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_order_attempt_limit"
+          ],
+          "actualErrorCodes": [
+            "invalid_order_attempt_limit"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "public_ui_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "forbidden_secret_value",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_string_value"
+          ],
+          "actualErrorCodes": [
+            "forbidden_string_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "templateReady": true,
+    "importImplementationPreflightStillBlocked": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsPacketValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenSyntheticPacketContent": true,
+    "noRuntimeArtifacts": true,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "templateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+    "importImplementationPreflightStatus": "preflight_recorded_manual_order_permission_import_review_blocked_pending_owner_packet",
+    "invalidFixtureIds": [
+      "missing_required_field",
+      "unknown_field",
+      "malformed_hash_field",
+      "empty_allowed_symbol_hashes",
+      "malformed_symbol_hash",
+      "expired_permission",
+      "invalid_mode",
+      "invalid_time_window",
+      "invalid_numeric_limit",
+      "invalid_order_attempt_limit",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "public_ui_flag_enabled",
+      "forbidden_secret_value"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenSyntheticPacketContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_manual_order_permission_packet_validator_regression",
+    "readyForManualOrderPermissionPacketValidatorRegression": true,
+    "fixturesOnly": true,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
