@@ -1989,6 +1989,36 @@ The template requires `mode=live_guarded`, approved-by hash, operator-access has
 
 Template success still does not create `data/private/trading/manual_order_permission.redacted.json`, generate hashes, import permission evidence, implement the KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
+## Step 116-3W Trading Manual Order Permission Hash Helper Contract
+
+The first Trading Manual Order Permission Hash Helper Contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_helper_contract.json
+scripts/generate-trading-manual-order-permission-hash-helper-contract.cjs
+scripts/generate-trading-manual-order-permission-hash-helper-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-helper
+```
+
+This is a manual_order_permission_hash_helper contract, not a hash helper implementation, manual order permission packet, permission importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It defines the future local-only hash-helper boundary so raw operator, account, symbol, policy, evidence, provider, and order values are not committed or logged when manual order permission evidence is prepared later.
+
+Current state remains:
+
+- `contractOnly=true`
+- `hashHelperImplementationAllowed=false`
+- `permissionPacketCreatedNow=false`
+- `permissionPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The future helper must use HMAC-SHA256 with a private pepper outside the repo, accept raw inputs only through stdin or an interactive prompt, avoid command-line raw inputs, avoid logging or persistence, normalize symbol inputs before hashing, and output only labelled hashes for the manual order permission template fields.
+
+Contract success still does not implement `scripts/create-trading-manual-order-permission-hashes.cjs`, create hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
