@@ -291,16 +291,17 @@ Step 116 should be split into small commits and PR-sized phases:
 39. Read-only provider response envelope contract.
 40. Read-only snapshot normalization contract.
 41. Read-only snapshot normalization local validator.
-42. Read-only snapshot risk input contract.
-43. Read-only snapshot risk input local validator.
-44. Private shadow order intent contract.
-45. Private shadow order intent local validator.
-46. Private shadow intent audit event contract.
-47. Private shadow intent audit event local validator.
-48. Private shadow runtime review packet contract.
-49. Private shadow runtime review packet local validator.
-50. Private shadow operator access contract.
-51. Private shadow operator access local validator.
+42. Read-only snapshot normalization validator fixtures.
+43. Read-only snapshot risk input contract.
+44. Read-only snapshot risk input local validator.
+45. Private shadow order intent contract.
+46. Private shadow order intent local validator.
+47. Private shadow intent audit event contract.
+48. Private shadow intent audit event local validator.
+49. Private shadow runtime review packet contract.
+50. Private shadow runtime review packet local validator.
+51. Private shadow operator access contract.
+52. Private shadow operator access local validator.
 49. Private shadow runtime preflight.
 50. KIS order adapter design review.
 51. Manual order permission preflight.
@@ -1409,6 +1410,32 @@ Current state remains:
 - `liveTradingAllowed=false`
 
 Validator success still does not parse KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
+
+## Step 116-3N Trading Read-Only Snapshot Normalization Validator Fixtures
+
+The first Trading Read-Only Snapshot Normalization Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_snapshot_normalization_validator_fixtures.json
+scripts/generate-trading-read-only-snapshot-normalization-validator-fixtures.cjs
+scripts/generate-trading-read-only-snapshot-normalization-validator-fixtures.test.cjs
+npm run check:trading-read-only-snapshot-normalization-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the local snapshot-normalization validator, not a KIS parser, provider adapter, runtime route, storage layer, DB migration, public UI, or order submission path. It records one redacted valid normalized snapshot and invalid fixture definitions for missing value hashes, unknown snapshot types, raw-payload storage, provider-call flags, order-submission flags, raw-payload shapes, malformed hashes, and stale freshness markers.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `rawPayloadStored=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not parse KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Step 116-1X Trading Read-Only Snapshot Risk Input Contract
 

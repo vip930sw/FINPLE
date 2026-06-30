@@ -28,6 +28,7 @@
       "readOnlyProviderRequestEnvelopeValidationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_request_envelope_validation_preflight.json",
       "readOnlyProviderResponseEnvelope": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_contract.json",
       "readOnlySnapshotNormalization": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
+      "readOnlySnapshotNormalizationValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_validator_fixtures.json",
       "readOnlySnapshotRiskInput": "data\\processed\\trading_lab_step116_read_only_snapshot_risk_input_contract.json",
       "privateShadowOrderIntent": "data\\processed\\trading_lab_step116_private_shadow_order_intent_contract.json",
       "privateShadowIntentAuditEvent": "data\\processed\\trading_lab_step116_private_shadow_intent_audit_event_contract.json",
@@ -73,10 +74,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 46,
-    "trackedContractsReady": 46,
+    "trackedContractsTotal": 47,
+    "trackedContractsReady": 47,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 64,
+    "requiredNpmScriptsTotal": 65,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -267,6 +268,15 @@
       "title": "Read-only snapshot normalization",
       "filePath": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
       "status": "contract_ready_pending_read_only_snapshot_normalization_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlySnapshotNormalizationValidatorFixtures",
+      "title": "Read-only snapshot normalization validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_validator_fixtures.json",
+      "status": "fixtures_ready_for_read_only_snapshot_normalization_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

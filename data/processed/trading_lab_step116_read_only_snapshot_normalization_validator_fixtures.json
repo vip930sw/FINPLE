@@ -1,0 +1,408 @@
+{
+  "contractVersion": "trading-lab-step116-read-only-snapshot-normalization-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-3N",
+  "scope": "read_only_snapshot_normalization_validator_fixtures",
+  "sourceFiles": {
+    "snapshotNormalizationContract": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_contract.json",
+    "responseEnvelopeValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validator_fixtures.json",
+    "validator": "scripts\\validate-trading-read-only-snapshot-normalization.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_read_only_snapshot_normalization_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "rawPayloadStored": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic normalized snapshot fixtures only; no real account number, app key, app secret, token, raw provider payload, raw order payload, execution content, or private approval packet content",
+    "validatorPath": "scripts\\validate-trading-read-only-snapshot-normalization.cjs",
+    "currentStepCallsProvider": false,
+    "currentStepParsesProviderPayload": false,
+    "validSyntheticSnapshot": {
+      "snapshotId": "snap_fixture_valid_001",
+      "snapshotType": "account_cash_balance_snapshot",
+      "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+      "createdAt": "2026-06-29T00:00:00.000Z",
+      "market": "KR",
+      "symbol": null,
+      "currency": "KRW",
+      "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+      "valueHash": "hmac-sha256:fixture_value_hash_123456",
+      "freshnessStatus": "fresh",
+      "providerStatus": "success",
+      "redactionVersion": "v1",
+      "rawPayloadStored": false,
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_value_hash",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "unknown_snapshot_type",
+        "expectedErrorCodes": [
+          "unknown_snapshot_type"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "execution_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "raw_payload_stored",
+        "expectedErrorCodes": [
+          "raw_payload_stored"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": true,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "provider_call_flag_enabled"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "order_submission_flag_enabled"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": true
+        }
+      },
+      {
+        "id": "raw_payload_shape_present",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "rawProviderPayloadShape": "forbidden_shape_marker"
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "not-a-labelled-hash",
+          "freshnessStatus": "fresh",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        }
+      },
+      {
+        "id": "stale_marker_allowed_but_recorded",
+        "expectedErrorCodes": [],
+        "snapshot": {
+          "snapshotId": "snap_fixture_valid_001",
+          "snapshotType": "account_cash_balance_snapshot",
+          "sourceEnvelopeHash": "hmac-sha256:fixture_envelope_hash_123456",
+          "createdAt": "2026-06-29T00:00:00.000Z",
+          "market": "KR",
+          "symbol": null,
+          "currency": "KRW",
+          "accountIdHash": "hmac-sha256:fixture_account_hash_123456",
+          "valueHash": "hmac-sha256:fixture_value_hash_123456",
+          "freshnessStatus": "stale",
+          "providerStatus": "success",
+          "redactionVersion": "v1",
+          "rawPayloadStored": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false
+        },
+        "expectedValid": true
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesMatchExpectedResults": true,
+      "invalidResults": [
+        {
+          "id": "missing_value_hash",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_snapshot_type",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "unknown_snapshot_type"
+          ],
+          "actualErrorCodes": [
+            "unknown_snapshot_type"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_payload_stored",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "raw_payload_stored"
+          ],
+          "actualErrorCodes": [
+            "raw_payload_stored"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "provider_call_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "order_submission_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "order_submission_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_payload_shape_present",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedValid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "stale_marker_allowed_but_recorded",
+          "valid": true,
+          "expectedValid": true,
+          "expectedErrorCodes": [],
+          "actualErrorCodes": [],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "snapshotNormalizationContractReady": true,
+    "responseEnvelopeValidatorFixturesReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsSnapshotNormalizationValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesMatchExpectedResults": true,
+    "validFixtureFieldsReady": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "rawPayloadStored": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "snapshotNormalizationContractStatus": "contract_ready_pending_read_only_snapshot_normalization_implementation_review",
+    "responseEnvelopeValidatorFixturesStatus": "fixtures_ready_for_read_only_provider_response_envelope_validator_regression",
+    "validFixtureFields": [
+      "snapshotId",
+      "snapshotType",
+      "sourceEnvelopeHash",
+      "createdAt",
+      "market",
+      "symbol",
+      "currency",
+      "accountIdHash",
+      "valueHash",
+      "freshnessStatus",
+      "providerStatus",
+      "redactionVersion",
+      "rawPayloadStored",
+      "providerCallsAllowed",
+      "orderSubmissionAllowed"
+    ],
+    "missingRequiredSnapshotFields": [],
+    "invalidFixtureIds": [
+      "missing_value_hash",
+      "unknown_snapshot_type",
+      "raw_payload_stored",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "raw_payload_shape_present",
+      "malformed_hash_field",
+      "stale_marker_allowed_but_recorded"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_read_only_snapshot_normalization_validator_regression",
+    "readyForSnapshotNormalizationFixtureRegression": true,
+    "fixturesOnly": true,
+    "rawPayloadStored": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
