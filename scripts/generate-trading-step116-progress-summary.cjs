@@ -299,6 +299,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-validation-result-receipt-validator",
   "check:trading-manual-order-permission-validation-result-receipt-validator-fixtures",
   "check:trading-manual-order-permission-validation-result-receipt-review-preflight",
+  "check:trading-manual-order-permission-validation-result-receipt-review-preflight-validator",
   "check:trading-mock-approval-evidence",
   "check:trading-mock-approval-evidence-validator",
   "check:trading-redacted-read-only-approval-template",

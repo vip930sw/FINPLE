@@ -323,7 +323,8 @@ Step 116 should be split into small commits and PR-sized phases:
 71. Manual order permission validation result receipt local validator.
 72. Manual order permission validation result receipt validator fixtures.
 73. Manual order permission validation result receipt review preflight.
-74. Live guarded execution only after manual approval.
+74. Manual order permission validation result receipt review preflight local validator.
+75. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2327,6 +2328,20 @@ npm run check:trading-manual-order-permission-validation-result-receipt-review-p
 This is a manual_order_permission_validation_result_receipt_review_preflight contract, not a real validation receipt, private packet reader, permission importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records the future owner-assisted review gate for an explicit redacted validation-result receipt path while keeping all current-step receipt reads and writes closed.
 
 Preflight readiness still does not create or read `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4P Trading Manual Order Permission Validation Result Receipt Review Preflight Local Validator
+
+The first local validator for the Trading Manual Order Permission Validation Result Receipt Review Preflight is:
+
+```text
+scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.cjs
+scripts/validate-trading-manual-order-permission-validation-result-receipt-review-preflight.test.cjs
+npm run check:trading-manual-order-permission-validation-result-receipt-review-preflight-validator
+```
+
+The validator requires an explicit `--contract <path>` argument and does not use a default private receipt or private packet path. It fails closed when the review preflight loses required top-level fields, review gates, forbidden-content markers, fixed future receipt path, or when any current-step flag enables receipt reads/writes, permission import, provider calls, order submission, runtime routes, public UI, DB writes, or live trading.
+
+Validator success still does not create or read `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
