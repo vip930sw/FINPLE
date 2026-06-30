@@ -3279,6 +3279,31 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 This is a redacted review-result contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. Review-result readiness records only the future owner-assisted result shape and keeps receipt reads, raw response capture, provider payload capture, provider calls, order submission, runtime routes, UI, DB writes, and live trading blocked.
 
+## Step 116-3L-K Trading Read-Only Provider Response Envelope Validation Result Receipt Review Result Local Validator
+
+The first local validator for the read-only provider response envelope validation result receipt review result is:
+
+```text
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-contract.cjs
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-contract.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator
+```
+
+The validator requires an explicit `--contract <path>` argument and does not use a default private receipt path. It fails closed when the review-result contract loses required top-level fields, review-result fields, review assertions, forbidden-content markers, the fixed future receipt path, or when any current-step flag enables receipt reads/writes, provider calls, provider payload capture, order submission, runtime routes, public UI, DB writes, or live trading.
+
+## Step 116-3L-L Trading Read-Only Provider Response Envelope Validation Result Receipt Review Result Validator Fixtures
+
+The first synthetic fixture regression contract for the read-only provider response envelope validation result receipt review result validator is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures
+```
+
+This is a synthetic fixture regression contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. The fixtures exercise local validator success and fail-closed cases for future receipt path drift, receipt reads/writes, provider-call actions, review-result field drift, assertion drift, forbidden-content drift, allow flags, raw-value-shaped markers, and forbidden runtime artifacts.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
