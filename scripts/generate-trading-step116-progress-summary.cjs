@@ -64,6 +64,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Private DB storage implementation preflight",
     "trading_lab_step116_private_db_storage_implementation_preflight.json",
   ],
+  [
+    "privateRuntimeRouteImplementationPreflight",
+    "Private runtime route implementation preflight",
+    "trading_lab_step116_private_runtime_route_implementation_preflight.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -119,6 +124,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-redacted-approval-packet-validator-fixtures",
   "check:trading-private-read-only-provider-implementation-preflight",
   "check:trading-private-db-storage-implementation-preflight",
+  "check:trading-private-runtime-route-implementation-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -147,7 +153,7 @@ const REMAINING_TRADING_GATES = [
   "private_shadow_runtime_implementation_review_not_started",
   "private_operator_access_implementation_review_not_started",
   "db_storage_review_blocked_pending_private_runtime_review",
-  "runtime_route_review_not_started",
+  "runtime_route_review_blocked_pending_private_runtime_review",
   "manual_order_permission_packet_not_imported",
   "kill_switch_clearance_not_recorded_for_order_submission",
   "risk_gate_clearance_not_recorded_for_order_submission",

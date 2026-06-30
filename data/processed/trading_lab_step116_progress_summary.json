@@ -42,7 +42,8 @@
       "redactedApprovalPacketValidationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
       "redactedApprovalPacketValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json",
       "privateReadOnlyProviderImplementationPreflight": "data\\processed\\trading_lab_step116_private_read_only_provider_implementation_preflight.json",
-      "privateDbStorageImplementationPreflight": "data\\processed\\trading_lab_step116_private_db_storage_implementation_preflight.json"
+      "privateDbStorageImplementationPreflight": "data\\processed\\trading_lab_step116_private_db_storage_implementation_preflight.json",
+      "privateRuntimeRouteImplementationPreflight": "data\\processed\\trading_lab_step116_private_runtime_route_implementation_preflight.json"
     }
   },
   "outputFiles": {
@@ -63,10 +64,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 36,
-    "trackedContractsReady": 36,
+    "trackedContractsTotal": 37,
+    "trackedContractsReady": 37,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 52,
+    "requiredNpmScriptsTotal": 53,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -395,6 +396,15 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "privateRuntimeRouteImplementationPreflight",
+      "title": "Private runtime route implementation preflight",
+      "filePath": "data\\processed\\trading_lab_step116_private_runtime_route_implementation_preflight.json",
+      "status": "preflight_recorded_runtime_route_review_blocked_pending_private_runtime_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
@@ -403,7 +413,7 @@
     "private_shadow_runtime_implementation_review_not_started",
     "private_operator_access_implementation_review_not_started",
     "db_storage_review_blocked_pending_private_runtime_review",
-    "runtime_route_review_not_started",
+    "runtime_route_review_blocked_pending_private_runtime_review",
     "manual_order_permission_packet_not_imported",
     "kill_switch_clearance_not_recorded_for_order_submission",
     "risk_gate_clearance_not_recorded_for_order_submission",
@@ -449,7 +459,7 @@
       "private_shadow_runtime_implementation_review_not_started",
       "private_operator_access_implementation_review_not_started",
       "db_storage_review_blocked_pending_private_runtime_review",
-      "runtime_route_review_not_started",
+      "runtime_route_review_blocked_pending_private_runtime_review",
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",

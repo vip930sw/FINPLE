@@ -96,6 +96,7 @@
     "check:trading-redacted-approval-packet-validator-fixtures": "node scripts/generate-trading-redacted-approval-packet-validator-fixtures.cjs --check && node --test scripts/generate-trading-redacted-approval-packet-validator-fixtures.test.cjs",
     "check:trading-private-read-only-provider-implementation-preflight": "node scripts/generate-trading-private-read-only-provider-implementation-preflight.cjs --check && node --test scripts/generate-trading-private-read-only-provider-implementation-preflight.test.cjs",
     "check:trading-private-db-storage-implementation-preflight": "node scripts/generate-trading-private-db-storage-implementation-preflight.cjs --check && node --test scripts/generate-trading-private-db-storage-implementation-preflight.test.cjs",
+    "check:trading-private-runtime-route-implementation-preflight": "node scripts/generate-trading-private-runtime-route-implementation-preflight.cjs --check && node --test scripts/generate-trading-private-runtime-route-implementation-preflight.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
