@@ -3241,6 +3241,18 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 This is a runbook contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records that any future owner-assisted receipt review must use an explicit owner-supplied redacted receipt path and local validators, and that a successful review still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading.
 
+## Step 116-3L-H Trading Read-Only Provider Response Envelope Validation Result Receipt Review Runbook Local Validator
+
+The first local validator for the read-only provider response envelope validation result receipt review runbook is:
+
+```text
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-contract.cjs
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-contract.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-validator
+```
+
+The validator requires an explicit `--contract <path>` argument and does not use a default private receipt path. It fails closed when the runbook loses required top-level fields, review assertions, redacted output fields, forbidden-output markers, fixed command templates, the fixed future receipt path, or when any current-step flag enables validator execution, receipt reads/writes, response-path capture, raw response capture, provider payload capture, provider calls, order submission, runtime routes, public UI, DB writes, or live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
