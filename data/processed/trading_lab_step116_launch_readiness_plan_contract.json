@@ -226,6 +226,7 @@
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",
       "live_guarded_order_adapter_implementation_review_not_started",
+      "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "public_homepage_router_blocked_until_live_guarded_review_complete"
     ],
     "callAuthorizationReviewStatus": "review_result_contract_ready_pending_owner_provider_call_authorization_review",

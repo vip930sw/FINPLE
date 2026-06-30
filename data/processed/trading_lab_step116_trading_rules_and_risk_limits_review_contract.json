@@ -1,0 +1,146 @@
+{
+  "contractVersion": "trading-lab-step116-trading-rules-and-risk-limits-review-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-5B",
+  "scope": "trading_rules_and_risk_limits_review",
+  "sourceFiles": {
+    "launchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "riskGateClearanceContract": "data\\processed\\trading_lab_step116_risk_gate_clearance_contract.json",
+    "killSwitchClearanceContract": "data\\processed\\trading_lab_step116_kill_switch_clearance_contract.json",
+    "manualOperatorApprovalContract": "data\\processed\\trading_lab_step116_manual_operator_approval_contract.json",
+    "riskEngine": "server\\src\\services\\tradingRiskEngine.js",
+    "tradingPolicy": "server\\src\\services\\tradingLabPolicy.js",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json"
+  },
+  "currentState": {
+    "reviewContractOnly": true,
+    "rulesRuntimeImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "tradingRulesAndRiskLimitsReview": {
+    "scope": "trading_rules_and_risk_limits_review",
+    "mayPlanRulesNow": true,
+    "mayApplyRuntimeRulesNow": false,
+    "mayChangeEnvNow": false,
+    "mayClearKillSwitchNow": false,
+    "mayClearRiskGateNow": false,
+    "maySubmitOrdersNow": false,
+    "requiredRuleReviewItems": [
+      "symbol_allowlist",
+      "blocked_instruments",
+      "max_single_order_notional",
+      "max_daily_turnover",
+      "max_cash_depletion_per_day",
+      "max_single_symbol_exposure",
+      "max_account_capital_allocated",
+      "max_order_attempts_per_day",
+      "max_consecutive_failed_order_attempts",
+      "max_slippage_tolerance",
+      "allowed_market_sessions",
+      "quote_and_fx_freshness",
+      "kill_switch_clearance",
+      "manual_operator_approval",
+      "risk_gate_clearance",
+      "audit_logger_readiness"
+    ],
+    "requiredAssertions": [
+      "wildcard_symbols_cannot_promote_to_live_guarded",
+      "rules_review_does_not_change_runtime_limits",
+      "rules_review_does_not_clear_kill_switch",
+      "rules_review_does_not_clear_risk_gate",
+      "rules_review_does_not_create_manual_approval",
+      "rules_review_does_not_authorize_provider_calls",
+      "rules_review_does_not_authorize_order_submission",
+      "rules_review_does_not_create_public_ui",
+      "rules_review_requires_private_shadow_runtime_review_first"
+    ],
+    "conservativeDefaultsForFutureReview": {
+      "allowedSymbols": [],
+      "blockedInstruments": [
+        "UVXY",
+        "TQQQ",
+        "SQQQ"
+      ],
+      "maxSingleOrderNotional": 1000,
+      "maxDailyTurnover": 2000,
+      "maxCashDepletionPerDay": 1000,
+      "maxSingleSymbolExposure": 3000,
+      "maxAccountCapitalAllocated": 10000,
+      "maxOrderAttemptsPerDay": 5,
+      "maxConsecutiveFailedOrderAttempts": 2,
+      "maxSlippageTolerance": 0.01,
+      "allowedMarketSessions": [
+        "KR_REGULAR",
+        "US_REGULAR"
+      ]
+    },
+    "promotionRules": [
+      "symbol allowlists must be explicit before live_guarded review",
+      "wildcard env symbols remain planning evidence only and cannot become runtime allowlists",
+      "risk limits must be reviewed after private shadow runtime review and before paper shadow operational tests",
+      "rules review cannot override kill switch, manual approval, risk gate, audit logger, or manual permission gates"
+    ]
+  },
+  "checks": {
+    "reviewContractOnly": true,
+    "launchPlanIncludesRulesReview": true,
+    "envRiskGateStillFailClosed": true,
+    "riskGateClearanceContractReady": true,
+    "killSwitchClearanceContractReady": true,
+    "manualOperatorApprovalContractReady": true,
+    "riskEngineExposesRequiredLimitChecks": true,
+    "policyExposesRiskLimitValidator": true,
+    "ruleReviewItemsReady": true,
+    "ruleAssertionsReady": true,
+    "architectureDocMentionsTradingRulesReview": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "missingRuleReviewItems": [],
+    "missingRuleAssertions": [],
+    "forbiddenRuntimeArtifacts": [],
+    "launchPlanStatus": "launch_readiness_plan_ready_trading_execution_still_blocked",
+    "envRiskGateStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "envRiskGateWarnings": [
+      "wildcard_allowed_symbols_must_be_narrowed_before_live_guarded",
+      "order_permission_metadata_recorded_but_order_submission_still_blocked"
+    ],
+    "riskGateClearanceStatus": "contract_ready_pending_risk_gate_clearance_implementation_review",
+    "killSwitchClearanceStatus": "contract_ready_pending_kill_switch_clearance_implementation_review",
+    "manualOperatorApprovalStatus": "contract_ready_pending_manual_approval_implementation_review"
+  },
+  "readiness": {
+    "status": "trading_rules_review_contract_ready_runtime_application_blocked",
+    "readyForFutureTradingRulesReview": true,
+    "rulesRuntimeImplementationAllowed": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": [],
+    "remainingTradingGates": [
+      "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
+      "private_shadow_runtime_implementation_review_blocked_pending_owner_packet_and_operator_access",
+      "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
+      "paper_shadow_operational_test_blocked_pending_rules_review",
+      "live_guarded_manual_test_blocked_pending_manual_permission_and_risk_clearance"
+    ]
+  }
+}

@@ -180,6 +180,7 @@
     "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator": "node --test scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-contract.test.cjs",
     "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures": "node scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures.test.cjs",
     "check:trading-launch-readiness-plan": "node scripts/generate-trading-launch-readiness-plan-contract.cjs --check && node --test scripts/generate-trading-launch-readiness-plan-contract.test.cjs",
+    "check:trading-rules-and-risk-limits-review": "node scripts/generate-trading-rules-and-risk-limits-review-contract.cjs --check && node --test scripts/generate-trading-rules-and-risk-limits-review-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {

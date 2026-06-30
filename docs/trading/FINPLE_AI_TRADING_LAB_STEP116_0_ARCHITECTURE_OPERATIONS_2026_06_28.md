@@ -3421,6 +3421,21 @@ This is a launch sequencing contract, not a provider caller, runtime route, priv
 
 The homepage router and dashboard work remains blocked now. Planning the future dashboard information architecture is allowed, but changing the homepage router, adding public trading UI, creating trading routes, adding private operator dashboard code, calling KIS, writing DB rows, or submitting orders remains outside the current step.
 
+## Step 116-5B Trading Rules And Risk Limits Review
+
+The first Trading Rules And Risk Limits Review contract is:
+
+```text
+data/processed/trading_lab_step116_trading_rules_and_risk_limits_review_contract.json
+scripts/generate-trading-rules-and-risk-limits-review-contract.cjs
+scripts/generate-trading-rules-and-risk-limits-review-contract.test.cjs
+npm run check:trading-rules-and-risk-limits-review
+```
+
+This is a rules-review contract, not a runtime rules service, KIS caller, provider caller, private shadow runtime, route, dashboard, DB migration, order adapter implementation, or live trading approval. It records the future review items for `trading_rules_and_risk_limits_review`: explicit symbol allowlists, blocked instruments, single-order notional caps, daily turnover caps, cash depletion caps, symbol exposure caps, allocated-capital caps, order-attempt caps, slippage tolerance, allowed sessions, freshness checks, kill-switch clearance, manual operator approval, risk-gate clearance, and audit logger readiness.
+
+Rule planning is allowed now; runtime application is not. Wildcard symbols from environment parsing remain planning evidence only and must be narrowed before any `live_guarded` review. The review cannot clear the kill switch, clear the risk gate, create manual approval, call KIS, create routes/UI/DB storage, submit orders, or approve public dashboard/router rollout.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

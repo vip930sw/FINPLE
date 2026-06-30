@@ -370,6 +370,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Trading launch readiness plan",
     "trading_lab_step116_launch_readiness_plan_contract.json",
   ],
+  [
+    "tradingRulesAndRiskLimitsReview",
+    "Trading rules and risk limits review",
+    "trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -509,6 +514,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator",
   "check:trading-read-only-provider-response-envelope-validation-result-receipt-review-result-validator-fixtures",
   "check:trading-launch-readiness-plan",
+  "check:trading-rules-and-risk-limits-review",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
@@ -548,6 +554,7 @@ const REMAINING_TRADING_GATES = [
   "kill_switch_clearance_not_recorded_for_order_submission",
   "risk_gate_clearance_not_recorded_for_order_submission",
   "live_guarded_order_adapter_implementation_review_not_started",
+  "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
   "public_homepage_router_blocked_until_live_guarded_review_complete",
 ];
 
