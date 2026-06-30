@@ -190,6 +190,7 @@
     "check:trading-read-only-approval-packet-validation-runbook": "node scripts/generate-trading-read-only-approval-packet-validation-runbook-contract.cjs --check && node --test scripts/generate-trading-read-only-approval-packet-validation-runbook-contract.test.cjs",
     "check:trading-read-only-approval-packet-validation-result-receipt": "node scripts/generate-trading-read-only-approval-packet-validation-result-receipt.cjs --check && node --test scripts/generate-trading-read-only-approval-packet-validation-result-receipt.test.cjs",
     "check:trading-read-only-approval-packet-validation-result-receipt-validator": "node --test scripts/validate-trading-read-only-approval-packet-validation-result-receipt.test.cjs",
+    "check:trading-read-only-approval-packet-validation-result-receipt-validator-fixtures": "node scripts/generate-trading-read-only-approval-packet-validation-result-receipt-validator-fixtures.cjs --check && node --test scripts/generate-trading-read-only-approval-packet-validation-result-receipt-validator-fixtures.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {

@@ -3570,6 +3570,21 @@ This is a pure local validator script for a redacted validation result receipt, 
 
 Validator success only proves the supplied redacted receipt shape is acceptable. It still does not record a receipt, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
 
+## Step 116-5L Trading Read-Only Approval Packet Validation Result Receipt Validator Fixtures
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt_validator_fixtures.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-validator-fixtures.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-validator-fixtures.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-validator-fixtures
+```
+
+This is a synthetic fixture contract for the redacted receipt validator, not a private approval packet, real validation result receipt, receipt recorder, approval importer, KIS call, Alpha Vantage call, provider call, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records one valid synthetic redacted receipt plus invalid fixtures for missing fields, unknown fields, malformed ids, malformed hashes, malformed timestamps, unsafe flags, forbidden private paths, and secret-like values.
+
+Fixture success only proves the local validator regression surface is locked. It still does not record a receipt, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
