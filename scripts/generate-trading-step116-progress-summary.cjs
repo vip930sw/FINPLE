@@ -401,6 +401,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-redacted-approval-hash-helper-preflight-validator-fixtures",
   "check:trading-redacted-approval-packet-validation",
   "check:trading-redacted-approval-packet-validation-preflight",
+  "check:trading-redacted-approval-packet-validation-preflight-validator",
   "check:trading-redacted-approval-packet-validator",
   "check:trading-redacted-approval-packet-validator-fixtures",
   "check:trading-private-read-only-provider-implementation-preflight",

@@ -1273,6 +1273,34 @@ Future validator implementation review is limited to a pure Node script with det
 
 Preflight readiness means the pure local validator implementation is allowed within this narrow boundary. It still does not read or create `data/private/trading/read_only_approval.redacted.json`, does not import approval evidence, does not call KIS, does not enable provider calls, does not create runtime routes, does not create UI, does not create DB storage, does not submit orders, and does not approve live trading.
 
+## Step 116-2I-A Trading Redacted Approval Packet Validation Preflight Local Validator
+
+The first Trading Redacted Approval Packet Validation Preflight Local Validator is:
+
+```text
+scripts/validate-trading-redacted-approval-packet-validation-preflight.cjs
+scripts/validate-trading-redacted-approval-packet-validation-preflight.test.cjs
+npm run check:trading-redacted-approval-packet-validation-preflight-validator
+```
+
+This is a pure local validator script for the redacted approval packet validation preflight, not a private approval packet, approval importer, KIS provider call, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--preflight <path>` argument and does not read `data/private/trading/read_only_approval.redacted.json` by default.
+
+Current state remains:
+
+- `validationImplementationAllowedNow=true`
+- `validationImplementationReviewAllowedLater=true`
+- `approvalPacketCreatedNow=false`
+- `approvalPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `liveTradingAllowed=false`
+
+The validator checks that only the pure local packet validator implementation is allowed, future validator and approval packet paths stay fixed, private packet reads/writes/imports remain disabled, preflight gates and implementation review rules remain complete, forbidden content remains listed, and provider/order/runtime/UI/live flags remain false.
+
+Validator success still does not read or create `data/private/trading/read_only_approval.redacted.json`, import approval evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
 ## Step 116-2J Trading Redacted Approval Packet Local Validator
 
 The first Trading Redacted Approval Packet Local Validator is:
