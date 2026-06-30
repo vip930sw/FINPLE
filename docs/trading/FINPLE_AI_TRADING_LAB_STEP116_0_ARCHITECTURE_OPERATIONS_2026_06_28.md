@@ -3541,6 +3541,21 @@ This is an owner-assisted validation runbook contract, not a packet validator ex
 
 The runbook is ready as guidance, but it does not run `scripts/validate-trading-redacted-read-only-approval-packet.cjs`, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
 
+## Step 116-5J Trading Read-Only Approval Packet Validation Result Receipt
+
+The first Trading Read-Only Approval Packet Validation Result Receipt contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt
+```
+
+This is a redacted receipt-boundary contract, not a packet validator execution, private packet creator, approval importer, KIS call, Alpha Vantage call, provider call, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records the future shape for a validation result receipt: opaque receipt id, validation status, validation timestamp, validator version hash, approval packet shape hash, hashed error codes, redaction version, and explicit false flags for packet path recording, raw value recording, approval import, provider calls, orders, runtime route, and public UI.
+
+The receipt contract is ready for future owner-assisted review, but it does not record a receipt now, does not run validation now, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

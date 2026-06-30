@@ -410,6 +410,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval packet validation runbook",
     "trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
   ],
+  [
+    "readOnlyApprovalPacketValidationResultReceipt",
+    "Read-only approval packet validation result receipt",
+    "trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -557,6 +562,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-alpha-kr-market-boundary",
   "check:trading-read-only-approval-packet-preparation-runbook",
   "check:trading-read-only-approval-packet-validation-runbook",
+  "check:trading-read-only-approval-packet-validation-result-receipt",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
