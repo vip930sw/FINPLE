@@ -290,16 +290,17 @@ Step 116 should be split into small commits and PR-sized phases:
 38. Read-only provider request envelope contract.
 39. Read-only provider response envelope contract.
 40. Read-only snapshot normalization contract.
-41. Read-only snapshot risk input contract.
-42. Read-only snapshot risk input local validator.
-43. Private shadow order intent contract.
-44. Private shadow order intent local validator.
-45. Private shadow intent audit event contract.
-46. Private shadow intent audit event local validator.
-47. Private shadow runtime review packet contract.
-48. Private shadow runtime review packet local validator.
-49. Private shadow operator access contract.
-50. Private shadow operator access local validator.
+41. Read-only snapshot normalization local validator.
+42. Read-only snapshot risk input contract.
+43. Read-only snapshot risk input local validator.
+44. Private shadow order intent contract.
+45. Private shadow order intent local validator.
+46. Private shadow intent audit event contract.
+47. Private shadow intent audit event local validator.
+48. Private shadow runtime review packet contract.
+49. Private shadow runtime review packet local validator.
+50. Private shadow operator access contract.
+51. Private shadow operator access local validator.
 49. Private shadow runtime preflight.
 50. KIS order adapter design review.
 51. Manual order permission preflight.
@@ -1384,6 +1385,30 @@ Current state remains:
 Future snapshot normalization review must include snapshot identity, source envelope hash, snapshot type, created timestamp, market/symbol/currency fields, hashed account identifier, value hash, freshness status, provider status, redaction version, raw-payload storage flag, and explicit provider/order allow flags. Allowed snapshot types are read-only account cash, account positions, orderable cash, quotes, FX, market-session state, and provider-rate-limit state only.
 
 The normalization boundary must forbid access tokens, app secrets, full account numbers, raw provider payloads, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows. Snapshot normalization success still does not perform provider calls, enable read-only runtime, persist raw provider payloads, create DB storage, or approve live order submission.
+
+## Step 116-3M Trading Read-Only Snapshot Normalization Local Validator
+
+The first Trading Read-Only Snapshot Normalization Local Validator is:
+
+```text
+scripts/validate-trading-read-only-snapshot-normalization.cjs
+scripts/validate-trading-read-only-snapshot-normalization.test.cjs
+npm run check:trading-read-only-snapshot-normalization-validator
+```
+
+This is a pure local JSON validator for explicit normalized snapshot files, not a KIS parser, provider adapter, runtime route, storage layer, DB migration, public UI, or order submission path. It validates only caller-supplied local JSON via `--snapshot` and rejects unknown fields, unknown snapshot types, malformed hashes, malformed timestamps, invalid market/currency/freshness/provider markers, raw payload storage, enabled provider-call flags, enabled order-submission flags, and secret-like or raw payload content.
+
+Current state remains:
+
+- `rawPayloadStored=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+Validator success still does not parse KIS payloads, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
 ## Step 116-1X Trading Read-Only Snapshot Risk Input Contract
 

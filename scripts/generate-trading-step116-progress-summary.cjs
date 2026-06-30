@@ -143,6 +143,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-provider-request-envelope-validator",
   "check:trading-read-only-provider-response-envelope",
   "check:trading-read-only-snapshot-normalization",
+  "check:trading-read-only-snapshot-normalization-validator",
   "check:trading-read-only-snapshot-risk-input",
   "check:trading-read-only-snapshot-risk-input-validator",
   "check:trading-private-shadow-order-intent",
