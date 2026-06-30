@@ -3391,6 +3391,21 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 This is a synthetic fixture regression contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. The fixtures exercise local validator success and fail-closed cases for future receipt path drift, receipt reads/writes, provider-call actions, review-result field drift, assertion drift, forbidden-content drift, allow flags, raw-value-shaped markers, and forbidden runtime artifacts.
 
+## Step 116-3M Trading Read-Only Provider Call Authorization Review Result
+
+The first Trading Read-Only Provider Call Authorization Review Result contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json
+scripts/generate-trading-read-only-provider-call-authorization-review-result-contract.cjs
+scripts/generate-trading-read-only-provider-call-authorization-review-result-contract.test.cjs
+npm run check:trading-read-only-provider-call-authorization-review-result
+```
+
+This is a redacted review-result contract, not a provider caller, token refresh path, KIS caller, runtime route, DB storage implementation, public UI, order submission path, or live trading approval. It records only the future owner-assisted result shape for `read_only_provider_call_authorization_review_result` while keeping provider-call authorization, provider calls, order submission, runtime routes, public UI, DB writes, and live trading blocked.
+
+Review-result readiness still does not create or read `data/private/trading/read_only_provider_call_authorization_review_result.redacted.json`, does not create provider request envelopes, does not call KIS, does not refresh tokens, does not connect to the database, does not submit orders, and does not approve live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

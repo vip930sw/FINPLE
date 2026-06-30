@@ -281,6 +281,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_read_only_provider_call_authorization_preflight.json",
   ],
   [
+    "readOnlyProviderCallAuthorizationReviewResult",
+    "Read-only provider call authorization review result",
+    "trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json",
+  ],
+  [
     "readOnlyProviderCallAuthorizationPreflightValidatorFixtures",
     "Read-only provider call authorization preflight validator fixtures",
     "trading_lab_step116_read_only_provider_call_authorization_preflight_validator_fixtures.json",
@@ -473,6 +478,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-private-shadow-runtime-implementation-preflight",
   "check:trading-read-only-approval-import-implementation-preflight",
   "check:trading-read-only-provider-call-authorization-preflight",
+  "check:trading-read-only-provider-call-authorization-review-result",
   "check:trading-read-only-provider-call-authorization-preflight-validator",
   "check:trading-read-only-provider-call-authorization-preflight-validator-fixtures",
   "check:trading-read-only-provider-endpoint-allowlist",
@@ -527,6 +533,7 @@ const REMAINING_TRADING_GATES = [
   "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
   "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
   "read_only_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
+  "read_only_provider_call_authorization_review_result_not_owner_supplied",
   "private_shadow_runtime_implementation_review_blocked_pending_owner_packet_and_operator_access",
   "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
   "db_storage_review_blocked_pending_private_runtime_review",

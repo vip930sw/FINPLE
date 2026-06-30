@@ -90,6 +90,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_private_shadow_runtime_implementation_preflight.json",
   "trading_lab_step116_read_only_approval_import_implementation_preflight.json",
   "trading_lab_step116_read_only_provider_call_authorization_preflight.json",
+  "trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json",
   "trading_lab_step116_read_only_provider_call_authorization_preflight_validator_fixtures.json",
   "trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
   "trading_lab_step116_read_only_provider_endpoint_allowlist_validator_fixtures.json",
@@ -151,10 +152,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 96);
-  assert.equal(report.progress.trackedContractsReady, 96);
+  assert.equal(report.progress.trackedContractsTotal, 97);
+  assert.equal(report.progress.trackedContractsReady, 97);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 134);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 135);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
@@ -177,6 +178,10 @@ test("records remaining trading gates instead of approving provider calls or ord
   assert.match(
     report.remainingTradingGates.join("|"),
     /read_only_provider_call_authorization_blocked_pending_owner_packet_and_provider_review/,
+  );
+  assert.match(
+    report.remainingTradingGates.join("|"),
+    /read_only_provider_call_authorization_review_result_not_owner_supplied/,
   );
   assert.match(
     report.remainingTradingGates.join("|"),
