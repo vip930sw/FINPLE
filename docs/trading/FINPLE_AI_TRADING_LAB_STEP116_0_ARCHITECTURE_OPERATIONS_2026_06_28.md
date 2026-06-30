@@ -278,28 +278,29 @@ Step 116 should be split into small commits and PR-sized phases:
 26. Read-only approval import implementation preflight.
 27. Read-only provider call authorization preflight.
 28. Read-only provider endpoint allowlist contract.
-29. Trading Step 116 progress summary.
-30. Read-only provider request envelope validation contract.
-31. Read-only provider request envelope validation preflight.
-32. Read-only provider request envelope local validator.
-33. Read-only provider request envelope contract.
-34. Read-only provider response envelope contract.
-35. Read-only snapshot normalization contract.
-36. Read-only snapshot risk input contract.
-37. Read-only snapshot risk input local validator.
-38. Private shadow order intent contract.
-39. Private shadow order intent local validator.
-40. Private shadow intent audit event contract.
-41. Private shadow intent audit event local validator.
-42. Private shadow runtime review packet contract.
-43. Private shadow runtime review packet local validator.
-44. Private shadow operator access contract.
-45. Private shadow operator access local validator.
-46. Private shadow runtime preflight.
-47. KIS order adapter design review.
-48. Manual order permission preflight.
-49. Manual order permission local validator.
-50. Live guarded execution only after manual approval.
+29. Read-only provider endpoint category validation preflight.
+30. Trading Step 116 progress summary.
+31. Read-only provider request envelope validation contract.
+32. Read-only provider request envelope validation preflight.
+33. Read-only provider request envelope local validator.
+34. Read-only provider request envelope contract.
+35. Read-only provider response envelope contract.
+36. Read-only snapshot normalization contract.
+37. Read-only snapshot risk input contract.
+38. Read-only snapshot risk input local validator.
+39. Private shadow order intent contract.
+40. Private shadow order intent local validator.
+41. Private shadow intent audit event contract.
+42. Private shadow intent audit event local validator.
+43. Private shadow runtime review packet contract.
+44. Private shadow runtime review packet local validator.
+45. Private shadow operator access contract.
+46. Private shadow operator access local validator.
+47. Private shadow runtime preflight.
+48. KIS order adapter design review.
+49. Manual order permission preflight.
+50. Manual order permission local validator.
+51. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1946,11 +1947,41 @@ Current state remains:
 - `dbMigrationAllowed=false`
 - `liveTradingAllowed=false`
 
-The future category allowlist is limited to read-only account cash balance, positions, orderable cash, current quote, FX rate, market session state, and provider rate-limit state reads. The future forbidden category list includes order submit, order cancel, order modify/replace, execution/fill download, order confirmation download, account transfer, credential or token introspection, and scenario monthly data download.
+The future category allowlist is limited to read-only account cash balance, positions, orderable cash, current quotes, FX rate, market session state, and provider rate-limit state reads. The future forbidden category list includes order submit, order cancel, order modify/replace, execution/fill download, order confirmation download, account transfer, credential or token introspection, and scenario monthly data download.
 
 The boundary forbids provider-specific endpoint paths, provider transaction ids, app keys, app secrets, access tokens, full account numbers, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, and scenario monthly return rows in this contract. Unknown categories must fail closed.
 
 Contract success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not map KIS endpoint paths or TR IDs, does not create or read `data/private/trading/read_only_approval.redacted.json`, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
+## Step 116-3H Trading Read-Only Provider Endpoint Category Validation Preflight
+
+The first Trading Read-Only Provider Endpoint Category Validation Preflight is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_endpoint_category_validation_preflight.json
+scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.cjs
+scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.test.cjs
+npm run check:trading-read-only-provider-endpoint-category-validation-preflight
+```
+
+This is a read_only_provider_endpoint_category_validation_preflight contract, not a KIS endpoint mapper, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It exists to keep the endpoint allowlist contract, request-envelope contract, and local request-envelope validator aligned on the same read-only category names before any provider-specific mapping review.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `providerSpecificEndpointPathsRecordedNow=false`
+- `providerSpecificTransactionIdsRecordedNow=false`
+- `categoryValidatorImplementationAllowedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+The aligned read-only categories are `account_cash_balance_read`, `account_positions_read`, `orderable_cash_read`, `current_quotes_read`, `fx_rate_read`, `market_session_state_read`, and `provider_rate_limit_state_read`. Any drift between the allowlist, request envelope contract, and local validator must block the preflight. Unknown, order, cancel, execution, confirmation, token, and scenario monthly categories remain fail-closed.
+
+Preflight success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not map KIS endpoint paths or TR IDs, does not create provider requests, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
 ## Explicit Non-Goals
 

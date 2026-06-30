@@ -78,7 +78,7 @@ test("records category allowlist while keeping provider calls, routes, UI, DB, a
   assert.equal(report.readiness.publicUiAllowed, false);
   assert.equal(report.readiness.dbMigrationAllowed, false);
   assert.match(boundary.allowedEndpointCategories.join("|"), /account_cash_balance_read/);
-  assert.match(boundary.allowedEndpointCategories.join("|"), /current_quote_read/);
+  assert.match(boundary.allowedEndpointCategories.join("|"), /current_quotes_read/);
   assert.match(boundary.forbiddenEndpointCategories.join("|"), /order_submit/);
   assert.match(boundary.forbiddenEndpointCategories.join("|"), /scenario_monthly_data_download/);
 });

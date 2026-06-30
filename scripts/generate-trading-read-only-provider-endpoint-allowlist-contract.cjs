@@ -53,7 +53,7 @@ const REQUIRED_ALLOWED_ENDPOINT_CATEGORIES = [
   "account_cash_balance_read",
   "account_positions_read",
   "orderable_cash_read",
-  "current_quote_read",
+  "current_quotes_read",
   "fx_rate_read",
   "market_session_state_read",
   "provider_rate_limit_state_read",

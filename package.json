@@ -102,6 +102,7 @@
     "check:trading-read-only-approval-import-implementation-preflight": "node scripts/generate-trading-read-only-approval-import-implementation-preflight.cjs --check && node --test scripts/generate-trading-read-only-approval-import-implementation-preflight.test.cjs",
     "check:trading-read-only-provider-call-authorization-preflight": "node scripts/generate-trading-read-only-provider-call-authorization-preflight.cjs --check && node --test scripts/generate-trading-read-only-provider-call-authorization-preflight.test.cjs",
     "check:trading-read-only-provider-endpoint-allowlist": "node scripts/generate-trading-read-only-provider-endpoint-allowlist-contract.cjs --check && node --test scripts/generate-trading-read-only-provider-endpoint-allowlist-contract.test.cjs",
+    "check:trading-read-only-provider-endpoint-category-validation-preflight": "node scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.cjs --check && node --test scripts/generate-trading-read-only-provider-endpoint-category-validation-preflight.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
