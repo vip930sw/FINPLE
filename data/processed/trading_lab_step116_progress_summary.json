@@ -41,6 +41,7 @@
       "privateShadowOperatorAccessValidatorFixtures": "data\\processed\\trading_lab_step116_private_shadow_operator_access_validator_fixtures.json",
       "manualOrderPermissionPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_preflight.json",
       "manualOrderPermissionValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validator_fixtures.json",
+      "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -80,10 +81,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 53,
-    "trackedContractsReady": 53,
+    "trackedContractsTotal": 54,
+    "trackedContractsReady": 54,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 71,
+    "requiredNpmScriptsTotal": 72,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -391,6 +392,15 @@
       "title": "Manual order permission validator fixtures",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_validator_fixtures.json",
       "status": "fixtures_ready_for_manual_order_permission_validator_regression",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedOrderAdapterImplementationPreflight",
+      "title": "Live-guarded order adapter implementation preflight",
+      "filePath": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+      "status": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

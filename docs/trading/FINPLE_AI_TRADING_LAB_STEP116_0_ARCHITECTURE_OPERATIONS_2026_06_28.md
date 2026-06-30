@@ -1928,6 +1928,37 @@ The valid synthetic fixture is a live_guarded, hash-only manual order permission
 
 Fixture success still does not import manual order permission evidence, implement the KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
+## Step 116-3U Trading Live-Guarded Order Adapter Implementation Preflight
+
+The first Trading Live-Guarded Order Adapter Implementation Preflight is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json
+scripts/generate-trading-live-guarded-order-adapter-implementation-preflight.cjs
+scripts/generate-trading-live-guarded-order-adapter-implementation-preflight.test.cjs
+npm run check:trading-live-guarded-order-adapter-implementation-preflight
+```
+
+This is a live_guarded_order_adapter_implementation_preflight contract, not a KIS order adapter, permission importer, provider caller, runtime route, DB migration, private dashboard, public UI, or order submission path. It records that the future order-adapter implementation review remains blocked until manual permission import, private shadow runtime review, operator access review, kill-switch clearance, risk-gate clearance, order-credential review, dry-run replay, shadow history review, and audit logger review are handled separately.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `manualOrderPermissionImportedNow=false`
+- `privateShadowRuntimeImplementedNow=false`
+- `privateOperatorAccessImplementedNow=false`
+- `orderAdapterImplementationAllowedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+The boundary allows only a later private-worker implementation review. It forbids default private packet reads, runtime routes, public UI, DB migrations now, scenario cache writes, raw account identifiers, raw operator identifiers, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, live endpoint content, provider calls in this step, and all order submission or cancellation paths.
+
+Preflight success still does not implement `server/src/services/trading/kisOrderAdapter.js`, import manual order permission evidence, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
