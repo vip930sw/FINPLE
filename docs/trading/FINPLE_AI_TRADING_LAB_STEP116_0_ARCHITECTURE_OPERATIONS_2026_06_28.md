@@ -2079,6 +2079,20 @@ Current state remains:
 
 Review contract success still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, request raw values or private pepper, generate hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
 
+## Step 116-3Z Trading Manual Order Permission Hash Helper Implementation Review Local Validator
+
+The first Trading Manual Order Permission Hash Helper Implementation Review Local Validator is:
+
+```text
+scripts/validate-trading-manual-order-permission-hash-helper-implementation-review-contract.cjs
+scripts/validate-trading-manual-order-permission-hash-helper-implementation-review-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-implementation-review-validator
+```
+
+This is a pure local validator for the implementation review contract, not a hash helper implementation, hash generator, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It requires an explicit `--contract <path>` argument and does not read private permission packets, environment secrets, provider URLs, account credentials, order credentials, or raw session tokens.
+
+The validator checks that the future helper path and permission packet path stay fixed, current-step helper creation/run/raw input/private pepper actions remain disabled, local-only execution and synthetic test boundaries remain fail-closed, helper output labels and forbidden content lists remain complete, and provider/order/runtime/UI allow flags stay false.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:

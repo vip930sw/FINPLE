@@ -95,6 +95,7 @@
     "check:trading-manual-order-permission-hash-helper": "node scripts/generate-trading-manual-order-permission-hash-helper-contract.cjs --check && node --test scripts/generate-trading-manual-order-permission-hash-helper-contract.test.cjs",
     "check:trading-manual-order-permission-hash-helper-preflight": "node scripts/generate-trading-manual-order-permission-hash-helper-preflight.cjs --check && node --test scripts/generate-trading-manual-order-permission-hash-helper-preflight.test.cjs",
     "check:trading-manual-order-permission-hash-helper-implementation-review": "node scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-contract.cjs --check && node --test scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-contract.test.cjs",
+    "check:trading-manual-order-permission-hash-helper-implementation-review-validator": "node --test scripts/validate-trading-manual-order-permission-hash-helper-implementation-review-contract.test.cjs",
     "check:trading-mock-approval-evidence": "node scripts/generate-trading-mock-approval-evidence-receipt.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-mock-approval-evidence-validator": "node --test scripts/validate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-redacted-read-only-approval-template": "node scripts/generate-trading-redacted-read-only-approval-template.cjs --check && node --test scripts/generate-trading-redacted-read-only-approval-template.test.cjs",
