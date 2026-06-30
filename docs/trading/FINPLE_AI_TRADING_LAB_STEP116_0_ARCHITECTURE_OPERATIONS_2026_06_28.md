@@ -280,28 +280,29 @@ Step 116 should be split into small commits and PR-sized phases:
 28. Read-only provider endpoint allowlist contract.
 29. Read-only provider endpoint category validation preflight.
 30. Read-only provider request envelope validator fixtures.
-31. Trading Step 116 progress summary.
-32. Read-only provider request envelope validation contract.
-33. Read-only provider request envelope validation preflight.
-34. Read-only provider request envelope local validator.
-35. Read-only provider request envelope contract.
-36. Read-only provider response envelope contract.
-37. Read-only snapshot normalization contract.
-38. Read-only snapshot risk input contract.
-39. Read-only snapshot risk input local validator.
-40. Private shadow order intent contract.
-41. Private shadow order intent local validator.
-42. Private shadow intent audit event contract.
-43. Private shadow intent audit event local validator.
-44. Private shadow runtime review packet contract.
-45. Private shadow runtime review packet local validator.
-46. Private shadow operator access contract.
-47. Private shadow operator access local validator.
-48. Private shadow runtime preflight.
-49. KIS order adapter design review.
-50. Manual order permission preflight.
-51. Manual order permission local validator.
-52. Live guarded execution only after manual approval.
+31. Read-only provider response envelope validation preflight.
+32. Trading Step 116 progress summary.
+33. Read-only provider request envelope validation contract.
+34. Read-only provider request envelope validation preflight.
+35. Read-only provider request envelope local validator.
+36. Read-only provider request envelope contract.
+37. Read-only provider response envelope contract.
+38. Read-only snapshot normalization contract.
+39. Read-only snapshot risk input contract.
+40. Read-only snapshot risk input local validator.
+41. Private shadow order intent contract.
+42. Private shadow order intent local validator.
+43. Private shadow intent audit event contract.
+44. Private shadow intent audit event local validator.
+45. Private shadow runtime review packet contract.
+46. Private shadow runtime review packet local validator.
+47. Private shadow operator access contract.
+48. Private shadow operator access local validator.
+49. Private shadow runtime preflight.
+50. KIS order adapter design review.
+51. Manual order permission preflight.
+52. Manual order permission local validator.
+53. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2009,6 +2010,33 @@ Current state remains:
 - `liveTradingAllowed=false`
 
 The fixtures are synthetic only. They do not include real account numbers, app keys, app secrets, access tokens, raw provider payloads, raw order payloads, private approval packet content, or KIS-specific endpoint paths/TR IDs. Fixture success still does not create provider requests, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
+
+## Step 116-3J Trading Read-Only Provider Response Envelope Validation Preflight
+
+The first Trading Read-Only Provider Response Envelope Validation Preflight is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_preflight.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-preflight.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-preflight.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-preflight
+```
+
+This is a read_only_provider_response_envelope_validation_preflight contract, not a response parser, KIS caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records that a future pure local response-envelope validator may be reviewed only after the response envelope contract, request-envelope fixtures, endpoint-category preflight, snapshot normalization contract, call-authorization preflight, and env risk gate all remain fail-closed.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `responseEnvelopeValidatorImplementationAllowedNow=true`
+- `responsePayloadReceivedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+Preflight success still does not receive provider responses, parse raw KIS payloads, refresh tokens, call KIS, enable provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading. The future validator must read only an explicit local candidate response-envelope path and must reject raw provider payloads, order/execution/fill content, live order endpoints, and scenario monthly rows.
 
 ## Explicit Non-Goals
 
