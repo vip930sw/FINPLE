@@ -54,6 +54,7 @@
       "manualOrderPermissionPacketValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validator_fixtures.json",
       "manualOrderPermissionPacketValidationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_preflight.json",
       "manualOrderPermissionPacketValidationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
+      "manualOrderPermissionValidationResultReceipt": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -93,10 +94,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 66,
-    "trackedContractsReady": 66,
+    "trackedContractsTotal": 67,
+    "trackedContractsReady": 67,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 88,
+    "requiredNpmScriptsTotal": 89,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -521,6 +522,15 @@
       "title": "Manual order permission packet validation runbook",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
       "status": "runbook_ready_for_owner_assisted_manual_order_permission_packet_validation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionValidationResultReceipt",
+      "title": "Manual order permission validation result receipt",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt.json",
+      "status": "receipt_contract_ready_pending_owner_validation_result_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
