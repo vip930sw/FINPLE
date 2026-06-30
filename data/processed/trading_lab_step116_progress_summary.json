@@ -116,7 +116,7 @@
     "trackedContractsTotal": 86,
     "trackedContractsReady": 86,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 117,
+    "requiredNpmScriptsTotal": 118,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"

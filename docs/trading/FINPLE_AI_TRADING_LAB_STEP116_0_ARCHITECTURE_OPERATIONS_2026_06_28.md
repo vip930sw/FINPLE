@@ -3157,6 +3157,22 @@ The receipt boundary allows only opaque receipt id, validation status, validatio
 
 Receipt contract success still does not receive provider responses, parse raw KIS payloads, call KIS, authorize provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
 
+## Step 116-3L-B Trading Read-Only Provider Response Envelope Validation Result Receipt Local Validator
+
+The first local validator for a redacted read-only provider response envelope validation result receipt is:
+
+```text
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt.cjs
+scripts/validate-trading-read-only-provider-response-envelope-validation-result-receipt.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-validator
+```
+
+This is a pure local receipt validator, not a provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It requires an explicit `--receipt <path>` argument and does not use a default private receipt, approval packet, or response-envelope path.
+
+The validator accepts only redacted receipt objects with opaque receipt id, validation status, validation timestamp, validator version hash, response-envelope shape hash, error-code hashes, `redactionVersion=v1`, and explicit false envelope-path/raw-response/provider-payload/provider/order/runtime/UI flags. It rejects private paths, raw response/provider/order strings, secret-shaped values, enabled allow flags, unknown fields, malformed hashes, and malformed timestamps.
+
+Validator success still does not receive provider responses, parse raw KIS payloads, call KIS, authorize provider calls, create runtime routes or UI, connect to the database, submit orders, or approve live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
