@@ -3556,6 +3556,20 @@ This is a redacted receipt-boundary contract, not a packet validator execution, 
 
 The receipt contract is ready for future owner-assisted review, but it does not record a receipt now, does not run validation now, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
 
+## Step 116-5K Trading Read-Only Approval Packet Validation Result Receipt Validator
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Validator is:
+
+```text
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt.cjs
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-validator
+```
+
+This is a pure local validator script for a redacted validation result receipt, not a receipt recorder, private approval packet reader, approval importer, KIS call, Alpha Vantage call, provider call, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It requires an explicit `--receipt <path>` argument and does not read `data/private/trading/read_only_approval.redacted.json` by default.
+
+Validator success only proves the supplied redacted receipt shape is acceptable. It still does not record a receipt, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

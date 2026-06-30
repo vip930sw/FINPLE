@@ -563,6 +563,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-packet-preparation-runbook",
   "check:trading-read-only-approval-packet-validation-runbook",
   "check:trading-read-only-approval-packet-validation-result-receipt",
+  "check:trading-read-only-approval-packet-validation-result-receipt-validator",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
