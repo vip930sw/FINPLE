@@ -2106,6 +2106,21 @@ npm run check:trading-manual-order-permission-hash-helper-implementation-review-
 
 This is a synthetic fixture regression contract for the local implementation review validator, not a hash helper implementation, hash generator, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records one redacted valid implementation-review contract fixture and invalid fixture definitions that must fail locally for helper creation/run, raw input or pepper requests, changed future paths, opened credential/network/packet-write boundaries, and enabled provider/order/runtime flags.
 
+## Step 116-4B Trading Manual Order Permission Hash Preparation Runbook Contract
+
+The first Trading Manual Order Permission Hash Preparation Runbook Contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json
+scripts/generate-trading-manual-order-permission-hash-preparation-runbook-contract.cjs
+scripts/generate-trading-manual-order-permission-hash-preparation-runbook-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-preparation-runbook
+```
+
+This is a runbook contract for a future owner-assisted local hash preparation step, not a hash helper implementation, helper execution, raw input request, private pepper request, hash generation run, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records the offline/local-only steps the owner can follow later without committing raw values, peppers, hash outputs, or private permission packets.
+
+Runbook readiness still does not create `scripts/create-trading-manual-order-permission-hashes.cjs`, does not run any helper, does not request raw account/operator/order/provider values, does not create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not call KIS, and does not enable provider calls, runtime routes, UI, DB writes, order submission, or live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
