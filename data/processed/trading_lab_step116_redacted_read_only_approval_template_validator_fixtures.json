@@ -1,0 +1,3431 @@
+{
+  "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-2W",
+  "scope": "redacted_read_only_approval_template_validator_fixtures",
+  "sourceFiles": {
+    "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
+    "validator": "scripts\\validate-trading-redacted-read-only-approval-template.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic redacted read-only approval template validator fixtures only; no real account, credential, token, provider payload, order payload, private approval packet, execution, fill, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-redacted-read-only-approval-template.cjs",
+    "validSyntheticRedactedReadOnlyApprovalTemplate": {
+      "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+      "auditedAt": "2026-06-29T00:00:00Z",
+      "step": "Step 116-2E",
+      "scope": "trading_redacted_read_only_approval_template",
+      "sourceFiles": {
+        "policy": "data\\processed\\trading_lab_step1160_policy.json",
+        "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+        "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+        "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+        "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+        "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+      },
+      "outputFiles": {
+        "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+      },
+      "currentState": {
+        "templateOnly": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "readOnlyRuntimeIntegrationAllowed": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "futureRedactedApprovalPacketTemplate": {
+        "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+        "currentStepCreatesPacket": false,
+        "requiredTemplateFields": [
+          "approvalId",
+          "approvedByHash",
+          "approvedAt",
+          "expiresAt",
+          "scope",
+          "environment",
+          "baseUrlScope",
+          "accountIdHash",
+          "allowedReadScopes",
+          "forbiddenActions",
+          "evidenceTicketHash",
+          "revocationPlanHash",
+          "redactionVersion",
+          "providerCallsAllowed",
+          "orderSubmissionAllowed",
+          "runtimeRouteAllowed",
+          "publicUiAllowed"
+        ],
+        "allowedReadScopes": [
+          "account_cash_balance",
+          "account_positions",
+          "orderable_cash",
+          "current_quotes",
+          "fx_rate",
+          "market_session_state",
+          "provider_rate_limit_state"
+        ],
+        "forbiddenActions": [
+          "order_submission",
+          "order_cancellation",
+          "position_mutation",
+          "live_trading_endpoint",
+          "raw_provider_response_persistence",
+          "public_frontend_secret_access",
+          "scenario_monthly_cache_write"
+        ],
+        "requiredTemplateAssertions": [
+          "template_is_redacted_only",
+          "template_does_not_create_private_packet",
+          "template_requires_account_id_hash",
+          "template_requires_approver_hash",
+          "template_forbids_secret_values",
+          "template_forbids_live_endpoint",
+          "template_does_not_enable_provider_calls",
+          "template_does_not_enable_order_submission",
+          "template_does_not_create_runtime_route"
+        ],
+        "forbiddenTemplateContent": [
+          "access_token",
+          "app_secret",
+          "app_key",
+          "full_account_number",
+          "raw_account_identifier",
+          "raw_provider_payload",
+          "raw_order_payload",
+          "order_confirmation",
+          "execution_id",
+          "fill_payload",
+          "live_order_endpoint",
+          "scenario_monthly_return_row"
+        ],
+        "placeholderRules": [
+          "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+          "accountIdHash must be a hash, never a full or partial account number",
+          "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+          "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+        ],
+        "sampleRedactedShape": {
+          "approvalId": "approval_<opaque_id>",
+          "approvedByHash": "sha256:<operator_hash>",
+          "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+          "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+          "scope": "read_only_shadow",
+          "environment": "mock",
+          "baseUrlScope": "virtual_trading_openapivts",
+          "accountIdHash": "sha256:<account_hash>",
+          "allowedReadScopes": [
+            "account_cash_balance",
+            "account_positions",
+            "orderable_cash",
+            "current_quotes",
+            "fx_rate",
+            "market_session_state",
+            "provider_rate_limit_state"
+          ],
+          "forbiddenActions": [
+            "order_submission",
+            "order_cancellation",
+            "position_mutation",
+            "live_trading_endpoint",
+            "raw_provider_response_persistence",
+            "public_frontend_secret_access",
+            "scenario_monthly_cache_write"
+          ],
+          "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+          "revocationPlanHash": "sha256:<revocation_plan_hash>",
+          "redactionVersion": "v1",
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      "checks": {
+        "templateOnly": true,
+        "shadowModePolicyReady": true,
+        "mockApprovalEvidenceReceiptReady": true,
+        "readOnlyApprovalIntakeContractReady": true,
+        "readOnlyApprovalImportPreflightReady": true,
+        "intakeContractHasRequiredFields": true,
+        "templateFieldsReady": true,
+        "allowedReadScopesReady": true,
+        "forbiddenActionsReady": true,
+        "templateAssertionsReady": true,
+        "forbiddenTemplateContentReady": true,
+        "preflightStillDisablesOrderSubmission": true,
+        "preflightStillDisablesProviderCalls": true,
+        "preflightStillDisablesDbMigration": true,
+        "architectureDocMentionsTemplate": true,
+        "noRuntimeArtifacts": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "runtimeRouteAllowed": false,
+        "publicUiAllowed": false
+      },
+      "evidence": {
+        "shadowMode": {
+          "mode": "shadow",
+          "externalOrderCall": false,
+          "providerDataCall": "read_only_future_contract",
+          "requiresManualApproval": true,
+          "description": "records intended orders without submitting them"
+        },
+        "missingTemplateFields": [],
+        "missingAllowedReadScopes": [],
+        "missingForbiddenActions": [],
+        "missingTemplateAssertions": [],
+        "missingForbiddenTemplateContent": [],
+        "forbiddenRuntimeArtifacts": [],
+        "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+        "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+        "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+        "preflightStatus": "ready_for_step116_pure_validator_implementation"
+      },
+      "readiness": {
+        "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+        "readyForOwnerRedactedApprovalPacketPreparation": true,
+        "approvalPacketCreatedNow": false,
+        "approvalPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false,
+        "blockers": []
+      }
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_output_files",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "packet_creation_enabled",
+        "expectedErrorCodes": [
+          "packet_creation_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": true,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_template_field",
+        "expectedErrorCodes": [
+          "missing_template_field"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_allowed_read_scope",
+        "expectedErrorCodes": [
+          "missing_allowed_read_scope"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_forbidden_action",
+        "expectedErrorCodes": [
+          "missing_forbidden_action"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_template_assertion",
+        "expectedErrorCodes": [
+          "missing_template_assertion"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_forbidden_template_content",
+        "expectedErrorCodes": [
+          "missing_forbidden_template_content"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_future_packet_path",
+        "expectedErrorCodes": [
+          "invalid_future_packet_path"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\live_order_permission.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "approval_packet_created_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": true,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": true,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": true,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": true,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "unsafe_sample_hash_value",
+        "expectedErrorCodes": [
+          "invalid_sample_hash_placeholder",
+          "sample_forbidden_value"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "raw_account",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "sample_allow_flag_enabled",
+        "expectedErrorCodes": [
+          "sample_allow_flag_enabled"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "virtual_trading_openapivts",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": true,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "invalid_sample_base_url_scope",
+        "expectedErrorCodes": [
+          "invalid_sample_base_url_scope"
+        ],
+        "template": {
+          "contractVersion": "trading-lab-step116-redacted-read-only-approval-template-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-2E",
+          "scope": "trading_redacted_read_only_approval_template",
+          "sourceFiles": {
+            "policy": "data\\processed\\trading_lab_step1160_policy.json",
+            "preflight": "data\\processed\\trading_lab_step1160_preflight.json",
+            "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
+            "readOnlyApprovalIntakeContract": "data\\processed\\trading_lab_step116_read_only_approval_intake_contract.json",
+            "readOnlyApprovalImportPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json"
+          },
+          "currentState": {
+            "templateOnly": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "readOnlyRuntimeIntegrationAllowed": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureRedactedApprovalPacketTemplate": {
+            "futureApprovalPacketPath": "data\\private\\trading\\read_only_approval.redacted.json",
+            "currentStepCreatesPacket": false,
+            "requiredTemplateFields": [
+              "approvalId",
+              "approvedByHash",
+              "approvedAt",
+              "expiresAt",
+              "scope",
+              "environment",
+              "baseUrlScope",
+              "accountIdHash",
+              "allowedReadScopes",
+              "forbiddenActions",
+              "evidenceTicketHash",
+              "revocationPlanHash",
+              "redactionVersion",
+              "providerCallsAllowed",
+              "orderSubmissionAllowed",
+              "runtimeRouteAllowed",
+              "publicUiAllowed"
+            ],
+            "allowedReadScopes": [
+              "account_cash_balance",
+              "account_positions",
+              "orderable_cash",
+              "current_quotes",
+              "fx_rate",
+              "market_session_state",
+              "provider_rate_limit_state"
+            ],
+            "forbiddenActions": [
+              "order_submission",
+              "order_cancellation",
+              "position_mutation",
+              "live_trading_endpoint",
+              "raw_provider_response_persistence",
+              "public_frontend_secret_access",
+              "scenario_monthly_cache_write"
+            ],
+            "requiredTemplateAssertions": [
+              "template_is_redacted_only",
+              "template_does_not_create_private_packet",
+              "template_requires_account_id_hash",
+              "template_requires_approver_hash",
+              "template_forbids_secret_values",
+              "template_forbids_live_endpoint",
+              "template_does_not_enable_provider_calls",
+              "template_does_not_enable_order_submission",
+              "template_does_not_create_runtime_route"
+            ],
+            "forbiddenTemplateContent": [
+              "access_token",
+              "app_secret",
+              "app_key",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "placeholderRules": [
+              "approvedByHash must be a hash or opaque operator id, not a real name unless separately approved",
+              "accountIdHash must be a hash, never a full or partial account number",
+              "evidenceTicketHash and revocationPlanHash must point to redacted operator evidence",
+              "provider/order/runtime/UI allow flags must remain false until a later implementation review"
+            ],
+            "sampleRedactedShape": {
+              "approvalId": "approval_<opaque_id>",
+              "approvedByHash": "sha256:<operator_hash>",
+              "approvedAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "expiresAt": "YYYY-MM-DDTHH:mm:ssZ",
+              "scope": "read_only_shadow",
+              "environment": "mock",
+              "baseUrlScope": "production_trading",
+              "accountIdHash": "sha256:<account_hash>",
+              "allowedReadScopes": [
+                "account_cash_balance",
+                "account_positions",
+                "orderable_cash",
+                "current_quotes",
+                "fx_rate",
+                "market_session_state",
+                "provider_rate_limit_state"
+              ],
+              "forbiddenActions": [
+                "order_submission",
+                "order_cancellation",
+                "position_mutation",
+                "live_trading_endpoint",
+                "raw_provider_response_persistence",
+                "public_frontend_secret_access",
+                "scenario_monthly_cache_write"
+              ],
+              "evidenceTicketHash": "sha256:<evidence_ticket_hash>",
+              "revocationPlanHash": "sha256:<revocation_plan_hash>",
+              "redactionVersion": "v1",
+              "providerCallsAllowed": false,
+              "orderSubmissionAllowed": false,
+              "runtimeRouteAllowed": false,
+              "publicUiAllowed": false
+            }
+          },
+          "checks": {
+            "templateOnly": true,
+            "shadowModePolicyReady": true,
+            "mockApprovalEvidenceReceiptReady": true,
+            "readOnlyApprovalIntakeContractReady": true,
+            "readOnlyApprovalImportPreflightReady": true,
+            "intakeContractHasRequiredFields": true,
+            "templateFieldsReady": true,
+            "allowedReadScopesReady": true,
+            "forbiddenActionsReady": true,
+            "templateAssertionsReady": true,
+            "forbiddenTemplateContentReady": true,
+            "preflightStillDisablesOrderSubmission": true,
+            "preflightStillDisablesProviderCalls": true,
+            "preflightStillDisablesDbMigration": true,
+            "architectureDocMentionsTemplate": true,
+            "noRuntimeArtifacts": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false
+          },
+          "evidence": {
+            "shadowMode": {
+              "mode": "shadow",
+              "externalOrderCall": false,
+              "providerDataCall": "read_only_future_contract",
+              "requiresManualApproval": true,
+              "description": "records intended orders without submitting them"
+            },
+            "missingTemplateFields": [],
+            "missingAllowedReadScopes": [],
+            "missingForbiddenActions": [],
+            "missingTemplateAssertions": [],
+            "missingForbiddenTemplateContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "mockApprovalEvidenceReceiptStatus": "receipt_ready_pending_redacted_read_only_approval_evidence_import_review",
+            "readOnlyApprovalIntakeContractStatus": "contract_ready_pending_read_only_approval_evidence_import",
+            "readOnlyApprovalImportPreflightStatus": "preflight_ready_pending_read_only_approval_import_implementation_review",
+            "preflightStatus": "ready_for_step116_pure_validator_implementation"
+          },
+          "readiness": {
+            "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+            "readyForOwnerRedactedApprovalPacketPreparation": true,
+            "approvalPacketCreatedNow": false,
+            "approvalPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_output_files",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "packet_creation_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "packet_creation_enabled"
+          ],
+          "actualErrorCodes": [
+            "packet_creation_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_template_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_template_field"
+          ],
+          "actualErrorCodes": [
+            "missing_template_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_allowed_read_scope",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_allowed_read_scope"
+          ],
+          "actualErrorCodes": [
+            "missing_allowed_read_scope"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_action",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_action"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_action"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_template_assertion",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_template_assertion"
+          ],
+          "actualErrorCodes": [
+            "missing_template_assertion"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_forbidden_template_content",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_forbidden_template_content"
+          ],
+          "actualErrorCodes": [
+            "missing_forbidden_template_content"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_future_packet_path",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_packet_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_packet_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "approval_packet_created_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unsafe_sample_hash_value",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_sample_hash_placeholder",
+            "sample_forbidden_value"
+          ],
+          "actualErrorCodes": [
+            "invalid_sample_hash_placeholder",
+            "sample_forbidden_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "sample_allow_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "sample_allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "sample_allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_sample_base_url_scope",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_sample_base_url_scope"
+          ],
+          "actualErrorCodes": [
+            "invalid_sample_base_url_scope"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "templateReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "redactedReadOnlyApprovalTemplateStatus": "template_ready_for_owner_redacted_approval_packet_preparation",
+    "invalidFixtureIds": [
+      "missing_output_files",
+      "packet_creation_enabled",
+      "missing_template_field",
+      "missing_allowed_read_scope",
+      "missing_forbidden_action",
+      "missing_template_assertion",
+      "missing_forbidden_template_content",
+      "changed_future_packet_path",
+      "approval_packet_created_flag_enabled",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "unsafe_sample_hash_value",
+      "sample_allow_flag_enabled",
+      "invalid_sample_base_url_scope"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_redacted_read_only_approval_template_validator_regression",
+    "readyForRedactedReadOnlyApprovalTemplateValidatorRegression": true,
+    "fixturesOnly": true,
+    "approvalPacketCreatedNow": false,
+    "approvalPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}

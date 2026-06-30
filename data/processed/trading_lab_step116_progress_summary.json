@@ -70,6 +70,7 @@
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "mockApprovalEvidenceReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt_validator_fixtures.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
+      "redactedReadOnlyApprovalTemplateValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
       "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
       "redactedApprovalPacketValidation": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
@@ -107,10 +108,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 80,
-    "trackedContractsReady": 80,
+    "trackedContractsTotal": 81,
+    "trackedContractsReady": 81,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 111,
+    "requiredNpmScriptsTotal": 112,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -679,6 +680,15 @@
       "title": "Redacted read-only approval template",
       "filePath": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "status": "template_ready_for_owner_redacted_approval_packet_preparation",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "redactedReadOnlyApprovalTemplateValidatorFixtures",
+      "title": "Redacted read-only approval template validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json",
+      "status": "fixtures_ready_for_redacted_read_only_approval_template_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
