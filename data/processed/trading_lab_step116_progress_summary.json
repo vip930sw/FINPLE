@@ -71,6 +71,7 @@
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "mockApprovalEvidenceReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt_validator_fixtures.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
+      "ownerReadOnlyEvidenceActionQueue": "data\\processed\\trading_lab_step116_owner_read_only_evidence_action_queue_contract.json",
       "redactedReadOnlyApprovalTemplateValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
       "redactedApprovalHashHelperValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_validator_fixtures.json",
@@ -129,10 +130,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 102,
-    "trackedContractsReady": 102,
+    "trackedContractsTotal": 103,
+    "trackedContractsReady": 103,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 140,
+    "requiredNpmScriptsTotal": 141,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -715,6 +716,15 @@
       "allowFlagViolations": []
     },
     {
+      "id": "ownerReadOnlyEvidenceActionQueue",
+      "title": "Owner read-only evidence action queue",
+      "filePath": "data\\processed\\trading_lab_step116_owner_read_only_evidence_action_queue_contract.json",
+      "status": "owner_read_only_evidence_action_queue_ready_import_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
       "id": "redactedReadOnlyApprovalTemplateValidatorFixtures",
       "title": "Redacted read-only approval template validator fixtures",
       "filePath": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json",
@@ -1059,6 +1069,7 @@
   ],
   "remainingTradingGates": [
     "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
+    "owner_read_only_evidence_action_queue_ready_import_still_blocked",
     "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
     "read_only_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
     "read_only_provider_call_authorization_review_result_not_owner_supplied",
@@ -1113,6 +1124,7 @@
     "blockers": [],
     "remainingTradingGates": [
       "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
+      "owner_read_only_evidence_action_queue_ready_import_still_blocked",
       "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
       "read_only_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
       "read_only_provider_call_authorization_review_result_not_owner_supplied",

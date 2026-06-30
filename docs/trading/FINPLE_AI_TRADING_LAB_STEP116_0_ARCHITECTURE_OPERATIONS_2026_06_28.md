@@ -3481,6 +3481,21 @@ This is a public dashboard and homepage router review planning contract, not a h
 
 Planning the future public dashboard and router review is allowed now; changing the homepage router or adding dashboard UI is not. Public dashboard work remains blocked until live-guarded review is separately complete, and any public copy must avoid implying live trading availability, order submission readiness, or user-facing order controls.
 
+## Step 116-5F Trading Owner Read-Only Evidence Action Queue
+
+The first Trading Owner Read-Only Evidence Action Queue contract is:
+
+```text
+data/processed/trading_lab_step116_owner_read_only_evidence_action_queue_contract.json
+scripts/generate-trading-owner-read-only-evidence-action-queue-contract.cjs
+scripts/generate-trading-owner-read-only-evidence-action-queue-contract.test.cjs
+npm run check:trading-owner-read-only-evidence-action-queue
+```
+
+This is an owner-facing action queue contract, not a private packet creator, hash generator, KIS call, provider call, approval importer, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records the future `owner_read_only_evidence_action_queue` items: mock trading portal status snapshot hash, approved-by hash, account-id hash, evidence ticket hash, revocation plan hash, approval and expiry timestamps, read-scope review, forbidden-action review, later local redacted packet validation, later owner import review request, and later provider-call authorization review request.
+
+The queue is ready for owner guidance, but it does not request raw inputs now, does not create `data/private/trading/read_only_approval.redacted.json`, does not implement a hash helper, does not generate hashes, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, and live trading remain blocked until separate owner-assisted reviews are completed.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

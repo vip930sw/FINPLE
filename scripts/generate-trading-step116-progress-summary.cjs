@@ -221,6 +221,11 @@ const TRACKED_READINESS_CONTRACTS = [
   ],
   ["redactedReadOnlyApprovalTemplate", "Redacted read-only approval template", "trading_lab_step116_redacted_read_only_approval_template.json"],
   [
+    "ownerReadOnlyEvidenceActionQueue",
+    "Owner read-only evidence action queue",
+    "trading_lab_step116_owner_read_only_evidence_action_queue_contract.json",
+  ],
+  [
     "redactedReadOnlyApprovalTemplateValidatorFixtures",
     "Redacted read-only approval template validator fixtures",
     "trading_lab_step116_redacted_read_only_approval_template_validator_fixtures.json",
@@ -482,6 +487,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-mock-approval-evidence-validator",
   "check:trading-mock-approval-evidence-validator-fixtures",
   "check:trading-redacted-read-only-approval-template",
+  "check:trading-owner-read-only-evidence-action-queue",
   "check:trading-redacted-read-only-approval-template-validator",
   "check:trading-redacted-read-only-approval-template-validator-fixtures",
   "check:trading-redacted-approval-hash-helper",
@@ -561,6 +567,7 @@ const FORBIDDEN_RUNTIME_ARTIFACTS = [
 const FORBIDDEN_SCENARIO_ARTIFACT = path.join("data", "processed", "scenario_monthly_returns.csv");
 const REMAINING_TRADING_GATES = [
   "owner_redacted_read_only_approval_packet_import_blocked_pending_owner_packet",
+  "owner_read_only_evidence_action_queue_ready_import_still_blocked",
   "private_read_only_provider_implementation_review_blocked_pending_owner_packet_import",
   "read_only_provider_call_authorization_blocked_pending_owner_packet_and_provider_review",
   "read_only_provider_call_authorization_review_result_not_owner_supplied",
