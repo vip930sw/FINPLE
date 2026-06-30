@@ -321,7 +321,8 @@ Step 116 should be split into small commits and PR-sized phases:
 69. Manual order permission packet validation runbook.
 70. Manual order permission validation result receipt.
 71. Manual order permission validation result receipt local validator.
-72. Live guarded execution only after manual approval.
+72. Manual order permission validation result receipt validator fixtures.
+73. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2295,6 +2296,21 @@ npm run check:trading-manual-order-permission-validation-result-receipt-validato
 The validator requires an explicit `--receipt <path>` argument and does not use a default private packet path. It accepts only a redacted receipt object with opaque receipt id, validation status, validation timestamp, validator version hash, packet shape hash, error code hashes, `redactionVersion=v1`, and explicit packet-path/raw-value/import/provider/order/runtime/UI flags set to false.
 
 Validator success still does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4N Trading Manual Order Permission Validation Result Receipt Validator Fixtures
+
+The first synthetic fixture regression contract for the validation result receipt validator is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-validation-result-receipt-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-validation-result-receipt-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-validation-result-receipt-validator-fixtures
+```
+
+This is a manual_order_permission_validation_result_receipt_validator_fixtures contract, not a real receipt, private packet reader, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid redacted receipt shapes for local validator regression only.
+
+Fixture readiness still does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not record a real validation receipt, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 

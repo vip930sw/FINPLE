@@ -1,0 +1,698 @@
+{
+  "contractVersion": "trading-lab-step116-manual-order-permission-validation-result-receipt-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-4N",
+  "scope": "manual_order_permission_validation_result_receipt_validator_fixtures",
+  "sourceFiles": {
+    "validationResultReceiptContract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt.json",
+    "validator": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "validationReceiptRecordedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic validation-result receipt fixtures only; no real receipt, private packet path, raw account, operator, credential, provider payload, order payload, token, app key, app secret, execution, fill, or order confirmation content",
+    "validatorPath": "scripts\\validate-trading-manual-order-permission-validation-result-receipt.cjs",
+    "validSyntheticValidationResultReceipt": {
+      "validationReceiptId": "validation_receipt_fixture_001",
+      "validationStatus": "valid",
+      "validatedAt": "2026-06-29T00:00:00.000Z",
+      "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+      "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+      "errorCodeHashes": [],
+      "redactionVersion": "v1",
+      "packetPathRecorded": false,
+      "rawValuesRecorded": false,
+      "permissionPacketImportedNow": false,
+      "providerCallsAllowed": false,
+      "orderSubmissionAllowed": false,
+      "runtimeRouteAllowed": false,
+      "publicUiAllowed": false
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_required_field",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "unknown_field",
+        "expectedErrorCodes": [
+          "unknown_field"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false,
+          "unexpected": "redacted_fixture_value"
+        }
+      },
+      {
+        "id": "invalid_validation_receipt_id",
+        "expectedErrorCodes": [
+          "invalid_validation_receipt_id"
+        ],
+        "receipt": {
+          "validationReceiptId": "receipt_fixture",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_validation_status",
+        "expectedErrorCodes": [
+          "invalid_validation_status"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "approved",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "malformed_timestamp",
+        "expectedErrorCodes": [
+          "malformed_timestamp"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "malformed_hash_field",
+        "expectedErrorCodes": [
+          "malformed_hash_field"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "not-a-labelled-hash",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "malformed_error_code_hash",
+        "expectedErrorCodes": [
+          "malformed_error_code_hash"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [
+            "not-a-labelled-hash"
+          ],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "invalid_redaction_version",
+        "expectedErrorCodes": [
+          "invalid_redaction_version"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v2",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "packet_path_recorded_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": true,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "raw_values_recorded_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": true,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "permission_packet_imported_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": true,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": true,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": true,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": true,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "public_ui_flag_enabled",
+        "expectedErrorCodes": [
+          "forbidden_flag_enabled"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": true
+        }
+      },
+      {
+        "id": "forbidden_secret_value",
+        "expectedErrorCodes": [
+          "forbidden_string_value"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:fixture_validator_version_hash_123456",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [
+            "hmac-sha256:app-secret-fixture-value"
+          ],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      },
+      {
+        "id": "forbidden_private_path_marker",
+        "expectedErrorCodes": [
+          "forbidden_string_value"
+        ],
+        "receipt": {
+          "validationReceiptId": "validation_receipt_fixture_001",
+          "validationStatus": "valid",
+          "validatedAt": "2026-06-29T00:00:00.000Z",
+          "validatorVersionHash": "sha256:manual_order_permission.redacted.json_marker",
+          "packetShapeHash": "hmac-sha256:fixture_packet_shape_hash_123456",
+          "errorCodeHashes": [],
+          "redactionVersion": "v1",
+          "packetPathRecorded": false,
+          "rawValuesRecorded": false,
+          "permissionPacketImportedNow": false,
+          "providerCallsAllowed": false,
+          "orderSubmissionAllowed": false,
+          "runtimeRouteAllowed": false,
+          "publicUiAllowed": false
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_required_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "unknown_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "unknown_field"
+          ],
+          "actualErrorCodes": [
+            "unknown_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_validation_receipt_id",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_validation_receipt_id"
+          ],
+          "actualErrorCodes": [
+            "invalid_validation_receipt_id"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_validation_status",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_validation_status"
+          ],
+          "actualErrorCodes": [
+            "invalid_validation_status"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_timestamp",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_timestamp"
+          ],
+          "actualErrorCodes": [
+            "malformed_timestamp"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_hash_field",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "actualErrorCodes": [
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "malformed_error_code_hash",
+          "valid": false,
+          "expectedErrorCodes": [
+            "malformed_error_code_hash"
+          ],
+          "actualErrorCodes": [
+            "malformed_error_code_hash"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "invalid_redaction_version",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_redaction_version"
+          ],
+          "actualErrorCodes": [
+            "invalid_redaction_version"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "packet_path_recorded_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_values_recorded_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "permission_packet_imported_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "public_ui_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "forbidden_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "forbidden_secret_value",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_string_value"
+          ],
+          "actualErrorCodes": [
+            "forbidden_string_value"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "forbidden_private_path_marker",
+          "valid": false,
+          "expectedErrorCodes": [
+            "forbidden_string_value"
+          ],
+          "actualErrorCodes": [
+            "forbidden_string_value",
+            "malformed_hash_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "receiptContractReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsReceiptValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noRuntimeArtifacts": true,
+    "validationReceiptRecordedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "receiptContractStatus": "receipt_contract_ready_pending_owner_validation_result_review",
+    "invalidFixtureIds": [
+      "missing_required_field",
+      "unknown_field",
+      "invalid_validation_receipt_id",
+      "invalid_validation_status",
+      "malformed_timestamp",
+      "malformed_hash_field",
+      "malformed_error_code_hash",
+      "invalid_redaction_version",
+      "packet_path_recorded_flag_enabled",
+      "raw_values_recorded_flag_enabled",
+      "permission_packet_imported_flag_enabled",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled",
+      "public_ui_flag_enabled",
+      "forbidden_secret_value",
+      "forbidden_private_path_marker"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_manual_order_permission_validation_result_receipt_validator_regression",
+    "readyForManualOrderPermissionValidationResultReceiptValidatorRegression": true,
+    "fixturesOnly": true,
+    "validationReceiptRecordedNow": false,
+    "packetPathRecorded": false,
+    "rawValuesRecorded": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
