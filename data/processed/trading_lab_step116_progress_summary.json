@@ -110,7 +110,8 @@
       "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
       "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
       "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
-      "alphaKrMarketBoundary": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json"
+      "alphaKrMarketBoundary": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
+      "readOnlyApprovalPacketPreparationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json"
     }
   },
   "outputFiles": {
@@ -131,10 +132,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 104,
-    "trackedContractsReady": 104,
+    "trackedContractsTotal": 105,
+    "trackedContractsReady": 105,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 142,
+    "requiredNpmScriptsTotal": 143,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1072,6 +1073,15 @@
       "title": "Alpha KR market boundary",
       "filePath": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
       "status": "alpha_kr_market_boundary_ready_provider_calls_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyApprovalPacketPreparationRunbook",
+      "title": "Read-only approval packet preparation runbook",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
+      "status": "runbook_ready_for_owner_assisted_read_only_approval_packet_preparation_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

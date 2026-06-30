@@ -400,6 +400,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Alpha KR market boundary",
     "trading_lab_step116_alpha_kr_market_boundary_contract.json",
   ],
+  [
+    "readOnlyApprovalPacketPreparationRunbook",
+    "Read-only approval packet preparation runbook",
+    "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -545,6 +550,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-live-guarded-manual-test-plan",
   "check:trading-public-dashboard-router-review-plan",
   "check:trading-alpha-kr-market-boundary",
+  "check:trading-read-only-approval-packet-preparation-runbook",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

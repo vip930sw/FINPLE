@@ -3511,6 +3511,21 @@ This is a provider-boundary contract, not an Alpha Vantage call, KIS call, Korea
 
 The boundary allows future review of Korean market data provider choices, but it does not assume Alpha Vantage Korean symbol coverage and does not treat asset proxy `supportedTickers` as a trading allowlist. Korean trading read-only work remains on the KIS mock-to-reviewed-read-only path, and `scenario_monthly_returns.csv` remains blocked by the separate Step 114 source-policy and writer gates.
 
+## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
+
+The first Trading Read-Only Approval Packet Preparation Runbook contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json
+scripts/generate-trading-read-only-approval-packet-preparation-runbook-contract.cjs
+scripts/generate-trading-read-only-approval-packet-preparation-runbook-contract.test.cjs
+npm run check:trading-read-only-approval-packet-preparation-runbook
+```
+
+This is an owner-assisted preparation runbook contract, not a hash generator, private packet creator, packet validator execution, KIS call, Alpha Vantage call, provider call, approval importer, runtime route, DB writer, public UI, order adapter implementation, order submission, or live trading approval. It records the future sequence for preparing a redacted read-only approval packet: explicit owner request, mock portal status confirmation, Render mock-scope confirmation without copying values, private pepper outside the repo, raw inputs outside the repo, hash-only output, redacted template fields only, false provider/order/runtime/UI flags, later explicit-path local validation, and no committed private packet or hash output.
+
+The runbook is ready as guidance, but it does not request raw inputs now, does not generate hashes, does not create or read `data/private/trading/read_only_approval.redacted.json`, and does not import approval evidence. Provider calls, runtime routes, DB writes, public UI, order submission, live trading, and `scenario_monthly_returns.csv` remain blocked by their separate gates.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
