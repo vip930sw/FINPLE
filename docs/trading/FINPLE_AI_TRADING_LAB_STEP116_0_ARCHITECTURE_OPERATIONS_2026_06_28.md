@@ -276,28 +276,29 @@ Step 116 should be split into small commits and PR-sized phases:
 24. Private operator access implementation preflight.
 25. Private shadow runtime implementation preflight.
 26. Read-only approval import implementation preflight.
-27. Trading Step 116 progress summary.
-28. Read-only provider request envelope validation contract.
-29. Read-only provider request envelope validation preflight.
-30. Read-only provider request envelope local validator.
-31. Read-only provider request envelope contract.
-32. Read-only provider response envelope contract.
-33. Read-only snapshot normalization contract.
-34. Read-only snapshot risk input contract.
-35. Read-only snapshot risk input local validator.
-36. Private shadow order intent contract.
-37. Private shadow order intent local validator.
-38. Private shadow intent audit event contract.
-39. Private shadow intent audit event local validator.
-40. Private shadow runtime review packet contract.
-41. Private shadow runtime review packet local validator.
-42. Private shadow operator access contract.
-43. Private shadow operator access local validator.
-44. Private shadow runtime preflight.
-45. KIS order adapter design review.
-46. Manual order permission preflight.
-47. Manual order permission local validator.
-48. Live guarded execution only after manual approval.
+27. Read-only provider call authorization preflight.
+28. Trading Step 116 progress summary.
+29. Read-only provider request envelope validation contract.
+30. Read-only provider request envelope validation preflight.
+31. Read-only provider request envelope local validator.
+32. Read-only provider request envelope contract.
+33. Read-only provider response envelope contract.
+34. Read-only snapshot normalization contract.
+35. Read-only snapshot risk input contract.
+36. Read-only snapshot risk input local validator.
+37. Private shadow order intent contract.
+38. Private shadow order intent local validator.
+39. Private shadow intent audit event contract.
+40. Private shadow intent audit event local validator.
+41. Private shadow runtime review packet contract.
+42. Private shadow runtime review packet local validator.
+43. Private shadow operator access contract.
+44. Private shadow operator access local validator.
+45. Private shadow runtime preflight.
+46. KIS order adapter design review.
+47. Manual order permission preflight.
+48. Manual order permission local validator.
+49. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1887,6 +1888,36 @@ Future read-only approval import implementation review remains blocked until `da
 The boundary allows only a later private-worker import implementation review. It forbids default private packet reads, packet writes now, packet import now, hash generation now, provider calls, order submission, runtime routes, public UI, database writes now, raw account identifiers, raw operator names, raw evidence text, raw revocation plans, raw provider payloads, raw order payloads, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows.
 
 Preflight success still does not implement `server/src/services/trading/readOnlyApprovalImport.js`, does not create or read `data/private/trading/read_only_approval.redacted.json`, does not generate hashes, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
+
+## Step 116-3F Trading Read-Only Provider Call Authorization Preflight
+
+The first Trading Read-Only Provider Call Authorization Preflight is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_call_authorization_preflight.json
+scripts/generate-trading-read-only-provider-call-authorization-preflight.cjs
+scripts/generate-trading-read-only-provider-call-authorization-preflight.test.cjs
+npm run check:trading-read-only-provider-call-authorization-preflight
+```
+
+This is a read_only_provider_call_authorization_preflight contract, not a KIS provider implementation, token refresh path, provider caller, approval importer, private dashboard, runtime route, DB storage implementation, public UI, or order submission path. It records that even read-only provider call authorization remains blocked until owner approval import and private read-only provider implementation reviews are handled separately.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `providerCallAuthorizationAllowedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `dbMigrationAllowed=false`
+- `liveTradingAllowed=false`
+
+Future read-only provider call authorization review remains blocked until `data/private/trading/read_only_approval.redacted.json` is prepared outside repo commits, the approval import review is recorded, and the private read-only provider implementation review is recorded. The preflight requires the read-only approval import implementation preflight, private read-only provider implementation preflight, request envelope validation preflight, request/response envelope contracts, snapshot normalization and risk-input contracts, private shadow runtime implementation preflight, and env risk-gate contract to remain fail-closed.
+
+The boundary allows only a later private-worker, read-only provider call authorization review. It forbids provider calls now, token refresh now, default private packet reads, runtime routes, public UI, database writes now, app keys, app secrets, access tokens, full account numbers, raw account identifiers, raw provider payloads, raw order payloads, order confirmations, execution identifiers, fill payloads, live order endpoints, and scenario monthly return rows.
+
+Preflight success still does not implement `server/src/services/trading/kisReadOnlyProvider.js`, does not create or read `data/private/trading/read_only_approval.redacted.json`, does not refresh tokens, does not call KIS, does not enable provider calls, does not create runtime routes or UI, does not connect to the database, does not submit orders, and does not approve live trading.
 
 ## Explicit Non-Goals
 

@@ -100,6 +100,7 @@
     "check:trading-private-operator-access-implementation-preflight": "node scripts/generate-trading-private-operator-access-implementation-preflight.cjs --check && node --test scripts/generate-trading-private-operator-access-implementation-preflight.test.cjs",
     "check:trading-private-shadow-runtime-implementation-preflight": "node scripts/generate-trading-private-shadow-runtime-implementation-preflight.cjs --check && node --test scripts/generate-trading-private-shadow-runtime-implementation-preflight.test.cjs",
     "check:trading-read-only-approval-import-implementation-preflight": "node scripts/generate-trading-read-only-approval-import-implementation-preflight.cjs --check && node --test scripts/generate-trading-read-only-approval-import-implementation-preflight.test.cjs",
+    "check:trading-read-only-provider-call-authorization-preflight": "node scripts/generate-trading-read-only-provider-call-authorization-preflight.cjs --check && node --test scripts/generate-trading-read-only-provider-call-authorization-preflight.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
