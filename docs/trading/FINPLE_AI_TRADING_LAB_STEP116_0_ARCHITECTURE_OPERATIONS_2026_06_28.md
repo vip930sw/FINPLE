@@ -1901,6 +1901,33 @@ The validator accepts only redacted, hash-only manual order permission evidence 
 
 Validator success still does not import permission evidence, implement a KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
 
+## Step 116-3T Trading Manual Order Permission Validator Fixtures
+
+The first Trading Manual Order Permission Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-validator-fixtures
+```
+
+This is a manual_order_permission_validator_fixtures contract, not a permission importer, KIS order adapter, provider caller, runtime route, DB migration, private dashboard, public UI, or order submission path. It records synthetic valid/invalid fixture shapes for the local hash-only manual order permission validator.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `permissionImportAllowed=false`
+- `liveTradingAllowed=false`
+
+The valid synthetic fixture is a live_guarded, hash-only manual order permission packet with time-boxed approval timestamps, non-empty symbol hashes, bounded order caps, and redacted operator/approval/policy/review/kill-switch/risk-gate/credential/replay/history/audit/revocation hashes. Invalid fixtures cover missing approval hash, shadow mode, enabled provider/order/runtime flags, empty symbol hashes, expired permission, overlong permission windows, excessive numeric limits, and private-reference fields.
+
+Fixture success still does not import manual order permission evidence, implement the KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:
