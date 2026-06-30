@@ -131,6 +131,7 @@
     "check:trading-manual-order-permission-validation-result-receipt-review-result-validator-fixtures": "node scripts/generate-trading-manual-order-permission-validation-result-receipt-review-result-validator-fixtures.cjs --check && node --test scripts/generate-trading-manual-order-permission-validation-result-receipt-review-result-validator-fixtures.test.cjs",
     "check:trading-mock-approval-evidence": "node scripts/generate-trading-mock-approval-evidence-receipt.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-mock-approval-evidence-validator": "node --test scripts/validate-trading-mock-approval-evidence-receipt.test.cjs",
+    "check:trading-mock-approval-evidence-validator-fixtures": "node scripts/generate-trading-mock-approval-evidence-receipt-validator-fixtures.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt-validator-fixtures.test.cjs",
     "check:trading-redacted-read-only-approval-template": "node scripts/generate-trading-redacted-read-only-approval-template.cjs --check && node --test scripts/generate-trading-redacted-read-only-approval-template.test.cjs",
     "check:trading-redacted-read-only-approval-template-validator": "node --test scripts/validate-trading-redacted-read-only-approval-template.test.cjs",
     "check:trading-redacted-approval-hash-helper": "node scripts/generate-trading-redacted-approval-hash-helper-contract.cjs --check && node --test scripts/generate-trading-redacted-approval-hash-helper-contract.test.cjs",
