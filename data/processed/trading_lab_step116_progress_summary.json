@@ -105,7 +105,8 @@
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResult": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_contract.json",
       "readOnlyProviderResponseEnvelopeValidationResultReceiptReviewResultValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_result_validator_fixtures.json",
       "tradingLaunchReadinessPlan": "data\\processed\\trading_lab_step116_launch_readiness_plan_contract.json",
-      "tradingRulesAndRiskLimitsReview": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json"
+      "tradingRulesAndRiskLimitsReview": "data\\processed\\trading_lab_step116_trading_rules_and_risk_limits_review_contract.json",
+      "paperShadowOperationalTestPlan": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json"
     }
   },
   "outputFiles": {
@@ -126,10 +127,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 99,
-    "trackedContractsReady": 99,
+    "trackedContractsTotal": 100,
+    "trackedContractsReady": 100,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 137,
+    "requiredNpmScriptsTotal": 138,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1025,6 +1026,15 @@
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
+    },
+    {
+      "id": "paperShadowOperationalTestPlan",
+      "title": "Paper shadow operational test plan",
+      "filePath": "data\\processed\\trading_lab_step116_paper_shadow_operational_test_plan_contract.json",
+      "status": "paper_shadow_operational_test_plan_ready_execution_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
     }
   ],
   "remainingTradingGates": [
@@ -1041,6 +1051,7 @@
     "risk_gate_clearance_not_recorded_for_order_submission",
     "live_guarded_order_adapter_implementation_review_not_started",
     "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
+    "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
     "public_homepage_router_blocked_until_live_guarded_review_complete"
   ],
   "checks": {
@@ -1091,6 +1102,7 @@
       "risk_gate_clearance_not_recorded_for_order_submission",
       "live_guarded_order_adapter_implementation_review_not_started",
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
+      "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
       "public_homepage_router_blocked_until_live_guarded_review_complete"
     ]
   }

@@ -3436,6 +3436,21 @@ This is a rules-review contract, not a runtime rules service, KIS caller, provid
 
 Rule planning is allowed now; runtime application is not. Wildcard symbols from environment parsing remain planning evidence only and must be narrowed before any `live_guarded` review. The review cannot clear the kill switch, clear the risk gate, create manual approval, call KIS, create routes/UI/DB storage, submit orders, or approve public dashboard/router rollout.
 
+## Step 116-5C Trading Paper Shadow Operational Test Plan
+
+The first Trading Paper Shadow Operational Test Plan contract is:
+
+```text
+data/processed/trading_lab_step116_paper_shadow_operational_test_plan_contract.json
+scripts/generate-trading-paper-shadow-operational-test-plan-contract.cjs
+scripts/generate-trading-paper-shadow-operational-test-plan-contract.test.cjs
+npm run check:trading-paper-shadow-operational-test-plan
+```
+
+This is an operational test planning contract, not a paper/shadow runtime executor, KIS caller, provider caller, route, dashboard, DB writer, order adapter implementation, or live trading approval. It records the future `paper_shadow_operational_test_plan` evidence: paper ledger replay windows, shadow intent replay windows, risk-gate recomputation for each intent, trading rules review reference, dry-run replay reference, shadow history reference, audit-event review, blocked-intent review, quote/FX/account-state snapshot hash review, operator notes, and rollback/kill-switch drill.
+
+Planning the paper/shadow operational test is allowed now; executing it is not. Execution stays blocked until private shadow runtime review, owner evidence import, and operator access review are recorded separately. Test success still cannot approve provider calls, order submission, runtime routes, public UI, DB writes, live-guarded manual testing, or public dashboard/router rollout.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
