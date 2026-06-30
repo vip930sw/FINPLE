@@ -306,11 +306,12 @@ Step 116 should be split into small commits and PR-sized phases:
 54. Private shadow runtime review packet validator fixtures.
 55. Private shadow operator access contract.
 56. Private shadow operator access local validator.
-57. Private shadow runtime preflight.
-58. KIS order adapter design review.
-59. Manual order permission preflight.
-60. Manual order permission local validator.
-61. Live guarded execution only after manual approval.
+57. Private shadow operator access validator fixtures.
+58. Private shadow runtime preflight.
+59. KIS order adapter design review.
+60. Manual order permission preflight.
+61. Manual order permission local validator.
+62. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -1818,6 +1819,33 @@ Current state remains:
 The validator accepts only shadow-mode, hash-only operator access evidence with time-boxed sessions, non-empty allowed/denied action hash arrays, operator/auth/session/policy/review/audit/kill-switch/private-network hashes, and explicit provider/order/runtime/UI allow flags set to false.
 
 Validator success still does not implement authentication or authorization, create private dashboard UI, create runtime routes, import private approval evidence, call KIS, enable provider calls, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-3S Trading Private Shadow Operator Access Validator Fixtures
+
+The first Trading Private Shadow Operator Access Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_private_shadow_operator_access_validator_fixtures.json
+scripts/generate-trading-private-shadow-operator-access-validator-fixtures.cjs
+scripts/generate-trading-private-shadow-operator-access-validator-fixtures.test.cjs
+npm run check:trading-private-shadow-operator-access-validator-fixtures
+```
+
+This is a private_shadow_operator_access_validator_fixtures contract, not an authentication implementation, authorization service, private dashboard, runtime route, KIS reader, provider adapter, DB migration, public UI, provider caller, order submitter, or approval importer. It records synthetic valid/invalid fixture shapes for the local hash-only private shadow operator-access validator.
+
+Current state remains:
+
+- `fixturesOnly=true`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `runtimeRouteAllowed=false`
+- `publicUiAllowed=false`
+- `authImplementationAllowed=false`
+- `liveTradingAllowed=false`
+
+The valid synthetic fixture is a shadow-mode, hash-only operator-access evidence packet with time-boxed session timestamps, non-empty allowed/denied action hashes, and redacted operator/role/auth/session/policy/runtime-review/audit/kill-switch/private-network hashes. Invalid fixtures cover missing operator ID hash, live mode, enabled provider/order/runtime/UI flags, empty action arrays, overlong sessions, malformed hashes, and private-path reference fields.
+
+Fixture success still does not implement authentication or authorization, create private dashboard UI, create runtime routes, import private approval evidence, call KIS, enable provider calls, create DB storage, submit or cancel orders, or approve live trading.
 
 ## Step 116-2C Trading Manual Order Permission Preflight
 
