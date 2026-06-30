@@ -325,7 +325,8 @@ Step 116 should be split into small commits and PR-sized phases:
 73. Manual order permission validation result receipt review preflight.
 74. Manual order permission validation result receipt review preflight local validator.
 75. Manual order permission validation result receipt review preflight validator fixtures.
-76. Live guarded execution only after manual approval.
+76. Manual order permission validation result receipt review runbook.
+77. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2356,6 +2357,19 @@ npm run check:trading-manual-order-permission-validation-result-receipt-review-p
 ```
 
 This is a manual_order_permission_validation_result_receipt_review_preflight_validator_fixtures contract, not a real validation receipt, private packet reader, permission importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid review-preflight shapes for local validator regression only.
+
+## Step 116-4R Trading Manual Order Permission Validation Result Receipt Review Runbook
+
+The first owner-assisted Trading Manual Order Permission Validation Result Receipt Review Runbook is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validation_result_receipt_review_runbook_contract.json
+scripts/generate-trading-manual-order-permission-validation-result-receipt-review-runbook-contract.cjs
+scripts/generate-trading-manual-order-permission-validation-result-receipt-review-runbook-contract.test.cjs
+npm run check:trading-manual-order-permission-validation-result-receipt-review-runbook
+```
+
+This is a manual_order_permission_validation_result_receipt_review_runbook contract, not a real validation receipt reader, private packet reader, permission importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records the future owner-assisted receipt review command shape for an explicit redacted validation-result receipt path while keeping current-step receipt reads, validation execution, imports, provider calls, orders, routes, UI, DB writes, and live trading closed.
 
 Fixture readiness still does not create or read `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
