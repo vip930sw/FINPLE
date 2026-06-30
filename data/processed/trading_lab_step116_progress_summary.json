@@ -44,6 +44,7 @@
       "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
       "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
       "manualOrderPermissionHashHelper": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+      "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -83,10 +84,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 56,
-    "trackedContractsReady": 56,
+    "trackedContractsTotal": 57,
+    "trackedContractsReady": 57,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 74,
+    "requiredNpmScriptsTotal": 75,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -421,6 +422,15 @@
       "title": "Manual order permission hash helper",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
       "status": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionHashHelperPreflight",
+      "title": "Manual order permission hash helper preflight",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+      "status": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

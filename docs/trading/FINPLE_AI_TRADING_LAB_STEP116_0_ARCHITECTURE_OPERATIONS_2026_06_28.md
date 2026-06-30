@@ -2019,6 +2019,36 @@ The future helper must use HMAC-SHA256 with a private pepper outside the repo, a
 
 Contract success still does not implement `scripts/create-trading-manual-order-permission-hashes.cjs`, create hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
 
+## Step 116-3X Trading Manual Order Permission Hash Helper Preflight
+
+The first Trading Manual Order Permission Hash Helper Preflight is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_helper_preflight.json
+scripts/generate-trading-manual-order-permission-hash-helper-preflight.cjs
+scripts/generate-trading-manual-order-permission-hash-helper-preflight.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-preflight
+```
+
+This is a manual_order_permission_hash_helper_preflight contract, not a hash helper implementation, hash generation run, manual order permission packet, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records that manual order hash preparation remains deferred until an explicit owner-assisted local step.
+
+Current state remains:
+
+- `preflightOnly=true`
+- `ownerHashPreparationDeferred=true`
+- `hashHelperImplementationAllowed=false`
+- `hashGenerationAllowed=false`
+- `permissionPacketCreatedNow=false`
+- `permissionPacketImportedNow=false`
+- `providerCallsAllowed=false`
+- `orderSubmissionAllowed=false`
+- `dbMigrationAllowed=false`
+- `publicUiAllowed=false`
+- `runtimeRouteAllowed=false`
+- `liveTradingAllowed=false`
+
+Preflight success still does not implement the helper, request raw values or private pepper, generate hashes, create `data/private/trading/manual_order_permission.redacted.json`, import permission evidence, call KIS, enable provider calls, create runtime routes, create UI, submit or cancel orders, or approve live trading.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:

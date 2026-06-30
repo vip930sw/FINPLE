@@ -93,6 +93,7 @@
     "check:trading-live-guarded-order-adapter-implementation-preflight": "node scripts/generate-trading-live-guarded-order-adapter-implementation-preflight.cjs --check && node --test scripts/generate-trading-live-guarded-order-adapter-implementation-preflight.test.cjs",
     "check:trading-redacted-manual-order-permission-template": "node scripts/generate-trading-redacted-manual-order-permission-template.cjs --check && node --test scripts/generate-trading-redacted-manual-order-permission-template.test.cjs",
     "check:trading-manual-order-permission-hash-helper": "node scripts/generate-trading-manual-order-permission-hash-helper-contract.cjs --check && node --test scripts/generate-trading-manual-order-permission-hash-helper-contract.test.cjs",
+    "check:trading-manual-order-permission-hash-helper-preflight": "node scripts/generate-trading-manual-order-permission-hash-helper-preflight.cjs --check && node --test scripts/generate-trading-manual-order-permission-hash-helper-preflight.test.cjs",
     "check:trading-mock-approval-evidence": "node scripts/generate-trading-mock-approval-evidence-receipt.cjs --check && node --test scripts/generate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-mock-approval-evidence-validator": "node --test scripts/validate-trading-mock-approval-evidence-receipt.test.cjs",
     "check:trading-redacted-read-only-approval-template": "node scripts/generate-trading-redacted-read-only-approval-template.cjs --check && node --test scripts/generate-trading-redacted-read-only-approval-template.test.cjs",
