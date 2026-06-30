@@ -2093,6 +2093,19 @@ This is a pure local validator for the implementation review contract, not a has
 
 The validator checks that the future helper path and permission packet path stay fixed, current-step helper creation/run/raw input/private pepper actions remain disabled, local-only execution and synthetic test boundaries remain fail-closed, helper output labels and forbidden content lists remain complete, and provider/order/runtime/UI allow flags stay false.
 
+## Step 116-4A Trading Manual Order Permission Hash Helper Implementation Review Validator Fixtures
+
+The first Trading Manual Order Permission Hash Helper Implementation Review Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json
+scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-validator-fixtures.cjs
+scripts/generate-trading-manual-order-permission-hash-helper-implementation-review-validator-fixtures.test.cjs
+npm run check:trading-manual-order-permission-hash-helper-implementation-review-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the local implementation review validator, not a hash helper implementation, hash generator, permission packet writer/importer, KIS order adapter, provider caller, runtime route, DB migration, public UI, or order submission path. It records one redacted valid implementation-review contract fixture and invalid fixture definitions that must fail locally for helper creation/run, raw input or pepper requests, changed future paths, opened credential/network/packet-write boundaries, and enabled provider/order/runtime flags.
+
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
 The first Trading Private Read-Only Provider Implementation Preflight is:

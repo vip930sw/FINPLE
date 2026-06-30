@@ -1,0 +1,2587 @@
+{
+  "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-validator-fixtures-v0.1",
+  "auditedAt": "2026-06-29T00:00:00Z",
+  "step": "Step 116-4A",
+  "scope": "manual_order_permission_hash_helper_implementation_review_validator_fixtures",
+  "sourceFiles": {
+    "implementationReviewContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
+    "validator": "scripts\\validate-trading-manual-order-permission-hash-helper-implementation-review-contract.cjs",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json"
+  },
+  "currentState": {
+    "fixturesOnly": true,
+    "helperImplementationCreatedNow": false,
+    "hashGenerationAllowed": false,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "validation": {
+    "redactionBoundary": "synthetic implementation-review contract fixtures only; no real account, operator, session, provider, order, app key, app secret, token, private pepper, or permission packet content",
+    "validatorPath": "scripts\\validate-trading-manual-order-permission-hash-helper-implementation-review-contract.cjs",
+    "currentStepCreatesHelper": false,
+    "currentStepRunsHelper": false,
+    "currentStepRequestsRawInputs": false,
+    "currentStepRequestsPrivatePepper": false,
+    "validSyntheticReviewContract": {
+      "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+      "auditedAt": "2026-06-29T00:00:00Z",
+      "step": "Step 116-3Y",
+      "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+      "sourceFiles": {
+        "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+        "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+        "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+        "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+        "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+      },
+      "outputFiles": {
+        "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+      },
+      "currentState": {
+        "contractOnly": true,
+        "helperImplementationCreatedNow": false,
+        "hashHelperImplementationAllowed": false,
+        "hashGenerationAllowed": false,
+        "permissionPacketCreatedNow": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "futureLocalOnlyImplementationReviewBoundary": {
+        "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+        "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+        "currentStepCreatesHelper": false,
+        "currentStepRunsHelper": false,
+        "currentStepRequestsRawInputs": false,
+        "currentStepRequestsPrivatePepper": false,
+        "implementationReviewCriteria": [
+          "local_only_node_cli_surface",
+          "no_network_access_or_provider_clients",
+          "crypto_hmac_sha256_only",
+          "private_pepper_outside_repo",
+          "raw_inputs_from_stdin_or_interactive_prompt_only",
+          "raw_inputs_not_allowed_in_command_args",
+          "raw_inputs_not_logged",
+          "raw_inputs_not_persisted",
+          "synthetic_test_vectors_only",
+          "deterministic_labelled_hash_output",
+          "stdout_only_by_default",
+          "no_permission_packet_write",
+          "no_permission_packet_import",
+          "no_provider_calls",
+          "no_order_submission",
+          "no_runtime_route",
+          "no_public_ui"
+        ],
+        "helperOutputLabels": [
+          "approvedByHash",
+          "operatorAccessHash",
+          "manualApprovalPolicyHash",
+          "orderAdapterDesignReviewHash",
+          "killSwitchClearanceHash",
+          "riskGateClearanceHash",
+          "orderCredentialBoundaryHash",
+          "dryRunReplayHash",
+          "shadowHistoryReviewHash",
+          "auditLoggerReadinessHash",
+          "allowedSymbolHashes",
+          "revocationPlanHash"
+        ],
+        "forbiddenReviewContent": [
+          "app_key",
+          "app_secret",
+          "access_token",
+          "full_account_number",
+          "raw_account_identifier",
+          "raw_operator_identifier",
+          "raw_session_token",
+          "raw_provider_payload",
+          "raw_order_payload",
+          "order_confirmation",
+          "execution_id",
+          "fill_payload",
+          "live_order_endpoint",
+          "scenario_monthly_return_row"
+        ],
+        "requiredTestBoundary": {
+          "syntheticFixturesOnly": true,
+          "realKisCredentialFixturesAllowed": false,
+          "rawAccountFixturesAllowed": false,
+          "rawOperatorFixturesAllowed": false,
+          "orderSubmissionFixturesAllowed": false
+        },
+        "requiredExecutionBoundary": {
+          "localOnly": true,
+          "networkAccessAllowed": false,
+          "providerClientImportsAllowed": false,
+          "commandLineRawSecretsAllowed": false,
+          "writesPermissionPacketByDefault": false
+        }
+      },
+      "checks": {
+        "contractOnly": true,
+        "hashHelperContractReady": true,
+        "hashHelperPreflightReady": true,
+        "manualOrderPermissionTemplateReady": true,
+        "liveGuardedAdapterPreflightStillBlocked": true,
+        "templateSampleHasOutputLabels": true,
+        "implementationReviewCriteriaReady": true,
+        "helperOutputLabelsReady": true,
+        "forbiddenReviewContentReady": true,
+        "architectureDocMentionsImplementationReview": true,
+        "noRuntimeArtifacts": true,
+        "hashHelperImplementationAllowed": false,
+        "hashGenerationAllowed": false,
+        "permissionPacketCreatedNow": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "runtimeRouteAllowed": false,
+        "publicUiAllowed": false,
+        "liveTradingAllowed": false
+      },
+      "evidence": {
+        "missingImplementationReviewCriteria": [],
+        "missingHelperOutputLabels": [],
+        "missingForbiddenReviewContent": [],
+        "forbiddenRuntimeArtifacts": [],
+        "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+        "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+        "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+        "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+      },
+      "readiness": {
+        "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+        "readyForFutureLocalHashHelperImplementationReview": true,
+        "helperImplementationCreatedNow": false,
+        "hashHelperImplementationAllowed": false,
+        "hashGenerationAllowed": false,
+        "permissionPacketCreatedNow": false,
+        "permissionPacketImportedNow": false,
+        "providerCallsAllowed": false,
+        "orderSubmissionAllowed": false,
+        "dbMigrationAllowed": false,
+        "publicUiAllowed": false,
+        "runtimeRouteAllowed": false,
+        "liveTradingAllowed": false,
+        "blockers": []
+      }
+    },
+    "syntheticInvalidFixtures": [
+      {
+        "id": "missing_output_files",
+        "expectedErrorCodes": [
+          "missing_required_field"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "helper_creation_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": true,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "helper_run_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": true,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "raw_input_request_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": true,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "private_pepper_request_enabled",
+        "expectedErrorCodes": [
+          "boundary_action_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": true,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_synthetic_test_vectors_rule",
+        "expectedErrorCodes": [
+          "missing_implementation_review_criterion"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "missing_revocation_plan_output_label",
+        "expectedErrorCodes": [
+          "missing_helper_output_label"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "changed_future_paths",
+        "expectedErrorCodes": [
+          "invalid_future_hash_helper_path",
+          "invalid_future_permission_packet_path"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts/hash-live-order-secret.cjs",
+            "futurePermissionPacketPath": "data/private/trading/live_order_permission.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "real_credential_fixture_boundary_opened",
+        "expectedErrorCodes": [
+          "test_boundary_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": true,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "network_boundary_opened",
+        "expectedErrorCodes": [
+          "execution_boundary_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": true,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "permission_packet_write_opened",
+        "expectedErrorCodes": [
+          "execution_boundary_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": true
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "provider_call_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": true,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "order_submission_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": false,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": true,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      },
+      {
+        "id": "runtime_route_flag_enabled",
+        "expectedErrorCodes": [
+          "allow_flag_enabled"
+        ],
+        "contract": {
+          "contractVersion": "trading-lab-step116-manual-order-permission-hash-helper-implementation-review-contract-v0.1",
+          "auditedAt": "2026-06-29T00:00:00Z",
+          "step": "Step 116-3Y",
+          "scope": "manual_order_permission_hash_helper_implementation_review_contract",
+          "sourceFiles": {
+            "manualOrderPermissionHashHelperContract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+            "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
+            "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+            "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+            "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+          },
+          "outputFiles": {
+            "contract": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json"
+          },
+          "currentState": {
+            "contractOnly": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "futureLocalOnlyImplementationReviewBoundary": {
+            "futureHashHelperPath": "scripts\\create-trading-manual-order-permission-hashes.cjs",
+            "futurePermissionPacketPath": "data\\private\\trading\\manual_order_permission.redacted.json",
+            "currentStepCreatesHelper": false,
+            "currentStepRunsHelper": false,
+            "currentStepRequestsRawInputs": false,
+            "currentStepRequestsPrivatePepper": false,
+            "implementationReviewCriteria": [
+              "local_only_node_cli_surface",
+              "no_network_access_or_provider_clients",
+              "crypto_hmac_sha256_only",
+              "private_pepper_outside_repo",
+              "raw_inputs_from_stdin_or_interactive_prompt_only",
+              "raw_inputs_not_allowed_in_command_args",
+              "raw_inputs_not_logged",
+              "raw_inputs_not_persisted",
+              "synthetic_test_vectors_only",
+              "deterministic_labelled_hash_output",
+              "stdout_only_by_default",
+              "no_permission_packet_write",
+              "no_permission_packet_import",
+              "no_provider_calls",
+              "no_order_submission",
+              "no_runtime_route",
+              "no_public_ui"
+            ],
+            "helperOutputLabels": [
+              "approvedByHash",
+              "operatorAccessHash",
+              "manualApprovalPolicyHash",
+              "orderAdapterDesignReviewHash",
+              "killSwitchClearanceHash",
+              "riskGateClearanceHash",
+              "orderCredentialBoundaryHash",
+              "dryRunReplayHash",
+              "shadowHistoryReviewHash",
+              "auditLoggerReadinessHash",
+              "allowedSymbolHashes",
+              "revocationPlanHash"
+            ],
+            "forbiddenReviewContent": [
+              "app_key",
+              "app_secret",
+              "access_token",
+              "full_account_number",
+              "raw_account_identifier",
+              "raw_operator_identifier",
+              "raw_session_token",
+              "raw_provider_payload",
+              "raw_order_payload",
+              "order_confirmation",
+              "execution_id",
+              "fill_payload",
+              "live_order_endpoint",
+              "scenario_monthly_return_row"
+            ],
+            "requiredTestBoundary": {
+              "syntheticFixturesOnly": true,
+              "realKisCredentialFixturesAllowed": false,
+              "rawAccountFixturesAllowed": false,
+              "rawOperatorFixturesAllowed": false,
+              "orderSubmissionFixturesAllowed": false
+            },
+            "requiredExecutionBoundary": {
+              "localOnly": true,
+              "networkAccessAllowed": false,
+              "providerClientImportsAllowed": false,
+              "commandLineRawSecretsAllowed": false,
+              "writesPermissionPacketByDefault": false
+            }
+          },
+          "checks": {
+            "contractOnly": true,
+            "hashHelperContractReady": true,
+            "hashHelperPreflightReady": true,
+            "manualOrderPermissionTemplateReady": true,
+            "liveGuardedAdapterPreflightStillBlocked": true,
+            "templateSampleHasOutputLabels": true,
+            "implementationReviewCriteriaReady": true,
+            "helperOutputLabelsReady": true,
+            "forbiddenReviewContentReady": true,
+            "architectureDocMentionsImplementationReview": true,
+            "noRuntimeArtifacts": true,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "runtimeRouteAllowed": true,
+            "publicUiAllowed": false,
+            "liveTradingAllowed": false
+          },
+          "evidence": {
+            "missingImplementationReviewCriteria": [],
+            "missingHelperOutputLabels": [],
+            "missingForbiddenReviewContent": [],
+            "forbiddenRuntimeArtifacts": [],
+            "manualOrderPermissionHashHelperContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+            "manualOrderPermissionHashHelperPreflightStatus": "preflight_ready_manual_order_hash_preparation_deferred_until_owner_request",
+            "redactedManualOrderPermissionTemplateStatus": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+            "liveGuardedOrderAdapterImplementationPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance"
+          },
+          "readiness": {
+            "status": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+            "readyForFutureLocalHashHelperImplementationReview": true,
+            "helperImplementationCreatedNow": false,
+            "hashHelperImplementationAllowed": false,
+            "hashGenerationAllowed": false,
+            "permissionPacketCreatedNow": false,
+            "permissionPacketImportedNow": false,
+            "providerCallsAllowed": false,
+            "orderSubmissionAllowed": false,
+            "dbMigrationAllowed": false,
+            "publicUiAllowed": false,
+            "runtimeRouteAllowed": false,
+            "liveTradingAllowed": false,
+            "blockers": []
+          }
+        }
+      }
+    ],
+    "evidence": {
+      "validFixturePasses": true,
+      "validFixtureErrorCodes": [],
+      "invalidFixturesFailWithExpectedCodes": true,
+      "invalidResults": [
+        {
+          "id": "missing_output_files",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_required_field"
+          ],
+          "actualErrorCodes": [
+            "missing_required_field"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "helper_creation_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "helper_run_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "raw_input_request_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "private_pepper_request_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "actualErrorCodes": [
+            "boundary_action_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_synthetic_test_vectors_rule",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_implementation_review_criterion"
+          ],
+          "actualErrorCodes": [
+            "missing_implementation_review_criterion"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "missing_revocation_plan_output_label",
+          "valid": false,
+          "expectedErrorCodes": [
+            "missing_helper_output_label"
+          ],
+          "actualErrorCodes": [
+            "missing_helper_output_label"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "changed_future_paths",
+          "valid": false,
+          "expectedErrorCodes": [
+            "invalid_future_hash_helper_path",
+            "invalid_future_permission_packet_path"
+          ],
+          "actualErrorCodes": [
+            "invalid_future_hash_helper_path",
+            "invalid_future_permission_packet_path"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "real_credential_fixture_boundary_opened",
+          "valid": false,
+          "expectedErrorCodes": [
+            "test_boundary_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "test_boundary_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "network_boundary_opened",
+          "valid": false,
+          "expectedErrorCodes": [
+            "execution_boundary_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "execution_boundary_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "permission_packet_write_opened",
+          "valid": false,
+          "expectedErrorCodes": [
+            "execution_boundary_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "execution_boundary_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "provider_call_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "order_submission_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        },
+        {
+          "id": "runtime_route_flag_enabled",
+          "valid": false,
+          "expectedErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "actualErrorCodes": [
+            "allow_flag_enabled"
+          ],
+          "missingExpectedErrorCodes": [],
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "fixturesOnly": true,
+    "implementationReviewContractReady": true,
+    "validatorExportsLocalValidation": true,
+    "architectureDocMentionsValidatorFixtures": true,
+    "validFixturePasses": true,
+    "invalidFixturesFailWithExpectedCodes": true,
+    "invalidFixtureCatalogReady": true,
+    "noForbiddenFixtureContent": true,
+    "noRuntimeArtifacts": true,
+    "helperImplementationCreatedNow": false,
+    "hashGenerationAllowed": false,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "implementationReviewContractStatus": "contract_ready_pending_manual_order_permission_hash_helper_local_only_implementation_review",
+    "invalidFixtureIds": [
+      "missing_output_files",
+      "helper_creation_enabled",
+      "helper_run_enabled",
+      "raw_input_request_enabled",
+      "private_pepper_request_enabled",
+      "missing_synthetic_test_vectors_rule",
+      "missing_revocation_plan_output_label",
+      "changed_future_paths",
+      "real_credential_fixture_boundary_opened",
+      "network_boundary_opened",
+      "permission_packet_write_opened",
+      "provider_call_flag_enabled",
+      "order_submission_flag_enabled",
+      "runtime_route_flag_enabled"
+    ],
+    "missingInvalidFixtureIds": [],
+    "forbiddenRuntimeArtifacts": [],
+    "forbiddenFixtureContent": []
+  },
+  "readiness": {
+    "status": "fixtures_ready_for_manual_order_permission_hash_helper_implementation_review_validator_regression",
+    "readyForImplementationReviewValidatorFixtureRegression": true,
+    "fixturesOnly": true,
+    "helperImplementationCreatedNow": false,
+    "hashGenerationAllowed": false,
+    "permissionPacketCreatedNow": false,
+    "permissionPacketImportedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "dbMigrationAllowed": false,
+    "publicUiAllowed": false,
+    "runtimeRouteAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": []
+  }
+}
