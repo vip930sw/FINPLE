@@ -3228,6 +3228,19 @@ npm run check:trading-read-only-provider-response-envelope-validation-result-rec
 
 This is a synthetic fixture regression contract, not a real validation receipt, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. The fixtures exercise local validator success and fail-closed cases for missing fields, review gate drift, boundary actions, forbidden-content catalog drift, future receipt path drift, allow flags, raw-value-shaped markers, and array-shape regressions.
 
+## Step 116-3L-G Trading Read-Only Provider Response Envelope Validation Result Receipt Review Runbook
+
+The first owner-assisted runbook contract for the read-only provider response envelope validation result receipt review is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_response_envelope_validation_result_receipt_review_runbook_contract.json
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-contract.cjs
+scripts/generate-trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook-contract.test.cjs
+npm run check:trading-read-only-provider-response-envelope-validation-result-receipt-review-runbook
+```
+
+This is a runbook contract, not a real validation receipt reader, provider response reader, KIS caller, provider caller, token refresh path, runtime route, DB storage implementation, public UI, or order submission path. It records that any future owner-assisted receipt review must use an explicit owner-supplied redacted receipt path and local validators, and that a successful review still does not authorize provider calls, runtime routes, UI, DB writes, orders, or live trading.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
