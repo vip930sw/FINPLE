@@ -333,7 +333,9 @@ Step 116 should be split into small commits and PR-sized phases:
 81. Manual order permission validation result receipt review result validator fixtures.
 82. Live-guarded order adapter implementation preflight local validator.
 83. Live-guarded order adapter implementation preflight validator fixtures.
-84. Live guarded execution only after manual approval.
+84. Redacted manual order permission template local validator.
+85. Redacted manual order permission template validator fixtures.
+86. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2035,6 +2037,31 @@ Current state remains:
 The template requires `mode=live_guarded`, approved-by hash, operator-access hash, manual-approval policy hash, order-adapter design review hash, kill-switch/risk-gate clearance hashes, order-credential boundary hash, dry-run replay hash, shadow-history review hash, audit-logger readiness hash, symbol hashes, order caps, revocation-plan hash, redaction version, and explicit provider/order/runtime/UI allow flags set to false.
 
 Template success still does not create `data/private/trading/manual_order_permission.redacted.json`, generate hashes, import permission evidence, implement the KIS order adapter, call KIS, enable provider calls, create runtime routes, create UI, create DB storage, submit or cancel orders, or approve live trading.
+
+## Step 116-4Z Trading Redacted Manual Order Permission Template Local Validator
+
+The first local validator for the Trading Redacted Manual Order Permission Template is:
+
+```text
+scripts/validate-trading-redacted-manual-order-permission-template.cjs
+scripts/validate-trading-redacted-manual-order-permission-template.test.cjs
+npm run check:trading-redacted-manual-order-permission-template-validator
+```
+
+This validates the redacted_manual_order_permission_template contract shape only. It requires an explicit `--contract` path, checks the future private packet path, required redacted template fields, template assertions, and forbidden content catalog, rejects raw-value-shaped strings and enabled trading allow flags, and does not create private permission packets, call providers, submit orders, create runtime routes, write the database, or expose public UI.
+
+## Step 116-4AA Trading Redacted Manual Order Permission Template Validator Fixtures
+
+The first synthetic fixture regression contract for the redacted manual order permission template validator is:
+
+```text
+data/processed/trading_lab_step116_redacted_manual_order_permission_template_validator_fixtures.json
+scripts/generate-trading-redacted-manual-order-permission-template-validator-fixtures.cjs
+scripts/generate-trading-redacted-manual-order-permission-template-validator-fixtures.test.cjs
+npm run check:trading-redacted-manual-order-permission-template-validator-fixtures
+```
+
+This is a redacted_manual_order_permission_template_validator_fixtures contract, not a real private permission packet, hash generator, permission importer, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records synthetic valid and invalid template shapes for local validator regression only.
 
 ## Step 116-3W Trading Manual Order Permission Hash Helper Contract
 

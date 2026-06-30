@@ -44,6 +44,7 @@
       "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
       "liveGuardedOrderAdapterImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight_validator_fixtures.json",
       "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
+      "redactedManualOrderPermissionTemplateValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template_validator_fixtures.json",
       "manualOrderPermissionHashHelper": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
       "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
       "manualOrderPermissionHashHelperImplementationReview": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
@@ -102,10 +103,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 75,
-    "trackedContractsReady": 75,
+    "trackedContractsTotal": 76,
+    "trackedContractsReady": 76,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 102,
+    "requiredNpmScriptsTotal": 104,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -440,6 +441,15 @@
       "title": "Redacted manual order permission template",
       "filePath": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
       "status": "template_ready_for_owner_redacted_manual_order_permission_preparation",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "redactedManualOrderPermissionTemplateValidatorFixtures",
+      "title": "Redacted manual order permission template validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template_validator_fixtures.json",
+      "status": "fixtures_ready_for_redacted_manual_order_permission_template_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
