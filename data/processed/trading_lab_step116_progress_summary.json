@@ -74,6 +74,7 @@
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
       "redactedApprovalHashHelperValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_validator_fixtures.json",
       "redactedApprovalHashHelperPreflight": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+      "redactedApprovalHashHelperPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight_validator_fixtures.json",
       "redactedApprovalPacketValidation": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_contract.json",
       "redactedApprovalPacketValidationPreflight": "data\\processed\\trading_lab_step116_redacted_approval_packet_validation_preflight.json",
       "redactedApprovalPacketValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_approval_packet_validator_fixtures.json",
@@ -109,10 +110,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 82,
-    "trackedContractsReady": 82,
+    "trackedContractsTotal": 83,
+    "trackedContractsReady": 83,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 113,
+    "requiredNpmScriptsTotal": 114,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -717,6 +718,15 @@
       "title": "Redacted approval hash helper preflight",
       "filePath": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight.json",
       "status": "preflight_ready_hash_preparation_deferred_until_owner_request",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "redactedApprovalHashHelperPreflightValidatorFixtures",
+      "title": "Redacted approval hash helper preflight validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_preflight_validator_fixtures.json",
+      "status": "fixtures_ready_for_redacted_approval_hash_helper_preflight_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

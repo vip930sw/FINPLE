@@ -77,6 +77,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_redacted_approval_hash_helper_contract.json",
   "trading_lab_step116_redacted_approval_hash_helper_validator_fixtures.json",
   "trading_lab_step116_redacted_approval_hash_helper_preflight.json",
+  "trading_lab_step116_redacted_approval_hash_helper_preflight_validator_fixtures.json",
   "trading_lab_step116_redacted_approval_packet_validation_contract.json",
   "trading_lab_step116_redacted_approval_packet_validation_preflight.json",
   "trading_lab_step116_redacted_approval_packet_validator_fixtures.json",
@@ -137,10 +138,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 82);
-  assert.equal(report.progress.trackedContractsReady, 82);
+  assert.equal(report.progress.trackedContractsTotal, 83);
+  assert.equal(report.progress.trackedContractsReady, 83);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 113);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 114);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
