@@ -46,6 +46,7 @@
       "redactedManualOrderPermissionTemplate": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template.json",
       "redactedManualOrderPermissionTemplateValidatorFixtures": "data\\processed\\trading_lab_step116_redacted_manual_order_permission_template_validator_fixtures.json",
       "manualOrderPermissionHashHelper": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
+      "manualOrderPermissionHashHelperValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_validator_fixtures.json",
       "manualOrderPermissionHashHelperPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_preflight.json",
       "manualOrderPermissionHashHelperImplementationReview": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
       "manualOrderPermissionHashHelperImplementationReviewValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json",
@@ -103,10 +104,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 76,
-    "trackedContractsReady": 76,
+    "trackedContractsTotal": 77,
+    "trackedContractsReady": 77,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 104,
+    "requiredNpmScriptsTotal": 106,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -459,6 +460,15 @@
       "title": "Manual order permission hash helper",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_contract.json",
       "status": "contract_ready_pending_manual_order_permission_hash_helper_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionHashHelperValidatorFixtures",
+      "title": "Manual order permission hash helper validator fixtures",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_validator_fixtures.json",
+      "status": "fixtures_ready_for_manual_order_permission_hash_helper_validator_regression",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
