@@ -53,6 +53,7 @@
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
       "manualOrderPermissionPacketValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validator_fixtures.json",
       "manualOrderPermissionPacketValidationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_preflight.json",
+      "manualOrderPermissionPacketValidationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
       "mockApprovalEvidenceReceipt": "data\\processed\\trading_lab_step116_mock_approval_evidence_receipt.json",
       "redactedReadOnlyApprovalTemplate": "data\\processed\\trading_lab_step116_redacted_read_only_approval_template.json",
       "redactedApprovalHashHelper": "data\\processed\\trading_lab_step116_redacted_approval_hash_helper_contract.json",
@@ -92,10 +93,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 65,
-    "trackedContractsReady": 65,
+    "trackedContractsTotal": 66,
+    "trackedContractsReady": 66,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 87,
+    "requiredNpmScriptsTotal": 88,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -511,6 +512,15 @@
       "title": "Manual order permission packet validation preflight",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_preflight.json",
       "status": "preflight_ready_for_owner_assisted_manual_order_permission_packet_validation",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionPacketValidationRunbook",
+      "title": "Manual order permission packet validation runbook",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
+      "status": "runbook_ready_for_owner_assisted_manual_order_permission_packet_validation_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

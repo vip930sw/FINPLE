@@ -318,7 +318,8 @@ Step 116 should be split into small commits and PR-sized phases:
 66. Manual order permission packet local validator.
 67. Manual order permission packet validator fixtures.
 68. Manual order permission packet validation preflight.
-69. Live guarded execution only after manual approval.
+69. Manual order permission packet validation runbook.
+70. Live guarded execution only after manual approval.
 
 ## Validation Expectations
 
@@ -2246,6 +2247,21 @@ npm run check:trading-manual-order-permission-packet-validation-preflight
 This is an owner-assisted validation readiness contract, not a private packet reader, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records that a future local validation run must use an explicit owner-supplied packet path; this preflight does not read any default private packet path.
 
 The preflight requires the redacted manual order permission template, packet validator fixtures, import implementation preflight, live-guarded order-adapter preflight, and env risk gate to remain fail-closed. Validation readiness still does not create or import `data/private/trading/manual_order_permission.redacted.json`, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
+
+## Step 116-4K Trading Manual Order Permission Packet Validation Runbook
+
+The first Trading Manual Order Permission Packet Validation Runbook contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json
+scripts/generate-trading-manual-order-permission-packet-validation-runbook-contract.cjs
+scripts/generate-trading-manual-order-permission-packet-validation-runbook-contract.test.cjs
+npm run check:trading-manual-order-permission-packet-validation-runbook
+```
+
+This is an owner-assisted local validation runbook contract, not a validator execution, private packet reader, packet writer/importer, hash generator, KIS caller, provider caller, order adapter, runtime route, DB migration, public UI, or order submission path. It records the later command shape for explicit owner-supplied packet validation and the redacted outputs that may be reviewed.
+
+Runbook readiness still does not read `data/private/trading/manual_order_permission.redacted.json`, does not create or import permission evidence, does not generate hashes, does not call KIS, does not implement `server/src/services/trading/manualOrderPermissionImport.js`, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not create runtime routes or UI, does not write the database, does not submit orders, and does not approve live trading.
 
 ## Step 116-2Z Trading Private Read-Only Provider Implementation Preflight
 
