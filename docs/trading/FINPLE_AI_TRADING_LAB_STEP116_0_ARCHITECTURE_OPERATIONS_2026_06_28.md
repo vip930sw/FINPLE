@@ -3885,6 +3885,19 @@ npm run check:trading-manual-order-permission-kill-switch-clearance-review-resul
 
 This `manual_order_permission_kill_switch_clearance_review_result_receipt` step opens only the future redacted receipt boundary for an owner-supplied kill-switch clearance review result. It does not read or record the owner result now, does not store private packet paths, raw values, hash inputs, credentials, or account identifiers, does not clear the kill switch, does not open risk-gate review, does not implement kill-switch runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6W Trading Manual Order Permission Risk Gate Clearance Review Preflight
+
+The first Trading Manual Order Permission Risk Gate Clearance Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_risk_gate_clearance_review_preflight_contract.json
+scripts/generate-trading-manual-order-permission-risk-gate-clearance-review-preflight-contract.cjs
+scripts/generate-trading-manual-order-permission-risk-gate-clearance-review-preflight-contract.test.cjs
+npm run check:trading-manual-order-permission-risk-gate-clearance-review-preflight
+```
+
+This `manual_order_permission_risk_gate_clearance_review_preflight` step opens only the future risk-gate clearance review preflight after the kill-switch clearance review result receipt boundary. It does not read private evidence, does not record a risk snapshot or risk-gate clearance result, does not open dry-run replay, does not implement risk-gate runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
