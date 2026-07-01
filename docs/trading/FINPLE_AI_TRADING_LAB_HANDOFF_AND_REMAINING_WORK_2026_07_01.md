@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `129/129 = 100%`
-- Required npm check coverage: `170/170 = 100%`
+- Contract/guardrail progress: `130/130 = 100%`
+- Required npm check coverage: `171/171 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -98,13 +98,15 @@ Completed safe steps:
 11. Open the explicit local validation receipt path supply gate without accepting a path, reading a receipt, or recording a receipt: `trading_lab_step116_manual_order_permission_validation_receipt_explicit_local_receipt_path_supply_gate_contract.json`.
 12. Open the validation receipt local validation execution preflight without running the validator, reading a receipt, or recording a receipt: `trading_lab_step116_manual_order_permission_validation_receipt_local_validation_execution_preflight_contract.json`.
 13. Open the validation receipt local validation execution result supply gate without accepting a result, reading a receipt, or recording a review result: `trading_lab_step116_manual_order_permission_validation_receipt_local_validation_execution_result_supply_gate_contract.json`.
+14. Open the validation receipt review result recording preflight without accepting a result, reading a receipt, recording a review result, or importing permission evidence: `trading_lab_step116_manual_order_permission_validation_receipt_review_result_recording_preflight_contract.json`.
 
 Next safe tasks:
 
 1. Owner supplies an explicit local redacted packet path outside repo commits.
 2. Validate a redacted packet only through that explicit owner-local path.
 3. Record a redacted validation result receipt without packet paths or raw values.
-4. Review that receipt before any import implementation work.
+4. Record a redacted validation receipt review result only after the owner-local receipt validation execution result is available.
+5. Review that receipt result before any import implementation work.
 
 Current blockers:
 
