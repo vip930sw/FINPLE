@@ -85,6 +85,7 @@
       "manualOrderPermissionShadowHistoryReviewResult": "data\\processed\\trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json",
       "liveGuardedOrderAdapterReviewResult": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_review_result_contract.json",
       "liveGuardedPrivateWorkerImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_private_worker_implementation_preflight_contract.json",
+      "liveGuardedOwnerAdapterReviewResultSupplyGate": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -178,10 +179,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 149,
-    "trackedContractsReady": 149,
+    "trackedContractsTotal": 150,
+    "trackedContractsReady": 150,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 190,
+    "requiredNpmScriptsTotal": 191,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -890,6 +891,15 @@
       "title": "Live-guarded private worker implementation preflight",
       "filePath": "data\\processed\\trading_lab_step116_live_guarded_private_worker_implementation_preflight_contract.json",
       "status": "live_guarded_private_worker_implementation_preflight_contract_ready_pending_owner_adapter_review_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedOwnerAdapterReviewResultSupplyGate",
+      "title": "Live-guarded owner adapter review result supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
+      "status": "live_guarded_owner_adapter_review_result_supply_gate_ready_pending_owner_result",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
