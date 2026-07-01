@@ -3781,6 +3781,19 @@ npm run check:trading-manual-order-permission-import-implementation-review-resul
 
 This `manual_order_permission_import_implementation_review_result_recording_preflight` step opens only the future owner-supplied redacted import implementation review result recording boundary. It does not accept or record the review result now, does not read a private permission packet, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6O Trading Manual Order Permission Import Implementation Review Result Supply Gate
+
+The first Trading Manual Order Permission Import Implementation Review Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_import_implementation_review_result_supply_gate_contract.json
+scripts/generate-trading-manual-order-permission-import-implementation-review-result-supply-gate-contract.cjs
+scripts/generate-trading-manual-order-permission-import-implementation-review-result-supply-gate-contract.test.cjs
+npm run check:trading-manual-order-permission-import-implementation-review-result-supply-gate
+```
+
+This `manual_order_permission_import_implementation_review_result_supply_gate` step opens only the future owner-supplied redacted import implementation review result supply boundary. It does not accept or record the review result now, does not read a private permission packet, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
