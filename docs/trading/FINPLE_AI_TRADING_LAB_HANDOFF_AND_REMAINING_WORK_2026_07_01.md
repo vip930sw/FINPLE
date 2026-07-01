@@ -110,11 +110,12 @@ Completed safe steps:
 23. Open the kill-switch clearance review result supply gate without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_supply_gate_contract.json`.
 24. Open the kill-switch clearance review result recording preflight without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_recording_preflight_contract.json`.
 25. Open the kill-switch clearance review result contract boundary without reading or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_contract.json`.
+26. Open the kill-switch clearance review result receipt boundary without reading or recording the result receipt, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_receipt_contract.json`.
 
 Next safe tasks:
 
 1. Owner supplies a redacted kill-switch clearance review result outside repo commits.
-2. Record a separate kill-switch clearance review result receipt only after the owner result exists, without clearing runtime kill switch state or opening order submission.
+2. Record the separate kill-switch clearance review result receipt only after the owner result exists, without clearing runtime kill switch state or opening order submission.
 3. Keep risk-gate clearance, dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
 
 Current blockers:
@@ -221,7 +222,7 @@ Fastest safe path toward private trading readiness:
 
 1. Owner supplies an explicit local redacted manual order permission packet path outside repo commits.
 2. Manual order permission packet validation receipt through that explicit owner-local packet path.
-3. Kill-switch clearance review result contract.
+3. Kill-switch clearance review result contract and receipt boundary.
 4. Risk-gate clearance review result contract.
 5. Dry-run replay execution result contract.
 6. Shadow-history review result contract.

@@ -259,6 +259,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_contract.json",
   ],
   [
+    "manualOrderPermissionKillSwitchClearanceReviewResultReceipt",
+    "Manual order permission kill-switch clearance review result receipt",
+    "trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_receipt_contract.json",
+  ],
+  [
     "manualOrderPermissionHashPreparationRunbookValidatorFixtures",
     "Manual order permission hash preparation runbook validator fixtures",
     "trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
@@ -674,6 +679,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-kill-switch-clearance-review-result-supply-gate",
   "check:trading-manual-order-permission-kill-switch-clearance-review-result-recording-preflight",
   "check:trading-manual-order-permission-kill-switch-clearance-review-result",
+  "check:trading-manual-order-permission-kill-switch-clearance-review-result-receipt",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator-fixtures",
   "check:trading-manual-order-permission-import-implementation-preflight",
