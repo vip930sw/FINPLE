@@ -3556,6 +3556,21 @@ This is a KIS personal-account order authority assertion contract, not a KIS API
 
 The assertion clears only the external-authority blocker language. It still keeps the operational gates closed: manual order permission packet import, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history review, and live-guarded order adapter implementation review must be completed separately before any order-capable runtime work.
 
+## Step 116-5X Trading KIS Personal Terms Permission Assertion
+
+The first Trading KIS Personal Terms Permission Assertion contract is:
+
+```text
+data/processed/trading_lab_step116_kis_personal_terms_permission_assertion_contract.json
+scripts/generate-trading-kis-personal-terms-permission-assertion-contract.cjs
+scripts/generate-trading-kis-personal-terms-permission-assertion-contract.test.cjs
+npm run check:trading-kis-personal-terms-permission-assertion
+```
+
+This is an owner-supplied KIS personal-account terms and permit assertion contract, not independent legal advice, a KIS API call, provider call, order adapter implementation, manual permission packet import, runtime route, DB migration, public UI, order submission, or live trading approval. It records the owner's July 1, 2026 statement that personal-account trading does not violate KIS terms and does not require a separate permit, so KIS terms/permit language should not remain an external blocker for the personal-account order path.
+
+The assertion clears only the external terms/permit blocker language. It still keeps the internal operational sequence closed: owner-local manual permission packet, validation result receipt, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result, and live-guarded order adapter review must be completed separately before any order-capable runtime work.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

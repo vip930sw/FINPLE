@@ -117,6 +117,7 @@
       "brokerContingencyReview": "data\\processed\\trading_lab_step116_broker_contingency_review_contract.json",
       "ownerOrderPathAssertion": "data\\processed\\trading_lab_step116_owner_order_path_assertion_contract.json",
       "kisPersonalOrderAuthorityAssertion": "data\\processed\\trading_lab_step116_kis_personal_order_authority_assertion_contract.json",
+      "kisPersonalTermsPermissionAssertion": "data\\processed\\trading_lab_step116_kis_personal_terms_permission_assertion_contract.json",
       "readOnlyApprovalPacketPreparationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
       "readOnlyApprovalPacketValidationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
       "readOnlyApprovalPacketValidationResultReceipt": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
@@ -135,6 +136,7 @@
     "readyForReadOnlyProviderCalls": false,
     "readyForPrivateShadowRuntime": false,
     "orderSubmissionAuthorityExternalBlockerCleared": true,
+    "kisPersonalTermsPermissionExternalBlockerCleared": true,
     "readyForOrderSubmission": false,
     "readyForLiveGuardedTrading": false,
     "providerCallsAllowed": false,
@@ -145,16 +147,17 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 117,
-    "trackedContractsReady": 117,
+    "trackedContractsTotal": 118,
+    "trackedContractsReady": 118,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 158,
+    "requiredNpmScriptsTotal": 159,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
     "authorityExternalBlockersCleared": [
       "owner_order_path_assertion_recorded",
-      "kis_personal_order_authority_recorded"
+      "kis_personal_order_authority_recorded",
+      "kis_personal_terms_permission_assertion_recorded"
     ]
   },
   "milestones": [
@@ -1149,6 +1152,15 @@
       "allowFlagViolations": []
     },
     {
+      "id": "kisPersonalTermsPermissionAssertion",
+      "title": "KIS personal terms permission assertion",
+      "filePath": "data\\processed\\trading_lab_step116_kis_personal_terms_permission_assertion_contract.json",
+      "status": "kis_personal_terms_permission_assertion_recorded_orders_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
       "id": "readOnlyApprovalPacketPreparationRunbook",
       "title": "Read-only approval packet preparation runbook",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
@@ -1260,6 +1272,7 @@
     "readyForReadOnlyProviderCalls": false,
     "readyForPrivateShadowRuntime": false,
     "orderSubmissionAuthorityExternalBlockerCleared": true,
+    "kisPersonalTermsPermissionExternalBlockerCleared": true,
     "readyForOrderSubmission": false,
     "readyForLiveGuardedTrading": false,
     "providerCallsAllowed": false,

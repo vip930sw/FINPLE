@@ -431,6 +431,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_kis_personal_order_authority_assertion_contract.json",
   ],
   [
+    "kisPersonalTermsPermissionAssertion",
+    "KIS personal terms permission assertion",
+    "trading_lab_step116_kis_personal_terms_permission_assertion_contract.json",
+  ],
+  [
     "readOnlyApprovalPacketPreparationRunbook",
     "Read-only approval packet preparation runbook",
     "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
@@ -616,6 +621,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-broker-contingency-review",
   "check:trading-owner-order-path-assertion",
   "check:trading-kis-personal-order-authority-assertion",
+  "check:trading-kis-personal-terms-permission-assertion",
   "check:trading-read-only-approval-packet-preparation-runbook",
   "check:trading-read-only-approval-packet-validation-runbook",
   "check:trading-read-only-approval-packet-validation-result-receipt",
@@ -822,6 +828,7 @@ function buildContract() {
       readyForReadOnlyProviderCalls: false,
       readyForPrivateShadowRuntime: false,
       orderSubmissionAuthorityExternalBlockerCleared: true,
+      kisPersonalTermsPermissionExternalBlockerCleared: true,
       readyForOrderSubmission: false,
       readyForLiveGuardedTrading: false,
       providerCallsAllowed: false,
@@ -844,6 +851,7 @@ function buildContract() {
       authorityExternalBlockersCleared: [
         "owner_order_path_assertion_recorded",
         "kis_personal_order_authority_recorded",
+        "kis_personal_terms_permission_assertion_recorded",
       ],
     },
     milestones,
@@ -863,6 +871,7 @@ function buildContract() {
       readyForReadOnlyProviderCalls: false,
       readyForPrivateShadowRuntime: false,
       orderSubmissionAuthorityExternalBlockerCleared: true,
+      kisPersonalTermsPermissionExternalBlockerCleared: true,
       readyForOrderSubmission: false,
       readyForLiveGuardedTrading: false,
       providerCallsAllowed: false,

@@ -120,6 +120,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_broker_contingency_review_contract.json",
   "trading_lab_step116_owner_order_path_assertion_contract.json",
   "trading_lab_step116_kis_personal_order_authority_assertion_contract.json",
+  "trading_lab_step116_kis_personal_terms_permission_assertion_contract.json",
   "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
   "trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
   "trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
@@ -172,16 +173,19 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 117);
-  assert.equal(report.progress.trackedContractsReady, 117);
+  assert.equal(report.progress.trackedContractsTotal, 118);
+  assert.equal(report.progress.trackedContractsReady, 118);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 158);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 159);
   assert.deepEqual(report.progress.authorityExternalBlockersCleared, [
     "owner_order_path_assertion_recorded",
     "kis_personal_order_authority_recorded",
+    "kis_personal_terms_permission_assertion_recorded",
   ]);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.orderSubmissionAuthorityExternalBlockerCleared, true);
+  assert.equal(report.readiness.kisPersonalTermsPermissionExternalBlockerCleared, true);
+  assert.equal(report.currentState.kisPersonalTermsPermissionExternalBlockerCleared, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
   assert.equal(report.readiness.readyForOrderSubmission, false);
@@ -220,6 +224,10 @@ test("records remaining trading gates instead of approving provider calls or ord
   assert.doesNotMatch(
     report.remainingTradingGates.join("|"),
     /kis_personal_order_authority_recorded_orders_still_blocked/,
+  );
+  assert.doesNotMatch(
+    report.remainingTradingGates.join("|"),
+    /kis_personal_terms_permission_assertion_recorded_orders_still_blocked/,
   );
   assert.match(report.remainingTradingGates.join("|"), /manual_order_permission_packet_not_imported/);
   assert.match(

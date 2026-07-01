@@ -6,15 +6,16 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff commit: `0f862e8 Add manual order permission packet checklist`
+Current handoff commit: `c91e4f2 Record live guarded internal gate sequence`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `117/117 = 100%`
-- Required npm check coverage: `158/158 = 100%`
+- Contract/guardrail progress: `118/118 = 100%`
+- Required npm check coverage: `159/159 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
+- `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -35,17 +36,19 @@ Step 114 scenario monthly data/provider work remains blocked separately.
 
 ## What We Just Clarified
 
-The owner confirmed two order-path points:
+The owner confirmed three order-path points:
 
 1. Personal-account order work is not blocked by an external permission dispute.
 2. KIS personal-account trading is allowed and should not remain an external order-submission authority blocker.
+3. Personal-account trading does not violate KIS terms and does not require a separate permit, so KIS terms/permit language should not remain an external blocker.
 
 These are now recorded as internal evidence contracts:
 
 - `data/processed/trading_lab_step116_owner_order_path_assertion_contract.json`
 - `data/processed/trading_lab_step116_kis_personal_order_authority_assertion_contract.json`
+- `data/processed/trading_lab_step116_kis_personal_terms_permission_assertion_contract.json`
 
-Important: these contracts clear external order-authority blocker language only. They do not approve real order submission and do not bypass FINPLE operational gates.
+Important: these contracts clear external order-authority and KIS terms/permit blocker language only. They do not approve real order submission and do not bypass FINPLE operational gates.
 
 ## Do Not Do Yet
 

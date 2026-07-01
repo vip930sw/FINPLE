@@ -1,0 +1,111 @@
+{
+  "contractVersion": "trading-lab-step116-kis-personal-terms-permission-assertion-v0.1",
+  "auditedAt": "2026-07-01T00:00:00Z",
+  "step": "Step 116-5X",
+  "scope": "kis_personal_terms_permission_assertion",
+  "sourceFiles": {
+    "ownerOrderPathAssertion": "data\\processed\\trading_lab_step116_owner_order_path_assertion_contract.json",
+    "kisPersonalOrderAuthorityAssertion": "data\\processed\\trading_lab_step116_kis_personal_order_authority_assertion_contract.json",
+    "liveGuardedInternalGateClearanceSequence": "data\\processed\\trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json",
+    "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+    "progressSummary": "data\\processed\\trading_lab_step116_progress_summary.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_kis_personal_terms_permission_assertion_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "ownerTermsPermissionAssertionRecordedNow": true,
+    "independentLegalDeterminationRecorded": false,
+    "assertionIsOperationalOrderApproval": false,
+    "manualOrderPermissionImportedNow": false,
+    "validationReceiptEvidenceRecorded": false,
+    "orderAdapterImplementedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "kisPersonalTermsPermissionAssertion": {
+    "assertedAt": "2026-07-01T17:25:00+09:00",
+    "assertionSummary": "owner stated that personal-account trading does not violate KIS terms and does not require a separate permit",
+    "interpretation": "record the owner's KIS personal-account terms and permit statement as an external blocker clearance only, while keeping FINPLE internal operational gates closed",
+    "acceptedBoundaries": [
+      "kis_personal_account_terms_not_external_blocker",
+      "kis_personal_account_separate_permit_not_external_blocker",
+      "terms_permission_assertion_is_owner_supplied",
+      "terms_permission_assertion_is_not_independent_legal_advice",
+      "terms_permission_assertion_does_not_submit_orders",
+      "terms_permission_assertion_does_not_call_kis",
+      "terms_permission_assertion_does_not_create_order_adapter",
+      "terms_permission_assertion_does_not_create_runtime_route",
+      "terms_permission_assertion_does_not_override_internal_gate_sequence"
+    ],
+    "stillRequiredInternalGates": [
+      "owner_local_manual_permission_packet",
+      "validation_result_receipt",
+      "kill_switch_clearance_review_result",
+      "risk_gate_clearance_review_result",
+      "dry_run_replay_execution_result",
+      "shadow_history_review_result",
+      "live_guarded_order_adapter_review"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "ownerTermsPermissionAssertionRecorded": true,
+    "independentLegalDeterminationRecorded": false,
+    "assertionIsOperationalOrderApproval": false,
+    "ownerOrderPathAssertionRecordedWithOrdersBlocked": true,
+    "kisPersonalOrderAuthorityRecordedWithOrdersBlocked": true,
+    "internalGateSequenceStillFailClosed": true,
+    "liveGuardedAdapterStillBlocked": true,
+    "progressSummaryStillFailClosed": true,
+    "architectureDocMentionsKisTermsPermissionAssertion": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "forbiddenRuntimeArtifacts": [],
+    "ownerOrderPathAssertionStatus": "owner_order_path_assertion_recorded_orders_still_blocked",
+    "kisPersonalOrderAuthorityAssertionStatus": "kis_personal_order_authority_recorded_orders_still_blocked",
+    "internalGateSequenceStatus": "sequence_contract_ready_owner_local_packet_preparation_opened_remaining_results_pending_evidence",
+    "liveGuardedAdapterPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance",
+    "progressSummaryStatus": "summary_ready_contract_stack_fail_closed_pending_private_trading_reviews"
+  },
+  "readiness": {
+    "status": "kis_personal_terms_permission_assertion_recorded_orders_still_blocked",
+    "termsPermissionExternalBlockerCleared": true,
+    "ownerTermsPermissionAssertionRecordedNow": true,
+    "independentLegalDeterminationRecorded": false,
+    "assertionIsOperationalOrderApproval": false,
+    "orderAuthorityExternalBlockerCleared": true,
+    "readyForManualOrderPermissionPacketPreparation": true,
+    "readyForOrderSubmission": false,
+    "readyForLiveGuardedTrading": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": [],
+    "remainingTradingGates": [
+      "manual_order_permission_packet_not_imported",
+      "validation_result_receipt_not_owner_supplied",
+      "kill_switch_clearance_not_recorded_for_order_submission",
+      "risk_gate_clearance_not_recorded_for_order_submission",
+      "dry_run_replay_execution_not_recorded_for_live_guarded_order_submission",
+      "shadow_history_review_not_recorded_for_live_guarded_order_submission",
+      "live_guarded_order_adapter_implementation_review_not_started"
+    ]
+  }
+}
