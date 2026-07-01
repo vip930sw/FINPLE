@@ -16,6 +16,7 @@
     "providerAdapterPreflight": "data\\processed\\scenario_p0_provider_adapter_preflight.json",
     "kisCapabilityPreflight": "data\\processed\\scenario_p0_kis_capability_preflight.json",
     "kisWrittenResponsePreflight": "data\\processed\\scenario_p0_kis_written_response_preflight.json",
+    "kisMarketDataReprocessingFollowUp": "data\\processed\\scenario_p0_kis_market_data_reprocessing_follow_up.json",
     "providerRuntimePreflight": "data\\processed\\scenario_p0_provider_runtime_preflight.json",
     "monthlyCacheWriterPreflight": "data\\processed\\scenario_p0_monthly_cache_writer_preflight.json",
     "approvalReadiness": "data\\processed\\scenario_p0_approval_readiness.json",
@@ -102,6 +103,8 @@
         "providerAdapterPreflightSafe": false,
         "kisCapabilityPreflightReady": false,
         "kisWrittenResponsePreflightReady": false,
+        "kisMarketDataReprocessingFollowUpSent": true,
+        "kisMarketDataReprocessingFollowUpResponseReady": false,
         "providerRuntimePreflightReady": false,
         "monthlyCacheWriterPreflightSafe": false
       },
@@ -147,6 +150,9 @@
           "kis_response_review_owner_or_reviewed_at_missing",
           "kis_response_status_pending_kis_written_response"
         ],
+        "kisMarketDataReprocessingFollowUpSent": true,
+        "kisMarketDataReprocessingFollowUpStatus": "kis_market_data_reprocessing_follow_up_sent_response_still_blocked",
+        "kisMarketDataReprocessingFollowUpResponseReady": false,
         "providerRuntimePreflightReady": false,
         "providerRuntimeBlockers": [
           "approval_readiness_provider_calls_not_allowed",
@@ -226,6 +232,8 @@
     "providerAdapterPreflightReady": false,
     "kisCapabilityPreflightReady": false,
     "kisWrittenResponsePreflightReady": false,
+    "kisMarketDataReprocessingFollowUpSent": true,
+    "kisMarketDataReprocessingFollowUpResponseReady": false,
     "providerRuntimePreflightReady": false,
     "monthlyCacheWriterPreflightReady": false,
     "bootstrapUnlockPreflightReady": false,

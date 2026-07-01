@@ -1,0 +1,89 @@
+{
+  "followUpVersion": "scenario-p0-kis-market-data-reprocessing-follow-up-v0.1",
+  "auditedAt": "2026-07-01T00:00:00Z",
+  "sourceFiles": {
+    "kisWrittenResponsePreflight": "data\\processed\\scenario_p0_kis_written_response_preflight.json",
+    "providerRuntimePreflight": "data\\processed\\scenario_p0_provider_runtime_preflight.json",
+    "termsReviewPacket": "docs\\portfolio-ml\\FINPLE_STEP114_KIS_TERMS_REVIEW_PACKET_2026_06_28.md",
+    "monthlyDataTarget": "data\\processed\\scenario_monthly_returns.csv"
+  },
+  "outputFiles": {
+    "followUp": "data\\processed\\scenario_p0_kis_market_data_reprocessing_follow_up.json"
+  },
+  "followUpScope": {
+    "ownerReportedSent": true,
+    "ownerReportedSentDate": "2026-07-01",
+    "sentTo": "openapi@koreainvestment.com",
+    "subjectCategory": "market_data_reprocessing_without_raw_market_data_display",
+    "allowedTopics": [
+      "overseas_daily_price_api_scope",
+      "overseas_rights_api_scope",
+      "internal_calculation_only",
+      "raw_market_data_not_displayed",
+      "raw_rows_not_redistributed_or_downloadable",
+      "derived_monthly_returns_and_scenario_metrics_only",
+      "cache_log_retention_policy_question",
+      "attribution_disclaimer_and_commercial_use_question"
+    ],
+    "excludedTopics": [
+      "mock_trading_account_permission",
+      "live_trading_account_permission",
+      "order_submission_permission",
+      "personal_account_trading_permission",
+      "raw_quote_screen_display",
+      "raw_chart_screen_display",
+      "raw_api_row_user_export"
+    ],
+    "rawEmailBodyStoredInRepo": false,
+    "personalAccountOrOrderDiscussionStoredInRepo": false
+  },
+  "checks": {
+    "followUpEvidenceOnly": true,
+    "ownerReportedSent": true,
+    "sentToKisOpenApi": true,
+    "allowedTopicsComplete": true,
+    "excludedTopicsComplete": true,
+    "rawEmailBodyStoredInRepo": false,
+    "personalAccountOrOrderDiscussionStoredInRepo": false,
+    "kisWrittenResponseStillPending": true,
+    "providerRuntimeStillBlocked": true,
+    "termsPacketStillRequiresWrittenResponse": false,
+    "monthlyFileExists": false,
+    "providerCallsAllowed": false,
+    "providerAdapterAllowed": false,
+    "monthlyDataWriteAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "orderSubmissionAllowed": false
+  },
+  "evidence": {
+    "missingAllowedTopics": [],
+    "missingExcludedTopics": [],
+    "kisWrittenResponseStatus": "blocked_pending_kis_written_response",
+    "providerRuntimeStatus": "blocked_before_runtime_provider_calls",
+    "providerRuntimeBlockers": [
+      "approval_readiness_provider_calls_not_allowed",
+      "provider_adapter_preflight_not_ready",
+      "monthly_cache_writer_preflight_not_ready",
+      "provider_group_count_mismatch",
+      "runtime_provider_credentials_missing",
+      "runtime_provider_capability_not_verified",
+      "runtime_provider_written_response_not_approved",
+      "runtime_provider_calls_not_explicitly_enabled",
+      "missing_or_invalid_env_FINPLE_SCENARIO_PROVIDER_MODE",
+      "missing_or_invalid_env_FINPLE_SCENARIO_ALLOW_PROVIDER_CALLS"
+    ]
+  },
+  "readiness": {
+    "status": "kis_market_data_reprocessing_follow_up_sent_response_still_blocked",
+    "responseStillBlocked": true,
+    "responseReady": false,
+    "providerCallsAllowed": false,
+    "providerAdapterAllowed": false,
+    "monthlyDataWriteAllowed": false,
+    "scenarioMonthlyReturnsWritten": false,
+    "bootstrapStillBlocked": true,
+    "nextAllowedStep": "wait_for_kis_written_response_on_market_data_reprocessing_without_raw_display",
+    "blockers": []
+  }
+}

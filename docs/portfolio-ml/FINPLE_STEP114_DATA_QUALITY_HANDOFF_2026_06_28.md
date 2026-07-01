@@ -812,6 +812,21 @@ scripts/generate-scenario-p0-kis-written-response-preflight.test.cjs
 
 The runtime provider preflight now consumes this written-response gate. KIS-backed provider groups remain blocked unless written confirmation is received, reviewed, and recorded with explicit approval for terms, raw-row retention, derived monthly return use, and user-facing derived analytics display.
 
+## Step 114-3C KIS Market-Data Reprocessing Follow-Up
+
+Recorded that the owner reported a KIS follow-up email sent on 2026-07-01. The follow-up deliberately excludes mock/live trading, personal-account trading permission, and order submission permission. It asks only about market-data API reprocessing where raw market data, raw quote rows, raw charts, and downloadable API rows are not displayed to FINPLE users.
+
+Added:
+
+```text
+data/processed/scenario_p0_kis_market_data_reprocessing_follow_up.json
+scripts/generate-scenario-p0-kis-market-data-reprocessing-follow-up.cjs
+scripts/generate-scenario-p0-kis-market-data-reprocessing-follow-up.test.cjs
+npm run check:scenario-p0-kis-market-data-follow-up
+```
+
+This is an outbound-follow-up evidence record only. It keeps `responseReady=false`, `providerCallsAllowed=false`, `monthlyDataWriteAllowed=false`, and `scenario_monthly_returns.csv` absent until a written response is received and reviewed.
+
 Current committed state:
 
 ```text

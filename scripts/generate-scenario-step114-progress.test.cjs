@@ -27,6 +27,7 @@ const PROCESSED_FILES = [
   "scenario_p0_provider_adapter_preflight.json",
   "scenario_p0_kis_capability_preflight.json",
   "scenario_p0_kis_written_response_preflight.json",
+  "scenario_p0_kis_market_data_reprocessing_follow_up.json",
   "scenario_p0_provider_runtime_preflight.json",
   "scenario_p0_monthly_cache_writer_preflight.json",
   "scenario_p0_approval_readiness.json",
@@ -92,6 +93,8 @@ test("reports 80 percent overall progress before real approval import and monthl
   assert.equal(progress.guardrails.providerAdapterPreflightReady, false);
   assert.equal(progress.guardrails.kisCapabilityPreflightReady, false);
   assert.equal(progress.guardrails.kisWrittenResponsePreflightReady, false);
+  assert.equal(progress.guardrails.kisMarketDataReprocessingFollowUpSent, true);
+  assert.equal(progress.guardrails.kisMarketDataReprocessingFollowUpResponseReady, false);
   assert.equal(progress.guardrails.providerRuntimePreflightReady, false);
   assert.equal(progress.guardrails.monthlyCacheWriterPreflightReady, false);
   assert.equal(progress.guardrails.bootstrapUnlockPreflightReady, false);

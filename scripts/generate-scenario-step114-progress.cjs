@@ -25,6 +25,11 @@ const KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH = path.join(
   "processed",
   "scenario_p0_kis_written_response_preflight.json",
 );
+const KIS_MARKET_DATA_REPROCESSING_FOLLOW_UP_PATH = path.join(
+  "data",
+  "processed",
+  "scenario_p0_kis_market_data_reprocessing_follow_up.json",
+);
 const PROVIDER_RUNTIME_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_provider_runtime_preflight.json");
 const MONTHLY_CACHE_WRITER_PREFLIGHT_PATH = path.join("data", "processed", "scenario_p0_monthly_cache_writer_preflight.json");
 const APPROVAL_READINESS_PATH = path.join("data", "processed", "scenario_p0_approval_readiness.json");
@@ -162,6 +167,7 @@ function buildProgress() {
   const providerAdapterPreflight = readJson(PROVIDER_ADAPTER_PREFLIGHT_PATH);
   const kisCapabilityPreflight = readJson(KIS_CAPABILITY_PREFLIGHT_PATH);
   const kisWrittenResponsePreflight = readJson(KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH);
+  const kisMarketDataReprocessingFollowUp = readJson(KIS_MARKET_DATA_REPROCESSING_FOLLOW_UP_PATH);
   const providerRuntimePreflight = readJson(PROVIDER_RUNTIME_PREFLIGHT_PATH);
   const monthlyCacheWriterPreflight = readJson(MONTHLY_CACHE_WRITER_PREFLIGHT_PATH);
   const approvalReadiness = readJson(APPROVAL_READINESS_PATH);
@@ -195,7 +201,10 @@ function buildProgress() {
     sourcePolicySyncPlan.rowCounts?.providerGroups === 5 &&
     sourcePolicySyncPreflight.checks?.totalSourcePolicyRows === 17 &&
     providerAdapterPreflight.checks?.sourcePolicyRows === 17 &&
-    monthlyCacheWriterPreflight.checks?.sourcePolicyRows === 17;
+    monthlyCacheWriterPreflight.checks?.sourcePolicyRows === 17 &&
+    kisMarketDataReprocessingFollowUp.readiness?.responseReady === false &&
+    kisMarketDataReprocessingFollowUp.readiness?.providerCallsAllowed === false &&
+    kisMarketDataReprocessingFollowUp.readiness?.monthlyDataWriteAllowed === false;
   const preApprovalGuardrailHarnessComplete =
     approvalIntakeValidation.readiness?.providerCallsAllowed === false &&
     realApprovalImportPreflight.readiness?.safeToWriteMonthlyData === false &&
@@ -300,6 +309,8 @@ function buildProgress() {
         providerAdapterPreflightSafe: providerAdapterPreflight.checks?.safeToImplementProviderAdapter,
         kisCapabilityPreflightReady: kisCapabilityPreflight.checks?.capabilityReady,
         kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady,
+        kisMarketDataReprocessingFollowUpSent: kisMarketDataReprocessingFollowUp.followUpScope?.ownerReportedSent,
+        kisMarketDataReprocessingFollowUpResponseReady: kisMarketDataReprocessingFollowUp.readiness?.responseReady,
         providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
       },
@@ -326,6 +337,9 @@ function buildProgress() {
         kisCapabilityBlockers: kisCapabilityPreflight.checks?.blockers ?? [],
         kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady,
         kisWrittenResponseBlockers: kisWrittenResponsePreflight.checks?.blockers ?? [],
+        kisMarketDataReprocessingFollowUpSent: kisMarketDataReprocessingFollowUp.followUpScope?.ownerReportedSent,
+        kisMarketDataReprocessingFollowUpStatus: kisMarketDataReprocessingFollowUp.readiness?.status,
+        kisMarketDataReprocessingFollowUpResponseReady: kisMarketDataReprocessingFollowUp.readiness?.responseReady,
         providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed,
         providerRuntimeBlockers: providerRuntimePreflight.checks?.blockers ?? [],
         monthlyCacheWriterPreflightSafe: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter,
@@ -396,6 +410,7 @@ function buildProgress() {
       providerAdapterPreflight: PROVIDER_ADAPTER_PREFLIGHT_PATH,
       kisCapabilityPreflight: KIS_CAPABILITY_PREFLIGHT_PATH,
       kisWrittenResponsePreflight: KIS_WRITTEN_RESPONSE_PREFLIGHT_PATH,
+      kisMarketDataReprocessingFollowUp: KIS_MARKET_DATA_REPROCESSING_FOLLOW_UP_PATH,
       providerRuntimePreflight: PROVIDER_RUNTIME_PREFLIGHT_PATH,
       monthlyCacheWriterPreflight: MONTHLY_CACHE_WRITER_PREFLIGHT_PATH,
       approvalReadiness: APPROVAL_READINESS_PATH,
@@ -436,6 +451,8 @@ function buildProgress() {
       providerAdapterPreflightReady: providerAdapterPreflight.checks?.safeToImplementProviderAdapter === true,
       kisCapabilityPreflightReady: kisCapabilityPreflight.checks?.capabilityReady === true,
       kisWrittenResponsePreflightReady: kisWrittenResponsePreflight.checks?.responseReady === true,
+      kisMarketDataReprocessingFollowUpSent: kisMarketDataReprocessingFollowUp.followUpScope?.ownerReportedSent === true,
+      kisMarketDataReprocessingFollowUpResponseReady: kisMarketDataReprocessingFollowUp.readiness?.responseReady === true,
       providerRuntimePreflightReady: providerRuntimePreflight.checks?.runtimeProviderCallsAllowed === true,
       monthlyCacheWriterPreflightReady: monthlyCacheWriterPreflight.checks?.safeToImplementMonthlyCacheWriter === true,
       bootstrapUnlockPreflightReady: bootstrapUnlockPreflight.checks?.safeToRunJointBlockBootstrap === true,

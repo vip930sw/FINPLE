@@ -77,6 +77,26 @@ providerCallsAllowed=false
 
 This gate must remain blocked unless KIS gives written confirmation and FINPLE records the response evidence, reviewer email, reviewed timestamp, approved use scope, agreement classification, `termsReviewed=yes`, and `rawRedistributionReviewed=yes`.
 
+## Market-Data Reprocessing Follow-Up
+
+The owner reported a KIS follow-up email sent on 2026-07-01. The follow-up narrowed the question to market-data use only:
+
+- use overseas daily price and rights APIs as internal calculation inputs
+- do not display raw market data, raw quote rows, raw charts, or downloadable API rows
+- do not discuss mock trading, live trading, personal-account trading permission, or order submission permission
+- ask whether derived monthly returns, benchmark returns, volatility, loss probability, and scenario analytics may be displayed after internal calculation
+- ask what cache, log, retention, attribution, disclaimer, commercial-use, and information-use-agreement rules apply
+
+This follow-up is recorded in:
+
+```text
+data/processed/scenario_p0_kis_market_data_reprocessing_follow_up.json
+scripts/generate-scenario-p0-kis-market-data-reprocessing-follow-up.cjs
+scripts/generate-scenario-p0-kis-market-data-reprocessing-follow-up.test.cjs
+```
+
+The follow-up sent record is not approval. It does not change `responseReady=false`, does not authorize provider calls, does not authorize raw-row storage, does not authorize monthly data writes, and does not create `scenario_monthly_returns.csv`.
+
 ## Questions To Send To KIS Or Legal
 
 Ready-to-send Korean email draft:
