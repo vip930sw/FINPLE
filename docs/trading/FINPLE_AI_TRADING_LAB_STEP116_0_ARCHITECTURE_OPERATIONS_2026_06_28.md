@@ -3820,6 +3820,19 @@ npm run check:trading-manual-order-permission-import-result-supply-gate
 
 This `manual_order_permission_import_result_supply_gate` step opens only the future owner-supplied redacted permission import result supply boundary. It does not accept or record the import result now, does not accept or record the owner review result now, does not read a private permission packet, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6R Trading Manual Order Permission Kill Switch Clearance Review Preflight
+
+The first Trading Manual Order Permission Kill Switch Clearance Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_kill_switch_clearance_review_preflight_contract.json
+scripts/generate-trading-manual-order-permission-kill-switch-clearance-review-preflight-contract.cjs
+scripts/generate-trading-manual-order-permission-kill-switch-clearance-review-preflight-contract.test.cjs
+npm run check:trading-manual-order-permission-kill-switch-clearance-review-preflight
+```
+
+This `manual_order_permission_kill_switch_clearance_review_preflight` step opens only the future kill-switch clearance review preflight after the permission import result supply gate. It does not accept or record the import result now, does not clear the kill switch, does not record a kill-switch clearance result, does not implement kill-switch runtime, does not read a private permission packet, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
