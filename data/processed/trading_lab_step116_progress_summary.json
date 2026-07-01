@@ -76,6 +76,7 @@
       "manualOrderPermissionKillSwitchClearanceReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_preflight_contract.json",
       "manualOrderPermissionKillSwitchClearanceReviewResultSupplyGate": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_supply_gate_contract.json",
       "manualOrderPermissionKillSwitchClearanceReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_recording_preflight_contract.json",
+      "manualOrderPermissionKillSwitchClearanceReviewResult": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -169,10 +170,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 140,
-    "trackedContractsReady": 140,
+    "trackedContractsTotal": 141,
+    "trackedContractsReady": 141,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 181,
+    "requiredNpmScriptsTotal": 182,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -800,6 +801,15 @@
       "title": "Manual order permission kill-switch clearance review result recording preflight",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_recording_preflight_contract.json",
       "status": "manual_order_permission_kill_switch_clearance_review_result_recording_preflight_ready_pending_owner_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionKillSwitchClearanceReviewResult",
+      "title": "Manual order permission kill-switch clearance review result",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_contract.json",
+      "status": "manual_order_permission_kill_switch_clearance_review_result_contract_ready_pending_owner_result_record",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

@@ -109,11 +109,12 @@ Completed safe steps:
 22. Open the kill-switch clearance review preflight without accepting the import result, clearing the kill switch, implementing kill-switch runtime, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_preflight_contract.json`.
 23. Open the kill-switch clearance review result supply gate without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_supply_gate_contract.json`.
 24. Open the kill-switch clearance review result recording preflight without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_recording_preflight_contract.json`.
+25. Open the kill-switch clearance review result contract boundary without reading or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_contract.json`.
 
 Next safe tasks:
 
 1. Owner supplies a redacted kill-switch clearance review result outside repo commits.
-2. Add a separate kill-switch clearance review result contract without reading private packet paths, clearing the kill switch, or opening order submission.
+2. Record a separate kill-switch clearance review result receipt only after the owner result exists, without clearing runtime kill switch state or opening order submission.
 3. Keep risk-gate clearance, dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
 
 Current blockers:
@@ -140,7 +141,7 @@ Goal: keep the global kill switch as the final hard stop until an explicit, audi
 
 Next safe tasks:
 
-1. Add a kill-switch clearance review result contract.
+1. Record the owner-supplied redacted kill-switch clearance review result outside repo-private values.
 2. Keep `FINPLE_TRADING_KILL_SWITCH=true` in production until the review is intentionally cleared.
 3. Ensure a clearance result alone still does not submit orders.
 
