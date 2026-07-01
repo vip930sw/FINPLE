@@ -4002,6 +4002,19 @@ npm run check:trading-live-guarded-owner-adapter-review-result-recording-preflig
 
 This `live_guarded_owner_adapter_review_result_recording_preflight` step opens only the recording preflight boundary for a future owner-supplied adapter review result. It keeps KIS personal permission out of the external blocker list, but it does not accept, read, or record the owner adapter review result now, does not implement a private worker or order adapter, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-7F Trading Live-Guarded Owner Adapter Review Result Recording Result Supply Gate
+
+The first Trading Live-Guarded Owner Adapter Review Result Recording Result Supply Gate is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_supply_gate_contract.json
+scripts/generate-trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate-contract.cjs
+scripts/generate-trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate-contract.test.cjs
+npm run check:trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate
+```
+
+This `live_guarded_owner_adapter_review_result_recording_result_supply_gate` step opens only the recording-result supply gate for a future owner-supplied adapter review result. It keeps KIS personal permission out of the external blocker list, but it does not accept, read, or record the recording result now, does not implement a private worker or order adapter, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
