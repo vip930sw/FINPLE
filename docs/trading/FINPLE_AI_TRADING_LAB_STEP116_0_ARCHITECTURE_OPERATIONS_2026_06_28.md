@@ -3950,6 +3950,19 @@ npm run check:trading-manual-order-permission-shadow-history-review-result
 
 This `manual_order_permission_shadow_history_review_result` step opens only the redacted, hash-only shadow-history review result contract boundary after the dry-run replay execution result boundary. It does not review shadow history now, does not read private history, does not record raw shadow/order/provider/risk/audit payloads, does not open the live-guarded adapter review, does not implement shadow-history runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-7B Trading Live-Guarded Order Adapter Review Result Contract
+
+The first Trading Live-Guarded Order Adapter Review Result Contract is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_order_adapter_review_result_contract.json
+scripts/generate-trading-live-guarded-order-adapter-review-result-contract.cjs
+scripts/generate-trading-live-guarded-order-adapter-review-result-contract.test.cjs
+npm run check:trading-live-guarded-order-adapter-review-result
+```
+
+This `live_guarded_order_adapter_review_result` step opens only the redacted, hash-only adapter review result contract boundary after the shadow-history review result boundary. It does not record an owner review result now, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps private worker implementation, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

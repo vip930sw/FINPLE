@@ -289,6 +289,11 @@ const TRACKED_READINESS_CONTRACTS = [
       "trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json",
     ],
     [
+      "liveGuardedOrderAdapterReviewResult",
+      "Live-guarded order adapter review result",
+      "trading_lab_step116_live_guarded_order_adapter_review_result_contract.json",
+    ],
+    [
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures",
       "Manual order permission hash preparation runbook validator fixtures",
       "trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
@@ -710,6 +715,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-risk-gate-clearance-review-result",
   "check:trading-manual-order-permission-dry-run-replay-execution-result",
   "check:trading-manual-order-permission-shadow-history-review-result",
+  "check:trading-live-guarded-order-adapter-review-result",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator-fixtures",
   "check:trading-manual-order-permission-import-implementation-preflight",
