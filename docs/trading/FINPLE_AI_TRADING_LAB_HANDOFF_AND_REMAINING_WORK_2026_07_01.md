@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `133/133 = 100%`
-- Required npm check coverage: `174/174 = 100%`
+- Contract/guardrail progress: `134/134 = 100%`
+- Required npm check coverage: `175/175 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -102,6 +102,7 @@ Completed safe steps:
 15. Open the validation receipt review result supply gate without accepting or recording the review result and without importing permission evidence: `trading_lab_step116_manual_order_permission_validation_receipt_review_result_supply_gate_contract.json`.
 16. Open the manual order permission import review preflight without reading the validation receipt/review result, importing permission evidence, or implementing the import service: `trading_lab_step116_manual_order_permission_import_review_preflight_contract.json`.
 17. Record the manual order permission import implementation review contract without supplying the review result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_implementation_review_contract.json`.
+18. Open the manual order permission import implementation review result recording preflight without accepting the owner review result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_implementation_review_result_recording_preflight_contract.json`.
 
 Next safe tasks:
 
