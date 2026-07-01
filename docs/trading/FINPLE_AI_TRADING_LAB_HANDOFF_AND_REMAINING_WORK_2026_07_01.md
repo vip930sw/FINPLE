@@ -113,12 +113,12 @@ Completed safe steps:
 26. Open the kill-switch clearance review result receipt boundary without reading or recording the result receipt, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_receipt_contract.json`.
 27. Open the risk-gate clearance review preflight without reading private evidence, recording a risk snapshot or risk-gate clearance result, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_preflight_contract.json`.
 28. Open the risk-gate clearance review result supply gate without accepting, reading, or recording the result, reading private evidence, recording a risk snapshot, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_supply_gate_contract.json`.
+29. Open the risk-gate clearance review result contract boundary without reading or recording the owner result, reading private evidence, recording raw risk snapshots, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_contract.json`.
 
 Next safe tasks:
 
-1. Owner supplies a redacted risk-gate clearance review result outside repo commits.
-2. Record a separate risk-gate clearance review result contract only after the owner result exists, without reading private evidence, recording raw risk snapshots, opening dry-run replay, or opening order submission.
-3. Keep dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
+1. Prepare a separate dry-run replay execution result contract without executing a replay, reading private evidence, opening the live adapter, or opening order submission.
+2. Keep shadow-history review and live-guarded adapter review closed until their ordered result records exist.
 
 Current blockers:
 
@@ -161,7 +161,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add a risk-gate clearance review result contract.
+4. Add a dry-run replay execution result contract after the risk-gate result boundary.
 
 Current blocker:
 
@@ -225,13 +225,12 @@ Fastest safe path toward private trading readiness:
 1. Owner supplies an explicit local redacted manual order permission packet path outside repo commits.
 2. Manual order permission packet validation receipt through that explicit owner-local packet path.
 3. Kill-switch clearance review result contract and receipt boundary.
-4. Risk-gate clearance review result contract.
-5. Dry-run replay execution result contract.
-6. Shadow-history review result contract.
-7. Live-guarded KIS order adapter implementation review contract.
-8. Private worker implementation only after all above pass.
-9. Private dashboard/operator monitoring.
-10. Public dashboard/homepage router only after live-guarded review.
+4. Dry-run replay execution result contract.
+5. Shadow-history review result contract.
+6. Live-guarded KIS order adapter implementation review contract.
+7. Private worker implementation only after all above pass.
+8. Private dashboard/operator monitoring.
+9. Public dashboard/homepage router only after live-guarded review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 
