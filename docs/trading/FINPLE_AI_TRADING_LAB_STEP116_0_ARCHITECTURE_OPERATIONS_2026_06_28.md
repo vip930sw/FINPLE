@@ -3703,6 +3703,19 @@ npm run check:trading-manual-order-permission-validation-receipt-local-validatio
 
 This `manual_order_permission_validation_receipt_local_validation_execution_preflight` step opens only the future local validation execution preflight for an owner-supplied explicit local redacted validation receipt path. It records placeholder command shape only and does not run the validator now, does not read a validation receipt now, does not record a validation receipt now, does not store the actual owner-local packet path or receipt path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash inputs, does not call KIS or any provider, does not submit orders, and keeps provider adapters, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6I Trading Manual Order Permission Validation Receipt Local Validation Execution Result Supply Gate
+
+The first Trading Manual Order Permission Validation Receipt Local Validation Execution Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validation_receipt_local_validation_execution_result_supply_gate_contract.json
+scripts/generate-trading-manual-order-permission-validation-receipt-local-validation-execution-result-supply-gate-contract.cjs
+scripts/generate-trading-manual-order-permission-validation-receipt-local-validation-execution-result-supply-gate-contract.test.cjs
+npm run check:trading-manual-order-permission-validation-receipt-local-validation-execution-result-supply-gate
+```
+
+This `manual_order_permission_validation_receipt_local_validation_execution_result_supply_gate` step opens only the future owner-local validation receipt execution result supply boundary. It does not run the validator now, does not read a validation receipt or validation result now, does not record a validation receipt review result now, does not store the actual owner-local packet path or receipt path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash inputs, does not call KIS or any provider, does not submit orders, and keeps provider adapters, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
