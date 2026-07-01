@@ -3807,6 +3807,19 @@ npm run check:trading-manual-order-permission-import-result-recording-preflight
 
 This `manual_order_permission_import_result_recording_preflight` step opens only the future permission import result recording preflight after the import implementation review result supply gate. It does not accept or record the owner review result now, does not record an import result now, does not read a private permission packet, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6Q Trading Manual Order Permission Import Result Supply Gate
+
+The first Trading Manual Order Permission Import Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_import_result_supply_gate_contract.json
+scripts/generate-trading-manual-order-permission-import-result-supply-gate-contract.cjs
+scripts/generate-trading-manual-order-permission-import-result-supply-gate-contract.test.cjs
+npm run check:trading-manual-order-permission-import-result-supply-gate
+```
+
+This `manual_order_permission_import_result_supply_gate` step opens only the future owner-supplied redacted permission import result supply boundary. It does not accept or record the import result now, does not accept or record the owner review result now, does not read a private permission packet, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

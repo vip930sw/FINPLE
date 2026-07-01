@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `136/136 = 100%`
-- Required npm check coverage: `177/177 = 100%`
+- Contract/guardrail progress: `137/137 = 100%`
+- Required npm check coverage: `178/178 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -105,12 +105,13 @@ Completed safe steps:
 18. Open the manual order permission import implementation review result recording preflight without accepting the owner review result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_implementation_review_result_recording_preflight_contract.json`.
 19. Open the manual order permission import implementation review result supply gate without accepting the owner review result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_implementation_review_result_supply_gate_contract.json`.
 20. Open the manual order permission import result recording preflight without accepting the owner review result, reading a private packet, implementing the import service, recording an import result, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_result_recording_preflight_contract.json`.
+21. Open the manual order permission import result supply gate without accepting or recording the import result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_result_supply_gate_contract.json`.
 
 Next safe tasks:
 
 1. Owner supplies a redacted manual order permission import implementation review result outside repo commits.
-2. Open a separate permission import result supply gate without reading private packet paths or importing permission evidence.
-3. Keep kill-switch clearance, risk-gate clearance, dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
+2. Open a separate kill-switch clearance review preflight without reading private packet paths or opening order submission.
+3. Keep risk-gate clearance, dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
 
 Current blockers:
 
