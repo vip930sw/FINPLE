@@ -3600,6 +3600,18 @@ This is a future owner-review preflight for a redacted read-only approval valida
 
 The preflight requires the existing receipt contract, receipt validator fixtures, local receipt validator, approval-import implementation block, and private read-only provider implementation block to remain aligned. Passing this preflight only says a later owner-supplied redacted receipt can be reviewed through an explicit path; it still does not record private paths or raw values, import approval evidence, authorize provider calls, create runtime routes, write DB rows, expose UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
 
+## Step 116-5N Trading Read-Only Approval Packet Validation Result Receipt Review Preflight Validator
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Review Preflight Validator is:
+
+```text
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt-review-preflight.cjs
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt-review-preflight.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator
+```
+
+This is a pure local validator for the review preflight contract. It requires explicit `--contract` input, validates the future receipt and approval-packet paths, verifies review gates and forbidden-content catalogs, and rejects any enabled receipt read, approval packet import, provider call, order submission, runtime route, DB, public UI, or live trading flags. It does not read private files, call KIS or Alpha Vantage, write DB rows, create runtime routes, expose public UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
