@@ -3742,6 +3742,19 @@ npm run check:trading-manual-order-permission-validation-receipt-review-result-s
 
 This `manual_order_permission_validation_receipt_review_result_supply_gate` step opens only the future owner-supplied redacted validation receipt review result supply boundary. It does not accept or record the review result now, does not read a validation receipt or validation result now, does not store the actual owner-local packet path or receipt path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash inputs, does not call KIS or any provider, does not submit orders, and keeps provider adapters, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6L Trading Manual Order Permission Import Review Preflight
+
+The first Trading Manual Order Permission Import Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_import_review_preflight_contract.json
+scripts/generate-trading-manual-order-permission-import-review-preflight-contract.cjs
+scripts/generate-trading-manual-order-permission-import-review-preflight-contract.test.cjs
+npm run check:trading-manual-order-permission-import-review-preflight
+```
+
+This `manual_order_permission_import_review_preflight` step opens only the future import review preflight boundary after the validation receipt review result supply gate. It does not accept the owner-supplied redacted review result now, does not read a validation receipt or review result now, does not record review result evidence, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not implement `manualOrderPermissionImport.js`, does not import permission evidence, does not implement the order adapter, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

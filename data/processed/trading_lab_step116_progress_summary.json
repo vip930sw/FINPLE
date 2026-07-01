@@ -67,6 +67,7 @@
       "manualOrderPermissionValidationReceiptLocalValidationExecutionResultSupplyGate": "data\\processed\\trading_lab_step116_manual_order_permission_validation_receipt_local_validation_execution_result_supply_gate_contract.json",
       "manualOrderPermissionValidationReceiptReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_receipt_review_result_recording_preflight_contract.json",
       "manualOrderPermissionValidationReceiptReviewResultSupplyGate": "data\\processed\\trading_lab_step116_manual_order_permission_validation_receipt_review_result_supply_gate_contract.json",
+      "manualOrderPermissionImportReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_review_preflight_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -160,10 +161,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 131,
-    "trackedContractsReady": 131,
+    "trackedContractsTotal": 132,
+    "trackedContractsReady": 132,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 172,
+    "requiredNpmScriptsTotal": 173,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -710,6 +711,15 @@
       "title": "Manual order permission validation receipt review result supply gate",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_validation_receipt_review_result_supply_gate_contract.json",
       "status": "validation_receipt_review_result_supply_gate_ready_pending_owner_review_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionImportReviewPreflight",
+      "title": "Manual order permission import review preflight",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_import_review_preflight_contract.json",
+      "status": "manual_order_permission_import_review_preflight_ready_import_still_blocked_pending_owner_review_result",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

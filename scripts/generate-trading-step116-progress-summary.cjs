@@ -209,6 +209,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_manual_order_permission_validation_receipt_review_result_supply_gate_contract.json",
   ],
   [
+    "manualOrderPermissionImportReviewPreflight",
+    "Manual order permission import review preflight",
+    "trading_lab_step116_manual_order_permission_import_review_preflight_contract.json",
+  ],
+  [
     "manualOrderPermissionHashPreparationRunbookValidatorFixtures",
     "Manual order permission hash preparation runbook validator fixtures",
     "trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
@@ -614,6 +619,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-validation-receipt-local-validation-execution-result-supply-gate",
   "check:trading-manual-order-permission-validation-receipt-review-result-recording-preflight",
   "check:trading-manual-order-permission-validation-receipt-review-result-supply-gate",
+  "check:trading-manual-order-permission-import-review-preflight",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator-fixtures",
   "check:trading-manual-order-permission-import-implementation-preflight",
