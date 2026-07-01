@@ -6,14 +6,15 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff commit: `adf481e Record KIS personal order authority assertion`
+Current handoff commit: `f9c5a0a Record live guarded clearance review bundle`
 
 ## Current State
 
-Step 116 AI Trading Lab has a complete contract/guardrail stack, but trading runtime remains closed.
+Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `114/114 = 100%`
-- Required npm check coverage: `155/155 = 100%`
+- Contract/guardrail progress: `115/115 = 100%`
+- Required npm check coverage: `156/156 = 100%`
+- `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -44,7 +45,7 @@ These are now recorded as internal evidence contracts:
 - `data/processed/trading_lab_step116_owner_order_path_assertion_contract.json`
 - `data/processed/trading_lab_step116_kis_personal_order_authority_assertion_contract.json`
 
-Important: these contracts clear blocker language only. They do not approve real order submission and do not bypass FINPLE operational gates.
+Important: these contracts clear external order-authority blocker language only. They do not approve real order submission and do not bypass FINPLE operational gates.
 
 ## Do Not Do Yet
 

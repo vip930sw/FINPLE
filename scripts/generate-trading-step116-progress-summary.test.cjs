@@ -174,7 +174,12 @@ test("summarizes contract progress while keeping trading locked", () => {
   assert.equal(report.progress.trackedContractsReady, 115);
   assert.equal(report.progress.trackedContractsRemaining, 0);
   assert.equal(report.progress.requiredNpmScriptsTotal, 156);
+  assert.deepEqual(report.progress.authorityExternalBlockersCleared, [
+    "owner_order_path_assertion_recorded",
+    "kis_personal_order_authority_recorded",
+  ]);
   assert.equal(report.readiness.contractStackReady, true);
+  assert.equal(report.readiness.orderSubmissionAuthorityExternalBlockerCleared, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
   assert.equal(report.readiness.readyForOrderSubmission, false);
@@ -209,8 +214,8 @@ test("records remaining trading gates instead of approving provider calls or ord
     report.remainingTradingGates.join("|"),
     /private_operator_access_implementation_review_blocked_pending_private_runtime_review/,
   );
-  assert.match(report.remainingTradingGates.join("|"), /owner_order_path_assertion_recorded_orders_still_blocked/);
-  assert.match(
+  assert.doesNotMatch(report.remainingTradingGates.join("|"), /owner_order_path_assertion_recorded_orders_still_blocked/);
+  assert.doesNotMatch(
     report.remainingTradingGates.join("|"),
     /kis_personal_order_authority_recorded_orders_still_blocked/,
   );

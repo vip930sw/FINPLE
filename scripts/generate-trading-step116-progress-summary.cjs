@@ -650,8 +650,6 @@ const REMAINING_TRADING_GATES = [
   "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
   "db_storage_review_blocked_pending_private_runtime_review",
   "runtime_route_review_blocked_pending_private_runtime_review",
-  "owner_order_path_assertion_recorded_orders_still_blocked",
-  "kis_personal_order_authority_recorded_orders_still_blocked",
   "manual_order_permission_packet_not_imported",
   "kill_switch_clearance_not_recorded_for_order_submission",
   "risk_gate_clearance_not_recorded_for_order_submission",
@@ -811,6 +809,7 @@ function buildContract() {
       contractStackReady,
       readyForReadOnlyProviderCalls: false,
       readyForPrivateShadowRuntime: false,
+      orderSubmissionAuthorityExternalBlockerCleared: true,
       readyForOrderSubmission: false,
       readyForLiveGuardedTrading: false,
       providerCallsAllowed: false,
@@ -828,8 +827,12 @@ function buildContract() {
       requiredNpmScriptsMissing: missingNpmScripts.length,
       completionRatio: Number((readyMilestones.length / milestones.length).toFixed(4)),
       phase: contractStackReady
-        ? "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
+        ? "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews"
         : "private_paper_shadow_contract_stack_incomplete",
+      authorityExternalBlockersCleared: [
+        "owner_order_path_assertion_recorded",
+        "kis_personal_order_authority_recorded",
+      ],
     },
     milestones,
     remainingTradingGates: REMAINING_TRADING_GATES,
@@ -847,6 +850,7 @@ function buildContract() {
       contractStackReady,
       readyForReadOnlyProviderCalls: false,
       readyForPrivateShadowRuntime: false,
+      orderSubmissionAuthorityExternalBlockerCleared: true,
       readyForOrderSubmission: false,
       readyForLiveGuardedTrading: false,
       providerCallsAllowed: false,
