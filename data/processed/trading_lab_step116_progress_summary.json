@@ -62,6 +62,7 @@
       "manualOrderPermissionPacketValidationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_preflight_validator_fixtures.json",
       "manualOrderPermissionPacketValidationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_packet_validation_runbook_contract.json",
       "manualOrderPermissionPacketPreparationChecklist": "data\\processed\\trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json",
+      "liveGuardedInternalGateClearanceSequence": "data\\processed\\trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json",
       "manualOrderPermissionValidationResultReceipt": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt.json",
       "manualOrderPermissionValidationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_validator_fixtures.json",
       "manualOrderPermissionValidationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_validation_result_receipt_review_preflight.json",
@@ -144,10 +145,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 116,
-    "trackedContractsReady": 116,
+    "trackedContractsTotal": 117,
+    "trackedContractsReady": 117,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 157,
+    "requiredNpmScriptsTotal": 158,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -648,6 +649,15 @@
       "title": "Manual order permission packet preparation checklist",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json",
       "status": "checklist_ready_pending_owner_assisted_manual_order_permission_packet_preparation",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedInternalGateClearanceSequence",
+      "title": "Live-guarded internal gate clearance sequence",
+      "filePath": "data\\processed\\trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json",
+      "status": "sequence_contract_ready_owner_local_packet_preparation_opened_remaining_results_pending_evidence",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

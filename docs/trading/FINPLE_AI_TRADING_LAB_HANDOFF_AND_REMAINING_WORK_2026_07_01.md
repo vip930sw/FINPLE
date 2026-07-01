@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff commit: `f9c5a0a Record live guarded clearance review bundle`
+Current handoff commit: `0f862e8 Add manual order permission packet checklist`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `116/116 = 100%`
-- Required npm check coverage: `157/157 = 100%`
+- Contract/guardrail progress: `117/117 = 100%`
+- Required npm check coverage: `158/158 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
@@ -71,10 +71,11 @@ Goal: convert the owner order authority assertions into a redacted, local, revie
 Next safe tasks:
 
 1. Prepare the owner-assisted manual order permission packet checklist from the existing template and runbooks. Completed as `trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json`.
-2. Decide the exact hash inputs the owner can safely provide outside the repo.
-3. Validate a redacted packet only through an explicit local path.
-4. Record a validation result receipt.
-5. Review that receipt before any import implementation work.
+2. Record the internal gate sequence and open only owner-local packet preparation while leaving evidence-dependent stages closed. Completed as `trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json`.
+3. Decide the exact hash inputs the owner can safely provide outside the repo.
+4. Validate a redacted packet only through an explicit local path.
+5. Record a validation result receipt.
+6. Review that receipt before any import implementation work.
 
 Current blockers:
 

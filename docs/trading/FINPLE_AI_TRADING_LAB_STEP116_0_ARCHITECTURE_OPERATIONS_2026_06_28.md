@@ -3586,6 +3586,21 @@ This is an owner-assisted preparation checklist for a future redacted manual ord
 
 The checklist confirms the next owner action can prepare a packet outside repo commits with hashes, caps, time boxes, and fail-closed flags only. It does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not run validation, does not import the packet, and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5W Trading Live-Guarded Internal Gate Clearance Sequence
+
+The first Trading Live-Guarded Internal Gate Clearance Sequence contract is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json
+scripts/generate-trading-live-guarded-internal-gate-clearance-sequence-contract.cjs
+scripts/generate-trading-live-guarded-internal-gate-clearance-sequence-contract.test.cjs
+npm run check:trading-live-guarded-internal-gate-clearance-sequence
+```
+
+This is a sequence contract for the internal operational gate order: owner-prepared manual permission packet, validation result receipt, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result, and live-guarded order adapter review. It is not a private packet creator, private packet reader, validator execution, clearance result recorder, replay executor, shadow-history reader, KIS call, provider call, order adapter implementation, runtime route, DB migration, public UI, order submission, or live trading approval.
+
+The sequence opens only the next owner-local packet preparation action and keeps every evidence-dependent result pending until a redacted owner or execution result exists. It does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not record private paths or raw values, and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
 
 The first Trading Read-Only Approval Packet Preparation Runbook contract is:

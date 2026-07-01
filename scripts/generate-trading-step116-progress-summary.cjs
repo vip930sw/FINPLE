@@ -184,6 +184,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json",
   ],
   [
+    "liveGuardedInternalGateClearanceSequence",
+    "Live-guarded internal gate clearance sequence",
+    "trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json",
+  ],
+  [
     "manualOrderPermissionValidationResultReceipt",
     "Manual order permission validation result receipt",
     "trading_lab_step116_manual_order_permission_validation_result_receipt.json",
@@ -538,6 +543,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-manual-order-permission-packet-validation-preflight-validator-fixtures",
   "check:trading-manual-order-permission-packet-validation-runbook",
   "check:trading-manual-order-permission-packet-preparation-checklist",
+  "check:trading-live-guarded-internal-gate-clearance-sequence",
   "check:trading-manual-order-permission-validation-result-receipt",
   "check:trading-manual-order-permission-validation-result-receipt-validator",
   "check:trading-manual-order-permission-validation-result-receipt-validator-fixtures",
