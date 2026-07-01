@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `126/126 = 100%`
-- Required npm check coverage: `167/167 = 100%`
+- Contract/guardrail progress: `127/127 = 100%`
+- Required npm check coverage: `168/168 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -95,6 +95,7 @@ Completed safe steps:
 8. Open the local validation execution preflight without reading the private packet, running the validator, or creating a receipt: `trading_lab_step116_manual_order_permission_local_validation_execution_preflight_contract.json`.
 9. Open the validation receipt recording preflight without reading validation output, recording a receipt, or opening kill-switch clearance: `trading_lab_step116_manual_order_permission_validation_receipt_recording_preflight_contract.json`.
 10. Open the validation execution result supply gate without accepting a result, reading validation output, or recording a receipt: `trading_lab_step116_manual_order_permission_validation_execution_result_supply_gate_contract.json`.
+11. Open the explicit local validation receipt path supply gate without accepting a path, reading a receipt, or recording a receipt: `trading_lab_step116_manual_order_permission_validation_receipt_explicit_local_receipt_path_supply_gate_contract.json`.
 
 Next safe tasks:
 
@@ -221,8 +222,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 126/126 tracked contracts ready
-- 167/167 required npm checks present
+- 127/127 tracked contracts ready
+- 168/168 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -261,10 +262,10 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 작업 기준은 실제 GitHub main 소스입니다. 시작 시 반드시 로컬/원격 main, Render API/DB health, Vercel 운영 응답을 확인해주세요.
 
 현재 상태:
-- Step 116 AI Trading Lab contract/guardrail stack은 126/126 ready, required npm checks 167/167 입니다.
+- Step 116 AI Trading Lab contract/guardrail stack은 127/127 ready, required npm checks 168/168 입니다.
 - owner order path assertion, KIS personal order authority assertion, KIS personal terms permission assertion은 기록 완료되었습니다.
 - 개인계좌/KIS 주문 제출 권한은 외부 blocker가 아닙니다.
-- owner-local manual order permission packet preparation assertion, explicit local packet validation receipt intake, owner explicit local packet path supply gate, local validation execution preflight, validation receipt recording preflight, validation execution result supply gate는 기록되었습니다.
+- owner-local manual order permission packet preparation assertion, explicit local packet validation receipt intake, owner explicit local packet path supply gate, local validation execution preflight, validation receipt recording preflight, validation execution result supply gate, explicit local validation receipt path supply gate는 기록되었습니다.
 - actual owner-local packet path, private packet, validation receipt는 아직 repo에 기록하지 않았습니다.
 - 실제 주문 제출 구현/실행은 manual permission packet validation receipt, kill-switch clearance review, risk-gate clearance review, dry-run replay execution result, shadow-history review, live-guarded adapter review가 순서대로 완료되기 전까지 열지 않습니다.
 - readyForReadOnlyProviderCalls=false
