@@ -3599,6 +3599,19 @@ npm run check:trading-manual-order-permission-owner-local-packet-preparation-han
 
 This `manual_order_permission_owner_local_packet_preparation_handoff` step opens only the owner-local redacted packet preparation handoff after the hash-input decision, packet checklist, validation runbook, validation preflight, KIS terms assertion, and internal gate sequence are aligned. It does not create, read, import, or record the path of `data/private/trading/manual_order_permission.redacted.json`, does not record raw values or hash values, does not run validation, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6A Trading Manual Order Permission Owner-Local Packet Preparation Assertion
+
+The first Trading Manual Order Permission Owner-Local Packet Preparation Assertion contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_owner_local_packet_preparation_assertion_contract.json
+scripts/generate-trading-manual-order-permission-owner-local-packet-preparation-assertion-contract.cjs
+scripts/generate-trading-manual-order-permission-owner-local-packet-preparation-assertion-contract.test.cjs
+npm run check:trading-manual-order-permission-owner-local-packet-preparation-assertion
+```
+
+This `manual_order_permission_owner_local_packet_preparation_assertion` step records only that the next validation gate may proceed through an explicit owner-local redacted packet path later. It does not create, read, import, or record the path of `data/private/trading/manual_order_permission.redacted.json`, does not create `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not run validation, does not record a validation receipt, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
