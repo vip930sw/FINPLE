@@ -3664,6 +3664,19 @@ npm run check:trading-manual-order-permission-validation-receipt-recording-prefl
 
 This `manual_order_permission_validation_receipt_recording_preflight` step opens only the redacted validation receipt recording preflight for a later owner local validation execution result. It does not read validation output now, does not record a receipt now, does not store the actual owner-local packet path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash inputs, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6F Trading Manual Order Permission Validation Execution Result Supply Gate
+
+The first Trading Manual Order Permission Validation Execution Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_validation_execution_result_supply_gate_contract.json
+scripts/generate-trading-manual-order-permission-validation-execution-result-supply-gate-contract.cjs
+scripts/generate-trading-manual-order-permission-validation-execution-result-supply-gate-contract.test.cjs
+npm run check:trading-manual-order-permission-validation-execution-result-supply-gate
+```
+
+This `manual_order_permission_validation_execution_result_supply_gate` step opens only the future owner-local validation execution result supply boundary. It does not read validation output now, does not record a validation receipt now, does not store the actual owner-local packet path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash inputs, does not call KIS or any provider, does not submit orders, and keeps provider adapters, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
