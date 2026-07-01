@@ -3612,6 +3612,19 @@ npm run check:trading-manual-order-permission-owner-local-packet-preparation-ass
 
 This `manual_order_permission_owner_local_packet_preparation_assertion` step records only that the next validation gate may proceed through an explicit owner-local redacted packet path later. It does not create, read, import, or record the path of `data/private/trading/manual_order_permission.redacted.json`, does not create `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not run validation, does not record a validation receipt, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6B Trading Manual Order Permission Explicit Local Packet Validation Receipt Intake
+
+The first Trading Manual Order Permission Explicit Local Packet Validation Receipt Intake contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_explicit_local_packet_validation_receipt_intake_contract.json
+scripts/generate-trading-manual-order-permission-explicit-local-packet-validation-receipt-intake-contract.cjs
+scripts/generate-trading-manual-order-permission-explicit-local-packet-validation-receipt-intake-contract.test.cjs
+npm run check:trading-manual-order-permission-explicit-local-packet-validation-receipt-intake
+```
+
+This `manual_order_permission_explicit_local_packet_validation_receipt_intake` step opens only the intake boundary for a later owner-supplied explicit local redacted packet path. It records placeholder command shape only and does not accept or record the actual path value in repo files, does not read `data/private/trading/manual_order_permission.redacted.json`, does not run validation, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash values, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `78d3e55 Record owner-local manual order packet handoff`
+Current handoff base commit before this update: `5ef8bd1 Record owner-local packet preparation assertion`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `121/121 = 100%`
-- Required npm check coverage: `162/162 = 100%`
+- Contract/guardrail progress: `122/122 = 100%`
+- Required npm check coverage: `163/163 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -90,12 +90,14 @@ Completed safe steps:
 3. Decide the exact hash inputs the owner can safely provide outside the repo: `trading_lab_step116_manual_order_permission_hash_input_decision_contract.json`.
 4. Open the owner-local redacted packet preparation handoff without creating or reading the private packet: `trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json`.
 5. Record the owner-local packet preparation assertion without creating, reading, or path-recording the private packet: `trading_lab_step116_manual_order_permission_owner_local_packet_preparation_assertion_contract.json`.
+6. Open the explicit local packet validation receipt intake without accepting or recording the actual owner-local path: `trading_lab_step116_manual_order_permission_explicit_local_packet_validation_receipt_intake_contract.json`.
 
 Next safe tasks:
 
-1. Validate a redacted packet only through an explicit owner-local path.
-2. Record a redacted validation result receipt without packet paths or raw values.
-3. Review that receipt before any import implementation work.
+1. Owner supplies an explicit local redacted packet path outside repo commits.
+2. Validate a redacted packet only through that explicit owner-local path.
+3. Record a redacted validation result receipt without packet paths or raw values.
+4. Review that receipt before any import implementation work.
 
 Current blockers:
 
@@ -196,15 +198,16 @@ Current blockers:
 
 Fastest safe path toward private trading readiness:
 
-1. Manual order permission packet validation receipt through an explicit owner-local packet path.
-2. Kill-switch clearance review result contract.
-3. Risk-gate clearance review result contract.
-4. Dry-run replay execution result contract.
-5. Shadow-history review result contract.
-6. Live-guarded KIS order adapter implementation review contract.
-7. Private worker implementation only after all above pass.
-8. Private dashboard/operator monitoring.
-9. Public dashboard/homepage router only after live-guarded review.
+1. Owner supplies an explicit local redacted manual order permission packet path outside repo commits.
+2. Manual order permission packet validation receipt through that explicit owner-local packet path.
+3. Kill-switch clearance review result contract.
+4. Risk-gate clearance review result contract.
+5. Dry-run replay execution result contract.
+6. Shadow-history review result contract.
+7. Live-guarded KIS order adapter implementation review contract.
+8. Private worker implementation only after all above pass.
+9. Private dashboard/operator monitoring.
+10. Public dashboard/homepage router only after live-guarded review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 
@@ -214,8 +217,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 121/121 tracked contracts ready
-- 162/162 required npm checks present
+- 122/122 tracked contracts ready
+- 163/163 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -235,12 +238,13 @@ Still intentionally blocked:
 - `scenario_monthly_returns.csv`
 
 Next work:
-1. manual order permission packet validation receipt through an explicit owner-local packet path
-2. kill-switch clearance review result
-3. risk-gate clearance review result
-4. dry-run replay execution result
-5. shadow-history review result
-6. live-guarded KIS order adapter implementation review
+1. owner supplies an explicit local redacted manual order permission packet path outside repo commits
+2. manual order permission packet validation receipt through that explicit owner-local packet path
+3. kill-switch clearance review result
+4. risk-gate clearance review result
+5. dry-run replay execution result
+6. shadow-history review result
+7. live-guarded KIS order adapter implementation review
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```
@@ -253,10 +257,11 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 작업 기준은 실제 GitHub main 소스입니다. 시작 시 반드시 로컬/원격 main, Render API/DB health, Vercel 운영 응답을 확인해주세요.
 
 현재 상태:
-- Step 116 AI Trading Lab contract/guardrail stack은 121/121 ready, required npm checks 162/162 입니다.
+- Step 116 AI Trading Lab contract/guardrail stack은 122/122 ready, required npm checks 163/163 입니다.
 - owner order path assertion, KIS personal order authority assertion, KIS personal terms permission assertion은 기록 완료되었습니다.
 - 개인계좌/KIS 주문 제출 권한은 외부 blocker가 아닙니다.
-- owner-local manual order permission packet preparation assertion은 repo 밖 packet 준비와 explicit local path validation으로 넘어가는 handoff로 기록되었습니다.
+- owner-local manual order permission packet preparation assertion과 explicit local packet validation receipt intake는 기록되었습니다.
+- actual owner-local packet path, private packet, validation receipt는 아직 repo에 기록하지 않았습니다.
 - 실제 주문 제출 구현/실행은 manual permission packet validation receipt, kill-switch clearance review, risk-gate clearance review, dry-run replay execution result, shadow-history review, live-guarded adapter review가 순서대로 완료되기 전까지 열지 않습니다.
 - readyForReadOnlyProviderCalls=false
 - readyForOrderSubmission=false
@@ -279,7 +284,7 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 - scenario runtime/API/chart/calculatePortfolioResult 수정 금지
 
 다음 권장 작업:
-Step 116 다음 단계로 manual order permission packet validation receipt through an explicit owner-local packet path, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result를 묶어서 안전하게 진행해주세요.
+Step 116 다음 단계로 owner-supplied explicit local packet path를 받아 manual order permission packet validation receipt를 기록하고, 이어서 kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result를 안전하게 진행해주세요.
 
 진척도는 order authority external blocker, internal operational gates, actual live trading readiness를 분리해서 보고해주세요.
 
