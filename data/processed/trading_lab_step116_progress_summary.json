@@ -54,6 +54,7 @@
       "manualOrderPermissionHashHelperImplementationReview": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_contract.json",
       "manualOrderPermissionHashHelperImplementationReviewValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json",
       "manualOrderPermissionHashPreparationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json",
+      "manualOrderPermissionHashInputDecision": "data\\processed\\trading_lab_step116_manual_order_permission_hash_input_decision_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -147,10 +148,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 118,
-    "trackedContractsReady": 118,
+    "trackedContractsTotal": 119,
+    "trackedContractsReady": 119,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 159,
+    "requiredNpmScriptsTotal": 160,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -580,6 +581,15 @@
       "title": "Manual order permission hash preparation runbook",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json",
       "status": "contract_ready_pending_owner_assisted_manual_order_hash_preparation_runbook_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionHashInputDecision",
+      "title": "Manual order permission hash input decision",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_input_decision_contract.json",
+      "status": "hash_input_decision_ready_owner_local_hash_preparation_unlocked",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

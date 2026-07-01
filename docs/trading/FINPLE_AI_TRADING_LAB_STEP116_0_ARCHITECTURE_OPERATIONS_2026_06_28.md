@@ -3571,6 +3571,21 @@ This is an owner-supplied KIS personal-account terms and permit assertion contra
 
 The assertion clears only the external terms/permit blocker language. It still keeps the internal operational sequence closed: owner-local manual permission packet, validation result receipt, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result, and live-guarded order adapter review must be completed separately before any order-capable runtime work.
 
+## Step 116-5Y Trading Manual Order Permission Hash Input Decision
+
+The first Trading Manual Order Permission Hash Input Decision contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_hash_input_decision_contract.json
+scripts/generate-trading-manual-order-permission-hash-input-decision-contract.cjs
+scripts/generate-trading-manual-order-permission-hash-input-decision-contract.test.cjs
+npm run check:trading-manual-order-permission-hash-input-decision
+```
+
+This is a hash-input decision contract for owner-local manual order permission packet preparation, not a raw input request, private pepper request, hash generator execution, private packet creator, packet validator execution, permission import, KIS call, provider call, order adapter implementation, runtime route, DB migration, public UI, order submission, or live trading approval. It records the approved hash labels the owner may prepare outside the repo: operator, policy, adapter review, kill-switch, risk-gate, credential boundary, dry-run replay, shadow history, audit logger, allowed symbols, and revocation-plan hashes.
+
+The decision unlocks only owner-local hash input preparation. It does not commit raw values, peppers, hash outputs, private files, `data/private/trading/manual_order_permission.redacted.json`, or `data/private/trading/manual_order_permission_hash_inputs.redacted.json`, and it keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff commit: `c91e4f2 Record live guarded internal gate sequence`
+Current handoff commit: `eb14fec Record KIS personal terms permission assertion`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `118/118 = 100%`
-- Required npm check coverage: `159/159 = 100%`
+- Contract/guardrail progress: `119/119 = 100%`
+- Required npm check coverage: `160/160 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -75,10 +75,11 @@ Next safe tasks:
 
 1. Prepare the owner-assisted manual order permission packet checklist from the existing template and runbooks. Completed as `trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json`.
 2. Record the internal gate sequence and open only owner-local packet preparation while leaving evidence-dependent stages closed. Completed as `trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json`.
-3. Decide the exact hash inputs the owner can safely provide outside the repo.
-4. Validate a redacted packet only through an explicit local path.
-5. Record a validation result receipt.
-6. Review that receipt before any import implementation work.
+3. Decide the exact hash inputs the owner can safely provide outside the repo. Completed as `trading_lab_step116_manual_order_permission_hash_input_decision_contract.json`.
+4. Prepare hash values and the redacted packet outside repo commits.
+5. Validate a redacted packet only through an explicit local path.
+6. Record a validation result receipt.
+7. Review that receipt before any import implementation work.
 
 Current blockers:
 
