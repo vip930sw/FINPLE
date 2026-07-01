@@ -58,6 +58,7 @@
       "manualOrderPermissionOwnerLocalPacketPreparationHandoff": "data\\processed\\trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json",
       "manualOrderPermissionOwnerLocalPacketPreparationAssertion": "data\\processed\\trading_lab_step116_manual_order_permission_owner_local_packet_preparation_assertion_contract.json",
       "manualOrderPermissionExplicitLocalPacketValidationReceiptIntake": "data\\processed\\trading_lab_step116_manual_order_permission_explicit_local_packet_validation_receipt_intake_contract.json",
+      "manualOrderPermissionOwnerExplicitLocalPacketPathSupplyGate": "data\\processed\\trading_lab_step116_manual_order_permission_owner_explicit_local_packet_path_supply_gate_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -151,10 +152,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 122,
-    "trackedContractsReady": 122,
+    "trackedContractsTotal": 123,
+    "trackedContractsReady": 123,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 163,
+    "requiredNpmScriptsTotal": 164,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -620,6 +621,15 @@
       "title": "Manual order permission explicit local packet validation receipt intake",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_explicit_local_packet_validation_receipt_intake_contract.json",
       "status": "explicit_local_packet_validation_receipt_intake_ready_pending_owner_local_path",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionOwnerExplicitLocalPacketPathSupplyGate",
+      "title": "Manual order permission owner explicit local packet path supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_owner_explicit_local_packet_path_supply_gate_contract.json",
+      "status": "owner_explicit_local_packet_path_supply_gate_ready_pending_owner_path",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
