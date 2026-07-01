@@ -114,11 +114,12 @@ Completed safe steps:
 27. Open the risk-gate clearance review preflight without reading private evidence, recording a risk snapshot or risk-gate clearance result, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_preflight_contract.json`.
 28. Open the risk-gate clearance review result supply gate without accepting, reading, or recording the result, reading private evidence, recording a risk snapshot, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_supply_gate_contract.json`.
 29. Open the risk-gate clearance review result contract boundary without reading or recording the owner result, reading private evidence, recording raw risk snapshots, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_contract.json`.
+30. Open the dry-run replay execution result contract boundary without executing a replay, reading private evidence, recording raw order/provider/risk/paper-ledger payloads, opening shadow-history review, or opening order submission: `trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json`.
 
 Next safe tasks:
 
-1. Prepare a separate dry-run replay execution result contract without executing a replay, reading private evidence, opening the live adapter, or opening order submission.
-2. Keep shadow-history review and live-guarded adapter review closed until their ordered result records exist.
+1. Prepare a separate shadow-history review result contract without reading private history, opening the live adapter, or opening order submission.
+2. Keep live-guarded adapter review closed until the ordered shadow-history result record exists.
 
 Current blockers:
 
@@ -161,7 +162,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add a dry-run replay execution result contract after the risk-gate result boundary.
+4. Add a shadow-history review result contract after the dry-run replay execution result boundary.
 
 Current blocker:
 
@@ -173,9 +174,8 @@ Goal: prove the intended order path through deterministic replay and private sha
 
 Next safe tasks:
 
-1. Define a dry-run replay execution result contract.
-2. Define a shadow-history review result contract.
-3. Require both results before any live-guarded adapter implementation review.
+1. Define a shadow-history review result contract.
+2. Require the dry-run replay execution result and shadow-history result before any live-guarded adapter implementation review.
 
 Current blockers:
 
@@ -225,12 +225,11 @@ Fastest safe path toward private trading readiness:
 1. Owner supplies an explicit local redacted manual order permission packet path outside repo commits.
 2. Manual order permission packet validation receipt through that explicit owner-local packet path.
 3. Kill-switch clearance review result contract and receipt boundary.
-4. Dry-run replay execution result contract.
-5. Shadow-history review result contract.
-6. Live-guarded KIS order adapter implementation review contract.
-7. Private worker implementation only after all above pass.
-8. Private dashboard/operator monitoring.
-9. Public dashboard/homepage router only after live-guarded review.
+4. Shadow-history review result contract.
+5. Live-guarded KIS order adapter implementation review contract.
+6. Private worker implementation only after all above pass.
+7. Private dashboard/operator monitoring.
+8. Public dashboard/homepage router only after live-guarded review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 

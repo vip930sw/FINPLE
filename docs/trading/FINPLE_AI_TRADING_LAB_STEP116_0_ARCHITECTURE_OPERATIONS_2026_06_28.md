@@ -3924,6 +3924,19 @@ npm run check:trading-manual-order-permission-risk-gate-clearance-review-result
 
 This `manual_order_permission_risk_gate_clearance_review_result` step opens only the redacted, hash-only risk-gate clearance review result contract boundary after the supply gate. It does not read or record the owner result now, does not read private evidence, does not record raw risk snapshots, does not open dry-run replay, does not implement risk-gate runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6Z Trading Manual Order Permission Dry-Run Replay Execution Result Contract
+
+The first Trading Manual Order Permission Dry-Run Replay Execution Result Contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json
+scripts/generate-trading-manual-order-permission-dry-run-replay-execution-result-contract.cjs
+scripts/generate-trading-manual-order-permission-dry-run-replay-execution-result-contract.test.cjs
+npm run check:trading-manual-order-permission-dry-run-replay-execution-result
+```
+
+This `manual_order_permission_dry_run_replay_execution_result` step opens only the redacted, hash-only dry-run replay execution result contract boundary after the risk-gate clearance review result boundary. It does not execute a replay now, does not read private evidence, does not record raw order/provider/risk/paper-ledger payloads, does not open shadow-history review, does not implement replay runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
