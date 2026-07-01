@@ -112,6 +112,7 @@
       "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
       "alphaKrMarketBoundary": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
       "brokerContingencyReview": "data\\processed\\trading_lab_step116_broker_contingency_review_contract.json",
+      "ownerOrderPathAssertion": "data\\processed\\trading_lab_step116_owner_order_path_assertion_contract.json",
       "readOnlyApprovalPacketPreparationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
       "readOnlyApprovalPacketValidationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
       "readOnlyApprovalPacketValidationResultReceipt": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
@@ -139,10 +140,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 112,
-    "trackedContractsReady": 112,
+    "trackedContractsTotal": 113,
+    "trackedContractsReady": 113,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 153,
+    "requiredNpmScriptsTotal": 154,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1094,6 +1095,15 @@
       "allowFlagViolations": []
     },
     {
+      "id": "ownerOrderPathAssertion",
+      "title": "Owner order path assertion",
+      "filePath": "data\\processed\\trading_lab_step116_owner_order_path_assertion_contract.json",
+      "status": "owner_order_path_assertion_recorded_orders_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
       "id": "readOnlyApprovalPacketPreparationRunbook",
       "title": "Read-only approval packet preparation runbook",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
@@ -1167,6 +1177,7 @@
     "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
     "db_storage_review_blocked_pending_private_runtime_review",
     "runtime_route_review_blocked_pending_private_runtime_review",
+    "owner_order_path_assertion_recorded_orders_still_blocked",
     "manual_order_permission_packet_not_imported",
     "kill_switch_clearance_not_recorded_for_order_submission",
     "risk_gate_clearance_not_recorded_for_order_submission",
@@ -1222,6 +1233,7 @@
       "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
       "db_storage_review_blocked_pending_private_runtime_review",
       "runtime_route_review_blocked_pending_private_runtime_review",
+      "owner_order_path_assertion_recorded_orders_still_blocked",
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",

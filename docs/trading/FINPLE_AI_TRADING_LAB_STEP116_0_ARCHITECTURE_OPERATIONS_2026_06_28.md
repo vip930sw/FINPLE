@@ -3526,6 +3526,21 @@ This is a contingency decision contract for KIS reply delays or rejection, not a
 
 The contingency rule is fail-closed: do not replace KIS with Alpha for order submission, do not rotate Render trading env to a different broker without a new credential boundary, and do not create any non-KIS adapter until a separate terms review, account/API application review, mock/testbed review, and adapter design review have been completed.
 
+## Step 116-5S Trading Owner Order Path Assertion
+
+The first Trading Owner Order Path Assertion contract is:
+
+```text
+data/processed/trading_lab_step116_owner_order_path_assertion_contract.json
+scripts/generate-trading-owner-order-path-assertion-contract.cjs
+scripts/generate-trading-owner-order-path-assertion-contract.test.cjs
+npm run check:trading-owner-order-path-assertion
+```
+
+This is an owner assertion evidence contract, not a manual order permission packet import, KIS call, provider call, order adapter implementation, runtime route, DB migration, public UI, order submission, or live trading approval. It records the owner's July 1, 2026 statement that personal-account order work is not blocked by an external permission dispute, while preserving FINPLE's internal gates for manual order permission packet preparation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history review, and live-guarded adapter review.
+
+The assertion removes order-path external-permission waiting language from the forward plan, but it does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not change `FINPLE_TRADING_KILL_SWITCH=true`, and does not make `readyForOrderSubmission`, `orderSubmissionAllowed`, or `readyForLiveGuardedTrading` true.
+
 ## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
 
 The first Trading Read-Only Approval Packet Preparation Runbook contract is:

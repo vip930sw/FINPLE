@@ -406,6 +406,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_broker_contingency_review_contract.json",
   ],
   [
+    "ownerOrderPathAssertion",
+    "Owner order path assertion",
+    "trading_lab_step116_owner_order_path_assertion_contract.json",
+  ],
+  [
     "readOnlyApprovalPacketPreparationRunbook",
     "Read-only approval packet preparation runbook",
     "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
@@ -586,6 +591,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-public-dashboard-router-review-plan",
   "check:trading-alpha-kr-market-boundary",
   "check:trading-broker-contingency-review",
+  "check:trading-owner-order-path-assertion",
   "check:trading-read-only-approval-packet-preparation-runbook",
   "check:trading-read-only-approval-packet-validation-runbook",
   "check:trading-read-only-approval-packet-validation-result-receipt",
@@ -632,6 +638,7 @@ const REMAINING_TRADING_GATES = [
   "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
   "db_storage_review_blocked_pending_private_runtime_review",
   "runtime_route_review_blocked_pending_private_runtime_review",
+  "owner_order_path_assertion_recorded_orders_still_blocked",
   "manual_order_permission_packet_not_imported",
   "kill_switch_clearance_not_recorded_for_order_submission",
   "risk_gate_clearance_not_recorded_for_order_submission",

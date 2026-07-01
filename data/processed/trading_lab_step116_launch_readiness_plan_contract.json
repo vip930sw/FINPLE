@@ -223,6 +223,7 @@
       "private_operator_access_implementation_review_blocked_pending_private_runtime_review",
       "db_storage_review_blocked_pending_private_runtime_review",
       "runtime_route_review_blocked_pending_private_runtime_review",
+      "owner_order_path_assertion_recorded_orders_still_blocked",
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",
