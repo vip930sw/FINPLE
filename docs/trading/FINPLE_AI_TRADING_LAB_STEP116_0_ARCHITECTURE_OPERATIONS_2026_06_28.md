@@ -3612,6 +3612,19 @@ npm run check:trading-read-only-approval-packet-validation-result-receipt-review
 
 This is a pure local validator for the review preflight contract. It requires explicit `--contract` input, validates the future receipt and approval-packet paths, verifies review gates and forbidden-content catalogs, and rejects any enabled receipt read, approval packet import, provider call, order submission, runtime route, DB, public UI, or live trading flags. It does not read private files, call KIS or Alpha Vantage, write DB rows, create runtime routes, expose public UI, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
 
+## Step 116-5O Trading Read-Only Approval Packet Validation Result Receipt Review Preflight Validator Fixtures
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Review Preflight Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight_validator_fixtures.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator-fixtures.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator-fixtures.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator-fixtures
+```
+
+This is a synthetic fixture regression contract for the review preflight validator, not a real validation receipt, private approval packet reader, approval importer, KIS caller, Alpha Vantage caller, provider caller, runtime route, DB migration, public UI, order adapter, order submission, or live trading path. The fixtures exercise local validator success and fail-closed cases for missing fields, review gate drift, boundary actions, forbidden-content catalog drift, future receipt path drift, future approval packet path drift, allow flags, raw-value-shaped markers, and array-shape regressions.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
