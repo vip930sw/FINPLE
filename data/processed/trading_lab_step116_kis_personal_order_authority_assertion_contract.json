@@ -1,0 +1,113 @@
+{
+  "contractVersion": "trading-lab-step116-kis-personal-order-authority-assertion-v0.1",
+  "auditedAt": "2026-07-01T00:00:00Z",
+  "step": "Step 116-5T",
+  "scope": "kis_personal_order_authority_assertion",
+  "sourceFiles": {
+    "ownerOrderPathAssertion": "data\\processed\\trading_lab_step116_owner_order_path_assertion_contract.json",
+    "kisOrderAdapterDesignReview": "data\\processed\\trading_lab_step116_kis_order_adapter_design_review.json",
+    "manualOrderPermissionPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_preflight.json",
+    "liveGuardedOrderAdapterImplementationPreflight": "data\\processed\\trading_lab_step116_live_guarded_order_adapter_implementation_preflight.json",
+    "killSwitchClearanceContract": "data\\processed\\trading_lab_step116_kill_switch_clearance_contract.json",
+    "riskGateClearanceContract": "data\\processed\\trading_lab_step116_risk_gate_clearance_contract.json",
+    "envRiskGateContract": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
+    "progressSummary": "data\\processed\\trading_lab_step116_progress_summary.json",
+    "architectureDoc": "docs\\trading\\FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_kis_personal_order_authority_assertion_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "kisPersonalOrderAuthorityAssertionRecordedNow": true,
+    "authorityAssertionIsOperationalOrderApproval": false,
+    "manualOrderPermissionImportedNow": false,
+    "orderAdapterImplementedNow": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "kisPersonalOrderAuthorityAssertion": {
+    "assertedAt": "2026-07-01T16:25:00+09:00",
+    "assertionSummary": "owner stated that KIS explicitly allows personal-account trading, so order-submission authority should not remain an external-permission blocker",
+    "interpretation": "remove KIS personal-account order authority as an external blocker, while keeping FINPLE operational submission gates closed",
+    "acceptedBoundaries": [
+      "kis_personal_account_order_authority_not_external_blocker",
+      "authority_assertion_does_not_submit_orders",
+      "authority_assertion_does_not_call_kis",
+      "authority_assertion_does_not_create_order_adapter",
+      "authority_assertion_does_not_create_runtime_route",
+      "authority_assertion_does_not_override_kill_switch",
+      "authority_assertion_does_not_override_risk_gate",
+      "authority_assertion_does_not_replace_manual_order_permission_packet"
+    ],
+    "nextEligibleWork": [
+      "manual_order_permission_packet_preparation",
+      "kill_switch_clearance_review",
+      "risk_gate_clearance_review",
+      "dry_run_replay_execution_contract",
+      "shadow_history_review_result_contract",
+      "live_guarded_order_adapter_implementation_review_after_clearance"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "kisPersonalOrderAuthorityAssertionRecorded": true,
+    "authorityAssertionIsOperationalOrderApproval": false,
+    "ownerOrderPathAssertionRecordedWithOrdersBlocked": true,
+    "kisOrderAdapterDesignStillReviewOnly": true,
+    "manualOrderPermissionPreflightReady": true,
+    "liveGuardedOrderAdapterStillBlocked": true,
+    "killSwitchClearanceStillRequiresImplementationReview": true,
+    "riskGateClearanceStillRequiresImplementationReview": true,
+    "envRiskGateFailClosed": true,
+    "progressSummaryStillFailClosed": true,
+    "architectureDocMentionsKisPersonalOrderAuthority": true,
+    "noRuntimeArtifacts": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false
+  },
+  "evidence": {
+    "forbiddenRuntimeArtifacts": [],
+    "ownerOrderPathAssertionStatus": "owner_order_path_assertion_recorded_orders_still_blocked",
+    "kisOrderAdapterDesignStatus": "design_review_ready_pending_manual_order_permission",
+    "manualOrderPermissionPreflightStatus": "preflight_ready_pending_manual_order_permission_evidence",
+    "liveGuardedOrderAdapterPreflightStatus": "preflight_recorded_live_guarded_order_adapter_review_blocked_pending_manual_permission_and_runtime_clearance",
+    "killSwitchClearanceStatus": "contract_ready_pending_kill_switch_clearance_implementation_review",
+    "riskGateClearanceStatus": "contract_ready_pending_risk_gate_clearance_implementation_review",
+    "envRiskGateStatus": "contract_ready_risk_gate_env_input_mapping_fail_closed",
+    "progressSummaryStatus": "summary_ready_contract_stack_fail_closed_pending_private_trading_reviews"
+  },
+  "readiness": {
+    "status": "kis_personal_order_authority_recorded_orders_still_blocked",
+    "authorityRecordedWithOrdersBlocked": true,
+    "kisPersonalOrderAuthorityAssertionRecordedNow": true,
+    "authorityAssertionIsOperationalOrderApproval": false,
+    "orderAuthorityExternalBlockerCleared": true,
+    "readyForManualOrderPermissionPacketPreparation": true,
+    "readyForOrderSubmission": false,
+    "readyForLiveGuardedTrading": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "liveTradingAllowed": false,
+    "blockers": [],
+    "remainingTradingGates": [
+      "manual_order_permission_packet_not_imported",
+      "kill_switch_clearance_not_recorded_for_order_submission",
+      "risk_gate_clearance_not_recorded_for_order_submission",
+      "dry_run_replay_execution_not_recorded_for_live_guarded_order_submission",
+      "shadow_history_review_not_recorded_for_live_guarded_order_submission",
+      "live_guarded_order_adapter_implementation_review_not_started"
+    ]
+  }
+}

@@ -116,6 +116,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_alpha_kr_market_boundary_contract.json",
   "trading_lab_step116_broker_contingency_review_contract.json",
   "trading_lab_step116_owner_order_path_assertion_contract.json",
+  "trading_lab_step116_kis_personal_order_authority_assertion_contract.json",
   "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
   "trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
   "trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
@@ -168,10 +169,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 113);
-  assert.equal(report.progress.trackedContractsReady, 113);
+  assert.equal(report.progress.trackedContractsTotal, 114);
+  assert.equal(report.progress.trackedContractsReady, 114);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 154);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 155);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
@@ -208,6 +209,10 @@ test("records remaining trading gates instead of approving provider calls or ord
     /private_operator_access_implementation_review_blocked_pending_private_runtime_review/,
   );
   assert.match(report.remainingTradingGates.join("|"), /owner_order_path_assertion_recorded_orders_still_blocked/);
+  assert.match(
+    report.remainingTradingGates.join("|"),
+    /kis_personal_order_authority_recorded_orders_still_blocked/,
+  );
   assert.match(report.remainingTradingGates.join("|"), /manual_order_permission_packet_not_imported/);
   assert.match(report.remainingTradingGates.join("|"), /live_guarded_order_adapter_implementation_review_not_started/);
   assert.match(report.remainingTradingGates.join("|"), /trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review/);

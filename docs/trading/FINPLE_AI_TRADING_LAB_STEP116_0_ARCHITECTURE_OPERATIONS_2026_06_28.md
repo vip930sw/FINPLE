@@ -3541,6 +3541,21 @@ This is an owner assertion evidence contract, not a manual order permission pack
 
 The assertion removes order-path external-permission waiting language from the forward plan, but it does not create or read `data/private/trading/manual_order_permission.redacted.json`, does not change `FINPLE_TRADING_KILL_SWITCH=true`, and does not make `readyForOrderSubmission`, `orderSubmissionAllowed`, or `readyForLiveGuardedTrading` true.
 
+## Step 116-5T Trading KIS Personal Order Authority Assertion
+
+The first Trading KIS Personal Order Authority Assertion contract is:
+
+```text
+data/processed/trading_lab_step116_kis_personal_order_authority_assertion_contract.json
+scripts/generate-trading-kis-personal-order-authority-assertion-contract.cjs
+scripts/generate-trading-kis-personal-order-authority-assertion-contract.test.cjs
+npm run check:trading-kis-personal-order-authority-assertion
+```
+
+This is a KIS personal-account order authority assertion contract, not a KIS API call, provider call, order adapter implementation, manual permission packet import, runtime route, DB migration, public UI, order submission, or live trading approval. It records the owner's July 1, 2026 statement that KIS personal-account trading is allowed and should not remain an external order-submission authority blocker.
+
+The assertion clears only the external-authority blocker language. It still keeps the operational gates closed: manual order permission packet import, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history review, and live-guarded order adapter implementation review must be completed separately before any order-capable runtime work.
+
 ## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
 
 The first Trading Read-Only Approval Packet Preparation Runbook contract is:
