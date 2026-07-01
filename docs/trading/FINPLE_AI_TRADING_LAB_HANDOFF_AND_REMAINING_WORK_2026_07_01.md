@@ -12,8 +12,8 @@ Current handoff commit: `f9c5a0a Record live guarded clearance review bundle`
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `115/115 = 100%`
-- Required npm check coverage: `156/156 = 100%`
+- Contract/guardrail progress: `116/116 = 100%`
+- Required npm check coverage: `157/157 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
@@ -70,7 +70,7 @@ Goal: convert the owner order authority assertions into a redacted, local, revie
 
 Next safe tasks:
 
-1. Prepare the owner-assisted manual order permission packet checklist from the existing template and runbooks.
+1. Prepare the owner-assisted manual order permission packet checklist from the existing template and runbooks. Completed as `trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json`.
 2. Decide the exact hash inputs the owner can safely provide outside the repo.
 3. Validate a redacted packet only through an explicit local path.
 4. Record a validation result receipt.
