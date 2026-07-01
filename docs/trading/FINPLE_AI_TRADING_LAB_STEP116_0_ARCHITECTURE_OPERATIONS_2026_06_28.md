@@ -3638,6 +3638,19 @@ npm run check:trading-manual-order-permission-owner-explicit-local-packet-path-s
 
 This `manual_order_permission_owner_explicit_local_packet_path_supply_gate` step opens only the owner-supplied explicit local path boundary for a later validation execution. It records placeholder command shape only and keeps the actual owner-local path out of repo files, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not run validation, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash values, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-6D Trading Manual Order Permission Local Validation Execution Preflight
+
+The first Trading Manual Order Permission Local Validation Execution Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_local_validation_execution_preflight_contract.json
+scripts/generate-trading-manual-order-permission-local-validation-execution-preflight-contract.cjs
+scripts/generate-trading-manual-order-permission-local-validation-execution-preflight-contract.test.cjs
+npm run check:trading-manual-order-permission-local-validation-execution-preflight
+```
+
+This `manual_order_permission_local_validation_execution_preflight` step opens only the local validation execution preflight for a later owner-supplied explicit local redacted packet path. It records placeholder command shape only and does not use or store the actual owner-local path, does not read or create `data/private/trading/manual_order_permission.redacted.json`, does not run validation, does not create or record `data/private/trading/manual_order_permission_validation_result_receipt.redacted.json`, does not import permission evidence, does not record raw values or hash values, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

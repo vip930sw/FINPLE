@@ -62,6 +62,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_manual_order_permission_owner_local_packet_preparation_assertion_contract.json",
   "trading_lab_step116_manual_order_permission_explicit_local_packet_validation_receipt_intake_contract.json",
   "trading_lab_step116_manual_order_permission_owner_explicit_local_packet_path_supply_gate_contract.json",
+  "trading_lab_step116_manual_order_permission_local_validation_execution_preflight_contract.json",
   "trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
   "trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
   "trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -178,10 +179,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 123);
-  assert.equal(report.progress.trackedContractsReady, 123);
+  assert.equal(report.progress.trackedContractsTotal, 124);
+  assert.equal(report.progress.trackedContractsReady, 124);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 164);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 165);
   assert.deepEqual(report.progress.authorityExternalBlockersCleared, [
     "owner_order_path_assertion_recorded",
     "kis_personal_order_authority_recorded",
