@@ -115,11 +115,12 @@ Completed safe steps:
 28. Open the risk-gate clearance review result supply gate without accepting, reading, or recording the result, reading private evidence, recording a risk snapshot, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_supply_gate_contract.json`.
 29. Open the risk-gate clearance review result contract boundary without reading or recording the owner result, reading private evidence, recording raw risk snapshots, opening dry-run replay, or opening order submission: `trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_contract.json`.
 30. Open the dry-run replay execution result contract boundary without executing a replay, reading private evidence, recording raw order/provider/risk/paper-ledger payloads, opening shadow-history review, or opening order submission: `trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json`.
+31. Open the shadow-history review result contract boundary without reviewing private history, reading private evidence, recording raw shadow/order/provider/risk/audit payloads, opening live-guarded adapter review, or opening order submission: `trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json`.
 
 Next safe tasks:
 
-1. Prepare a separate shadow-history review result contract without reading private history, opening the live adapter, or opening order submission.
-2. Keep live-guarded adapter review closed until the ordered shadow-history result record exists.
+1. Prepare a separate live-guarded adapter review result contract without implementing the adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+2. Keep the private worker implementation closed until that adapter review result exists.
 
 Current blockers:
 
@@ -162,7 +163,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add a shadow-history review result contract after the dry-run replay execution result boundary.
+4. Add a live-guarded adapter review result contract after the shadow-history review result boundary.
 
 Current blocker:
 
@@ -174,8 +175,8 @@ Goal: prove the intended order path through deterministic replay and private sha
 
 Next safe tasks:
 
-1. Define a shadow-history review result contract.
-2. Require the dry-run replay execution result and shadow-history result before any live-guarded adapter implementation review.
+1. Require the dry-run replay execution result and shadow-history result before any live-guarded adapter implementation review.
+2. Define a live-guarded adapter review result contract without implementing the adapter.
 
 Current blockers:
 
@@ -220,16 +221,12 @@ Current blockers:
 
 ## Suggested Next Work Order
 
-Fastest safe path toward private trading readiness:
+Fastest safe path toward private trading readiness from the current contract boundary:
 
-1. Owner supplies an explicit local redacted manual order permission packet path outside repo commits.
-2. Manual order permission packet validation receipt through that explicit owner-local packet path.
-3. Kill-switch clearance review result contract and receipt boundary.
-4. Shadow-history review result contract.
-5. Live-guarded KIS order adapter implementation review contract.
-6. Private worker implementation only after all above pass.
-7. Private dashboard/operator monitoring.
-8. Public dashboard/homepage router only after live-guarded review.
+1. Live-guarded KIS order adapter implementation review result contract.
+2. Private worker implementation only after all prior review result contracts pass.
+3. Private dashboard/operator monitoring.
+4. Public dashboard/homepage router only after live-guarded review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 
@@ -306,7 +303,7 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 - scenario runtime/API/chart/calculatePortfolioResult 수정 금지
 
 다음 권장 작업:
-Step 116 다음 단계로 owner-supplied explicit local packet path를 받아 manual order permission packet validation receipt를 기록하고, 이어서 kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result를 안전하게 진행해주세요.
+Step 116 다음 단계로 live-guarded adapter review result contract boundary를 안전하게 준비해주세요. 실제 adapter 구현, KIS/provider 호출, 주문 제출, runtime route, public UI, DB migration은 계속 금지입니다.
 
 진척도는 order authority external blocker, internal operational gates, actual live trading readiness를 분리해서 보고해주세요.
 

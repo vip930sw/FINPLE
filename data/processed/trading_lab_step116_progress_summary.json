@@ -82,6 +82,7 @@
       "manualOrderPermissionRiskGateClearanceReviewResultSupplyGate": "data\\processed\\trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_supply_gate_contract.json",
       "manualOrderPermissionRiskGateClearanceReviewResult": "data\\processed\\trading_lab_step116_manual_order_permission_risk_gate_clearance_review_result_contract.json",
       "manualOrderPermissionDryRunReplayExecutionResult": "data\\processed\\trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json",
+      "manualOrderPermissionShadowHistoryReviewResult": "data\\processed\\trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -175,10 +176,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 146,
-    "trackedContractsReady": 146,
+    "trackedContractsTotal": 147,
+    "trackedContractsReady": 147,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 187,
+    "requiredNpmScriptsTotal": 188,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -860,6 +861,15 @@
       "title": "Manual order permission dry-run replay execution result",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json",
       "status": "manual_order_permission_dry_run_replay_execution_result_contract_ready_pending_owner_result_record",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionShadowHistoryReviewResult",
+      "title": "Manual order permission shadow-history review result",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json",
+      "status": "manual_order_permission_shadow_history_review_result_contract_ready_pending_owner_result_record",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
