@@ -16,6 +16,7 @@
       "envRiskGate": "data\\processed\\trading_lab_step116_env_risk_gate_contract.json",
       "dryRunReplay": "data\\processed\\trading_lab_step116_dry_run_replay_contract.json",
       "shadowHistoryReview": "data\\processed\\trading_lab_step116_shadow_history_review_contract.json",
+      "liveGuardedClearanceReviewResultBundle": "data\\processed\\trading_lab_step116_live_guarded_clearance_review_result_bundle_contract.json",
       "auditLoggerReadiness": "data\\processed\\trading_lab_step116_audit_logger_readiness_contract.json",
       "manualOperatorApproval": "data\\processed\\trading_lab_step116_manual_operator_approval_contract.json",
       "killSwitchClearance": "data\\processed\\trading_lab_step116_kill_switch_clearance_contract.json",
@@ -141,10 +142,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 114,
-    "trackedContractsReady": 114,
+    "trackedContractsTotal": 115,
+    "trackedContractsReady": 115,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 155,
+    "requiredNpmScriptsTotal": 156,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -227,6 +228,15 @@
       "title": "Shadow history review contract",
       "filePath": "data\\processed\\trading_lab_step116_shadow_history_review_contract.json",
       "status": "contract_ready_pending_shadow_history_fixture_implementation_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedClearanceReviewResultBundle",
+      "title": "Live-guarded clearance review result bundle",
+      "filePath": "data\\processed\\trading_lab_step116_live_guarded_clearance_review_result_bundle_contract.json",
+      "status": "contract_ready_pending_owner_supplied_live_guarded_clearance_review_results",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
@@ -1192,6 +1202,7 @@
     "manual_order_permission_packet_not_imported",
     "kill_switch_clearance_not_recorded_for_order_submission",
     "risk_gate_clearance_not_recorded_for_order_submission",
+    "live_guarded_clearance_review_result_bundle_not_owner_supplied",
     "live_guarded_order_adapter_implementation_review_not_started",
     "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
     "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",
@@ -1249,6 +1260,7 @@
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",
+      "live_guarded_clearance_review_result_bundle_not_owner_supplied",
       "live_guarded_order_adapter_implementation_review_not_started",
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",

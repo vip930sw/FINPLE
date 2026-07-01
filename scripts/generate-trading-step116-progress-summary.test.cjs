@@ -19,6 +19,7 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_env_risk_gate_contract.json",
   "trading_lab_step116_dry_run_replay_contract.json",
   "trading_lab_step116_shadow_history_review_contract.json",
+  "trading_lab_step116_live_guarded_clearance_review_result_bundle_contract.json",
   "trading_lab_step116_audit_logger_readiness_contract.json",
   "trading_lab_step116_manual_operator_approval_contract.json",
   "trading_lab_step116_kill_switch_clearance_contract.json",
@@ -169,10 +170,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 114);
-  assert.equal(report.progress.trackedContractsReady, 114);
+  assert.equal(report.progress.trackedContractsTotal, 115);
+  assert.equal(report.progress.trackedContractsReady, 115);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 155);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 156);
   assert.equal(report.readiness.contractStackReady, true);
   assert.equal(report.readiness.readyForReadOnlyProviderCalls, false);
   assert.equal(report.readiness.readyForPrivateShadowRuntime, false);
@@ -214,6 +215,10 @@ test("records remaining trading gates instead of approving provider calls or ord
     /kis_personal_order_authority_recorded_orders_still_blocked/,
   );
   assert.match(report.remainingTradingGates.join("|"), /manual_order_permission_packet_not_imported/);
+  assert.match(
+    report.remainingTradingGates.join("|"),
+    /live_guarded_clearance_review_result_bundle_not_owner_supplied/,
+  );
   assert.match(report.remainingTradingGates.join("|"), /live_guarded_order_adapter_implementation_review_not_started/);
   assert.match(report.remainingTradingGates.join("|"), /trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review/);
   assert.match(report.remainingTradingGates.join("|"), /paper_shadow_operational_test_execution_blocked_pending_private_runtime_review/);

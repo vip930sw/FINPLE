@@ -228,6 +228,7 @@
       "manual_order_permission_packet_not_imported",
       "kill_switch_clearance_not_recorded_for_order_submission",
       "risk_gate_clearance_not_recorded_for_order_submission",
+      "live_guarded_clearance_review_result_bundle_not_owner_supplied",
       "live_guarded_order_adapter_implementation_review_not_started",
       "trading_rules_runtime_application_blocked_pending_private_shadow_runtime_review",
       "paper_shadow_operational_test_execution_blocked_pending_private_runtime_review",

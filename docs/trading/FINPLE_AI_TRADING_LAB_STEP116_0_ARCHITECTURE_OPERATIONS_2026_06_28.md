@@ -3556,6 +3556,21 @@ This is a KIS personal-account order authority assertion contract, not a KIS API
 
 The assertion clears only the external-authority blocker language. It still keeps the operational gates closed: manual order permission packet import, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history review, and live-guarded order adapter implementation review must be completed separately before any order-capable runtime work.
 
+## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
+
+The first Trading Live-Guarded Clearance Review Result Bundle contract is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_clearance_review_result_bundle_contract.json
+scripts/generate-trading-live-guarded-clearance-review-result-bundle-contract.cjs
+scripts/generate-trading-live-guarded-clearance-review-result-bundle-contract.test.cjs
+npm run check:trading-live-guarded-clearance-review-result-bundle
+```
+
+This is a bundle boundary for future owner-supplied live-guarded clearance review results, not a private evidence read, manual permission packet import, KIS call, provider call, dry-run replay execution, shadow-history execution, order adapter implementation, runtime route, DB migration, public UI, order submission, or live trading approval. It ties the already-recorded manual order permission packet preparation/validation receipt review result to the required future kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, and shadow-history review result.
+
+The bundle records only the redacted hash-only shape for those future results. It does not record source paths, raw values, private packet contents, order payloads, provider payloads, execution ids, or live endpoint details, and it keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked pending separate reviews.
+
 ## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
 
 The first Trading Read-Only Approval Packet Preparation Runbook contract is:
