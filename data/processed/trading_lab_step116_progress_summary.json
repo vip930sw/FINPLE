@@ -55,6 +55,7 @@
       "manualOrderPermissionHashHelperImplementationReviewValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_helper_implementation_review_validator_fixtures.json",
       "manualOrderPermissionHashPreparationRunbook": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_contract.json",
       "manualOrderPermissionHashInputDecision": "data\\processed\\trading_lab_step116_manual_order_permission_hash_input_decision_contract.json",
+      "manualOrderPermissionOwnerLocalPacketPreparationHandoff": "data\\processed\\trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json",
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_hash_preparation_runbook_validator_fixtures.json",
       "manualOrderPermissionImportImplementationPreflight": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight.json",
       "manualOrderPermissionImportImplementationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_manual_order_permission_import_implementation_preflight_validator_fixtures.json",
@@ -148,10 +149,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 119,
-    "trackedContractsReady": 119,
+    "trackedContractsTotal": 120,
+    "trackedContractsReady": 120,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 160,
+    "requiredNpmScriptsTotal": 161,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -590,6 +591,15 @@
       "title": "Manual order permission hash input decision",
       "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_hash_input_decision_contract.json",
       "status": "hash_input_decision_ready_owner_local_hash_preparation_unlocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "manualOrderPermissionOwnerLocalPacketPreparationHandoff",
+      "title": "Manual order permission owner-local packet preparation handoff",
+      "filePath": "data\\processed\\trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json",
+      "status": "owner_local_packet_preparation_handoff_ready_pending_owner_local_redacted_packet",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

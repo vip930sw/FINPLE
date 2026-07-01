@@ -3586,6 +3586,19 @@ This is a hash-input decision contract for owner-local manual order permission p
 
 The decision unlocks only owner-local hash input preparation. It does not commit raw values, peppers, hash outputs, private files, `data/private/trading/manual_order_permission.redacted.json`, or `data/private/trading/manual_order_permission_hash_inputs.redacted.json`, and it keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5Z Trading Manual Order Permission Owner-Local Packet Preparation Handoff
+
+The first Trading Manual Order Permission Owner-Local Packet Preparation Handoff contract is:
+
+```text
+data/processed/trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json
+scripts/generate-trading-manual-order-permission-owner-local-packet-preparation-handoff-contract.cjs
+scripts/generate-trading-manual-order-permission-owner-local-packet-preparation-handoff-contract.test.cjs
+npm run check:trading-manual-order-permission-owner-local-packet-preparation-handoff
+```
+
+This `manual_order_permission_owner_local_packet_preparation_handoff` step opens only the owner-local redacted packet preparation handoff after the hash-input decision, packet checklist, validation runbook, validation preflight, KIS terms assertion, and internal gate sequence are aligned. It does not create, read, import, or record the path of `data/private/trading/manual_order_permission.redacted.json`, does not record raw values or hash values, does not run validation, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

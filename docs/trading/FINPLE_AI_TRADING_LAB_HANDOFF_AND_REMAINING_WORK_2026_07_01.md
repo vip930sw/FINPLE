@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff commit: `eb14fec Record KIS personal terms permission assertion`
+Current handoff commit: `e05312a Record manual order permission hash input decision`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `119/119 = 100%`
-- Required npm check coverage: `160/160 = 100%`
+- Contract/guardrail progress: `120/120 = 100%`
+- Required npm check coverage: `161/161 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -76,13 +76,15 @@ Next safe tasks:
 1. Prepare the owner-assisted manual order permission packet checklist from the existing template and runbooks. Completed as `trading_lab_step116_manual_order_permission_packet_preparation_checklist_contract.json`.
 2. Record the internal gate sequence and open only owner-local packet preparation while leaving evidence-dependent stages closed. Completed as `trading_lab_step116_live_guarded_internal_gate_clearance_sequence_contract.json`.
 3. Decide the exact hash inputs the owner can safely provide outside the repo. Completed as `trading_lab_step116_manual_order_permission_hash_input_decision_contract.json`.
-4. Prepare hash values and the redacted packet outside repo commits.
-5. Validate a redacted packet only through an explicit local path.
-6. Record a validation result receipt.
-7. Review that receipt before any import implementation work.
+4. Open the owner-local redacted packet preparation handoff without creating or reading the private packet. Completed as `trading_lab_step116_manual_order_permission_owner_local_packet_preparation_handoff_contract.json`.
+5. Prepare hash values and the redacted packet outside repo commits.
+6. Validate a redacted packet only through an explicit local path.
+7. Record a validation result receipt.
+8. Review that receipt before any import implementation work.
 
 Current blockers:
 
+- `manual_order_permission_owner_local_packet_not_prepared`
 - `manual_order_permission_packet_not_imported`
 - `manual_order_permission_import_review_blocked_pending_owner_packet`
 
@@ -214,7 +216,7 @@ Current blockers:
 
 Fastest safe path toward private trading readiness:
 
-1. Manual order permission packet preparation guidance.
+1. Owner prepares the redacted manual order permission packet outside repo commits.
 2. Manual order permission packet validation result receipt path.
 3. Kill-switch clearance review result contract.
 4. Risk-gate clearance review result contract.
@@ -232,11 +234,11 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ```markdown
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
-Current main: `adf481e`
+Current main: `e05312a`
 
 Step 116 guardrail stack is complete:
-- 114/114 tracked contracts ready
-- 155/155 required npm checks present
+- 120/120 tracked contracts ready
+- 161/161 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -255,12 +257,13 @@ Still intentionally blocked:
 - `scenario_monthly_returns.csv`
 
 Next work:
-1. manual order permission packet preparation and validation receipt
-2. kill-switch clearance review result
-3. risk-gate clearance review result
-4. dry-run replay execution result
-5. shadow-history review result
-6. live-guarded KIS order adapter implementation review
+1. owner-local manual order permission packet preparation outside repo commits
+2. manual order permission packet validation receipt
+3. kill-switch clearance review result
+4. risk-gate clearance review result
+5. dry-run replay execution result
+6. shadow-history review result
+7. live-guarded KIS order adapter implementation review
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```
@@ -300,7 +303,7 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 - scenario runtime/API/chart/calculatePortfolioResult 수정 금지
 
 다음 권장 작업:
-Step 116 다음 단계로 manual order permission packet preparation/validation receipt, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result를 묶어서 안전하게 진행해주세요.
+Step 116 다음 단계로 owner-local manual order permission packet preparation outside repo commits, manual order permission packet validation receipt, kill-switch clearance review result, risk-gate clearance review result, dry-run replay execution result, shadow-history review result를 묶어서 안전하게 진행해주세요.
 
 작업 후 관련 npm 검증, node --test, git diff --check, npm.cmd run build를 실행하고 커밋/푸시까지 진행해주세요.
 ```
