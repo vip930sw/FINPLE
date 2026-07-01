@@ -149,3 +149,4 @@ P0 경쟁력·지표·데이터·기술부채
 ## Recent AI Trading Lab Baseline
 
 - [FINPLE AI Trading Lab Step 116-0 Architecture And Operations 2026-06-28](./trading/FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md)
+- [FINPLE AI Trading Lab Handoff And Remaining Work 2026-07-01](./trading/FINPLE_AI_TRADING_LAB_HANDOFF_AND_REMAINING_WORK_2026_07_01.md)
