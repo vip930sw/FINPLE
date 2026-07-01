@@ -3963,6 +3963,19 @@ npm run check:trading-live-guarded-order-adapter-review-result
 
 This `live_guarded_order_adapter_review_result` step opens only the redacted, hash-only adapter review result contract boundary after the shadow-history review result boundary. It does not record an owner review result now, does not implement `server/src/services/trading/kisOrderAdapter.js`, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps private worker implementation, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-7C Trading Live-Guarded Private Worker Implementation Preflight
+
+The first Trading Live-Guarded Private Worker Implementation Preflight is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_private_worker_implementation_preflight_contract.json
+scripts/generate-trading-live-guarded-private-worker-implementation-preflight-contract.cjs
+scripts/generate-trading-live-guarded-private-worker-implementation-preflight-contract.test.cjs
+npm run check:trading-live-guarded-private-worker-implementation-preflight
+```
+
+This `live_guarded_private_worker_implementation_preflight` step opens only the private-worker implementation review/preflight contract boundary after the live-guarded adapter review result boundary. It does not record an owner adapter review result now, does not implement a private worker, does not import or execute `server/src/services/trading/kisOrderAdapter.js`, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

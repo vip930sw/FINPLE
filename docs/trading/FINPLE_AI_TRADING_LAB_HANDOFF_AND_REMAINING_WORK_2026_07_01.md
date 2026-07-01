@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `138/138 = 100%`
-- Required npm check coverage: `179/179 = 100%`
+- Contract/guardrail progress: `149/149 = 100%`
+- Required npm check coverage: `190/190 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -117,10 +117,11 @@ Completed safe steps:
 30. Open the dry-run replay execution result contract boundary without executing a replay, reading private evidence, recording raw order/provider/risk/paper-ledger payloads, opening shadow-history review, or opening order submission: `trading_lab_step116_manual_order_permission_dry_run_replay_execution_result_contract.json`.
 31. Open the shadow-history review result contract boundary without reviewing private history, reading private evidence, recording raw shadow/order/provider/risk/audit payloads, opening live-guarded adapter review, or opening order submission: `trading_lab_step116_manual_order_permission_shadow_history_review_result_contract.json`.
 32. Open the live-guarded adapter review result contract boundary without recording the owner review result, implementing the adapter, signing provider requests, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_order_adapter_review_result_contract.json`.
+33. Open the live-guarded private worker implementation preflight contract boundary without recording the owner adapter review result, implementing a worker or adapter, signing provider requests, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_preflight_contract.json`.
 
 Next safe tasks:
 
-1. Prepare a private-worker implementation review/preflight contract without implementing the adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+1. Prepare a private-worker implementation review result or supply-gate contract without implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 2. Keep actual private worker code closed until a separate owner-supplied adapter review result exists.
 
 Current blockers:
@@ -164,7 +165,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add a private-worker implementation review/preflight contract after the live-guarded adapter review result boundary.
+4. Add a private-worker implementation review result or supply-gate contract after the preflight boundary.
 
 Current blocker:
 
@@ -176,8 +177,8 @@ Goal: prove the intended order path through deterministic replay and private sha
 
 Next safe tasks:
 
-1. Require the dry-run replay execution result, shadow-history result, and adapter review result before any private worker implementation review.
-2. Define a private-worker implementation review/preflight contract without implementing the adapter.
+1. Require the dry-run replay execution result, shadow-history result, adapter review result, and private-worker preflight before any private worker implementation.
+2. Define a private-worker implementation review result or supply-gate contract without implementing the adapter.
 
 Current blockers:
 
@@ -224,7 +225,7 @@ Current blockers:
 
 Fastest safe path toward private trading readiness from the current contract boundary:
 
-1. Private worker implementation review/preflight contract.
+1. Private worker implementation review result or supply-gate contract.
 2. Private worker implementation only after all prior review result contracts pass.
 3. Private dashboard/operator monitoring.
 4. Public dashboard/homepage router only after live-guarded review.
