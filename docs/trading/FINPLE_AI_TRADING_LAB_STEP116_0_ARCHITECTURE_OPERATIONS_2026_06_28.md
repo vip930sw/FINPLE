@@ -3625,6 +3625,31 @@ npm run check:trading-read-only-approval-packet-validation-result-receipt-review
 
 This is a synthetic fixture regression contract for the review preflight validator, not a real validation receipt, private approval packet reader, approval importer, KIS caller, Alpha Vantage caller, provider caller, runtime route, DB migration, public UI, order adapter, order submission, or live trading path. The fixtures exercise local validator success and fail-closed cases for missing fields, review gate drift, boundary actions, forbidden-content catalog drift, future receipt path drift, future approval packet path drift, allow flags, raw-value-shaped markers, and array-shape regressions.
 
+## Step 116-5P Trading Read-Only Approval Packet Validation Result Receipt Review Runbook
+
+The first owner-assisted Trading Read-Only Approval Packet Validation Result Receipt Review Runbook contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_contract.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-contract.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-contract.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-runbook
+```
+
+This is a future owner-assisted runbook contract for reviewing a redacted read-only approval validation-result receipt, not a private receipt reader, private approval packet reader, approval importer, hash generator, KIS caller, Alpha Vantage caller, provider caller, runtime route, DB migration, public UI, order adapter, order submission, or live trading path. It records explicit future command templates and redacted output fields while keeping current-step receipt reads, validation execution, imports, provider calls, orders, routes, UI, DB writes, and live trading closed.
+
+## Step 116-5Q Trading Read-Only Approval Packet Validation Result Receipt Review Runbook Validator
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Review Runbook Validator is:
+
+```text
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-contract.cjs
+scripts/validate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-contract.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-runbook-validator
+```
+
+This is a pure local validator for the review runbook contract. It requires explicit `--contract` input and rejects command drift, future receipt path drift, missing review assertions, missing redacted output fields, forbidden output catalog drift, enabled provider calls, enabled order submission, runtime routes, public UI, DB writes, live trading, or raw-value-shaped markers. It does not read private files, call KIS or Alpha Vantage, create runtime routes, expose public UI, write DB rows, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

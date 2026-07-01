@@ -430,6 +430,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval packet validation result receipt review preflight validator fixtures",
     "trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight_validator_fixtures.json",
   ],
+  [
+    "readOnlyApprovalPacketValidationResultReceiptReviewRunbook",
+    "Read-only approval packet validation result receipt review runbook",
+    "trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -583,6 +588,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-packet-validation-result-receipt-review-preflight",
   "check:trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator",
   "check:trading-read-only-approval-packet-validation-result-receipt-review-preflight-validator-fixtures",
+  "check:trading-read-only-approval-packet-validation-result-receipt-review-runbook",
+  "check:trading-read-only-approval-packet-validation-result-receipt-review-runbook-validator",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

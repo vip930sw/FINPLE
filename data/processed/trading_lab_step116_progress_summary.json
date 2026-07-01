@@ -116,7 +116,8 @@
       "readOnlyApprovalPacketValidationResultReceipt": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
       "readOnlyApprovalPacketValidationResultReceiptValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_validator_fixtures.json",
       "readOnlyApprovalPacketValidationResultReceiptReviewPreflight": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight.json",
-      "readOnlyApprovalPacketValidationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight_validator_fixtures.json"
+      "readOnlyApprovalPacketValidationResultReceiptReviewPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight_validator_fixtures.json",
+      "readOnlyApprovalPacketValidationResultReceiptReviewRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_contract.json"
     }
   },
   "outputFiles": {
@@ -137,10 +138,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 110,
-    "trackedContractsReady": 110,
+    "trackedContractsTotal": 111,
+    "trackedContractsReady": 111,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 150,
+    "requiredNpmScriptsTotal": 152,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1132,6 +1133,15 @@
       "title": "Read-only approval packet validation result receipt review preflight validator fixtures",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_preflight_validator_fixtures.json",
       "status": "fixtures_ready_for_read_only_approval_validation_result_receipt_review_preflight_validator_regression",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyApprovalPacketValidationResultReceiptReviewRunbook",
+      "title": "Read-only approval packet validation result receipt review runbook",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_contract.json",
+      "status": "runbook_ready_for_owner_assisted_read_only_approval_validation_result_receipt_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
