@@ -108,11 +108,12 @@ Completed safe steps:
 21. Open the manual order permission import result supply gate without accepting or recording the import result, reading a private packet, implementing the import service, or importing permission evidence: `trading_lab_step116_manual_order_permission_import_result_supply_gate_contract.json`.
 22. Open the kill-switch clearance review preflight without accepting the import result, clearing the kill switch, implementing kill-switch runtime, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_preflight_contract.json`.
 23. Open the kill-switch clearance review result supply gate without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_supply_gate_contract.json`.
+24. Open the kill-switch clearance review result recording preflight without accepting, reading, or recording the result, clearing the kill switch, opening risk-gate review, or opening order submission: `trading_lab_step116_manual_order_permission_kill_switch_clearance_review_result_recording_preflight_contract.json`.
 
 Next safe tasks:
 
 1. Owner supplies a redacted kill-switch clearance review result outside repo commits.
-2. Open a separate kill-switch clearance review result recording preflight without reading private packet paths, clearing the kill switch, or opening order submission.
+2. Add a separate kill-switch clearance review result contract without reading private packet paths, clearing the kill switch, or opening order submission.
 3. Keep risk-gate clearance, dry-run replay, shadow-history review, and live-guarded adapter review closed until their ordered result records exist.
 
 Current blockers:
