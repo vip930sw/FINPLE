@@ -3511,6 +3511,21 @@ This is a provider-boundary contract, not an Alpha Vantage call, KIS call, Korea
 
 The boundary allows future review of Korean market data provider choices, but it does not assume Alpha Vantage Korean symbol coverage and does not treat asset proxy `supportedTickers` as a trading allowlist. Korean trading read-only work remains on the KIS mock-to-reviewed-read-only path, and `scenario_monthly_returns.csv` remains blocked by the separate Step 114 source-policy and writer gates.
 
+## Step 116-5R Trading Broker Contingency Review
+
+The first Trading Broker Contingency Review contract is:
+
+```text
+data/processed/trading_lab_step116_broker_contingency_review_contract.json
+scripts/generate-trading-broker-contingency-review-contract.cjs
+scripts/generate-trading-broker-contingency-review-contract.test.cjs
+npm run check:trading-broker-contingency-review
+```
+
+This is a contingency decision contract for KIS reply delays or rejection, not a broker switchover, adapter implementation, API call, runtime route, DB migration, public UI, order adapter, order submission, or live trading path. It records KIS as the current primary path, Kiwoom REST API and LS Securities OPEN API as broker-order API candidates requiring separate owner/account/terms review, and Alpha Vantage plus KRX Data Marketplace as data-only candidates that cannot replace a personal brokerage order endpoint.
+
+The contingency rule is fail-closed: do not replace KIS with Alpha for order submission, do not rotate Render trading env to a different broker without a new credential boundary, and do not create any non-KIS adapter until a separate terms review, account/API application review, mock/testbed review, and adapter design review have been completed.
+
 ## Step 116-5H Trading Read-Only Approval Packet Preparation Runbook
 
 The first Trading Read-Only Approval Packet Preparation Runbook contract is:

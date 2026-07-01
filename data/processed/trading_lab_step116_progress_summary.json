@@ -111,6 +111,7 @@
       "liveGuardedManualTestPlan": "data\\processed\\trading_lab_step116_live_guarded_manual_test_plan_contract.json",
       "publicDashboardRouterReviewPlan": "data\\processed\\trading_lab_step116_public_dashboard_router_review_plan_contract.json",
       "alphaKrMarketBoundary": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
+      "brokerContingencyReview": "data\\processed\\trading_lab_step116_broker_contingency_review_contract.json",
       "readOnlyApprovalPacketPreparationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
       "readOnlyApprovalPacketValidationRunbook": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_runbook_contract.json",
       "readOnlyApprovalPacketValidationResultReceipt": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt.json",
@@ -138,10 +139,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 111,
-    "trackedContractsReady": 111,
+    "trackedContractsTotal": 112,
+    "trackedContractsReady": 112,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 152,
+    "requiredNpmScriptsTotal": 153,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_pending_private_evidence_and_implementation_reviews"
@@ -1079,6 +1080,15 @@
       "title": "Alpha KR market boundary",
       "filePath": "data\\processed\\trading_lab_step116_alpha_kr_market_boundary_contract.json",
       "status": "alpha_kr_market_boundary_ready_provider_calls_still_blocked",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "brokerContingencyReview",
+      "title": "Broker contingency review",
+      "filePath": "data\\processed\\trading_lab_step116_broker_contingency_review_contract.json",
+      "status": "broker_contingency_review_ready_no_runtime_switch",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

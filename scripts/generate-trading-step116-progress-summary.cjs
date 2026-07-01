@@ -401,6 +401,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_alpha_kr_market_boundary_contract.json",
   ],
   [
+    "brokerContingencyReview",
+    "Broker contingency review",
+    "trading_lab_step116_broker_contingency_review_contract.json",
+  ],
+  [
     "readOnlyApprovalPacketPreparationRunbook",
     "Read-only approval packet preparation runbook",
     "trading_lab_step116_read_only_approval_packet_preparation_runbook_contract.json",
@@ -580,6 +585,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-live-guarded-manual-test-plan",
   "check:trading-public-dashboard-router-review-plan",
   "check:trading-alpha-kr-market-boundary",
+  "check:trading-broker-contingency-review",
   "check:trading-read-only-approval-packet-preparation-runbook",
   "check:trading-read-only-approval-packet-validation-runbook",
   "check:trading-read-only-approval-packet-validation-result-receipt",
