@@ -23,9 +23,26 @@ const REQUIRED_CONTRACTS = [
   "trading_lab_step116_progress_summary.json",
 ];
 const DOC_PATH = path.join("docs", "trading", "FINPLE_AI_TRADING_LAB_STEP116_0_ARCHITECTURE_OPERATIONS_2026_06_28.md");
+const WORKSPACES = [];
+
+function removeWorkspace(workspace) {
+  const tempRoot = path.resolve(os.tmpdir());
+  const resolved = path.resolve(workspace);
+  if (!resolved.startsWith(`${tempRoot}${path.sep}`)) {
+    return;
+  }
+  fs.rmSync(resolved, { recursive: true, force: true });
+}
+
+test.afterEach(() => {
+  while (WORKSPACES.length > 0) {
+    removeWorkspace(WORKSPACES.pop());
+  }
+});
 
 function makeWorkspace() {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "finple-boundary-review-result-recording-result-supply-gate-"));
+  WORKSPACES.push(workspace);
   const processedDir = path.join(workspace, "data", "processed");
   fs.mkdirSync(processedDir, { recursive: true });
   for (const fileName of REQUIRED_CONTRACTS) {

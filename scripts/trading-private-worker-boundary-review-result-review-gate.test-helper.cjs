@@ -38,6 +38,15 @@ function writeJson(workspace, fileName, value) {
   fs.writeFileSync(path.join(workspace, "data", "processed", fileName), `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function removeWorkspace(workspace) {
+  const tempRoot = path.resolve(os.tmpdir());
+  const resolved = path.resolve(workspace);
+  if (!resolved.startsWith(`${tempRoot}${path.sep}`)) {
+    return;
+  }
+  fs.rmSync(resolved, { recursive: true, force: true });
+}
+
 function assertLocked(report, readyField) {
   assert.equal(report.readiness[readyField], true);
   assert.equal(report.currentState.kisPersonalPermissionExternalBlocker, false);
@@ -60,37 +69,48 @@ function assertLocked(report, readyField) {
 }
 
 function exerciseGate(config) {
-  const workspace = makeWorkspace(config);
-  const checkResult = runContract(config, workspace);
-  assert.equal(checkResult.status, 0, checkResult.stderr);
-  assert.match(checkResult.stdout, new RegExp(config.stdoutPattern));
+  const workspaces = [];
+  try {
+    const workspace = makeWorkspace(config);
+    workspaces.push(workspace);
+    const checkResult = runContract(config, workspace);
+    assert.equal(checkResult.status, 0, checkResult.stderr);
+    assert.match(checkResult.stdout, new RegExp(config.stdoutPattern));
 
-  const writeWorkspace = makeWorkspace(config);
-  const writeResult = runContract(config, writeWorkspace, []);
-  assert.equal(writeResult.status, 0, writeResult.stderr);
-  assertLocked(readJson(writeWorkspace, config.contract), config.readyField);
+    const writeWorkspace = makeWorkspace(config);
+    workspaces.push(writeWorkspace);
+    const writeResult = runContract(config, writeWorkspace, []);
+    assert.equal(writeResult.status, 0, writeResult.stderr);
+    assertLocked(readJson(writeWorkspace, config.contract), config.readyField);
 
-  const blockedWorkspace = makeWorkspace(config);
-  const previous = readJson(blockedWorkspace, config.previousContract);
-  previous.readiness[config.previousReadyField] = false;
-  previous.readiness.providerCallsAllowed = true;
-  writeJson(blockedWorkspace, config.previousContract, previous);
-  const blockedResult = runContract(config, blockedWorkspace, []);
-  assert.equal(blockedResult.status, 0, blockedResult.stderr);
-  const blockedReport = readJson(blockedWorkspace, config.contract);
-  assert.equal(blockedReport.readiness[config.readyField], false);
-  assert.match(blockedReport.readiness.blockers.join("|"), new RegExp(`${config.previousKey}_not_ready`));
+    const blockedWorkspace = makeWorkspace(config);
+    workspaces.push(blockedWorkspace);
+    const previous = readJson(blockedWorkspace, config.previousContract);
+    previous.readiness[config.previousReadyField] = false;
+    previous.readiness.providerCallsAllowed = true;
+    writeJson(blockedWorkspace, config.previousContract, previous);
+    const blockedResult = runContract(config, blockedWorkspace, []);
+    assert.equal(blockedResult.status, 0, blockedResult.stderr);
+    const blockedReport = readJson(blockedWorkspace, config.contract);
+    assert.equal(blockedReport.readiness[config.readyField], false);
+    assert.match(blockedReport.readiness.blockers.join("|"), new RegExp(`${config.previousKey}_not_ready`));
 
-  const progressWorkspace = makeWorkspace(config);
-  const progress = readJson(progressWorkspace, PROGRESS_SUMMARY);
-  progress.readiness.readyForLiveGuardedTrading = true;
-  progress.readiness.orderSubmissionAllowed = true;
-  writeJson(progressWorkspace, PROGRESS_SUMMARY, progress);
-  const progressResult = runContract(config, progressWorkspace, []);
-  assert.equal(progressResult.status, 0, progressResult.stderr);
-  const progressReport = readJson(progressWorkspace, config.contract);
-  assert.equal(progressReport.readiness[config.readyField], false);
-  assert.match(progressReport.readiness.blockers.join("|"), /progress_summary_no_longer_fail_closed/);
+    const progressWorkspace = makeWorkspace(config);
+    workspaces.push(progressWorkspace);
+    const progress = readJson(progressWorkspace, PROGRESS_SUMMARY);
+    progress.readiness.readyForLiveGuardedTrading = true;
+    progress.readiness.orderSubmissionAllowed = true;
+    writeJson(progressWorkspace, PROGRESS_SUMMARY, progress);
+    const progressResult = runContract(config, progressWorkspace, []);
+    assert.equal(progressResult.status, 0, progressResult.stderr);
+    const progressReport = readJson(progressWorkspace, config.contract);
+    assert.equal(progressReport.readiness[config.readyField], false);
+    assert.match(progressReport.readiness.blockers.join("|"), /progress_summary_no_longer_fail_closed/);
+  } finally {
+    for (const workspace of workspaces.reverse()) {
+      removeWorkspace(workspace);
+    }
+  }
 }
 
 module.exports = { exerciseGate };
