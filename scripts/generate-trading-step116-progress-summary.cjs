@@ -474,6 +474,21 @@ const TRACKED_READINESS_CONTRACTS = [
       "trading_lab_step116_forbidden_item_unlock_review_result_recording_result_contract.json",
     ],
     [
+      "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewPreflight",
+      "Live-guarded forbidden item unlock review result recording result review preflight",
+      "trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_preflight_contract.json",
+    ],
+    [
+      "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewResultSupplyGate",
+      "Live-guarded forbidden item unlock review result recording result review result supply gate",
+      "trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_supply_gate_contract.json",
+    ],
+    [
+      "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewResult",
+      "Live-guarded forbidden item unlock review result recording result review result",
+      "trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_contract.json",
+    ],
+    [
       "liveGuardedOwnerAdapterReviewResultSupplyGate",
       "Live-guarded owner adapter review result supply gate",
       "trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
@@ -967,6 +982,9 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-forbidden-item-unlock-review-result-recording-preflight",
   "check:trading-forbidden-item-unlock-review-result-recording-result-supply-gate",
   "check:trading-forbidden-item-unlock-review-result-recording-result",
+  "check:trading-forbidden-item-unlock-review-result-recording-result-review-preflight",
+  "check:trading-forbidden-item-unlock-review-result-recording-result-review-result-supply-gate",
+  "check:trading-forbidden-item-unlock-review-result-recording-result-review-result",
   "check:trading-live-guarded-owner-adapter-review-result-supply-gate",
   "check:trading-live-guarded-owner-adapter-review-result-recording-preflight",
   "check:trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate",
