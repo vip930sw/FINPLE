@@ -4483,6 +4483,45 @@ npm run check:trading-forbidden-item-unlock-review-result
 
 This `live_guarded_forbidden_item_unlock_review_result` step records the review-result boundary for future forbidden-item unlock decisions, but it still does not unlock the underlying item. Each underlying item must later pass its own explicit implementation or data gate before any provider call, order submission, adapter/worker code, route, UI, DB migration, or monthly scenario data write can happen.
 
+## Step 116-9G Trading Live-Guarded Forbidden Item Unlock Review Result Recording Preflight
+
+The first Trading Live-Guarded Forbidden Item Unlock Review Result Recording Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_review_result_recording_preflight_contract.json
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-preflight-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-preflight-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-review-result-recording-preflight
+```
+
+This `live_guarded_forbidden_item_unlock_review_result_recording_preflight` step opens only the preflight boundary for recording the already bounded forbidden-item unlock review result. It does not record private paths, raw values, credential/account material, hash input material, or any actual unlock result, and it keeps provider calls, order submission, worker/adapter implementation, routes, public UI, DB migration, and scenario monthly return writes closed.
+
+## Step 116-9H Trading Live-Guarded Forbidden Item Unlock Review Result Recording Result Supply Gate
+
+The first Trading Live-Guarded Forbidden Item Unlock Review Result Recording Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_review_result_recording_result_supply_gate_contract.json
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-result-supply-gate-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-result-supply-gate-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-review-result-recording-result-supply-gate
+```
+
+This `live_guarded_forbidden_item_unlock_review_result_recording_result_supply_gate` step opens only a future result supply gate for the forbidden-item unlock review-result recording chain. It accepts no supplied result in-repo, records no private material, performs no actual unlock, and leaves every trading/data-write allow flag false.
+
+## Step 116-9I Trading Live-Guarded Forbidden Item Unlock Review Result Recording Result
+
+The first Trading Live-Guarded Forbidden Item Unlock Review Result Recording Result contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_review_result_recording_result_contract.json
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-result-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-review-result-recording-result-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-review-result-recording-result
+```
+
+This `live_guarded_forbidden_item_unlock_review_result_recording_result` step records that the review-result recording boundary itself is ready, while keeping the underlying forbidden items blocked until their later explicit data or implementation gates pass. It still does not implement provider adapters/workers, call KIS/provider, submit orders, create runtime routes or public UI, run DB migrations, or write `scenario_monthly_returns.csv`.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
