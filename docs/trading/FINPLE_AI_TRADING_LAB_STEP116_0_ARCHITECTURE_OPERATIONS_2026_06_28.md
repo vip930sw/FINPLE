@@ -4366,6 +4366,45 @@ npm run check:trading-live-guarded-private-worker-implementation-boundary-review
 
 This `live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_recording_result_review_result` step records only the contract boundary for a future review-result chain after the supply gate. It keeps the worker implementation boundary closed: no provider adapter, private worker, runtime route, public UI, DB migration, provider call, order submission, raw private value, private path, hash input, credential, account identifier, or `scenario_monthly_returns.csv` is created or opened by this step.
 
+## Step 116-8H Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Preflight
+
+The first Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_preflight_contract.json
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-preflight-contract.cjs
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-preflight-contract.test.cjs
+npm run check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-preflight
+```
+
+This `live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_recording_result_review_result_recording_preflight` step opens only a contract preflight for a future recording action after the review-result contract. It does not accept, read, or record private evidence, does not implement private worker or adapter code, does not import an order adapter, does not start worker runtime, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-8I Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Result Supply Gate
+
+The first Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-supply-gate-contract.cjs
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-supply-gate-contract.test.cjs
+npm run check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate
+```
+
+This `live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate` step opens only a contract supply gate for a future recording result. It does not supply, read, or record a private result in the repo, does not record private paths, raw values, hash inputs, credentials, account identifiers, provider payloads, order payloads, or execution data, and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-8J Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Result
+
+The first Trading Live-Guarded Private Worker Implementation Boundary Review Result Recording Result Review Result Recording Result Review Result Recording Result contract is:
+
+```text
+data/processed/trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_contract.json
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-contract.cjs
+scripts/generate-trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-contract.test.cjs
+npm run check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-result
+```
+
+This `live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_recording_result_review_result_recording_result` step records only another contract boundary in the private worker boundary review-result chain. It still does not implement a private worker, provider adapter, runtime route, public UI, DB migration, provider call, order submission, private path, raw private value, hash input, credential, account identifier, or `scenario_monthly_returns.csv`.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
