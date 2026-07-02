@@ -175,11 +175,14 @@ Completed safe steps:
 88. Open the forbidden-item unlock chain closure review preflight without accepting private material, owner results, or opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_preflight_contract.json`.
 89. Open the forbidden-item unlock chain closure review-result supply gate without accepting or recording supplied review-result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_supply_gate_contract.json`.
 90. Record the forbidden-item unlock chain closure review-result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_contract.json`.
+91. Open the forbidden-item unlock chain closure review-result recording preflight without reading, accepting, or recording private material and without opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_preflight_contract.json`.
+92. Open the forbidden-item unlock chain closure review-result recording-result supply gate without accepting or recording supplied recording-result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_result_supply_gate_contract.json`.
+93. Record the forbidden-item unlock chain closure review-result recording result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_result_contract.json`.
 
 Next safe tasks:
 
 1. Wait for the owner-supplied redacted boundary review recording-result review-result outside repo commits.
-2. After the 8E-8J review-result boundary chain and 9A-9X forbidden-item unlock review/recording/closure review chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+2. After the 8E-8J review-result boundary chain and 9A-9AA forbidden-item unlock review/recording/closure review-result recording chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 3. Keep actual private worker code closed until every later guarded implementation step is explicit.
 
 Current blockers:
