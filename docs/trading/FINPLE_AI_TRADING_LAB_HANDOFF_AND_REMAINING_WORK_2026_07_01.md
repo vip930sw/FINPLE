@@ -187,6 +187,7 @@ Completed safe steps:
 100. Open the forbidden-item unlock chain closure recording-result review-result recording preflight without reading, accepting, or recording private material and without opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_result_recording_preflight_contract.json`.
 101. Open the forbidden-item unlock chain closure recording-result review-result recording-result supply gate without accepting or recording supplied recording-result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_result_recording_result_supply_gate_contract.json`.
 102. Record the forbidden-item unlock chain closure recording-result review-result recording result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_result_recording_result_contract.json`.
+103. Record synthetic read-only approval packet validation result receipt review runbook validator fixtures without reading a private receipt, importing approval evidence, calling providers, opening runtime routes/UI/DB, submitting orders, or creating `scenario_monthly_returns.csv`: `trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_validator_fixtures.json`.
 
 Next safe tasks:
 

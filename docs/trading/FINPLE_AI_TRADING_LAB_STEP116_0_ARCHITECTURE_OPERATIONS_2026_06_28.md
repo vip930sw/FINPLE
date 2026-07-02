@@ -5057,6 +5057,19 @@ npm run check:trading-read-only-approval-packet-validation-result-receipt-review
 
 This is a pure local validator for the review runbook contract. It requires explicit `--contract` input and rejects command drift, future receipt path drift, missing review assertions, missing redacted output fields, forbidden output catalog drift, enabled provider calls, enabled order submission, runtime routes, public UI, DB writes, live trading, or raw-value-shaped markers. It does not read private files, call KIS or Alpha Vantage, create runtime routes, expose public UI, write DB rows, submit orders, approve live trading, or create `scenario_monthly_returns.csv`.
 
+## Step 116-5Q-F Trading Read-Only Approval Packet Validation Result Receipt Review Runbook Validator Fixtures
+
+The first Trading Read-Only Approval Packet Validation Result Receipt Review Runbook Validator Fixtures contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_runbook_validator_fixtures.json
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-validator-fixtures.cjs
+scripts/generate-trading-read-only-approval-packet-validation-result-receipt-review-runbook-validator-fixtures.test.cjs
+npm run check:trading-read-only-approval-packet-validation-result-receipt-review-runbook-validator-fixtures
+```
+
+This is a synthetic validator-fixtures contract for the read-only approval validation receipt review runbook validator. It records only redacted synthetic valid/invalid contract shapes, does not read a private receipt or approval packet, does not run provider calls, does not import approval evidence, and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
