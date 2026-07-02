@@ -1000,6 +1000,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result supply gate",
     "trading_lab_step116_read_only_approval_import_review_result_supply_gate_contract.json",
   ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingPreflight",
+    "Read-only approval import review result recording preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_recording_preflight_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1269,6 +1274,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-packet-validation-result-receipt-review-result-supply-gate",
   "check:trading-read-only-approval-import-review-preflight",
   "check:trading-read-only-approval-import-review-result-supply-gate",
+  "check:trading-read-only-approval-import-review-result-recording-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
