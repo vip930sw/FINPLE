@@ -4678,6 +4678,45 @@ npm run check:trading-forbidden-item-unlock-chain-closure-result
 
 This `live_guarded_forbidden_item_unlock_chain_closure_result` step records the closure boundary for the forbidden-item unlock review chain while preserving the fail-closed taxonomy. It still does not unlock any underlying forbidden item, and every provider/order/runtime/UI/DB/data-write action remains blocked until a later explicit implementation or data gate passes.
 
+## Step 116-9V Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Preflight
+
+The first Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_chain_closure_review_preflight_contract.json
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-preflight-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-preflight-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-chain-closure-review-preflight
+```
+
+This `live_guarded_forbidden_item_unlock_chain_closure_review_preflight` step opens only a review preflight over the already recorded chain closure result. It accepts no private material, records no owner result, and keeps provider calls, order submission, adapter/worker implementation, runtime routes, public UI, DB migration, and monthly scenario writes closed.
+
+## Step 116-9W Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Result Supply Gate
+
+The first Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Result Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_supply_gate_contract.json
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-result-supply-gate-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-result-supply-gate-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-chain-closure-review-result-supply-gate
+```
+
+This `live_guarded_forbidden_item_unlock_chain_closure_review_result_supply_gate` step opens only a future closure-review result supply gate. It accepts no supplied result in the repo, records no private paths, raw values, credentials, account material, or hash inputs, and leaves every trading/data-write allow flag false.
+
+## Step 116-9X Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Result
+
+The first Trading Live-Guarded Forbidden Item Unlock Chain Closure Review Result contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_contract.json
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-result-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-chain-closure-review-result-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-chain-closure-review-result
+```
+
+This `live_guarded_forbidden_item_unlock_chain_closure_review_result` step records only the review-result boundary for the forbidden-item unlock chain closure. It still does not unlock any underlying forbidden item, and every provider/order/runtime/UI/DB/data-write action remains blocked until a later explicit implementation or data gate passes.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
