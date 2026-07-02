@@ -323,6 +323,11 @@ const TRACKED_READINESS_CONTRACTS = [
         "Live-guarded owner adapter review result recording result review preflight",
         "trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_review_preflight_contract.json",
       ],
+      [
+        "liveGuardedOwnerAdapterReviewResultRecordingResultReviewResultSupplyGate",
+        "Live-guarded owner adapter review result recording result review result supply gate",
+        "trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_review_result_supply_gate_contract.json",
+      ],
     [
       "manualOrderPermissionHashPreparationRunbookValidatorFixtures",
       "Manual order permission hash preparation runbook validator fixtures",
@@ -752,6 +757,7 @@ const REQUIRED_NPM_SCRIPTS = [
       "check:trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate",
       "check:trading-live-guarded-owner-adapter-review-result-recording-result",
       "check:trading-live-guarded-owner-adapter-review-result-recording-result-review-preflight",
+      "check:trading-live-guarded-owner-adapter-review-result-recording-result-review-result-supply-gate",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator",
   "check:trading-manual-order-permission-hash-preparation-runbook-validator-fixtures",
   "check:trading-manual-order-permission-import-implementation-preflight",

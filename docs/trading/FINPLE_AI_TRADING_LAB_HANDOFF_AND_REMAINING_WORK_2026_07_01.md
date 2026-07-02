@@ -12,8 +12,8 @@ Current handoff base commit before this update: `5ef8bd1 Record owner-local pack
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `154/154 = 100%`
-- Required npm check coverage: `195/195 = 100%`
+- Contract/guardrail progress: `155/155 = 100%`
+- Required npm check coverage: `196/196 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -123,10 +123,11 @@ Completed safe steps:
 36. Open the live-guarded owner adapter review result recording result supply gate while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the recording result, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_supply_gate_contract.json`.
 37. Open the live-guarded owner adapter review result recording result contract boundary while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the recording result, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_contract.json`.
 38. Open the live-guarded owner adapter review result recording result review preflight while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the recording result review, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_review_preflight_contract.json`.
+39. Open the live-guarded owner adapter review result recording result review result supply gate while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the review result, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_review_result_supply_gate_contract.json`.
 
 Next safe tasks:
 
-1. Prepare an owner adapter review result recording result review result supply gate without reading private result payloads, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+1. Prepare an owner adapter review result recording result review result contract boundary without reading private result payloads, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 2. Keep actual private worker code closed until the separate owner-supplied adapter review result is explicitly recorded.
 
 Current blockers:
@@ -170,7 +171,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add an owner adapter review result recording result review result supply gate after the review preflight boundary.
+4. Add an owner adapter review result recording result review result contract boundary after the review result supply gate.
 
 Current blocker:
 
@@ -182,8 +183,8 @@ Goal: prove the intended order path through deterministic replay and private sha
 
 Next safe tasks:
 
-1. Require the dry-run replay execution result, shadow-history result, adapter review result, private-worker preflight, owner adapter review result supply gate, recording preflight, recording result supply gate, recording result contract, and recording result review preflight before any private worker implementation.
-2. Define an owner adapter review result recording result review result supply gate without implementing the adapter.
+1. Require the dry-run replay execution result, shadow-history result, adapter review result, private-worker preflight, owner adapter review result supply gate, recording preflight, recording result supply gate, recording result contract, recording result review preflight, and recording result review result supply gate before any private worker implementation.
+2. Define an owner adapter review result recording result review result contract boundary without implementing the adapter.
 
 Current blockers:
 
@@ -230,7 +231,7 @@ Current blockers:
 
 Fastest safe path toward private trading readiness from the current contract boundary:
 
-1. Owner adapter review result recording result review result supply gate.
+1. Owner adapter review result recording result review result contract boundary.
 2. Private worker implementation only after all prior review result contracts pass.
 3. Private dashboard/operator monitoring.
 4. Public dashboard/homepage router only after live-guarded review.
