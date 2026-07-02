@@ -226,7 +226,8 @@
       "readOnlyApprovalPacketValidationResultReceiptReviewResult": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_result_contract.json",
       "readOnlyApprovalPacketValidationResultReceiptReviewResultValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_result_validator_fixtures.json",
       "readOnlyApprovalPacketValidationResultReceiptReviewResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_packet_validation_result_receipt_review_result_supply_gate_contract.json",
-      "readOnlyApprovalImportReviewPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_preflight_contract.json"
+      "readOnlyApprovalImportReviewPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_preflight_contract.json",
+      "readOnlyApprovalImportReviewResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_supply_gate_contract.json"
     }
   },
   "outputFiles": {
@@ -249,10 +250,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 223,
-    "trackedContractsReady": 223,
+    "trackedContractsTotal": 224,
+    "trackedContractsReady": 224,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 265,
+    "requiredNpmScriptsTotal": 266,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -2266,6 +2267,15 @@
       "title": "Read-only approval import review preflight",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_preflight_contract.json",
       "status": "read_only_approval_import_review_preflight_ready_import_still_blocked_pending_owner_review_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyApprovalImportReviewResultSupplyGate",
+      "title": "Read-only approval import review result supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_supply_gate_contract.json",
+      "status": "read_only_approval_import_review_result_supply_gate_ready_import_still_blocked_pending_owner_review_result",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
