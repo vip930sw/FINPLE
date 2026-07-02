@@ -141,12 +141,13 @@ Completed safe steps:
 54. Open the live-guarded private worker implementation boundary review result recording result contract boundary while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the recording result, implementing worker/adapter code, importing an order adapter, starting worker runtime, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_boundary_review_result_recording_result_contract.json`.
 55. Open the live-guarded private worker implementation boundary review result recording result review preflight while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the recording-result review, implementing worker/adapter code, importing an order adapter, starting worker runtime, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_preflight_contract.json`.
 56. Open the live-guarded private worker implementation boundary review result recording result review result supply gate while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the review result, implementing worker/adapter code, importing an order adapter, starting worker runtime, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_supply_gate_contract.json`.
+57. Open the live-guarded private worker implementation boundary review result recording result review result contract boundary while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the review result, implementing worker/adapter code, importing an order adapter, starting worker runtime, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_contract.json`.
 
 Next safe tasks:
 
-1. Wait for the owner-supplied redacted private-worker implementation boundary review recording-result review result outside repo commits.
-2. After that owner review result exists, prepare a hash-only boundary review recording-result review result contract boundary without reading private paths/raw values, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
-3. Keep actual private worker code closed until the separate review-result contract boundary and later guarded implementation steps are explicit.
+1. Review the new boundary review recording-result review-result contract boundary.
+2. After that review, prepare the next separate guarded boundary before any private worker implementation, without reading private paths/raw values, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+3. Keep actual private worker code closed until every later guarded implementation step is explicit.
 
 Current blockers:
 
