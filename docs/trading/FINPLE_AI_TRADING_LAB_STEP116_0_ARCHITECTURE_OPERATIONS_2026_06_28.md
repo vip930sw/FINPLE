@@ -4028,6 +4028,19 @@ npm run check:trading-live-guarded-owner-adapter-review-result-recording-result
 
 This `live_guarded_owner_adapter_review_result_recording_result` step opens only the contract boundary for a future owner-supplied adapter review result recording result. It keeps KIS personal permission out of the external blocker list, but it does not accept, read, or record the recording result now, does not implement a private worker or order adapter, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-7H Trading Live-Guarded Owner Adapter Review Result Recording Result Review Preflight
+
+The first Trading Live-Guarded Owner Adapter Review Result Recording Result Review Preflight is:
+
+```text
+data/processed/trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_review_preflight_contract.json
+scripts/generate-trading-live-guarded-owner-adapter-review-result-recording-result-review-preflight-contract.cjs
+scripts/generate-trading-live-guarded-owner-adapter-review-result-recording-result-review-preflight-contract.test.cjs
+npm run check:trading-live-guarded-owner-adapter-review-result-recording-result-review-preflight
+```
+
+This `live_guarded_owner_adapter_review_result_recording_result_review_preflight` step opens only the future review preflight boundary for an owner-supplied adapter review result recording result. It keeps KIS personal permission out of the external blocker list, but it does not accept, read, or record the recording result review now, does not read private result payloads, does not implement a private worker or order adapter, does not sign or submit provider requests, does not call KIS or any provider, does not submit orders, and keeps runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
