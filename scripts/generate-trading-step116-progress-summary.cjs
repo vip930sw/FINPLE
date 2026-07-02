@@ -429,6 +429,21 @@ const TRACKED_READINESS_CONTRACTS = [
       "trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_contract.json",
     ],
     [
+      "liveGuardedPrivateWorkerImplementationBoundaryReviewResultRecordingResultReviewResultRecordingResultReviewPreflight",
+      "Live-guarded private worker implementation boundary review result recording result review result recording result review preflight",
+      "trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_review_preflight_contract.json",
+    ],
+    [
+      "liveGuardedPrivateWorkerImplementationBoundaryReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate",
+      "Live-guarded private worker implementation boundary review result recording result review result recording result review result supply gate",
+      "trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json",
+    ],
+    [
+      "liveGuardedPrivateWorkerImplementationBoundaryReviewResultRecordingResultReviewResultRecordingResultReviewResult",
+      "Live-guarded private worker implementation boundary review result recording result review result recording result review result",
+      "trading_lab_step116_private_worker_boundary_review_result_review_result_recording_result_review_result_recording_result_review_result_contract.json",
+    ],
+    [
       "liveGuardedForbiddenItemUnlockTaxonomyPreflight",
       "Live-guarded forbidden item unlock taxonomy preflight",
       "trading_lab_step116_forbidden_item_unlock_taxonomy_preflight_contract.json",
@@ -1078,6 +1093,9 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-preflight",
   "check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate",
   "check:trading-live-guarded-private-worker-implementation-boundary-review-result-recording-result-review-result-recording-result-review-result-recording-result",
+  "check:trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-review-preflight",
+  "check:trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-review-result-supply-gate",
+  "check:trading-private-worker-boundary-review-result-review-result-recording-result-review-result-recording-result-review-result",
   "check:trading-forbidden-item-unlock-taxonomy-preflight",
   "check:trading-forbidden-item-unlock-taxonomy",
   "check:trading-forbidden-item-unlock-sequence-map",
