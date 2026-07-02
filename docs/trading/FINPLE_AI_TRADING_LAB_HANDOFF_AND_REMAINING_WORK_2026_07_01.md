@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `e5504d4 Record private worker review recording result contract`
+Current handoff base commit before this update: `dbd5797 Record private worker review result review preflight`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `162/162 = 100%`
-- Required npm check coverage: `203/203 = 100%`
+- Contract/guardrail progress: `163/163 = 100%`
+- Required npm check coverage: `204/204 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -131,10 +131,11 @@ Completed safe steps:
 44. Open the live-guarded private worker implementation review result recording result supply gate while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the worker review recording result, recording private paths/raw values, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_review_result_recording_result_supply_gate_contract.json`.
 45. Open the live-guarded private worker implementation review result recording result contract boundary while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the worker review recording result, recording private paths/raw values/hash inputs, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_review_result_recording_result_contract.json`.
 46. Open the live-guarded private worker implementation review result recording result review preflight while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the worker review recording-result review, recording private paths/raw values/hash inputs, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_review_result_recording_result_review_preflight_contract.json`.
+47. Open the live-guarded private worker implementation review result recording result review result supply gate while keeping KIS personal permission out of the external blocker list, without accepting, reading, or recording the worker review recording-result review result, recording private paths/raw values/hash inputs, implementing worker/adapter code, calling KIS/provider, creating routes/UI/DB, or opening order submission: `trading_lab_step116_live_guarded_private_worker_implementation_review_result_recording_result_review_result_supply_gate_contract.json`.
 
 Next safe tasks:
 
-1. Prepare a private-worker implementation review result recording result review result supply gate without implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+1. Prepare a private-worker implementation review result recording result review result contract boundary without implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 2. Keep actual private worker code closed until the separate owner-supplied adapter review result is explicitly recorded.
 
 Current blockers:
@@ -178,7 +179,7 @@ Next safe tasks:
 1. Convert parsed trading env values into a reviewed live-guarded risk input snapshot.
 2. Narrow `FINPLE_TRADING_ALLOWED_SYMBOLS` before live-guarded mode; wildcard symbols must not become a live allowlist.
 3. Record max notional, daily loss, exposure, session, slippage, failed-attempt, and blocked-instrument boundaries.
-4. Add a private-worker implementation review result recording result review result supply gate after the private-worker implementation review result recording result review preflight.
+4. Add a private-worker implementation review result recording result review result contract boundary after the private-worker implementation review result recording result review result supply gate.
 
 Current blocker:
 
@@ -190,8 +191,8 @@ Goal: prove the intended order path through deterministic replay and private sha
 
 Next safe tasks:
 
-1. Require the dry-run replay execution result, shadow-history result, adapter review result, private-worker preflight, owner adapter review result supply gate, recording preflight, recording result supply gate, recording result contract, recording result review preflight, recording result review result supply gate, recording result review result contract, private-worker implementation review, private-worker implementation review result supply gate, private-worker implementation review result recording preflight, private-worker implementation review result recording result supply gate, private-worker implementation review result recording result contract, and private-worker implementation review result recording result review preflight before any private worker implementation.
-2. Define a private-worker implementation review result recording result review result supply gate without implementing the adapter.
+1. Require the dry-run replay execution result, shadow-history result, adapter review result, private-worker preflight, owner adapter review result supply gate, recording preflight, recording result supply gate, recording result contract, recording result review preflight, recording result review result supply gate, recording result review result contract, private-worker implementation review, private-worker implementation review result supply gate, private-worker implementation review result recording preflight, private-worker implementation review result recording result supply gate, private-worker implementation review result recording result contract, private-worker implementation review result recording result review preflight, and private-worker implementation review result recording result review result supply gate before any private worker implementation.
+2. Define a private-worker implementation review result recording result review result contract boundary without implementing the adapter.
 
 Current blockers:
 
@@ -238,7 +239,7 @@ Current blockers:
 
 Fastest safe path toward private trading readiness from the current contract boundary:
 
-1. Private-worker implementation review result recording result review result supply gate.
+1. Private-worker implementation review result recording result review result contract boundary.
 2. Private worker implementation only after all prior review result contracts pass.
 3. Private dashboard/operator monitoring.
 4. Public dashboard/homepage router only after live-guarded review.
@@ -251,8 +252,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 162/162 tracked contracts ready
-- 203/203 required npm checks present
+- 163/163 tracked contracts ready
+- 204/204 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -291,7 +292,7 @@ FINPLE 저장소 vip930sw/FINPLE의 main 브랜치에서 이어서 작업해주�
 작업 기준은 실제 GitHub main 소스입니다. 시작 시 반드시 로컬/원격 main, Render API/DB health, Vercel 운영 응답을 확인해주세요.
 
 현재 상태:
-- Step 116 AI Trading Lab contract/guardrail stack은 162/162 ready, required npm checks 203/203 입니다.
+- Step 116 AI Trading Lab contract/guardrail stack은 163/163 ready, required npm checks 204/204 입니다.
 - owner order path assertion, KIS personal order authority assertion, KIS personal terms permission assertion은 기록 완료되었습니다.
 - 개인계좌/KIS 주문 제출 권한은 외부 blocker가 아닙니다.
 - owner-local manual order permission packet preparation assertion, explicit local packet validation receipt intake, owner explicit local packet path supply gate, local validation execution preflight, validation receipt recording preflight, validation execution result supply gate, explicit local validation receipt path supply gate, validation receipt local validation execution preflight, validation receipt local validation execution result supply gate는 기록되었습니다.
