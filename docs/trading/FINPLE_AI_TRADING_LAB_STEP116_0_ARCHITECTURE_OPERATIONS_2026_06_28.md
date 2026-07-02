@@ -5121,6 +5121,19 @@ npm run check:trading-read-only-approval-packet-validation-result-receipt-review
 
 This `read_only_approval_packet_validation_result_receipt_review_result_supply_gate` step opens only a future owner-supplied redacted approval validation receipt review-result supply boundary. It does not accept, read, or record the supplied review result now, does not read a private receipt or approval packet, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5Q-K Trading Read-Only Approval Import Review Preflight
+
+The first Trading Read-Only Approval Import Review Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_preflight_contract.json
+scripts/generate-trading-read-only-approval-import-review-preflight-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-preflight-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-preflight
+```
+
+This `read_only_approval_import_review_preflight` step opens only the preflight boundary for a future read-only approval import review after an owner-supplied redacted approval validation receipt review result. It does not accept or read that review result now, does not read a private approval packet, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
