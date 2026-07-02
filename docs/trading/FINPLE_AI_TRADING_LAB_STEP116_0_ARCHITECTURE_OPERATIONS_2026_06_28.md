@@ -5433,6 +5433,32 @@ npm run check:trading-read-only-approval-import-review-result-recording-result-r
 
 This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_preflight` step opens only a review preflight boundary for a future owner-supplied redacted approval import recording-result review-result recording-result review. It does not accept, read, or record that review now, does not read the recording result, does not record private paths, raw values, or hash inputs, does not read a private approval packet, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5Q-AI Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Supply Gate
+
+The first Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Supply Gate Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-supply-gate-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-supply-gate-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-supply-gate
+```
+
+This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_supply_gate` step opens only a supply gate boundary for a future owner-supplied redacted approval import recording-result review-result recording-result review result. It does not supply, accept, read, or record the result now, does not read the recording result, does not record private paths, raw values, or hash inputs, does not read a private approval packet, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-AJ Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Contract
+
+The first Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result
+```
+
+This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result` step records only a synthetic contract boundary for a future owner-supplied redacted approval import recording-result review-result recording-result review result. It does not accept, read, or record that supplied result now, does not read the recording result, does not record private paths, raw values, or hash inputs, does not read a private approval packet, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
