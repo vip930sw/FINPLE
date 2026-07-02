@@ -235,7 +235,9 @@
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_supply_gate_contract.json",
       "readOnlyApprovalImportReviewResultRecordingResultReviewResult": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_contract.json",
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_preflight_contract.json",
-      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_supply_gate_contract.json"
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResult": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_contract.json",
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_review_preflight_contract.json"
     }
   },
   "outputFiles": {
@@ -258,10 +260,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 232,
-    "trackedContractsReady": 232,
+    "trackedContractsTotal": 234,
+    "trackedContractsReady": 234,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 274,
+    "requiredNpmScriptsTotal": 276,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -2356,6 +2358,24 @@
       "title": "Read-only approval import review result recording result review result recording result supply gate",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
       "status": "read_only_approval_import_review_result_recording_result_review_result_recording_result_supply_gate_ready_import_still_blocked_pending_owner_recording_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResult",
+      "title": "Read-only approval import review result recording result review result recording result",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_contract.json",
+      "status": "read_only_approval_import_review_result_recording_result_review_result_recording_result_ready_import_still_blocked_pending_owner_recording_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewPreflight",
+      "title": "Read-only approval import review result recording result review result recording result review preflight",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_result_review_preflight_contract.json",
+      "status": "read_only_approval_import_review_result_recording_result_review_result_recording_result_review_preflight_ready_import_still_blocked_pending_owner_review",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
