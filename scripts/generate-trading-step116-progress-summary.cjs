@@ -1030,6 +1030,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result recording result review result",
     "trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_contract.json",
   ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingPreflight",
+    "Read-only approval import review result recording result review result recording preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_recording_result_review_result_recording_preflight_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1305,6 +1310,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-recording-result-review-preflight",
   "check:trading-read-only-approval-import-review-result-recording-result-review-result-supply-gate",
   "check:trading-read-only-approval-import-review-result-recording-result-review-result",
+  "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
