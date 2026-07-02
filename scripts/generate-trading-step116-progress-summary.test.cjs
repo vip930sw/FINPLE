@@ -117,6 +117,9 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_forbidden_item_unlock_taxonomy_preflight_contract.json",
   "trading_lab_step116_forbidden_item_unlock_taxonomy_contract.json",
   "trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json",
+  "trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json",
+  "trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json",
+  "trading_lab_step116_forbidden_item_unlock_review_result_contract.json",
   "trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
   "trading_lab_step116_live_guarded_owner_adapter_review_result_recording_preflight_contract.json",
   "trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_supply_gate_contract.json",
@@ -240,10 +243,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 185);
-  assert.equal(report.progress.trackedContractsReady, 185);
+  assert.equal(report.progress.trackedContractsTotal, 188);
+  assert.equal(report.progress.trackedContractsReady, 188);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 226);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 229);
   assert.deepEqual(report.progress.authorityExternalBlockersCleared, [
     "owner_order_path_assertion_recorded",
     "kis_personal_order_authority_recorded",

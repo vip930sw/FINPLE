@@ -444,6 +444,21 @@ const TRACKED_READINESS_CONTRACTS = [
       "trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json",
     ],
     [
+      "liveGuardedForbiddenItemUnlockRequestPreflight",
+      "Live-guarded forbidden item unlock request preflight",
+      "trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json",
+    ],
+    [
+      "liveGuardedForbiddenItemUnlockReviewSupplyGate",
+      "Live-guarded forbidden item unlock review supply gate",
+      "trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json",
+    ],
+    [
+      "liveGuardedForbiddenItemUnlockReviewResult",
+      "Live-guarded forbidden item unlock review result",
+      "trading_lab_step116_forbidden_item_unlock_review_result_contract.json",
+    ],
+    [
       "liveGuardedOwnerAdapterReviewResultSupplyGate",
       "Live-guarded owner adapter review result supply gate",
       "trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
@@ -931,6 +946,9 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-forbidden-item-unlock-taxonomy-preflight",
   "check:trading-forbidden-item-unlock-taxonomy",
   "check:trading-forbidden-item-unlock-sequence-map",
+  "check:trading-forbidden-item-unlock-request-preflight",
+  "check:trading-forbidden-item-unlock-review-supply-gate",
+  "check:trading-forbidden-item-unlock-review-result",
   "check:trading-live-guarded-owner-adapter-review-result-supply-gate",
   "check:trading-live-guarded-owner-adapter-review-result-recording-preflight",
   "check:trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate",

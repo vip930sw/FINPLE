@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `e52d24d Extend private worker boundary review result gates`
+Current handoff base commit before this update: `2cd31a7 Classify trading forbidden item unlock boundaries`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `185/185 = 100%`
-- Required npm check coverage: `226/226 = 100%`
+- Contract/guardrail progress: `188/188 = 100%`
+- Required npm check coverage: `229/229 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -154,11 +154,14 @@ Completed safe steps:
 67. Classify forbidden items as current-stage forbidden, separately unlockable by later gates, or non-repo private material without opening provider calls, order submission, adapter/worker code, runtime routes, public UI, DB migration, or `scenario_monthly_returns.csv`: `trading_lab_step116_forbidden_item_unlock_taxonomy_preflight_contract.json`.
 68. Record the forbidden item unlock taxonomy while keeping all live-trading and data-write allow flags false: `trading_lab_step116_forbidden_item_unlock_taxonomy_contract.json`.
 69. Map separately unlockable items to later review gates while keeping private packet path material, raw values, credential material, account material, and hash input material out of repo commits: `trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json`.
+70. Prepare the forbidden-item unlock request preflight without accepting request evidence or opening any trading/data-write surface: `trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json`.
+71. Open the forbidden-item unlock review supply gate without recording owner review result material, private paths, raw values, credential/account material, or hash input material: `trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json`.
+72. Record the forbidden-item unlock review-result boundary while keeping each underlying item blocked until its own explicit implementation or data gate passes: `trading_lab_step116_forbidden_item_unlock_review_result_contract.json`.
 
 Next safe tasks:
 
 1. Wait for the owner-supplied redacted boundary review recording-result review-result outside repo commits.
-2. After the 8E-8J review-result boundary chain and 9A-9C forbidden-item taxonomy are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+2. After the 8E-8J review-result boundary chain and 9A-9F forbidden-item unlock review chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 3. Keep actual private worker code closed until every later guarded implementation step is explicit.
 
 Current blockers:
@@ -275,8 +278,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 185/185 tracked contracts ready
-- 226/226 required npm checks present
+- 188/188 tracked contracts ready
+- 229/229 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`

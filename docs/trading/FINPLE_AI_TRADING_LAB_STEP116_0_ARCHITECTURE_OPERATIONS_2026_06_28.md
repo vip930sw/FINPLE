@@ -4444,6 +4444,45 @@ npm run check:trading-forbidden-item-unlock-sequence-map
 
 This `live_guarded_forbidden_item_unlock_sequence_map` step maps current-stage forbidden items to later gates: read-only provider calls need read-only provider authorization review, order submission needs manual permission receipt, kill switch, risk gate, dry-run replay, shadow-history, and adapter review, private worker work needs implementation review result and later runtime review, runtime route/public UI/DB work need separate route/dashboard/storage reviews, and `scenario_monthly_returns.csv` needs real source approval and writer gates. It is a map only; no runtime or trading behavior is opened.
 
+## Step 116-9D Trading Live-Guarded Forbidden Item Unlock Request Preflight
+
+The first Trading Live-Guarded Forbidden Item Unlock Request Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json
+scripts/generate-trading-forbidden-item-unlock-request-preflight-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-request-preflight-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-request-preflight
+```
+
+This `live_guarded_forbidden_item_unlock_request_preflight` step prepares the shape for future unlock requests after the taxonomy and sequence map. It does not accept an unlock request as evidence, does not enable provider calls, orders, worker/adapter code, runtime routes, public UI, DB migration, or `scenario_monthly_returns.csv`, and keeps private material out of the repo.
+
+## Step 116-9E Trading Live-Guarded Forbidden Item Unlock Review Supply Gate
+
+The first Trading Live-Guarded Forbidden Item Unlock Review Supply Gate contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json
+scripts/generate-trading-forbidden-item-unlock-review-supply-gate-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-review-supply-gate-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-review-supply-gate
+```
+
+This `live_guarded_forbidden_item_unlock_review_supply_gate` step opens only a future review-result supply gate for unlock requests. It records no owner result, no private path, no raw value, no credential/account material, and no hash input material, and it keeps every trading/data-write allow flag false.
+
+## Step 116-9F Trading Live-Guarded Forbidden Item Unlock Review Result
+
+The first Trading Live-Guarded Forbidden Item Unlock Review Result contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_review_result_contract.json
+scripts/generate-trading-forbidden-item-unlock-review-result-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-review-result-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-review-result
+```
+
+This `live_guarded_forbidden_item_unlock_review_result` step records the review-result boundary for future forbidden-item unlock decisions, but it still does not unlock the underlying item. Each underlying item must later pass its own explicit implementation or data gate before any provider call, order submission, adapter/worker code, route, UI, DB migration, or monthly scenario data write can happen.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:

@@ -114,6 +114,9 @@
       "liveGuardedForbiddenItemUnlockTaxonomyPreflight": "data\\processed\\trading_lab_step116_forbidden_item_unlock_taxonomy_preflight_contract.json",
       "liveGuardedForbiddenItemUnlockTaxonomy": "data\\processed\\trading_lab_step116_forbidden_item_unlock_taxonomy_contract.json",
       "liveGuardedForbiddenItemUnlockSequenceMap": "data\\processed\\trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json",
+      "liveGuardedForbiddenItemUnlockRequestPreflight": "data\\processed\\trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json",
+      "liveGuardedForbiddenItemUnlockReviewSupplyGate": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json",
+      "liveGuardedForbiddenItemUnlockReviewResult": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_contract.json",
       "liveGuardedOwnerAdapterReviewResultSupplyGate": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
       "liveGuardedOwnerAdapterReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_recording_preflight_contract.json",
       "liveGuardedOwnerAdapterReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_supply_gate_contract.json",
@@ -214,10 +217,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 185,
-    "trackedContractsReady": 185,
+    "trackedContractsTotal": 188,
+    "trackedContractsReady": 188,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 226,
+    "requiredNpmScriptsTotal": 229,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -1187,6 +1190,33 @@
       "title": "Live-guarded forbidden item unlock sequence map",
       "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json",
       "status": "live_guarded_forbidden_item_unlock_sequence_map_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockRequestPreflight",
+      "title": "Live-guarded forbidden item unlock request preflight",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_request_preflight_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_request_preflight_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockReviewSupplyGate",
+      "title": "Live-guarded forbidden item unlock review supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_supply_gate_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_review_supply_gate_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockReviewResult",
+      "title": "Live-guarded forbidden item unlock review result",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_review_result_ready_fail_closed",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
