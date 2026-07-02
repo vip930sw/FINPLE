@@ -195,12 +195,13 @@ Completed safe steps:
 108. Open the read-only approval import review-result supply gate without accepting, reading, or recording the supplied owner import review result, reading private approval packets, implementing `readOnlyApprovalImport.js`, importing approval evidence, authorizing provider calls, opening runtime routes/UI/DB, submitting orders, or creating `scenario_monthly_returns.csv`: `trading_lab_step116_read_only_approval_import_review_result_supply_gate_contract.json`.
 109. Open the read-only approval import review-result recording preflight without accepting, reading, or recording the owner import review result, recording private paths/raw values/hash inputs, reading private approval packets, implementing `readOnlyApprovalImport.js`, importing approval evidence, authorizing provider calls, opening runtime routes/UI/DB, submitting orders, or creating `scenario_monthly_returns.csv`: `trading_lab_step116_read_only_approval_import_review_result_recording_preflight_contract.json`.
 110. Open the read-only approval import review-result recording-result supply gate without accepting, reading, or recording the owner recording result, recording private paths/raw values/hash inputs, reading private approval packets, implementing `readOnlyApprovalImport.js`, importing approval evidence, authorizing provider calls, opening runtime routes/UI/DB, submitting orders, or creating `scenario_monthly_returns.csv`: `trading_lab_step116_read_only_approval_import_review_result_recording_result_supply_gate_contract.json`.
+111. Record the read-only approval import review-result recording-result contract boundary without accepting, reading, or recording the owner recording result, recording private paths/raw values/hash inputs, reading private approval packets, implementing `readOnlyApprovalImport.js`, importing approval evidence, authorizing provider calls, opening runtime routes/UI/DB, submitting orders, or creating `scenario_monthly_returns.csv`: `trading_lab_step116_read_only_approval_import_review_result_recording_result_contract.json`.
 
 Next safe tasks:
 
-1. Wait for the owner-supplied redacted boundary review recording-result review-result outside repo commits.
-2. After the 8E-8M review-result boundary chain and 9A-9AG forbidden-item unlock review/recording/closure recording-result review-result recording chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
-3. Keep actual private worker code closed until every later guarded implementation step is explicit.
+1. Wait for the owner-supplied redacted read-only approval import review recording result outside repo commits.
+2. Prepare only the next hash-only internal review gate without reading private paths/raw values/hash inputs, implementing `readOnlyApprovalImport.js`, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+3. Keep actual provider calls, private worker/adapter implementation, runtime routes, public UI, DB migration, order submission, and `scenario_monthly_returns.csv` closed until every later guarded implementation step is explicit.
 
 Local test temp-folder prompt:
 
