@@ -344,6 +344,11 @@ const TRACKED_READINESS_CONTRACTS = [
       "trading_lab_step116_live_guarded_private_worker_implementation_boundary_preflight_contract.json",
     ],
     [
+      "liveGuardedPrivateWorkerImplementationBoundaryReview",
+      "Live-guarded private worker implementation boundary review",
+      "trading_lab_step116_live_guarded_private_worker_implementation_boundary_review_contract.json",
+    ],
+    [
       "liveGuardedOwnerAdapterReviewResultSupplyGate",
       "Live-guarded owner adapter review result supply gate",
       "trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
@@ -811,6 +816,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-live-guarded-private-worker-implementation-review-result-recording-result-review-result-supply-gate",
   "check:trading-live-guarded-private-worker-implementation-review-result-recording-result-review-result",
   "check:trading-live-guarded-private-worker-implementation-boundary-preflight",
+  "check:trading-live-guarded-private-worker-implementation-boundary-review",
   "check:trading-live-guarded-owner-adapter-review-result-supply-gate",
   "check:trading-live-guarded-owner-adapter-review-result-recording-preflight",
   "check:trading-live-guarded-owner-adapter-review-result-recording-result-supply-gate",
