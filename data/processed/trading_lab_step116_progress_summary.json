@@ -129,6 +129,9 @@
       "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewResultRecordingResultReviewPreflight": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_preflight_contract.json",
       "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json",
       "liveGuardedForbiddenItemUnlockReviewResultRecordingResultReviewResultRecordingResultReviewResult": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_contract.json",
+      "liveGuardedForbiddenItemUnlockChainClosurePreflight": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_preflight_contract.json",
+      "liveGuardedForbiddenItemUnlockChainClosureResultSupplyGate": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_result_supply_gate_contract.json",
+      "liveGuardedForbiddenItemUnlockChainClosureResult": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_result_contract.json",
       "liveGuardedOwnerAdapterReviewResultSupplyGate": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_supply_gate_contract.json",
       "liveGuardedOwnerAdapterReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_recording_preflight_contract.json",
       "liveGuardedOwnerAdapterReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_live_guarded_owner_adapter_review_result_recording_result_supply_gate_contract.json",
@@ -229,10 +232,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 200,
-    "trackedContractsReady": 200,
+    "trackedContractsTotal": 203,
+    "trackedContractsReady": 203,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 241,
+    "requiredNpmScriptsTotal": 244,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -1337,6 +1340,33 @@
       "title": "Live-guarded forbidden item unlock review result recording result review result recording result review result",
       "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_contract.json",
       "status": "live_guarded_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockChainClosurePreflight",
+      "title": "Live-guarded forbidden item unlock chain closure preflight",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_preflight_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_chain_closure_preflight_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockChainClosureResultSupplyGate",
+      "title": "Live-guarded forbidden item unlock chain closure result supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_result_supply_gate_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_chain_closure_result_supply_gate_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "liveGuardedForbiddenItemUnlockChainClosureResult",
+      "title": "Live-guarded forbidden item unlock chain closure result",
+      "filePath": "data\\processed\\trading_lab_step116_forbidden_item_unlock_chain_closure_result_contract.json",
+      "status": "live_guarded_forbidden_item_unlock_chain_closure_result_ready_fail_closed",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

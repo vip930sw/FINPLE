@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `ed40679 Add forbidden item unlock review recording gates`
+Current handoff base commit before this update: `8882605 Add forbidden item unlock recording result review gates`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `200/200 = 100%`
-- Required npm check coverage: `241/241 = 100%`
+- Contract/guardrail progress: `203/203 = 100%`
+- Required npm check coverage: `244/244 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -169,11 +169,14 @@ Completed safe steps:
 82. Open the forbidden-item unlock review-result recording-result review-result recording-result review preflight without reading, accepting, or recording owner review material and without opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_preflight_contract.json`.
 83. Open the forbidden-item unlock review-result recording-result review-result recording-result review-result supply gate without accepting or recording the supplied review result in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json`.
 84. Record the forbidden-item unlock review-result recording-result review-result recording-result review-result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_review_result_recording_result_review_result_recording_result_review_result_contract.json`.
+85. Open the forbidden-item unlock chain closure preflight over the existing review chain without accepting private material, owner results, or opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_preflight_contract.json`.
+86. Open the forbidden-item unlock chain closure result supply gate without accepting or recording supplied closure result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_result_supply_gate_contract.json`.
+87. Record the forbidden-item unlock chain closure result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_result_contract.json`.
 
 Next safe tasks:
 
 1. Wait for the owner-supplied redacted boundary review recording-result review-result outside repo commits.
-2. After the 8E-8J review-result boundary chain and 9A-9R forbidden-item unlock review/recording/review-result chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+2. After the 8E-8J review-result boundary chain and 9A-9U forbidden-item unlock review/recording/closure chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 3. Keep actual private worker code closed until every later guarded implementation step is explicit.
 
 Current blockers:
@@ -290,8 +293,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 200/200 tracked contracts ready
-- 241/241 required npm checks present
+- 203/203 tracked contracts ready
+- 244/244 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
