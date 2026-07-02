@@ -178,12 +178,28 @@ Completed safe steps:
 91. Open the forbidden-item unlock chain closure review-result recording preflight without reading, accepting, or recording private material and without opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_preflight_contract.json`.
 92. Open the forbidden-item unlock chain closure review-result recording-result supply gate without accepting or recording supplied recording-result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_result_supply_gate_contract.json`.
 93. Record the forbidden-item unlock chain closure review-result recording result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_review_result_recording_result_contract.json`.
+94. Open the forbidden-item unlock chain closure recording-result review preflight without reading, accepting, or recording private material and without opening provider/order/runtime/UI/DB/data-write paths: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_preflight_contract.json`.
+95. Open the forbidden-item unlock chain closure recording-result review-result supply gate without accepting or recording supplied review-result material in the repo and without unlocking any underlying forbidden item: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_result_supply_gate_contract.json`.
+96. Record the forbidden-item unlock chain closure recording-result review result boundary while preserving the fail-closed taxonomy and requiring later explicit implementation/data gates for every underlying item: `trading_lab_step116_forbidden_item_unlock_chain_closure_recording_result_review_result_contract.json`.
 
 Next safe tasks:
 
 1. Wait for the owner-supplied redacted boundary review recording-result review-result outside repo commits.
-2. After the 8E-8J review-result boundary chain and 9A-9AA forbidden-item unlock review/recording/closure review-result recording chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
+2. After the 8E-8J review-result boundary chain and 9A-9AD forbidden-item unlock review/recording/closure recording-result review chain are reviewed, prepare the next hash-only internal gate without reading private paths/raw values/hash inputs, implementing the worker/adapter, calling KIS/provider, creating routes/UI/DB, or opening order submission.
 3. Keep actual private worker code closed until every later guarded implementation step is explicit.
+
+Local test temp-folder prompt:
+
+```text
+Before and after any full local verification in this FINPLE Step 116 thread, check and clean only disposable local artifacts:
+- Count `%TEMP%\finple-*` directories before/after `node --test`.
+- Delete only `%TEMP%\finple-*` test workspaces after verifying each resolved path stays under `[IO.Path]::GetTempPath()`.
+- If normal PowerShell deletion fails because of long nested filenames, use the Windows long-path prefix (`\\?\`) only for those verified `%TEMP%\finple-*` paths.
+- After `npm.cmd run build`, remove local-only `dist`, `.vite`, and `node_modules\.vite` after verifying each resolved path stays inside the repo root.
+- Do not delete `node_modules` unless the user explicitly accepts reinstall cost.
+- Do not delete repo data, docs, source files, `.git`, private packet files, or any non-`finple-*` temp folders.
+- Final reports must state whether `%TEMP%\finple-*`, `dist`, `.vite`, `node_modules\.vite`, and `scenario_monthly_returns.csv` remain.
+```
 
 Current blockers:
 
