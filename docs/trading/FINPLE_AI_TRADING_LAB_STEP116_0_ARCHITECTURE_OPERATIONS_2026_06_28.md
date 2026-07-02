@@ -4405,6 +4405,45 @@ npm run check:trading-live-guarded-private-worker-implementation-boundary-review
 
 This `live_guarded_private_worker_implementation_boundary_review_result_recording_result_review_result_recording_result_review_result_recording_result` step records only another contract boundary in the private worker boundary review-result chain. It still does not implement a private worker, provider adapter, runtime route, public UI, DB migration, provider call, order submission, private path, raw private value, hash input, credential, account identifier, or `scenario_monthly_returns.csv`.
 
+## Step 116-9A Trading Live-Guarded Forbidden Item Unlock Taxonomy Preflight
+
+The first Trading Live-Guarded Forbidden Item Unlock Taxonomy Preflight contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_taxonomy_preflight_contract.json
+scripts/generate-trading-forbidden-item-unlock-taxonomy-preflight-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-taxonomy-preflight-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-taxonomy-preflight
+```
+
+This `live_guarded_forbidden_item_unlock_taxonomy_preflight` step classifies the forbidden list without unlocking anything. Provider calls, order submission, provider adapter implementation, private worker implementation, runtime routes, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` are current-stage forbidden items that require later explicit gates. Private packet path material, private local receipt path material, raw provider/order/account material, credential material, token material, and hash input material remain non-repo material and are not made unlockable by this taxonomy.
+
+## Step 116-9B Trading Live-Guarded Forbidden Item Unlock Taxonomy
+
+The first Trading Live-Guarded Forbidden Item Unlock Taxonomy contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_taxonomy_contract.json
+scripts/generate-trading-forbidden-item-unlock-taxonomy-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-taxonomy-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-taxonomy
+```
+
+This `live_guarded_forbidden_item_unlock_taxonomy` step records the contract taxonomy after the preflight. It keeps all live-trading and data-write allow flags false and records that separately unlockable items still need their own future review gates. It does not read private evidence, does not call KIS/provider, does not submit orders, does not implement adapter/worker code, and does not create routes, public UI, DB migrations, or `scenario_monthly_returns.csv`.
+
+## Step 116-9C Trading Live-Guarded Forbidden Item Unlock Sequence Map
+
+The first Trading Live-Guarded Forbidden Item Unlock Sequence Map contract is:
+
+```text
+data/processed/trading_lab_step116_forbidden_item_unlock_sequence_map_contract.json
+scripts/generate-trading-forbidden-item-unlock-sequence-map-contract.cjs
+scripts/generate-trading-forbidden-item-unlock-sequence-map-contract.test.cjs
+npm run check:trading-forbidden-item-unlock-sequence-map
+```
+
+This `live_guarded_forbidden_item_unlock_sequence_map` step maps current-stage forbidden items to later gates: read-only provider calls need read-only provider authorization review, order submission needs manual permission receipt, kill switch, risk gate, dry-run replay, shadow-history, and adapter review, private worker work needs implementation review result and later runtime review, runtime route/public UI/DB work need separate route/dashboard/storage reviews, and `scenario_monthly_returns.csv` needs real source approval and writer gates. It is a map only; no runtime or trading behavior is opened.
+
 ## Step 116-5U Trading Live-Guarded Clearance Review Result Bundle
 
 The first Trading Live-Guarded Clearance Review Result Bundle contract is:
