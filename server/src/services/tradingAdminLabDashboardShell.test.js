@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildAdminTradingLabStrategyDraftStatus,
   buildAdminTradingLabDashboardStatus,
   buildTradingLabMockLedger,
   buildTradingLabMockTradeEvents,
@@ -14,6 +15,7 @@ import {
   calculateTradingLabDrawdownSummary,
   calculateTradingLabPerformanceSummary,
   calculateTradingLabPositionLedger,
+  buildTradingLabMockRecalculationBoundary,
   buildTradingLabDailyReturnSeries,
   buildTradingLabEquityVisualization,
   buildTradingLabKpiSummaryCards,
@@ -21,6 +23,8 @@ import {
   buildTradingLabPositionSnapshot,
   buildTradingLabReturnVisualization,
   buildTradingLabStrategyConfig,
+  buildTradingLabStrategyConfigDraft,
+  validateTradingLabStrategyConfigDraft,
 } from "./tradingAdminLabDashboardShell.js";
 
 test("trading lab dashboard data does not call provider, issue token, query quote, or submit order", () => {
@@ -225,7 +229,7 @@ test("Step 133 allocation and performance summary calculations remain admin-only
   assert.equal(performance.rawProviderResponseStored, false);
   assert.equal(performance.providerCallsAllowed, false);
   assert.equal(performance.orderSubmissionAllowed, false);
-  assert.equal(status.calculationMode, "mock_ledger_calculation_admin_only");
+  assert.equal(status.step133CalculationMode, "mock_ledger_calculation_admin_only");
   assert.equal(status.mockLedger.sourceStep, "step133");
   assert.equal(status.positionLedger.positions.length, 3);
   assert.equal(status.allocationSummary.totalWeightPct, 100);
@@ -234,4 +238,102 @@ test("Step 133 allocation and performance summary calculations remain admin-only
   assert.equal(status.flags.readyForReadOnlyProviderCalls, false);
   assert.equal(status.flags.readyForOrderSubmission, false);
   assert.equal(status.flags.readyForLiveGuardedTrading, false);
+});
+
+test("Step 134 strategy draft schema is redacted and keeps all trading flags false", () => {
+  const draftStatus = buildAdminTradingLabStrategyDraftStatus();
+  const draft = draftStatus.strategyDraft;
+  const serialized = JSON.stringify(draftStatus);
+
+  assert.equal(draftStatus.ok, true);
+  assert.equal(draftStatus.status, "admin_only_strategy_draft_controls_fail_closed");
+  assert.equal(draft.draftType, "admin_only_mock_strategy_config_draft");
+  assert.equal(draft.sourceStep, "step134");
+  assert.equal(draft.providerCallsAllowed, false);
+  assert.equal(draft.orderSubmissionAllowed, false);
+  assert.equal(draft.tokenIssuanceAttempted, false);
+  assert.equal(draft.quoteRequestAttempted, false);
+  assert.equal(draft.networkCallAttempted, false);
+  assert.equal(draft.orderSubmissionAttempted, false);
+  assert.equal(draft.persistentStorageUsed, false);
+  assert.equal(draft.dbWriteUsed, false);
+  assert.equal(draftStatus.flags.providerCallsAllowed, false);
+  assert.equal(draftStatus.flags.orderSubmissionAllowed, false);
+  assert.equal(draftStatus.flags.readyForReadOnlyProviderCalls, false);
+  assert.equal(draftStatus.flags.readyForOrderSubmission, false);
+  assert.equal(draftStatus.flags.readyForLiveGuardedTrading, false);
+  assert.equal(serialized.includes("APP_KEY"), false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+});
+
+test("Step 134 strategy validation rejects unsafe modes and wildcard symbols", () => {
+  const draft = buildTradingLabStrategyConfigDraft({
+    mode: "live_order_submit",
+    allowedSymbols: ["*"],
+    targetWeights: [{ symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 100 }],
+  });
+  const validation = validateTradingLabStrategyConfigDraft({ ...draft, mode: "live_order_submit", allowedSymbols: ["*"] });
+
+  assert.equal(validation.status, "blocked");
+  assert.ok(validation.blockers.includes("unsupported_or_live_strategy_mode"));
+  assert.ok(validation.blockers.includes("live_or_order_submission_mode_rejected"));
+  assert.ok(validation.blockers.includes("wildcard_all_symbols_rejected"));
+  assert.equal(validation.providerCallsAllowed, false);
+  assert.equal(validation.orderSubmissionAllowed, false);
+  assert.equal(validation.readinessPromoted, false);
+});
+
+test("Step 134 strategy validation handles target weight residual safely", () => {
+  const draft = buildTradingLabStrategyConfigDraft({
+    allowedSymbols: ["SYMBOL_A_PLACEHOLDER", "SYMBOL_B_PLACEHOLDER"],
+    targetWeights: [
+      { symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 50 },
+      { symbol: "SYMBOL_B_PLACEHOLDER", weightPct: 25 },
+    ],
+  });
+  const validation = validateTradingLabStrategyConfigDraft(draft);
+
+  assert.equal(validation.status, "validation_required");
+  assert.equal(validation.targetWeightTotalPct, 75);
+  assert.equal(validation.residualWeightPct, 25);
+  assert.ok(validation.warnings.includes("target_weight_residual_review_required"));
+});
+
+test("Step 134 mock recalculation boundary uses mock data only and preserves Step 133 calculations", () => {
+  const draft = buildTradingLabStrategyConfigDraft({
+    mode: "shadow",
+    allowedSymbols: ["SYMBOL_A_PLACEHOLDER", "SYMBOL_B_PLACEHOLDER"],
+    targetWeights: [
+      { symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 60 },
+      { symbol: "SYMBOL_B_PLACEHOLDER", weightPct: 40 },
+    ],
+    riskLimits: {
+      maxOrderAmount: 1000,
+      maxDailyLossPct: 1,
+      maxPositionWeightPct: 60,
+    },
+  });
+  const boundary = buildTradingLabMockRecalculationBoundary(draft);
+  const dashboard = buildAdminTradingLabDashboardStatus({ strategyDraft: draft });
+
+  assert.equal(boundary.status, "mock_recalculated");
+  assert.equal(boundary.calculationMode, "strategy_draft_mock_recalculation_admin_only");
+  assert.equal(boundary.providerCallsAllowed, false);
+  assert.equal(boundary.orderSubmissionAllowed, false);
+  assert.equal(boundary.networkCallAttempted, false);
+  assert.equal(boundary.persistentStorageUsed, false);
+  assert.equal(boundary.dbWriteUsed, false);
+  assert.ok(boundary.mockLedger.events.length >= 2);
+  assert.equal(boundary.performance.dataSource, "mock_ledger_calculation_result");
+  assert.equal(dashboard.step, "Step 134: Admin trading lab strategy config draft controls");
+  assert.equal(dashboard.mockLedger.sourceStep, "step133");
+  assert.equal(dashboard.strategy.sourceStep, "step134");
+  assert.equal(dashboard.strategyDraftStatus.validation.status, "mock_only");
+  assert.equal(dashboard.flags.providerCallsAllowed, false);
+  assert.equal(dashboard.flags.orderSubmissionAllowed, false);
+  assert.equal(dashboard.flags.readyForReadOnlyProviderCalls, false);
+  assert.equal(dashboard.flags.readyForOrderSubmission, false);
+  assert.equal(dashboard.flags.readyForLiveGuardedTrading, false);
 });

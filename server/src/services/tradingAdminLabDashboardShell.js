@@ -36,6 +36,18 @@ export const STEP133_ADMIN_TRADING_LAB_MOCK_LEDGER_CALCULATION_FLAGS = Object.fr
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP134_ADMIN_TRADING_LAB_STRATEGY_DRAFT_FLAGS = Object.freeze({
+  ...STEP133_ADMIN_TRADING_LAB_MOCK_LEDGER_CALCULATION_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -43,6 +55,45 @@ export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   mode: "mock | dry_run | shadow",
   redaction: "metadata_only_no_private_values",
   flags: "all_false",
+});
+
+export const TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA = Object.freeze({
+  strategyDraftId: "string",
+  draftType: "admin_only_mock_strategy_config_draft",
+  sourceStep: "step134",
+  strategyName: "string",
+  mode: "mock | dry_run | shadow",
+  allowedSymbols: "placeholder_symbol[]",
+  targetWeights: "target_weight_draft[]",
+  rebalanceRule: "rebalance_rule_draft",
+  riskLimits: "risk_limit_draft",
+  status: "draft | blocked | mock_only | validation_required",
+  providerPayload: false,
+  orderPayload: false,
+});
+
+export const TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL = Object.freeze({
+  symbol: "placeholder_symbol",
+  weightPct: "number",
+  status: "mock_only | validation_required",
+  providerPayload: false,
+  orderPayload: false,
+});
+
+export const TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL = Object.freeze({
+  ruleId: "string",
+  interval: "manual_review | weekly_mock | monthly_mock",
+  thresholdPct: "number",
+  status: "mock_only",
+});
+
+export const TRADING_LAB_RISK_LIMIT_DRAFT_MODEL = Object.freeze({
+  maxOrderAmount: "number | placeholder",
+  maxDailyLossPct: "number | placeholder",
+  maxPositionWeightPct: "number | placeholder",
+  killSwitchRequired: true,
+  riskGateRequired: true,
+  status: "blocked_by_default",
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -192,6 +243,95 @@ function safeRatio(numerator, denominator) {
   const safeDenominator = toFiniteNumber(denominator);
   if (safeDenominator === 0) return 0;
   return toFiniteNumber(numerator) / safeDenominator;
+}
+
+function normalizeStrategyDraftMode(mode) {
+  const normalized = String(mode || "mock").toLowerCase();
+  return ["mock", "dry_run", "shadow"].includes(normalized) ? normalized : "blocked";
+}
+
+function normalizePlaceholderSymbols(symbols = []) {
+  const input = Array.isArray(symbols) ? symbols : String(symbols || "").split(",");
+  const normalized = input
+    .map((symbol) => String(symbol || "").trim().toUpperCase())
+    .filter(Boolean)
+    .filter((symbol) => symbol !== "*" && symbol !== "ALL" && symbol !== "ALL_SYMBOLS");
+  const unique = [...new Set(normalized)];
+  return unique.length > 0
+    ? unique
+    : ["SYMBOL_A_PLACEHOLDER", "SYMBOL_B_PLACEHOLDER", "SYMBOL_C_PLACEHOLDER"];
+}
+
+function normalizeTargetWeightDrafts(targetWeights = [], allowedSymbols = []) {
+  const bySymbol = new Map(
+    (Array.isArray(targetWeights) ? targetWeights : []).map((target) => [
+      String(target?.symbol || "").trim().toUpperCase(),
+      Math.max(0, toFiniteNumber(target?.weightPct)),
+    ]),
+  );
+  return allowedSymbols.map((symbol, index) => ({
+    targetWeightDraftId: `step134_target_weight_${index + 1}`,
+    symbol,
+    weightPct: roundPct(bySymbol.has(symbol) ? bySymbol.get(symbol) : 0),
+    status: "mock_only",
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+  }));
+}
+
+function normalizeRiskLimitDraft(riskLimits = {}) {
+  return {
+    riskLimitDraftId: "step134_risk_limit_draft",
+    maxOrderAmount: Math.max(0, toFiniteNumber(riskLimits.maxOrderAmount, 0)),
+    maxDailyLossPct: Math.max(0, toFiniteNumber(riskLimits.maxDailyLossPct, 0)),
+    maxPositionWeightPct: Math.max(0, toFiniteNumber(riskLimits.maxPositionWeightPct, 0)),
+    killSwitchRequired: true,
+    riskGateRequired: true,
+    status: "blocked_by_default",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+function normalizeRebalanceRuleDraft(rebalanceRule = {}) {
+  const interval = String(rebalanceRule.interval || "manual_review").toLowerCase();
+  const safeInterval = ["manual_review", "weekly_mock", "monthly_mock"].includes(interval) ? interval : "manual_review";
+  return {
+    rebalanceRuleDraftId: "step134_rebalance_rule_draft",
+    interval: safeInterval,
+    thresholdPct: Math.max(0, toFiniteNumber(rebalanceRule.thresholdPct, 5)),
+    status: "mock_only",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+function buildMockEventsFromStrategyDraft(strategyDraft = {}, options = {}) {
+  const priceSeries = getMockPriceSeries(options);
+  const firstDate = getPriceDates(priceSeries)[0] || "2026-07-01";
+  const firstPrices = priceSeries[firstDate] || {};
+  const initialCash = roundMoney(options.initialCash ?? 100000);
+  const deployableCash = roundMoney(initialCash * 0.75);
+
+  return (strategyDraft.targetWeights || [])
+    .filter((target) => toFiniteNumber(target.weightPct) > 0)
+    .map((target, index) => {
+      const mockPrice = Math.max(1, toFiniteNumber(firstPrices[target.symbol], 1000));
+      const allocationAmount = roundMoney(deployableCash * safeRatio(target.weightPct, 100));
+      return normalizeMockTradeEvent(
+        {
+          eventId: `step134_mock_recalculation_event_${index + 1}`,
+          date: firstDate,
+          symbol: target.symbol,
+          side: "buy",
+          quantity: roundQuantity(allocationAmount / mockPrice),
+          mockPrice,
+          fee: 0,
+          mode: strategyDraft.mode || "mock",
+        },
+        index,
+      );
+    });
 }
 
 function normalizeMockTradeEvent(event = {}, index = 0) {
@@ -649,28 +789,217 @@ export function buildTradingLabMockLedger(options = {}) {
   };
 }
 
-export function buildTradingLabStrategyConfig(options = {}) {
-  return {
-    strategyId: options.strategyId || "step131_admin_trading_lab_strategy_placeholder",
-    strategyType: "admin_trading_lab_strategy_config",
-    sourceStep: "step131",
-    name: "관리자 모의 전략",
-    allowedModes: ["mock", "dry_run", "shadow"],
-    activeMode: "mock",
-    allowedSymbolsStatus: "placeholder_only",
-    allowedSymbols: ["SYMBOL_A_PLACEHOLDER", "SYMBOL_B_PLACEHOLDER", "SYMBOL_C_PLACEHOLDER"],
-    targetWeights: [
-      { symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 40, status: "mock_only" },
-      { symbol: "SYMBOL_B_PLACEHOLDER", weightPct: 35, status: "dry_run_only" },
-      { symbol: "SYMBOL_C_PLACEHOLDER", weightPct: 25, status: "shadow_only" },
+export function buildTradingLabStrategyConfigDraft(input = {}, options = {}) {
+  const allowedSymbols = normalizePlaceholderSymbols(input.allowedSymbols || options.allowedSymbols);
+  const mode = normalizeStrategyDraftMode(input.mode || options.mode);
+  const targetWeights = normalizeTargetWeightDrafts(
+    input.targetWeights || options.targetWeights || [
+      { symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 40 },
+      { symbol: "SYMBOL_B_PLACEHOLDER", weightPct: 35 },
+      { symbol: "SYMBOL_C_PLACEHOLDER", weightPct: 25 },
     ],
-    rebalanceCondition: "mock_threshold_review_only",
-    maxOrderAmountStatus: "not_configured_placeholder",
-    maxDailyLossStatus: "blocked_by_default",
+    allowedSymbols,
+  );
+  const targetWeightTotalPct = roundPct(targetWeights.reduce((sum, target) => sum + toFiniteNumber(target.weightPct), 0));
+  const residualWeightPct = roundPct(100 - targetWeightTotalPct);
+  const riskLimits = normalizeRiskLimitDraft(input.riskLimits || options.riskLimits);
+  const rebalanceRule = normalizeRebalanceRuleDraft(input.rebalanceRule || options.rebalanceRule);
+  const initialStatus = mode === "blocked" ? "blocked" : Math.abs(residualWeightPct) <= 0.01 ? "mock_only" : "validation_required";
+
+  return {
+    strategyDraftId: input.strategyDraftId || options.strategyDraftId || "step134_admin_trading_lab_strategy_draft",
+    draftType: "admin_only_mock_strategy_config_draft",
+    sourceStep: "step134",
+    strategyName: input.strategyName || options.strategyName || "Admin mock strategy draft",
+    mode,
+    allowedModes: ["mock", "dry_run", "shadow"],
+    allowedSymbols,
+    allowedSymbolsStatus: allowedSymbols.length > 0 ? "placeholder_only" : "blocked",
+    targetWeights,
+    targetWeightTotalPct,
+    residualWeightPct,
+    rebalanceRule,
+    entryRulePlaceholder: input.entryRulePlaceholder || "mock_entry_rule_placeholder_only",
+    exitRulePlaceholder: input.exitRulePlaceholder || "mock_exit_rule_placeholder_only",
+    riskLimits,
+    maxOrderAmount: riskLimits.maxOrderAmount,
+    maxDailyLossPct: riskLimits.maxDailyLossPct,
+    maxPositionWeightPct: riskLimits.maxPositionWeightPct,
     killSwitchRequired: true,
-    currentStatus: "blocked",
-    calculationSource: "step133_mock_ledger_calculation_core",
-    flags: { ...STEP133_ADMIN_TRADING_LAB_MOCK_LEDGER_CALCULATION_FLAGS },
+    riskGateRequired: true,
+    status: initialStatus,
+    createdAt: input.createdAt || "2026-07-04T00:00:00.000Z",
+    updatedAtPlaceholder: "in_memory_preview_only",
+    storageMode: "admin_only_in_memory_placeholder",
+    redaction: makeLabRedaction({ schema: "step134_admin_trading_lab_strategy_draft_v1" }),
+    flags: { ...STEP134_ADMIN_TRADING_LAB_STRATEGY_DRAFT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    credentialStored: false,
+    accountIdentifierStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+  };
+}
+
+export function validateTradingLabStrategyConfigDraft(draft = {}) {
+  const targetWeightTotalPct = roundPct(
+    (draft.targetWeights || []).reduce((sum, target) => sum + toFiniteNumber(target.weightPct), 0),
+  );
+  const residualWeightPct = roundPct(100 - targetWeightTotalPct);
+  const blockers = [];
+  const warnings = [];
+  const mode = normalizeStrategyDraftMode(draft.mode);
+  const allowedSymbols = normalizePlaceholderSymbols(draft.allowedSymbols);
+
+  if (mode === "blocked") blockers.push("unsupported_or_live_strategy_mode");
+  if (String(draft.mode || "").match(/live|real|production|order_submit|submit_order/i)) {
+    blockers.push("live_or_order_submission_mode_rejected");
+  }
+  if ((draft.allowedSymbols || []).some((symbol) => ["*", "ALL", "ALL_SYMBOLS"].includes(String(symbol || "").toUpperCase()))) {
+    blockers.push("wildcard_all_symbols_rejected");
+  }
+  if (allowedSymbols.length === 0) blockers.push("allowed_symbols_missing");
+  if (Math.abs(residualWeightPct) > 0.01) warnings.push("target_weight_residual_review_required");
+  if (toFiniteNumber(draft.riskLimits?.maxOrderAmount, 0) <= 0) warnings.push("max_order_amount_placeholder_only");
+  if (toFiniteNumber(draft.riskLimits?.maxDailyLossPct, 0) <= 0) warnings.push("max_daily_loss_placeholder_only");
+  if (toFiniteNumber(draft.riskLimits?.maxPositionWeightPct, 0) <= 0) warnings.push("max_position_weight_placeholder_only");
+
+  const status = blockers.length > 0 ? "blocked" : warnings.length > 0 ? "validation_required" : "mock_only";
+  return {
+    validationId: "step134_strategy_draft_validation",
+    sourceStep: "step134",
+    status,
+    targetWeightTotalPct,
+    residualWeightPct,
+    blockers,
+    warnings,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readinessPromoted: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step134_admin_trading_lab_strategy_draft_validation_v1" }),
+  };
+}
+
+export function buildTradingLabMockRecalculationBoundary(strategyDraft = buildTradingLabStrategyConfigDraft(), options = {}) {
+  const validation = options.validation || validateTradingLabStrategyConfigDraft(strategyDraft);
+  const events = validation.status === "blocked" ? [] : buildMockEventsFromStrategyDraft(strategyDraft, options);
+  const mockLedger = buildTradingLabMockLedger({
+    ...options,
+    mode: strategyDraft.mode,
+    strategyId: strategyDraft.strategyDraftId,
+    events,
+  });
+  const dailyReturns = calculateTradingLabDailyReturnSeries(mockLedger);
+  const performance = calculateTradingLabPerformanceSummary(mockLedger, { dailyReturns });
+
+  return {
+    boundaryId: "step134_mock_recalculation_boundary",
+    sourceStep: "step134",
+    status: validation.status === "blocked" ? "blocked" : "mock_recalculated",
+    calculationMode: "strategy_draft_mock_recalculation_admin_only",
+    strategyDraftId: strategyDraft.strategyDraftId,
+    reflectedFields: ["targetWeights", "mode", "allowedSymbols", "riskLimits"],
+    mockLedger,
+    dailyReturns,
+    performance,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step134_admin_trading_lab_mock_recalculation_boundary_v1" }),
+  };
+}
+
+export function buildAdminTradingLabStrategyDraftStatus(input = {}, options = {}) {
+  const strategyDraft = input.strategyDraft || buildTradingLabStrategyConfigDraft(input, options);
+  const validation = input.validation || validateTradingLabStrategyConfigDraft(strategyDraft);
+  const mockRecalculationBoundary = input.mockRecalculationBoundary || buildTradingLabMockRecalculationBoundary(
+    strategyDraft,
+    { ...options, validation },
+  );
+
+  return {
+    ok: true,
+    step: "Step 134: Admin trading lab strategy config draft controls",
+    status: "admin_only_strategy_draft_controls_fail_closed",
+    strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
+    targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
+    rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
+    riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
+    strategyDraft,
+    validation,
+    mockRecalculationBoundary,
+    flags: { ...STEP134_ADMIN_TRADING_LAB_STRATEGY_DRAFT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      rawProviderResponseExposed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      scenarioMonthlyReturnsTouched: false,
+      scenarioRuntimeTouched: false,
+    },
+  };
+}
+
+export function buildTradingLabStrategyConfig(options = {}) {
+  const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
+  return {
+    strategyId: options.strategyId || strategyDraft.strategyDraftId || "step131_admin_trading_lab_strategy_placeholder",
+    strategyType: "admin_trading_lab_strategy_config",
+    sourceStep: "step134",
+    name: strategyDraft.strategyName || "Admin mock strategy draft",
+    allowedModes: ["mock", "dry_run", "shadow"],
+    activeMode: strategyDraft.mode || "mock",
+    allowedSymbolsStatus: strategyDraft.allowedSymbolsStatus || "placeholder_only",
+    allowedSymbols: strategyDraft.allowedSymbols || ["SYMBOL_A_PLACEHOLDER", "SYMBOL_B_PLACEHOLDER", "SYMBOL_C_PLACEHOLDER"],
+    targetWeights: strategyDraft.targetWeights || [],
+    rebalanceCondition: strategyDraft.rebalanceRule?.interval || "manual_review",
+    maxOrderAmountStatus: strategyDraft.riskLimits?.maxOrderAmount > 0 ? "mock_limit_configured" : "not_configured_placeholder",
+    maxDailyLossStatus: strategyDraft.riskLimits?.maxDailyLossPct > 0 ? "mock_limit_configured" : "blocked_by_default",
+    maxPositionWeightStatus: strategyDraft.riskLimits?.maxPositionWeightPct > 0 ? "mock_limit_configured" : "blocked_by_default",
+    killSwitchRequired: true,
+    riskGateRequired: true,
+    currentStatus: strategyDraft.status || "blocked",
+    calculationSource: "step134_strategy_draft_mock_recalculation_boundary",
+    flags: { ...STEP134_ADMIN_TRADING_LAB_STRATEGY_DRAFT_FLAGS },
     redaction: makeLabRedaction(),
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
@@ -964,7 +1293,9 @@ export function buildTradingLabAuditLogSummary(options = {}) {
 }
 
 export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
-  const mockLedger = input.mockLedger || buildTradingLabMockLedger(options);
+  const strategyDraftStatus = input.strategyDraftStatus || buildAdminTradingLabStrategyDraftStatus(input.strategyDraft || {}, options);
+  const mockRecalculationBoundary = input.mockRecalculationBoundary || strategyDraftStatus.mockRecalculationBoundary;
+  const mockLedger = input.mockLedger || mockRecalculationBoundary.mockLedger || buildTradingLabMockLedger(options);
   const mockTradeEvents = input.mockTradeEvents || buildTradingLabMockTradeEvents({ ...options, events: mockLedger.events });
   const positionLedger = input.positionLedger || calculateTradingLabPositionLedger(mockLedger, options);
   const dailyEquity = input.dailyEquity || calculateTradingLabDailyEquitySeries(mockLedger, options);
@@ -973,7 +1304,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
   const drawdownSummary = input.drawdownSummary || calculateTradingLabDrawdownSummary(mockLedger, { ...options, dailyReturns });
   const allocationSummary = input.allocationSummary || calculateTradingLabAllocationSummary(positionLedger, options);
   const performance = input.performance || buildTradingLabCumulativePerformance({ ...options, mockLedger, dailyReturns });
-  const strategy = input.strategy || buildTradingLabStrategyConfig(options);
+  const strategy = input.strategy || buildTradingLabStrategyConfig({ ...options, strategyDraft: strategyDraftStatus.strategyDraft });
   const positions = input.positions || buildTradingLabPositionSnapshot({ ...options, mockLedger, positionLedger });
   const orderCandidates = input.orderCandidates || buildTradingLabOrderCandidateSummary(options);
   const auditLogs = input.auditLogs || buildTradingLabAuditLogSummary(options);
@@ -991,11 +1322,22 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
 
   return {
     ok: true,
-    step: "Step 133: Admin trading lab mock ledger return calculation core",
+    step: "Step 134: Admin trading lab strategy config draft controls",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
-    calculationMode: "mock_ledger_calculation_admin_only",
+    calculationMode: "strategy_draft_mock_recalculation_admin_only",
+    step133CalculationMode: "mock_ledger_calculation_admin_only",
+    step133Compatibility: {
+      calculationMode: "mock_ledger_calculation_admin_only",
+      mockLedgerCalculationCoreRetained: true,
+    },
     visualizationMode: "mock_static_admin_only",
     strategyConfigSchema: TRADING_LAB_STRATEGY_CONFIG_SCHEMA,
+    strategyDraftStatus,
+    strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
+    targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
+    rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
+    riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
+    mockRecalculationBoundary,
     dailyReturnSeriesSchema: TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA,
     cumulativePerformanceSchema: TRADING_LAB_CUMULATIVE_PERFORMANCE_SCHEMA,
     kpiSummaryCardSchema: TRADING_LAB_KPI_SUMMARY_CARD_SCHEMA,
@@ -1024,7 +1366,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP133_ADMIN_TRADING_LAB_MOCK_LEDGER_CALCULATION_FLAGS },
+    flags: { ...STEP134_ADMIN_TRADING_LAB_STRATEGY_DRAFT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,

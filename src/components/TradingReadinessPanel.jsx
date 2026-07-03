@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabStrategyDraftStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
@@ -117,6 +118,17 @@ const KPI_LABELS = {
   mock_position_weight: "투자 비중",
   mock_order_candidates: "주문 후보",
 };
+
+const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
+  strategyName: "Admin mock strategy draft",
+  mode: "mock",
+  allowedSymbols: "SYMBOL_A_PLACEHOLDER, SYMBOL_B_PLACEHOLDER, SYMBOL_C_PLACEHOLDER",
+  targetWeights: "40 / 35 / 25",
+  rebalanceRule: "manual_review",
+  maxOrderAmount: "placeholder",
+  maxDailyLoss: "placeholder",
+  maxPositionWeight: "placeholder",
+});
 
 const STATUS_LABELS = {
   OPEN: "열림",
@@ -236,6 +248,9 @@ export function TradingReadinessPanel() {
   const [providerCallPolicyStatus, setProviderCallPolicyStatus] = useState(null);
   const [kisQuoteAdapterOptInPreflightStatus, setKisQuoteAdapterOptInPreflightStatus] = useState(null);
   const [tradingLabDashboardStatus, setTradingLabDashboardStatus] = useState(null);
+  const [tradingLabStrategyDraftStatus, setTradingLabStrategyDraftStatus] = useState(null);
+  const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
+  const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -257,6 +272,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
       fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
       fetchAdminTradingLabDashboardStatus().catch(() => null),
+      fetchAdminTradingLabStrategyDraftStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -275,6 +291,7 @@ export function TradingReadinessPanel() {
         setProviderCallPolicyStatus(payload?.[12] || null);
         setKisQuoteAdapterOptInPreflightStatus(payload?.[13] || null);
         setTradingLabDashboardStatus(payload?.[14] || null);
+        setTradingLabStrategyDraftStatus(payload?.[15] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -295,6 +312,10 @@ export function TradingReadinessPanel() {
     return envBlockers + killSwitchReasons;
   }, [readiness]);
   const labStrategy = tradingLabDashboardStatus?.strategy || {};
+  const labStrategyDraftStatus = tradingLabStrategyDraftStatus || tradingLabDashboardStatus?.strategyDraftStatus || {};
+  const labStrategyDraft = labStrategyDraftStatus?.strategyDraft || {};
+  const labStrategyDraftValidation = labStrategyDraftStatus?.validation || {};
+  const labStrategyDraftPreview = strategyDraftPreview || labStrategyDraft;
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -326,6 +347,27 @@ export function TradingReadinessPanel() {
   function handleTradingPanelTabChange(nextTab) {
     setActiveTradingPanelTab(nextTab);
     updateTradingPanelTabQuery(nextTab);
+  }
+
+  function handleStrategyDraftInputChange(event) {
+    const { name, value } = event.target;
+    setStrategyDraftForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleStrategyDraftPreview(event) {
+    event.preventDefault();
+    setStrategyDraftPreview({
+      ...strategyDraftForm,
+      strategyDraftId: "local_admin_mock_strategy_draft_preview",
+      sourceStep: "step134",
+      status: "local_mock_preview_only",
+      storageMode: "local_state_only_no_db_write",
+      providerCallsAllowed: false,
+      orderSubmissionAllowed: false,
+      readyForReadOnlyProviderCalls: false,
+      readyForOrderSubmission: false,
+      readyForLiveGuardedTrading: false,
+    });
   }
 
   return (
@@ -479,6 +521,107 @@ export function TradingReadinessPanel() {
         </div>
 
         <div className="tradingLabGrid">
+          <article className="tradingLabSection tradingLabStrategyDraftControls" data-admin-panel-key="trading-lab-strategy-draft-controls">
+            <span>Strategy draft</span>
+            <h4>{labStrategyDraftPreview.strategyName || "Admin mock strategy draft"}</h4>
+            <form onSubmit={handleStrategyDraftPreview}>
+              <label>
+                <span>Strategy name</span>
+                <input
+                  name="strategyName"
+                  value={strategyDraftForm.strategyName}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft name"
+                />
+              </label>
+              <label>
+                <span>Mode</span>
+                <select name="mode" value={strategyDraftForm.mode} onChange={handleStrategyDraftInputChange} aria-label="Strategy draft mode">
+                  <option value="mock">mock</option>
+                  <option value="dry_run">dry-run</option>
+                  <option value="shadow">shadow</option>
+                </select>
+              </label>
+              <label>
+                <span>Allowed symbols</span>
+                <input
+                  name="allowedSymbols"
+                  value={strategyDraftForm.allowedSymbols}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft allowed symbols"
+                />
+              </label>
+              <label>
+                <span>Target weights</span>
+                <input
+                  name="targetWeights"
+                  value={strategyDraftForm.targetWeights}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft target weights"
+                />
+              </label>
+              <label>
+                <span>Rebalance rule</span>
+                <select
+                  name="rebalanceRule"
+                  value={strategyDraftForm.rebalanceRule}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft rebalance rule"
+                >
+                  <option value="manual_review">manual review</option>
+                  <option value="weekly_mock">weekly mock</option>
+                  <option value="monthly_mock">monthly mock</option>
+                </select>
+              </label>
+              <label>
+                <span>Max amount</span>
+                <input
+                  name="maxOrderAmount"
+                  value={strategyDraftForm.maxOrderAmount}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft max amount placeholder"
+                />
+              </label>
+              <label>
+                <span>Max daily loss</span>
+                <input
+                  name="maxDailyLoss"
+                  value={strategyDraftForm.maxDailyLoss}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft max daily loss placeholder"
+                />
+              </label>
+              <label>
+                <span>Max position</span>
+                <input
+                  name="maxPositionWeight"
+                  value={strategyDraftForm.maxPositionWeight}
+                  onChange={handleStrategyDraftInputChange}
+                  aria-label="Strategy draft max position placeholder"
+                />
+              </label>
+              <button type="submit">Apply mock draft</button>
+            </form>
+            <dl>
+              <div>
+                <dt>Draft status</dt>
+                <dd>{formatStatus(labStrategyDraftPreview.status || labStrategyDraftStatus.status || "mock_only")}</dd>
+              </div>
+              <div>
+                <dt>Validation</dt>
+                <dd>{formatStatus(labStrategyDraftValidation.status || "validation_required")}</dd>
+              </div>
+              <div>
+                <dt>Residual</dt>
+                <dd>{Number(labStrategyDraftValidation.residualWeightPct || labStrategyDraft.residualWeightPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>Boundary</dt>
+                <dd>{formatStatus(labStrategyDraftStatus?.mockRecalculationBoundary?.status || "mock_only")}</dd>
+              </div>
+            </dl>
+          </article>
+
           <article className="tradingLabSection">
             <span>현재 투자전략</span>
             <h4>{labStrategy.name || "관리자 모의 전략"}</h4>
