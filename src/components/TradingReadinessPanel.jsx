@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
   fetchAdminTradingRiskKillSwitchReviewResultStatus,
   fetchAdminTradingRiskKillSwitchStatus,
@@ -66,6 +67,7 @@ export function TradingReadinessPanel() {
   const [riskKillSwitchStatus, setRiskKillSwitchStatus] = useState(null);
   const [riskKillSwitchReviewResultStatus, setRiskKillSwitchReviewResultStatus] = useState(null);
   const [manualApprovalOrderDraftStatus, setManualApprovalOrderDraftStatus] = useState(null);
+  const [manualApprovalOrderDraftReviewResultStatus, setManualApprovalOrderDraftReviewResultStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
       fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
+      fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -87,6 +90,7 @@ export function TradingReadinessPanel() {
         setRiskKillSwitchStatus(payload?.[3] || null);
         setRiskKillSwitchReviewResultStatus(payload?.[4] || null);
         setManualApprovalOrderDraftStatus(payload?.[5] || null);
+        setManualApprovalOrderDraftReviewResultStatus(payload?.[6] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -201,6 +205,18 @@ export function TradingReadinessPanel() {
           Draft {manualApprovalOrderDraftStatus?.draft?.draftId || "step122_manual_approval_order_draft_placeholder"} /
           preflight {manualApprovalOrderDraftStatus?.preflight?.preflightStatus || "blocked"}.
           Redacted placeholder only; no broker payload or order submission.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingManualApprovalOrderDraftReviewResult">
+        <span>Manual approval draft review</span>
+        <strong>
+          {manualApprovalOrderDraftReviewResultStatus?.status ||
+            "admin_only_manual_approval_order_draft_review_result_gate_fail_closed"}
+        </strong>
+        <p>
+          Receipts {Number(manualApprovalOrderDraftReviewResultStatus?.receiptCount || 0)}.
+          Redacted in-memory review result only; no DB write, provider call, or order submission.
         </p>
       </div>
     </section>
