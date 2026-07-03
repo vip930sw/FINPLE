@@ -403,7 +403,8 @@
     "check:trading-step116-owner-evidence-receipt-review-result-recording-bundle": "node scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.cjs --check && node --test scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs",
     "check:trading-step117-implementation-shell-readonly-dashboard": "node scripts/check-trading-step117-implementation-shell-readonly-dashboard.cjs && node --test server/src/services/tradingImplementationShell.test.js server/src/routes/adminTradingReadinessRoutes.test.js scripts/check-trading-step117-implementation-shell-readonly-dashboard.test.cjs",
-    "check:trading-step118-shadow-ledger-dry-run-replay": "node scripts/check-trading-step118-shadow-ledger-dry-run-replay.cjs && node --test server/src/services/tradingShadowLedger.test.js server/src/routes/adminTradingReadinessRoutes.test.js scripts/check-trading-step118-shadow-ledger-dry-run-replay.test.cjs"
+    "check:trading-step118-shadow-ledger-dry-run-replay": "node scripts/check-trading-step118-shadow-ledger-dry-run-replay.cjs && node --test server/src/services/tradingShadowLedger.test.js server/src/routes/adminTradingReadinessRoutes.test.js scripts/check-trading-step118-shadow-ledger-dry-run-replay.test.cjs",
+    "check:trading-step119-admin-shadow-review-gate": "node scripts/check-trading-step119-admin-shadow-review-gate.cjs && node --test server/src/services/tradingShadowReviewGate.test.js server/src/routes/adminTradingReadinessRoutes.test.js scripts/check-trading-step119-admin-shadow-review-gate.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

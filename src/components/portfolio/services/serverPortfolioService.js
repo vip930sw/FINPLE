@@ -270,6 +270,10 @@ export async function fetchAdminTradingShadowStatus() {
   return requestJson("/admin/trading-readiness/shadow-status", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingShadowReviewStatus() {
+  return requestJson("/admin/trading-readiness/shadow-review", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

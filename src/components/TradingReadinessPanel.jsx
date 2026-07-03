@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { fetchAdminTradingShadowStatus, fetchTradingReadinessStatus } from "./portfolio/services/serverPortfolioService";
+import {
+  fetchAdminTradingShadowReviewStatus,
+  fetchAdminTradingShadowStatus,
+  fetchTradingReadinessStatus,
+} from "./portfolio/services/serverPortfolioService";
 
 const FALLBACK_READINESS = Object.freeze({
   ok: true,
@@ -55,6 +59,7 @@ function statusClass(value) {
 export function TradingReadinessPanel() {
   const [readiness, setReadiness] = useState(FALLBACK_READINESS);
   const [shadowStatus, setShadowStatus] = useState(null);
+  const [shadowReviewStatus, setShadowReviewStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -63,11 +68,13 @@ export function TradingReadinessPanel() {
     Promise.all([
       fetchTradingReadinessStatus(),
       fetchAdminTradingShadowStatus().catch(() => null),
+      fetchAdminTradingShadowReviewStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
         setReadiness(payload?.[0] || FALLBACK_READINESS);
         setShadowStatus(payload?.[1] || null);
+        setShadowReviewStatus(payload?.[2] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -145,6 +152,15 @@ export function TradingReadinessPanel() {
         <p>
           Candidates {Number(shadowStatus?.candidateCount || 0)} / audit events {Number(shadowStatus?.auditEventCount || 0)}.
           Admin-only, read-only, in-memory boundary.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingShadowReview">
+        <span>Review gate</span>
+        <strong>{shadowReviewStatus?.status || "admin_only_shadow_review_gate_fail_closed"}</strong>
+        <p>
+          Results {Number(shadowReviewStatus?.reviewResults?.length || 0)} / blockers {Number(shadowReviewStatus?.blockers?.length || 0)}.
+          Review is redacted and cannot promote live readiness.
         </p>
       </div>
     </section>
