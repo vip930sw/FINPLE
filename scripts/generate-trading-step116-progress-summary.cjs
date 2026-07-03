@@ -1425,6 +1425,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Owner evidence receipt placeholder bundle",
     "trading_lab_step116_owner_evidence_receipt_placeholder_bundle_contract.json",
   ],
+  [
+    "liveTradingPublicDashboardUnblockPreflight",
+    "Live trading and public dashboard unblock preflight",
+    "trading_lab_step116_live_trading_public_dashboard_unblock_preflight_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1779,6 +1784,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-step116-owner-evidence-intake-kit",
   "check:trading-step116-owner-evidence-receipt-schema",
   "check:trading-step116-owner-evidence-receipt-placeholder-bundle",
+  "check:trading-step116-live-trading-public-dashboard-unblock-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

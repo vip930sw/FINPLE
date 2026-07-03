@@ -6257,6 +6257,21 @@ This bundle records six redacted placeholders for the owner-local evidence/revie
 
 The bundle is intentionally fail-closed. It records `actualPrivateEvidenceImported=false`, `readyForReadOnlyProviderCalls=false`, `readyForOrderSubmission=false`, `readyForLiveGuardedTrading=false`, `providerCallsAllowed=false`, `orderSubmissionAllowed=false`, `runtimeRouteAllowed=false`, `publicUiAllowed=false`, and `dbMigrationAllowed=false`. It does not record actual owner-local paths, raw values, hash values, credentials, account identifiers, provider/order payloads, or private packet contents.
 
+## Step 116-5W Live Trading And Public Dashboard Unblock Preflight
+
+The live trading and public dashboard unblock preflight contract is:
+
+```text
+data/processed/trading_lab_step116_live_trading_public_dashboard_unblock_preflight_contract.json
+scripts/generate-trading-step116-live-trading-public-dashboard-unblock-preflight-contract.cjs
+scripts/generate-trading-step116-live-trading-public-dashboard-unblock-preflight-contract.test.cjs
+npm run check:trading-step116-live-trading-public-dashboard-unblock-preflight
+```
+
+This preflight converts the request to begin actual trading implementation and homepage dashboard rollout into an auditable fail-closed checklist. It confirms that the repo-safe owner evidence receipt placeholders exist, the remaining operational gate inventory is still 20 gates, and the implementation path remains blocked until owner evidence receipt review, read-only provider authorization, manual permission validation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history, live-guarded adapter review, private worker review, private operator dashboard review, public dashboard router review, and homepage router review complete explicitly.
+
+The preflight is not implementation. It records `actualTradingImplementationAllowed=false`, `providerAdapterImplementationAllowed=false`, `privateWorkerImplementationAllowed=false`, `publicDashboardImplementationAllowed=false`, `homepageRouterChangeAllowed=false`, `providerCallsAllowed=false`, `orderSubmissionAllowed=false`, `runtimeRouteAllowed=false`, `publicUiAllowed=false`, and `dbMigrationAllowed=false`. It also fails if forbidden artifacts such as a trading route, provider adapter, live worker, public trading UI, DB migration, or `scenario_monthly_returns.csv` appear early.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
