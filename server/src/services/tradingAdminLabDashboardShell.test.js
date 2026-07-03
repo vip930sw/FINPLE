@@ -4,9 +4,13 @@ import test from "node:test";
 import {
   buildAdminTradingLabDashboardStatus,
   buildTradingLabAuditLogSummary,
+  buildTradingLabAllocationVisualization,
   buildTradingLabDailyReturnSeries,
+  buildTradingLabEquityVisualization,
+  buildTradingLabKpiSummaryCards,
   buildTradingLabOrderCandidateSummary,
   buildTradingLabPositionSnapshot,
+  buildTradingLabReturnVisualization,
   buildTradingLabStrategyConfig,
 } from "./tradingAdminLabDashboardShell.js";
 
@@ -102,4 +106,47 @@ test("admin dashboard status keeps boundaries admin-only and readiness flags fal
   assert.equal(status.flags.readyForReadOnlyProviderCalls, false);
   assert.equal(status.flags.readyForOrderSubmission, false);
   assert.equal(status.flags.readyForLiveGuardedTrading, false);
+});
+
+test("Step 132 dashboard visualization exposes mock KPI cards only", () => {
+  const kpiCards = buildTradingLabKpiSummaryCards();
+  const status = buildAdminTradingLabDashboardStatus();
+
+  assert.equal(status.visualizationMode, "mock_static_admin_only");
+  assert.ok(Array.isArray(kpiCards.cards));
+  assert.ok(kpiCards.cards.length >= 6);
+  assert.equal(kpiCards.providerPayloadStored, false);
+  assert.equal(kpiCards.orderPayloadStored, false);
+  assert.equal(kpiCards.accountIdentifierStored, false);
+  assert.equal(status.kpiCards.providerCallsAllowed, false);
+  assert.equal(status.kpiCards.orderSubmissionAllowed, false);
+});
+
+test("Step 132 equity and return visualization points are static and redacted", () => {
+  const equityVisualization = buildTradingLabEquityVisualization();
+  const returnVisualization = buildTradingLabReturnVisualization();
+
+  assert.ok(Array.isArray(equityVisualization.points));
+  assert.ok(Array.isArray(returnVisualization.points));
+  assert.equal(equityVisualization.dataSource, "static_placeholder_only");
+  assert.equal(returnVisualization.dataSource, "static_placeholder_only");
+  assert.equal(equityVisualization.providerPayloadStored, false);
+  assert.equal(equityVisualization.orderPayloadStored, false);
+  assert.equal(returnVisualization.rawProviderResponseStored, false);
+  assert.equal(returnVisualization.providerCallsAllowed, false);
+  assert.equal(returnVisualization.orderSubmissionAllowed, false);
+});
+
+test("Step 132 allocation visualization contains no account identifier or provider payload", () => {
+  const allocationVisualization = buildTradingLabAllocationVisualization();
+  const serialized = JSON.stringify(allocationVisualization);
+
+  assert.ok(Array.isArray(allocationVisualization.allocations));
+  assert.equal(allocationVisualization.accountIdentifierStored, false);
+  assert.equal(allocationVisualization.providerPayloadStored, false);
+  assert.equal(allocationVisualization.orderPayloadStored, false);
+  assert.equal(serialized.includes("APP_KEY"), false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("accountNo"), false);
 });

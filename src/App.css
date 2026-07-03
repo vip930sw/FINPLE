@@ -263,6 +263,25 @@ nav {
   border-color: rgba(15, 23, 42, 0.12);
 }
 
+.tradingAdminDashboardStack {
+  display: grid;
+  gap: 1rem;
+}
+
+.tradingSafetyPanel {
+  background: #fff7ed;
+  border-color: rgba(154, 52, 18, 0.22);
+}
+
+.tradingSafetyPanelDetails {
+  background: #fffaf5;
+}
+
+.tradingLabDashboardPanel {
+  background: #f7fee7;
+  border-color: rgba(77, 124, 15, 0.22);
+}
+
 .tradingReadinessBadge {
   align-self: flex-start;
   border: 1px solid rgba(15, 23, 42, 0.14);
@@ -361,6 +380,11 @@ nav {
   padding: 1rem;
 }
 
+.tradingLabHeader p {
+  color: #64748b;
+  margin: 0.35rem 0 0;
+}
+
 .tradingLabHeader {
   align-items: flex-start;
   display: flex;
@@ -370,7 +394,9 @@ nav {
 
 .tradingLabHeader span,
 .tradingLabSection > span,
-.tradingLabTableSection > span {
+.tradingLabTableSection > span,
+.tradingLabChartCard > span,
+.tradingLabKpiCard > span {
   color: #64748b;
   font-size: 0.8rem;
   font-weight: 800;
@@ -389,6 +415,133 @@ nav {
   font-size: 0.74rem;
   padding: 0.32rem 0.55rem;
   text-align: right;
+}
+
+.tradingLabKpiGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 1rem;
+}
+
+.tradingLabKpiCard {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  min-height: 104px;
+  padding: 0.85rem;
+}
+
+.tradingLabKpiCard strong {
+  color: #0f172a;
+  display: block;
+  font-size: 1.35rem;
+  margin-top: 0.4rem;
+}
+
+.tradingLabKpiCard p {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0.25rem 0 0;
+}
+
+.tradingLabChartGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 0.9rem;
+}
+
+.tradingLabChartCard {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  min-height: 210px;
+  padding: 0.9rem;
+}
+
+.tradingLabLineChart {
+  color: #2563eb;
+  display: block;
+  height: 120px;
+  margin-top: 0.7rem;
+  width: 100%;
+}
+
+.tradingLabLineChart.return {
+  color: #16a34a;
+}
+
+.tradingLabChartLegend {
+  color: #64748b;
+  display: flex;
+  font-size: 0.7rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+}
+
+.tradingLabReturnBars {
+  align-items: flex-end;
+  display: flex;
+  gap: 0.45rem;
+  height: 84px;
+  margin-top: 0.3rem;
+}
+
+.tradingLabReturnBars span {
+  border-radius: 999px 999px 0 0;
+  display: block;
+  flex: 1;
+  min-width: 18px;
+}
+
+.tradingLabReturnBars .positive {
+  background: #22c55e;
+}
+
+.tradingLabReturnBars .negative {
+  background: #ef4444;
+}
+
+.tradingLabAllocationBars {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+
+.tradingLabAllocationRow {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.tradingLabAllocationRow div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tradingLabAllocationRow strong,
+.tradingLabAllocationRow small {
+  color: #334155;
+  font-weight: 800;
+}
+
+.tradingLabAllocationRow span {
+  background: #e2e8f0;
+  border-radius: 999px;
+  display: block;
+  height: 12px;
+  overflow: hidden;
+}
+
+.tradingLabAllocationRow i {
+  background: #14b8a6;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
 }
 
 .tradingLabGrid {

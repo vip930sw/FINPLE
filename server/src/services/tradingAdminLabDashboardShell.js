@@ -12,6 +12,18 @@ export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP132_ADMIN_TRADING_LAB_VISUALIZATION_FLAGS = Object.freeze({
+  ...STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -36,6 +48,43 @@ export const TRADING_LAB_CUMULATIVE_PERFORMANCE_SCHEMA = Object.freeze({
   sourceStep: "step131",
   dataSource: "static_placeholder_only",
   rawProviderResponse: false,
+});
+
+export const TRADING_LAB_KPI_SUMMARY_CARD_SCHEMA = Object.freeze({
+  cardId: "string",
+  cardType: "mock_kpi_summary_card",
+  sourceStep: "step132",
+  dataSource: "static_placeholder_only",
+  providerPayload: false,
+  orderPayload: false,
+});
+
+export const TRADING_LAB_EQUITY_VISUALIZATION_SCHEMA = Object.freeze({
+  visualizationId: "string",
+  visualizationType: "mock_daily_equity_line",
+  sourceStep: "step132",
+  dataSource: "static_placeholder_only",
+  providerPayload: false,
+  orderPayload: false,
+});
+
+export const TRADING_LAB_RETURN_VISUALIZATION_SCHEMA = Object.freeze({
+  visualizationId: "string",
+  visualizationType: "mock_return_bar_series",
+  sourceStep: "step132",
+  dataSource: "static_placeholder_only",
+  providerPayload: false,
+  orderPayload: false,
+});
+
+export const TRADING_LAB_ALLOCATION_VISUALIZATION_SCHEMA = Object.freeze({
+  visualizationId: "string",
+  visualizationType: "mock_allocation_table_bars",
+  sourceStep: "step132",
+  dataSource: "static_placeholder_only",
+  accountIdentifier: false,
+  providerPayload: false,
+  orderPayload: false,
 });
 
 export const TRADING_LAB_POSITION_SNAPSHOT_SCHEMA = Object.freeze({
@@ -159,6 +208,147 @@ export function buildTradingLabCumulativePerformance(options = {}) {
   };
 }
 
+export function buildTradingLabKpiSummaryCards(input = {}, options = {}) {
+  const performance = input.performance || buildTradingLabCumulativePerformance(options);
+  const dailyReturns = input.dailyReturns || buildTradingLabDailyReturnSeries(options);
+  const positions = input.positions || buildTradingLabPositionSnapshot(options);
+  const orderCandidates = input.orderCandidates || buildTradingLabOrderCandidateSummary(options);
+  const latestRow = dailyReturns.rows.at(-1) || {};
+  const positionWeight = positions.positions.reduce((sum, position) => sum + Number(position.weightPct || 0), 0);
+
+  return {
+    summaryId: options.summaryId || "step132_mock_kpi_summary_cards",
+    summaryType: "mock_kpi_summary_cards",
+    sourceStep: "step132",
+    dataSource: "static_placeholder_only",
+    cards: [
+      {
+        cardId: "mock_total_equity",
+        label: "Mock equity",
+        value: Number(latestRow.equityPlaceholder || 0),
+        valueType: "placeholder_currency",
+        status: "mock_only",
+      },
+      {
+        cardId: "mock_cumulative_return",
+        label: "Cumulative return",
+        value: Number(performance.cumulativeReturnPct || 0),
+        suffix: "%",
+        status: "mock_only",
+      },
+      {
+        cardId: "mock_daily_return",
+        label: "Latest daily return",
+        value: Number(latestRow.dailyReturnPct || 0),
+        suffix: "%",
+        status: "mock_only",
+      },
+      {
+        cardId: "mock_mdd",
+        label: "Max drawdown",
+        value: Number(performance.mddPct || 0),
+        suffix: "%",
+        status: "mock_only",
+      },
+      {
+        cardId: "mock_position_weight",
+        label: "Position weight",
+        value: positionWeight,
+        suffix: "%",
+        status: "placeholder_only",
+      },
+      {
+        cardId: "mock_order_candidates",
+        label: "Order candidates",
+        value: orderCandidates.candidates.length,
+        status: "blocked",
+      },
+    ],
+    redaction: makeLabRedaction({ schema: "step132_admin_trading_lab_visualization_v1" }),
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    accountIdentifierStored: false,
+    rawProviderResponseStored: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function buildTradingLabEquityVisualization(dailyReturns = buildTradingLabDailyReturnSeries(), options = {}) {
+  return {
+    visualizationId: options.visualizationId || "step132_mock_daily_equity_visualization",
+    visualizationType: "mock_daily_equity_line",
+    sourceStep: "step132",
+    dataSource: "static_placeholder_only",
+    points: dailyReturns.rows.map((row, index) => ({
+      index,
+      date: row.date,
+      equityPlaceholder: Number(row.equityPlaceholder || 0),
+      status: "mock_only",
+    })),
+    redaction: makeLabRedaction({ schema: "step132_admin_trading_lab_visualization_v1" }),
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    accountIdentifierStored: false,
+    rawProviderResponseStored: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function buildTradingLabReturnVisualization(dailyReturns = buildTradingLabDailyReturnSeries(), options = {}) {
+  return {
+    visualizationId: options.visualizationId || "step132_mock_return_visualization",
+    visualizationType: "mock_return_bar_series",
+    sourceStep: "step132",
+    dataSource: "static_placeholder_only",
+    points: dailyReturns.rows.map((row, index) => ({
+      index,
+      date: row.date,
+      dailyReturnPct: Number(row.dailyReturnPct || 0),
+      cumulativeReturnPct: Number(row.cumulativeReturnPct || 0),
+      drawdownPct: Number(row.drawdownPct || 0),
+      status: "mock_only",
+    })),
+    redaction: makeLabRedaction({ schema: "step132_admin_trading_lab_visualization_v1" }),
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    accountIdentifierStored: false,
+    rawProviderResponseStored: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function buildTradingLabAllocationVisualization(
+  positions = buildTradingLabPositionSnapshot(),
+  strategy = buildTradingLabStrategyConfig(),
+  options = {},
+) {
+  const targetWeights = new Map((strategy.targetWeights || []).map((target) => [target.symbol, Number(target.weightPct || 0)]));
+
+  return {
+    visualizationId: options.visualizationId || "step132_mock_allocation_visualization",
+    visualizationType: "mock_allocation_table_bars",
+    sourceStep: "step132",
+    dataSource: "static_placeholder_only",
+    allocations: positions.positions.map((position) => ({
+      symbol: position.symbol,
+      name: position.name,
+      weightPct: Number(position.weightPct || 0),
+      targetWeightPct: targetWeights.get(position.symbol) || 0,
+      status: "mock_only",
+    })),
+    redaction: makeLabRedaction({ schema: "step132_admin_trading_lab_visualization_v1" }),
+    accountIdentifierStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
 export function buildTradingLabPositionSnapshot(options = {}) {
   return {
     snapshotId: options.snapshotId || "step131_mock_position_snapshot",
@@ -259,24 +449,44 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
   const positions = input.positions || buildTradingLabPositionSnapshot(options);
   const orderCandidates = input.orderCandidates || buildTradingLabOrderCandidateSummary(options);
   const auditLogs = input.auditLogs || buildTradingLabAuditLogSummary(options);
+  const kpiCards = input.kpiCards || buildTradingLabKpiSummaryCards(
+    { performance, dailyReturns, positions, orderCandidates },
+    options,
+  );
+  const equityVisualization = input.equityVisualization || buildTradingLabEquityVisualization(dailyReturns, options);
+  const returnVisualization = input.returnVisualization || buildTradingLabReturnVisualization(dailyReturns, options);
+  const allocationVisualization = input.allocationVisualization || buildTradingLabAllocationVisualization(
+    positions,
+    strategy,
+    options,
+  );
 
   return {
     ok: true,
-    step: "Step 131: Add admin trading lab dashboard shell and Koreanize safety panel",
+    step: "Step 132: Separate admin trading safety panel and visualize trading lab dashboard",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
+    visualizationMode: "mock_static_admin_only",
     strategyConfigSchema: TRADING_LAB_STRATEGY_CONFIG_SCHEMA,
     dailyReturnSeriesSchema: TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA,
     cumulativePerformanceSchema: TRADING_LAB_CUMULATIVE_PERFORMANCE_SCHEMA,
+    kpiSummaryCardSchema: TRADING_LAB_KPI_SUMMARY_CARD_SCHEMA,
+    equityVisualizationSchema: TRADING_LAB_EQUITY_VISUALIZATION_SCHEMA,
+    returnVisualizationSchema: TRADING_LAB_RETURN_VISUALIZATION_SCHEMA,
+    allocationVisualizationSchema: TRADING_LAB_ALLOCATION_VISUALIZATION_SCHEMA,
     positionSnapshotSchema: TRADING_LAB_POSITION_SNAPSHOT_SCHEMA,
     orderCandidateSummarySchema: TRADING_LAB_ORDER_CANDIDATE_SUMMARY_SCHEMA,
     auditLogSummarySchema: TRADING_LAB_AUDIT_LOG_SUMMARY_SCHEMA,
     strategy,
     dailyReturns,
     performance,
+    kpiCards,
+    equityVisualization,
+    returnVisualization,
+    allocationVisualization,
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS },
+    flags: { ...STEP132_ADMIN_TRADING_LAB_VISUALIZATION_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,

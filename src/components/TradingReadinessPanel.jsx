@@ -123,6 +123,33 @@ function formatStatus(value) {
   return STATUS_LABELS[rawValue] || rawValue.replaceAll("_", " ");
 }
 
+function buildSparklinePoints(points, valueKey, width = 320, height = 120) {
+  const values = points.map((point) => Number(point?.[valueKey] || 0));
+  if (values.length === 0) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const step = values.length > 1 ? width / (values.length - 1) : width;
+
+  return values
+    .map((value, index) => {
+      const x = Number((index * step).toFixed(2));
+      const y = Number((height - ((value - min) / span) * (height - 24) - 12).toFixed(2));
+      return `${x},${y}`;
+    })
+    .join(" ");
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Number(value || 0)));
+}
+
+function formatKpiValue(card) {
+  const value = Number(card?.value || 0);
+  if (card?.valueType === "placeholder_currency") return value.toLocaleString("ko-KR");
+  return `${value.toFixed(Number.isInteger(value) ? 0 : 2)}${card?.suffix || ""}`;
+}
+
 export function TradingReadinessPanel() {
   const [readiness, setReadiness] = useState(FALLBACK_READINESS);
   const [shadowStatus, setShadowStatus] = useState(null);
@@ -211,9 +238,24 @@ export function TradingReadinessPanel() {
   const labAuditEvents = Array.isArray(tradingLabDashboardStatus?.auditLogs?.events)
     ? tradingLabDashboardStatus.auditLogs.events
     : [];
+  const labKpiCards = Array.isArray(tradingLabDashboardStatus?.kpiCards?.cards)
+    ? tradingLabDashboardStatus.kpiCards.cards
+    : [];
+  const labEquityPoints = Array.isArray(tradingLabDashboardStatus?.equityVisualization?.points)
+    ? tradingLabDashboardStatus.equityVisualization.points
+    : labDailyRows;
+  const labReturnPoints = Array.isArray(tradingLabDashboardStatus?.returnVisualization?.points)
+    ? tradingLabDashboardStatus.returnVisualization.points
+    : labDailyRows;
+  const labAllocations = Array.isArray(tradingLabDashboardStatus?.allocationVisualization?.allocations)
+    ? tradingLabDashboardStatus.allocationVisualization.allocations
+    : labPositions;
+  const equitySparklinePoints = buildSparklinePoints(labEquityPoints, "equityPlaceholder");
+  const cumulativeReturnSparklinePoints = buildSparklinePoints(labReturnPoints, "cumulativeReturnPct");
 
   return (
-    <section className="accountCard tradingReadinessPanel" data-admin-panel-key="trading-readiness">
+    <div className="tradingAdminDashboardStack" data-admin-panel-key="admin-trading-dashboard">
+    <section className="accountCard tradingReadinessPanel tradingSafetyPanel" data-admin-panel-key="trading-readiness">
       <div className="serverStorageHeader">
         <div>
           <p className="accountMiniLabel">거래 안전상태</p>
@@ -264,13 +306,75 @@ export function TradingReadinessPanel() {
         <p>{readiness?.lastAuditEvent?.message || FALLBACK_READINESS.lastAuditEvent.message}</p>
       </div>
 
-      <div className="tradingLabDashboard" data-admin-panel-key="trading-lab-dashboard">
+    </section>
+
+    <section className="accountCard tradingLabDashboardPanel" data-admin-panel-key="trading-lab-dashboard">
+      <div className="tradingLabDashboard">
         <div className="tradingLabHeader">
           <div>
             <span>관리자 Trading Lab</span>
             <h3>모의 운용 대시보드</h3>
+            <p>Mock, dry-run, shadow placeholder data only. Provider calls and orders stay blocked.</p>
           </div>
           <strong>{formatStatus(tradingLabDashboardStatus?.status || "admin_only")}</strong>
+        </div>
+
+        <div className="tradingLabKpiGrid" aria-label="Trading lab KPI summary">
+          {labKpiCards.map((card) => (
+            <article className="tradingLabKpiCard" key={card.cardId}>
+              <span>{card.label}</span>
+              <strong>{formatKpiValue(card)}</strong>
+              <p>{formatStatus(card.status || "mock_only")}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="tradingLabChartGrid">
+          <article className="tradingLabChartCard">
+            <span>Daily asset value</span>
+            <svg className="tradingLabLineChart" viewBox="0 0 320 120" role="img" aria-label="Mock daily equity line">
+              <polyline points={equitySparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
+            </svg>
+            <div className="tradingLabChartLegend">
+              {labEquityPoints.map((point) => (
+                <span key={point.date}>{point.date}</span>
+              ))}
+            </div>
+          </article>
+
+          <article className="tradingLabChartCard">
+            <span>Return path</span>
+            <svg className="tradingLabLineChart return" viewBox="0 0 320 120" role="img" aria-label="Mock cumulative return line">
+              <polyline points={cumulativeReturnSparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
+            </svg>
+            <div className="tradingLabReturnBars" aria-label="Daily return bars">
+              {labReturnPoints.map((point) => (
+                <span
+                  key={point.date}
+                  className={Number(point.dailyReturnPct || 0) >= 0 ? "positive" : "negative"}
+                  style={{ height: `${24 + clampPercent(Math.abs(point.dailyReturnPct || 0) * 120)}px` }}
+                  title={`${point.date} ${Number(point.dailyReturnPct || 0).toFixed(2)}%`}
+                />
+              ))}
+            </div>
+          </article>
+
+          <article className="tradingLabChartCard tradingLabAllocationCard">
+            <span>Current allocation</span>
+            <div className="tradingLabAllocationBars" aria-label="Mock allocation bars">
+              {labAllocations.map((allocation) => (
+                <div className="tradingLabAllocationRow" key={allocation.symbol}>
+                  <div>
+                    <strong>{allocation.symbol}</strong>
+                    <small>{Number(allocation.weightPct || 0).toFixed(2)}%</small>
+                  </div>
+                  <span>
+                    <i style={{ width: `${clampPercent(allocation.weightPct)}%` }} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </article>
         </div>
 
         <div className="tradingLabGrid">
@@ -468,6 +572,9 @@ export function TradingReadinessPanel() {
         </div>
       </div>
 
+    </section>
+
+    <section className="accountCard tradingReadinessPanel tradingSafetyPanel tradingSafetyPanelDetails" data-admin-panel-key="trading-safety-details">
       <div className="tradingReadinessAudit tradingShadowHistory">
         <span>섀도우 이용 상태</span>
         <strong>{formatStatus(shadowStatus?.status || "read_only_shadow_history")}</strong>
@@ -631,5 +738,6 @@ export function TradingReadinessPanel() {
         </p>
       </div>
     </section>
+    </div>
   );
 }
