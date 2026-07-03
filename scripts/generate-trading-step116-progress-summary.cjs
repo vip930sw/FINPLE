@@ -1370,6 +1370,36 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
     "trading_lab_step116_read_only_approval_import_review_result_ch_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
   ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResult",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result",
+    "trading_lab_step116_read_only_approval_import_review_result_ci_review_result_recording_result_review_result_recording_result_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewPreflight",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_cj_review_result_recording_result_review_result_recording_result_review_preflight_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result supply gate",
+    "trading_lab_step116_read_only_approval_import_review_result_ck_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResult",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result",
+    "trading_lab_step116_read_only_approval_import_review_result_cl_review_result_recording_result_review_result_recording_result_review_result_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_cm_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
+    "trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1713,6 +1743,12 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-cf-review-result-recording-result-review-result",
   "check:trading-read-only-approval-import-review-result-cg-review-result-recording-result-review-result-recording-preflight",
   "check:trading-read-only-approval-import-review-result-ch-review-result-recording-result-review-result-recording-result-supply",
+  "check:trading-read-only-approval-import-review-result-ci-review-result-recording-result-review-result-recording-result",
+  "check:trading-read-only-approval-import-review-result-cj-review-result-recording-result-review-result-recording-result-review-preflight",
+  "check:trading-read-only-approval-import-review-result-ck-review-result-recording-result-review-result-recording-result-review-result-supply",
+  "check:trading-read-only-approval-import-review-result-cl-review-result-recording-result-review-result-recording-result-review-result",
+  "check:trading-read-only-approval-import-review-result-cm-review-result-recording-result-review-result-recording-result-review-result-recording-preflight",
+  "check:trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

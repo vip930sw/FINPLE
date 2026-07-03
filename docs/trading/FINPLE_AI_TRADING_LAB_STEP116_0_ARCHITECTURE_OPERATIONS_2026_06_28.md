@@ -6109,6 +6109,84 @@ npm run check:trading-read-only-approval-import-review-result-ch-review-result-r
 
 This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate` step opens only a supply gate boundary for a future owner-supplied redacted approval import review-result recording-result review-result recording result. It does not supply, accept, read, or record the owner recording result now, does not read private approval packets, does not record private paths, raw values, or hash inputs, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5Q-CI Trading Read-Only Approval Import Review Result Recording Chain
+
+The CI recording-result contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_ci_review_result_recording_result_review_result_recording_result_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-ci-review-result-recording-result-review-result-recording-result-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-ci-review-result-recording-result-review-result-recording-result-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-ci-review-result-recording-result-review-result-recording-result
+```
+
+This step records only a contract boundary for a future owner-supplied redacted approval import review-result recording result. It does not accept, read, or record the owner recording result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-CJ Trading Read-Only Approval Import Review Result Recording Chain
+
+The CJ review preflight contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_cj_review_result_recording_result_review_result_recording_result_review_preflight_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-cj-review-result-recording-result-review-result-recording-result-review-preflight-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-cj-review-result-recording-result-review-result-recording-result-review-preflight-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-cj-review-result-recording-result-review-result-recording-result-review-preflight
+```
+
+This step opens only a review preflight boundary. It does not accept, read, or record the owner review now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-CK Trading Read-Only Approval Import Review Result Recording Chain
+
+The CK review-result supply gate contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_ck_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-ck-review-result-recording-result-review-result-recording-result-review-result-supply-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-ck-review-result-recording-result-review-result-recording-result-review-result-supply-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-ck-review-result-recording-result-review-result-recording-result-review-result-supply
+```
+
+This step opens only a future owner-supplied redacted review-result supply gate. It does not supply, accept, read, or record the owner review result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-CL Trading Read-Only Approval Import Review Result Recording Chain
+
+The CL review-result contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_cl_review_result_recording_result_review_result_recording_result_review_result_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-cl-review-result-recording-result-review-result-recording-result-review-result-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-cl-review-result-recording-result-review-result-recording-result-review-result-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-cl-review-result-recording-result-review-result-recording-result-review-result
+```
+
+This step records only a contract boundary for a future owner-supplied redacted review result. It does not accept, read, or record the owner review result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-CM Trading Read-Only Approval Import Review Result Recording Chain
+
+The CM recording preflight contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_cm_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-cm-review-result-recording-result-review-result-recording-result-review-result-recording-preflight-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-cm-review-result-recording-result-review-result-recording-result-review-result-recording-preflight-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-cm-review-result-recording-result-review-result-recording-result-review-result-recording-preflight
+```
+
+This step opens only a recording preflight boundary. It does not accept, read, or record the owner recording result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-CN Trading Read-Only Approval Import Review Result Recording Chain
+
+The CN recording-result supply gate contract boundary is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply
+```
+
+This step opens only a future owner-supplied redacted recording-result supply gate. It does not supply, accept, read, or record the owner recording result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
