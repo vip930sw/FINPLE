@@ -1,6 +1,7 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { buildAdminManualApprovalOrderDraftPreflightStatus } from "../services/tradingManualApprovalOrderDraftPreflight.js";
 import { buildTradingReadinessSnapshot } from "../services/tradingImplementationShell.js";
 import { buildAdminRiskKillSwitchReviewStatus } from "../services/tradingRiskKillSwitchReviewCore.js";
 import { buildAdminRiskKillSwitchReviewResultGateStatus } from "../services/tradingRiskKillSwitchReviewResultGate.js";
@@ -40,6 +41,12 @@ router.get("/risk-kill-switch", (request, response) => {
 router.get("/risk-kill-switch-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminRiskKillSwitchReviewResultGateStatus());
+  });
+});
+
+router.get("/manual-approval-order-draft-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminManualApprovalOrderDraftPreflightStatus());
   });
 });
 

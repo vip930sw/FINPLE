@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
   fetchAdminTradingRiskKillSwitchReviewResultStatus,
   fetchAdminTradingRiskKillSwitchStatus,
   fetchAdminTradingShadowReviewStatus,
@@ -64,6 +65,7 @@ export function TradingReadinessPanel() {
   const [shadowReviewStatus, setShadowReviewStatus] = useState(null);
   const [riskKillSwitchStatus, setRiskKillSwitchStatus] = useState(null);
   const [riskKillSwitchReviewResultStatus, setRiskKillSwitchReviewResultStatus] = useState(null);
+  const [manualApprovalOrderDraftStatus, setManualApprovalOrderDraftStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingShadowReviewStatus().catch(() => null),
       fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
       fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
+      fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -83,6 +86,7 @@ export function TradingReadinessPanel() {
         setShadowReviewStatus(payload?.[2] || null);
         setRiskKillSwitchStatus(payload?.[3] || null);
         setRiskKillSwitchReviewResultStatus(payload?.[4] || null);
+        setManualApprovalOrderDraftStatus(payload?.[5] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -187,6 +191,16 @@ export function TradingReadinessPanel() {
         <p>
           Receipts {Number(riskKillSwitchReviewResultStatus?.receiptCount || 0)}.
           Redacted in-memory status only; no DB write and no readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingManualApprovalOrderDraft">
+        <span>Manual approval draft</span>
+        <strong>{manualApprovalOrderDraftStatus?.status || "admin_only_manual_approval_order_draft_preflight_fail_closed"}</strong>
+        <p>
+          Draft {manualApprovalOrderDraftStatus?.draft?.draftId || "step122_manual_approval_order_draft_placeholder"} /
+          preflight {manualApprovalOrderDraftStatus?.preflight?.preflightStatus || "blocked"}.
+          Redacted placeholder only; no broker payload or order submission.
         </p>
       </div>
     </section>

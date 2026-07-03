@@ -282,6 +282,10 @@ export async function fetchAdminTradingRiskKillSwitchReviewResultStatus() {
   return requestJson("/admin/trading-readiness/risk-kill-switch-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingManualApprovalOrderDraftPreflightStatus() {
+  return requestJson("/admin/trading-readiness/manual-approval-order-draft-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

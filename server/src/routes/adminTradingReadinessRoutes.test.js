@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 
-test("exposes only admin-guarded read-only trading readiness, shadow status, review, risk, and result endpoints", () => {
+test("exposes only admin-guarded read-only trading readiness, shadow status, review, risk, result, and draft endpoints", () => {
   const routeText = fs.readFileSync("server/src/routes/adminTradingReadinessRoutes.js", "utf8");
 
   assert.match(routeText, /requireAdminAccess/);
@@ -13,6 +13,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/shadow-review"/);
   assert.match(routeText, /router\.get\("\/risk-kill-switch"/);
   assert.match(routeText, /router\.get\("\/risk-kill-switch-review-result"/);
+  assert.match(routeText, /router\.get\("\/manual-approval-order-draft-preflight"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });
