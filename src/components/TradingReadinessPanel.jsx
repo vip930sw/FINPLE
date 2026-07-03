@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingRiskKillSwitchStatus,
   fetchAdminTradingShadowReviewStatus,
   fetchAdminTradingShadowStatus,
   fetchTradingReadinessStatus,
@@ -60,6 +61,7 @@ export function TradingReadinessPanel() {
   const [readiness, setReadiness] = useState(FALLBACK_READINESS);
   const [shadowStatus, setShadowStatus] = useState(null);
   const [shadowReviewStatus, setShadowReviewStatus] = useState(null);
+  const [riskKillSwitchStatus, setRiskKillSwitchStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -69,12 +71,14 @@ export function TradingReadinessPanel() {
       fetchTradingReadinessStatus(),
       fetchAdminTradingShadowStatus().catch(() => null),
       fetchAdminTradingShadowReviewStatus().catch(() => null),
+      fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
         setReadiness(payload?.[0] || FALLBACK_READINESS);
         setShadowStatus(payload?.[1] || null);
         setShadowReviewStatus(payload?.[2] || null);
+        setRiskKillSwitchStatus(payload?.[3] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -161,6 +165,15 @@ export function TradingReadinessPanel() {
         <p>
           Results {Number(shadowReviewStatus?.reviewResults?.length || 0)} / blockers {Number(shadowReviewStatus?.blockers?.length || 0)}.
           Review is redacted and cannot promote live readiness.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingRiskKillSwitchReview">
+        <span>Risk and kill-switch</span>
+        <strong>{riskKillSwitchStatus?.status || "admin_only_risk_kill_switch_review_fail_closed"}</strong>
+        <p>
+          Risk gate {riskKillSwitchStatus?.riskGate?.status || "blocked"} / kill-switch {riskKillSwitchStatus?.killSwitch?.status || "active_blocking"}.
+          Admin-only, redacted, and read-only; live readiness stays blocked.
         </p>
       </div>
     </section>

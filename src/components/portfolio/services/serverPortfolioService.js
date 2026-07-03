@@ -274,6 +274,10 @@ export async function fetchAdminTradingShadowReviewStatus() {
   return requestJson("/admin/trading-readiness/shadow-review", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingRiskKillSwitchStatus() {
+  return requestJson("/admin/trading-readiness/risk-kill-switch", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
