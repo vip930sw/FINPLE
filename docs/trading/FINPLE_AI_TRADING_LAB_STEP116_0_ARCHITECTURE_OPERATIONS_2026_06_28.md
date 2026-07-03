@@ -6227,6 +6227,36 @@ npm run check:trading-step116-owner-evidence-intake-kit
 
 This kit moves the workflow from more contract-chain expansion to the owner-local evidence intake path. It lists the six owner-local items needed before real unlock work can proceed and provides a paste-ready Korean operator prompt. The kit allows only non-sensitive receipt facts in the repo and explicitly forbids recording actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, or private packet contents. Provider calls, order submission, provider adapter and worker implementation, runtime routes, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked.
 
+## Step 116-5U Owner Evidence Receipt Schema
+
+The owner evidence receipt schema contract is:
+
+```text
+data/processed/trading_lab_step116_owner_evidence_receipt_schema_contract.json
+scripts/generate-trading-step116-owner-evidence-receipt-schema-contract.cjs
+scripts/generate-trading-step116-owner-evidence-receipt-schema-contract.test.cjs
+npm run check:trading-step116-owner-evidence-receipt-schema
+```
+
+This schema defines the only repo-safe fields allowed for owner-local evidence receipts: item label, owner confirmation status, redaction status, reviewer role, checked date, next gate name, a `noPrivateMaterialRecorded` assertion, and the private-material prohibition list. It explicitly rejects actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, private packet contents, private packet paths, validation receipt paths, tokens, account numbers, order confirmations, execution ids, and fill payloads.
+
+Readiness here means only that a non-sensitive receipt shape is ready for review. It does not import owner evidence, validate private packets, call providers, submit orders, implement provider adapters or workers, create runtime routes, create public UI/homepage router changes, run DB migrations, or create `scenario_monthly_returns.csv`.
+
+## Step 116-5V Owner Evidence Receipt Placeholder Bundle
+
+The owner evidence receipt placeholder bundle contract is:
+
+```text
+data/processed/trading_lab_step116_owner_evidence_receipt_placeholder_bundle_contract.json
+scripts/generate-trading-step116-owner-evidence-receipt-placeholder-bundle-contract.cjs
+scripts/generate-trading-step116-owner-evidence-receipt-placeholder-bundle-contract.test.cjs
+npm run check:trading-step116-owner-evidence-receipt-placeholder-bundle
+```
+
+This bundle records six redacted placeholders for the owner-local evidence/review-result items prepared outside the repo: read-only approval packet import evidence, read-only provider-call authorization review result, manual order permission packet validation import evidence, kill-switch clearance review result, risk-gate clearance review result, and live-guarded clearance review result bundle. Each placeholder records only that the owner-local item is prepared outside the repo and pending receipt review, with private material still prohibited and not recorded.
+
+The bundle is intentionally fail-closed. It records `actualPrivateEvidenceImported=false`, `readyForReadOnlyProviderCalls=false`, `readyForOrderSubmission=false`, `readyForLiveGuardedTrading=false`, `providerCallsAllowed=false`, `orderSubmissionAllowed=false`, `runtimeRouteAllowed=false`, `publicUiAllowed=false`, and `dbMigrationAllowed=false`. It does not record actual owner-local paths, raw values, hash values, credentials, account identifiers, provider/order payloads, or private packet contents.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

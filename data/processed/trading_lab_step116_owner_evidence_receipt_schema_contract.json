@@ -1,0 +1,116 @@
+{
+  "contractVersion": "trading-lab-step116-owner-evidence-receipt-schema-v0.1",
+  "auditedAt": "2026-07-03T00:00:00Z",
+  "step": "Step 116 owner evidence receipt schema",
+  "scope": "repo_safe_owner_evidence_receipt_schema",
+  "sourceFiles": {
+    "ownerEvidenceIntakeKit": "data\\processed\\trading_lab_step116_owner_evidence_intake_kit_contract.json",
+    "runbook": "docs\\trading\\FINPLE_STEP116_OWNER_EVIDENCE_INTAKE_RUNBOOK_2026_07_03.md"
+  },
+  "outputFiles": {
+    "contract": "data\\processed\\trading_lab_step116_owner_evidence_receipt_schema_contract.json"
+  },
+  "currentState": {
+    "contractOnly": true,
+    "ownerLocalEvidencePreparedOutsideRepo": true,
+    "receiptSchemaReady": true,
+    "actualLiveTradingReadiness": false,
+    "readyForReadOnlyProviderCalls": false,
+    "readyForOrderSubmission": false,
+    "readyForLiveGuardedTrading": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false
+  },
+  "ownerLocalOnlyIntakeItems": [
+    "read_only_approval_packet_import_evidence",
+    "read_only_provider_call_authorization_review_result",
+    "manual_order_permission_packet_validation_import_evidence",
+    "kill_switch_clearance_review_result",
+    "risk_gate_clearance_review_result",
+    "live_guarded_clearance_review_result_bundle"
+  ],
+  "receiptSchema": {
+    "allowedFields": [
+      "itemLabel",
+      "ownerConfirmationStatus",
+      "redactionStatus",
+      "reviewerRole",
+      "checkedDate",
+      "nextGateName",
+      "noPrivateMaterialRecorded",
+      "privateMaterialProhibited"
+    ],
+    "forbiddenFields": [
+      "actualLocalFilePath",
+      "rawValue",
+      "hashValue",
+      "credential",
+      "accountIdentifier",
+      "providerPayload",
+      "orderPayload",
+      "privatePacketContent",
+      "privatePacketPath",
+      "validationReceiptPath",
+      "appKey",
+      "appSecret",
+      "accessToken",
+      "accountNumber",
+      "orderConfirmation",
+      "executionId",
+      "fillPayload"
+    ],
+    "requiredAssertions": [
+      "owner_confirmation_status_is_present",
+      "redaction_status_is_present",
+      "checked_date_is_present",
+      "no_private_material_recorded_is_true",
+      "private_material_prohibited_list_is_present"
+    ],
+    "allowedOwnerConfirmationStatuses": [
+      "prepared_outside_repo_pending_receipt_review"
+    ],
+    "allowedRedactionStatuses": [
+      "owner_local_redacted_not_recorded_in_repo"
+    ]
+  },
+  "checks": {
+    "contractOnly": true,
+    "intakeKitReady": true,
+    "runbookMentionsReceiptRules": true,
+    "ownerLocalItemCount": 6,
+    "ownerLocalItemCountStable": true,
+    "allowedReceiptFieldsOnlyNonSensitive": true,
+    "forbiddenReceiptFieldsEnumerated": true,
+    "schemaDoesNotAcceptPrivatePath": true,
+    "schemaDoesNotAcceptRawValues": true,
+    "schemaDoesNotAcceptHashValues": true,
+    "schemaDoesNotAcceptCredentials": true,
+    "schemaDoesNotAcceptAccountIdentifiers": true,
+    "schemaDoesNotAcceptProviderOrOrderPayloads": true,
+    "forbiddenArtifactsAbsent": true,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false
+  },
+  "evidence": {
+    "forbiddenArtifacts": []
+  },
+  "readiness": {
+    "status": "owner_evidence_receipt_schema_ready_fail_closed",
+    "readyForRepoSafeReceiptPlaceholders": true,
+    "readyForReadOnlyProviderCalls": false,
+    "readyForOrderSubmission": false,
+    "readyForLiveGuardedTrading": false,
+    "providerCallsAllowed": false,
+    "orderSubmissionAllowed": false,
+    "runtimeRouteAllowed": false,
+    "publicUiAllowed": false,
+    "dbMigrationAllowed": false,
+    "blockers": []
+  }
+}

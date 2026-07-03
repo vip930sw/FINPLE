@@ -1415,6 +1415,16 @@ const TRACKED_READINESS_CONTRACTS = [
     "Owner evidence intake kit",
     "trading_lab_step116_owner_evidence_intake_kit_contract.json",
   ],
+  [
+    "ownerEvidenceReceiptSchema",
+    "Owner evidence receipt schema",
+    "trading_lab_step116_owner_evidence_receipt_schema_contract.json",
+  ],
+  [
+    "ownerEvidenceReceiptPlaceholderBundle",
+    "Owner evidence receipt placeholder bundle",
+    "trading_lab_step116_owner_evidence_receipt_placeholder_bundle_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1767,6 +1777,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-step116-remaining-operational-gate-inventory",
   "check:trading-step116-remaining-operational-gate-batch-plan",
   "check:trading-step116-owner-evidence-intake-kit",
+  "check:trading-step116-owner-evidence-receipt-schema",
+  "check:trading-step116-owner-evidence-receipt-placeholder-bundle",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

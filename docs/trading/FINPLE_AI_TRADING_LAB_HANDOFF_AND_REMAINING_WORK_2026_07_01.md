@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `8882605 Add forbidden item unlock recording result review gates`
+Current handoff base commit before this update: `fab69cb Add owner evidence intake kit`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `203/203 = 100%`
-- Required npm check coverage: `244/244 = 100%`
+- Contract/guardrail progress: `309/309 = 100%`
+- Required npm check coverage: `351/351 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -392,12 +392,13 @@ Current blockers:
 
 ## Suggested Next Work Order
 
-Fastest safe path toward private trading readiness from the current contract boundary:
+Fastest safe path toward private trading readiness from the current owner evidence intake boundary:
 
-1. Private-worker implementation boundary review result supply gate.
-2. Private worker implementation only after all prior review result contracts, boundary review, and guarded implementation checks pass.
-3. Private dashboard/operator monitoring.
-4. Public dashboard/homepage router only after live-guarded review.
+1. Owner evidence receipt review preflight/result using only the repo-safe placeholder bundle.
+2. Internal review gates for read-only provider authorization, manual order permission validation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history, and live-guarded clearance.
+3. Private worker/adapter implementation only after all prior review result contracts, boundary review, and guarded implementation checks pass.
+4. Private dashboard/operator monitoring after private runtime and operator-access reviews.
+5. Public dashboard/homepage router only after live-guarded review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 
@@ -428,11 +429,11 @@ Still intentionally blocked:
 - `scenario_monthly_returns.csv`
 
 Next work:
-1. Use `FINPLE_STEP116_OWNER_EVIDENCE_INTAKE_RUNBOOK_2026_07_03.md` as the active owner evidence intake handoff.
-2. Owner prepares the six owner-local evidence/review result items outside the repo and outside chat.
-3. Do not record actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, or private packet contents in repo commits.
-4. The next repo-safe implementation step is a redacted receipt schema and placeholder receipt bundle that records only non-sensitive receipt facts.
-5. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until the receipt bundle and follow-on reviews pass.
+1. Treat `FINPLE_STEP116_OWNER_EVIDENCE_INTAKE_RUNBOOK_2026_07_03.md` as the active owner evidence intake handoff.
+2. The six owner-local evidence/review result items are prepared outside the repo and outside chat; the repo records only the redacted receipt schema and placeholder bundle.
+3. Keep actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, private packet contents, and receipt paths out of repo commits and chat.
+4. The next repo-safe implementation step is owner evidence receipt review preflight/result handling using only the placeholder bundle; it must still avoid importing private evidence or opening provider/order/runtime surfaces.
+5. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until follow-on reviews pass explicitly.
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```
