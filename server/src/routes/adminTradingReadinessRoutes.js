@@ -3,6 +3,7 @@ import express from "express";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import { buildTradingReadinessSnapshot } from "../services/tradingImplementationShell.js";
 import { buildAdminRiskKillSwitchReviewStatus } from "../services/tradingRiskKillSwitchReviewCore.js";
+import { buildAdminRiskKillSwitchReviewResultGateStatus } from "../services/tradingRiskKillSwitchReviewResultGate.js";
 import { buildReadOnlyShadowStatusHistory } from "../services/tradingShadowLedger.js";
 import { buildAdminShadowReviewGateStatus } from "../services/tradingShadowReviewGate.js";
 
@@ -33,6 +34,12 @@ router.get("/shadow-review", (request, response) => {
 router.get("/risk-kill-switch", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminRiskKillSwitchReviewStatus());
+  });
+});
+
+router.get("/risk-kill-switch-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminRiskKillSwitchReviewResultGateStatus());
   });
 });
 

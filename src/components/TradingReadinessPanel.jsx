@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingRiskKillSwitchReviewResultStatus,
   fetchAdminTradingRiskKillSwitchStatus,
   fetchAdminTradingShadowReviewStatus,
   fetchAdminTradingShadowStatus,
@@ -62,6 +63,7 @@ export function TradingReadinessPanel() {
   const [shadowStatus, setShadowStatus] = useState(null);
   const [shadowReviewStatus, setShadowReviewStatus] = useState(null);
   const [riskKillSwitchStatus, setRiskKillSwitchStatus] = useState(null);
+  const [riskKillSwitchReviewResultStatus, setRiskKillSwitchReviewResultStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingShadowStatus().catch(() => null),
       fetchAdminTradingShadowReviewStatus().catch(() => null),
       fetchAdminTradingRiskKillSwitchStatus().catch(() => null),
+      fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -79,6 +82,7 @@ export function TradingReadinessPanel() {
         setShadowStatus(payload?.[1] || null);
         setShadowReviewStatus(payload?.[2] || null);
         setRiskKillSwitchStatus(payload?.[3] || null);
+        setRiskKillSwitchReviewResultStatus(payload?.[4] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -174,6 +178,15 @@ export function TradingReadinessPanel() {
         <p>
           Risk gate {riskKillSwitchStatus?.riskGate?.status || "blocked"} / kill-switch {riskKillSwitchStatus?.killSwitch?.status || "active_blocking"}.
           Admin-only, redacted, and read-only; live readiness stays blocked.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingRiskKillSwitchReviewResult">
+        <span>Review result recording</span>
+        <strong>{riskKillSwitchReviewResultStatus?.status || "admin_only_risk_kill_switch_review_result_gate_fail_closed"}</strong>
+        <p>
+          Receipts {Number(riskKillSwitchReviewResultStatus?.receiptCount || 0)}.
+          Redacted in-memory status only; no DB write and no readiness promotion.
         </p>
       </div>
     </section>

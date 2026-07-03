@@ -278,6 +278,10 @@ export async function fetchAdminTradingRiskKillSwitchStatus() {
   return requestJson("/admin/trading-readiness/risk-kill-switch", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingRiskKillSwitchReviewResultStatus() {
+  return requestJson("/admin/trading-readiness/risk-kill-switch-review-result", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
