@@ -1,0 +1,26 @@
+const test = require("node:test");
+const { exerciseGate } = require("./trading-read-only-approval-import-review-result-review-gate.test-helper.cjs");
+
+test("keeps read-only approval import review-result recording-result review result recording result review result recording result review result recording result review result recording result supply gate locked", () => {
+  exerciseGate({
+    tmpPrefix:
+      "finple-read-only-approval-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate",
+    script:
+      "generate-trading-read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate-contract.cjs",
+    contract:
+      "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
+    readyField:
+      "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate",
+    previousContract:
+      "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json",
+    previousReadyField:
+      "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight",
+    previousKey:
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight",
+    requiredContracts: [
+      "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json",
+    ],
+    stdoutPattern:
+      "read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate-contract",
+  });
+});
