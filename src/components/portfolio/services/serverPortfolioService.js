@@ -298,6 +298,10 @@ export async function fetchAdminTradingManualApprovalClearanceReviewResultStatus
   return requestJson("/admin/trading-readiness/manual-approval-clearance-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus() {
+  return requestJson("/admin/trading-readiness/kis-read-only-provider-call-inventory-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

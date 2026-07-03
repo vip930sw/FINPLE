@@ -1,6 +1,7 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { buildAdminKisReadOnlyProviderCallInventoryPreflightStatus } from "../services/tradingKisReadOnlyProviderCallInventoryPreflight.js";
 import { buildAdminManualApprovalClearanceReviewResultGateStatus } from "../services/tradingManualApprovalClearanceReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../services/tradingManualApprovalOrderDraftClearancePreflightGate.js";
 import { buildAdminManualApprovalOrderDraftReviewResultGateStatus } from "../services/tradingManualApprovalOrderDraftReviewResultGate.js";
@@ -68,6 +69,12 @@ router.get("/manual-approval-order-draft-clearance-preflight", (request, respons
 router.get("/manual-approval-clearance-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminManualApprovalClearanceReviewResultGateStatus());
+  });
+});
+
+router.get("/kis-read-only-provider-call-inventory-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminKisReadOnlyProviderCallInventoryPreflightStatus());
   });
 });
 

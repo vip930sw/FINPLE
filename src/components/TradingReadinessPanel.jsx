@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
@@ -72,6 +73,7 @@ export function TradingReadinessPanel() {
   const [manualApprovalOrderDraftReviewResultStatus, setManualApprovalOrderDraftReviewResultStatus] = useState(null);
   const [manualApprovalOrderDraftClearanceStatus, setManualApprovalOrderDraftClearanceStatus] = useState(null);
   const [manualApprovalClearanceReviewResultStatus, setManualApprovalClearanceReviewResultStatus] = useState(null);
+  const [kisProviderCallInventoryStatus, setKisProviderCallInventoryStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
       fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
+      fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -99,6 +102,7 @@ export function TradingReadinessPanel() {
         setManualApprovalOrderDraftReviewResultStatus(payload?.[6] || null);
         setManualApprovalOrderDraftClearanceStatus(payload?.[7] || null);
         setManualApprovalClearanceReviewResultStatus(payload?.[8] || null);
+        setKisProviderCallInventoryStatus(payload?.[9] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -251,6 +255,19 @@ export function TradingReadinessPanel() {
           Receipts {Number(manualApprovalClearanceReviewResultStatus?.receiptCount || 0)} /
           decision {manualApprovalClearanceReviewResultStatus?.recording?.review?.decision || "clearance_not_granted"}.
           Redacted review result only; no readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingKisProviderCallInventory">
+        <span>KIS provider-call inventory</span>
+        <strong>
+          {kisProviderCallInventoryStatus?.status ||
+            "admin_only_kis_read_only_provider_call_inventory_preflight_fail_closed"}
+        </strong>
+        <p>
+          Preflight {kisProviderCallInventoryStatus?.preflight?.status || "opt_in_required"} /
+          blockers {Number(kisProviderCallInventoryStatus?.preflight?.blockerCount || 0)}.
+          Inventory only; no token issuance, provider call, or readiness promotion.
         </p>
       </div>
     </section>
