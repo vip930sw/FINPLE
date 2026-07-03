@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
   fetchAdminTradingLabStrategyDraftReviewResultStatus,
   fetchAdminTradingLabStrategyDraftReviewStatus,
   fetchAdminTradingLabStrategyDraftStatus,
@@ -253,6 +254,7 @@ export function TradingReadinessPanel() {
   const [tradingLabStrategyDraftStatus, setTradingLabStrategyDraftStatus] = useState(null);
   const [tradingLabStrategyDraftReviewStatus, setTradingLabStrategyDraftReviewStatus] = useState(null);
   const [tradingLabStrategyDraftReviewResultStatus, setTradingLabStrategyDraftReviewResultStatus] = useState(null);
+  const [tradingLabStrategyDraftClearancePreflightStatus, setTradingLabStrategyDraftClearancePreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -279,6 +281,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabStrategyDraftStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftReviewStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabStrategyDraftClearancePreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -300,6 +303,7 @@ export function TradingReadinessPanel() {
         setTradingLabStrategyDraftStatus(payload?.[15] || null);
         setTradingLabStrategyDraftReviewStatus(payload?.[16] || null);
         setTradingLabStrategyDraftReviewResultStatus(payload?.[17] || null);
+        setTradingLabStrategyDraftClearancePreflightStatus(payload?.[18] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -342,6 +346,11 @@ export function TradingReadinessPanel() {
   const labStrategyDraftReviewResultHistory = Array.isArray(labStrategyDraftReviewResultStatus?.mockHistory)
     ? labStrategyDraftReviewResultStatus.mockHistory
     : [];
+  const labStrategyDraftClearancePreflightStatus = tradingLabStrategyDraftClearancePreflightStatus || tradingLabDashboardStatus?.strategyDraftClearancePreflightStatus || {};
+  const labStrategyDraftClearancePreflight = labStrategyDraftClearancePreflightStatus?.clearancePreflight || {};
+  const labStrategyDraftClearanceCandidate = labStrategyDraftClearancePreflightStatus?.candidate || labStrategyDraftClearancePreflight?.candidate || {};
+  const labStrategyDraftClearanceResult = labStrategyDraftClearancePreflightStatus?.result || labStrategyDraftClearancePreflight?.result || {};
+  const labStrategyDraftClearanceBlockerSummary = labStrategyDraftClearancePreflightStatus?.blockerSummary || labStrategyDraftClearancePreflight?.blockerSummary || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -727,6 +736,44 @@ export function TradingReadinessPanel() {
               ))}
               {(labStrategyDraftReviewBlockerSummary.warningMessages || []).map((message, index) => (
                 <li key={`review-result-warning-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabStrategyDraftClearancePreflight" data-admin-panel-key="trading-lab-strategy-draft-clearance-preflight">
+            <span>Mock clearance preflight</span>
+            <h4>{formatStatus(labStrategyDraftClearanceResult.clearanceStatus || labStrategyDraftClearancePreflight.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This clearance preflight is mock-only, admin-only, and cannot create order candidates, order drafts, provider calls, or live trading readiness.
+            </p>
+            <div className="tradingLabReviewCards tradingLabClearanceCards">
+              <div>
+                <span>Candidate</span>
+                <strong>{formatStatus(labStrategyDraftClearanceCandidate.status || "validation_required")}</strong>
+                <small>{labStrategyDraftClearanceCandidate.orderCandidateCreated ? "order_candidate_created" : "no_order_candidate"}</small>
+              </div>
+              <div>
+                <span>Scope</span>
+                <strong>{formatStatus(labStrategyDraftClearanceResult.clearanceScope || "mock_only")}</strong>
+                <small>{formatStatus(labStrategyDraftClearanceResult.nextAllowedStep || "mock_review_only")}</small>
+              </div>
+              <div>
+                <span>Provider impact</span>
+                <strong>{formatStatus(labStrategyDraftClearanceResult.providerCallImpact || "blocked")}</strong>
+                <small>KIS calls remain blocked</small>
+              </div>
+              <div>
+                <span>Order impact</span>
+                <strong>{formatStatus(labStrategyDraftClearanceResult.orderSubmissionImpact || "blocked")}</strong>
+                <small>{labStrategyDraftClearanceCandidate.orderDraftCreated ? "order_draft_created" : "no_order_draft"}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabClearanceList" aria-label="Strategy draft clearance preflight blockers and warnings">
+              {(labStrategyDraftClearanceBlockerSummary.blockerMessages || labStrategyDraftClearanceBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`clearance-preflight-blocker-${index}`}>{message}</li>
+              ))}
+              {(labStrategyDraftClearanceBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`clearance-preflight-warning-${index}`}>{message}</li>
               ))}
             </ul>
           </article>

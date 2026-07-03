@@ -3,6 +3,7 @@ import express from "express";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
   buildAdminTradingLabDashboardStatus,
+  buildAdminTradingLabStrategyDraftClearancePreflightStatus,
   buildAdminTradingLabStrategyDraftReviewResultStatus,
   buildAdminTradingLabStrategyDraftReviewStatus,
   buildAdminTradingLabStrategyDraftStatus,
@@ -133,6 +134,12 @@ router.get("/trading-lab-strategy-draft-review", (request, response) => {
 router.get("/trading-lab-strategy-draft-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabStrategyDraftReviewResultStatus());
+  });
+});
+
+router.get("/trading-lab-strategy-draft-clearance-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabStrategyDraftClearancePreflightStatus());
   });
 });
 
