@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { fetchTradingReadinessStatus } from "./portfolio/services/serverPortfolioService";
+import { fetchAdminTradingShadowStatus, fetchTradingReadinessStatus } from "./portfolio/services/serverPortfolioService";
 
 const FALLBACK_READINESS = Object.freeze({
   ok: true,
@@ -54,15 +54,20 @@ function statusClass(value) {
 
 export function TradingReadinessPanel() {
   const [readiness, setReadiness] = useState(FALLBACK_READINESS);
+  const [shadowStatus, setShadowStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
     let cancelled = false;
 
-    fetchTradingReadinessStatus()
+    Promise.all([
+      fetchTradingReadinessStatus(),
+      fetchAdminTradingShadowStatus().catch(() => null),
+    ])
       .then((payload) => {
         if (cancelled) return;
-        setReadiness(payload || FALLBACK_READINESS);
+        setReadiness(payload?.[0] || FALLBACK_READINESS);
+        setShadowStatus(payload?.[1] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -84,7 +89,7 @@ export function TradingReadinessPanel() {
   }, [readiness]);
 
   return (
-    <section className="accountCard tradingReadinessPanel" data-mypage-panel-key="trading-readiness">
+    <section className="accountCard tradingReadinessPanel" data-admin-panel-key="trading-readiness">
       <div className="serverStorageHeader">
         <div>
           <p className="accountMiniLabel">Trading Readiness</p>
@@ -132,6 +137,15 @@ export function TradingReadinessPanel() {
         <span>Last audit event</span>
         <strong>{readiness?.lastAuditEvent?.status || "placeholder_only"}</strong>
         <p>{readiness?.lastAuditEvent?.message || FALLBACK_READINESS.lastAuditEvent.message}</p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingShadowHistory">
+        <span>Shadow status/history</span>
+        <strong>{shadowStatus?.status || "read_only_shadow_history"}</strong>
+        <p>
+          Candidates {Number(shadowStatus?.candidateCount || 0)} / audit events {Number(shadowStatus?.auditEventCount || 0)}.
+          Admin-only, read-only, in-memory boundary.
+        </p>
       </div>
     </section>
   );

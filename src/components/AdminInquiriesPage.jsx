@@ -15,6 +15,7 @@ import {
   sendSupportInquiryReply,
   updateSupportInquiryStatus,
 } from "./portfolio/services/serverPortfolioService";
+import { TradingReadinessPanel } from "./TradingReadinessPanel";
 
 const ADMIN_MENU_ITEMS = [
   { key: "inquiries", page: "admin-inquiries", label: "문의사항 관리", description: "접수·처리 상태" },
@@ -22,6 +23,7 @@ const ADMIN_MENU_ITEMS = [
   { key: "subscriptions", page: "admin-subscriptions", label: "구독 관리", description: "플랜·결제 기간" },
   { key: "ai-usage", page: "admin-ai-usage", label: "AI 사용량", description: "분석 호출·비용 관찰" },
   { key: "education", page: "admin-education", label: "교육 계정 관리", description: "수업·만료 관리" },
+  { key: "trading", page: "admin-trading", label: "Trading readiness", description: "shadow·dry-run read-only" },
   { key: "clear", page: "admin-clear", label: "관리자 모드 해제", description: "저장 토큰 삭제" },
 ];
 
@@ -118,6 +120,7 @@ function getActiveSectionFromPage(page) {
   if (page === "subscriptions") return "subscriptions";
   if (page === "ai-usage") return "ai-usage";
   if (page === "education") return "education";
+  if (page === "trading") return "trading";
   if (page === "clear") return "clear";
   return "inquiries";
 }
@@ -614,6 +617,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               onDeleteSelected={handleDeleteSelectedEducationAccounts}
               onDeleteExpired={handleDeleteExpiredEducationAccounts}
             />
+          ) : null}
+
+          {activeSection === "trading" ? (
+            <TradingReadinessPanel />
           ) : null}
 
           {activeSection === "clear" ? (

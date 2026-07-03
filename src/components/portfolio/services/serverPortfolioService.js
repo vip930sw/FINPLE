@@ -263,7 +263,11 @@ export async function fetchAdminEducationAccounts() {
 }
 
 export async function fetchTradingReadinessStatus() {
-  return requestJson("/trading-readiness/readiness", {}, { skipAuthHeader: true });
+  return requestJson("/admin/trading-readiness/readiness", {}, { includeAdminToken: true });
+}
+
+export async function fetchAdminTradingShadowStatus() {
+  return requestJson("/admin/trading-readiness/shadow-status", {}, { includeAdminToken: true });
 }
 
 export async function bulkCreateAdminEducationAccounts(input = {}) {
