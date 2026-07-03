@@ -78,6 +78,46 @@ const LEGACY_SAFETY_PANEL_LABELS = [
   "KIS quote adapter opt-in",
 ];
 
+const LEGACY_TRADING_LAB_LABELS = [
+  "관리자 Trading Lab",
+  "Mock, dry-run, shadow placeholder data only. Provider calls and orders stay blocked.",
+  "Mock equity",
+  "Cumulative return",
+  "Latest daily return",
+  "Max drawdown",
+  "Position weight",
+  "Order candidates",
+  "Audit logs",
+  "Daily returns",
+  "Current allocation",
+  "Return path",
+  "Daily asset value",
+  "Strategy",
+  "Performance",
+];
+
+const TRADING_PANEL_TABS = [
+  {
+    key: "lab",
+    label: "모의 운용 대시보드",
+    description: "KPI·차트·모의 전략",
+  },
+  {
+    key: "safety",
+    label: "거래 안전평가",
+    description: "차단 상태·게이트 점검",
+  },
+];
+
+const KPI_LABELS = {
+  mock_total_equity: "모의 평가금액",
+  mock_cumulative_return: "누적 수익률",
+  mock_daily_return: "최근 일별 수익률",
+  mock_mdd: "최대 낙폭",
+  mock_position_weight: "투자 비중",
+  mock_order_candidates: "주문 후보",
+};
+
 const STATUS_LABELS = {
   OPEN: "열림",
   BLOCKED: "차단됨",
@@ -150,7 +190,25 @@ function formatKpiValue(card) {
   return `${value.toFixed(Number.isInteger(value) ? 0 : 2)}${card?.suffix || ""}`;
 }
 
+function getInitialTradingPanelTab() {
+  if (typeof window === "undefined") return "lab";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("tab") === "safety" ? "safety" : "lab";
+}
+
+function updateTradingPanelTabQuery(nextTab) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (nextTab === "lab") {
+    url.searchParams.delete("tab");
+  } else {
+    url.searchParams.set("tab", "safety");
+  }
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 export function TradingReadinessPanel() {
+  const [activeTradingPanelTab, setActiveTradingPanelTab] = useState(getInitialTradingPanelTab);
   const [readiness, setReadiness] = useState(FALLBACK_READINESS);
   const [shadowStatus, setShadowStatus] = useState(null);
   const [shadowReviewStatus, setShadowReviewStatus] = useState(null);
@@ -253,8 +311,37 @@ export function TradingReadinessPanel() {
   const equitySparklinePoints = buildSparklinePoints(labEquityPoints, "equityPlaceholder");
   const cumulativeReturnSparklinePoints = buildSparklinePoints(labReturnPoints, "cumulativeReturnPct");
 
+  function handleTradingPanelTabChange(nextTab) {
+    setActiveTradingPanelTab(nextTab);
+    updateTradingPanelTabQuery(nextTab);
+  }
+
   return (
     <div className="tradingAdminDashboardStack" data-admin-panel-key="admin-trading-dashboard">
+      <div className="tradingAdminTabHeader">
+        <div>
+          <p className="accountMiniLabel">거래 관리</p>
+          <h2>모의운용·안전평가 관리</h2>
+          <p>실제 거래 기능은 비활성화되어 있으며, 이 화면은 관리자 전용 읽기 상태만 보여줍니다.</p>
+        </div>
+        <div className="tradingAdminSegmentControl" role="tablist" aria-label="거래 관리 화면 전환">
+          {TRADING_PANEL_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTradingPanelTab === tab.key}
+              className={activeTradingPanelTab === tab.key ? "active" : ""}
+              onClick={() => handleTradingPanelTabChange(tab.key)}
+            >
+              <span>{tab.label}</span>
+              <em>{tab.description}</em>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTradingPanelTab === "safety" ? (
     <section className="accountCard tradingReadinessPanel tradingSafetyPanel" data-admin-panel-key="trading-readiness">
       <div className="serverStorageHeader">
         <div>
@@ -307,22 +394,24 @@ export function TradingReadinessPanel() {
       </div>
 
     </section>
+      ) : null}
 
+      {activeTradingPanelTab === "lab" ? (
     <section className="accountCard tradingLabDashboardPanel" data-admin-panel-key="trading-lab-dashboard">
       <div className="tradingLabDashboard">
         <div className="tradingLabHeader">
           <div>
-            <span>관리자 Trading Lab</span>
+            <span>모의 운용 대시보드</span>
             <h3>모의 운용 대시보드</h3>
-            <p>Mock, dry-run, shadow placeholder data only. Provider calls and orders stay blocked.</p>
+            <p>모의·드라이런·섀도우 자리표시자 데이터만 표시하며, provider 호출과 주문 제출은 계속 차단됩니다.</p>
           </div>
           <strong>{formatStatus(tradingLabDashboardStatus?.status || "admin_only")}</strong>
         </div>
 
-        <div className="tradingLabKpiGrid" aria-label="Trading lab KPI summary">
+        <div className="tradingLabKpiGrid" aria-label="모의 운용 KPI 요약">
           {labKpiCards.map((card) => (
             <article className="tradingLabKpiCard" key={card.cardId}>
-              <span>{card.label}</span>
+              <span>{KPI_LABELS[card.cardId] || card.label}</span>
               <strong>{formatKpiValue(card)}</strong>
               <p>{formatStatus(card.status || "mock_only")}</p>
             </article>
@@ -331,8 +420,8 @@ export function TradingReadinessPanel() {
 
         <div className="tradingLabChartGrid">
           <article className="tradingLabChartCard">
-            <span>Daily asset value</span>
-            <svg className="tradingLabLineChart" viewBox="0 0 320 120" role="img" aria-label="Mock daily equity line">
+            <span>일별 자산 변화</span>
+            <svg className="tradingLabLineChart" viewBox="0 0 320 120" role="img" aria-label="모의 일별 자산 변화">
               <polyline points={equitySparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
             </svg>
             <div className="tradingLabChartLegend">
@@ -343,11 +432,11 @@ export function TradingReadinessPanel() {
           </article>
 
           <article className="tradingLabChartCard">
-            <span>Return path</span>
-            <svg className="tradingLabLineChart return" viewBox="0 0 320 120" role="img" aria-label="Mock cumulative return line">
+            <span>수익률 경로</span>
+            <svg className="tradingLabLineChart return" viewBox="0 0 320 120" role="img" aria-label="모의 누적 수익률 경로">
               <polyline points={cumulativeReturnSparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
             </svg>
-            <div className="tradingLabReturnBars" aria-label="Daily return bars">
+            <div className="tradingLabReturnBars" aria-label="일별 수익률 막대">
               {labReturnPoints.map((point) => (
                 <span
                   key={point.date}
@@ -360,8 +449,8 @@ export function TradingReadinessPanel() {
           </article>
 
           <article className="tradingLabChartCard tradingLabAllocationCard">
-            <span>Current allocation</span>
-            <div className="tradingLabAllocationBars" aria-label="Mock allocation bars">
+            <span>현재 자산분포</span>
+            <div className="tradingLabAllocationBars" aria-label="모의 자산분포 막대">
               {labAllocations.map((allocation) => (
                 <div className="tradingLabAllocationRow" key={allocation.symbol}>
                   <div>
@@ -379,7 +468,7 @@ export function TradingReadinessPanel() {
 
         <div className="tradingLabGrid">
           <article className="tradingLabSection">
-            <span>Strategy</span>
+            <span>현재 투자전략</span>
             <h4>{labStrategy.name || "관리자 모의 전략"}</h4>
             <dl>
               <div>
@@ -414,7 +503,7 @@ export function TradingReadinessPanel() {
           </article>
 
           <article className="tradingLabSection">
-            <span>Performance</span>
+            <span>모의 성과</span>
             <h4>모의 성과</h4>
             <dl>
               <div>
@@ -450,14 +539,14 @@ export function TradingReadinessPanel() {
         </div>
 
         <div className="tradingLabTableSection">
-          <span>Daily returns</span>
+          <span>일별 수익률</span>
           <div className="tradingLabTable">
             <div className="tradingLabTableRow header">
               <span>날짜</span>
               <span>일별 수익률</span>
               <span>누적 수익률</span>
-              <span>Drawdown</span>
-              <span>Equity</span>
+              <span>낙폭</span>
+              <span>평가금액</span>
             </div>
             {labDailyRows.map((row) => (
               <div className="tradingLabTableRow" key={row.date}>
@@ -472,10 +561,10 @@ export function TradingReadinessPanel() {
         </div>
 
         <div className="tradingLabTableSection">
-          <span>Positions</span>
+          <span>포지션</span>
           <div className="tradingLabTable">
             <div className="tradingLabTableRow header">
-              <span>Symbol</span>
+              <span>심볼</span>
               <span>이름</span>
               <span>수량</span>
               <span>평균가</span>
@@ -497,7 +586,7 @@ export function TradingReadinessPanel() {
 
         <div className="tradingLabGrid">
           <article className="tradingLabSection">
-            <span>Order candidates</span>
+            <span>주문 후보</span>
             <h4>수동승인 주문 후보</h4>
             {labOrderCandidates.map((candidate) => (
               <dl key={candidate.draftId}>
@@ -538,7 +627,7 @@ export function TradingReadinessPanel() {
           </article>
 
           <article className="tradingLabSection">
-            <span>Audit logs</span>
+            <span>감사 로그</span>
             <h4>감사 로그 요약</h4>
             {labAuditEvents.map((event) => (
               <dl key={event.eventId}>
@@ -573,7 +662,9 @@ export function TradingReadinessPanel() {
       </div>
 
     </section>
+      ) : null}
 
+      {activeTradingPanelTab === "safety" ? (
     <section className="accountCard tradingReadinessPanel tradingSafetyPanel tradingSafetyPanelDetails" data-admin-panel-key="trading-safety-details">
       <div className="tradingReadinessAudit tradingShadowHistory">
         <span>섀도우 이용 상태</span>
@@ -738,6 +829,7 @@ export function TradingReadinessPanel() {
         </p>
       </div>
     </section>
+      ) : null}
     </div>
   );
 }

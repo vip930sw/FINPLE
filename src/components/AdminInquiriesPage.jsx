@@ -23,7 +23,7 @@ const ADMIN_MENU_ITEMS = [
   { key: "subscriptions", page: "admin-subscriptions", label: "구독 관리", description: "플랜·결제 기간" },
   { key: "ai-usage", page: "admin-ai-usage", label: "AI 사용량", description: "분석 호출·비용 관찰" },
   { key: "education", page: "admin-education", label: "교육 계정 관리", description: "수업·만료 관리" },
-  { key: "trading", page: "admin-trading", label: "거래 안전상태", description: "섀도우·드라이런 읽기 전용" },
+  { key: "trading", page: "admin-trading", label: "거래 관리", description: "모의운용·안전평가" },
   { key: "clear", page: "admin-clear", label: "관리자 모드 해제", description: "저장 토큰 삭제" },
 ];
 

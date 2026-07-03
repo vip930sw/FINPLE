@@ -268,6 +268,74 @@ nav {
   gap: 1rem;
 }
 
+.tradingAdminTabHeader {
+  align-items: stretch;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+  padding: 1rem;
+}
+
+.tradingAdminTabHeader h2 {
+  color: #0f172a;
+  margin: 0 0 0.35rem;
+}
+
+.tradingAdminTabHeader p:not(.accountMiniLabel) {
+  color: #475569;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.tradingAdminSegmentControl {
+  align-items: stretch;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.45rem;
+}
+
+.tradingAdminSegmentControl button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #475569;
+  min-height: 64px;
+  padding: 0.7rem;
+  text-align: left;
+}
+
+.tradingAdminSegmentControl button.active {
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.tradingAdminSegmentControl span,
+.tradingAdminSegmentControl em {
+  display: block;
+}
+
+.tradingAdminSegmentControl span {
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.tradingAdminSegmentControl em {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
 .tradingSafetyPanel {
   background: #fff7ed;
   border-color: rgba(154, 52, 18, 0.22);
@@ -376,7 +444,7 @@ nav {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
-  margin-top: 1rem;
+  margin-top: 0;
   padding: 1rem;
 }
 
@@ -623,6 +691,25 @@ nav {
   background: #e2e8f0;
   color: #334155;
   font-size: 0.74rem;
+}
+
+@media (max-width: 760px) {
+  .tradingAdminTabHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .tradingAdminSegmentControl {
+    grid-template-columns: 1fr;
+  }
+
+  .tradingAdminSegmentControl button {
+    min-height: 58px;
+  }
+
+  .tradingLabChartLegend {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 .cardHeader p {
