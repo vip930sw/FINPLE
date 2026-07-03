@@ -1,0 +1,35 @@
+const path = require("node:path");
+const { runContract } = require("./trading-read-only-approval-import-review-result-review-gate.cjs");
+
+const CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_approval_import_review_result_bz_review_result_contract.json",
+);
+const PREVIOUS_SUPPLY_GATE_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_approval_import_review_result_by_review_result_supply_gate_contract.json",
+);
+
+runContract({
+  contractPath: CONTRACT_PATH,
+  step: "Step 116-5Q-BZ",
+  scope:
+    "read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result",
+  logName: "read-only-approval-import-review-result-bz-review-result-contract",
+  readyField:
+    "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResult",
+  sources: [
+    {
+      key:
+        "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate",
+      path: PREVIOUS_SUPPLY_GATE_PATH,
+      readyField:
+        "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate",
+    },
+  ],
+  pendingExternalInputs: [
+    "owner_redacted_read_only_approval_import_review_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result",
+  ],
+});

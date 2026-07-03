@@ -298,6 +298,8 @@ const TRACKED_CONTRACTS = [
   "trading_lab_step116_read_only_approval_import_review_result_bv_recording_result_supply_gate_contract.json",
   "trading_lab_step116_read_only_approval_import_review_result_bw_recording_result_contract.json",
   "trading_lab_step116_read_only_approval_import_review_result_bx_recording_result_review_preflight_contract.json",
+  "trading_lab_step116_read_only_approval_import_review_result_by_review_result_supply_gate_contract.json",
+  "trading_lab_step116_read_only_approval_import_review_result_bz_review_result_contract.json",
 ];
 
 function makeWorkspace() {
@@ -343,10 +345,10 @@ test("summarizes contract progress while keeping trading locked", () => {
 
   assert.equal(result.status, 0, result.stderr);
   const report = readJson(workspace);
-  assert.equal(report.progress.trackedContractsTotal, 288);
-  assert.equal(report.progress.trackedContractsReady, 288);
+  assert.equal(report.progress.trackedContractsTotal, 290);
+  assert.equal(report.progress.trackedContractsReady, 290);
   assert.equal(report.progress.trackedContractsRemaining, 0);
-  assert.equal(report.progress.requiredNpmScriptsTotal, 330);
+  assert.equal(report.progress.requiredNpmScriptsTotal, 332);
   assert.deepEqual(report.progress.authorityExternalBlockersCleared, [
     "owner_order_path_assertion_recorded",
     "kis_personal_order_authority_recorded",
