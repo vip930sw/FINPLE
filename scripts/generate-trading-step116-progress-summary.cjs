@@ -1400,6 +1400,16 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
     "trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
   ],
+  [
+    "remainingOperationalGateInventory",
+    "Remaining operational gate inventory",
+    "trading_lab_step116_remaining_operational_gate_inventory_contract.json",
+  ],
+  [
+    "remainingOperationalGateBatchPlan",
+    "Remaining operational gate batch plan",
+    "trading_lab_step116_remaining_operational_gate_batch_plan_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1749,6 +1759,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-cl-review-result-recording-result-review-result-recording-result-review-result",
   "check:trading-read-only-approval-import-review-result-cm-review-result-recording-result-review-result-recording-result-review-result-recording-preflight",
   "check:trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply",
+  "check:trading-step116-remaining-operational-gate-inventory",
+  "check:trading-step116-remaining-operational-gate-batch-plan",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

@@ -428,13 +428,11 @@ Still intentionally blocked:
 - `scenario_monthly_returns.csv`
 
 Next work:
-1. owner supplies an explicit local redacted manual order permission packet path outside repo commits
-2. manual order permission packet validation receipt through that explicit owner-local packet path
-3. kill-switch clearance review result
-4. risk-gate clearance review result
-5. dry-run replay execution result
-6. shadow-history review result
-7. live-guarded KIS order adapter implementation review
+1. Use `trading_lab_step116_remaining_operational_gate_inventory_contract.json` and `trading_lab_step116_remaining_operational_gate_batch_plan_contract.json` as the current numeric answer for remaining work: 20 internal operational gates remain.
+2. Treat those 20 gates as 6 owner-supplied private evidence/result gates, 9 internal review/operator gates, and 5 runtime/UI/DB gates that stay blocked.
+3. Ask the owner for the required private evidence/review results outside repo commits before opening real implementation gates.
+4. Keep repo-safe batch work limited to contract/preflight/reporting boundaries that do not accept private evidence, implement provider/worker/adapter code, call providers, submit orders, create routes/UI/DB migrations, or create `scenario_monthly_returns.csv`.
+5. Continue reporting order-authority external blocker, internal operational gates, and actual live trading readiness separately.
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```

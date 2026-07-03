@@ -6187,6 +6187,32 @@ npm run check:trading-read-only-approval-import-review-result-cn-review-result-r
 
 This step opens only a future owner-supplied redacted recording-result supply gate. It does not supply, accept, read, or record the owner recording result now and keeps provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5R Remaining Operational Gate Inventory
+
+The remaining operational gate inventory contract is:
+
+```text
+data/processed/trading_lab_step116_remaining_operational_gate_inventory_contract.json
+scripts/generate-trading-step116-remaining-operational-gate-inventory-contract.cjs
+scripts/generate-trading-step116-remaining-operational-gate-inventory-contract.test.cjs
+npm run check:trading-step116-remaining-operational-gate-inventory
+```
+
+This contract records that 20 internal operational gates remain after the contract stack is ready and the order-authority external blocker is cleared. It classifies the remaining gates as 6 owner-supplied private evidence or result gates, 9 internal review or operator gates, and 5 runtime/UI/DB gates that remain blocked. It does not accept private evidence, does not implement provider adapters or workers, does not call providers, does not submit orders, does not create runtime routes/UI/DB migrations, and keeps `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5S Remaining Operational Gate Batch Plan
+
+The remaining operational gate batch plan contract is:
+
+```text
+data/processed/trading_lab_step116_remaining_operational_gate_batch_plan_contract.json
+scripts/generate-trading-step116-remaining-operational-gate-batch-plan-contract.cjs
+scripts/generate-trading-step116-remaining-operational-gate-batch-plan-contract.test.cjs
+npm run check:trading-step116-remaining-operational-gate-batch-plan
+```
+
+This contract gives the numeric answer for "how many gates remain" while keeping the system fail-closed: 20 internal operational gates remain, split into 6 owner-supplied private evidence/result gates, 9 internal review/operator gates, and 5 runtime/UI/DB gates. Repo-safe batch work is limited to keeping the inventory and progress summary current and adding only contract/preflight boundaries that do not accept private evidence or open provider calls, orders, routes, UI, DB migration, or scenario monthly data writes.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

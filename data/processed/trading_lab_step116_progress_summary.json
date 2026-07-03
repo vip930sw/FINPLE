@@ -283,7 +283,9 @@
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_ck_review_result_recording_result_review_result_recording_result_review_result_supply_gate_contract.json",
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResult": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cl_review_result_recording_result_review_result_recording_result_review_result_contract.json",
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cm_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json",
-      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json"
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
+      "remainingOperationalGateInventory": "data\\processed\\trading_lab_step116_remaining_operational_gate_inventory_contract.json",
+      "remainingOperationalGateBatchPlan": "data\\processed\\trading_lab_step116_remaining_operational_gate_batch_plan_contract.json"
     }
   },
   "outputFiles": {
@@ -306,10 +308,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 304,
-    "trackedContractsReady": 304,
+    "trackedContractsTotal": 306,
+    "trackedContractsReady": 306,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 346,
+    "requiredNpmScriptsTotal": 348,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -3052,6 +3054,24 @@
       "title": "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
       "filePath": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
       "status": "read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_ready_pending_owner_review_result",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "remainingOperationalGateInventory",
+      "title": "Remaining operational gate inventory",
+      "filePath": "data\\processed\\trading_lab_step116_remaining_operational_gate_inventory_contract.json",
+      "status": "remaining_operational_gate_inventory_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "remainingOperationalGateBatchPlan",
+      "title": "Remaining operational gate batch plan",
+      "filePath": "data\\processed\\trading_lab_step116_remaining_operational_gate_batch_plan_contract.json",
+      "status": "remaining_operational_gate_batch_plan_ready_fail_closed",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
