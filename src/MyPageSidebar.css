@@ -16,6 +16,27 @@
   min-width: 0;
 }
 
+.adminTradingConsoleLayout {
+  align-items: start;
+  gap: 28px;
+  max-width: min(1380px, calc(100% - 48px));
+  padding-top: 6px;
+  scroll-margin-top: 104px;
+}
+
+.adminTradingConsoleLayout .adminConsoleSidebar {
+  top: 96px;
+}
+
+.adminTradingConsoleLayout .adminTradingConsolePanels {
+  gap: 20px !important;
+  margin: 0 0 56px !important;
+  max-width: none !important;
+  min-width: 0;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
 .myPageDashboardLayout--singlePanel .accountPanelStack {
   gap: 0;
 }
@@ -539,6 +560,10 @@
   .myPageDashboardLayout { grid-template-columns: 1fr; }
   .myPageSidebar { position: static; }
   .myPageSidebarNav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .adminTradingConsoleLayout {
+    max-width: calc(100% - 28px);
+  }
 }
 
 @media (max-width: 720px) {

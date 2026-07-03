@@ -266,6 +266,11 @@ nav {
 .tradingAdminDashboardStack {
   display: grid;
   gap: 1rem;
+  isolation: isolate;
+  min-width: 0;
+  position: relative;
+  scroll-margin-top: 104px;
+  width: 100%;
 }
 
 .tradingAdminTabHeader {
@@ -276,7 +281,10 @@ nav {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+  min-width: 0;
   padding: 1rem;
+  position: relative;
+  z-index: 0;
 }
 
 .tradingAdminTabHeader h2 {
@@ -298,6 +306,7 @@ nav {
   display: grid;
   gap: 0.45rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
   padding: 0.45rem;
 }
 
@@ -307,6 +316,7 @@ nav {
   border-radius: 6px;
   color: #475569;
   min-height: 64px;
+  min-width: 0;
   padding: 0.7rem;
   text-align: left;
 }
@@ -339,6 +349,9 @@ nav {
 .tradingSafetyPanel {
   background: #fff7ed;
   border-color: rgba(154, 52, 18, 0.22);
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .tradingSafetyPanelDetails {
@@ -348,6 +361,10 @@ nav {
 .tradingLabDashboardPanel {
   background: #f7fee7;
   border-color: rgba(77, 124, 15, 0.22);
+  margin-top: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .tradingReadinessBadge {
@@ -395,6 +412,7 @@ nav {
   gap: 0.75rem;
   justify-content: space-between;
   min-height: 52px;
+  min-width: 0;
   padding: 0.75rem 0.85rem;
 }
 
@@ -426,6 +444,8 @@ nav {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
   margin-top: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0.9rem;
 }
 
@@ -444,8 +464,13 @@ nav {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
+  display: grid;
+  gap: 0.9rem;
   margin-top: 0;
+  min-width: 0;
+  overflow: hidden;
   padding: 1rem;
+  position: relative;
 }
 
 .tradingLabHeader p {
@@ -458,6 +483,7 @@ nav {
   display: flex;
   gap: 1rem;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .tradingLabHeader span,
@@ -483,13 +509,15 @@ nav {
   font-size: 0.74rem;
   padding: 0.32rem 0.55rem;
   text-align: right;
+  white-space: normal;
 }
 
 .tradingLabKpiGrid {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  margin-top: 1rem;
+  margin-top: 0;
+  min-width: 0;
 }
 
 .tradingLabKpiCard {
@@ -497,6 +525,8 @@ nav {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
   min-height: 104px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0.85rem;
 }
 
@@ -505,6 +535,7 @@ nav {
   display: block;
   font-size: 1.35rem;
   margin-top: 0.4rem;
+  overflow-wrap: anywhere;
 }
 
 .tradingLabKpiCard p {
@@ -518,7 +549,8 @@ nav {
   display: grid;
   gap: 0.8rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin-top: 0.9rem;
+  margin-top: 0;
+  min-width: 0;
 }
 
 .tradingLabChartCard {
@@ -526,6 +558,8 @@ nav {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
   min-height: 210px;
+  min-width: 0;
+  overflow: hidden;
   padding: 0.9rem;
 }
 
@@ -549,6 +583,14 @@ nav {
   gap: 0.45rem;
   justify-content: space-between;
   margin-top: 0.3rem;
+  min-width: 0;
+}
+
+.tradingLabChartLegend span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tradingLabReturnBars {
@@ -588,13 +630,17 @@ nav {
 .tradingLabAllocationRow div {
   align-items: center;
   display: flex;
+  gap: 0.65rem;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .tradingLabAllocationRow strong,
 .tradingLabAllocationRow small {
   color: #334155;
   font-weight: 800;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .tradingLabAllocationRow span {
@@ -616,7 +662,8 @@ nav {
   display: grid;
   gap: 0.8rem;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  margin-top: 0.9rem;
+  margin-top: 0;
+  min-width: 0;
 }
 
 .tradingLabSection,
@@ -624,6 +671,8 @@ nav {
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 0.9rem;
 }
 
@@ -637,6 +686,7 @@ nav {
   display: grid;
   gap: 0.35rem;
   grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1.2fr);
+  min-width: 0;
 }
 
 .tradingLabSection dt {
@@ -654,14 +704,16 @@ nav {
 }
 
 .tradingLabTableSection {
-  margin-top: 0.8rem;
+  margin-top: 0;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .tradingLabTable {
   display: grid;
   gap: 0.35rem;
   min-width: 680px;
+  width: 100%;
 }
 
 .tradingLabTableRow {
@@ -669,6 +721,7 @@ nav {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: repeat(5, minmax(90px, 1fr));
+  min-width: 0;
 }
 
 .tradingLabTableSection:nth-of-type(4) .tradingLabTableRow {
@@ -683,6 +736,7 @@ nav {
   font-size: 0.78rem;
   font-weight: 700;
   min-height: 38px;
+  min-width: 0;
   overflow-wrap: anywhere;
   padding: 0.55rem;
 }

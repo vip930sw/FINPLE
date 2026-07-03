@@ -511,7 +511,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
         <p>문의사항, 회원, 구독 상태를 한 화면 구조에서 관리합니다.</p>
       </section>
 
-      <div className="myPageDashboardLayout adminConsoleLayout">
+      <div className={`myPageDashboardLayout adminConsoleLayout${activeSection === "trading" ? " adminTradingConsoleLayout" : ""}`}>
         <aside className="myPageSidebar adminConsoleSidebar">
           <div className="myPageSidebarHeader">
             <strong>관리자</strong>
@@ -545,7 +545,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
           </nav>
         </aside>
 
-        <section className="accountPanelStack adminConsolePanels" aria-label="관리자 패널">
+        <section
+          className={`accountPanelStack adminConsolePanels${activeSection === "trading" ? " adminTradingConsolePanels" : ""}`}
+          aria-label="관리자 패널"
+        >
           {activeSection === "inquiries" ? (
             <InquiryManagementPanel
               filteredInquiries={filteredInquiries}
