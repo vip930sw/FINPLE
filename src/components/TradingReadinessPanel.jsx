@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingProviderCallPolicyStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
@@ -78,6 +79,7 @@ export function TradingReadinessPanel() {
   const [kisProviderCallInventoryStatus, setKisProviderCallInventoryStatus] = useState(null);
   const [providerResponseEnvelopeValidationStatus, setProviderResponseEnvelopeValidationStatus] = useState(null);
   const [providerResponseValidationReviewResultStatus, setProviderResponseValidationReviewResultStatus] = useState(null);
+  const [providerCallPolicyStatus, setProviderCallPolicyStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
       fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
       fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
+      fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -111,6 +114,7 @@ export function TradingReadinessPanel() {
         setKisProviderCallInventoryStatus(payload?.[9] || null);
         setProviderResponseEnvelopeValidationStatus(payload?.[10] || null);
         setProviderResponseValidationReviewResultStatus(payload?.[11] || null);
+        setProviderCallPolicyStatus(payload?.[12] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -302,6 +306,17 @@ export function TradingReadinessPanel() {
           Result {providerResponseValidationReviewResultStatus?.reviewResult?.status || "review_recorded"} /
           decision {providerResponseValidationReviewResultStatus?.reviewResult?.decision || "validation_pending"}.
           Redacted admin-only status; no provider call, token issuance, quote query, DB write, or readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingProviderCallPolicy">
+        <span>Provider-call policy</span>
+        <strong>{providerCallPolicyStatus?.status || "admin_only_provider_call_policy_core_fail_closed"}</strong>
+        <p>
+          Cache {providerCallPolicyStatus?.cachePolicy?.status || "policy_pending"} /
+          rate limit {providerCallPolicyStatus?.rateLimitPolicy?.status || "policy_pending"} /
+          audit {providerCallPolicyStatus?.auditPolicy?.status || "audit_policy_only"}.
+          Dry-run policy only; no provider call, quote query, audit DB write, or readiness promotion.
         </p>
       </div>
     </section>

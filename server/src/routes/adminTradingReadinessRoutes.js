@@ -1,6 +1,7 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { buildAdminProviderCallPolicyStatus } from "../services/tradingProviderCallPolicyCore.js";
 import { buildAdminKisReadOnlyProviderCallInventoryPreflightStatus } from "../services/tradingKisReadOnlyProviderCallInventoryPreflight.js";
 import { buildAdminManualApprovalClearanceReviewResultGateStatus } from "../services/tradingManualApprovalClearanceReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../services/tradingManualApprovalOrderDraftClearancePreflightGate.js";
@@ -89,6 +90,12 @@ router.get("/provider-response-envelope-validation", (request, response) => {
 router.get("/provider-response-validation-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminProviderResponseValidationReviewResultStatus());
+  });
+});
+
+router.get("/provider-call-policy", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminProviderCallPolicyStatus());
   });
 });
 
