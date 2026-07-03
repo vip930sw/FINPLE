@@ -3,8 +3,17 @@ import test from "node:test";
 
 import {
   buildAdminTradingLabDashboardStatus,
+  buildTradingLabMockLedger,
+  buildTradingLabMockTradeEvents,
   buildTradingLabAuditLogSummary,
   buildTradingLabAllocationVisualization,
+  calculateTradingLabAllocationSummary,
+  calculateTradingLabCumulativeReturnSeries,
+  calculateTradingLabDailyEquitySeries,
+  calculateTradingLabDailyReturnSeries,
+  calculateTradingLabDrawdownSummary,
+  calculateTradingLabPerformanceSummary,
+  calculateTradingLabPositionLedger,
   buildTradingLabDailyReturnSeries,
   buildTradingLabEquityVisualization,
   buildTradingLabKpiSummaryCards,
@@ -128,8 +137,10 @@ test("Step 132 equity and return visualization points are static and redacted", 
 
   assert.ok(Array.isArray(equityVisualization.points));
   assert.ok(Array.isArray(returnVisualization.points));
-  assert.equal(equityVisualization.dataSource, "static_placeholder_only");
-  assert.equal(returnVisualization.dataSource, "static_placeholder_only");
+  assert.equal(equityVisualization.dataSource, "mock_ledger_calculation_result");
+  assert.equal(returnVisualization.dataSource, "mock_ledger_calculation_result");
+  assert.equal(equityVisualization.staticPlaceholderSourceRetained, "static_placeholder_only");
+  assert.equal(returnVisualization.staticPlaceholderSourceRetained, "static_placeholder_only");
   assert.equal(equityVisualization.providerPayloadStored, false);
   assert.equal(equityVisualization.orderPayloadStored, false);
   assert.equal(returnVisualization.rawProviderResponseStored, false);
@@ -149,4 +160,78 @@ test("Step 132 allocation visualization contains no account identifier or provid
   assert.equal(serialized.includes("APP_SECRET"), false);
   assert.equal(serialized.includes("accountNumber"), false);
   assert.equal(serialized.includes("accountNo"), false);
+});
+
+test("Step 133 mock ledger model and trade events stay provider-free and redacted", () => {
+  const mockLedger = buildTradingLabMockLedger();
+  const mockTradeEvents = buildTradingLabMockTradeEvents();
+  const serialized = JSON.stringify({ mockLedger, mockTradeEvents });
+
+  assert.equal(mockLedger.ledgerType, "admin_only_mock_trading_ledger");
+  assert.equal(mockLedger.sourceStep, "step133");
+  assert.equal(mockLedger.status, "mock_calculated_fail_closed");
+  assert.ok(Array.isArray(mockLedger.events));
+  assert.ok(Array.isArray(mockLedger.positions));
+  assert.ok(Array.isArray(mockLedger.equitySeries));
+  assert.equal(mockLedger.providerCallsAllowed, false);
+  assert.equal(mockLedger.orderSubmissionAllowed, false);
+  assert.equal(mockLedger.tokenIssuanceAttempted, false);
+  assert.equal(mockLedger.quoteRequestAttempted, false);
+  assert.equal(mockLedger.networkCallAttempted, false);
+  assert.equal(mockLedger.orderSubmissionAttempted, false);
+  assert.equal(mockLedger.credentialStored, false);
+  assert.equal(mockLedger.accountIdentifierStored, false);
+  assert.equal(mockLedger.providerPayloadStored, false);
+  assert.equal(mockLedger.orderPayloadStored, false);
+  assert.equal(mockLedger.rawProviderResponseStored, false);
+  assert.equal(mockTradeEvents.events.every((event) => event.source === "mock_ledger"), true);
+  assert.equal(serialized.includes("APP_KEY"), false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+});
+
+test("Step 133 position, daily equity, return, cumulative return, and drawdown calculations are deterministic", () => {
+  const mockLedger = buildTradingLabMockLedger();
+  const positionLedger = calculateTradingLabPositionLedger(mockLedger);
+  const dailyEquity = calculateTradingLabDailyEquitySeries(mockLedger);
+  const dailyReturns = calculateTradingLabDailyReturnSeries(mockLedger, { dailyEquity });
+  const cumulativeReturns = calculateTradingLabCumulativeReturnSeries(mockLedger, { dailyReturns });
+  const drawdownSummary = calculateTradingLabDrawdownSummary(mockLedger, { dailyReturns });
+
+  assert.equal(positionLedger.dataSource, "mock_ledger_calculation_result");
+  assert.equal(positionLedger.positions.length, 3);
+  assert.equal(positionLedger.providerCallsAllowed, false);
+  assert.equal(positionLedger.orderSubmissionAllowed, false);
+  assert.deepEqual(dailyEquity.rows.map((row) => row.date), ["2026-07-01", "2026-07-02", "2026-07-03"]);
+  assert.equal(dailyEquity.rows.at(-1).equity, 100208);
+  assert.equal(dailyReturns.rows.at(-1).cumulativeReturnPct, 0.208);
+  assert.equal(cumulativeReturns.rows.at(-1).cumulativeReturnPct, 0.208);
+  assert.equal(drawdownSummary.mddPct, 0);
+});
+
+test("Step 133 allocation and performance summary calculations remain admin-only mock results", () => {
+  const mockLedger = buildTradingLabMockLedger();
+  const positionLedger = calculateTradingLabPositionLedger(mockLedger);
+  const allocationSummary = calculateTradingLabAllocationSummary(positionLedger);
+  const dailyReturns = calculateTradingLabDailyReturnSeries(mockLedger);
+  const performance = calculateTradingLabPerformanceSummary(mockLedger, { dailyReturns });
+  const status = buildAdminTradingLabDashboardStatus();
+
+  assert.equal(allocationSummary.totalWeightPct, 100);
+  assert.equal(allocationSummary.providerPayloadStored, false);
+  assert.equal(allocationSummary.orderPayloadStored, false);
+  assert.equal(performance.dataSource, "mock_ledger_calculation_result");
+  assert.equal(performance.rawProviderResponseStored, false);
+  assert.equal(performance.providerCallsAllowed, false);
+  assert.equal(performance.orderSubmissionAllowed, false);
+  assert.equal(status.calculationMode, "mock_ledger_calculation_admin_only");
+  assert.equal(status.mockLedger.sourceStep, "step133");
+  assert.equal(status.positionLedger.positions.length, 3);
+  assert.equal(status.allocationSummary.totalWeightPct, 100);
+  assert.equal(status.flags.providerCallsAllowed, false);
+  assert.equal(status.flags.orderSubmissionAllowed, false);
+  assert.equal(status.flags.readyForReadOnlyProviderCalls, false);
+  assert.equal(status.flags.readyForOrderSubmission, false);
+  assert.equal(status.flags.readyForLiveGuardedTrading, false);
 });

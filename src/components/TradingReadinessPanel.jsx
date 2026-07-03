@@ -190,6 +190,18 @@ function formatKpiValue(card) {
   return `${value.toFixed(Number.isInteger(value) ? 0 : 2)}${card?.suffix || ""}`;
 }
 
+function formatLabNumber(value, options = {}) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  if (options.percent) return `${number.toFixed(2)}%`;
+  if (options.quantity) return number.toLocaleString("ko-KR", { maximumFractionDigits: 6 });
+  return number.toLocaleString("ko-KR", { maximumFractionDigits: 2 });
+}
+
+function formatPositionField(position, valueKey, placeholderKey, options = {}) {
+  return formatLabNumber(position?.[valueKey], options) || formatStatus(position?.[placeholderKey] || "mock_only");
+}
+
 function getInitialTradingPanelTab() {
   if (typeof window === "undefined") return "lab";
   const params = new URLSearchParams(window.location.search);
@@ -575,9 +587,9 @@ export function TradingReadinessPanel() {
               <div className="tradingLabTableRow" key={position.symbol}>
                 <span>{position.symbol}</span>
                 <span>{position.name}</span>
-                <span>{formatStatus(position.quantityPlaceholder || "mock_only")}</span>
-                <span>{formatStatus(position.averagePricePlaceholder || "mock_only")}</span>
-                <span>{formatStatus(position.currentPricePlaceholder || "mock_only")}</span>
+                <span>{formatPositionField(position, "quantity", "quantityPlaceholder", { quantity: true })}</span>
+                <span>{formatPositionField(position, "averagePrice", "averagePricePlaceholder")}</span>
+                <span>{formatPositionField(position, "mockCurrentPrice", "currentPricePlaceholder")}</span>
                 <span>{Number(position.weightPct || 0).toFixed(2)}%</span>
               </div>
             ))}
