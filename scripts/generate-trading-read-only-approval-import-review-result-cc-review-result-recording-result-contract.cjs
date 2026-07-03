@@ -1,0 +1,35 @@
+const path = require("node:path");
+const { runContract } = require("./trading-read-only-approval-import-review-result-review-gate.cjs");
+
+const CONTRACT_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_approval_import_review_result_cc_review_result_recording_result_contract.json",
+);
+const PREVIOUS_SUPPLY_GATE_PATH = path.join(
+  "data",
+  "processed",
+  "trading_lab_step116_read_only_approval_import_review_result_cb_review_result_recording_result_supply_gate_contract.json",
+);
+
+runContract({
+  contractPath: CONTRACT_PATH,
+  step: "Step 116-5Q-CC",
+  scope:
+    "read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result",
+  logName: "read-only-approval-import-review-result-cc-review-result-recording-result-contract",
+  readyField:
+    "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResult",
+  sources: [
+    {
+      key:
+        "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate",
+      path: PREVIOUS_SUPPLY_GATE_PATH,
+      readyField:
+        "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate",
+    },
+  ],
+  pendingExternalInputs: [
+    "owner_redacted_read_only_approval_import_review_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result",
+  ],
+});

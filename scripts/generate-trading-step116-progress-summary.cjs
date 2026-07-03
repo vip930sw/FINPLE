@@ -1340,6 +1340,16 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
     "trading_lab_step116_read_only_approval_import_review_result_cb_review_result_recording_result_supply_gate_contract.json",
   ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResult",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result",
+    "trading_lab_step116_read_only_approval_import_review_result_cc_review_result_recording_result_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewPreflight",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_cd_review_result_recording_result_review_preflight_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1677,6 +1687,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-bz-review-result",
   "check:trading-read-only-approval-import-review-result-ca-review-result-recording-preflight",
   "check:trading-read-only-approval-import-review-result-cb-review-result-recording-result-supply",
+  "check:trading-read-only-approval-import-review-result-cc-review-result-recording-result",
+  "check:trading-read-only-approval-import-review-result-cd-review-result-recording-result-review-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
