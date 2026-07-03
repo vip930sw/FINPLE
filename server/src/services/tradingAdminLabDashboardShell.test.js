@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildAdminTradingLabStrategyDraftStatus,
   buildAdminTradingLabStrategyDraftReviewStatus,
+  buildAdminTradingLabStrategyDraftReviewResultStatus,
   buildAdminTradingLabDashboardStatus,
   buildTradingLabMockLedger,
   buildTradingLabMockTradeEvents,
@@ -27,8 +28,13 @@ import {
   buildTradingLabStrategyConfigDraft,
   buildTradingLabStrategyDraftChangeHistory,
   buildTradingLabStrategyDraftComparison,
+  buildTradingLabStrategyDraftReviewBlockerSummary,
   buildTradingLabStrategyDraftReviewGate,
+  buildTradingLabStrategyDraftReviewReceipt,
+  buildTradingLabStrategyDraftReviewResult,
+  buildTradingLabStrategyDraftReviewResultRecordingGate,
   buildTradingLabStrategyRiskImpactPreview,
+  validateTradingLabStrategyDraftReviewResult,
   validateTradingLabStrategyConfigDraft,
 } from "./tradingAdminLabDashboardShell.js";
 
@@ -430,8 +436,112 @@ test("Step 135 admin review status and dashboard integration remain admin-only f
   assert.equal(reviewStatus.readyForLiveGuardedTrading, false);
   assert.equal(reviewStatus.persistentStorageUsed, false);
   assert.equal(reviewStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 135: Admin trading lab strategy draft comparison review gate");
   assert.equal(dashboard.strategyDraftReviewStatus.step, "Step 135: Admin trading lab strategy draft comparison review gate");
+  assert.equal(dashboard.flags.providerCallsAllowed, false);
+  assert.equal(dashboard.flags.orderSubmissionAllowed, false);
+  assert.equal(dashboard.flags.readyForLiveGuardedTrading, false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+});
+
+test("Step 136 review result can record a redacted mock receipt without opening readiness", () => {
+  const strategyDraft = buildTradingLabStrategyConfigDraft({
+    targetWeights: [
+      { symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 40 },
+      { symbol: "SYMBOL_B_PLACEHOLDER", weightPct: 35 },
+      { symbol: "SYMBOL_C_PLACEHOLDER", weightPct: 25 },
+    ],
+    riskLimits: {
+      maxOrderAmount: 1000,
+      maxDailyLossPct: 1,
+      maxPositionWeightPct: 60,
+    },
+  });
+  const validation = validateTradingLabStrategyConfigDraft(strategyDraft);
+  const reviewResultValidation = validateTradingLabStrategyDraftReviewResult({ strategyDraft, validation });
+  const reviewResult = buildTradingLabStrategyDraftReviewResult({ strategyDraft, reviewResultValidation });
+  const receipt = buildTradingLabStrategyDraftReviewReceipt(reviewResult);
+  const recordingGate = buildTradingLabStrategyDraftReviewResultRecordingGate({ strategyDraft, validation });
+  const serialized = JSON.stringify({ reviewResult, receipt, recordingGate });
+
+  assert.equal(reviewResultValidation.reviewStatus, "recorded");
+  assert.equal(reviewResult.decision, "mock_review_recorded");
+  assert.equal(receipt.redacted, true);
+  assert.equal(receipt.readinessImpact, "none");
+  assert.equal(receipt.providerCallImpact, "blocked");
+  assert.equal(receipt.orderSubmissionImpact, "blocked");
+  assert.equal(recordingGate.storageMode, "in_memory_placeholder_only");
+  assert.equal(recordingGate.mockHistory.length, 1);
+  assert.equal(recordingGate.providerCallsAllowed, false);
+  assert.equal(recordingGate.orderSubmissionAllowed, false);
+  assert.equal(recordingGate.readyForReadOnlyProviderCalls, false);
+  assert.equal(recordingGate.readyForOrderSubmission, false);
+  assert.equal(recordingGate.readyForLiveGuardedTrading, false);
+  assert.equal(recordingGate.persistentStorageUsed, false);
+  assert.equal(recordingGate.dbWriteUsed, false);
+  assert.equal(serialized.includes("APP_KEY"), false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+});
+
+test("Step 136 review result rejects unsafe private or payload-shaped input", () => {
+  const reviewResultValidation = validateTradingLabStrategyDraftReviewResult({
+    reviewResultInput: {
+      credential: "APP_SECRET_SHOULD_NOT_BE_RECORDED",
+    },
+  });
+  const blockerSummary = buildTradingLabStrategyDraftReviewBlockerSummary(reviewResultValidation);
+
+  assert.equal(reviewResultValidation.reviewStatus, "blocked");
+  assert.ok(reviewResultValidation.blockers.includes("unsafe_private_or_payload_value_rejected"));
+  assert.equal(blockerSummary.redacted, true);
+  assert.equal(blockerSummary.providerCallImpact, "blocked");
+  assert.equal(blockerSummary.orderSubmissionImpact, "blocked");
+  assert.equal(blockerSummary.persistentStorageUsed, false);
+  assert.equal(blockerSummary.dbWriteUsed, false);
+});
+
+test("Step 136 review result keeps unsafe live and wildcard drafts blocked", () => {
+  const unsafeDraft = buildTradingLabStrategyConfigDraft({
+    mode: "live_order_submit",
+    allowedSymbols: ["*"],
+    targetWeights: [{ symbol: "SYMBOL_A_PLACEHOLDER", weightPct: 100 }],
+  });
+  const validation = validateTradingLabStrategyConfigDraft({ ...unsafeDraft, mode: "live_order_submit", allowedSymbols: ["*"] });
+  const reviewResultValidation = validateTradingLabStrategyDraftReviewResult({ strategyDraft: unsafeDraft, validation });
+
+  assert.equal(reviewResultValidation.reviewStatus, "blocked");
+  assert.ok(reviewResultValidation.blockers.includes("unsupported_or_live_strategy_mode"));
+  assert.ok(reviewResultValidation.blockers.includes("live_or_order_submission_mode_rejected"));
+  assert.ok(reviewResultValidation.blockers.includes("wildcard_all_symbols_rejected"));
+  assert.equal(reviewResultValidation.providerCallsAllowed, false);
+  assert.equal(reviewResultValidation.orderSubmissionAllowed, false);
+  assert.equal(reviewResultValidation.readyForReadOnlyProviderCalls, false);
+  assert.equal(reviewResultValidation.readyForOrderSubmission, false);
+  assert.equal(reviewResultValidation.readyForLiveGuardedTrading, false);
+});
+
+test("Step 136 admin review result status and dashboard integration remain admin-only fail-closed", () => {
+  const reviewResultStatus = buildAdminTradingLabStrategyDraftReviewResultStatus();
+  const dashboard = buildAdminTradingLabDashboardStatus();
+  const serialized = JSON.stringify({ reviewResultStatus, dashboard });
+
+  assert.equal(reviewResultStatus.status, "admin_only_strategy_draft_review_result_recording_gate_fail_closed");
+  assert.equal(reviewResultStatus.boundaries.adminOnly, true);
+  assert.equal(reviewResultStatus.boundaries.publicDashboardExposed, false);
+  assert.equal(reviewResultStatus.boundaries.myPageDashboardExposed, false);
+  assert.equal(reviewResultStatus.boundaries.homepageDashboardExposed, false);
+  assert.equal(reviewResultStatus.providerCallsAllowed, false);
+  assert.equal(reviewResultStatus.orderSubmissionAllowed, false);
+  assert.equal(reviewResultStatus.readyForReadOnlyProviderCalls, false);
+  assert.equal(reviewResultStatus.readyForOrderSubmission, false);
+  assert.equal(reviewResultStatus.readyForLiveGuardedTrading, false);
+  assert.equal(reviewResultStatus.persistentStorageUsed, false);
+  assert.equal(reviewResultStatus.dbWriteUsed, false);
+  assert.equal(dashboard.step, "Step 136: Admin trading lab strategy draft review result recording gate");
+  assert.equal(dashboard.strategyDraftReviewStatus.step, "Step 135: Admin trading lab strategy draft comparison review gate");
+  assert.equal(dashboard.strategyDraftReviewResultStatus.step, "Step 136: Admin trading lab strategy draft review result recording gate");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
   assert.equal(dashboard.flags.orderSubmissionAllowed, false);
   assert.equal(dashboard.flags.readyForLiveGuardedTrading, false);

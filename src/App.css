@@ -777,6 +777,18 @@ nav {
   overflow-wrap: anywhere;
 }
 
+.tradingLabMutedText {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.5;
+  margin: 0.65rem 0 0;
+}
+
+.tradingLabReviewResultCards div {
+  background: #f8fafc;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -794,6 +806,12 @@ nav {
   font-weight: 800;
   overflow-wrap: anywhere;
   padding: 0.5rem 0.6rem;
+}
+
+.tradingLabReviewResultList li {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.16);
+  color: #166534;
 }
 
 .tradingLabTableSection {

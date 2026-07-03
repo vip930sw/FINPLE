@@ -25,6 +25,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/trading-lab-dashboard"/);
   assert.match(routeText, /router\.get\("\/trading-lab-strategy-draft"/);
   assert.match(routeText, /router\.get\("\/trading-lab-strategy-draft-review"/);
+  assert.match(routeText, /router\.get\("\/trading-lab-strategy-draft-review-result"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });

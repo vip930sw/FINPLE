@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabStrategyDraftReviewResultStatus,
   fetchAdminTradingLabStrategyDraftReviewStatus,
   fetchAdminTradingLabStrategyDraftStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
@@ -251,6 +252,7 @@ export function TradingReadinessPanel() {
   const [tradingLabDashboardStatus, setTradingLabDashboardStatus] = useState(null);
   const [tradingLabStrategyDraftStatus, setTradingLabStrategyDraftStatus] = useState(null);
   const [tradingLabStrategyDraftReviewStatus, setTradingLabStrategyDraftReviewStatus] = useState(null);
+  const [tradingLabStrategyDraftReviewResultStatus, setTradingLabStrategyDraftReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -276,6 +278,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabDashboardStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftReviewStatus().catch(() => null),
+      fetchAdminTradingLabStrategyDraftReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -296,6 +299,7 @@ export function TradingReadinessPanel() {
         setTradingLabDashboardStatus(payload?.[14] || null);
         setTradingLabStrategyDraftStatus(payload?.[15] || null);
         setTradingLabStrategyDraftReviewStatus(payload?.[16] || null);
+        setTradingLabStrategyDraftReviewResultStatus(payload?.[17] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -330,6 +334,14 @@ export function TradingReadinessPanel() {
     : [];
   const labStrategyRiskImpactPreview = labStrategyDraftReviewStatus?.riskImpactPreview || {};
   const labStrategyDraftReviewGate = labStrategyDraftReviewStatus?.reviewGate || {};
+  const labStrategyDraftReviewResultStatus = tradingLabStrategyDraftReviewResultStatus || tradingLabDashboardStatus?.strategyDraftReviewResultStatus || {};
+  const labStrategyDraftReviewResult = labStrategyDraftReviewResultStatus?.reviewResult || labStrategyDraftReviewResultStatus?.recordingGate?.reviewResult || {};
+  const labStrategyDraftReviewReceipt = labStrategyDraftReviewResultStatus?.receipt || labStrategyDraftReviewResultStatus?.recordingGate?.receipt || {};
+  const labStrategyDraftReviewBlockerSummary = labStrategyDraftReviewResultStatus?.blockerSummary || labStrategyDraftReviewResultStatus?.recordingGate?.blockerSummary || {};
+  const labStrategyDraftReviewDecisionSummary = labStrategyDraftReviewResultStatus?.decisionSummary || labStrategyDraftReviewResultStatus?.recordingGate?.decisionSummary || {};
+  const labStrategyDraftReviewResultHistory = Array.isArray(labStrategyDraftReviewResultStatus?.mockHistory)
+    ? labStrategyDraftReviewResultStatus.mockHistory
+    : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -681,6 +693,44 @@ export function TradingReadinessPanel() {
             </dl>
           </article>
 
+          <article className="tradingLabSection tradingLabStrategyDraftReviewResult" data-admin-panel-key="trading-lab-strategy-draft-review-result">
+            <span>Mock review result</span>
+            <h4>{formatStatus(labStrategyDraftReviewResult.reviewStatus || labStrategyDraftReviewResultStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This mock review result is read-only and does not grant provider calls, order submission, or live trading readiness.
+            </p>
+            <div className="tradingLabReviewCards tradingLabReviewResultCards">
+              <div>
+                <span>Receipt</span>
+                <strong>{labStrategyDraftReviewReceipt.receiptId || "step136_strategy_draft_review_receipt"}</strong>
+                <small>{labStrategyDraftReviewReceipt.redacted === false ? "not_redacted" : "redacted"}</small>
+              </div>
+              <div>
+                <span>Decision</span>
+                <strong>{formatStatus(labStrategyDraftReviewResult.decision || "rejected")}</strong>
+                <small>{formatStatus(labStrategyDraftReviewDecisionSummary.readinessImpact || "none")}</small>
+              </div>
+              <div>
+                <span>Provider impact</span>
+                <strong>{formatStatus(labStrategyDraftReviewReceipt.providerCallImpact || "blocked")}</strong>
+                <small>KIS call impact none</small>
+              </div>
+              <div>
+                <span>Order impact</span>
+                <strong>{formatStatus(labStrategyDraftReviewReceipt.orderSubmissionImpact || "blocked")}</strong>
+                <small>Live gate stays blocked</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabReviewResultList" aria-label="Strategy draft review result blockers and warnings">
+              {(labStrategyDraftReviewBlockerSummary.blockerMessages || labStrategyDraftReviewBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`review-result-blocker-${index}`}>{message}</li>
+              ))}
+              {(labStrategyDraftReviewBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`review-result-warning-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </article>
+
           <article className="tradingLabSection">
             <span>현재 투자전략</span>
             <h4>{labStrategy.name || "관리자 모의 전략"}</h4>
@@ -815,6 +865,28 @@ export function TradingReadinessPanel() {
                 <span>{formatStatus(change.status || "draft")}</span>
                 <span>{change.summary}</span>
                 <span>{change.redacted === true ? "true" : "false"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tradingLabTableSection tradingLabStrategyReviewResultHistory">
+          <span>Mock review result history</span>
+          <div className="tradingLabTable">
+            <div className="tradingLabTableRow header">
+              <span>Receipt ID</span>
+              <span>Status</span>
+              <span>Decision</span>
+              <span>Readiness impact</span>
+              <span>Redacted</span>
+            </div>
+            {labStrategyDraftReviewResultHistory.map((receipt) => (
+              <div className="tradingLabTableRow" key={receipt.receiptId}>
+                <span>{receipt.receiptId}</span>
+                <span>{formatStatus(receipt.reviewStatus || "validation_required")}</span>
+                <span>{formatStatus(receipt.decision || "rejected")}</span>
+                <span>{formatStatus(receipt.readinessImpact || "none")}</span>
+                <span>{receipt.redacted === false ? "false" : "true"}</span>
               </div>
             ))}
           </div>
