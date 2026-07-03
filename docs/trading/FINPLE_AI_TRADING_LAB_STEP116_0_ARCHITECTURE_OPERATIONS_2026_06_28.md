@@ -6315,6 +6315,19 @@ This bundle records the next three repo-safe recording gates together: recording
 
 The bundle is fail-closed. It keeps actual trading implementation, provider adapter/worker implementation, public dashboard implementation, homepage router changes, provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked. The next repo-safe gate after this bundle is a read-only provider-call authorization review result supply gate, still without calling providers.
 
+## Step 116-5ZA Trading Read-Only Provider Call Authorization Review Result Supply Gate
+
+The read-only provider call authorization review result supply gate contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_provider_call_authorization_review_result_supply_gate_contract.json
+scripts/generate-trading-read-only-provider-call-authorization-review-result-supply-gate-contract.cjs
+scripts/generate-trading-read-only-provider-call-authorization-review-result-supply-gate-contract.test.cjs
+npm run check:trading-read-only-provider-call-authorization-review-result-supply-gate
+```
+
+This supply gate allows only a future owner-supplied redacted provider-call authorization review result to be supplied outside repo commits. It does not read or record that result now, does not import private evidence, does not create provider requests, does not implement a provider adapter or worker, does not add runtime routes, public UI, homepage router changes, DB writes, order submission, live trading, or `scenario_monthly_returns.csv`. It keeps `providerCallsAllowed=false` and `readyForReadOnlyProviderCalls=false`; the next repo-safe gate is a separate review-result recording preflight, still without provider calls.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

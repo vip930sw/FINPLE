@@ -806,6 +806,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json",
   ],
   [
+    "readOnlyProviderCallAuthorizationReviewResultSupplyGate",
+    "Read-only provider call authorization review result supply gate",
+    "trading_lab_step116_read_only_provider_call_authorization_review_result_supply_gate_contract.json",
+  ],
+  [
     "readOnlyProviderCallAuthorizationPreflightValidatorFixtures",
     "Read-only provider call authorization preflight validator fixtures",
     "trading_lab_step116_read_only_provider_call_authorization_preflight_validator_fixtures.json",
@@ -1673,6 +1678,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-implementation-preflight",
   "check:trading-read-only-provider-call-authorization-preflight",
   "check:trading-read-only-provider-call-authorization-review-result",
+  "check:trading-read-only-provider-call-authorization-review-result-supply-gate",
   "check:trading-read-only-provider-call-authorization-preflight-validator",
   "check:trading-read-only-provider-call-authorization-preflight-validator-fixtures",
   "check:trading-read-only-provider-endpoint-allowlist",

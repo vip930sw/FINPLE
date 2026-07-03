@@ -12,8 +12,8 @@ Current handoff base commit before this update: `9a9105e Open owner evidence rec
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `315/315 = 100%`
-- Required npm check coverage: `355/355 = 100%`
+- Contract/guardrail progress: `316/316 = 100%`
+- Required npm check coverage: `356/356 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -394,8 +394,8 @@ Current blockers:
 
 Fastest safe path toward private trading readiness from the current owner evidence receipt review-result recording boundary:
 
-1. Prepare the read-only provider-call authorization review result supply gate without calling providers.
-2. Keep the owner evidence receipt review-result recording bundle as boundary-only; it still records `ownerEvidenceReceiptReviewResultRecorded=false`.
+1. Record the read-only provider-call authorization review result recording preflight without calling providers.
+2. Keep the owner evidence receipt review-result recording bundle and provider-call authorization review-result supply gate as boundary-only; they still do not record owner result material or allow provider calls.
 3. Internal review gates for read-only provider authorization, manual order permission validation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history, live-guarded clearance, and private-worker review.
 4. Private worker/adapter implementation only after all prior review result contracts, boundary review, and guarded implementation checks pass.
 5. Private dashboard/operator monitoring after private runtime and operator-access reviews.
@@ -409,8 +409,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 315/315 tracked contracts ready
-- 355/355 required npm checks present
+- 316/316 tracked contracts ready
+- 356/356 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -435,8 +435,9 @@ Next work:
 3. Keep actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, private packet contents, and receipt paths out of repo commits and chat.
 4. The live trading and public dashboard unblock preflight is recorded, but it is not implementation and still keeps actual trading, provider adapter/worker implementation, runtime routes, and public dashboard/homepage rollout blocked.
 5. Owner evidence receipt review preflight, review-result supply gate, and the review-result recording bundle are recorded. The owner result itself is still not recorded, and the allowed future review-result fields are non-sensitive status/reviewer/date/count/redaction assertions only.
-6. The next repo-safe implementation step is read-only provider-call authorization review result supply gate work; it must still avoid provider calls, private evidence import, and provider/order/runtime/UI/DB surfaces.
-7. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until follow-on reviews pass explicitly.
+6. The read-only provider-call authorization review result supply gate is recorded, still without provider calls, private evidence import, and provider/order/runtime/UI/DB surfaces.
+7. The next repo-safe implementation step is read-only provider-call authorization review-result recording preflight work; it must still avoid provider calls, private evidence import, and provider/order/runtime/UI/DB surfaces.
+8. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until follow-on reviews pass explicitly.
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```

@@ -189,6 +189,7 @@
       "readOnlyApprovalImportImplementationPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_implementation_preflight.json",
       "readOnlyProviderCallAuthorizationPreflight": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight.json",
       "readOnlyProviderCallAuthorizationReviewResult": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json",
+      "readOnlyProviderCallAuthorizationReviewResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_review_result_supply_gate_contract.json",
       "readOnlyProviderCallAuthorizationPreflightValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_preflight_validator_fixtures.json",
       "readOnlyProviderEndpointAllowlist": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_contract.json",
       "readOnlyProviderEndpointAllowlistValidatorFixtures": "data\\processed\\trading_lab_step116_read_only_provider_endpoint_allowlist_validator_fixtures.json",
@@ -317,10 +318,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 315,
-    "trackedContractsReady": 315,
+    "trackedContractsTotal": 316,
+    "trackedContractsReady": 316,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 355,
+    "requiredNpmScriptsTotal": 356,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -1992,6 +1993,15 @@
       "title": "Read-only provider call authorization review result",
       "filePath": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_review_result_contract.json",
       "status": "review_result_contract_ready_pending_owner_provider_call_authorization_review",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "readOnlyProviderCallAuthorizationReviewResultSupplyGate",
+      "title": "Read-only provider call authorization review result supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_read_only_provider_call_authorization_review_result_supply_gate_contract.json",
+      "status": "read_only_provider_call_authorization_review_result_supply_gate_ready_pending_owner_review_result",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
