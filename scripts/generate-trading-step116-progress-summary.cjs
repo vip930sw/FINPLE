@@ -1190,6 +1190,16 @@ const TRACKED_READINESS_CONTRACTS = [
     "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result supply gate",
     "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
   ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResult",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result",
+    "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_contract.json",
+  ],
+  [
+    "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewPreflight",
+    "Read-only approval import review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review result recording result review preflight",
+    "trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_preflight_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1497,6 +1507,8 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result",
   "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-preflight",
   "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-gate",
+  "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result",
+  "check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-preflight",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [
