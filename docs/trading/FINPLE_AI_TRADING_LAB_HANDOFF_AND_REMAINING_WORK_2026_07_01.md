@@ -6,14 +6,14 @@ Repo: `vip930sw/FINPLE`
 
 Branch: `main`
 
-Current handoff base commit before this update: `f72802d Record owner evidence receipt placeholders`
+Current handoff base commit before this update: `80e5b70 Add live trading dashboard unblock preflight`
 
 ## Current State
 
 Step 116 AI Trading Lab has a complete contract/guardrail stack, and the owner/KIS order-authority external blocker is cleared. Trading runtime remains closed.
 
-- Contract/guardrail progress: `310/310 = 100%`
-- Required npm check coverage: `352/352 = 100%`
+- Contract/guardrail progress: `312/312 = 100%`
+- Required npm check coverage: `354/354 = 100%`
 - `orderSubmissionAuthorityExternalBlockerCleared=true`
 - `kisPersonalTermsPermissionExternalBlockerCleared=true`
 - `readyForReadOnlyProviderCalls=false`
@@ -392,13 +392,14 @@ Current blockers:
 
 ## Suggested Next Work Order
 
-Fastest safe path toward private trading readiness from the current live-trading/public-dashboard unblock preflight boundary:
+Fastest safe path toward private trading readiness from the current owner evidence receipt review boundary:
 
-1. Owner evidence receipt review preflight/result using only the repo-safe placeholder bundle.
-2. Internal review gates for read-only provider authorization, manual order permission validation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history, live-guarded clearance, and private-worker review.
-3. Private worker/adapter implementation only after all prior review result contracts, boundary review, and guarded implementation checks pass.
-4. Private dashboard/operator monitoring after private runtime and operator-access reviews.
-5. Public dashboard/homepage router only after live-guarded review and public dashboard router review.
+1. Owner supplies only the repo-safe owner evidence receipt review result status, without private paths, raw values, hash values, credentials, account identifiers, provider/order payloads, or private packet contents.
+2. Record the owner evidence receipt review result through a recording preflight/result contract that still keeps provider calls, orders, runtime routes, public UI, and DB closed.
+3. Internal review gates for read-only provider authorization, manual order permission validation, kill-switch clearance, risk-gate clearance, dry-run replay, shadow history, live-guarded clearance, and private-worker review.
+4. Private worker/adapter implementation only after all prior review result contracts, boundary review, and guarded implementation checks pass.
+5. Private dashboard/operator monitoring after private runtime and operator-access reviews.
+6. Public dashboard/homepage router only after live-guarded review and public dashboard router review.
 
 This path does not wait on Step 114 market-data approval for personal-account order authority. It still waits on internal FINPLE safety gates before real order submission.
 
@@ -408,8 +409,8 @@ This path does not wait on Step 114 market-data approval for personal-account or
 ### FINPLE AI Trading Lab handoff - 2026-07-01
 
 Step 116 guardrail stack is complete:
-- 310/310 tracked contracts ready
-- 352/352 required npm checks present
+- 312/312 tracked contracts ready
+- 354/354 required npm checks present
 - `readyForReadOnlyProviderCalls=false`
 - `readyForOrderSubmission=false`
 - `readyForLiveGuardedTrading=false`
@@ -433,8 +434,9 @@ Next work:
 2. The six owner-local evidence/review result items are prepared outside the repo and outside chat; the repo records only the redacted receipt schema and placeholder bundle.
 3. Keep actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, private packet contents, and receipt paths out of repo commits and chat.
 4. The live trading and public dashboard unblock preflight is recorded, but it is not implementation and still keeps actual trading, provider adapter/worker implementation, runtime routes, and public dashboard/homepage rollout blocked.
-5. The next repo-safe implementation step is owner evidence receipt review preflight/result handling using only the placeholder bundle; it must still avoid importing private evidence or opening provider/order/runtime/UI/DB surfaces.
-6. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until follow-on reviews pass explicitly.
+5. Owner evidence receipt review preflight and review-result supply gate are recorded. The result is not recorded yet, and the allowed future review-result fields are non-sensitive status/reviewer/date/count/redaction assertions only.
+6. The next repo-safe implementation step is owner evidence receipt review-result recording preflight/result handling; it must still avoid importing private evidence or opening provider/order/runtime/UI/DB surfaces.
+7. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until follow-on reviews pass explicitly.
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```

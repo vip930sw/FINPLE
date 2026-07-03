@@ -289,7 +289,9 @@
       "ownerEvidenceIntakeKit": "data\\processed\\trading_lab_step116_owner_evidence_intake_kit_contract.json",
       "ownerEvidenceReceiptSchema": "data\\processed\\trading_lab_step116_owner_evidence_receipt_schema_contract.json",
       "ownerEvidenceReceiptPlaceholderBundle": "data\\processed\\trading_lab_step116_owner_evidence_receipt_placeholder_bundle_contract.json",
-      "liveTradingPublicDashboardUnblockPreflight": "data\\processed\\trading_lab_step116_live_trading_public_dashboard_unblock_preflight_contract.json"
+      "liveTradingPublicDashboardUnblockPreflight": "data\\processed\\trading_lab_step116_live_trading_public_dashboard_unblock_preflight_contract.json",
+      "ownerEvidenceReceiptReviewPreflight": "data\\processed\\trading_lab_step116_owner_evidence_receipt_review_preflight_contract.json",
+      "ownerEvidenceReceiptReviewResultSupplyGate": "data\\processed\\trading_lab_step116_owner_evidence_receipt_review_result_supply_gate_contract.json"
     }
   },
   "outputFiles": {
@@ -312,10 +314,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 310,
-    "trackedContractsReady": 310,
+    "trackedContractsTotal": 312,
+    "trackedContractsReady": 312,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 352,
+    "requiredNpmScriptsTotal": 354,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -3112,6 +3114,24 @@
       "title": "Live trading and public dashboard unblock preflight",
       "filePath": "data\\processed\\trading_lab_step116_live_trading_public_dashboard_unblock_preflight_contract.json",
       "status": "live_trading_public_dashboard_unblock_preflight_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "ownerEvidenceReceiptReviewPreflight",
+      "title": "Owner evidence receipt review preflight",
+      "filePath": "data\\processed\\trading_lab_step116_owner_evidence_receipt_review_preflight_contract.json",
+      "status": "owner_evidence_receipt_review_preflight_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "ownerEvidenceReceiptReviewResultSupplyGate",
+      "title": "Owner evidence receipt review result supply gate",
+      "filePath": "data\\processed\\trading_lab_step116_owner_evidence_receipt_review_result_supply_gate_contract.json",
+      "status": "owner_evidence_receipt_review_result_supply_gate_ready_fail_closed",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []
