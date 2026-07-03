@@ -4,6 +4,7 @@ import {
   fetchAdminTradingProviderCallPolicyStatus,
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
+  fetchAdminTradingLabDashboardStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
@@ -44,27 +45,82 @@ const FALLBACK_READINESS = Object.freeze({
   },
   lastAuditEvent: {
     status: "placeholder_only",
-    message: "No live trading audit event has been emitted.",
+    message: "실제 거래 감사 이벤트는 아직 발생하지 않았습니다.",
   },
 });
 
 const FLAG_LABELS = [
-  ["providerCallsAllowed", "Provider calls"],
-  ["orderSubmissionAllowed", "Order submission"],
-  ["runtimeRouteAllowed", "Runtime route"],
-  ["publicUiAllowed", "Public UI"],
-  ["dbMigrationAllowed", "DB migration"],
-  ["readyForReadOnlyProviderCalls", "Read-only provider readiness"],
-  ["readyForOrderSubmission", "Order readiness"],
-  ["readyForLiveGuardedTrading", "Live guarded readiness"],
+  ["providerCallsAllowed", "내부 증권 API 호출", "Provider calls"],
+  ["orderSubmissionAllowed", "실제 주문 제출", "Order submission"],
+  ["runtimeRouteAllowed", "거래 실행 API", "Runtime route"],
+  ["publicUiAllowed", "일반 사용자 화면", "Public UI"],
+  ["dbMigrationAllowed", "거래 DB 변경", "DB migration"],
+  ["readyForReadOnlyProviderCalls", "읽기 전용 시세 조회", "Read-only provider readiness"],
+  ["readyForOrderSubmission", "주문 준비 상태", "Order readiness"],
+  ["readyForLiveGuardedTrading", "제한적 실거래 상태", "Live guarded readiness"],
 ];
 
+const LEGACY_SAFETY_PANEL_LABELS = [
+  "Read-only trading shell",
+  "Last audit event",
+  "Shadow status/history",
+  "Review gate",
+  "Risk and kill-switch",
+  "Review result recording",
+  "Manual approval draft",
+  "Manual approval draft review",
+  "Manual approval clearance preflight",
+  "Manual approval clearance review",
+  "KIS provider-call inventory",
+  "Provider response validation",
+  "Provider response validation review",
+  "Provider-call policy",
+  "KIS quote adapter opt-in",
+];
+
+const STATUS_LABELS = {
+  OPEN: "열림",
+  BLOCKED: "차단됨",
+  READY: "준비됨",
+  PENDING: "확인 필요",
+  NOT_READY: "준비 전",
+  blocked: "차단됨",
+  active_blocking: "차단됨",
+  blocked_unknown: "차단됨",
+  fail_closed: "오류 시 자동 차단",
+  fail_closed_local_fallback: "오류 시 자동 차단",
+  pending: "확인 필요",
+  validation_pending: "확인 필요",
+  not_ready: "준비 전",
+  mock: "모의",
+  mock_only: "모의 전용",
+  dry_run_only: "드라이런 전용",
+  shadow_only: "섀도우 전용",
+  admin_only: "관리자 전용",
+  redacted: "민감정보 제거됨",
+  placeholder_only: "자리표시자 전용",
+  adapter_blocked: "어댑터 차단됨",
+  adapter_boundary_ready: "경계 준비됨",
+  opt_in_required: "승인 필요",
+  policy_pending: "정책 확인 필요",
+  policy_ready: "정책 준비됨",
+  review_recorded: "검토 기록됨",
+  clearance_not_granted: "최종 승인 전",
+  envelope_only: "응답 형식만 확인",
+};
+
 function boolStatus(value) {
-  return value === true ? "OPEN" : "BLOCKED";
+  return value === true ? "열림" : "차단됨";
 }
 
 function statusClass(value) {
   return value === true ? "open" : "blocked";
+}
+
+function formatStatus(value) {
+  if (typeof value === "boolean") return boolStatus(value);
+  const rawValue = String(value || "not_ready");
+  return STATUS_LABELS[rawValue] || rawValue.replaceAll("_", " ");
 }
 
 export function TradingReadinessPanel() {
@@ -82,6 +138,7 @@ export function TradingReadinessPanel() {
   const [providerResponseValidationReviewResultStatus, setProviderResponseValidationReviewResultStatus] = useState(null);
   const [providerCallPolicyStatus, setProviderCallPolicyStatus] = useState(null);
   const [kisQuoteAdapterOptInPreflightStatus, setKisQuoteAdapterOptInPreflightStatus] = useState(null);
+  const [tradingLabDashboardStatus, setTradingLabDashboardStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -102,6 +159,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
       fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
       fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
+      fetchAdminTradingLabDashboardStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -119,6 +177,7 @@ export function TradingReadinessPanel() {
         setProviderResponseValidationReviewResultStatus(payload?.[11] || null);
         setProviderCallPolicyStatus(payload?.[12] || null);
         setKisQuoteAdapterOptInPreflightStatus(payload?.[13] || null);
+        setTradingLabDashboardStatus(payload?.[14] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -138,44 +197,59 @@ export function TradingReadinessPanel() {
     const killSwitchReasons = Array.isArray(readiness?.killSwitch?.reasons) ? readiness.killSwitch.reasons.length : 0;
     return envBlockers + killSwitchReasons;
   }, [readiness]);
+  const labStrategy = tradingLabDashboardStatus?.strategy || {};
+  const labPerformance = tradingLabDashboardStatus?.performance || {};
+  const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
+    ? tradingLabDashboardStatus.dailyReturns.rows
+    : [];
+  const labPositions = Array.isArray(tradingLabDashboardStatus?.positions?.positions)
+    ? tradingLabDashboardStatus.positions.positions
+    : [];
+  const labOrderCandidates = Array.isArray(tradingLabDashboardStatus?.orderCandidates?.candidates)
+    ? tradingLabDashboardStatus.orderCandidates.candidates
+    : [];
+  const labAuditEvents = Array.isArray(tradingLabDashboardStatus?.auditLogs?.events)
+    ? tradingLabDashboardStatus.auditLogs.events
+    : [];
 
   return (
     <section className="accountCard tradingReadinessPanel" data-admin-panel-key="trading-readiness">
       <div className="serverStorageHeader">
         <div>
-          <p className="accountMiniLabel">Trading Readiness</p>
-          <h2>Read-only trading shell</h2>
+          <p className="accountMiniLabel">거래 안전상태</p>
+          <h2>거래 안전상태</h2>
           <p>
-            Mock, dry-run, and shadow mode readiness only. Live provider calls and order submission stay blocked.
+            이 화면은 개인계좌 기반 거래 기능을 실제로 실행하기 전, 관리자가 안전상태를 점검하기 위한 읽기 전용 화면입니다.
+            현재 실제 KIS 호출과 주문 제출은 모두 차단되어 있습니다.
           </p>
         </div>
-        <span className={`tradingReadinessBadge ${loadState}`}>{readiness?.status || loadState}</span>
+        <span className={`tradingReadinessBadge ${loadState}`}>{formatStatus(readiness?.status || loadState)}</span>
       </div>
 
       <div className="accountStatusGrid tradingReadinessMetrics">
         <article>
-          <span>Mode</span>
-          <strong>{readiness?.tradingMode || "mock"}</strong>
-          <p>mock / dry-run / shadow shell</p>
+          <span>모드</span>
+          <strong>{formatStatus(readiness?.tradingMode || "mock")}</strong>
+          <p>모의 / 드라이런 / 섀도우 상태만 표시합니다.</p>
         </article>
         <article>
-          <span>Kill switch</span>
-          <strong>{readiness?.killSwitch?.status || "blocked"}</strong>
-          <p>{readiness?.killSwitch?.enabled === false ? "not cleared" : "enabled or forced blocked"}</p>
+          <span>비상 차단</span>
+          <strong>{formatStatus(readiness?.killSwitch?.status || "blocked")}</strong>
+          <p>{readiness?.killSwitch?.enabled === false ? "해제 확인 전" : "활성 또는 강제 차단"}</p>
         </article>
         <article>
-          <span>Allowed symbols</span>
-          <strong>{readiness?.allowedSymbols?.status || "blocked"}</strong>
-          <p>{Number(readiness?.allowedSymbols?.count || 0)} configured</p>
+          <span>허용 종목</span>
+          <strong>{formatStatus(readiness?.allowedSymbols?.status || "blocked")}</strong>
+          <p>{Number(readiness?.allowedSymbols?.count || 0)}개 설정됨</p>
         </article>
         <article>
-          <span>Blockers</span>
+          <span>차단 사유</span>
           <strong>{blockerCount}</strong>
-          <p>fail-closed checks active</p>
+          <p>오류 시 자동 차단 점검 활성</p>
         </article>
       </div>
 
-      <div className="tradingReadinessFlagGrid" aria-label="Trading readiness flags">
+      <div className="tradingReadinessFlagGrid" aria-label="거래 안전상태 플래그">
         {FLAG_LABELS.map(([key, label]) => (
           <div key={key} className="tradingReadinessFlag">
             <span>{label}</span>
@@ -185,156 +259,375 @@ export function TradingReadinessPanel() {
       </div>
 
       <div className="tradingReadinessAudit">
-        <span>Last audit event</span>
-        <strong>{readiness?.lastAuditEvent?.status || "placeholder_only"}</strong>
+        <span>최근 감사 이벤트</span>
+        <strong>{formatStatus(readiness?.lastAuditEvent?.status || "placeholder_only")}</strong>
         <p>{readiness?.lastAuditEvent?.message || FALLBACK_READINESS.lastAuditEvent.message}</p>
       </div>
 
+      <div className="tradingLabDashboard" data-admin-panel-key="trading-lab-dashboard">
+        <div className="tradingLabHeader">
+          <div>
+            <span>관리자 Trading Lab</span>
+            <h3>모의 운용 대시보드</h3>
+          </div>
+          <strong>{formatStatus(tradingLabDashboardStatus?.status || "admin_only")}</strong>
+        </div>
+
+        <div className="tradingLabGrid">
+          <article className="tradingLabSection">
+            <span>Strategy</span>
+            <h4>{labStrategy.name || "관리자 모의 전략"}</h4>
+            <dl>
+              <div>
+                <dt>이용 모드</dt>
+                <dd>{formatStatus(labStrategy.activeMode || "mock")}</dd>
+              </div>
+              <div>
+                <dt>허용 종목</dt>
+                <dd>{labStrategy.allowedSymbolsStatus || "placeholder_only"}</dd>
+              </div>
+              <div>
+                <dt>리밸런싱 조건</dt>
+                <dd>{formatStatus(labStrategy.rebalanceCondition || "mock_only")}</dd>
+              </div>
+              <div>
+                <dt>최대 주문금액</dt>
+                <dd>{formatStatus(labStrategy.maxOrderAmountStatus || "not_ready")}</dd>
+              </div>
+              <div>
+                <dt>최대 일일 손실한도</dt>
+                <dd>{formatStatus(labStrategy.maxDailyLossStatus || "blocked")}</dd>
+              </div>
+              <div>
+                <dt>비상 차단 필요</dt>
+                <dd>{labStrategy.killSwitchRequired === false ? "아니오" : "예"}</dd>
+              </div>
+              <div>
+                <dt>현재 상태</dt>
+                <dd>{formatStatus(labStrategy.currentStatus || "blocked")}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article className="tradingLabSection">
+            <span>Performance</span>
+            <h4>모의 성과</h4>
+            <dl>
+              <div>
+                <dt>누적 수익률</dt>
+                <dd>{Number(labPerformance.cumulativeReturnPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>기간 수익률</dt>
+                <dd>{Number(labPerformance.periodReturnPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>MDD</dt>
+                <dd>{Number(labPerformance.mddPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>변동성</dt>
+                <dd>{Number(labPerformance.volatilityPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>승률</dt>
+                <dd>{Number(labPerformance.winRatePct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>손익비</dt>
+                <dd>{Number(labPerformance.profitLossRatio || 0).toFixed(2)}</dd>
+              </div>
+              <div>
+                <dt>기준값</dt>
+                <dd>{formatStatus(labPerformance.benchmarkStatus || "mock_only")}</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
+
+        <div className="tradingLabTableSection">
+          <span>Daily returns</span>
+          <div className="tradingLabTable">
+            <div className="tradingLabTableRow header">
+              <span>날짜</span>
+              <span>일별 수익률</span>
+              <span>누적 수익률</span>
+              <span>Drawdown</span>
+              <span>Equity</span>
+            </div>
+            {labDailyRows.map((row) => (
+              <div className="tradingLabTableRow" key={row.date}>
+                <span>{row.date}</span>
+                <span>{Number(row.dailyReturnPct || 0).toFixed(2)}%</span>
+                <span>{Number(row.cumulativeReturnPct || 0).toFixed(2)}%</span>
+                <span>{Number(row.drawdownPct || 0).toFixed(2)}%</span>
+                <span>{Number(row.equityPlaceholder || 0).toLocaleString("ko-KR")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tradingLabTableSection">
+          <span>Positions</span>
+          <div className="tradingLabTable">
+            <div className="tradingLabTableRow header">
+              <span>Symbol</span>
+              <span>이름</span>
+              <span>수량</span>
+              <span>평균가</span>
+              <span>현재가</span>
+              <span>비중</span>
+            </div>
+            {labPositions.map((position) => (
+              <div className="tradingLabTableRow" key={position.symbol}>
+                <span>{position.symbol}</span>
+                <span>{position.name}</span>
+                <span>{formatStatus(position.quantityPlaceholder || "mock_only")}</span>
+                <span>{formatStatus(position.averagePricePlaceholder || "mock_only")}</span>
+                <span>{formatStatus(position.currentPricePlaceholder || "mock_only")}</span>
+                <span>{Number(position.weightPct || 0).toFixed(2)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tradingLabGrid">
+          <article className="tradingLabSection">
+            <span>Order candidates</span>
+            <h4>수동승인 주문 후보</h4>
+            {labOrderCandidates.map((candidate) => (
+              <dl key={candidate.draftId}>
+                <div>
+                  <dt>Draft ID</dt>
+                  <dd>{candidate.draftId}</dd>
+                </div>
+                <div>
+                  <dt>모드</dt>
+                  <dd>{formatStatus(candidate.mode || "mock")}</dd>
+                </div>
+                <div>
+                  <dt>방향</dt>
+                  <dd>{formatStatus(candidate.sidePlaceholder || "mock_only")}</dd>
+                </div>
+                <div>
+                  <dt>수량</dt>
+                  <dd>{formatStatus(candidate.quantityPlaceholder || "mock_only")}</dd>
+                </div>
+                <div>
+                  <dt>예상 금액</dt>
+                  <dd>{formatStatus(candidate.estimatedAmountPlaceholder || "mock_only")}</dd>
+                </div>
+                <div>
+                  <dt>리스크</dt>
+                  <dd>{formatStatus(candidate.riskStatus || "blocked")}</dd>
+                </div>
+                <div>
+                  <dt>비상 차단</dt>
+                  <dd>{formatStatus(candidate.killSwitchStatus || "active_blocking")}</dd>
+                </div>
+                <div>
+                  <dt>사전검증</dt>
+                  <dd>{formatStatus(candidate.preflightStatus || "not_ready")}</dd>
+                </div>
+              </dl>
+            ))}
+          </article>
+
+          <article className="tradingLabSection">
+            <span>Audit logs</span>
+            <h4>감사 로그 요약</h4>
+            {labAuditEvents.map((event) => (
+              <dl key={event.eventId}>
+                <div>
+                  <dt>Event ID</dt>
+                  <dd>{event.eventId}</dd>
+                </div>
+                <div>
+                  <dt>이벤트 유형</dt>
+                  <dd>{event.eventType}</dd>
+                </div>
+                <div>
+                  <dt>상태</dt>
+                  <dd>{formatStatus(event.status || "blocked")}</dd>
+                </div>
+                <div>
+                  <dt>생성시각</dt>
+                  <dd>{event.createdAt}</dd>
+                </div>
+                <div>
+                  <dt>마스킹 사유</dt>
+                  <dd>{formatStatus(event.redactedReason || "redacted")}</dd>
+                </div>
+                <div>
+                  <dt>차단 사유</dt>
+                  <dd>{event.blockedReason || "live_provider_and_order_paths_disabled"}</dd>
+                </div>
+              </dl>
+            ))}
+          </article>
+        </div>
+      </div>
+
       <div className="tradingReadinessAudit tradingShadowHistory">
-        <span>Shadow status/history</span>
-        <strong>{shadowStatus?.status || "read_only_shadow_history"}</strong>
+        <span>섀도우 이용 상태</span>
+        <strong>{formatStatus(shadowStatus?.status || "read_only_shadow_history")}</strong>
         <p>
-          Candidates {Number(shadowStatus?.candidateCount || 0)} / audit events {Number(shadowStatus?.auditEventCount || 0)}.
-          Admin-only, read-only, in-memory boundary.
+          후보 {Number(shadowStatus?.candidateCount || 0)}건 / 감사 이벤트 {Number(shadowStatus?.auditEventCount || 0)}건.
+          관리자 전용 읽기 화면이며 메모리 기반 경계만 표시합니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingShadowReview">
-        <span>Review gate</span>
-        <strong>{shadowReviewStatus?.status || "admin_only_shadow_review_gate_fail_closed"}</strong>
+        <span>검토 게이트</span>
+        <strong>{formatStatus(shadowReviewStatus?.status || "admin_only_shadow_review_gate_fail_closed")}</strong>
         <p>
-          Results {Number(shadowReviewStatus?.reviewResults?.length || 0)} / blockers {Number(shadowReviewStatus?.blockers?.length || 0)}.
-          Review is redacted and cannot promote live readiness.
+          검토 결과 {Number(shadowReviewStatus?.reviewResults?.length || 0)}건 / 차단 사유 {Number(shadowReviewStatus?.blockers?.length || 0)}건.
+          민감정보는 제거되며 실거래 준비상태로 승격할 수 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingRiskKillSwitchReview">
-        <span>Risk and kill-switch</span>
-        <strong>{riskKillSwitchStatus?.status || "admin_only_risk_kill_switch_review_fail_closed"}</strong>
+        <span>리스크 및 비상 차단</span>
+        <strong>{formatStatus(riskKillSwitchStatus?.status || "admin_only_risk_kill_switch_review_fail_closed")}</strong>
         <p>
-          Risk gate {riskKillSwitchStatus?.riskGate?.status || "blocked"} / kill-switch {riskKillSwitchStatus?.killSwitch?.status || "active_blocking"}.
-          Admin-only, redacted, and read-only; live readiness stays blocked.
+          리스크 {formatStatus(riskKillSwitchStatus?.riskGate?.status || "blocked")} /
+          비상 차단 {formatStatus(riskKillSwitchStatus?.killSwitch?.status || "active_blocking")}.
+          관리자 전용 읽기 상태이며 실거래 준비상태는 계속 차단됩니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingRiskKillSwitchReviewResult">
-        <span>Review result recording</span>
-        <strong>{riskKillSwitchReviewResultStatus?.status || "admin_only_risk_kill_switch_review_result_gate_fail_closed"}</strong>
+        <span>검토 결과 기록</span>
+        <strong>{formatStatus(riskKillSwitchReviewResultStatus?.status || "admin_only_risk_kill_switch_review_result_gate_fail_closed")}</strong>
         <p>
-          Receipts {Number(riskKillSwitchReviewResultStatus?.receiptCount || 0)}.
-          Redacted in-memory status only; no DB write and no readiness promotion.
+          영수증 {Number(riskKillSwitchReviewResultStatus?.receiptCount || 0)}건.
+          민감정보가 제거된 메모리 상태만 표시하며 DB 기록과 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingManualApprovalOrderDraft">
-        <span>Manual approval draft</span>
-        <strong>{manualApprovalOrderDraftStatus?.status || "admin_only_manual_approval_order_draft_preflight_fail_closed"}</strong>
+        <span>수동승인 주문 초안</span>
+        <strong>{formatStatus(manualApprovalOrderDraftStatus?.status || "admin_only_manual_approval_order_draft_preflight_fail_closed")}</strong>
         <p>
-          Draft {manualApprovalOrderDraftStatus?.draft?.draftId || "step122_manual_approval_order_draft_placeholder"} /
-          preflight {manualApprovalOrderDraftStatus?.preflight?.preflightStatus || "blocked"}.
-          Redacted placeholder only; no broker payload or order submission.
+          초안 {manualApprovalOrderDraftStatus?.draft?.draftId || "step122_manual_approval_order_draft_placeholder"} /
+          사전검증 {formatStatus(manualApprovalOrderDraftStatus?.preflight?.preflightStatus || "blocked")}.
+          민감정보 제거 placeholder만 표시하며 broker payload와 주문 제출은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingManualApprovalOrderDraftReviewResult">
-        <span>Manual approval draft review</span>
+        <span>수동승인 초안 검토</span>
         <strong>
-          {manualApprovalOrderDraftReviewResultStatus?.status ||
-            "admin_only_manual_approval_order_draft_review_result_gate_fail_closed"}
+          {formatStatus(
+            manualApprovalOrderDraftReviewResultStatus?.status ||
+              "admin_only_manual_approval_order_draft_review_result_gate_fail_closed",
+          )}
         </strong>
         <p>
-          Receipts {Number(manualApprovalOrderDraftReviewResultStatus?.receiptCount || 0)}.
-          Redacted in-memory review result only; no DB write, provider call, or order submission.
+          영수증 {Number(manualApprovalOrderDraftReviewResultStatus?.receiptCount || 0)}건.
+          민감정보 제거 검토 결과만 표시하며 DB 기록, provider 호출, 주문 제출은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingManualApprovalOrderDraftClearance">
-        <span>Manual approval clearance preflight</span>
+        <span>수동승인 최종 사전검증</span>
         <strong>
-          {manualApprovalOrderDraftClearanceStatus?.status ||
-            "admin_only_manual_approval_order_draft_clearance_preflight_fail_closed"}
+          {formatStatus(
+            manualApprovalOrderDraftClearanceStatus?.status ||
+              "admin_only_manual_approval_order_draft_clearance_preflight_fail_closed",
+          )}
         </strong>
         <p>
-          Candidate {manualApprovalOrderDraftClearanceStatus?.candidate?.clearanceStatus || "blocked"} /
-          blockers {Number(manualApprovalOrderDraftClearanceStatus?.preflight?.blockerCount || 0)}.
-          Clearance candidate only; readiness flags stay blocked.
+          후보 {formatStatus(manualApprovalOrderDraftClearanceStatus?.candidate?.clearanceStatus || "blocked")} /
+          차단 사유 {Number(manualApprovalOrderDraftClearanceStatus?.preflight?.blockerCount || 0)}건.
+          최종 승인 후보만 표시하며 readiness flag는 계속 차단됩니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingManualApprovalClearanceReviewResult">
-        <span>Manual approval clearance review</span>
+        <span>수동승인 최종 검토</span>
         <strong>
-          {manualApprovalClearanceReviewResultStatus?.status ||
-            "admin_only_manual_approval_clearance_review_result_gate_fail_closed"}
+          {formatStatus(
+            manualApprovalClearanceReviewResultStatus?.status ||
+              "admin_only_manual_approval_clearance_review_result_gate_fail_closed",
+          )}
         </strong>
         <p>
-          Receipts {Number(manualApprovalClearanceReviewResultStatus?.receiptCount || 0)} /
-          decision {manualApprovalClearanceReviewResultStatus?.recording?.review?.decision || "clearance_not_granted"}.
-          Redacted review result only; no readiness promotion.
+          영수증 {Number(manualApprovalClearanceReviewResultStatus?.receiptCount || 0)}건 /
+          결정 {formatStatus(manualApprovalClearanceReviewResultStatus?.recording?.review?.decision || "clearance_not_granted")}.
+          민감정보 제거 검토 결과만 표시하며 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingKisProviderCallInventory">
-        <span>KIS provider-call inventory</span>
+        <span>KIS 호출 사전평가</span>
         <strong>
-          {kisProviderCallInventoryStatus?.status ||
-            "admin_only_kis_read_only_provider_call_inventory_preflight_fail_closed"}
+          {formatStatus(
+            kisProviderCallInventoryStatus?.status ||
+              "admin_only_kis_read_only_provider_call_inventory_preflight_fail_closed",
+          )}
         </strong>
         <p>
-          Preflight {kisProviderCallInventoryStatus?.preflight?.status || "opt_in_required"} /
-          blockers {Number(kisProviderCallInventoryStatus?.preflight?.blockerCount || 0)}.
-          Inventory only; no token issuance, provider call, or readiness promotion.
+          사전검증 {formatStatus(kisProviderCallInventoryStatus?.preflight?.status || "opt_in_required")} /
+          차단 사유 {Number(kisProviderCallInventoryStatus?.preflight?.blockerCount || 0)}건.
+          목록 점검만 표시하며 token 발급, provider 호출, 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingProviderResponseValidation">
-        <span>Provider response validation</span>
+        <span>Provider 응답 검증</span>
         <strong>
-          {providerResponseEnvelopeValidationStatus?.status ||
-            "admin_only_provider_response_envelope_validation_receipt_fail_closed"}
+          {formatStatus(
+            providerResponseEnvelopeValidationStatus?.status ||
+              "admin_only_provider_response_envelope_validation_receipt_fail_closed",
+          )}
         </strong>
         <p>
-          Envelope {providerResponseEnvelopeValidationStatus?.envelope?.status || "envelope_only"} /
-          receipt {providerResponseEnvelopeValidationStatus?.receipt?.status || "validation_pending"}.
-          Redacted mock-only status; no token issuance, quote query, provider call, or readiness promotion.
+          응답 형식 {formatStatus(providerResponseEnvelopeValidationStatus?.envelope?.status || "envelope_only")} /
+          영수증 {formatStatus(providerResponseEnvelopeValidationStatus?.receipt?.status || "validation_pending")}.
+          민감정보 제거 모의 상태만 표시하며 token 발급, 시세 조회, provider 호출, 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingProviderResponseValidationReviewResult">
-        <span>Provider response validation review</span>
+        <span>Provider 응답 검증 검토</span>
         <strong>
-          {providerResponseValidationReviewResultStatus?.status ||
-            "admin_only_provider_response_validation_review_result_gate_fail_closed"}
+          {formatStatus(
+            providerResponseValidationReviewResultStatus?.status ||
+              "admin_only_provider_response_validation_review_result_gate_fail_closed",
+          )}
         </strong>
         <p>
-          Result {providerResponseValidationReviewResultStatus?.reviewResult?.status || "review_recorded"} /
-          decision {providerResponseValidationReviewResultStatus?.reviewResult?.decision || "validation_pending"}.
-          Redacted admin-only status; no provider call, token issuance, quote query, DB write, or readiness promotion.
+          결과 {formatStatus(providerResponseValidationReviewResultStatus?.reviewResult?.status || "review_recorded")} /
+          결정 {formatStatus(providerResponseValidationReviewResultStatus?.reviewResult?.decision || "validation_pending")}.
+          민감정보 제거 관리자 상태만 표시하며 provider 호출, token 발급, 시세 조회, DB 기록, 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingProviderCallPolicy">
-        <span>Provider-call policy</span>
-        <strong>{providerCallPolicyStatus?.status || "admin_only_provider_call_policy_core_fail_closed"}</strong>
+        <span>Provider 호출 정책</span>
+        <strong>{formatStatus(providerCallPolicyStatus?.status || "admin_only_provider_call_policy_core_fail_closed")}</strong>
         <p>
-          Cache {providerCallPolicyStatus?.cachePolicy?.status || "policy_pending"} /
-          rate limit {providerCallPolicyStatus?.rateLimitPolicy?.status || "policy_pending"} /
-          audit {providerCallPolicyStatus?.auditPolicy?.status || "audit_policy_only"}.
-          Dry-run policy only; no provider call, quote query, audit DB write, or readiness promotion.
+          캐시 {formatStatus(providerCallPolicyStatus?.cachePolicy?.status || "policy_pending")} /
+          호출 제한 {formatStatus(providerCallPolicyStatus?.rateLimitPolicy?.status || "policy_pending")} /
+          감사 {formatStatus(providerCallPolicyStatus?.auditPolicy?.status || "audit_policy_only")}.
+          드라이런 정책만 표시하며 provider 호출, 시세 조회, 감사 DB 기록, 준비상태 승격은 없습니다.
         </p>
       </div>
 
       <div className="tradingReadinessAudit tradingKisQuoteAdapterOptInPreflight">
-        <span>KIS quote adapter opt-in</span>
+        <span>KIS 시세 어댑터 사전검증</span>
         <strong>
-          {kisQuoteAdapterOptInPreflightStatus?.status ||
-            "admin_only_kis_read_only_quote_adapter_opt_in_preflight_fail_closed"}
+          {formatStatus(
+            kisQuoteAdapterOptInPreflightStatus?.status ||
+              "admin_only_kis_read_only_quote_adapter_opt_in_preflight_fail_closed",
+          )}
         </strong>
         <p>
-          Boundary {kisQuoteAdapterOptInPreflightStatus?.boundary?.status || "adapter_boundary_ready"} /
-          preflight {kisQuoteAdapterOptInPreflightStatus?.preflight?.status || "adapter_blocked"} /
-          blockers {Number(kisQuoteAdapterOptInPreflightStatus?.preflight?.blockerCount || 0)}.
-          Preflight boundary only; no KIS token issuance, quote query, provider call, raw config exposure, or readiness promotion.
+          경계 {formatStatus(kisQuoteAdapterOptInPreflightStatus?.boundary?.status || "adapter_boundary_ready")} /
+          사전검증 {formatStatus(kisQuoteAdapterOptInPreflightStatus?.preflight?.status || "adapter_blocked")} /
+          차단 사유 {Number(kisQuoteAdapterOptInPreflightStatus?.preflight?.blockerCount || 0)}건.
+          사전검증 경계만 표시하며 KIS token 발급, 시세 조회, provider 호출, 원본 설정 노출, 준비상태 승격은 없습니다.
         </p>
       </div>
     </section>

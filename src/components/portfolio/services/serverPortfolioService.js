@@ -318,6 +318,10 @@ export async function fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStat
   return requestJson("/admin/trading-readiness/kis-read-only-quote-adapter-opt-in-preflight", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabDashboardStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-dashboard", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

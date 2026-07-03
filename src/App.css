@@ -353,6 +353,125 @@ nav {
   margin: 0.35rem 0 0;
 }
 
+.tradingLabDashboard {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.tradingLabHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.tradingLabHeader span,
+.tradingLabSection > span,
+.tradingLabTableSection > span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.tradingLabHeader h3,
+.tradingLabSection h4 {
+  color: #0f172a;
+  margin: 0.2rem 0 0;
+}
+
+.tradingLabHeader strong {
+  background: #fee2e2;
+  border-radius: 999px;
+  color: #991b1b;
+  font-size: 0.74rem;
+  padding: 0.32rem 0.55rem;
+  text-align: right;
+}
+
+.tradingLabGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 0.9rem;
+}
+
+.tradingLabSection,
+.tradingLabTableSection {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 0.9rem;
+}
+
+.tradingLabSection dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.8rem 0 0;
+}
+
+.tradingLabSection dl div {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.tradingLabSection dt {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.tradingLabSection dd {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabTableSection {
+  margin-top: 0.8rem;
+  overflow-x: auto;
+}
+
+.tradingLabTable {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 680px;
+}
+
+.tradingLabTableRow {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+}
+
+.tradingLabTableSection:nth-of-type(4) .tradingLabTableRow {
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+}
+
+.tradingLabTableRow span {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 6px;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-height: 38px;
+  overflow-wrap: anywhere;
+  padding: 0.55rem;
+}
+
+.tradingLabTableRow.header span {
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.74rem;
+}
+
 .cardHeader p {
   color: #64748b;
   margin: 0 0 6px;

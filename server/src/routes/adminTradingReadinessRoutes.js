@@ -1,6 +1,7 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { buildAdminTradingLabDashboardStatus } from "../services/tradingAdminLabDashboardShell.js";
 import { buildAdminProviderCallPolicyStatus } from "../services/tradingProviderCallPolicyCore.js";
 import { buildAdminKisReadOnlyQuoteAdapterOptInPreflightStatus } from "../services/tradingKisReadOnlyQuoteAdapterOptInPreflightBoundary.js";
 import { buildAdminKisReadOnlyProviderCallInventoryPreflightStatus } from "../services/tradingKisReadOnlyProviderCallInventoryPreflight.js";
@@ -103,6 +104,12 @@ router.get("/provider-call-policy", (request, response) => {
 router.get("/kis-read-only-quote-adapter-opt-in-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminKisReadOnlyQuoteAdapterOptInPreflightStatus());
+  });
+});
+
+router.get("/trading-lab-dashboard", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabDashboardStatus());
   });
 });
 
