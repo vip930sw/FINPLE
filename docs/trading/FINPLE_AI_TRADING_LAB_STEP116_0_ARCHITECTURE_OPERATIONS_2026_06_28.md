@@ -6298,6 +6298,23 @@ npm run check:trading-step116-owner-evidence-receipt-review-result-supply-gate
 
 This supply gate allows only a future redacted review-result status to be supplied. It does not record the result yet, does not import private evidence, does not validate private packets, and does not clear read-only provider calls, order submission, live-guarded trading, runtime routes, public UI/homepage router changes, DB migration, or `scenario_monthly_returns.csv`. Its allowed review-result fields are limited to non-sensitive status, reviewer role, reviewed date, receipt count, redaction confirmation, no-private-material assertion, and next gate name.
 
+## Step 116-5Z Owner Evidence Receipt Review Result Recording Bundle
+
+The owner evidence receipt review result recording bundle is:
+
+```text
+data/processed/trading_lab_step116_owner_evidence_receipt_review_result_recording_preflight_contract.json
+data/processed/trading_lab_step116_owner_evidence_receipt_review_result_recording_result_supply_gate_contract.json
+data/processed/trading_lab_step116_owner_evidence_receipt_review_result_recording_result_contract.json
+scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.cjs
+scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.test.cjs
+npm run check:trading-step116-owner-evidence-receipt-review-result-recording-bundle
+```
+
+This bundle records the next three repo-safe recording gates together: recording preflight, recording-result supply gate, and recording-result boundary. The bundle still records `ownerEvidenceReceiptReviewResultRecorded=false`; it does not accept or store the actual owner result, actual local paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, private packet contents, or validation receipt paths.
+
+The bundle is fail-closed. It keeps actual trading implementation, provider adapter/worker implementation, public dashboard implementation, homepage router changes, provider calls, order submission, runtime routes, public UI, DB migration, live trading, and `scenario_monthly_returns.csv` blocked. The next repo-safe gate after this bundle is a read-only provider-call authorization review result supply gate, still without calling providers.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

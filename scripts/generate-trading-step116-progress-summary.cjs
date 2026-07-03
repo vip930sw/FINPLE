@@ -1440,6 +1440,21 @@ const TRACKED_READINESS_CONTRACTS = [
     "Owner evidence receipt review result supply gate",
     "trading_lab_step116_owner_evidence_receipt_review_result_supply_gate_contract.json",
   ],
+  [
+    "ownerEvidenceReceiptReviewResultRecordingPreflight",
+    "Owner evidence receipt review result recording preflight",
+    "trading_lab_step116_owner_evidence_receipt_review_result_recording_preflight_contract.json",
+  ],
+  [
+    "ownerEvidenceReceiptReviewResultRecordingResultSupplyGate",
+    "Owner evidence receipt review result recording result supply gate",
+    "trading_lab_step116_owner_evidence_receipt_review_result_recording_result_supply_gate_contract.json",
+  ],
+  [
+    "ownerEvidenceReceiptReviewResultRecordingResult",
+    "Owner evidence receipt review result recording result",
+    "trading_lab_step116_owner_evidence_receipt_review_result_recording_result_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1797,6 +1812,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-step116-live-trading-public-dashboard-unblock-preflight",
   "check:trading-step116-owner-evidence-receipt-review-preflight",
   "check:trading-step116-owner-evidence-receipt-review-result-supply-gate",
+  "check:trading-step116-owner-evidence-receipt-review-result-recording-bundle",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

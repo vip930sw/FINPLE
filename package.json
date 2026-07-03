@@ -399,6 +399,7 @@
     "check:trading-step116-live-trading-public-dashboard-unblock-preflight": "node scripts/generate-trading-step116-live-trading-public-dashboard-unblock-preflight-contract.cjs --check && node --test scripts/generate-trading-step116-live-trading-public-dashboard-unblock-preflight-contract.test.cjs",
     "check:trading-step116-owner-evidence-receipt-review-preflight": "node scripts/generate-trading-step116-owner-evidence-receipt-review-preflight-contract.cjs --check && node --test scripts/generate-trading-step116-owner-evidence-receipt-review-preflight-contract.test.cjs",
     "check:trading-step116-owner-evidence-receipt-review-result-supply-gate": "node scripts/generate-trading-step116-owner-evidence-receipt-review-result-supply-gate-contract.cjs --check && node --test scripts/generate-trading-step116-owner-evidence-receipt-review-result-supply-gate-contract.test.cjs",
+    "check:trading-step116-owner-evidence-receipt-review-result-recording-bundle": "node scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.cjs --check && node --test scripts/generate-trading-step116-owner-evidence-receipt-review-result-recording-bundle-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {
