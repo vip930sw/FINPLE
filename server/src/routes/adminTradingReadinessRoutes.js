@@ -7,6 +7,7 @@ import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../s
 import { buildAdminManualApprovalOrderDraftReviewResultGateStatus } from "../services/tradingManualApprovalOrderDraftReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftPreflightStatus } from "../services/tradingManualApprovalOrderDraftPreflight.js";
 import { buildAdminProviderResponseEnvelopeValidationStatus } from "../services/tradingProviderResponseEnvelopeValidationReceipt.js";
+import { buildAdminProviderResponseValidationReviewResultStatus } from "../services/tradingProviderResponseValidationReviewResultGate.js";
 import { buildTradingReadinessSnapshot } from "../services/tradingImplementationShell.js";
 import { buildAdminRiskKillSwitchReviewStatus } from "../services/tradingRiskKillSwitchReviewCore.js";
 import { buildAdminRiskKillSwitchReviewResultGateStatus } from "../services/tradingRiskKillSwitchReviewResultGate.js";
@@ -82,6 +83,12 @@ router.get("/kis-read-only-provider-call-inventory-preflight", (request, respons
 router.get("/provider-response-envelope-validation", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminProviderResponseEnvelopeValidationStatus());
+  });
+});
+
+router.get("/provider-response-validation-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminProviderResponseValidationReviewResultStatus());
   });
 });
 

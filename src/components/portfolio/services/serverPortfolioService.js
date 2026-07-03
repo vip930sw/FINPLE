@@ -306,6 +306,10 @@ export async function fetchAdminTradingProviderResponseEnvelopeValidationStatus(
   return requestJson("/admin/trading-readiness/provider-response-envelope-validation", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingProviderResponseValidationReviewResultStatus() {
+  return requestJson("/admin/trading-readiness/provider-response-validation-review-result", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

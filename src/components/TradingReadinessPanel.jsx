@@ -7,6 +7,7 @@ import {
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
   fetchAdminTradingProviderResponseEnvelopeValidationStatus,
+  fetchAdminTradingProviderResponseValidationReviewResultStatus,
   fetchAdminTradingRiskKillSwitchReviewResultStatus,
   fetchAdminTradingRiskKillSwitchStatus,
   fetchAdminTradingShadowReviewStatus,
@@ -76,6 +77,7 @@ export function TradingReadinessPanel() {
   const [manualApprovalClearanceReviewResultStatus, setManualApprovalClearanceReviewResultStatus] = useState(null);
   const [kisProviderCallInventoryStatus, setKisProviderCallInventoryStatus] = useState(null);
   const [providerResponseEnvelopeValidationStatus, setProviderResponseEnvelopeValidationStatus] = useState(null);
+  const [providerResponseValidationReviewResultStatus, setProviderResponseValidationReviewResultStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -93,6 +95,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
       fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
       fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
+      fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -107,6 +110,7 @@ export function TradingReadinessPanel() {
         setManualApprovalClearanceReviewResultStatus(payload?.[8] || null);
         setKisProviderCallInventoryStatus(payload?.[9] || null);
         setProviderResponseEnvelopeValidationStatus(payload?.[10] || null);
+        setProviderResponseValidationReviewResultStatus(payload?.[11] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -285,6 +289,19 @@ export function TradingReadinessPanel() {
           Envelope {providerResponseEnvelopeValidationStatus?.envelope?.status || "envelope_only"} /
           receipt {providerResponseEnvelopeValidationStatus?.receipt?.status || "validation_pending"}.
           Redacted mock-only status; no token issuance, quote query, provider call, or readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingProviderResponseValidationReviewResult">
+        <span>Provider response validation review</span>
+        <strong>
+          {providerResponseValidationReviewResultStatus?.status ||
+            "admin_only_provider_response_validation_review_result_gate_fail_closed"}
+        </strong>
+        <p>
+          Result {providerResponseValidationReviewResultStatus?.reviewResult?.status || "review_recorded"} /
+          decision {providerResponseValidationReviewResultStatus?.reviewResult?.decision || "validation_pending"}.
+          Redacted admin-only status; no provider call, token issuance, quote query, DB write, or readiness promotion.
         </p>
       </div>
     </section>
