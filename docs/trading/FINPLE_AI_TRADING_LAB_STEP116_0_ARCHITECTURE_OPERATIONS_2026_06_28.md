@@ -6213,6 +6213,20 @@ npm run check:trading-step116-remaining-operational-gate-batch-plan
 
 This contract gives the numeric answer for "how many gates remain" while keeping the system fail-closed: 20 internal operational gates remain, split into 6 owner-supplied private evidence/result gates, 9 internal review/operator gates, and 5 runtime/UI/DB gates. Repo-safe batch work is limited to keeping the inventory and progress summary current and adding only contract/preflight boundaries that do not accept private evidence or open provider calls, orders, routes, UI, DB migration, or scenario monthly data writes.
 
+## Step 116-5T Owner Evidence Intake Kit
+
+The owner evidence intake kit is:
+
+```text
+docs/trading/FINPLE_STEP116_OWNER_EVIDENCE_INTAKE_RUNBOOK_2026_07_03.md
+data/processed/trading_lab_step116_owner_evidence_intake_kit_contract.json
+scripts/generate-trading-step116-owner-evidence-intake-kit-contract.cjs
+scripts/generate-trading-step116-owner-evidence-intake-kit-contract.test.cjs
+npm run check:trading-step116-owner-evidence-intake-kit
+```
+
+This kit moves the workflow from more contract-chain expansion to the owner-local evidence intake path. It lists the six owner-local items needed before real unlock work can proceed and provides a paste-ready Korean operator prompt. The kit allows only non-sensitive receipt facts in the repo and explicitly forbids recording actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, or private packet contents. Provider calls, order submission, provider adapter and worker implementation, runtime routes, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:

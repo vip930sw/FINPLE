@@ -285,7 +285,8 @@
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cm_review_result_recording_result_review_result_recording_result_review_result_recording_preflight_contract.json",
       "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultSupplyGate": "data\\processed\\trading_lab_step116_read_only_approval_import_review_result_cn_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate_contract.json",
       "remainingOperationalGateInventory": "data\\processed\\trading_lab_step116_remaining_operational_gate_inventory_contract.json",
-      "remainingOperationalGateBatchPlan": "data\\processed\\trading_lab_step116_remaining_operational_gate_batch_plan_contract.json"
+      "remainingOperationalGateBatchPlan": "data\\processed\\trading_lab_step116_remaining_operational_gate_batch_plan_contract.json",
+      "ownerEvidenceIntakeKit": "data\\processed\\trading_lab_step116_owner_evidence_intake_kit_contract.json"
     }
   },
   "outputFiles": {
@@ -308,10 +309,10 @@
     "liveTradingAllowed": false
   },
   "progress": {
-    "trackedContractsTotal": 306,
-    "trackedContractsReady": 306,
+    "trackedContractsTotal": 307,
+    "trackedContractsReady": 307,
     "trackedContractsRemaining": 0,
-    "requiredNpmScriptsTotal": 348,
+    "requiredNpmScriptsTotal": 349,
     "requiredNpmScriptsMissing": 0,
     "completionRatio": 1,
     "phase": "private_paper_shadow_contract_stack_ready_order_authority_external_blocker_cleared_pending_private_evidence_and_implementation_reviews",
@@ -3072,6 +3073,15 @@
       "title": "Remaining operational gate batch plan",
       "filePath": "data\\processed\\trading_lab_step116_remaining_operational_gate_batch_plan_contract.json",
       "status": "remaining_operational_gate_batch_plan_ready_fail_closed",
+      "ready": true,
+      "blockers": [],
+      "allowFlagViolations": []
+    },
+    {
+      "id": "ownerEvidenceIntakeKit",
+      "title": "Owner evidence intake kit",
+      "filePath": "data\\processed\\trading_lab_step116_owner_evidence_intake_kit_contract.json",
+      "status": "owner_evidence_intake_kit_ready_fail_closed",
       "ready": true,
       "blockers": [],
       "allowFlagViolations": []

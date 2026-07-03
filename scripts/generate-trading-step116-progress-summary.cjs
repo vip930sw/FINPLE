@@ -1410,6 +1410,11 @@ const TRACKED_READINESS_CONTRACTS = [
     "Remaining operational gate batch plan",
     "trading_lab_step116_remaining_operational_gate_batch_plan_contract.json",
   ],
+  [
+    "ownerEvidenceIntakeKit",
+    "Owner evidence intake kit",
+    "trading_lab_step116_owner_evidence_intake_kit_contract.json",
+  ],
 ];
 
 const REQUIRED_NPM_SCRIPTS = [
@@ -1761,6 +1766,7 @@ const REQUIRED_NPM_SCRIPTS = [
   "check:trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply",
   "check:trading-step116-remaining-operational-gate-inventory",
   "check:trading-step116-remaining-operational-gate-batch-plan",
+  "check:trading-step116-owner-evidence-intake-kit",
 ];
 
 const FORBIDDEN_ALLOW_FLAGS = [

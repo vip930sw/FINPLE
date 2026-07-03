@@ -393,6 +393,7 @@
     "check:trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply": "node scripts/generate-trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-contract.cjs --check && node --test scripts/generate-trading-read-only-approval-import-review-result-cn-review-result-recording-result-review-result-recording-result-review-result-recording-result-supply-contract.test.cjs",
     "check:trading-step116-remaining-operational-gate-inventory": "node scripts/generate-trading-step116-remaining-operational-gate-inventory-contract.cjs --check && node --test scripts/generate-trading-step116-remaining-operational-gate-inventory-contract.test.cjs",
     "check:trading-step116-remaining-operational-gate-batch-plan": "node scripts/generate-trading-step116-remaining-operational-gate-batch-plan-contract.cjs --check && node --test scripts/generate-trading-step116-remaining-operational-gate-batch-plan-contract.test.cjs",
+    "check:trading-step116-owner-evidence-intake-kit": "node scripts/generate-trading-step116-owner-evidence-intake-kit-contract.cjs --check && node --test scripts/generate-trading-step116-owner-evidence-intake-kit-contract.test.cjs",
     "check:trading-step116-progress-summary": "node scripts/generate-trading-step116-progress-summary.cjs --check && node --test scripts/generate-trading-step116-progress-summary.test.cjs"
   },
   "dependencies": {

@@ -428,11 +428,11 @@ Still intentionally blocked:
 - `scenario_monthly_returns.csv`
 
 Next work:
-1. Use `trading_lab_step116_remaining_operational_gate_inventory_contract.json` and `trading_lab_step116_remaining_operational_gate_batch_plan_contract.json` as the current numeric answer for remaining work: 20 internal operational gates remain.
-2. Treat those 20 gates as 6 owner-supplied private evidence/result gates, 9 internal review/operator gates, and 5 runtime/UI/DB gates that stay blocked.
-3. Ask the owner for the required private evidence/review results outside repo commits before opening real implementation gates.
-4. Keep repo-safe batch work limited to contract/preflight/reporting boundaries that do not accept private evidence, implement provider/worker/adapter code, call providers, submit orders, create routes/UI/DB migrations, or create `scenario_monthly_returns.csv`.
-5. Continue reporting order-authority external blocker, internal operational gates, and actual live trading readiness separately.
+1. Use `FINPLE_STEP116_OWNER_EVIDENCE_INTAKE_RUNBOOK_2026_07_03.md` as the active owner evidence intake handoff.
+2. Owner prepares the six owner-local evidence/review result items outside the repo and outside chat.
+3. Do not record actual local file paths, raw values, hash values, credentials, account identifiers, provider payloads, order payloads, or private packet contents in repo commits.
+4. The next repo-safe implementation step is a redacted receipt schema and placeholder receipt bundle that records only non-sensitive receipt facts.
+5. Provider calls, order submission, provider adapter/worker implementation, runtime route, public UI/homepage router, DB migration, and `scenario_monthly_returns.csv` remain blocked until the receipt bundle and follow-on reviews pass.
 
 Step 114 scenario data remains separately blocked pending written market-data/source approval. No `scenario_monthly_returns.csv` should be created until the source-policy and writer gates open.
 ```
