@@ -290,6 +290,10 @@ export async function fetchAdminTradingManualApprovalOrderDraftReviewResultStatu
   return requestJson("/admin/trading-readiness/manual-approval-order-draft-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus() {
+  return requestJson("/admin/trading-readiness/manual-approval-order-draft-clearance-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

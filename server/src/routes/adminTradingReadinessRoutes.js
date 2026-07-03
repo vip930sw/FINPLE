@@ -1,6 +1,7 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
+import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../services/tradingManualApprovalOrderDraftClearancePreflightGate.js";
 import { buildAdminManualApprovalOrderDraftReviewResultGateStatus } from "../services/tradingManualApprovalOrderDraftReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftPreflightStatus } from "../services/tradingManualApprovalOrderDraftPreflight.js";
 import { buildTradingReadinessSnapshot } from "../services/tradingImplementationShell.js";
@@ -54,6 +55,12 @@ router.get("/manual-approval-order-draft-preflight", (request, response) => {
 router.get("/manual-approval-order-draft-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminManualApprovalOrderDraftReviewResultGateStatus());
+  });
+});
+
+router.get("/manual-approval-order-draft-clearance-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminManualApprovalOrderDraftClearancePreflightStatus());
   });
 });
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
   fetchAdminTradingRiskKillSwitchReviewResultStatus,
@@ -68,6 +69,7 @@ export function TradingReadinessPanel() {
   const [riskKillSwitchReviewResultStatus, setRiskKillSwitchReviewResultStatus] = useState(null);
   const [manualApprovalOrderDraftStatus, setManualApprovalOrderDraftStatus] = useState(null);
   const [manualApprovalOrderDraftReviewResultStatus, setManualApprovalOrderDraftReviewResultStatus] = useState(null);
+  const [manualApprovalOrderDraftClearanceStatus, setManualApprovalOrderDraftClearanceStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingRiskKillSwitchReviewResultStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
+      fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -91,6 +94,7 @@ export function TradingReadinessPanel() {
         setRiskKillSwitchReviewResultStatus(payload?.[4] || null);
         setManualApprovalOrderDraftStatus(payload?.[5] || null);
         setManualApprovalOrderDraftReviewResultStatus(payload?.[6] || null);
+        setManualApprovalOrderDraftClearanceStatus(payload?.[7] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -217,6 +221,19 @@ export function TradingReadinessPanel() {
         <p>
           Receipts {Number(manualApprovalOrderDraftReviewResultStatus?.receiptCount || 0)}.
           Redacted in-memory review result only; no DB write, provider call, or order submission.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingManualApprovalOrderDraftClearance">
+        <span>Manual approval clearance preflight</span>
+        <strong>
+          {manualApprovalOrderDraftClearanceStatus?.status ||
+            "admin_only_manual_approval_order_draft_clearance_preflight_fail_closed"}
+        </strong>
+        <p>
+          Candidate {manualApprovalOrderDraftClearanceStatus?.candidate?.clearanceStatus || "blocked"} /
+          blockers {Number(manualApprovalOrderDraftClearanceStatus?.preflight?.blockerCount || 0)}.
+          Clearance candidate only; readiness flags stay blocked.
         </p>
       </div>
     </section>
