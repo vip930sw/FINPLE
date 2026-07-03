@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabStrategyDraftReviewStatus,
   fetchAdminTradingLabStrategyDraftStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
@@ -249,6 +250,7 @@ export function TradingReadinessPanel() {
   const [kisQuoteAdapterOptInPreflightStatus, setKisQuoteAdapterOptInPreflightStatus] = useState(null);
   const [tradingLabDashboardStatus, setTradingLabDashboardStatus] = useState(null);
   const [tradingLabStrategyDraftStatus, setTradingLabStrategyDraftStatus] = useState(null);
+  const [tradingLabStrategyDraftReviewStatus, setTradingLabStrategyDraftReviewStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -273,6 +275,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
       fetchAdminTradingLabDashboardStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftStatus().catch(() => null),
+      fetchAdminTradingLabStrategyDraftReviewStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -292,6 +295,7 @@ export function TradingReadinessPanel() {
         setKisQuoteAdapterOptInPreflightStatus(payload?.[13] || null);
         setTradingLabDashboardStatus(payload?.[14] || null);
         setTradingLabStrategyDraftStatus(payload?.[15] || null);
+        setTradingLabStrategyDraftReviewStatus(payload?.[16] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -316,6 +320,16 @@ export function TradingReadinessPanel() {
   const labStrategyDraft = labStrategyDraftStatus?.strategyDraft || {};
   const labStrategyDraftValidation = labStrategyDraftStatus?.validation || {};
   const labStrategyDraftPreview = strategyDraftPreview || labStrategyDraft;
+  const labStrategyDraftReviewStatus = tradingLabStrategyDraftReviewStatus || tradingLabDashboardStatus?.strategyDraftReviewStatus || {};
+  const labStrategyDraftComparison = labStrategyDraftReviewStatus?.comparison || {};
+  const labStrategyDraftChangeRows = Array.isArray(labStrategyDraftReviewStatus?.changeHistory?.changes)
+    ? labStrategyDraftReviewStatus.changeHistory.changes
+    : [];
+  const labStrategyDraftDiffRows = Array.isArray(labStrategyDraftComparison?.diffRows)
+    ? labStrategyDraftComparison.diffRows
+    : [];
+  const labStrategyRiskImpactPreview = labStrategyDraftReviewStatus?.riskImpactPreview || {};
+  const labStrategyDraftReviewGate = labStrategyDraftReviewStatus?.reviewGate || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -622,6 +636,51 @@ export function TradingReadinessPanel() {
             </dl>
           </article>
 
+          <article className="tradingLabSection tradingLabStrategyDraftReview" data-admin-panel-key="trading-lab-strategy-draft-review">
+            <span>Strategy review</span>
+            <h4>{formatStatus(labStrategyDraftReviewGate.status || labStrategyDraftReviewStatus.status || "review_pending")}</h4>
+            <div className="tradingLabReviewCards">
+              <div>
+                <span>Before</span>
+                <strong>{labStrategyDraftComparison.baseStrategyName || "Admin mock strategy baseline"}</strong>
+                <small>{formatStatus(labStrategyDraftComparison.modeBefore || "mock")}</small>
+              </div>
+              <div>
+                <span>After</span>
+                <strong>{labStrategyDraftComparison.draftStrategyName || labStrategyDraftPreview.strategyName || "Admin mock strategy draft"}</strong>
+                <small>{formatStatus(labStrategyDraftComparison.modeAfter || "mock")}</small>
+              </div>
+              <div>
+                <span>Validation</span>
+                <strong>{formatStatus(labStrategyDraftComparison.validationStatus || labStrategyDraftValidation.status || "validation_required")}</strong>
+                <small>{formatStatus(labStrategyDraftComparison.reviewStatus || "review_pending")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList" aria-label="Strategy draft change summary">
+              {labStrategyDraftDiffRows.map((row, index) => (
+                <li key={`${row.field || "change"}-${row.symbol || index}`}>{row.summary || "mock strategy draft comparison change"}</li>
+              ))}
+            </ul>
+            <dl>
+              <div>
+                <dt>Return delta</dt>
+                <dd>{Number(labStrategyRiskImpactPreview.cumulativeReturnDeltaPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>MDD delta</dt>
+                <dd>{Number(labStrategyRiskImpactPreview.mddDeltaPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>Cash delta</dt>
+                <dd>{Number(labStrategyRiskImpactPreview.cashWeightDeltaPct || 0).toFixed(2)}%</dd>
+              </div>
+              <div>
+                <dt>Max weight delta</dt>
+                <dd>{Number(labStrategyRiskImpactPreview.maxPositionWeightDeltaPct || 0).toFixed(2)}%</dd>
+              </div>
+            </dl>
+          </article>
+
           <article className="tradingLabSection">
             <span>현재 투자전략</span>
             <h4>{labStrategy.name || "관리자 모의 전략"}</h4>
@@ -734,6 +793,28 @@ export function TradingReadinessPanel() {
                 <span>{formatPositionField(position, "averagePrice", "averagePricePlaceholder")}</span>
                 <span>{formatPositionField(position, "mockCurrentPrice", "currentPricePlaceholder")}</span>
                 <span>{Number(position.weightPct || 0).toFixed(2)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tradingLabTableSection tradingLabStrategyReviewHistory">
+          <span>Strategy change history</span>
+          <div className="tradingLabTable">
+            <div className="tradingLabTableRow header">
+              <span>Change ID</span>
+              <span>Type</span>
+              <span>Status</span>
+              <span>Summary</span>
+              <span>Redacted</span>
+            </div>
+            {labStrategyDraftChangeRows.map((change) => (
+              <div className="tradingLabTableRow" key={change.changeId}>
+                <span>{change.changeId}</span>
+                <span>{formatStatus(change.changeType || "target_weight")}</span>
+                <span>{formatStatus(change.status || "draft")}</span>
+                <span>{change.summary}</span>
+                <span>{change.redacted === true ? "true" : "false"}</span>
               </div>
             ))}
           </div>

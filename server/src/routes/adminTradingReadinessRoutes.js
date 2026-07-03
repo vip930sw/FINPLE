@@ -1,7 +1,11 @@
 import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
-import { buildAdminTradingLabDashboardStatus, buildAdminTradingLabStrategyDraftStatus } from "../services/tradingAdminLabDashboardShell.js";
+import {
+  buildAdminTradingLabDashboardStatus,
+  buildAdminTradingLabStrategyDraftReviewStatus,
+  buildAdminTradingLabStrategyDraftStatus,
+} from "../services/tradingAdminLabDashboardShell.js";
 import { buildAdminProviderCallPolicyStatus } from "../services/tradingProviderCallPolicyCore.js";
 import { buildAdminKisReadOnlyQuoteAdapterOptInPreflightStatus } from "../services/tradingKisReadOnlyQuoteAdapterOptInPreflightBoundary.js";
 import { buildAdminKisReadOnlyProviderCallInventoryPreflightStatus } from "../services/tradingKisReadOnlyProviderCallInventoryPreflight.js";
@@ -116,6 +120,12 @@ router.get("/trading-lab-dashboard", (request, response) => {
 router.get("/trading-lab-strategy-draft", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabStrategyDraftStatus());
+  });
+});
+
+router.get("/trading-lab-strategy-draft-review", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabStrategyDraftReviewStatus());
   });
 });
 

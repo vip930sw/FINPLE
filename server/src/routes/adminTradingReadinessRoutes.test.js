@@ -24,6 +24,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/kis-read-only-quote-adapter-opt-in-preflight"/);
   assert.match(routeText, /router\.get\("\/trading-lab-dashboard"/);
   assert.match(routeText, /router\.get\("\/trading-lab-strategy-draft"/);
+  assert.match(routeText, /router\.get\("\/trading-lab-strategy-draft-review"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });
