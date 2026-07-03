@@ -5875,6 +5875,32 @@ npm run check:trading-read-only-approval-import-review-result-recording-result-r
 
 This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_supply_gate` step opens only a supply gate boundary for a future owner-supplied redacted approval import recording-result review-result recording-result review-result recording result review result recording result review result recording result review result recording result. It does not supply, accept, read, or record the result now, does not read private approval packets, does not record private paths, raw values, or hash inputs, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
 
+## Step 116-5Q-BQ Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result
+
+The first Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-bq-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-bq-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-bq
+```
+
+This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result` step records only the contract boundary for a future owner-supplied redacted approval import recording-result review-result recording-result review-result recording result review result recording result review result recording result review result recording result. It does not accept, read, or record the owner recording result now, does not read private approval packets, does not record private paths, raw values, or hash inputs, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
+
+## Step 116-5Q-BR Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Preflight
+
+The first Trading Read-Only Approval Import Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Result Recording Result Review Preflight Contract is:
+
+```text
+data/processed/trading_lab_step116_read_only_approval_import_review_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_preflight_contract.json
+scripts/generate-trading-read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-br-review-preflight-contract.cjs
+scripts/generate-trading-read-only-approval-import-review-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-br-review-preflight-contract.test.cjs
+npm run check:trading-read-only-approval-import-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-review-result-recording-result-br-review-preflight
+```
+
+This `read_only_approval_import_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review_result_recording_result_review` step opens only a review preflight boundary after the recording-result contract. It does not accept, read, or record a future review now, does not read private approval packets, does not record private paths, raw values, or hash inputs, does not implement `readOnlyApprovalImport.js`, does not import approval evidence, does not authorize provider calls, and keeps runtime routes, public UI, DB migration, order submission, live trading, and `scenario_monthly_returns.csv` blocked.
+
 ## Explicit Non-Goals
 
 Do not do these in Step 116-0:
