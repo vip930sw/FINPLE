@@ -338,6 +338,10 @@ export async function fetchAdminTradingLabStrategyDraftClearancePreflightStatus(
   return requestJson("/admin/trading-readiness/trading-lab-strategy-draft-clearance-preflight", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-strategy-draft-clearance-review-result", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

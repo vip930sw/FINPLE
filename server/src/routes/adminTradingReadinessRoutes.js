@@ -4,6 +4,7 @@ import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
   buildAdminTradingLabDashboardStatus,
   buildAdminTradingLabStrategyDraftClearancePreflightStatus,
+  buildAdminTradingLabStrategyDraftClearanceReviewResultStatus,
   buildAdminTradingLabStrategyDraftReviewResultStatus,
   buildAdminTradingLabStrategyDraftReviewStatus,
   buildAdminTradingLabStrategyDraftStatus,
@@ -140,6 +141,12 @@ router.get("/trading-lab-strategy-draft-review-result", (request, response) => {
 router.get("/trading-lab-strategy-draft-clearance-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabStrategyDraftClearancePreflightStatus());
+  });
+});
+
+router.get("/trading-lab-strategy-draft-clearance-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabStrategyDraftClearanceReviewResultStatus());
   });
 });
 

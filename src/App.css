@@ -793,6 +793,10 @@ nav {
   background: #fff7ed;
 }
 
+.tradingLabClearanceReviewCards div {
+  background: #f8fafc;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -822,6 +826,12 @@ nav {
   background: #fff7ed;
   border-color: rgba(234, 88, 12, 0.16);
   color: #9a3412;
+}
+
+.tradingLabClearanceReviewList li {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.16);
+  color: #166534;
 }
 
 .tradingLabTableSection {

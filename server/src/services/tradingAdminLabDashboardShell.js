@@ -84,6 +84,18 @@ export const STEP137_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_PREFLIGHT_FLAGS 
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP138_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_FLAGS = Object.freeze({
+  ...STEP137_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_PREFLIGHT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -261,6 +273,64 @@ export const TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_PREFLIGHT_RESULT_SCHEMA = Obje
   clearanceStatus: "blocked | validation_required | mock_only_clearance_candidate | not_ready",
   clearanceScope: "mock_only",
   nextAllowedStep: "mock_review_only",
+  redacted: true,
+});
+
+export const TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_RECORDING_SCHEMA = Object.freeze({
+  clearanceReviewResultId: "string",
+  clearancePreflightId: "string",
+  candidateId: "string",
+  strategyDraftId: "string",
+  reviewResultId: "string",
+  receiptId: "string",
+  sourceStep: "step138",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_clearance_review_recorded | blocked | rejected",
+  reviewedAt: "placeholder_timestamp",
+  reviewedBy: "admin_placeholder",
+  readinessImpact: "none",
+  redacted: true,
+});
+
+export const TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RECEIPT_SCHEMA = Object.freeze({
+  receiptId: "string",
+  clearanceReviewResultId: "string",
+  clearancePreflightId: "string",
+  candidateId: "string",
+  strategyDraftId: "string",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_clearance_review_recorded | blocked | rejected",
+  recordedAt: "placeholder_timestamp",
+  blockerCount: "number",
+  warningCount: "number",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_review_only",
+  redacted: true,
+});
+
+export const TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_DECISION_SUMMARY_MODEL = Object.freeze({
+  decisionSummaryId: "string",
+  sourceStep: "step138",
+  decision: "mock_clearance_review_recorded | blocked | rejected",
+  summary: "string",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  redacted: true,
+});
+
+export const TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_BLOCKER_SUMMARY_MODEL = Object.freeze({
+  blockerSummaryId: "string",
+  sourceStep: "step138",
+  blockers: "string[]",
+  warnings: "string[]",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
   redacted: true,
 });
 
@@ -2015,6 +2085,342 @@ export function buildAdminTradingLabStrategyDraftClearancePreflightStatus(input 
   };
 }
 
+export function validateTradingLabStrategyDraftClearanceReviewResult(input = {}, options = {}) {
+  const strategyDraft = input.strategyDraft || buildTradingLabStrategyConfigDraft(input, options);
+  const validation = input.validation || validateTradingLabStrategyConfigDraft(strategyDraft);
+  const comparison = input.comparison || buildTradingLabStrategyDraftComparison({ ...input, strategyDraft, validation }, options);
+  const reviewGate = input.reviewGate || buildTradingLabStrategyDraftReviewGate({ ...input, strategyDraft, validation, comparison }, options);
+  const reviewResultStatus = input.reviewResultStatus || buildAdminTradingLabStrategyDraftReviewResultStatus(
+    { ...input, strategyDraft, validation, comparison, reviewGate },
+    options,
+  );
+  const clearancePreflightStatus = input.clearancePreflightStatus || buildAdminTradingLabStrategyDraftClearancePreflightStatus(
+    { ...input, strategyDraft, validation, comparison, reviewGate, reviewResultStatus },
+    options,
+  );
+  const clearancePreflight = input.clearancePreflight || clearancePreflightStatus.clearancePreflight || null;
+  const clearanceValidation = input.clearanceValidation || clearancePreflight?.clearanceValidation || null;
+  const candidate = input.candidate || clearancePreflightStatus.candidate || clearancePreflight?.candidate || null;
+  const preflightResult = input.preflightResult || clearancePreflightStatus.result || clearancePreflight?.result || null;
+  const blockers = [
+    ...(validation.blockers || []),
+    ...(clearanceValidation?.blockers || []),
+    ...(clearancePreflightStatus.blockerSummary?.blockers || []),
+  ];
+  const warnings = [
+    ...(validation.warnings || []),
+    ...(clearanceValidation?.warnings || []),
+    ...(clearancePreflightStatus.blockerSummary?.warnings || []),
+  ];
+
+  if (!preflightResult) blockers.push("clearance_preflight_missing");
+  if (preflightResult && preflightResult.redacted !== true) blockers.push("clearance_preflight_not_redacted");
+  if (preflightResult && preflightResult.clearanceScope !== "mock_only") blockers.push("clearance_scope_not_mock_only");
+  if (preflightResult && preflightResult.readinessImpact !== "none") blockers.push("clearance_readiness_impact_not_none");
+  if (preflightResult && preflightResult.providerCallImpact !== "blocked") blockers.push("clearance_provider_call_impact_not_blocked");
+  if (preflightResult && preflightResult.orderSubmissionImpact !== "blocked") blockers.push("clearance_order_submission_impact_not_blocked");
+  if (preflightResult && preflightResult.liveTradingImpact !== "blocked") blockers.push("clearance_live_trading_impact_not_blocked");
+  if (preflightResult?.clearanceStatus === "blocked") blockers.push("clearance_preflight_blocked");
+  if (preflightResult?.clearanceStatus === "validation_required") warnings.push("clearance_preflight_validation_required");
+  if (!candidate) blockers.push("clearance_candidate_missing");
+  if (candidate && candidate.scope !== "mock_only") blockers.push("clearance_candidate_scope_not_mock_only");
+  if (candidate && candidate.orderCandidateCreated !== false) blockers.push("clearance_candidate_must_not_create_order_candidate");
+  if (candidate && candidate.orderDraftCreated !== false) blockers.push("clearance_candidate_must_not_create_order_draft");
+  if (candidate?.status === "blocked") blockers.push("clearance_candidate_blocked");
+  if (candidate?.status === "validation_required") warnings.push("clearance_candidate_validation_required");
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const reviewStatus = uniqueBlockers.length > 0
+    ? "blocked"
+    : uniqueWarnings.length > 0
+      ? "validation_required"
+      : "recorded";
+  const decision = reviewStatus === "recorded"
+    ? "mock_clearance_review_recorded"
+    : reviewStatus === "blocked"
+      ? "blocked"
+      : "rejected";
+
+  return {
+    validationId: "step138_strategy_draft_clearance_review_result_validation",
+    sourceStep: "step138",
+    clearanceReviewResultId: "step138_strategy_draft_clearance_review_result",
+    clearancePreflightId: preflightResult?.clearancePreflightId || "missing_clearance_preflight",
+    candidateId: candidate?.candidateId || "missing_clearance_candidate",
+    strategyDraftId: strategyDraft.strategyDraftId,
+    reviewResultId: preflightResult?.reviewResultId || clearanceValidation?.reviewResultId || "missing_review_result",
+    receiptId: preflightResult?.receiptId || clearanceValidation?.receiptId || "missing_review_receipt",
+    reviewStatus,
+    decision,
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    summary: reviewStatus === "recorded"
+      ? "mock-only clearance review recorded"
+      : "mock-only clearance review remains blocked or requires validation",
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_review_only",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step138_strategy_draft_clearance_review_result_validation_v1" }),
+  };
+}
+
+export function buildTradingLabStrategyDraftClearanceReviewBlockerSummary(validation = validateTradingLabStrategyDraftClearanceReviewResult()) {
+  return {
+    blockerSummaryId: "step138_strategy_draft_clearance_review_blocker_summary",
+    sourceStep: "step138",
+    status: validation.reviewStatus,
+    blockers: validation.blockers || [],
+    warnings: validation.warnings || [],
+    blockerMessages: validation.blockerSummary || [],
+    warningMessages: validation.warningSummary || [],
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    redacted: true,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+  };
+}
+
+export function buildTradingLabStrategyDraftClearanceReviewDecisionSummary(reviewResult = buildTradingLabStrategyDraftClearanceReviewResult()) {
+  return {
+    decisionSummaryId: "step138_strategy_draft_clearance_review_decision_summary",
+    sourceStep: "step138",
+    decision: reviewResult.decision,
+    reviewStatus: reviewResult.reviewStatus,
+    summary: reviewResult.summary || "mock-only clearance review recorded",
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_review_only",
+    redacted: true,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+  };
+}
+
+export function buildTradingLabStrategyDraftClearanceReviewResult(input = {}, options = {}) {
+  const validation = input.clearanceReviewValidation || validateTradingLabStrategyDraftClearanceReviewResult(input, options);
+
+  return {
+    clearanceReviewResultId: validation.clearanceReviewResultId,
+    clearancePreflightId: validation.clearancePreflightId,
+    candidateId: validation.candidateId,
+    strategyDraftId: validation.strategyDraftId,
+    reviewResultId: validation.reviewResultId,
+    receiptId: validation.receiptId,
+    sourceStep: "step138",
+    reviewStatus: validation.reviewStatus,
+    decision: validation.decision,
+    reviewedAt: "placeholder_timestamp",
+    reviewedBy: "admin_placeholder",
+    summary: validation.summary,
+    blockers: validation.blockers || [],
+    warnings: validation.warnings || [],
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_review_only",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    credentialStored: false,
+    accountIdentifierStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    privatePathStored: false,
+    hashValueStored: false,
+    digestValueStored: false,
+  };
+}
+
+export function buildTradingLabStrategyDraftClearanceReviewReceipt(reviewResult = buildTradingLabStrategyDraftClearanceReviewResult()) {
+  return {
+    receiptId: "step138_strategy_draft_clearance_review_receipt",
+    clearanceReviewResultId: reviewResult.clearanceReviewResultId,
+    clearancePreflightId: reviewResult.clearancePreflightId,
+    candidateId: reviewResult.candidateId,
+    strategyDraftId: reviewResult.strategyDraftId,
+    sourceStep: "step138",
+    reviewStatus: reviewResult.reviewStatus,
+    decision: reviewResult.decision,
+    redacted: true,
+    recordedAt: "placeholder_timestamp",
+    blockerCount: Array.isArray(reviewResult.blockers) ? reviewResult.blockers.length : 0,
+    warningCount: Array.isArray(reviewResult.warnings) ? reviewResult.warnings.length : 0,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_review_only",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    credentialStored: false,
+    accountIdentifierStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    privatePathStored: false,
+    hashValueStored: false,
+    digestValueStored: false,
+  };
+}
+
+export function buildTradingLabStrategyDraftClearanceReviewResultRecordingGate(input = {}, options = {}) {
+  const clearanceReviewValidation = input.clearanceReviewValidation || validateTradingLabStrategyDraftClearanceReviewResult(input, options);
+  const reviewResult = input.reviewResult || buildTradingLabStrategyDraftClearanceReviewResult({ ...input, clearanceReviewValidation }, options);
+  const receipt = input.receipt || buildTradingLabStrategyDraftClearanceReviewReceipt(reviewResult);
+  const blockerSummary = input.blockerSummary || buildTradingLabStrategyDraftClearanceReviewBlockerSummary(clearanceReviewValidation);
+  const decisionSummary = input.decisionSummary || buildTradingLabStrategyDraftClearanceReviewDecisionSummary(reviewResult);
+
+  return {
+    recordingGateId: "step138_strategy_draft_clearance_review_result_recording_gate",
+    sourceStep: "step138",
+    status: reviewResult.reviewStatus,
+    storageMode: "in_memory_placeholder_only",
+    clearanceReviewValidation,
+    reviewResult,
+    receipt,
+    blockerSummary,
+    decisionSummary,
+    mockHistory: [receipt],
+    flags: { ...STEP138_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step138_strategy_draft_clearance_review_result_recording_gate_v1" }),
+  };
+}
+
+export function buildAdminTradingLabStrategyDraftClearanceReviewResultStatus(input = {}, options = {}) {
+  const strategyDraft = input.strategyDraft || buildTradingLabStrategyConfigDraft(input, options);
+  const validation = input.validation || validateTradingLabStrategyConfigDraft(strategyDraft);
+  const comparison = input.comparison || buildTradingLabStrategyDraftComparison({ ...input, strategyDraft, validation }, options);
+  const reviewGate = input.reviewGate || buildTradingLabStrategyDraftReviewGate({ ...input, strategyDraft, validation, comparison }, options);
+  const reviewResultStatus = input.reviewResultStatus || buildAdminTradingLabStrategyDraftReviewResultStatus(
+    { ...input, strategyDraft, validation, comparison, reviewGate },
+    options,
+  );
+  const clearancePreflightStatus = input.clearancePreflightStatus || buildAdminTradingLabStrategyDraftClearancePreflightStatus(
+    { ...input, strategyDraft, validation, comparison, reviewGate, reviewResultStatus },
+    options,
+  );
+  const recordingGate = input.recordingGate || buildTradingLabStrategyDraftClearanceReviewResultRecordingGate(
+    { ...input, strategyDraft, validation, comparison, reviewGate, reviewResultStatus, clearancePreflightStatus },
+    options,
+  );
+
+  return {
+    ok: true,
+    step: "Step 138: Admin trading lab strategy draft clearance review result recording gate",
+    status: "admin_only_strategy_draft_clearance_review_result_recording_gate_fail_closed",
+    strategyDraftClearanceReviewResultRecordingSchema: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_RECORDING_SCHEMA,
+    strategyDraftClearanceReviewReceiptSchema: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RECEIPT_SCHEMA,
+    strategyDraftClearanceReviewDecisionSummaryModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_DECISION_SUMMARY_MODEL,
+    strategyDraftClearanceReviewBlockerSummaryModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_BLOCKER_SUMMARY_MODEL,
+    recordingGate,
+    reviewResult: recordingGate.reviewResult,
+    receipt: recordingGate.receipt,
+    blockerSummary: recordingGate.blockerSummary,
+    decisionSummary: recordingGate.decisionSummary,
+    mockHistory: recordingGate.mockHistory,
+    flags: { ...STEP138_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      scenarioMonthlyReturnsTouched: false,
+      scenarioRuntimeTouched: false,
+    },
+  };
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -2355,6 +2761,18 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const strategyDraftClearanceReviewResultStatus = input.strategyDraftClearanceReviewResultStatus || buildAdminTradingLabStrategyDraftClearanceReviewResultStatus(
+    {
+      ...input,
+      strategyDraft: strategyDraftStatus.strategyDraft,
+      validation: strategyDraftStatus.validation,
+      comparison: strategyDraftReviewStatus.comparison,
+      reviewGate: strategyDraftReviewStatus.reviewGate,
+      reviewResultStatus: strategyDraftReviewResultStatus,
+      clearancePreflightStatus: strategyDraftClearancePreflightStatus,
+    },
+    options,
+  );
   const mockRecalculationBoundary = input.mockRecalculationBoundary || strategyDraftStatus.mockRecalculationBoundary;
   const mockLedger = input.mockLedger || mockRecalculationBoundary.mockLedger || buildTradingLabMockLedger(options);
   const mockTradeEvents = input.mockTradeEvents || buildTradingLabMockTradeEvents({ ...options, events: mockLedger.events });
@@ -2383,7 +2801,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
 
   return {
     ok: true,
-    step: "Step 137: Admin trading lab strategy draft clearance preflight",
+    step: "Step 138: Admin trading lab strategy draft clearance review result recording gate",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -2397,6 +2815,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     strategyDraftReviewStatus,
     strategyDraftReviewResultStatus,
     strategyDraftClearancePreflightStatus,
+    strategyDraftClearanceReviewResultStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -2409,6 +2828,10 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     strategyDraftClearanceCandidateModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_CANDIDATE_MODEL,
     strategyDraftClearanceBlockerModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_BLOCKER_MODEL,
     strategyDraftClearancePreflightResultSchema: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_PREFLIGHT_RESULT_SCHEMA,
+    strategyDraftClearanceReviewResultRecordingSchema: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_RECORDING_SCHEMA,
+    strategyDraftClearanceReviewReceiptSchema: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RECEIPT_SCHEMA,
+    strategyDraftClearanceReviewDecisionSummaryModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_DECISION_SUMMARY_MODEL,
+    strategyDraftClearanceReviewBlockerSummaryModel: TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_BLOCKER_SUMMARY_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -2441,7 +2864,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP137_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_PREFLIGHT_FLAGS },
+    flags: { ...STEP138_ADMIN_TRADING_LAB_STRATEGY_DRAFT_CLEARANCE_REVIEW_RESULT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,

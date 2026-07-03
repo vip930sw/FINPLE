@@ -6,6 +6,7 @@ import {
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
   fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
+  fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus,
   fetchAdminTradingLabStrategyDraftReviewResultStatus,
   fetchAdminTradingLabStrategyDraftReviewStatus,
   fetchAdminTradingLabStrategyDraftStatus,
@@ -255,6 +256,7 @@ export function TradingReadinessPanel() {
   const [tradingLabStrategyDraftReviewStatus, setTradingLabStrategyDraftReviewStatus] = useState(null);
   const [tradingLabStrategyDraftReviewResultStatus, setTradingLabStrategyDraftReviewResultStatus] = useState(null);
   const [tradingLabStrategyDraftClearancePreflightStatus, setTradingLabStrategyDraftClearancePreflightStatus] = useState(null);
+  const [tradingLabStrategyDraftClearanceReviewResultStatus, setTradingLabStrategyDraftClearanceReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -282,6 +284,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabStrategyDraftReviewStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftReviewResultStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftClearancePreflightStatus().catch(() => null),
+      fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -304,6 +307,7 @@ export function TradingReadinessPanel() {
         setTradingLabStrategyDraftReviewStatus(payload?.[16] || null);
         setTradingLabStrategyDraftReviewResultStatus(payload?.[17] || null);
         setTradingLabStrategyDraftClearancePreflightStatus(payload?.[18] || null);
+        setTradingLabStrategyDraftClearanceReviewResultStatus(payload?.[19] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -351,6 +355,14 @@ export function TradingReadinessPanel() {
   const labStrategyDraftClearanceCandidate = labStrategyDraftClearancePreflightStatus?.candidate || labStrategyDraftClearancePreflight?.candidate || {};
   const labStrategyDraftClearanceResult = labStrategyDraftClearancePreflightStatus?.result || labStrategyDraftClearancePreflight?.result || {};
   const labStrategyDraftClearanceBlockerSummary = labStrategyDraftClearancePreflightStatus?.blockerSummary || labStrategyDraftClearancePreflight?.blockerSummary || {};
+  const labStrategyDraftClearanceReviewResultStatus = tradingLabStrategyDraftClearanceReviewResultStatus || tradingLabDashboardStatus?.strategyDraftClearanceReviewResultStatus || {};
+  const labStrategyDraftClearanceReviewResult = labStrategyDraftClearanceReviewResultStatus?.reviewResult || labStrategyDraftClearanceReviewResultStatus?.recordingGate?.reviewResult || {};
+  const labStrategyDraftClearanceReviewReceipt = labStrategyDraftClearanceReviewResultStatus?.receipt || labStrategyDraftClearanceReviewResultStatus?.recordingGate?.receipt || {};
+  const labStrategyDraftClearanceReviewBlockerSummary = labStrategyDraftClearanceReviewResultStatus?.blockerSummary || labStrategyDraftClearanceReviewResultStatus?.recordingGate?.blockerSummary || {};
+  const labStrategyDraftClearanceReviewDecisionSummary = labStrategyDraftClearanceReviewResultStatus?.decisionSummary || labStrategyDraftClearanceReviewResultStatus?.recordingGate?.decisionSummary || {};
+  const labStrategyDraftClearanceReviewHistory = Array.isArray(labStrategyDraftClearanceReviewResultStatus?.mockHistory)
+    ? labStrategyDraftClearanceReviewResultStatus.mockHistory
+    : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -774,6 +786,47 @@ export function TradingReadinessPanel() {
               ))}
               {(labStrategyDraftClearanceBlockerSummary.warningMessages || []).map((message, index) => (
                 <li key={`clearance-preflight-warning-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabStrategyDraftClearanceReviewResult" data-admin-panel-key="trading-lab-strategy-draft-clearance-review-result">
+            <span>Mock clearance review result</span>
+            <h4>{formatStatus(labStrategyDraftClearanceReviewResult.reviewStatus || labStrategyDraftClearanceReviewResultStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This recorded result is only for mock/dry-run strategy review and does not execute orders, grant provider access, or change live readiness.
+            </p>
+            <div className="tradingLabReviewCards tradingLabClearanceReviewCards">
+              <div>
+                <span>Receipt</span>
+                <strong>{labStrategyDraftClearanceReviewReceipt.receiptId || "step138_strategy_draft_clearance_review_receipt"}</strong>
+                <small>{labStrategyDraftClearanceReviewReceipt.redacted === false ? "not_redacted" : "redacted"}</small>
+              </div>
+              <div>
+                <span>Decision</span>
+                <strong>{formatStatus(labStrategyDraftClearanceReviewResult.decision || "rejected")}</strong>
+                <small>{formatStatus(labStrategyDraftClearanceReviewDecisionSummary.nextAllowedStep || "mock_review_only")}</small>
+              </div>
+              <div>
+                <span>Provider impact</span>
+                <strong>{formatStatus(labStrategyDraftClearanceReviewReceipt.providerCallImpact || "blocked")}</strong>
+                <small>KIS calls remain blocked</small>
+              </div>
+              <div>
+                <span>Order impact</span>
+                <strong>{formatStatus(labStrategyDraftClearanceReviewReceipt.orderSubmissionImpact || "blocked")}</strong>
+                <small>{labStrategyDraftClearanceReviewResult.orderDraftCreated ? "order_draft_created" : "no_order_draft"}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabClearanceReviewList" aria-label="Strategy draft clearance review result blockers and warnings">
+              {(labStrategyDraftClearanceReviewBlockerSummary.blockerMessages || labStrategyDraftClearanceReviewBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`clearance-review-result-blocker-${index}`}>{message}</li>
+              ))}
+              {(labStrategyDraftClearanceReviewBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`clearance-review-result-warning-${index}`}>{message}</li>
+              ))}
+              {labStrategyDraftClearanceReviewHistory.slice(0, 1).map((receipt, index) => (
+                <li key={`clearance-review-history-${index}`}>{receipt.receiptId || "mock clearance review receipt"} · {formatStatus(receipt.decision || "rejected")}</li>
               ))}
             </ul>
           </article>
