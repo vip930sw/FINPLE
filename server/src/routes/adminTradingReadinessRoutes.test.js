@@ -16,6 +16,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/manual-approval-order-draft-preflight"/);
   assert.match(routeText, /router\.get\("\/manual-approval-order-draft-review-result"/);
   assert.match(routeText, /router\.get\("\/manual-approval-order-draft-clearance-preflight"/);
+  assert.match(routeText, /router\.get\("\/manual-approval-clearance-review-result"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });

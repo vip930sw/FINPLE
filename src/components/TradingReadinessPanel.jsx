@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
@@ -70,6 +71,7 @@ export function TradingReadinessPanel() {
   const [manualApprovalOrderDraftStatus, setManualApprovalOrderDraftStatus] = useState(null);
   const [manualApprovalOrderDraftReviewResultStatus, setManualApprovalOrderDraftReviewResultStatus] = useState(null);
   const [manualApprovalOrderDraftClearanceStatus, setManualApprovalOrderDraftClearanceStatus] = useState(null);
+  const [manualApprovalClearanceReviewResultStatus, setManualApprovalClearanceReviewResultStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -84,6 +86,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingManualApprovalOrderDraftPreflightStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftReviewResultStatus().catch(() => null),
       fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
+      fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -95,6 +98,7 @@ export function TradingReadinessPanel() {
         setManualApprovalOrderDraftStatus(payload?.[5] || null);
         setManualApprovalOrderDraftReviewResultStatus(payload?.[6] || null);
         setManualApprovalOrderDraftClearanceStatus(payload?.[7] || null);
+        setManualApprovalClearanceReviewResultStatus(payload?.[8] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -234,6 +238,19 @@ export function TradingReadinessPanel() {
           Candidate {manualApprovalOrderDraftClearanceStatus?.candidate?.clearanceStatus || "blocked"} /
           blockers {Number(manualApprovalOrderDraftClearanceStatus?.preflight?.blockerCount || 0)}.
           Clearance candidate only; readiness flags stay blocked.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingManualApprovalClearanceReviewResult">
+        <span>Manual approval clearance review</span>
+        <strong>
+          {manualApprovalClearanceReviewResultStatus?.status ||
+            "admin_only_manual_approval_clearance_review_result_gate_fail_closed"}
+        </strong>
+        <p>
+          Receipts {Number(manualApprovalClearanceReviewResultStatus?.receiptCount || 0)} /
+          decision {manualApprovalClearanceReviewResultStatus?.recording?.review?.decision || "clearance_not_granted"}.
+          Redacted review result only; no readiness promotion.
         </p>
       </div>
     </section>

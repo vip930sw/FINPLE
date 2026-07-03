@@ -294,6 +294,10 @@ export async function fetchAdminTradingManualApprovalOrderDraftClearancePrefligh
   return requestJson("/admin/trading-readiness/manual-approval-order-draft-clearance-preflight", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingManualApprovalClearanceReviewResultStatus() {
+  return requestJson("/admin/trading-readiness/manual-approval-clearance-review-result", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
