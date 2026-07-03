@@ -1,0 +1,25 @@
+const test = require("node:test");
+const { exerciseGate } = require("./trading-read-only-approval-import-review-result-review-gate.test-helper.cjs");
+
+test("keeps read-only approval import review result cg recording preflight locked", () => {
+  exerciseGate({
+    tmpPrefix: "finple-read-only-approval-cg-recording-preflight",
+    script:
+      "generate-trading-read-only-approval-import-review-result-cg-review-result-recording-result-review-result-recording-preflight-contract.cjs",
+    contract:
+      "trading_lab_step116_read_only_approval_import_review_result_cg_review_result_recording_result_review_result_recording_preflight_contract.json",
+    readyField:
+      "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingPreflight",
+    previousContract:
+      "trading_lab_step116_read_only_approval_import_review_result_cf_review_result_recording_result_review_result_contract.json",
+    previousReadyField:
+      "readyForReadOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResult",
+    previousKey:
+      "readOnlyApprovalImportReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResultRecordingResultReviewResult",
+    requiredContracts: [
+      "trading_lab_step116_read_only_approval_import_review_result_cf_review_result_recording_result_review_result_contract.json",
+    ],
+    stdoutPattern:
+      "read-only-approval-import-review-result-cg-review-result-recording-result-review-result-recording-preflight-contract",
+  });
+});
