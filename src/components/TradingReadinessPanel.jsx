@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   fetchAdminTradingProviderCallPolicyStatus,
+  fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingManualApprovalClearanceReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
@@ -80,6 +81,7 @@ export function TradingReadinessPanel() {
   const [providerResponseEnvelopeValidationStatus, setProviderResponseEnvelopeValidationStatus] = useState(null);
   const [providerResponseValidationReviewResultStatus, setProviderResponseValidationReviewResultStatus] = useState(null);
   const [providerCallPolicyStatus, setProviderCallPolicyStatus] = useState(null);
+  const [kisQuoteAdapterOptInPreflightStatus, setKisQuoteAdapterOptInPreflightStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -99,6 +101,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
       fetchAdminTradingProviderResponseValidationReviewResultStatus().catch(() => null),
       fetchAdminTradingProviderCallPolicyStatus().catch(() => null),
+      fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -115,6 +118,7 @@ export function TradingReadinessPanel() {
         setProviderResponseEnvelopeValidationStatus(payload?.[10] || null);
         setProviderResponseValidationReviewResultStatus(payload?.[11] || null);
         setProviderCallPolicyStatus(payload?.[12] || null);
+        setKisQuoteAdapterOptInPreflightStatus(payload?.[13] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -317,6 +321,20 @@ export function TradingReadinessPanel() {
           rate limit {providerCallPolicyStatus?.rateLimitPolicy?.status || "policy_pending"} /
           audit {providerCallPolicyStatus?.auditPolicy?.status || "audit_policy_only"}.
           Dry-run policy only; no provider call, quote query, audit DB write, or readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingKisQuoteAdapterOptInPreflight">
+        <span>KIS quote adapter opt-in</span>
+        <strong>
+          {kisQuoteAdapterOptInPreflightStatus?.status ||
+            "admin_only_kis_read_only_quote_adapter_opt_in_preflight_fail_closed"}
+        </strong>
+        <p>
+          Boundary {kisQuoteAdapterOptInPreflightStatus?.boundary?.status || "adapter_boundary_ready"} /
+          preflight {kisQuoteAdapterOptInPreflightStatus?.preflight?.status || "adapter_blocked"} /
+          blockers {Number(kisQuoteAdapterOptInPreflightStatus?.preflight?.blockerCount || 0)}.
+          Preflight boundary only; no KIS token issuance, quote query, provider call, raw config exposure, or readiness promotion.
         </p>
       </div>
     </section>

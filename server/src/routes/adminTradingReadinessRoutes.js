@@ -2,6 +2,7 @@ import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import { buildAdminProviderCallPolicyStatus } from "../services/tradingProviderCallPolicyCore.js";
+import { buildAdminKisReadOnlyQuoteAdapterOptInPreflightStatus } from "../services/tradingKisReadOnlyQuoteAdapterOptInPreflightBoundary.js";
 import { buildAdminKisReadOnlyProviderCallInventoryPreflightStatus } from "../services/tradingKisReadOnlyProviderCallInventoryPreflight.js";
 import { buildAdminManualApprovalClearanceReviewResultGateStatus } from "../services/tradingManualApprovalClearanceReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../services/tradingManualApprovalOrderDraftClearancePreflightGate.js";
@@ -96,6 +97,12 @@ router.get("/provider-response-validation-review-result", (request, response) =>
 router.get("/provider-call-policy", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminProviderCallPolicyStatus());
+  });
+});
+
+router.get("/kis-read-only-quote-adapter-opt-in-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminKisReadOnlyQuoteAdapterOptInPreflightStatus());
   });
 });
 

@@ -314,6 +314,10 @@ export async function fetchAdminTradingProviderCallPolicyStatus() {
   return requestJson("/admin/trading-readiness/provider-call-policy", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus() {
+  return requestJson("/admin/trading-readiness/kis-read-only-quote-adapter-opt-in-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
