@@ -19,6 +19,7 @@ function makeWorkspace() {
     "server/src/index.js",
     "server/src/services/tradingImplementationShell.js",
     "server/src/services/tradingImplementationShell.test.js",
+    "server/src/services/tradingProviderAdapterSkeleton.js",
     "server/src/routes/adminTradingReadinessRoutes.js",
     "server/src/routes/adminTradingReadinessRoutes.test.js",
     "src/components/TradingReadinessPanel.jsx",

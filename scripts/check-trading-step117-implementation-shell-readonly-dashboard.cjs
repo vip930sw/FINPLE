@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const REQUIRED_FILES = [
   "server/src/services/tradingImplementationShell.js",
   "server/src/services/tradingImplementationShell.test.js",
+  "server/src/services/tradingProviderAdapterSkeleton.js",
   "server/src/routes/adminTradingReadinessRoutes.js",
   "server/src/routes/adminTradingReadinessRoutes.test.js",
   "src/components/TradingReadinessPanel.jsx",
@@ -33,6 +34,13 @@ const REQUIRED_SNIPPETS = [
   ["server/src/services/tradingImplementationShell.js", "providerCallsAllowed: false"],
   ["server/src/services/tradingImplementationShell.js", "orderSubmissionAllowed: false"],
   ["server/src/services/tradingImplementationShell.js", "networkCallAttempted: false"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "STEP117_PROVIDER_ADAPTER_INTERFACE"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "blocked_provider_calls_disabled"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "not_implemented"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "fail_closed"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "mock_only"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "dry_run_only"],
+  ["server/src/services/tradingProviderAdapterSkeleton.js", "shadow_only"],
   ["src/components/TradingReadinessPanel.jsx", "Provider calls"],
   ["src/components/TradingReadinessPanel.jsx", "Order submission"],
   ["src/components/TradingReadinessPanel.jsx", "readyForLiveGuardedTrading"],
@@ -64,9 +72,10 @@ function main() {
   }
 
   const serviceText = readText("server/src/services/tradingImplementationShell.js");
+  const providerAdapterText = readText("server/src/services/tradingProviderAdapterSkeleton.js");
   const routeText = readText("server/src/routes/adminTradingReadinessRoutes.js");
   const uiText = readText("src/components/TradingReadinessPanel.jsx");
-  const joined = `${serviceText}\n${routeText}\n${uiText}`;
+  const joined = `${serviceText}\n${providerAdapterText}\n${routeText}\n${uiText}`;
   const forbiddenTerms = [
     "fetch(",
     "axios",

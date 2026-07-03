@@ -1,7 +1,12 @@
 import { evaluateKillSwitch } from "./tradingLabPolicy.js";
 import { TRADING_ENV_NAMES, validateTradingEnvConfig } from "./tradingEnvConfig.js";
+import {
+  createBlockedProviderAdapter,
+  STEP117_PROVIDER_ADAPTER_STATUSES,
+} from "./tradingProviderAdapterSkeleton.js";
 
 export const STEP117_TRADING_MODES = Object.freeze(["mock", "dry_run", "shadow"]);
+export { createBlockedProviderAdapter };
 
 export const STEP117_FAIL_CLOSED_FLAGS = Object.freeze({
   providerCallsAllowed: false,
@@ -61,42 +66,6 @@ export function createTradingAuditPlaceholder(overrides = {}) {
     message: "No live trading audit event has been emitted.",
     ...overrides,
   };
-}
-
-export function createBlockedProviderAdapter(options = {}) {
-  const mode = normalizeShellMode(options.mode);
-  return Object.freeze({
-    name: "finple_step117_blocked_provider_adapter",
-    mode,
-    mockOnly: true,
-    dryRunOnly: mode === "dry_run",
-    shadowOnly: mode === "shadow",
-    providerCallsAllowed: false,
-    orderSubmissionAllowed: false,
-    networkCallAttempted: false,
-    async requestReadOnlySnapshot() {
-      return {
-        ok: false,
-        status: "blocked_provider_calls_disabled",
-        mode,
-        providerCallsAllowed: false,
-        orderSubmissionAllowed: false,
-        networkCallAttempted: false,
-        reason: "step117_shell_does_not_call_provider",
-      };
-    },
-    async submitOrder() {
-      return {
-        ok: false,
-        status: "blocked_order_submission_disabled",
-        mode,
-        providerCallsAllowed: false,
-        orderSubmissionAllowed: false,
-        networkCallAttempted: false,
-        reason: "step117_shell_does_not_submit_orders",
-      };
-    },
-  });
 }
 
 export function createPrivateWorkerShell(options = {}) {
@@ -169,7 +138,8 @@ export function buildTradingReadinessSnapshot(options = {}) {
     providerAdapter: {
       name: providerAdapter.name,
       mode: providerAdapter.mode,
-      status: "blocked_not_implemented_mock_only",
+      status: STEP117_PROVIDER_ADAPTER_STATUSES.failClosed,
+      modeStatus: providerAdapter.modeStatus,
       providerCallsAllowed: false,
       networkCallAttempted: false,
     },

@@ -6,6 +6,10 @@ import {
   createBlockedProviderAdapter,
   createPrivateWorkerShell,
 } from "./tradingImplementationShell.js";
+import {
+  STEP117_PROVIDER_ADAPTER_INTERFACE,
+  STEP117_PROVIDER_ADAPTER_STATUSES,
+} from "./tradingProviderAdapterSkeleton.js";
 
 test("provider calls and order submission are blocked by default", async () => {
   const adapter = createBlockedProviderAdapter({ mode: "shadow" });
@@ -14,8 +18,23 @@ test("provider calls and order submission are blocked by default", async () => {
 
   assert.equal(snapshot.providerCallsAllowed, false);
   assert.equal(snapshot.networkCallAttempted, false);
+  assert.equal(snapshot.status, STEP117_PROVIDER_ADAPTER_STATUSES.blocked);
   assert.equal(order.orderSubmissionAllowed, false);
   assert.equal(order.networkCallAttempted, false);
+});
+
+test("provider adapter skeleton exposes only blocked interface methods", () => {
+  const adapter = createBlockedProviderAdapter({ mode: "dry-run" });
+
+  for (const methodName of STEP117_PROVIDER_ADAPTER_INTERFACE) {
+    assert.equal(typeof adapter[methodName], "function");
+  }
+
+  assert.equal(adapter.status, STEP117_PROVIDER_ADAPTER_STATUSES.failClosed);
+  assert.equal(adapter.modeStatus, STEP117_PROVIDER_ADAPTER_STATUSES.dryRunOnly);
+  assert.equal(adapter.providerCallsAllowed, false);
+  assert.equal(adapter.orderSubmissionAllowed, false);
+  assert.equal(adapter.networkCallAttempted, false);
 });
 
 test("mock, dry-run, and shadow worker shell never calls network", () => {
