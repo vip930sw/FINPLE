@@ -6,6 +6,7 @@ import {
   fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus,
   fetchAdminTradingManualApprovalOrderDraftReviewResultStatus,
   fetchAdminTradingManualApprovalOrderDraftPreflightStatus,
+  fetchAdminTradingProviderResponseEnvelopeValidationStatus,
   fetchAdminTradingRiskKillSwitchReviewResultStatus,
   fetchAdminTradingRiskKillSwitchStatus,
   fetchAdminTradingShadowReviewStatus,
@@ -74,6 +75,7 @@ export function TradingReadinessPanel() {
   const [manualApprovalOrderDraftClearanceStatus, setManualApprovalOrderDraftClearanceStatus] = useState(null);
   const [manualApprovalClearanceReviewResultStatus, setManualApprovalClearanceReviewResultStatus] = useState(null);
   const [kisProviderCallInventoryStatus, setKisProviderCallInventoryStatus] = useState(null);
+  const [providerResponseEnvelopeValidationStatus, setProviderResponseEnvelopeValidationStatus] = useState(null);
   const [loadState, setLoadState] = useState("loading");
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingManualApprovalOrderDraftClearancePreflightStatus().catch(() => null),
       fetchAdminTradingManualApprovalClearanceReviewResultStatus().catch(() => null),
       fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus().catch(() => null),
+      fetchAdminTradingProviderResponseEnvelopeValidationStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -103,6 +106,7 @@ export function TradingReadinessPanel() {
         setManualApprovalOrderDraftClearanceStatus(payload?.[7] || null);
         setManualApprovalClearanceReviewResultStatus(payload?.[8] || null);
         setKisProviderCallInventoryStatus(payload?.[9] || null);
+        setProviderResponseEnvelopeValidationStatus(payload?.[10] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -268,6 +272,19 @@ export function TradingReadinessPanel() {
           Preflight {kisProviderCallInventoryStatus?.preflight?.status || "opt_in_required"} /
           blockers {Number(kisProviderCallInventoryStatus?.preflight?.blockerCount || 0)}.
           Inventory only; no token issuance, provider call, or readiness promotion.
+        </p>
+      </div>
+
+      <div className="tradingReadinessAudit tradingProviderResponseValidation">
+        <span>Provider response validation</span>
+        <strong>
+          {providerResponseEnvelopeValidationStatus?.status ||
+            "admin_only_provider_response_envelope_validation_receipt_fail_closed"}
+        </strong>
+        <p>
+          Envelope {providerResponseEnvelopeValidationStatus?.envelope?.status || "envelope_only"} /
+          receipt {providerResponseEnvelopeValidationStatus?.receipt?.status || "validation_pending"}.
+          Redacted mock-only status; no token issuance, quote query, provider call, or readiness promotion.
         </p>
       </div>
     </section>

@@ -18,6 +18,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/manual-approval-order-draft-clearance-preflight"/);
   assert.match(routeText, /router\.get\("\/manual-approval-clearance-review-result"/);
   assert.match(routeText, /router\.get\("\/kis-read-only-provider-call-inventory-preflight"/);
+  assert.match(routeText, /router\.get\("\/provider-response-envelope-validation"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });

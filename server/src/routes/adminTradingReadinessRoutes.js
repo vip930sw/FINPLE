@@ -6,6 +6,7 @@ import { buildAdminManualApprovalClearanceReviewResultGateStatus } from "../serv
 import { buildAdminManualApprovalOrderDraftClearancePreflightStatus } from "../services/tradingManualApprovalOrderDraftClearancePreflightGate.js";
 import { buildAdminManualApprovalOrderDraftReviewResultGateStatus } from "../services/tradingManualApprovalOrderDraftReviewResultGate.js";
 import { buildAdminManualApprovalOrderDraftPreflightStatus } from "../services/tradingManualApprovalOrderDraftPreflight.js";
+import { buildAdminProviderResponseEnvelopeValidationStatus } from "../services/tradingProviderResponseEnvelopeValidationReceipt.js";
 import { buildTradingReadinessSnapshot } from "../services/tradingImplementationShell.js";
 import { buildAdminRiskKillSwitchReviewStatus } from "../services/tradingRiskKillSwitchReviewCore.js";
 import { buildAdminRiskKillSwitchReviewResultGateStatus } from "../services/tradingRiskKillSwitchReviewResultGate.js";
@@ -75,6 +76,12 @@ router.get("/manual-approval-clearance-review-result", (request, response) => {
 router.get("/kis-read-only-provider-call-inventory-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminKisReadOnlyProviderCallInventoryPreflightStatus());
+  });
+});
+
+router.get("/provider-response-envelope-validation", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminProviderResponseEnvelopeValidationStatus());
   });
 });
 

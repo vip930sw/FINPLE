@@ -302,6 +302,10 @@ export async function fetchAdminTradingKisReadOnlyProviderCallInventoryPreflight
   return requestJson("/admin/trading-readiness/kis-read-only-provider-call-inventory-preflight", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingProviderResponseEnvelopeValidationStatus() {
+  return requestJson("/admin/trading-readiness/provider-response-envelope-validation", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
