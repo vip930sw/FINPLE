@@ -17,6 +17,7 @@ import portfolioDbRoutes from "./routes/portfolioDbRoutes.js";
 import inquiryRoutes from "./routes/inquiryRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import aiPortfolioAnalysisRoutes from "./routes/aiPortfolioAnalysisRoutes.js";
+import tradingReadinessRoutes from "./routes/tradingReadinessRoutes.js";
 
 import {
   getAssetDataBatch,
@@ -71,6 +72,7 @@ app.use("/api/account/portfolios", portfolioDbRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiPortfolioAnalysisRoutes);
+app.use("/api/trading-readiness", tradingReadinessRoutes);
 
 app.get("/api/health", (request, response) => {
   response.json({

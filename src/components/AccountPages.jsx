@@ -25,6 +25,7 @@ import {
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
 import { changeFinplePassword, deleteFinpleAccount } from "./authClientService";
+import { TradingReadinessPanel } from "./TradingReadinessPanel";
 
 function isEducationAuthUser(user) {
   return Boolean(
@@ -280,6 +281,7 @@ export function MyPage({ onNavigate }) {
         <AccountStatusPanel onNavigate={onNavigate} />
         <PlanStatusPanel planKey={effectivePlanKey} onNavigate={onNavigate} isEducationAccount={isEducationAccount} />
         <ServerStoragePanel planKey={effectivePlanKey} isEducationAccount={isEducationAccount} />
+        <TradingReadinessPanel />
         <AdminInquiryPanel />
       </section>
 

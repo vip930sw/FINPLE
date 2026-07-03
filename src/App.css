@@ -259,6 +259,100 @@ nav {
   margin-bottom: 24px;
 }
 
+.tradingReadinessPanel {
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.tradingReadinessBadge {
+  align-self: flex-start;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: 100%;
+  padding: 0.45rem 0.7rem;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+.tradingReadinessBadge.ready {
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.tradingReadinessBadge.fallback,
+.tradingReadinessBadge.loading {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.tradingReadinessMetrics article strong {
+  word-break: break-word;
+}
+
+.tradingReadinessFlagGrid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 1rem;
+}
+
+.tradingReadinessFlag {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0.75rem 0.85rem;
+}
+
+.tradingReadinessFlag span,
+.tradingReadinessAudit span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tradingReadinessFlag strong {
+  border-radius: 999px;
+  font-size: 0.74rem;
+  padding: 0.32rem 0.55rem;
+}
+
+.tradingReadinessFlag strong.blocked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tradingReadinessFlag strong.open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tradingReadinessAudit {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  margin-top: 1rem;
+  padding: 0.9rem;
+}
+
+.tradingReadinessAudit strong {
+  color: #0f172a;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.tradingReadinessAudit p {
+  color: #475569;
+  margin: 0.35rem 0 0;
+}
+
 .cardHeader p {
   color: #64748b;
   margin: 0 0 6px;
