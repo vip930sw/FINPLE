@@ -3,6 +3,7 @@ import express from "express";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
   buildAdminTradingLabDashboardStatus,
+  buildAdminTradingLabMockFillSimulationPreflightStatus,
   buildAdminTradingLabMockExecutionPreflightStatus,
   buildAdminTradingLabMockExecutionReviewResultStatus,
   buildAdminTradingLabMockOrderGenerationPreflightStatus,
@@ -182,6 +183,12 @@ router.get("/trading-lab-mock-execution-preflight", (request, response) => {
 router.get("/trading-lab-mock-execution-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabMockExecutionReviewResultStatus());
+  });
+});
+
+router.get("/trading-lab-mock-fill-simulation-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabMockFillSimulationPreflightStatus());
   });
 });
 
