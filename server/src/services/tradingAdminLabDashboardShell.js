@@ -192,6 +192,18 @@ export const STEP146_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_PREFLIGHT_FLAGS
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP147_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_FLAGS = Object.freeze({
+  ...STEP146_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_PREFLIGHT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -1161,6 +1173,91 @@ export const TRADING_LAB_MOCK_FILL_SIMULATION_CORE_PREFLIGHT_RESULT_SCHEMA = Obj
   orderSubmissionImpact: "blocked",
   liveTradingImpact: "blocked",
   nextAllowedStep: "mock_fill_simulation_core",
+});
+
+export const TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_MODEL = Object.freeze({
+  fillCoreReviewResultId: "string",
+  sourceStep: "step147",
+  fillCorePreflightId: "string",
+  fillCoreInputBundleId: "string",
+  fillSimulationReviewResultId: "string",
+  fillSimulationCandidateId: "string",
+  mockExecutionReviewResultId: "string",
+  mockOrderGenerationReviewResultId: "string",
+  mockRunCandidateId: "string",
+  strategyDraftId: "string",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_fill_core_review_recorded | blocked | rejected",
+  reviewedAt: "placeholder_recorded_at",
+  reviewedBy: "admin_placeholder",
+  summary: "string",
+  blockers: "string[]",
+  warnings: "string[]",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_FILL_CORE_REVIEW_RECEIPT_SCHEMA = Object.freeze({
+  receiptId: "string",
+  sourceStep: "step147",
+  fillCoreReviewResultId: "string",
+  fillCorePreflightId: "string",
+  fillCoreInputBundleId: "string",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_fill_core_review_recorded | blocked | rejected",
+  redacted: true,
+  recordedAt: "placeholder_recorded_at",
+  blockerCount: "number",
+  warningCount: "number",
+  pricingPolicyReviewStatus: "mock_only | blocked | validation_required",
+  slippagePolicyReviewStatus: "mock_only | blocked | validation_required",
+  feePolicyReviewStatus: "mock_only | blocked | validation_required",
+  cashAvailabilityReviewStatus: "mock_only | blocked | validation_required",
+  positionImpactReviewStatus: "mock_only | blocked | validation_required",
+  deterministicCalculationReviewStatus: "mock_only | blocked | validation_required",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_fill_simulation_core",
+});
+
+export const TRADING_LAB_MOCK_FILL_CORE_REVIEW_DECISION_SUMMARY_MODEL = Object.freeze({
+  summaryId: "string",
+  sourceStep: "step147",
+  decision: "mock_fill_core_review_recorded | blocked | rejected",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  blockers: "string[]",
+  warnings: "string[]",
+  messages: "string[]",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_FILL_CORE_POLICY_REVIEW_SUMMARY_MODEL = Object.freeze({
+  summaryId: "string",
+  sourceStep: "step147",
+  dependencyReviewStatus: "mock_only | blocked | validation_required",
+  pricingPolicyReviewStatus: "mock_only | blocked | validation_required",
+  slippagePolicyReviewStatus: "mock_only | blocked | validation_required",
+  feePolicyReviewStatus: "mock_only | blocked | validation_required",
+  cashAvailabilityReviewStatus: "mock_only | blocked | validation_required",
+  positionImpactReviewStatus: "mock_only | blocked | validation_required",
+  deterministicCalculationReviewStatus: "mock_only | blocked | validation_required",
+  redacted: true,
+  actualFillPriceLookupAttempted: false,
+  actualFeeScheduleQueried: false,
+  accountBalanceQueried: false,
+  actualCashUpdated: false,
+  actualPositionUpdated: false,
+  persistentStorageUsed: false,
+  dbWriteUsed: false,
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -7448,6 +7545,488 @@ export function buildAdminTradingLabMockFillSimulationCorePreflightStatus(input 
   };
 }
 
+function getStep147FillSimulationCorePreflightContext(input = {}, options = {}) {
+  const hasCorePreflightStatus = Object.prototype.hasOwnProperty.call(input, "mockFillSimulationCorePreflightStatus");
+  const mockFillSimulationCorePreflightStatus = hasCorePreflightStatus
+    ? input.mockFillSimulationCorePreflightStatus
+    : buildAdminTradingLabMockFillSimulationCorePreflightStatus(input, options);
+  const preflight = input.preflight || mockFillSimulationCorePreflightStatus?.preflight || null;
+  const validation = input.preflightValidation || mockFillSimulationCorePreflightStatus?.validation || preflight?.validation || null;
+  const result = input.preflightResult || input.result || mockFillSimulationCorePreflightStatus?.result || preflight?.result || null;
+  const inputBundle = input.inputBundle || mockFillSimulationCorePreflightStatus?.inputBundle || preflight?.inputBundle || null;
+  const scenario = input.scenario || mockFillSimulationCorePreflightStatus?.scenario || preflight?.scenario || null;
+  const policyValidation = input.policyValidation || mockFillSimulationCorePreflightStatus?.policyValidation || preflight?.policyValidation || {};
+  const cashAvailability = input.cashAvailability || mockFillSimulationCorePreflightStatus?.cashAvailability || preflight?.cashAvailability || {};
+  const positionImpact = input.positionImpact || mockFillSimulationCorePreflightStatus?.positionImpact || preflight?.positionImpact || {};
+  const deterministicReadiness = input.deterministicReadiness || mockFillSimulationCorePreflightStatus?.deterministicReadiness || preflight?.deterministicReadiness || {};
+  const reviewStatus = input.mockFillSimulationReviewResultStatus
+    || preflight?.mockFillSimulationReviewResultStatus
+    || mockFillSimulationCorePreflightStatus?.mockFillSimulationReviewResultStatus
+    || null;
+  const fillCandidates = input.fillCandidates
+    || reviewStatus?.recordingGate?.mockFillSimulationPreflightStatus?.fillCandidates
+    || reviewStatus?.recordingGate?.mockFillSimulationPreflightStatus?.preflight?.fillCandidates
+    || [];
+
+  return {
+    mockFillSimulationCorePreflightStatus,
+    preflight,
+    validation,
+    result,
+    inputBundle,
+    scenario,
+    policyValidation,
+    cashAvailability,
+    positionImpact,
+    deterministicReadiness,
+    reviewStatus,
+    fillCandidates,
+  };
+}
+
+export function buildTradingLabMockFillCorePolicyReviewSummary(input = {}, options = {}) {
+  const context = getStep147FillSimulationCorePreflightContext(input, options);
+  const result = context.result || {};
+  const statuses = [
+    result.pricingPolicyStatus || context.policyValidation?.pricingPolicyStatus || context.policyValidation?.status || "validation_required",
+    result.slippagePolicyStatus || context.policyValidation?.slippagePolicyStatus || context.policyValidation?.status || "validation_required",
+    result.feePolicyStatus || context.policyValidation?.feePolicyStatus || context.policyValidation?.status || "validation_required",
+    result.cashAvailabilityStatus || context.cashAvailability?.status || "validation_required",
+    result.positionImpactStatus || context.positionImpact?.status || "validation_required",
+    result.deterministicCalculationStatus || context.deterministicReadiness?.status || "validation_required",
+  ];
+  const status = statuses.includes("blocked") ? "blocked" : statuses.includes("validation_required") ? "validation_required" : "mock_only";
+
+  return {
+    summaryId: "step147_mock_fill_core_policy_review_summary",
+    sourceStep: "step147",
+    status,
+    dependencyReviewStatus: context.result?.status === "mock_fill_core_ready" ? "mock_only" : context.result?.status === "blocked" ? "blocked" : "validation_required",
+    pricingPolicyReviewStatus: statuses[0],
+    slippagePolicyReviewStatus: statuses[1],
+    feePolicyReviewStatus: statuses[2],
+    cashAvailabilityReviewStatus: statuses[3],
+    positionImpactReviewStatus: statuses[4],
+    deterministicCalculationReviewStatus: statuses[5],
+    positionRowCount: Array.isArray(context.positionImpact?.rows) ? context.positionImpact.rows.length : 0,
+    redacted: true,
+    actualFillPriceLookupAttempted: false,
+    actualFeeScheduleQueried: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function validateTradingLabMockFillSimulationCoreReviewResult(input = {}, options = {}) {
+  const context = getStep147FillSimulationCorePreflightContext(input, options);
+  const policyReviewSummary = input.policyReviewSummary || buildTradingLabMockFillCorePolicyReviewSummary(input, options);
+  const blockers = [];
+  const warnings = [];
+  const candidates = Array.isArray(context.fillCandidates) ? context.fillCandidates : [];
+
+  if (!context.preflight) blockers.push("mock_fill_simulation_core_preflight_missing");
+  if (!context.result) blockers.push("mock_fill_simulation_core_preflight_result_missing");
+  if (!context.inputBundle) blockers.push("mock_fill_core_input_bundle_missing");
+  if (context.result && context.result.redacted !== true) blockers.push("mock_fill_simulation_core_preflight_result_not_redacted");
+  if (context.inputBundle && context.inputBundle.redacted !== true) blockers.push("mock_fill_core_input_bundle_not_redacted");
+  if (context.result && context.result.scope !== "mock_only") blockers.push("mock_fill_core_preflight_scope_not_mock_only");
+  if (context.result && context.result.readinessImpact !== "none") blockers.push("preflight_readiness_impact_not_none");
+  if (context.result && context.result.providerCallImpact !== "blocked") blockers.push("preflight_provider_call_impact_not_blocked");
+  if (context.result && context.result.orderSubmissionImpact !== "blocked") blockers.push("preflight_order_submission_impact_not_blocked");
+  if (context.result && context.result.liveTradingImpact !== "blocked") blockers.push("preflight_live_trading_impact_not_blocked");
+  if (context.result?.status === "blocked") blockers.push("mock_fill_simulation_core_preflight_blocked");
+  if (context.result?.status === "validation_required") warnings.push("mock_fill_simulation_core_preflight_validation_required");
+  if (context.result?.nextAllowedStep && context.result.nextAllowedStep !== "mock_fill_simulation_core") blockers.push("preflight_next_step_not_mock_fill_simulation_core");
+  if (context.inputBundle && String(context.inputBundle.mode || "").match(/live|real|production|order_submit|submit_order/i)) blockers.push("unsafe_live_or_order_mode_rejected");
+  if (context.validation?.blockers?.includes("unsafe_live_or_order_mode_rejected")) blockers.push("unsafe_live_or_order_mode_rejected");
+  if (context.validation?.blockers?.includes("wildcard_all_symbols_rejected")) blockers.push("wildcard_all_symbols_rejected");
+  if (context.validation?.warnings?.includes("target_weight_residual_review_required")) warnings.push("target_weight_residual_review_required");
+  if (policyReviewSummary.status === "blocked") blockers.push("mock_fill_core_policy_review_blocked");
+  if (policyReviewSummary.status === "validation_required") warnings.push("mock_fill_core_policy_review_validation_required");
+  if (context.policyValidation?.status === "blocked") blockers.push("mock_fill_core_policy_blocked");
+  if (context.cashAvailability?.status === "blocked") blockers.push("mock_fill_core_cash_availability_blocked");
+  if (context.positionImpact?.status === "blocked") blockers.push("mock_fill_core_position_impact_blocked");
+  if (context.deterministicReadiness?.status === "blocked") blockers.push("mock_fill_core_deterministic_readiness_blocked");
+  if (candidates.some((candidate) => candidate.redacted !== true)) blockers.push("mock_fill_candidate_not_redacted");
+  if (candidates.some((candidate) => candidate.actualOrderCandidateCreated !== false)) blockers.push("actual_order_candidate_must_not_be_created");
+  if (candidates.some((candidate) => candidate.actualOrderDraftCreated !== false)) blockers.push("actual_order_draft_must_not_be_created");
+  if (candidates.some((candidate) => candidate.kisOrderPayloadCreated !== false)) blockers.push("kis_order_payload_must_not_be_created");
+  if (candidates.some((candidate) => candidate.kisExecutionPayloadCreated !== false)) blockers.push("kis_execution_payload_must_not_be_created");
+  if (candidates.some((candidate) => candidate.kisFillPayloadCreated !== false)) blockers.push("kis_fill_payload_must_not_be_created");
+  if (candidates.some((candidate) => candidate.actualExecutionCreated !== false || candidate.executionRecordCreated !== false)) blockers.push("actual_execution_must_not_be_created");
+  if (candidates.some((candidate) => candidate.actualFillRecordCreated !== false || candidate.fillRecordCreated !== false || candidate.fillCreated !== false)) blockers.push("actual_fill_must_not_be_created");
+  if (candidates.some((candidate) => candidate.accountBalanceQueried !== false)) blockers.push("account_balance_query_must_not_run");
+  if (context.cashAvailability?.actualCashUpdated === true || context.result?.actualCashUpdated === true) blockers.push("actual_cash_update_must_not_run");
+  if (context.positionImpact?.actualPositionUpdated === true || context.result?.actualPositionUpdated === true) blockers.push("actual_position_update_must_not_run");
+  if (containsUnsafeReviewResultInput(input.reviewResultInput || input.reviewResult || input.receipt || {})) blockers.push("unsafe_private_or_payload_value_rejected");
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const reviewStatus = uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "recorded";
+  const decision = reviewStatus === "recorded" ? "mock_fill_core_review_recorded" : reviewStatus === "blocked" ? "blocked" : "rejected";
+
+  return {
+    validationId: "step147_mock_fill_simulation_core_review_result_validation",
+    sourceStep: "step147",
+    reviewStatus,
+    decision,
+    fillCoreReviewResultId: "step147_mock_fill_core_review_result",
+    fillCorePreflightId: context.result?.mockFillSimulationCorePreflightId || context.validation?.mockFillSimulationCorePreflightId || "missing_mock_fill_core_preflight",
+    fillCoreInputBundleId: context.inputBundle?.inputBundleId || context.result?.inputBundleId || "missing_fill_core_input_bundle",
+    fillSimulationReviewResultId: context.result?.fillSimulationReviewResultId || context.validation?.fillSimulationReviewResultId || "missing_fill_simulation_review_result",
+    fillSimulationCandidateId: context.validation?.fillSimulationCandidateId || "missing_fill_simulation_candidate",
+    mockExecutionReviewResultId: context.validation?.mockExecutionReviewResultId || "missing_mock_execution_review_result",
+    mockOrderGenerationReviewResultId: context.reviewStatus?.reviewResult?.mockOrderGenerationReviewResultId || "missing_mock_order_generation_review_result",
+    mockRunCandidateId: context.result?.mockRunCandidateId || context.validation?.mockRunCandidateId || "missing_mock_run_candidate",
+    strategyDraftId: context.result?.strategyDraftId || context.validation?.strategyDraftId || context.inputBundle?.strategyDraftId || "missing_strategy_draft",
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    pricingPolicyReviewStatus: policyReviewSummary.pricingPolicyReviewStatus,
+    slippagePolicyReviewStatus: policyReviewSummary.slippagePolicyReviewStatus,
+    feePolicyReviewStatus: policyReviewSummary.feePolicyReviewStatus,
+    cashAvailabilityReviewStatus: policyReviewSummary.cashAvailabilityReviewStatus,
+    positionImpactReviewStatus: policyReviewSummary.positionImpactReviewStatus,
+    deterministicCalculationReviewStatus: policyReviewSummary.deterministicCalculationReviewStatus,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_fill_simulation_core",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step147_mock_fill_simulation_core_review_result_validation_v1" }),
+  };
+}
+
+export function buildTradingLabMockFillSimulationCoreReviewResult(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockFillSimulationCoreReviewResult(input, options);
+
+  return {
+    fillCoreReviewResultId: validation.fillCoreReviewResultId,
+    sourceStep: "step147",
+    fillCorePreflightId: validation.fillCorePreflightId,
+    fillCoreInputBundleId: validation.fillCoreInputBundleId,
+    fillSimulationReviewResultId: validation.fillSimulationReviewResultId,
+    fillSimulationCandidateId: validation.fillSimulationCandidateId,
+    mockExecutionReviewResultId: validation.mockExecutionReviewResultId,
+    mockOrderGenerationReviewResultId: validation.mockOrderGenerationReviewResultId,
+    mockRunCandidateId: validation.mockRunCandidateId,
+    strategyDraftId: validation.strategyDraftId,
+    reviewStatus: validation.reviewStatus,
+    decision: validation.decision,
+    reviewedAt: "placeholder_recorded_at",
+    reviewedBy: "admin_placeholder",
+    summary: validation.reviewStatus === "recorded" ? "mock fill core review recorded" : validation.reviewStatus,
+    blockers: validation.blockers,
+    warnings: validation.warnings,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_fill_simulation_core",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    credentialStored: false,
+    accountIdentifierStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    privatePathStored: false,
+    hashValueStored: false,
+    digestValueStored: false,
+  };
+}
+
+export function buildTradingLabMockFillCoreReviewReceipt(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockFillSimulationCoreReviewResult(input, options);
+  const reviewResult = input.reviewResult || buildTradingLabMockFillSimulationCoreReviewResult({ ...input, validation }, options);
+
+  return {
+    receiptId: "step147_mock_fill_core_review_receipt",
+    sourceStep: "step147",
+    fillCoreReviewResultId: reviewResult.fillCoreReviewResultId,
+    fillCorePreflightId: reviewResult.fillCorePreflightId,
+    fillCoreInputBundleId: reviewResult.fillCoreInputBundleId,
+    reviewStatus: reviewResult.reviewStatus,
+    decision: reviewResult.decision,
+    redacted: true,
+    recordedAt: "placeholder_recorded_at",
+    blockerCount: validation.blockerCount,
+    warningCount: validation.warningCount,
+    pricingPolicyReviewStatus: validation.pricingPolicyReviewStatus,
+    slippagePolicyReviewStatus: validation.slippagePolicyReviewStatus,
+    feePolicyReviewStatus: validation.feePolicyReviewStatus,
+    cashAvailabilityReviewStatus: validation.cashAvailabilityReviewStatus,
+    positionImpactReviewStatus: validation.positionImpactReviewStatus,
+    deterministicCalculationReviewStatus: validation.deterministicCalculationReviewStatus,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_fill_simulation_core",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+  };
+}
+
+export function buildTradingLabMockFillCoreReviewDecisionSummary(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockFillSimulationCoreReviewResult(input, options);
+
+  return {
+    summaryId: "step147_mock_fill_core_review_decision_summary",
+    sourceStep: "step147",
+    decision: validation.decision,
+    reviewStatus: validation.reviewStatus,
+    blockers: validation.blockers,
+    warnings: validation.warnings,
+    blockerMessages: validation.blockerSummary,
+    warningMessages: validation.warningSummary,
+    messages: [
+      "Mock fill core preparation review only.",
+      "Not an actual fill result.",
+      "Not an actual order candidate.",
+      "No actual cash or position update.",
+      "KIS calls and order submission remain blocked.",
+      "External order authority evidence is still required.",
+    ],
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function buildTradingLabMockFillSimulationCoreReviewResultRecordingGate(input = {}, options = {}) {
+  const mockFillSimulationCorePreflightStatus = input.mockFillSimulationCorePreflightStatus || buildAdminTradingLabMockFillSimulationCorePreflightStatus(input, options);
+  const policyReviewSummary = input.policyReviewSummary || buildTradingLabMockFillCorePolicyReviewSummary(
+    { ...input, mockFillSimulationCorePreflightStatus },
+    options,
+  );
+  const validation = input.validation || validateTradingLabMockFillSimulationCoreReviewResult(
+    { ...input, mockFillSimulationCorePreflightStatus, policyReviewSummary },
+    options,
+  );
+  const reviewResult = input.reviewResult || buildTradingLabMockFillSimulationCoreReviewResult({ ...input, validation }, options);
+  const receipt = input.receipt || buildTradingLabMockFillCoreReviewReceipt({ ...input, validation, reviewResult }, options);
+  const decisionSummary = input.decisionSummary || buildTradingLabMockFillCoreReviewDecisionSummary({ ...input, validation }, options);
+
+  return {
+    recordingGateId: "step147_mock_fill_simulation_core_review_result_recording_gate",
+    sourceStep: "step147",
+    status: validation.reviewStatus,
+    decision: validation.decision,
+    mockFillSimulationCorePreflightStatus,
+    policyReviewSummary,
+    validation,
+    reviewResult,
+    receipt,
+    decisionSummary,
+    blockerSummary: {
+      summaryId: "step147_mock_fill_core_review_blocker_summary",
+      sourceStep: "step147",
+      blockers: validation.blockers,
+      warnings: validation.warnings,
+      blockerMessages: validation.blockerSummary,
+      warningMessages: validation.warningSummary,
+      redacted: true,
+      readinessImpact: "none",
+      providerCallImpact: "blocked",
+      orderSubmissionImpact: "blocked",
+      liveTradingImpact: "blocked",
+    },
+    mockHistory: [
+      {
+        historyId: "step147_mock_fill_core_review_history_1",
+        sourceStep: "step147",
+        reviewStatus: validation.reviewStatus,
+        decision: validation.decision,
+        redacted: true,
+        recordedAt: "placeholder_recorded_at",
+        nextAllowedStep: "mock_fill_simulation_core",
+      },
+    ],
+    flags: { ...STEP147_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step147_mock_fill_simulation_core_review_result_recording_gate_v1" }),
+  };
+}
+
+export function buildAdminTradingLabMockFillSimulationCoreReviewResultStatus(input = {}, options = {}) {
+  const recordingGate = input.recordingGate || buildTradingLabMockFillSimulationCoreReviewResultRecordingGate(input, options);
+
+  return {
+    ok: true,
+    step: "Step 147: Admin trading lab mock fill simulation core review result recording gate",
+    status: "admin_only_trading_lab_mock_fill_simulation_core_review_result_recording_gate_fail_closed",
+    mockFillSimulationCoreReviewResultModel: TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_MODEL,
+    mockFillCoreReviewReceiptSchema: TRADING_LAB_MOCK_FILL_CORE_REVIEW_RECEIPT_SCHEMA,
+    mockFillCoreReviewDecisionSummaryModel: TRADING_LAB_MOCK_FILL_CORE_REVIEW_DECISION_SUMMARY_MODEL,
+    mockFillCorePolicyReviewSummaryModel: TRADING_LAB_MOCK_FILL_CORE_POLICY_REVIEW_SUMMARY_MODEL,
+    recordingGate,
+    validation: recordingGate.validation,
+    reviewResult: recordingGate.reviewResult,
+    receipt: recordingGate.receipt,
+    policyReviewSummary: recordingGate.policyReviewSummary,
+    decisionSummary: recordingGate.decisionSummary,
+    blockerSummary: recordingGate.blockerSummary,
+    mockHistory: recordingGate.mockHistory,
+    flags: { ...STEP147_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      scenarioMonthlyReturnsTouched: false,
+      scenarioRuntimeTouched: false,
+    },
+  };
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -7877,6 +8456,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockFillSimulationCoreReviewResultStatus = input.mockFillSimulationCoreReviewResultStatus || buildAdminTradingLabMockFillSimulationCoreReviewResultStatus(
+    {
+      ...input,
+      mockFillSimulationCorePreflightStatus,
+    },
+    options,
+  );
   const performance = input.performance || buildTradingLabCumulativePerformance({ ...options, mockLedger, dailyReturns });
   const strategy = input.strategy || buildTradingLabStrategyConfig({ ...options, strategyDraft: strategyDraftStatus.strategyDraft });
   const positions = input.positions || buildTradingLabPositionSnapshot({ ...options, mockLedger, positionLedger });
@@ -7896,7 +8482,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
 
   return {
     ok: true,
-    step: "Step 146: Admin trading lab mock fill simulation core preflight",
+    step: "Step 147: Admin trading lab mock fill simulation core review result recording gate",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -7919,6 +8505,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockFillSimulationPreflightStatus,
     mockFillSimulationReviewResultStatus,
     mockFillSimulationCorePreflightStatus,
+    mockFillSimulationCoreReviewResultStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -7982,6 +8569,10 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockFillCoreInputBundleModel: TRADING_LAB_MOCK_FILL_CORE_INPUT_BUNDLE_MODEL,
     mockFillScenarioModel: TRADING_LAB_MOCK_FILL_SCENARIO_MODEL,
     mockFillSimulationCorePreflightResultSchema: TRADING_LAB_MOCK_FILL_SIMULATION_CORE_PREFLIGHT_RESULT_SCHEMA,
+    mockFillSimulationCoreReviewResultModel: TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_MODEL,
+    mockFillCoreReviewReceiptSchema: TRADING_LAB_MOCK_FILL_CORE_REVIEW_RECEIPT_SCHEMA,
+    mockFillCoreReviewDecisionSummaryModel: TRADING_LAB_MOCK_FILL_CORE_REVIEW_DECISION_SUMMARY_MODEL,
+    mockFillCorePolicyReviewSummaryModel: TRADING_LAB_MOCK_FILL_CORE_POLICY_REVIEW_SUMMARY_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -8014,7 +8605,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP146_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_PREFLIGHT_FLAGS },
+    flags: { ...STEP147_ADMIN_TRADING_LAB_MOCK_FILL_SIMULATION_CORE_REVIEW_RESULT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,
