@@ -6,6 +6,7 @@ import {
   buildAdminTradingLabMockFillSimulationCorePreflightStatus,
   buildAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   buildAdminTradingLabMockFillSimulationCoreStatus,
+  buildAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus,
   buildAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus,
   buildAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus,
   buildAdminTradingLabMockPortfolioPerformanceRecalculationPreflightStatus,
@@ -273,6 +274,12 @@ router.get("/trading-lab-mock-portfolio-performance-recalculation-review-result"
 router.get("/trading-lab-mock-portfolio-performance-recalculation-core-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus());
+  });
+});
+
+router.get("/trading-lab-mock-portfolio-performance-recalculation-core-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus());
   });
 });
 
