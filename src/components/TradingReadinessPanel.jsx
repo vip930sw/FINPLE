@@ -10,6 +10,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
+  fetchAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus,
   fetchAdminTradingLabMockFillSimulationPreflightStatus,
   fetchAdminTradingLabMockFillSimulationReviewResultStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
@@ -277,6 +278,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockFillSimulationCorePreflightStatus, setTradingLabMockFillSimulationCorePreflightStatus] = useState(null);
   const [tradingLabMockFillSimulationCoreReviewResultStatus, setTradingLabMockFillSimulationCoreReviewResultStatus] = useState(null);
   const [tradingLabMockFillSimulationCoreStatus, setTradingLabMockFillSimulationCoreStatus] = useState(null);
+  const [tradingLabMockPortfolioLedgerUpdatePreflightStatus, setTradingLabMockPortfolioLedgerUpdatePreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -315,6 +317,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockFillSimulationCorePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationCoreStatus().catch(() => null),
+      fetchAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -348,6 +351,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockFillSimulationCorePreflightStatus(payload?.[27] || null);
         setTradingLabMockFillSimulationCoreReviewResultStatus(payload?.[28] || null);
         setTradingLabMockFillSimulationCoreStatus(payload?.[29] || null);
+        setTradingLabMockPortfolioLedgerUpdatePreflightStatus(payload?.[30] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -550,6 +554,16 @@ export function TradingReadinessPanel() {
   const labMockFillCoreValidation = labMockFillSimulationCoreStatus?.validation || {};
   const labMockFillCoreHistory = Array.isArray(labMockFillSimulationCoreStatus?.mockHistory)
     ? labMockFillSimulationCoreStatus.mockHistory
+    : [];
+  const labMockPortfolioLedgerUpdatePreflightStatus = tradingLabMockPortfolioLedgerUpdatePreflightStatus || tradingLabDashboardStatus?.mockPortfolioLedgerUpdatePreflightStatus || {};
+  const labMockLedgerUpdateResult = labMockPortfolioLedgerUpdatePreflightStatus?.result || {};
+  const labMockLedgerUpdateSummary = labMockPortfolioLedgerUpdatePreflightStatus?.summary || {};
+  const labMockLedgerUpdateValidation = labMockPortfolioLedgerUpdatePreflightStatus?.validation || {};
+  const labMockLedgerUpdateCandidates = Array.isArray(labMockPortfolioLedgerUpdatePreflightStatus?.ledgerUpdateCandidates)
+    ? labMockPortfolioLedgerUpdatePreflightStatus.ledgerUpdateCandidates
+    : [];
+  const labMockLedgerUpdateHistory = Array.isArray(labMockPortfolioLedgerUpdatePreflightStatus?.mockHistory)
+    ? labMockPortfolioLedgerUpdatePreflightStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1566,6 +1580,63 @@ export function TradingReadinessPanel() {
               ))}
               {labMockFillCalculationInputs.length === 0 ? (
                 <li>Mock calculation input remains validation-required; KIS calls and order submission stay blocked.</li>
+              ) : null}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockLedgerUpdatePreflight" data-admin-panel-key="trading-lab-mock-portfolio-ledger-update-preflight">
+            <span>Mock portfolio ledger update preflight</span>
+            <h4>{formatStatus(labMockPortfolioLedgerUpdatePreflightStatus.status || labMockLedgerUpdateValidation.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This preflight only checks whether FINPLE internal mock ledger update candidates can be previewed from redacted mock fill results. It does not update real account ledgers, DB state, cash, positions, fills, executions, orders, or live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockLedgerUpdatePreflightCards">
+              <div>
+                <span>Mock ledger candidates</span>
+                <strong>{Number(labMockLedgerUpdateSummary.candidateCount || labMockLedgerUpdateCandidates.length || 0)}</strong>
+                <small>{formatStatus(labMockLedgerUpdateSummary.nextAllowedStep || labMockLedgerUpdateResult.nextAllowedStep || "mock_portfolio_ledger_update_review_result")}</small>
+              </div>
+              <div>
+                <span>Cash delta preview</span>
+                <strong>{Number(labMockLedgerUpdateSummary.totalCashDelta || 0).toLocaleString("ko-KR")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateValidation.cashDeltaStatus || labMockLedgerUpdateResult.cashDeltaStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Position delta preview</span>
+                <strong>{Number(labMockLedgerUpdateSummary.totalPositionDeltaCount || 0)}</strong>
+                <small>{formatStatus(labMockLedgerUpdateValidation.positionDeltaStatus || labMockLedgerUpdateResult.positionDeltaStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Portfolio value preview</span>
+                <strong>{Number(labMockLedgerUpdateResult.portfolioValueAfterPreview || 0).toLocaleString("ko-KR")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateValidation.portfolioValueImpactStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Ledger consistency</span>
+                <strong>{formatStatus(labMockLedgerUpdateValidation.ledgerConsistencyStatus || labMockLedgerUpdateResult.ledgerConsistencyStatus || "validation_required")}</strong>
+                <small>{Number(labMockLedgerUpdateValidation.blockerCount || 0)} blockers / {Number(labMockLedgerUpdateValidation.warningCount || 0)} warnings</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockLedgerUpdateResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockLedgerUpdatePreflightList" aria-label="Mock portfolio ledger update preflight candidates and guardrails">
+              {labMockLedgerUpdateCandidates.slice(0, 4).map((candidate, index) => (
+                <li key={`mock-ledger-update-candidate-${index}`}>{candidate.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(candidate.status || "validation_required")} / cash after {Number(candidate.cashAfterPreview || 0).toLocaleString("ko-KR")} / position after {Number(candidate.positionAfterPreview || 0).toLocaleString("ko-KR")}</li>
+              ))}
+              {(labMockLedgerUpdateValidation.blockerSummary || labMockLedgerUpdateValidation.blockers || []).map((message, index) => (
+                <li key={`mock-ledger-update-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockLedgerUpdateValidation.warningSummary || []).map((message, index) => (
+                <li key={`mock-ledger-update-warning-${index}`}>{message}</li>
+              ))}
+              {labMockLedgerUpdateHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-ledger-update-history-${index}`}>{item.historyId || `mock_ledger_update_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {Number(item.candidateCount || 0)} mock rows</li>
+              ))}
+              {labMockLedgerUpdateCandidates.length === 0 ? (
+                <li>Mock ledger update candidates remain validation-required; no DB, account cash, or position update is performed.</li>
               ) : null}
             </ul>
           </article>

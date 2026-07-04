@@ -38,6 +38,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/trading-lab-mock-fill-simulation-core-preflight"/);
   assert.match(routeText, /router\.get\("\/trading-lab-mock-fill-simulation-core-review-result"/);
   assert.match(routeText, /router\.get\("\/trading-lab-mock-fill-simulation-core"/);
+  assert.match(routeText, /router\.get\("\/trading-lab-mock-portfolio-ledger-update-preflight"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });
