@@ -438,6 +438,10 @@ export async function fetchAdminTradingLabMockDashboardCleanupPreflightStatus() 
   return requestJson("/admin/trading-readiness/trading-lab-mock-dashboard-cleanup-preflight", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabMockDashboardCleanupReviewResultStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-mock-dashboard-cleanup-review-result", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

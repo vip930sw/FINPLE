@@ -893,6 +893,10 @@ nav {
   background: #ecfeff;
 }
 
+.tradingLabMockDashboardCleanupReviewCards div {
+  background: #f0fdfa;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -1072,6 +1076,12 @@ nav {
   background: #ecfeff;
   border-color: rgba(8, 145, 178, 0.16);
   color: #155e75;
+}
+
+.tradingLabMockDashboardCleanupReviewList li {
+  background: #f0fdfa;
+  border-color: rgba(13, 148, 136, 0.16);
+  color: #115e59;
 }
 
 .tradingLabCleanupDetails {
