@@ -6,6 +6,7 @@ import {
   buildAdminTradingLabMockFillSimulationCorePreflightStatus,
   buildAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   buildAdminTradingLabMockFillSimulationCoreStatus,
+  buildAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus,
   buildAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus,
   buildAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus,
   buildAdminTradingLabMockFillSimulationReviewResultStatus,
@@ -231,6 +232,12 @@ router.get("/trading-lab-mock-portfolio-ledger-update-preflight", (request, resp
 router.get("/trading-lab-mock-portfolio-ledger-update-review-result", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus());
+  });
+});
+
+router.get("/trading-lab-mock-portfolio-ledger-update-core-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus());
   });
 });
 
