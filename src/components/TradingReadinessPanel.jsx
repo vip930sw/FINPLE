@@ -7,6 +7,7 @@ import {
   fetchAdminTradingLabDashboardStatus,
   fetchAdminTradingLabMockExecutionPreflightStatus,
   fetchAdminTradingLabMockExecutionReviewResultStatus,
+  fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationPreflightStatus,
   fetchAdminTradingLabMockFillSimulationReviewResultStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
@@ -271,6 +272,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockExecutionReviewResultStatus, setTradingLabMockExecutionReviewResultStatus] = useState(null);
   const [tradingLabMockFillSimulationPreflightStatus, setTradingLabMockFillSimulationPreflightStatus] = useState(null);
   const [tradingLabMockFillSimulationReviewResultStatus, setTradingLabMockFillSimulationReviewResultStatus] = useState(null);
+  const [tradingLabMockFillSimulationCorePreflightStatus, setTradingLabMockFillSimulationCorePreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -306,6 +308,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockExecutionReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockFillSimulationCorePreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -336,6 +339,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockExecutionReviewResultStatus(payload?.[24] || null);
         setTradingLabMockFillSimulationPreflightStatus(payload?.[25] || null);
         setTradingLabMockFillSimulationReviewResultStatus(payload?.[26] || null);
+        setTradingLabMockFillSimulationCorePreflightStatus(payload?.[27] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -501,6 +505,19 @@ export function TradingReadinessPanel() {
       : [];
   const labMockFillSimulationReviewImpactRows = Array.isArray(labMockFillSimulationReviewImpactSummary?.rows)
     ? labMockFillSimulationReviewImpactSummary.rows
+    : [];
+  const labMockFillSimulationCorePreflightStatus = tradingLabMockFillSimulationCorePreflightStatus || tradingLabDashboardStatus?.mockFillSimulationCorePreflightStatus || {};
+  const labMockFillSimulationCorePreflight = labMockFillSimulationCorePreflightStatus?.preflight || {};
+  const labMockFillSimulationCoreResult = labMockFillSimulationCorePreflightStatus?.result || labMockFillSimulationCorePreflight?.result || {};
+  const labMockFillCoreInputBundle = labMockFillSimulationCorePreflightStatus?.inputBundle || labMockFillSimulationCorePreflight?.inputBundle || {};
+  const labMockFillScenario = labMockFillSimulationCorePreflightStatus?.scenario || labMockFillSimulationCorePreflight?.scenario || {};
+  const labMockFillCorePolicyValidation = labMockFillSimulationCorePreflightStatus?.policyValidation || labMockFillSimulationCorePreflight?.policyValidation || {};
+  const labMockFillCoreCashAvailability = labMockFillSimulationCorePreflightStatus?.cashAvailability || labMockFillSimulationCorePreflight?.cashAvailability || {};
+  const labMockFillCorePositionImpact = labMockFillSimulationCorePreflightStatus?.positionImpact || labMockFillSimulationCorePreflight?.positionImpact || {};
+  const labMockFillCoreDeterministicReadiness = labMockFillSimulationCorePreflightStatus?.deterministicReadiness || labMockFillSimulationCorePreflight?.deterministicReadiness || {};
+  const labMockFillCoreBlockerSummary = labMockFillSimulationCorePreflightStatus?.blockerSummary || labMockFillSimulationCorePreflight?.blockerSummary || {};
+  const labMockFillCorePositionRows = Array.isArray(labMockFillCorePositionImpact?.rows)
+    ? labMockFillCorePositionImpact.rows
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1350,6 +1367,62 @@ export function TradingReadinessPanel() {
               ))}
               {labMockFillSimulationReviewHistory.slice(0, 2).map((item, index) => (
                 <li key={`mock-fill-simulation-review-history-${index}`}>{item.historyId || `mock_fill_simulation_review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockFillSimulationCorePreflight" data-admin-panel-key="trading-lab-mock-fill-simulation-core-preflight">
+            <span>Mock fill simulation core preflight</span>
+            <h4>{formatStatus(labMockFillSimulationCoreResult.status || labMockFillSimulationCorePreflight.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This preflight prepares FINPLE internal mock fill simulation core inputs only. It does not execute orders, create fills, update cash or positions, call KIS, write DB state, or open live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockFillCoreCards">
+              <div>
+                <span>Input bundle</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.inputBundleStatus || labMockFillCoreInputBundle.cashPlaceholderStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillCoreInputBundle.candidateCount || 0)} mock candidates</small>
+              </div>
+              <div>
+                <span>Fill scenario</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.fillScenarioStatus || labMockFillScenario.priceSource || "static_mock_series")}</strong>
+                <small>{formatStatus(labMockFillScenario.fillPolicy || "mock_close_price")} / {formatStatus(labMockFillScenario.fillTiming || "mock_same_day")}</small>
+              </div>
+              <div>
+                <span>Pricing / slippage / fee</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.pricingPolicyStatus || labMockFillCorePolicyValidation.status || "validation_required")}</strong>
+                <small>{Number(labMockFillCorePolicyValidation.mockFeeRate || 0).toFixed(4)} mock fee rate</small>
+              </div>
+              <div>
+                <span>Cash availability</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.cashAvailabilityStatus || labMockFillCoreCashAvailability.status || "validation_required")}</strong>
+                <small>{Number(labMockFillCoreCashAvailability.projectedCashPlaceholder || 0).toLocaleString("ko-KR")} mock cash</small>
+              </div>
+              <div>
+                <span>Position impact</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.positionImpactStatus || labMockFillCorePositionImpact.status || "validation_required")}</strong>
+                <small>{Number(labMockFillCorePositionRows.length || 0)} mock rows</small>
+              </div>
+              <div>
+                <span>Deterministic readiness</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.deterministicCalculationStatus || labMockFillCoreDeterministicReadiness.status || "validation_required")}</strong>
+                <small>{formatStatus(labMockFillSimulationCoreResult.nextAllowedStep || "mock_fill_simulation_core")}</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockFillSimulationCoreResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockFillSimulationCoreResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockFillCoreList" aria-label="Mock fill simulation core preflight blockers warnings and readiness">
+              {(labMockFillCoreBlockerSummary.blockerMessages || labMockFillCoreBlockerSummary.blockers || ["KIS calls, order submission, fill records, cash updates, and position updates remain blocked."]).map((message, index) => (
+                <li key={`mock-fill-core-preflight-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockFillCoreBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-fill-core-preflight-warning-${index}`}>{message}</li>
+              ))}
+              {labMockFillCorePositionRows.slice(0, 3).map((row, index) => (
+                <li key={`mock-fill-core-position-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected {Number(row.projectedMockQuantity || 0).toLocaleString("ko-KR")} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
               ))}
             </ul>
           </article>

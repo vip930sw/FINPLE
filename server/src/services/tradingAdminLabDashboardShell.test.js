@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildAdminTradingLabMockExecutionReviewResultStatus,
+  buildAdminTradingLabMockFillSimulationCorePreflightStatus,
   buildAdminTradingLabMockFillSimulationPreflightStatus,
   buildAdminTradingLabMockFillSimulationReviewResultStatus,
   buildAdminTradingLabStrategyDraftStatus,
@@ -87,6 +88,10 @@ import {
   buildTradingLabMockFillSimulationReviewReceipt,
   buildTradingLabMockFillSimulationReviewResult,
   buildTradingLabMockFillSimulationReviewResultRecordingGate,
+  buildTradingLabMockFillSimulationCorePreflight,
+  buildTradingLabMockFillSimulationCorePreflightResult,
+  buildTradingLabMockFillCoreInputBundle,
+  buildTradingLabMockFillScenario,
   buildTradingLabMockFillSlippageFeePreview,
   buildTradingLabMockFillPlanReviewSummary,
   buildTradingLabMockFillPlanPlaceholders,
@@ -103,6 +108,11 @@ import {
   validateTradingLabMockFillPositionImpact,
   validateTradingLabMockFillSimulationPreflight,
   validateTradingLabMockFillSimulationReviewResult,
+  validateTradingLabMockFillSimulationCorePreflight,
+  validateTradingLabMockFillCoreCashAvailability,
+  validateTradingLabMockFillCorePositionImpact,
+  validateTradingLabMockFillCorePricingSlippageFeePolicy,
+  validateTradingLabMockFillDeterministicCalculationReadiness,
   validateTradingLabMockRunCandidatePreflight,
   validateTradingLabStrategyDraftClearanceReviewResult,
   validateTradingLabStrategyDraftClearancePreflight,
@@ -611,7 +621,7 @@ test("Step 136 admin review result status and dashboard integration remain admin
   assert.equal(reviewResultStatus.readyForLiveGuardedTrading, false);
   assert.equal(reviewResultStatus.persistentStorageUsed, false);
   assert.equal(reviewResultStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.strategyDraftReviewStatus.step, "Step 135: Admin trading lab strategy draft comparison review gate");
   assert.equal(dashboard.strategyDraftReviewResultStatus.step, "Step 136: Admin trading lab strategy draft review result recording gate");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -749,7 +759,7 @@ test("Step 137 admin clearance status and dashboard integration remain admin-onl
   assert.equal(clearanceStatus.readyForLiveGuardedTrading, false);
   assert.equal(clearanceStatus.persistentStorageUsed, false);
   assert.equal(clearanceStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.strategyDraftReviewResultStatus.step, "Step 136: Admin trading lab strategy draft review result recording gate");
   assert.equal(dashboard.strategyDraftClearancePreflightStatus.step, "Step 137: Admin trading lab strategy draft clearance preflight");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -908,7 +918,7 @@ test("Step 138 admin clearance review result status and dashboard integration re
   assert.equal(clearanceReviewStatus.orderDraftCreated, false);
   assert.equal(clearanceReviewStatus.persistentStorageUsed, false);
   assert.equal(clearanceReviewStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.strategyDraftReviewResultStatus.step, "Step 136: Admin trading lab strategy draft review result recording gate");
   assert.equal(dashboard.strategyDraftClearancePreflightStatus.step, "Step 137: Admin trading lab strategy draft clearance preflight");
   assert.equal(dashboard.strategyDraftClearanceReviewResultStatus.step, "Step 138: Admin trading lab strategy draft clearance review result recording gate");
@@ -1081,7 +1091,7 @@ test("Step 139 admin mock run candidate status and dashboard integration remain 
   assert.equal(mockRunStatus.accountBalanceQueried, false);
   assert.equal(mockRunStatus.persistentStorageUsed, false);
   assert.equal(mockRunStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.strategyDraftClearanceReviewResultStatus.step, "Step 138: Admin trading lab strategy draft clearance review result recording gate");
   assert.equal(dashboard.mockRunCandidatePreflightStatus.step, "Step 139: Admin trading lab mock run candidate preflight");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -1343,7 +1353,7 @@ test("Step 140 admin mock order generation status and dashboard integration rema
   assert.equal(mockOrderStatus.accountBalanceQueried, false);
   assert.equal(mockOrderStatus.persistentStorageUsed, false);
   assert.equal(mockOrderStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockRunCandidatePreflightStatus.step, "Step 139: Admin trading lab mock run candidate preflight");
   assert.equal(dashboard.mockOrderGenerationPreflightStatus.step, "Step 140: Admin trading lab mock order generation preflight");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -1588,7 +1598,7 @@ test("Step 141 admin mock order generation review status and dashboard integrati
   assert.equal(reviewStatus.readyForLiveGuardedTrading, false);
   assert.equal(reviewStatus.persistentStorageUsed, false);
   assert.equal(reviewStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockOrderGenerationPreflightStatus.step, "Step 140: Admin trading lab mock order generation preflight");
   assert.equal(dashboard.mockOrderGenerationReviewResultStatus.step, "Step 141: Admin trading lab mock order generation review result recording gate");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -1841,7 +1851,7 @@ test("Step 142 admin mock execution status and dashboard integration remain admi
   assert.equal(mockExecutionStatus.readyForLiveGuardedTrading, false);
   assert.equal(mockExecutionStatus.persistentStorageUsed, false);
   assert.equal(mockExecutionStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockOrderGenerationReviewResultStatus.step, "Step 141: Admin trading lab mock order generation review result recording gate");
   assert.equal(dashboard.mockExecutionPreflightStatus.step, "Step 142: Admin trading lab mock execution preflight");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -2095,7 +2105,7 @@ test("Step 143 admin mock execution review status and dashboard integration rema
   assert.equal(mockExecutionReviewStatus.readyForLiveGuardedTrading, false);
   assert.equal(mockExecutionReviewStatus.persistentStorageUsed, false);
   assert.equal(mockExecutionReviewStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockExecutionPreflightStatus.step, "Step 142: Admin trading lab mock execution preflight");
   assert.equal(dashboard.mockExecutionReviewResultStatus.step, "Step 143: Admin trading lab mock execution review result recording gate");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -2414,7 +2424,7 @@ test("Step 144 admin mock fill simulation status and dashboard integration remai
   assert.equal(mockFillSimulationStatus.readyForLiveGuardedTrading, false);
   assert.equal(mockFillSimulationStatus.persistentStorageUsed, false);
   assert.equal(mockFillSimulationStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockExecutionReviewResultStatus.step, "Step 143: Admin trading lab mock execution review result recording gate");
   assert.equal(dashboard.mockFillSimulationPreflightStatus.step, "Step 144: Admin trading lab mock fill simulation preflight");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -2628,7 +2638,7 @@ test("Step 145 admin mock fill simulation review status and dashboard integratio
   assert.equal(mockFillSimulationReviewStatus.readyForLiveGuardedTrading, false);
   assert.equal(mockFillSimulationReviewStatus.persistentStorageUsed, false);
   assert.equal(mockFillSimulationReviewStatus.dbWriteUsed, false);
-  assert.equal(dashboard.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
   assert.equal(dashboard.mockFillSimulationPreflightStatus.step, "Step 144: Admin trading lab mock fill simulation preflight");
   assert.equal(dashboard.mockFillSimulationReviewResultStatus.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
   assert.equal(dashboard.flags.providerCallsAllowed, false);
@@ -2649,5 +2659,215 @@ test("Step 145 admin mock fill simulation review status and dashboard integratio
   assert.equal(serialized.includes("actualExecutionCreated\":true"), false);
   assert.equal(serialized.includes("actualFillRecordCreated\":true"), false);
   assert.equal(serialized.includes("fillCreated\":true"), false);
+  assert.equal(serialized.includes("accountBalanceQueried\":true"), false);
+});
+
+test("Step 146 mock fill simulation core preflight builds redacted mock-only inputs without live artifacts", () => {
+  const mockFillSimulationReviewResultStatus = buildAdminTradingLabMockFillSimulationReviewResultStatus();
+  const inputBundle = buildTradingLabMockFillCoreInputBundle({ mockFillSimulationReviewResultStatus });
+  const scenario = buildTradingLabMockFillScenario({ mockFillSimulationReviewResultStatus });
+  const policyValidation = validateTradingLabMockFillCorePricingSlippageFeePolicy({ mockFillSimulationReviewResultStatus });
+  const cashAvailability = validateTradingLabMockFillCoreCashAvailability({ mockFillSimulationReviewResultStatus });
+  const positionImpact = validateTradingLabMockFillCorePositionImpact({ mockFillSimulationReviewResultStatus });
+  const deterministicReadiness = validateTradingLabMockFillDeterministicCalculationReadiness({
+    mockFillSimulationReviewResultStatus,
+    inputBundle,
+    scenario,
+  });
+  const validation = validateTradingLabMockFillSimulationCorePreflight({
+    mockFillSimulationReviewResultStatus,
+    inputBundle,
+    scenario,
+    policyValidation,
+    cashAvailability,
+    positionImpact,
+    deterministicReadiness,
+  });
+  const result = buildTradingLabMockFillSimulationCorePreflightResult({ validation });
+  const preflight = buildTradingLabMockFillSimulationCorePreflight({
+    mockFillSimulationReviewResultStatus,
+    inputBundle,
+    scenario,
+    policyValidation,
+    cashAvailability,
+    positionImpact,
+    deterministicReadiness,
+    validation,
+    result,
+  });
+  const serialized = JSON.stringify({ inputBundle, scenario, policyValidation, cashAvailability, positionImpact, deterministicReadiness, validation, result, preflight });
+
+  assert.equal(inputBundle.redacted, true);
+  assert.equal(inputBundle.scope, "mock_only");
+  assert.equal(scenario.priceSource, "static_mock_series");
+  assert.equal(policyValidation.providerQuoteUsed, false);
+  assert.equal(policyValidation.kisQuoteQueryUsed, false);
+  assert.equal(policyValidation.actualFillPriceLookupAttempted, false);
+  assert.equal(cashAvailability.accountBalanceQueried, false);
+  assert.equal(positionImpact.actualFillRecordCreated, false);
+  assert.equal(deterministicReadiness.deterministicInputsOnly, true);
+  assert.equal(result.redacted, true);
+  assert.equal(result.nextAllowedStep, "mock_fill_simulation_core");
+  assert.equal(preflight.providerCallsAllowed, false);
+  assert.equal(preflight.orderSubmissionAllowed, false);
+  assert.equal(preflight.readyForReadOnlyProviderCalls, false);
+  assert.equal(preflight.readyForOrderSubmission, false);
+  assert.equal(preflight.readyForLiveGuardedTrading, false);
+  assert.equal(preflight.actualOrderCandidateCreated, false);
+  assert.equal(preflight.actualOrderDraftCreated, false);
+  assert.equal(preflight.kisOrderPayloadCreated, false);
+  assert.equal(preflight.kisExecutionPayloadCreated, false);
+  assert.equal(preflight.kisFillPayloadCreated, false);
+  assert.equal(preflight.actualExecutionCreated, false);
+  assert.equal(preflight.actualFillRecordCreated, false);
+  assert.equal(preflight.fillCreated, false);
+  assert.equal(preflight.actualCashUpdated, false);
+  assert.equal(preflight.actualPositionUpdated, false);
+  assert.equal(preflight.persistentStorageUsed, false);
+  assert.equal(preflight.dbWriteUsed, false);
+  assert.equal(serialized.includes("APP_KEY"), false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("providerPayloadStored\":true"), false);
+  assert.equal(serialized.includes("orderPayloadStored\":true"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+  assert.equal(serialized.includes("actualFillRecordCreated\":true"), false);
+  assert.equal(serialized.includes("actualCashUpdated\":true"), false);
+  assert.equal(serialized.includes("actualPositionUpdated\":true"), false);
+});
+
+test("Step 146 mock fill simulation core preflight depends on Step145 redacted review receipt", () => {
+  const missingValidation = validateTradingLabMockFillSimulationCorePreflight({
+    mockFillSimulationReviewResultStatus: {},
+  });
+  const unsafeValidation = validateTradingLabMockFillSimulationCorePreflight({
+    mockFillSimulationReviewResultStatus: {
+      reviewResult: {
+        fillSimulationReviewResultId: "unsafe_review",
+        sourceStep: "step145",
+        reviewStatus: "recorded",
+        redacted: false,
+        readinessImpact: "none",
+        providerCallImpact: "blocked",
+        orderSubmissionImpact: "blocked",
+        liveTradingImpact: "blocked",
+      },
+      receipt: {
+        receiptId: "unsafe_receipt",
+        reviewStatus: "recorded",
+        redacted: false,
+        nextAllowedStep: "mock_fill_simulation_core_preflight",
+      },
+    },
+  });
+
+  assert.equal(missingValidation.status, "blocked");
+  assert.ok(missingValidation.blockers.includes("mock_fill_simulation_review_result_missing"));
+  assert.ok(missingValidation.blockers.includes("mock_fill_simulation_review_receipt_missing"));
+  assert.equal(unsafeValidation.status, "blocked");
+  assert.ok(unsafeValidation.blockers.includes("mock_fill_simulation_review_result_not_redacted"));
+  assert.ok(unsafeValidation.blockers.includes("mock_fill_simulation_review_receipt_not_redacted"));
+  assert.equal(unsafeValidation.providerCallsAllowed, false);
+  assert.equal(unsafeValidation.orderSubmissionAllowed, false);
+  assert.equal(unsafeValidation.readyForLiveGuardedTrading, false);
+});
+
+test("Step 146 mock fill simulation core preflight blocks unsafe policies and actual artifacts", () => {
+  const mockFillSimulationReviewResultStatus = buildAdminTradingLabMockFillSimulationReviewResultStatus();
+  const unsafeCandidate = {
+    ...mockFillSimulationReviewResultStatus.recordingGate.mockFillSimulationPreflightStatus.fillCandidates[0],
+    fillPolicy: "live_market",
+    mockPriceSource: "provider_quote",
+    actualOrderCandidateCreated: true,
+    actualOrderDraftCreated: true,
+    kisOrderPayloadCreated: true,
+    kisExecutionPayloadCreated: true,
+    kisFillPayloadCreated: true,
+    actualExecutionCreated: true,
+    actualFillRecordCreated: true,
+    accountBalanceQueried: true,
+  };
+  const validation = validateTradingLabMockFillSimulationCorePreflight({
+    mockFillSimulationReviewResultStatus: {
+      ...mockFillSimulationReviewResultStatus,
+      recordingGate: {
+        ...mockFillSimulationReviewResultStatus.recordingGate,
+        mockFillSimulationPreflightStatus: {
+          ...mockFillSimulationReviewResultStatus.recordingGate.mockFillSimulationPreflightStatus,
+          fillCandidates: [unsafeCandidate],
+        },
+      },
+    },
+  });
+
+  assert.equal(validation.status, "blocked");
+  assert.ok(validation.blockers.includes("invalid_mock_fill_policy_rejected"));
+  assert.ok(validation.blockers.includes("non_mock_price_source_rejected"));
+  assert.ok(validation.blockers.includes("actual_order_candidate_must_not_be_created"));
+  assert.ok(validation.blockers.includes("actual_order_draft_must_not_be_created"));
+  assert.ok(validation.blockers.includes("kis_order_payload_must_not_be_created"));
+  assert.ok(validation.blockers.includes("kis_execution_payload_must_not_be_created"));
+  assert.ok(validation.blockers.includes("kis_fill_payload_must_not_be_created"));
+  assert.ok(validation.blockers.includes("actual_execution_must_not_be_created"));
+  assert.ok(validation.blockers.includes("actual_fill_must_not_be_created"));
+  assert.ok(validation.blockers.includes("account_balance_query_must_not_run"));
+  assert.equal(validation.providerCallsAllowed, false);
+  assert.equal(validation.orderSubmissionAllowed, false);
+  assert.equal(validation.readyForReadOnlyProviderCalls, false);
+  assert.equal(validation.readyForOrderSubmission, false);
+  assert.equal(validation.readyForLiveGuardedTrading, false);
+});
+
+test("Step 146 admin mock fill simulation core preflight status and dashboard integration remain admin-only fail-closed", () => {
+  const mockFillSimulationCorePreflightStatus = buildAdminTradingLabMockFillSimulationCorePreflightStatus();
+  const dashboard = buildAdminTradingLabDashboardStatus();
+  const serialized = JSON.stringify({ mockFillSimulationCorePreflightStatus, dashboard });
+
+  assert.equal(mockFillSimulationCorePreflightStatus.status, "admin_only_trading_lab_mock_fill_simulation_core_preflight_fail_closed");
+  assert.equal(mockFillSimulationCorePreflightStatus.boundaries.adminOnly, true);
+  assert.equal(mockFillSimulationCorePreflightStatus.boundaries.publicDashboardExposed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.boundaries.myPageDashboardExposed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.boundaries.homepageDashboardExposed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualOrderCandidateCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualOrderDraftCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.kisOrderPayloadCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.kisExecutionPayloadCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.kisFillPayloadCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualExecutionCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualFillRecordCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.fillCreated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualCashUpdated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.actualPositionUpdated, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.accountBalanceQueried, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.providerCallsAllowed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.orderSubmissionAllowed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.readyForReadOnlyProviderCalls, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.readyForOrderSubmission, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.readyForLiveGuardedTrading, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.persistentStorageUsed, false);
+  assert.equal(mockFillSimulationCorePreflightStatus.dbWriteUsed, false);
+  assert.equal(dashboard.step, "Step 146: Admin trading lab mock fill simulation core preflight");
+  assert.equal(dashboard.mockFillSimulationReviewResultStatus.step, "Step 145: Admin trading lab mock fill simulation review result recording gate");
+  assert.equal(dashboard.mockFillSimulationCorePreflightStatus.step, "Step 146: Admin trading lab mock fill simulation core preflight");
+  assert.equal(dashboard.flags.providerCallsAllowed, false);
+  assert.equal(dashboard.flags.orderSubmissionAllowed, false);
+  assert.equal(dashboard.flags.readyForReadOnlyProviderCalls, false);
+  assert.equal(dashboard.flags.readyForOrderSubmission, false);
+  assert.equal(dashboard.flags.readyForLiveGuardedTrading, false);
+  assert.equal(serialized.includes("APP_SECRET"), false);
+  assert.equal(serialized.includes("accountNumber"), false);
+  assert.equal(serialized.includes("providerPayloadStored\":true"), false);
+  assert.equal(serialized.includes("orderPayloadStored\":true"), false);
+  assert.equal(serialized.includes("rawProviderResponseStored\":true"), false);
+  assert.equal(serialized.includes("actualOrderCandidateCreated\":true"), false);
+  assert.equal(serialized.includes("actualOrderDraftCreated\":true"), false);
+  assert.equal(serialized.includes("kisOrderPayloadCreated\":true"), false);
+  assert.equal(serialized.includes("kisExecutionPayloadCreated\":true"), false);
+  assert.equal(serialized.includes("kisFillPayloadCreated\":true"), false);
+  assert.equal(serialized.includes("actualExecutionCreated\":true"), false);
+  assert.equal(serialized.includes("actualFillRecordCreated\":true"), false);
+  assert.equal(serialized.includes("fillCreated\":true"), false);
+  assert.equal(serialized.includes("actualCashUpdated\":true"), false);
+  assert.equal(serialized.includes("actualPositionUpdated\":true"), false);
   assert.equal(serialized.includes("accountBalanceQueried\":true"), false);
 });
