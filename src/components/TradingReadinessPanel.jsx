@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabMockRunCandidatePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus,
   fetchAdminTradingLabStrategyDraftReviewResultStatus,
@@ -257,6 +258,7 @@ export function TradingReadinessPanel() {
   const [tradingLabStrategyDraftReviewResultStatus, setTradingLabStrategyDraftReviewResultStatus] = useState(null);
   const [tradingLabStrategyDraftClearancePreflightStatus, setTradingLabStrategyDraftClearancePreflightStatus] = useState(null);
   const [tradingLabStrategyDraftClearanceReviewResultStatus, setTradingLabStrategyDraftClearanceReviewResultStatus] = useState(null);
+  const [tradingLabMockRunCandidatePreflightStatus, setTradingLabMockRunCandidatePreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -285,6 +287,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabStrategyDraftReviewResultStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftClearancePreflightStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockRunCandidatePreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -308,6 +311,7 @@ export function TradingReadinessPanel() {
         setTradingLabStrategyDraftReviewResultStatus(payload?.[17] || null);
         setTradingLabStrategyDraftClearancePreflightStatus(payload?.[18] || null);
         setTradingLabStrategyDraftClearanceReviewResultStatus(payload?.[19] || null);
+        setTradingLabMockRunCandidatePreflightStatus(payload?.[20] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -363,6 +367,15 @@ export function TradingReadinessPanel() {
   const labStrategyDraftClearanceReviewHistory = Array.isArray(labStrategyDraftClearanceReviewResultStatus?.mockHistory)
     ? labStrategyDraftClearanceReviewResultStatus.mockHistory
     : [];
+  const labMockRunCandidatePreflightStatus = tradingLabMockRunCandidatePreflightStatus || tradingLabDashboardStatus?.mockRunCandidatePreflightStatus || {};
+  const labMockRunCandidatePreflight = labMockRunCandidatePreflightStatus?.preflight || {};
+  const labMockRunCandidateReadiness = labMockRunCandidatePreflightStatus?.readiness || labMockRunCandidatePreflight?.readiness || {};
+  const labMockRunCandidate = labMockRunCandidatePreflightStatus?.candidate || labMockRunCandidatePreflight?.candidate || {};
+  const labMockRunInputBundle = labMockRunCandidatePreflightStatus?.inputBundle || labMockRunCandidatePreflight?.inputBundle || {};
+  const labMockRunUniverse = labMockRunCandidatePreflightStatus?.universeSnapshot || labMockRunCandidatePreflight?.universeSnapshot || {};
+  const labMockRunInitialCapital = labMockRunCandidatePreflightStatus?.initialCapital || labMockRunCandidatePreflight?.initialCapital || {};
+  const labMockRunPreflightResult = labMockRunCandidatePreflightStatus?.result || labMockRunCandidatePreflight?.result || {};
+  const labMockRunBlockerSummary = labMockRunCandidatePreflightStatus?.blockerSummary || labMockRunCandidatePreflight?.blockerSummary || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -827,6 +840,54 @@ export function TradingReadinessPanel() {
               ))}
               {labStrategyDraftClearanceReviewHistory.slice(0, 1).map((receipt, index) => (
                 <li key={`clearance-review-history-${index}`}>{receipt.receiptId || "mock clearance review receipt"} · {formatStatus(receipt.decision || "rejected")}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockRunCandidatePreflight" data-admin-panel-key="trading-lab-mock-run-candidate-preflight">
+            <span>Mock run candidate preflight</span>
+            <h4>{formatStatus(labMockRunPreflightResult.status || labMockRunCandidate.status || labMockRunCandidatePreflightStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This candidate is only for FINPLE internal mock trading run preparation and never creates order candidates, order drafts, provider calls, or live readiness.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockRunCards">
+              <div>
+                <span>Input bundle</span>
+                <strong>{labMockRunInputBundle.inputBundleId || "step139_mock_run_input_bundle"}</strong>
+                <small>{formatStatus(labMockRunInputBundle.scope || "mock_only")}</small>
+              </div>
+              <div>
+                <span>Universe</span>
+                <strong>{formatStatus(labMockRunUniverse.priceSeriesStatus || labMockRunCandidateReadiness.priceSeriesDependencyStatus || "validation_required")}</strong>
+                <small>{Number(labMockRunUniverse.symbolCount || 0)} symbols</small>
+              </div>
+              <div>
+                <span>Initial capital</span>
+                <strong>{Number(labMockRunInitialCapital.initialCapitalPlaceholder || 0).toLocaleString()}</strong>
+                <small>{formatStatus(labMockRunInitialCapital.status || "placeholder_only")}</small>
+              </div>
+              <div>
+                <span>Provider impact</span>
+                <strong>{formatStatus(labMockRunPreflightResult.providerCallImpact || "blocked")}</strong>
+                <small>KIS calls remain blocked</small>
+              </div>
+              <div>
+                <span>Order impact</span>
+                <strong>{formatStatus(labMockRunPreflightResult.orderSubmissionImpact || "blocked")}</strong>
+                <small>{labMockRunCandidate.orderDraftCreated ? "order_draft_created" : "no_order_draft"}</small>
+              </div>
+              <div>
+                <span>Candidate guard</span>
+                <strong>{labMockRunCandidate.orderCandidateCreated ? "order_candidate_created" : "no_order_candidate"}</strong>
+                <small>{formatStatus(labMockRunPreflightResult.nextAllowedStep || "mock_order_generation_preflight")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockRunList" aria-label="Mock run candidate preflight blockers and warnings">
+              {(labMockRunBlockerSummary.blockerMessages || labMockRunBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`mock-run-candidate-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockRunBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-run-candidate-warning-${index}`}>{message}</li>
               ))}
             </ul>
           </article>
