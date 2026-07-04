@@ -10,6 +10,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
+  fetchAdminTradingLabMockDashboardCleanupPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
@@ -303,6 +304,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockTradingRunSummaryPreflightStatus, setTradingLabMockTradingRunSummaryPreflightStatus] = useState(null);
   const [tradingLabMockTradingRunSummaryReviewResultStatus, setTradingLabMockTradingRunSummaryReviewResultStatus] = useState(null);
   const [tradingLabMockTradingRunSummaryCoreStatus, setTradingLabMockTradingRunSummaryCoreStatus] = useState(null);
+  const [tradingLabMockDashboardCleanupPreflightStatus, setTradingLabMockDashboardCleanupPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -354,6 +356,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockTradingRunSummaryPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockTradingRunSummaryCoreStatus().catch(() => null),
+      fetchAdminTradingLabMockDashboardCleanupPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -400,6 +403,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockTradingRunSummaryPreflightStatus(payload?.[40] || null);
         setTradingLabMockTradingRunSummaryReviewResultStatus(payload?.[41] || null);
         setTradingLabMockTradingRunSummaryCoreStatus(payload?.[42] || null);
+        setTradingLabMockDashboardCleanupPreflightStatus(payload?.[43] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -729,6 +733,22 @@ export function TradingReadinessPanel() {
   const labMockTradingRunSummaryRiskSafetySummary = labMockTradingRunSummaryCoreStatus?.riskSafetySummary || labMockTradingRunSummaryCoreResult?.riskSummary || {};
   const labMockTradingRunSummaryCoreHistory = Array.isArray(labMockTradingRunSummaryCoreStatus?.mockHistory)
     ? labMockTradingRunSummaryCoreStatus.mockHistory
+    : [];
+  const labMockDashboardCleanupPreflightStatus = tradingLabMockDashboardCleanupPreflightStatus || tradingLabDashboardStatus?.mockDashboardCleanupPreflightStatus || {};
+  const labMockDashboardCleanupPreflightResult = labMockDashboardCleanupPreflightStatus?.result || {};
+  const labMockDashboardCleanupValidation = labMockDashboardCleanupPreflightStatus?.validation || {};
+  const labMockDashboardSectionInventory = labMockDashboardCleanupPreflightStatus?.sectionInventory || {};
+  const labMockDashboardPriorityLayout = labMockDashboardCleanupPreflightStatus?.priorityLayout || {};
+  const labMockDashboardCollapsibleSectionPlan = labMockDashboardCleanupPreflightStatus?.collapsibleSectionPlan || {};
+  const labMockDashboardSections = Array.isArray(labMockDashboardSectionInventory?.sections)
+    ? labMockDashboardSectionInventory.sections
+    : [];
+  const labMockDashboardPrimarySections = labMockDashboardSections.filter((section) => section.priority === "primary");
+  const labMockDashboardCollapsibleGroups = Array.isArray(labMockDashboardCollapsibleSectionPlan?.groups)
+    ? labMockDashboardCollapsibleSectionPlan.groups
+    : [];
+  const labMockDashboardCleanupHistory = Array.isArray(labMockDashboardCleanupPreflightStatus?.mockHistory)
+    ? labMockDashboardCleanupPreflightStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2630,6 +2650,99 @@ export function TradingReadinessPanel() {
                 <li>Mock trading run summary review remains validation-required; live/provider/order gates stay blocked and all readiness flags remain false.</li>
               ) : null}
             </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockDashboardCleanupPreflight" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-preflight">
+            <span>모의 대시보드 정리 사전검토</span>
+            <h4>{formatStatus(labMockDashboardCleanupPreflightResult.status || labMockDashboardCleanupPreflightStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock dashboard cleanup preview only. It keeps the existing admin mock run sections, moves summary signals first, groups detail sections for review, and keeps KIS/provider/order/live gates blocked.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockDashboardCleanupCards">
+              <div>
+                <span>Summary source</span>
+                <strong>{labMockDashboardCleanupPreflightResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result"}</strong>
+                <small>Step161 dependency</small>
+              </div>
+              <div>
+                <span>Summary-first layout</span>
+                <strong>{formatStatus(labMockDashboardCleanupPreflightResult.summaryFirstLayoutStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardPriorityLayout.priorityMode || "summary_first")}</small>
+              </div>
+              <div>
+                <span>Section inventory</span>
+                <strong>{labMockDashboardCleanupPreflightResult.sectionCount ?? labMockDashboardSectionInventory.sectionCount ?? 0}</strong>
+                <small>{formatStatus(labMockDashboardCleanupPreflightResult.sectionInventoryStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Primary summary sections</span>
+                <strong>{labMockDashboardCleanupPreflightResult.primarySectionCount ?? labMockDashboardSectionInventory.primarySectionCount ?? 0}</strong>
+                <small>KPI, chart, allocation, summary</small>
+              </div>
+              <div>
+                <span>Collapsible groups</span>
+                <strong>{labMockDashboardCollapsibleSectionPlan.groupCount ?? labMockDashboardCollapsibleGroups.length}</strong>
+                <small>{formatStatus(labMockDashboardCleanupPreflightResult.collapsibleSectionPlanStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Existing sections</span>
+                <strong>{labMockDashboardCollapsibleSectionPlan.deletesExistingSections ? "Validation required" : "Preserved"}</strong>
+                <small>No admin mock section deletion</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupPreflightResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupPreflightResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupPreflightResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupPreflightResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Next step</span>
+                <strong>{formatStatus(labMockDashboardCleanupPreflightResult.nextAllowedStep || "mock_dashboard_cleanup_review")}</strong>
+                <small>Admin mock-only</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockDashboardCleanupList" aria-label="Mock dashboard cleanup preflight guardrails">
+              <li>{labMockDashboardCleanupPreflightResult.mockDashboardCleanupPreflightId || "step162_mock_dashboard_cleanup_preflight"} / {formatStatus(labMockDashboardCleanupPreflightResult.status || "validation_required")} / summary-first admin mock dashboard preview only</li>
+              <li>No KIS/provider call, no KIS token, no quote query, no order submission, no DB write, and no account balance query.</li>
+              <li>No actual trading run id, order id, execution id, fill id, ledger persistence, performance record, cash update, or position update is created.</li>
+              <li>Admin mock run sections remain under the trading lab; My Page, homepage, and public routes do not expose this cleanup preview.</li>
+              <li>Next allowed step: {formatStatus(labMockDashboardCleanupPreflightResult.nextAllowedStep || "mock_dashboard_cleanup_review")}</li>
+              {(labMockDashboardCleanupValidation.blockerSummary || labMockDashboardCleanupValidation.blockers || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockDashboardCleanupValidation.warningSummary || labMockDashboardCleanupValidation.warnings || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-warning-${index}`}>{message}</li>
+              ))}
+              {labMockDashboardCleanupHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-dashboard-cleanup-history-${index}`}>{item.historyId || `mock_dashboard_cleanup_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_dashboard_cleanup_review")}</li>
+              ))}
+            </ul>
+            <details className="tradingLabCleanupDetails">
+              <summary>Summary-first priority plan</summary>
+              <ul className="tradingLabReviewList tradingLabMockDashboardCleanupList">
+                {(labMockDashboardPriorityLayout.primaryOrder || []).map((sectionId) => (
+                  <li key={`mock-dashboard-priority-${sectionId}`}>{sectionId} / primary summary surface</li>
+                ))}
+                {labMockDashboardPrimarySections.length === 0 ? (
+                  <li>Primary summary sections require validation before the cleanup preview can be treated as ready.</li>
+                ) : null}
+              </ul>
+            </details>
+            <details className="tradingLabCleanupDetails">
+              <summary>Collapsible detail grouping plan</summary>
+              <ul className="tradingLabReviewList tradingLabMockDashboardCleanupList">
+                {labMockDashboardCollapsibleGroups.map((group) => (
+                  <li key={`mock-dashboard-collapsible-${group.groupId}`}>{group.groupId} / {group.title} / {group.defaultCollapsed ? "default collapsed" : "default open"} / preserved</li>
+                ))}
+                {labMockDashboardCollapsibleGroups.length === 0 ? (
+                  <li>Collapsible grouping remains validation-required; no existing admin mock section is removed.</li>
+                ) : null}
+              </ul>
+            </details>
           </article>
 
           <article className="tradingLabSection tradingLabMockTradingRunSummaryCore" data-admin-panel-key="trading-lab-mock-trading-run-summary-core">

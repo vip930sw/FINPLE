@@ -1,0 +1,46 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const test = require("node:test");
+
+test("Step 162 checker covers mock dashboard cleanup preflight implementation and safety boundaries", () => {
+  const checkText = fs.readFileSync("scripts/check-trading-step162-admin-trading-lab-mock-dashboard-cleanup-preflight.cjs", "utf8");
+  const packageText = fs.readFileSync("package.json", "utf8");
+
+  assert.match(checkText, /STEP162_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_PREFLIGHT_FLAGS/);
+  assert.match(checkText, /TRADING_LAB_MOCK_DASHBOARD_CLEANUP_PREFLIGHT_MODEL/);
+  assert.match(checkText, /TRADING_LAB_MOCK_DASHBOARD_SECTION_INVENTORY_MODEL/);
+  assert.match(checkText, /TRADING_LAB_MOCK_DASHBOARD_PRIORITY_LAYOUT_MODEL/);
+  assert.match(checkText, /TRADING_LAB_MOCK_DASHBOARD_COLLAPSIBLE_SECTION_PLAN_MODEL/);
+  assert.match(checkText, /TRADING_LAB_MOCK_DASHBOARD_CLEANUP_PREFLIGHT_RESULT_SCHEMA/);
+  assert.match(checkText, /buildTradingLabMockDashboardSectionInventory/);
+  assert.match(checkText, /buildTradingLabMockDashboardPriorityLayout/);
+  assert.match(checkText, /buildTradingLabMockDashboardCollapsibleSectionPlan/);
+  assert.match(checkText, /validateTradingLabMockDashboardCleanupPreflight/);
+  assert.match(checkText, /buildTradingLabMockDashboardCleanupPreflight/);
+  assert.match(checkText, /buildAdminTradingLabMockDashboardCleanupPreflightStatus/);
+  assert.match(checkText, /trading-lab-mock-dashboard-cleanup-preflight/);
+  assert.match(checkText, /requireAdminAccess/);
+  assert.match(checkText, /AccountPages\.jsx/);
+  assert.match(checkText, /src\/App\.jsx/);
+  assert.match(checkText, /scenario_monthly_returns\.csv/);
+  assert.match(checkText, /scenario runtime files must remain untouched/);
+  assert.match(checkText, /providerCallsAllowed: true/);
+  assert.match(checkText, /orderSubmissionAllowed: true/);
+  assert.match(checkText, /kisOrderPayloadCreated: true/);
+  assert.match(checkText, /kisExecutionPayloadCreated: true/);
+  assert.match(checkText, /kisFillPayloadCreated: true/);
+  assert.match(checkText, /executionRecordCreated: true/);
+  assert.match(checkText, /fillRecordCreated: true/);
+  assert.match(checkText, /portfolioLedgerPersisted: true/);
+  assert.match(checkText, /performanceRecordPersisted: true/);
+  assert.match(checkText, /accountBalanceQueried: true/);
+  assert.match(checkText, /actualCashUpdated: true/);
+  assert.match(checkText, /actualPositionUpdated: true/);
+  assert.match(checkText, /actualPerformanceRecordUpdated: true/);
+  assert.match(checkText, /realTradingRunIdentifierCreated: true/);
+  assert.match(checkText, /existingSectionsDeleted: true/);
+  assert.match(checkText, /actualInvestmentPerformanceConfirmed: true/);
+  assert.match(checkText, /returnGuaranteeProvided: true/);
+  assert.match(checkText, /investmentAdviceProvided: true/);
+  assert.match(packageText, /check:trading-step162-admin-trading-lab-mock-dashboard-cleanup-preflight/);
+});

@@ -7,6 +7,7 @@ import {
   buildAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   buildAdminTradingLabMockFillSimulationCoreStatus,
   buildAdminTradingLabMockTradingRunSummaryPreflightStatus,
+  buildAdminTradingLabMockDashboardCleanupPreflightStatus,
   buildAdminTradingLabMockTradingRunSummaryCoreStatus,
   buildAdminTradingLabMockTradingRunSummaryReviewResultStatus,
   buildAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus,
@@ -308,6 +309,12 @@ router.get("/trading-lab-mock-trading-run-summary-review-result", (request, resp
 router.get("/trading-lab-mock-trading-run-summary-core", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabMockTradingRunSummaryCoreStatus());
+  });
+});
+
+router.get("/trading-lab-mock-dashboard-cleanup-preflight", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabMockDashboardCleanupPreflightStatus());
   });
 });
 
