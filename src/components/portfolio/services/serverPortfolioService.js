@@ -422,6 +422,10 @@ export async function fetchAdminTradingLabMockPortfolioPerformanceRecalculationC
   return requestJson("/admin/trading-readiness/trading-lab-mock-portfolio-performance-recalculation-core", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabMockTradingRunSummaryPreflightStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-mock-trading-run-summary-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

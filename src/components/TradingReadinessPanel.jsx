@@ -10,6 +10,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
+  fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus,
@@ -297,6 +298,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus, setTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus] = useState(null);
   const [tradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus, setTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus] = useState(null);
   const [tradingLabMockPortfolioPerformanceRecalculationCoreStatus, setTradingLabMockPortfolioPerformanceRecalculationCoreStatus] = useState(null);
+  const [tradingLabMockTradingRunSummaryPreflightStatus, setTradingLabMockTradingRunSummaryPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -345,6 +347,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus().catch(() => null),
+      fetchAdminTradingLabMockTradingRunSummaryPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -388,6 +391,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus(payload?.[37] || null);
         setTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus(payload?.[38] || null);
         setTradingLabMockPortfolioPerformanceRecalculationCoreStatus(payload?.[39] || null);
+        setTradingLabMockTradingRunSummaryPreflightStatus(payload?.[40] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -687,6 +691,14 @@ export function TradingReadinessPanel() {
   const labMockPerformanceChartDataResult = labMockPortfolioPerformanceRecalculationCoreStatus?.chartDataResult || labMockPerformanceResult?.chartData || {};
   const labMockPerformanceCoreCalculationHistory = Array.isArray(labMockPortfolioPerformanceRecalculationCoreStatus?.mockHistory)
     ? labMockPortfolioPerformanceRecalculationCoreStatus.mockHistory
+    : [];
+  const labMockTradingRunSummaryPreflightStatus = tradingLabMockTradingRunSummaryPreflightStatus || tradingLabDashboardStatus?.mockTradingRunSummaryPreflightStatus || {};
+  const labMockTradingRunSummaryPreflightResult = labMockTradingRunSummaryPreflightStatus?.result || {};
+  const labMockTradingRunSummaryInputBundle = labMockTradingRunSummaryPreflightStatus?.summaryInputBundle || {};
+  const labMockTradingRunSummaryValidation = labMockTradingRunSummaryPreflightStatus?.validation || {};
+  const labMockTradingRunSummaryDependencyMap = labMockTradingRunSummaryPreflightStatus?.dependencyMap || {};
+  const labMockTradingRunSummaryHistory = Array.isArray(labMockTradingRunSummaryPreflightStatus?.mockHistory)
+    ? labMockTradingRunSummaryPreflightStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2410,6 +2422,91 @@ export function TradingReadinessPanel() {
               ))}
               {!labMockPerformanceResult.calculationStatus ? (
                 <li>Mock performance recalculation core remains validation-required; no real account, DB, provider, order, fill, execution, cash, position, ledger, or performance mutation is performed.</li>
+              ) : null}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockTradingRunSummaryPreflight" data-admin-panel-key="trading-lab-mock-trading-run-summary-preflight">
+            <span>Mock trading run summary preflight</span>
+            <h4>{formatStatus(labMockTradingRunSummaryPreflightResult.status || labMockTradingRunSummaryPreflightStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock trading run summary preflight only. It is not a stored trading run summary, does not write DB state, does not update actual cash, positions, ledger, or performance records, and keeps KIS/provider/order/live gates blocked.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockTradingRunSummaryPreflightCards">
+              <div>
+                <span>Strategy summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.strategySummaryStatus || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryInputBundle.strategyDraftId || "mock strategy only"}</small>
+              </div>
+              <div>
+                <span>Order summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.orderSummaryStatus || "validation_required")}</strong>
+                <small>Not an order candidate</small>
+              </div>
+              <div>
+                <span>Execution summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.executionSummaryStatus || "validation_required")}</strong>
+                <small>No execution record</small>
+              </div>
+              <div>
+                <span>Fill summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.fillSummaryStatus || "validation_required")}</strong>
+                <small>No fill record</small>
+              </div>
+              <div>
+                <span>Ledger summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.ledgerSummaryStatus || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryInputBundle.ledgerUpdateResultId || "mock ledger only"}</small>
+              </div>
+              <div>
+                <span>Performance summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.performanceSummaryStatus || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryInputBundle.performanceResultId || "mock performance only"}</small>
+              </div>
+              <div>
+                <span>Risk summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.riskSummaryStatus || "validation_required")}</strong>
+                <small>External authority still required</small>
+              </div>
+              <div>
+                <span>Dashboard aggregation</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.dashboardAggregationStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryDependencyMap.dashboardAggregationStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Chart aggregation</span>
+                <strong>{formatStatus(labMockTradingRunSummaryValidation.chartAggregationStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryDependencyMap.chartAggregationStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockTradingRunSummaryPreflightResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryPreflightResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockTradingRunSummaryPreflightResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryPreflightResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockTradingRunSummaryPreflightList" aria-label="Mock trading run summary preflight guardrails">
+              <li>{labMockTradingRunSummaryPreflightResult.tradingRunSummaryPreflightId || "step159_mock_trading_run_summary_preflight"} / {formatStatus(labMockTradingRunSummaryPreflightResult.status || "validation_required")} / FINPLE internal mock summary readiness only</li>
+              <li>{labMockTradingRunSummaryPreflightResult.performanceResultId || "step158_mock_portfolio_performance_recalculation_core_result"} / Step158 dependency required</li>
+              <li>Not a stored trading run summary, not actual investment performance, and not a return guarantee or investment advice.</li>
+              <li>No DB write, no KIS/provider call, no KIS token, no quote query, no order submission, and no account balance query.</li>
+              <li>No order candidate, order draft, execution record, fill record, ledger persistence, or performance record is created.</li>
+              <li>Next allowed step: {formatStatus(labMockTradingRunSummaryPreflightResult.nextAllowedStep || "mock_trading_run_summary_review_result")}</li>
+              {(labMockTradingRunSummaryValidation.blockerSummary || labMockTradingRunSummaryValidation.blockers || []).map((message, index) => (
+                <li key={`mock-trading-run-summary-preflight-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockTradingRunSummaryValidation.warningSummary || labMockTradingRunSummaryValidation.warnings || []).map((message, index) => (
+                <li key={`mock-trading-run-summary-preflight-warning-${index}`}>{message}</li>
+              ))}
+              {labMockTradingRunSummaryHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-trading-run-summary-preflight-history-${index}`}>{item.historyId || `mock_trading_run_summary_preflight_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_trading_run_summary_review_result")}</li>
+              ))}
+              {!labMockTradingRunSummaryPreflightResult.status ? (
+                <li>Mock trading run summary preflight remains validation-required; live/provider/order gates stay blocked and all readiness flags remain false.</li>
               ) : null}
             </ul>
           </article>
