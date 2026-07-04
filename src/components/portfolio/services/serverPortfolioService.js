@@ -354,6 +354,10 @@ export async function fetchAdminTradingLabMockOrderGenerationReviewResultStatus(
   return requestJson("/admin/trading-readiness/trading-lab-mock-order-generation-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabMockExecutionPreflightStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-mock-execution-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

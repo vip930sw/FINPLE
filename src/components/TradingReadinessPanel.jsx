@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabMockExecutionPreflightStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
   fetchAdminTradingLabMockOrderGenerationReviewResultStatus,
   fetchAdminTradingLabMockRunCandidatePreflightStatus,
@@ -263,6 +264,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockRunCandidatePreflightStatus, setTradingLabMockRunCandidatePreflightStatus] = useState(null);
   const [tradingLabMockOrderGenerationPreflightStatus, setTradingLabMockOrderGenerationPreflightStatus] = useState(null);
   const [tradingLabMockOrderGenerationReviewResultStatus, setTradingLabMockOrderGenerationReviewResultStatus] = useState(null);
+  const [tradingLabMockExecutionPreflightStatus, setTradingLabMockExecutionPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -294,6 +296,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockRunCandidatePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockOrderGenerationPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockOrderGenerationReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockExecutionPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -320,6 +323,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockRunCandidatePreflightStatus(payload?.[20] || null);
         setTradingLabMockOrderGenerationPreflightStatus(payload?.[21] || null);
         setTradingLabMockOrderGenerationReviewResultStatus(payload?.[22] || null);
+        setTradingLabMockExecutionPreflightStatus(payload?.[23] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -410,6 +414,26 @@ export function TradingReadinessPanel() {
       : [];
   const labMockOrderGenerationIntentReviewRows = Array.isArray(labMockOrderGenerationIntentReviewSummary?.rows)
     ? labMockOrderGenerationIntentReviewSummary.rows
+    : [];
+  const labMockExecutionPreflightStatus = tradingLabMockExecutionPreflightStatus || tradingLabDashboardStatus?.mockExecutionPreflightStatus || {};
+  const labMockExecutionPreflight = labMockExecutionPreflightStatus?.preflight || {};
+  const labMockExecutionResult = labMockExecutionPreflightStatus?.result || labMockExecutionPreflight?.result || {};
+  const labMockExecutionRiskGuard = labMockExecutionPreflightStatus?.riskGuard || labMockExecutionPreflight?.riskGuard || {};
+  const labMockExecutionCashImpact = labMockExecutionPreflightStatus?.cashImpactPreview || labMockExecutionPreflight?.cashImpactPreview || {};
+  const labMockExecutionPositionImpact = labMockExecutionPreflightStatus?.positionImpactPreview || labMockExecutionPreflight?.positionImpactPreview || {};
+  const labMockExecutionBlockerSummary = labMockExecutionPreflightStatus?.blockerSummary || labMockExecutionPreflight?.blockerSummary || {};
+  const labMockExecutionIntents = Array.isArray(labMockExecutionPreflightStatus?.mockExecutionIntents)
+    ? labMockExecutionPreflightStatus.mockExecutionIntents
+    : Array.isArray(labMockExecutionPreflight?.mockExecutionIntents)
+      ? labMockExecutionPreflight.mockExecutionIntents
+      : [];
+  const labMockFillPlans = Array.isArray(labMockExecutionPreflightStatus?.fillPlans)
+    ? labMockExecutionPreflightStatus.fillPlans
+    : Array.isArray(labMockExecutionPreflight?.fillPlans)
+      ? labMockExecutionPreflight.fillPlans
+      : [];
+  const labMockPositionImpactRows = Array.isArray(labMockExecutionPositionImpact?.rows)
+    ? labMockExecutionPositionImpact.rows
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1031,6 +1055,60 @@ export function TradingReadinessPanel() {
               ))}
               {labMockOrderGenerationReviewHistory.slice(0, 2).map((item, index) => (
                 <li key={`mock-order-generation-review-history-${index}`}>{item.historyId || `review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockExecutionPreflight" data-admin-panel-key="trading-lab-mock-execution-preflight">
+            <span>Mock execution preflight</span>
+            <h4>{formatStatus(labMockExecutionResult.status || labMockExecutionPreflightStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This result is a FINPLE internal mock execution preview only. It does not execute orders, create live fills, query balances, call KIS, or change live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockExecutionCards">
+              <div>
+                <span>Mock execution intents</span>
+                <strong>{Number(labMockExecutionResult.executionIntentCount || labMockExecutionIntents.length || 0)}</strong>
+                <small>{formatStatus(labMockExecutionResult.nextAllowedStep || "mock_execution_review")}</small>
+              </div>
+              <div>
+                <span>Fill plan</span>
+                <strong>{formatStatus(labMockExecutionResult.fillPlanStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillPlans.length || 0)} mock plans</small>
+              </div>
+              <div>
+                <span>Cash preview</span>
+                <strong>{formatStatus(labMockExecutionResult.cashImpactStatus || labMockExecutionCashImpact.status || "validation_required")}</strong>
+                <small>{Number(labMockExecutionCashImpact.endingCashPlaceholder || 0).toLocaleString("ko-KR")} ending cash</small>
+              </div>
+              <div>
+                <span>Position preview</span>
+                <strong>{formatStatus(labMockExecutionResult.positionImpactStatus || labMockExecutionPositionImpact.status || "validation_required")}</strong>
+                <small>{Number(labMockPositionImpactRows.length || 0)} rows</small>
+              </div>
+              <div>
+                <span>Risk guard</span>
+                <strong>{formatStatus(labMockExecutionResult.riskGuardStatus || labMockExecutionRiskGuard.status || "blocked")}</strong>
+                <small>{Number(labMockExecutionRiskGuard.blockedExecutionIntentCount || labMockExecutionResult.blockedExecutionIntentCount || 0)} blocked</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockExecutionResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockExecutionResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockExecutionList" aria-label="Mock execution preflight blockers warnings and previews">
+              {(labMockExecutionBlockerSummary.blockerMessages || labMockExecutionBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`mock-execution-preflight-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockExecutionBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-execution-preflight-warning-${index}`}>{message}</li>
+              ))}
+              {labMockExecutionIntents.slice(0, 3).map((intent, index) => (
+                <li key={`mock-execution-intent-${index}`}>{intent.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(intent.side || "mock_hold")} / {Number(intent.mockEstimatedAmount || 0).toLocaleString("ko-KR")} mock amount</li>
+              ))}
+              {labMockPositionImpactRows.slice(0, 2).map((row, index) => (
+                <li key={`mock-position-impact-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected {Number(row.projectedMockQuantity || 0).toLocaleString("ko-KR")} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
               ))}
             </ul>
           </article>
