@@ -11,6 +11,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
+  fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreReviewResultStatus,
@@ -301,6 +302,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockPortfolioPerformanceRecalculationCoreStatus, setTradingLabMockPortfolioPerformanceRecalculationCoreStatus] = useState(null);
   const [tradingLabMockTradingRunSummaryPreflightStatus, setTradingLabMockTradingRunSummaryPreflightStatus] = useState(null);
   const [tradingLabMockTradingRunSummaryReviewResultStatus, setTradingLabMockTradingRunSummaryReviewResultStatus] = useState(null);
+  const [tradingLabMockTradingRunSummaryCoreStatus, setTradingLabMockTradingRunSummaryCoreStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -351,6 +353,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockPortfolioPerformanceRecalculationCoreStatus().catch(() => null),
       fetchAdminTradingLabMockTradingRunSummaryPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockTradingRunSummaryCoreStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -396,6 +399,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockPortfolioPerformanceRecalculationCoreStatus(payload?.[39] || null);
         setTradingLabMockTradingRunSummaryPreflightStatus(payload?.[40] || null);
         setTradingLabMockTradingRunSummaryReviewResultStatus(payload?.[41] || null);
+        setTradingLabMockTradingRunSummaryCoreStatus(payload?.[42] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -712,6 +716,19 @@ export function TradingReadinessPanel() {
   const labMockTradingRunSummaryReviewDecisionSummary = labMockTradingRunSummaryReviewResultStatus?.decisionSummary || {};
   const labMockTradingRunSummaryReviewHistory = Array.isArray(labMockTradingRunSummaryReviewResultStatus?.mockHistory)
     ? labMockTradingRunSummaryReviewResultStatus.mockHistory
+    : [];
+  const labMockTradingRunSummaryCoreStatus = tradingLabMockTradingRunSummaryCoreStatus || tradingLabDashboardStatus?.mockTradingRunSummaryCoreStatus || {};
+  const labMockTradingRunSummaryCoreResult = labMockTradingRunSummaryCoreStatus?.result || {};
+  const labMockTradingRunSummaryCoreValidation = labMockTradingRunSummaryCoreStatus?.validation || {};
+  const labMockTradingRunSummaryDashboardAggregation = labMockTradingRunSummaryCoreStatus?.dashboardAggregation || labMockTradingRunSummaryCoreResult?.dashboardAggregation || {};
+  const labMockTradingRunSummaryChartAggregation = labMockTradingRunSummaryCoreStatus?.chartAggregation || labMockTradingRunSummaryCoreResult?.chartAggregation || {};
+  const labMockTradingRunSummaryStrategySummary = labMockTradingRunSummaryCoreStatus?.strategySummary || labMockTradingRunSummaryCoreResult?.strategySummary || {};
+  const labMockTradingRunSummaryOrderExecutionFillSummary = labMockTradingRunSummaryCoreStatus?.orderExecutionFillSummary || {};
+  const labMockTradingRunSummaryLedgerSummary = labMockTradingRunSummaryCoreStatus?.ledgerSummary || labMockTradingRunSummaryCoreResult?.ledgerSummary || {};
+  const labMockTradingRunSummaryPerformanceSummary = labMockTradingRunSummaryCoreStatus?.performanceSummary || labMockTradingRunSummaryCoreResult?.performanceSummary || {};
+  const labMockTradingRunSummaryRiskSafetySummary = labMockTradingRunSummaryCoreStatus?.riskSafetySummary || labMockTradingRunSummaryCoreResult?.riskSummary || {};
+  const labMockTradingRunSummaryCoreHistory = Array.isArray(labMockTradingRunSummaryCoreStatus?.mockHistory)
+    ? labMockTradingRunSummaryCoreStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2611,6 +2628,98 @@ export function TradingReadinessPanel() {
               ))}
               {!labMockTradingRunSummaryReviewResult.reviewStatus ? (
                 <li>Mock trading run summary review remains validation-required; live/provider/order gates stay blocked and all readiness flags remain false.</li>
+              ) : null}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockTradingRunSummaryCore" data-admin-panel-key="trading-lab-mock-trading-run-summary-core">
+            <span>Mock trading run summary result</span>
+            <h4>{formatStatus(labMockTradingRunSummaryCoreResult.summaryStatus || labMockTradingRunSummaryCoreStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock trading run summary aggregation only. It reuses the admin mock KPI, chart, and allocation surfaces as redacted deterministic preview data, does not store a trading run summary, and keeps KIS/provider/order/live gates blocked.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockTradingRunSummaryCoreCards">
+              <div>
+                <span>Summary result</span>
+                <strong>{formatStatus(labMockTradingRunSummaryCoreResult.summaryStatus || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryCoreResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result"}</small>
+              </div>
+              <div>
+                <span>Strategy summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryStrategySummary.status || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryStrategySummary.strategyDraftId || "mock strategy only"}</small>
+              </div>
+              <div>
+                <span>Order / execution / fill</span>
+                <strong>{formatStatus(labMockTradingRunSummaryOrderExecutionFillSummary.orderSummaryStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryOrderExecutionFillSummary.executionSummaryStatus || "validation_required")} / {formatStatus(labMockTradingRunSummaryOrderExecutionFillSummary.fillSummaryStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Ledger summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryLedgerSummary.status || "validation_required")}</strong>
+                <small>No ledger persistence</small>
+              </div>
+              <div>
+                <span>Performance summary</span>
+                <strong>{formatStatus(labMockTradingRunSummaryPerformanceSummary.status || "validation_required")}</strong>
+                <small>No performance record storage</small>
+              </div>
+              <div>
+                <span>Risk / safety</span>
+                <strong>{formatStatus(labMockTradingRunSummaryRiskSafetySummary.riskStatus || "blocked")}</strong>
+                <small>External authority still required</small>
+              </div>
+              <div>
+                <span>Dashboard aggregation</span>
+                <strong>{formatStatus(labMockTradingRunSummaryDashboardAggregation.status || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryDashboardAggregation.deterministic ? "Deterministic mock aggregation" : "Validation required"}</small>
+              </div>
+              <div>
+                <span>Chart aggregation</span>
+                <strong>{formatStatus(labMockTradingRunSummaryChartAggregation.status || "validation_required")}</strong>
+                <small>{labMockTradingRunSummaryChartAggregation.redacted ? "Redacted chart preview" : "Validation required"}</small>
+              </div>
+              <div>
+                <span>Deterministic aggregation</span>
+                <strong>{formatStatus(labMockTradingRunSummaryCoreValidation.deterministicAggregationStatus || "blocked")}</strong>
+                <small>No provider quote source</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockTradingRunSummaryCoreResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryCoreResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockTradingRunSummaryCoreResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockTradingRunSummaryCoreResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Next step</span>
+                <strong>{formatStatus(labMockTradingRunSummaryCoreResult.nextAllowedStep || "mock_trading_run_dashboard_cleanup_preflight")}</strong>
+                <small>Admin mock-only</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockTradingRunSummaryCoreList" aria-label="Mock trading run summary core guardrails">
+              <li>{labMockTradingRunSummaryCoreResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result"} / {formatStatus(labMockTradingRunSummaryCoreResult.summaryStatus || "validation_required")} / FINPLE internal mock trading run summary only</li>
+              <li>{labMockTradingRunSummaryCoreResult.tradingRunSummaryReviewResultId || "step160_mock_trading_run_summary_review_result"} / Step160 dependency required</li>
+              <li>Not a stored trading run summary, not actual investment performance, and not a return guarantee or investment advice.</li>
+              <li>No DB write, no KIS/provider call, no KIS token, no quote query, no order submission, and no account balance query.</li>
+              <li>No actual trading run id, order id, execution id, fill id, ledger persistence, or performance record is created.</li>
+              <li>No actual cash update, no actual position update, and no portfolio ledger update are performed.</li>
+              <li>Existing KPI, chart, and allocation surfaces remain admin-only mock summaries; My Page, homepage, and public routes do not expose this UI.</li>
+              <li>Next allowed step: {formatStatus(labMockTradingRunSummaryCoreResult.nextAllowedStep || "mock_trading_run_dashboard_cleanup_preflight")}</li>
+              {(labMockTradingRunSummaryCoreValidation.blockerSummary || labMockTradingRunSummaryCoreValidation.blockers || []).map((message, index) => (
+                <li key={`mock-trading-run-summary-core-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockTradingRunSummaryCoreValidation.warningSummary || labMockTradingRunSummaryCoreValidation.warnings || []).map((message, index) => (
+                <li key={`mock-trading-run-summary-core-warning-${index}`}>{message}</li>
+              ))}
+              {labMockTradingRunSummaryCoreHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-trading-run-summary-core-history-${index}`}>{item.historyId || `mock_trading_run_summary_core_history_${index + 1}`} / {formatStatus(item.summaryStatus || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_trading_run_dashboard_cleanup_preflight")}</li>
+              ))}
+              {!labMockTradingRunSummaryCoreResult.summaryStatus ? (
+                <li>Mock trading run summary core remains validation-required; live/provider/order gates stay blocked and all readiness flags remain false.</li>
               ) : null}
             </ul>
           </article>

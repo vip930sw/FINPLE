@@ -430,6 +430,10 @@ export async function fetchAdminTradingLabMockTradingRunSummaryReviewResultStatu
   return requestJson("/admin/trading-readiness/trading-lab-mock-trading-run-summary-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabMockTradingRunSummaryCoreStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-mock-trading-run-summary-core", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",
