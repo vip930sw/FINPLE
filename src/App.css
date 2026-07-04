@@ -801,6 +801,10 @@ nav {
   background: #ecfeff;
 }
 
+.tradingLabMockOrderCards div {
+  background: #f7fee7;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -842,6 +846,12 @@ nav {
   background: #ecfeff;
   border-color: rgba(8, 145, 178, 0.16);
   color: #155e75;
+}
+
+.tradingLabMockOrderList li {
+  background: #f7fee7;
+  border-color: rgba(101, 163, 13, 0.16);
+  color: #3f6212;
 }
 
 .tradingLabTableSection {

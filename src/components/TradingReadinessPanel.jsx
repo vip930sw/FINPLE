@@ -5,6 +5,7 @@ import {
   fetchAdminTradingKisReadOnlyQuoteAdapterOptInPreflightStatus,
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
+  fetchAdminTradingLabMockOrderGenerationPreflightStatus,
   fetchAdminTradingLabMockRunCandidatePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus,
@@ -259,6 +260,7 @@ export function TradingReadinessPanel() {
   const [tradingLabStrategyDraftClearancePreflightStatus, setTradingLabStrategyDraftClearancePreflightStatus] = useState(null);
   const [tradingLabStrategyDraftClearanceReviewResultStatus, setTradingLabStrategyDraftClearanceReviewResultStatus] = useState(null);
   const [tradingLabMockRunCandidatePreflightStatus, setTradingLabMockRunCandidatePreflightStatus] = useState(null);
+  const [tradingLabMockOrderGenerationPreflightStatus, setTradingLabMockOrderGenerationPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -288,6 +290,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabStrategyDraftClearancePreflightStatus().catch(() => null),
       fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockRunCandidatePreflightStatus().catch(() => null),
+      fetchAdminTradingLabMockOrderGenerationPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -312,6 +315,7 @@ export function TradingReadinessPanel() {
         setTradingLabStrategyDraftClearancePreflightStatus(payload?.[18] || null);
         setTradingLabStrategyDraftClearanceReviewResultStatus(payload?.[19] || null);
         setTradingLabMockRunCandidatePreflightStatus(payload?.[20] || null);
+        setTradingLabMockOrderGenerationPreflightStatus(payload?.[21] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -376,6 +380,18 @@ export function TradingReadinessPanel() {
   const labMockRunInitialCapital = labMockRunCandidatePreflightStatus?.initialCapital || labMockRunCandidatePreflight?.initialCapital || {};
   const labMockRunPreflightResult = labMockRunCandidatePreflightStatus?.result || labMockRunCandidatePreflight?.result || {};
   const labMockRunBlockerSummary = labMockRunCandidatePreflightStatus?.blockerSummary || labMockRunCandidatePreflight?.blockerSummary || {};
+  const labMockOrderGenerationPreflightStatus = tradingLabMockOrderGenerationPreflightStatus || tradingLabDashboardStatus?.mockOrderGenerationPreflightStatus || {};
+  const labMockOrderGenerationPreflight = labMockOrderGenerationPreflightStatus?.preflight || {};
+  const labMockOrderGenerationResult = labMockOrderGenerationPreflightStatus?.result || labMockOrderGenerationPreflight?.result || {};
+  const labMockOrderGenerationValidation = labMockOrderGenerationPreflightStatus?.validation || labMockOrderGenerationPreflight?.validation || {};
+  const labMockOrderGenerationGapSummary = labMockOrderGenerationPreflightStatus?.allocationGapSummary || labMockOrderGenerationPreflight?.allocationGapSummary || {};
+  const labMockOrderGenerationRiskGuard = labMockOrderGenerationPreflightStatus?.riskGuard || labMockOrderGenerationPreflight?.riskGuard || {};
+  const labMockOrderGenerationBlockerSummary = labMockOrderGenerationPreflightStatus?.blockerSummary || labMockOrderGenerationPreflight?.blockerSummary || {};
+  const labMockOrderIntents = Array.isArray(labMockOrderGenerationPreflightStatus?.mockOrderIntents)
+    ? labMockOrderGenerationPreflightStatus.mockOrderIntents
+    : Array.isArray(labMockOrderGenerationPreflight?.mockOrderIntents)
+      ? labMockOrderGenerationPreflight.mockOrderIntents
+      : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -888,6 +904,57 @@ export function TradingReadinessPanel() {
               ))}
               {(labMockRunBlockerSummary.warningMessages || []).map((message, index) => (
                 <li key={`mock-run-candidate-warning-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockOrderGenerationPreflight" data-admin-panel-key="trading-lab-mock-order-generation-preflight">
+            <span>Mock order generation preflight</span>
+            <h4>{formatStatus(labMockOrderGenerationResult.status || labMockOrderGenerationPreflightStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This result is a FINPLE internal mock order preview only. It does not execute orders, build KIS payloads, query balances, or change live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockOrderCards">
+              <div>
+                <span>Mock intents</span>
+                <strong>{Number(labMockOrderGenerationResult.intentCount || labMockOrderIntents.length || 0)}</strong>
+                <small>{formatStatus(labMockOrderGenerationResult.nextAllowedStep || "mock_order_generation_review")}</small>
+              </div>
+              <div>
+                <span>Allocation gap</span>
+                <strong>{formatStatus(labMockOrderGenerationResult.allocationGapStatus || labMockOrderGenerationGapSummary.status || "validation_required")}</strong>
+                <small>{Number(labMockOrderGenerationGapSummary.maxAbsoluteGap || 0).toFixed(2)}pp max</small>
+              </div>
+              <div>
+                <span>Risk guard</span>
+                <strong>{formatStatus(labMockOrderGenerationResult.riskGuardStatus || labMockOrderGenerationRiskGuard.status || "blocked")}</strong>
+                <small>{Number(labMockOrderGenerationRiskGuard.blockedIntentCount || labMockOrderGenerationResult.blockedIntentCount || 0)} blocked</small>
+              </div>
+              <div>
+                <span>KIS impact</span>
+                <strong>{formatStatus(labMockOrderGenerationResult.providerCallImpact || "blocked")}</strong>
+                <small>payload none</small>
+              </div>
+              <div>
+                <span>Actual artifact</span>
+                <strong>{labMockOrderGenerationResult.actualOrderCandidateCreated ? "created" : "none"}</strong>
+                <small>{labMockOrderGenerationResult.actualOrderDraftCreated ? "draft_created" : "draft_none"}</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockOrderGenerationResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockOrderGenerationValidation.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockOrderList" aria-label="Mock order generation preflight blockers and warnings">
+              {(labMockOrderGenerationBlockerSummary.blockerMessages || labMockOrderGenerationBlockerSummary.blockers || ["No live/provider/order gate opened."]).map((message, index) => (
+                <li key={`mock-order-generation-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockOrderGenerationBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-order-generation-warning-${index}`}>{message}</li>
+              ))}
+              {labMockOrderIntents.slice(0, 3).map((intent, index) => (
+                <li key={`mock-order-intent-${index}`}>{intent.symbol || "SYMBOL_PLACEHOLDER"} · {formatStatus(intent.side || "mock_hold")} · {Number(intent.weightGap || 0).toFixed(2)}pp</li>
               ))}
             </ul>
           </article>
