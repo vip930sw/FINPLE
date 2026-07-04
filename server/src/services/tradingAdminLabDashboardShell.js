@@ -300,6 +300,18 @@ export const STEP155_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP156_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_FLAGS = Object.freeze({
+  ...STEP155_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_REVIEW_RESULT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -2015,6 +2027,126 @@ export const TRADING_LAB_MOCK_PERFORMANCE_RECALCULATION_REVIEW_SUMMARY_MODEL = O
   chartDataReviewStatus: "reviewed | blocked | validation_required",
   dependencyReviewStatus: "satisfied | blocked | validation_required",
   redacted: true,
+});
+
+export const TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_MODEL = Object.freeze({
+  performanceCorePreflightId: "string",
+  sourceStep: "step156",
+  performanceRecalculationReviewResultId: "string",
+  performanceRecalculationPreflightId: "string",
+  performanceInputBundleId: "string",
+  ledgerUpdateResultId: "string",
+  mockRunCandidateId: "string",
+  strategyDraftId: "string",
+  scope: "mock_only",
+  status: "blocked | validation_required | mock_performance_core_ready | not_ready",
+  coreInputBundleStatus: "mock_only | blocked | validation_required",
+  equitySeriesPolicyStatus: "ready | blocked | validation_required",
+  dailyReturnPolicyStatus: "ready | blocked | validation_required",
+  cumulativeReturnPolicyStatus: "ready | blocked | validation_required",
+  drawdownPolicyStatus: "ready | blocked | validation_required",
+  mddPolicyStatus: "ready | blocked | validation_required",
+  allocationPolicyStatus: "ready | blocked | validation_required",
+  realizedPnlPolicyStatus: "placeholder_only | blocked | validation_required",
+  unrealizedPnlPolicyStatus: "placeholder_only | blocked | validation_required",
+  kpiSummaryPolicyStatus: "ready | blocked | validation_required",
+  chartDataPolicyStatus: "ready | blocked | validation_required",
+  deterministicCalculationStatus: "ready | blocked | validation_required",
+  dependencyStatus: "satisfied | blocked | validation_required",
+  blockerCount: "number",
+  warningCount: "number",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_PERFORMANCE_CORE_INPUT_BUNDLE_MODEL = Object.freeze({
+  performanceCoreInputBundleId: "string",
+  sourceStep: "step156",
+  performanceRecalculationReviewResultId: "string",
+  performanceInputBundleId: "string",
+  ledgerUpdateResultId: "string",
+  mockRunCandidateId: "string",
+  strategyDraftId: "string",
+  scope: "mock_only",
+  equityBeforePlaceholder: "number",
+  equityAfterPreview: "number",
+  cashAfterPreview: "number",
+  positionAfterPreview: "number",
+  portfolioValueAfterPreview: "number",
+  realizedPnlPlaceholder: "number",
+  unrealizedPnlPlaceholder: "number",
+  priorEquitySeriesPlaceholder: "number[]",
+  priorReturnSeriesPlaceholder: "number[]",
+  priorDrawdownSeriesPlaceholder: "number[]",
+  priorAllocationSnapshotPlaceholder: "mock_allocation_snapshot[]",
+  mockCalendarRef: "static_mock_calendar",
+  mockBenchmarkRef: "static_mock_benchmark",
+  mockValuationPolicy: "static_mock_series_only",
+  mockReturnPolicy: "deterministic_mock_return_preview",
+  mockDrawdownPolicy: "deterministic_mock_drawdown_preview",
+  mockAllocationPolicy: "mock_allocation_preview_only",
+  mockKpiPolicy: "mock_kpi_summary_preview_only",
+  mockChartDataPolicy: "mock_chart_data_preview_only",
+  deterministic: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_PERFORMANCE_CORE_SCENARIO_MODEL = Object.freeze({
+  scenarioId: "string",
+  sourceStep: "step156",
+  scenarioName: "string",
+  scope: "mock_only",
+  recalculationMode: "equity_return_drawdown_allocation_kpi_chart_preview",
+  equityPolicy: "static_mock_equity_series_only",
+  returnPolicy: "deterministic_mock_return_preview",
+  cumulativeReturnPolicy: "deterministic_mock_cumulative_return_preview",
+  drawdownPolicy: "deterministic_mock_drawdown_preview",
+  mddPolicy: "deterministic_mock_mdd_preview",
+  allocationPolicy: "mock_allocation_preview_only",
+  kpiPolicy: "mock_kpi_summary_preview_only",
+  chartDataPolicy: "mock_chart_data_preview_only",
+  deterministic: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_PERFORMANCE_CORE_PREFLIGHT_RESULT_SCHEMA = Object.freeze({
+  performanceCorePreflightId: "string",
+  sourceStep: "step156",
+  performanceCoreInputBundleId: "string",
+  performanceRecalculationReviewResultId: "string",
+  performanceInputBundleId: "string",
+  ledgerUpdateResultId: "string",
+  status: "blocked | validation_required | mock_performance_core_ready | not_ready",
+  scope: "mock_only",
+  redacted: true,
+  equitySeriesPolicyStatus: "ready | blocked | validation_required",
+  dailyReturnPolicyStatus: "ready | blocked | validation_required",
+  cumulativeReturnPolicyStatus: "ready | blocked | validation_required",
+  drawdownPolicyStatus: "ready | blocked | validation_required",
+  mddPolicyStatus: "ready | blocked | validation_required",
+  allocationPolicyStatus: "ready | blocked | validation_required",
+  realizedPnlPolicyStatus: "placeholder_only | blocked | validation_required",
+  unrealizedPnlPolicyStatus: "placeholder_only | blocked | validation_required",
+  kpiSummaryPolicyStatus: "ready | blocked | validation_required",
+  chartDataPolicyStatus: "ready | blocked | validation_required",
+  deterministicCalculationStatus: "ready | blocked | validation_required",
+  dependencyStatus: "satisfied | blocked | validation_required",
+  blockerCount: "number",
+  warningCount: "number",
+  equityAfterPreview: "number",
+  dailyReturnPreview: "number",
+  cumulativeReturnPreview: "number",
+  drawdownPreview: "number",
+  mddPreview: "number",
+  allocationPreview: "mock_allocation_preview",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_portfolio_performance_recalculation_core",
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -12008,6 +12140,437 @@ export function buildAdminTradingLabMockPortfolioPerformanceRecalculationReviewR
   return buildTradingLabMockPortfolioPerformanceRecalculationReviewResultRecordingGate(input, options);
 }
 
+function mapPerformanceCorePolicyStatus(status) {
+  if (["recorded", "reviewed", "ready", "placeholder_only", "satisfied", "mock_performance_core_ready"].includes(status)) return "ready";
+  if (status === "blocked") return "blocked";
+  return "validation_required";
+}
+
+function getStep156MockPortfolioPerformanceCorePreflightContext(input = {}, options = {}) {
+  const hasReviewStatus = Object.prototype.hasOwnProperty.call(input, "mockPortfolioPerformanceRecalculationReviewResultStatus");
+  const mockPortfolioPerformanceRecalculationReviewResultStatus = hasReviewStatus
+    ? input.mockPortfolioPerformanceRecalculationReviewResultStatus
+    : buildAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus(input, options);
+  const reviewResult = input.performanceRecalculationReviewResult
+    || mockPortfolioPerformanceRecalculationReviewResultStatus?.reviewResult
+    || null;
+  const receipt = input.performanceRecalculationReviewReceipt
+    || mockPortfolioPerformanceRecalculationReviewResultStatus?.receipt
+    || null;
+  const reviewValidation = input.performanceRecalculationReviewValidation
+    || mockPortfolioPerformanceRecalculationReviewResultStatus?.validation
+    || {};
+  const sourcePerformanceInputBundle = input.performanceInputBundle
+    || buildTradingLabMockPerformanceRecalculationInputBundle(input, options);
+
+  return {
+    mockPortfolioPerformanceRecalculationReviewResultStatus,
+    reviewResult,
+    receipt,
+    reviewValidation,
+    sourcePerformanceInputBundle,
+  };
+}
+
+export function buildTradingLabMockPerformanceCoreInputBundle(input = {}, options = {}) {
+  const context = getStep156MockPortfolioPerformanceCorePreflightContext(input, options);
+  const reviewResult = context.reviewResult || {};
+  const receipt = context.receipt || {};
+  const sourceBundle = context.sourcePerformanceInputBundle || {};
+  const reviewValidation = context.reviewValidation || {};
+
+  return {
+    performanceCoreInputBundleId: "step156_mock_performance_core_input_bundle",
+    sourceStep: "step156",
+    performanceRecalculationReviewResultId: reviewResult.performanceRecalculationReviewResultId || receipt.performanceRecalculationReviewResultId || "step156_missing_performance_recalculation_review_result",
+    performanceInputBundleId: reviewResult.performanceInputBundleId || receipt.performanceInputBundleId || sourceBundle.performanceInputBundleId || "step156_missing_performance_input_bundle",
+    ledgerUpdateResultId: reviewResult.ledgerUpdateResultId || sourceBundle.ledgerUpdateResultId || "step156_missing_ledger_update_result",
+    mockRunCandidateId: reviewResult.mockRunCandidateId || sourceBundle.mockRunCandidateId || "step156_missing_mock_run_candidate",
+    strategyDraftId: reviewResult.strategyDraftId || sourceBundle.strategyDraftId || "step156_missing_strategy_draft",
+    scope: "mock_only",
+    coreInputBundleStatus: "mock_only",
+    equityBeforePlaceholder: toFiniteNumber(sourceBundle.equityBeforePlaceholder, 1000000),
+    equityAfterPreview: toFiniteNumber(input.equityAfterPreview ?? reviewValidation.equityAfterPreview ?? sourceBundle.equityAfterPreview, 1000000),
+    cashAfterPreview: toFiniteNumber(sourceBundle.cashAfterPreview, 120000),
+    positionAfterPreview: toFiniteNumber(sourceBundle.positionAfterPreview, 880000),
+    portfolioValueAfterPreview: toFiniteNumber(sourceBundle.portfolioValueAfterPreview, 1000000),
+    realizedPnlPlaceholder: toFiniteNumber(sourceBundle.realizedPnlPlaceholder, 0),
+    unrealizedPnlPlaceholder: toFiniteNumber(sourceBundle.unrealizedPnlPlaceholder, 0),
+    priorEquitySeriesPlaceholder: Array.isArray(sourceBundle.priorEquitySeriesPlaceholder) && sourceBundle.priorEquitySeriesPlaceholder.length > 0
+      ? sourceBundle.priorEquitySeriesPlaceholder
+      : [960000, 980000, 1000000],
+    priorReturnSeriesPlaceholder: Array.isArray(sourceBundle.priorReturnSeriesPlaceholder) && sourceBundle.priorReturnSeriesPlaceholder.length > 0
+      ? sourceBundle.priorReturnSeriesPlaceholder
+      : [0, 2.0833, 2.0408],
+    priorDrawdownSeriesPlaceholder: Array.isArray(sourceBundle.priorDrawdownSeriesPlaceholder) && sourceBundle.priorDrawdownSeriesPlaceholder.length > 0
+      ? sourceBundle.priorDrawdownSeriesPlaceholder
+      : [0, -1.2, -0.4],
+    priorAllocationSnapshotPlaceholder: Array.isArray(sourceBundle.priorAllocationSnapshotPlaceholder) && sourceBundle.priorAllocationSnapshotPlaceholder.length > 0
+      ? sourceBundle.priorAllocationSnapshotPlaceholder
+      : [
+        { symbol: "MOCK_QQQ", weightPct: 45, status: "mock_only" },
+        { symbol: "MOCK_SCHD", weightPct: 35, status: "mock_only" },
+        { symbol: "CASH", weightPct: 20, status: "mock_only" },
+      ],
+    mockCalendarRef: "static_mock_calendar",
+    mockBenchmarkRef: "static_mock_benchmark",
+    mockValuationPolicy: "static_mock_series_only",
+    mockReturnPolicy: "deterministic_mock_return_preview",
+    mockDrawdownPolicy: "deterministic_mock_drawdown_preview",
+    mockAllocationPolicy: "mock_allocation_preview_only",
+    mockKpiPolicy: "mock_kpi_summary_preview_only",
+    mockChartDataPolicy: "mock_chart_data_preview_only",
+    deterministic: true,
+    redacted: true,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    accountIdentifierStored: false,
+    credentialStored: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualPerformanceRecordCreated: false,
+    actualPerformanceRecordUpdated: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    actualPortfolioLedgerUpdated: false,
+    accountBalanceQueried: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+  };
+}
+
+export function buildTradingLabMockPerformanceCoreScenario(input = {}, options = {}) {
+  return {
+    scenarioId: "step156_mock_performance_core_scenario",
+    sourceStep: "step156",
+    scenarioName: "Mock portfolio performance recalculation core readiness",
+    scope: "mock_only",
+    recalculationMode: "equity_return_drawdown_allocation_kpi_chart_preview",
+    equityPolicy: "static_mock_equity_series_only",
+    returnPolicy: "deterministic_mock_return_preview",
+    cumulativeReturnPolicy: "deterministic_mock_cumulative_return_preview",
+    drawdownPolicy: "deterministic_mock_drawdown_preview",
+    mddPolicy: "deterministic_mock_mdd_preview",
+    allocationPolicy: "mock_allocation_preview_only",
+    kpiPolicy: "mock_kpi_summary_preview_only",
+    chartDataPolicy: "mock_chart_data_preview_only",
+    deterministic: true,
+    redacted: true,
+    actualPerformanceConfirmation: false,
+    investmentAdvice: false,
+    returnGuarantee: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+  };
+}
+
+export function validateTradingLabMockPortfolioPerformanceRecalculationCorePreflight(input = {}, options = {}) {
+  const context = getStep156MockPortfolioPerformanceCorePreflightContext(input, options);
+  const reviewResult = context.reviewResult || {};
+  const receipt = context.receipt || {};
+  const bundle = input.performanceCoreInputBundle || buildTradingLabMockPerformanceCoreInputBundle(input, options);
+  const scenario = input.performanceCoreScenario || buildTradingLabMockPerformanceCoreScenario(input, options);
+  const blockers = [];
+  const warnings = [];
+
+  if (!context.mockPortfolioPerformanceRecalculationReviewResultStatus) blockers.push("mock_performance_recalculation_review_result_status_missing");
+  if (!context.reviewResult) blockers.push("mock_performance_recalculation_review_result_missing");
+  if (!context.receipt) blockers.push("mock_performance_recalculation_review_receipt_missing");
+  if (reviewResult.redacted !== true) blockers.push("mock_performance_recalculation_review_result_not_redacted");
+  if (receipt.redacted !== true) blockers.push("mock_performance_recalculation_review_receipt_not_redacted");
+  if (reviewResult.reviewStatus !== "recorded") blockers.push("mock_performance_recalculation_review_not_recorded");
+  if (reviewResult.decision !== "mock_performance_recalculation_review_recorded") blockers.push("mock_performance_recalculation_review_decision_not_recorded");
+  if (receipt.nextAllowedStep && receipt.nextAllowedStep !== "mock_portfolio_performance_recalculation_core") blockers.push("mock_performance_recalculation_review_next_step_not_core");
+  if (reviewResult.readinessImpact !== "none" || receipt.readinessImpact !== "none") blockers.push("performance_core_readiness_impact_not_none");
+  if (reviewResult.providerCallImpact !== "blocked" || receipt.providerCallImpact !== "blocked") blockers.push("performance_core_provider_call_impact_not_blocked");
+  if (reviewResult.orderSubmissionImpact !== "blocked" || receipt.orderSubmissionImpact !== "blocked") blockers.push("performance_core_order_submission_impact_not_blocked");
+  if (reviewResult.liveTradingImpact !== "blocked" || receipt.liveTradingImpact !== "blocked") blockers.push("performance_core_live_trading_impact_not_blocked");
+  if (bundle.redacted !== true) blockers.push("mock_performance_core_input_bundle_not_redacted");
+  if (bundle.scope !== "mock_only") blockers.push("mock_performance_core_input_bundle_scope_not_mock_only");
+  if (scenario.redacted !== true) blockers.push("mock_performance_core_scenario_not_redacted");
+  if (scenario.scope !== "mock_only") blockers.push("mock_performance_core_scenario_scope_not_mock_only");
+  if (bundle.actualPerformanceRecordCreated !== false || bundle.actualPerformanceRecordUpdated !== false) blockers.push("actual_performance_record_must_not_change");
+  if (bundle.actualCashUpdated !== false || bundle.actualPositionUpdated !== false) blockers.push("actual_cash_position_update_must_not_run");
+  if (bundle.actualPortfolioLedgerUpdated !== false) blockers.push("actual_portfolio_ledger_update_must_not_run");
+  if (bundle.accountBalanceQueried !== false) blockers.push("actual_account_balance_query_must_not_run");
+  if (bundle.persistentStorageUsed !== false || bundle.dbWriteUsed !== false) blockers.push("persistent_db_write_must_not_run");
+  if (bundle.kisOrderPayloadCreated !== false || bundle.kisExecutionPayloadCreated !== false || bundle.kisFillPayloadCreated !== false) blockers.push("kis_order_execution_fill_payload_must_not_be_created");
+  if (containsUnsafeReviewResultInput(input.performanceCoreInput || input.performanceCoreReviewInput || {})) blockers.push("unsafe_private_or_payload_value_rejected");
+
+  for (const [key, value] of Object.entries({
+    mockValuationPolicy: bundle.mockValuationPolicy,
+    mockReturnPolicy: bundle.mockReturnPolicy,
+    mockDrawdownPolicy: bundle.mockDrawdownPolicy,
+    mockAllocationPolicy: bundle.mockAllocationPolicy,
+    mockKpiPolicy: bundle.mockKpiPolicy,
+    mockChartDataPolicy: bundle.mockChartDataPolicy,
+    equityPolicy: scenario.equityPolicy,
+    returnPolicy: scenario.returnPolicy,
+    cumulativeReturnPolicy: scenario.cumulativeReturnPolicy,
+    drawdownPolicy: scenario.drawdownPolicy,
+    mddPolicy: scenario.mddPolicy,
+    allocationPolicy: scenario.allocationPolicy,
+    kpiPolicy: scenario.kpiPolicy,
+    chartDataPolicy: scenario.chartDataPolicy,
+  })) {
+    if (!value || !String(value).includes("mock")) blockers.push(`${key}_missing_or_not_mock_policy`);
+  }
+  if (scenario.deterministic !== true || bundle.deterministic !== true) blockers.push("performance_core_deterministic_policy_missing");
+
+  const equityAfter = toFiniteNumber(bundle.equityAfterPreview, 0);
+  const equityBefore = toFiniteNumber(bundle.equityBeforePlaceholder, 0);
+  const dailyReturnPreview = equityBefore > 0 ? ((equityAfter - equityBefore) / equityBefore) * 100 : toFiniteNumber(input.dailyReturnPreview, 0);
+  const priorReturns = Array.isArray(bundle.priorReturnSeriesPlaceholder) ? bundle.priorReturnSeriesPlaceholder.map((value) => toFiniteNumber(value, 0)) : [];
+  const cumulativeReturnPreview = priorReturns.reduce((acc, value) => ((1 + acc / 100) * (1 + value / 100) - 1) * 100, dailyReturnPreview);
+  const drawdownPreview = toFiniteNumber(input.drawdownPreview ?? (equityAfter >= equityBefore ? 0 : ((equityAfter - equityBefore) / equityBefore) * 100), 0);
+  const priorDrawdowns = Array.isArray(bundle.priorDrawdownSeriesPlaceholder) ? bundle.priorDrawdownSeriesPlaceholder.map((value) => toFiniteNumber(value, 0)) : [];
+  const mddPreview = Math.min(drawdownPreview, ...priorDrawdowns, 0);
+  const allocationPreview = Array.isArray(bundle.priorAllocationSnapshotPlaceholder) ? bundle.priorAllocationSnapshotPlaceholder : [];
+
+  if (equityAfter < 0) warnings.push("mock_equity_preview_negative");
+  if (!Number.isFinite(dailyReturnPreview) || Math.abs(dailyReturnPreview) > 100) warnings.push("mock_daily_return_preview_invalid");
+  if (!Number.isFinite(cumulativeReturnPreview) || Math.abs(cumulativeReturnPreview) > 1000) warnings.push("mock_cumulative_return_preview_invalid");
+  if (!Number.isFinite(drawdownPreview) || drawdownPreview > 0 || drawdownPreview < -100) warnings.push("mock_drawdown_preview_invalid");
+  if (!Number.isFinite(mddPreview) || mddPreview > 0 || mddPreview < -100) warnings.push("mock_mdd_preview_invalid");
+  if (allocationPreview.length === 0) warnings.push("mock_allocation_preview_missing");
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const status = uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "mock_performance_core_ready";
+  const policyStatus = uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "ready";
+
+  return {
+    validationId: "step156_mock_portfolio_performance_recalculation_core_preflight_validation",
+    sourceStep: "step156",
+    status,
+    performanceCorePreflightId: "step156_mock_portfolio_performance_recalculation_core_preflight",
+    performanceCoreInputBundleId: bundle.performanceCoreInputBundleId,
+    performanceRecalculationReviewResultId: reviewResult.performanceRecalculationReviewResultId || receipt.performanceRecalculationReviewResultId || bundle.performanceRecalculationReviewResultId,
+    performanceRecalculationPreflightId: reviewResult.performanceRecalculationPreflightId || receipt.performanceRecalculationPreflightId || "step156_missing_performance_recalculation_preflight",
+    performanceInputBundleId: bundle.performanceInputBundleId,
+    ledgerUpdateResultId: bundle.ledgerUpdateResultId,
+    mockRunCandidateId: bundle.mockRunCandidateId,
+    strategyDraftId: bundle.strategyDraftId,
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    coreInputBundleStatus: mapPerformanceCorePolicyStatus(bundle.coreInputBundleStatus),
+    equitySeriesPolicyStatus: policyStatus,
+    dailyReturnPolicyStatus: policyStatus,
+    cumulativeReturnPolicyStatus: policyStatus,
+    drawdownPolicyStatus: policyStatus,
+    mddPolicyStatus: policyStatus,
+    allocationPolicyStatus: policyStatus,
+    realizedPnlPolicyStatus: uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "placeholder_only",
+    unrealizedPnlPolicyStatus: uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "placeholder_only",
+    kpiSummaryPolicyStatus: policyStatus,
+    chartDataPolicyStatus: policyStatus,
+    deterministicCalculationStatus: scenario.deterministic === true && bundle.deterministic === true ? policyStatus : "blocked",
+    dependencyStatus: uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "satisfied",
+    equityAfterPreview: equityAfter,
+    dailyReturnPreview,
+    cumulativeReturnPreview,
+    drawdownPreview,
+    mddPreview,
+    allocationPreview,
+    deterministic: true,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    actualLedgerEntryCreated: false,
+    actualPortfolioLedgerUpdated: false,
+    actualPerformanceRecordCreated: false,
+    actualPerformanceRecordUpdated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step156_mock_performance_core_preflight_validation_v1" }),
+  };
+}
+
+export function buildTradingLabMockPortfolioPerformanceRecalculationCorePreflight(input = {}, options = {}) {
+  const performanceCoreInputBundle = input.performanceCoreInputBundle || buildTradingLabMockPerformanceCoreInputBundle(input, options);
+  const performanceCoreScenario = input.performanceCoreScenario || buildTradingLabMockPerformanceCoreScenario(input, options);
+  const validation = input.validation || validateTradingLabMockPortfolioPerformanceRecalculationCorePreflight(
+    { ...input, performanceCoreInputBundle, performanceCoreScenario },
+    options,
+  );
+
+  const result = {
+    performanceCorePreflightId: validation.performanceCorePreflightId,
+    sourceStep: "step156",
+    performanceCoreInputBundleId: validation.performanceCoreInputBundleId,
+    performanceRecalculationReviewResultId: validation.performanceRecalculationReviewResultId,
+    performanceRecalculationPreflightId: validation.performanceRecalculationPreflightId,
+    performanceInputBundleId: validation.performanceInputBundleId,
+    ledgerUpdateResultId: validation.ledgerUpdateResultId,
+    mockRunCandidateId: validation.mockRunCandidateId,
+    strategyDraftId: validation.strategyDraftId,
+    status: validation.status,
+    scope: "mock_only",
+    redacted: true,
+    coreInputBundleStatus: validation.coreInputBundleStatus,
+    equitySeriesPolicyStatus: validation.equitySeriesPolicyStatus,
+    dailyReturnPolicyStatus: validation.dailyReturnPolicyStatus,
+    cumulativeReturnPolicyStatus: validation.cumulativeReturnPolicyStatus,
+    drawdownPolicyStatus: validation.drawdownPolicyStatus,
+    mddPolicyStatus: validation.mddPolicyStatus,
+    allocationPolicyStatus: validation.allocationPolicyStatus,
+    realizedPnlPolicyStatus: validation.realizedPnlPolicyStatus,
+    unrealizedPnlPolicyStatus: validation.unrealizedPnlPolicyStatus,
+    kpiSummaryPolicyStatus: validation.kpiSummaryPolicyStatus,
+    chartDataPolicyStatus: validation.chartDataPolicyStatus,
+    deterministicCalculationStatus: validation.deterministicCalculationStatus,
+    dependencyStatus: validation.dependencyStatus,
+    blockerCount: validation.blockerCount,
+    warningCount: validation.warningCount,
+    equityAfterPreview: validation.equityAfterPreview,
+    dailyReturnPreview: validation.dailyReturnPreview,
+    cumulativeReturnPreview: validation.cumulativeReturnPreview,
+    drawdownPreview: validation.drawdownPreview,
+    mddPreview: validation.mddPreview,
+    allocationPreview: validation.allocationPreview,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_portfolio_performance_recalculation_core",
+  };
+
+  return {
+    ok: true,
+    step: "Step 156: Admin trading lab mock portfolio performance recalculation core preflight",
+    status: "admin_only_trading_lab_mock_portfolio_performance_recalculation_core_preflight_fail_closed",
+    sourceStep: "step156",
+    mockPortfolioPerformanceRecalculationCorePreflightModel: TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_MODEL,
+    mockPerformanceCoreInputBundleModel: TRADING_LAB_MOCK_PERFORMANCE_CORE_INPUT_BUNDLE_MODEL,
+    mockPerformanceCoreScenarioModel: TRADING_LAB_MOCK_PERFORMANCE_CORE_SCENARIO_MODEL,
+    mockPerformanceCorePreflightResultSchema: TRADING_LAB_MOCK_PERFORMANCE_CORE_PREFLIGHT_RESULT_SCHEMA,
+    performanceCoreInputBundle,
+    performanceCoreScenario,
+    validation,
+    result,
+    summary: {
+      summaryId: "step156_mock_performance_core_preflight_summary",
+      sourceStep: "step156",
+      status: validation.status,
+      deterministicCalculationStatus: validation.deterministicCalculationStatus,
+      blockerCount: validation.blockerCount,
+      warningCount: validation.warningCount,
+      blockerSummary: validation.blockerSummary,
+      warningSummary: validation.warningSummary,
+      readinessImpact: "none",
+      providerCallImpact: "blocked",
+      orderSubmissionImpact: "blocked",
+      liveTradingImpact: "blocked",
+      nextAllowedStep: "mock_portfolio_performance_recalculation_core",
+      redacted: true,
+    },
+    mockHistory: [
+      {
+        historyId: "step156_mock_performance_core_preflight_history_1",
+        sourceStep: "step156",
+        status: validation.status,
+        redacted: true,
+        recordedAt: "placeholder_recorded_at",
+        nextAllowedStep: "mock_portfolio_performance_recalculation_core",
+      },
+    ],
+    flags: { ...STEP156_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    actualLedgerEntryCreated: false,
+    actualPortfolioLedgerUpdated: false,
+    actualPerformanceRecordCreated: false,
+    actualPerformanceRecordUpdated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      scenarioMonthlyReturnsTouched: false,
+      scenarioRuntimeTouched: false,
+      actualPerformanceRecordCreateAllowed: false,
+      actualPerformanceRecordUpdateAllowed: false,
+      actualLedgerUpdateAllowed: false,
+      actualCashUpdateAllowed: false,
+      actualPositionUpdateAllowed: false,
+      accountBalanceQueryAllowed: false,
+    },
+    redaction: makeLabRedaction({ schema: "step156_mock_portfolio_performance_recalculation_core_preflight_status_v1" }),
+  };
+}
+
+export function buildAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus(input = {}, options = {}) {
+  return buildTradingLabMockPortfolioPerformanceRecalculationCorePreflight(input, options);
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -12502,6 +13065,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockPortfolioPerformanceRecalculationCorePreflightStatus = input.mockPortfolioPerformanceRecalculationCorePreflightStatus || buildAdminTradingLabMockPortfolioPerformanceRecalculationCorePreflightStatus(
+    {
+      ...input,
+      mockPortfolioPerformanceRecalculationReviewResultStatus,
+    },
+    options,
+  );
   const performance = input.performance || buildTradingLabCumulativePerformance({ ...options, mockLedger, dailyReturns });
   const strategy = input.strategy || buildTradingLabStrategyConfig({ ...options, strategyDraft: strategyDraftStatus.strategyDraft });
   const positions = input.positions || buildTradingLabPositionSnapshot({ ...options, mockLedger, positionLedger });
@@ -12521,7 +13091,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
 
   return {
     ok: true,
-    step: "Step 155: Admin trading lab mock portfolio performance recalculation review result recording gate",
+    step: "Step 156: Admin trading lab mock portfolio performance recalculation core preflight",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -12553,6 +13123,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockPortfolioLedgerUpdateCoreStatus,
     mockPortfolioPerformanceRecalculationPreflightStatus,
     mockPortfolioPerformanceRecalculationReviewResultStatus,
+    mockPortfolioPerformanceRecalculationCorePreflightStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -12652,6 +13223,10 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockPerformanceRecalculationReviewReceiptSchema: TRADING_LAB_MOCK_PERFORMANCE_RECALCULATION_REVIEW_RECEIPT_SCHEMA,
     mockPerformanceRecalculationReviewDecisionSummaryModel: TRADING_LAB_MOCK_PERFORMANCE_RECALCULATION_REVIEW_DECISION_SUMMARY_MODEL,
     mockPerformanceRecalculationReviewSummaryModel: TRADING_LAB_MOCK_PERFORMANCE_RECALCULATION_REVIEW_SUMMARY_MODEL,
+    mockPortfolioPerformanceRecalculationCorePreflightModel: TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_MODEL,
+    mockPerformanceCoreInputBundleModel: TRADING_LAB_MOCK_PERFORMANCE_CORE_INPUT_BUNDLE_MODEL,
+    mockPerformanceCoreScenarioModel: TRADING_LAB_MOCK_PERFORMANCE_CORE_SCENARIO_MODEL,
+    mockPerformanceCorePreflightResultSchema: TRADING_LAB_MOCK_PERFORMANCE_CORE_PREFLIGHT_RESULT_SCHEMA,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -12684,7 +13259,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP155_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_REVIEW_RESULT_FLAGS },
+    flags: { ...STEP156_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_PERFORMANCE_RECALCULATION_CORE_PREFLIGHT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,
