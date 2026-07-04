@@ -10,6 +10,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
+  fetchAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus,
   fetchAdminTradingLabMockPortfolioPerformanceRecalculationPreflightStatus,
   fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus,
   fetchAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus,
@@ -289,6 +290,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus, setTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus] = useState(null);
   const [tradingLabMockPortfolioLedgerUpdateCoreStatus, setTradingLabMockPortfolioLedgerUpdateCoreStatus] = useState(null);
   const [tradingLabMockPortfolioPerformanceRecalculationPreflightStatus, setTradingLabMockPortfolioPerformanceRecalculationPreflightStatus] = useState(null);
+  const [tradingLabMockPortfolioPerformanceRecalculationReviewResultStatus, setTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -333,6 +335,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioPerformanceRecalculationPreflightStatus().catch(() => null),
+      fetchAdminTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -372,6 +375,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus(payload?.[33] || null);
         setTradingLabMockPortfolioLedgerUpdateCoreStatus(payload?.[34] || null);
         setTradingLabMockPortfolioPerformanceRecalculationPreflightStatus(payload?.[35] || null);
+        setTradingLabMockPortfolioPerformanceRecalculationReviewResultStatus(payload?.[36] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -631,6 +635,15 @@ export function TradingReadinessPanel() {
   const labMockPerformanceSummary = labMockPortfolioPerformanceRecalculationPreflightStatus?.summary || {};
   const labMockPerformanceHistory = Array.isArray(labMockPortfolioPerformanceRecalculationPreflightStatus?.mockHistory)
     ? labMockPortfolioPerformanceRecalculationPreflightStatus.mockHistory
+    : [];
+  const labMockPortfolioPerformanceRecalculationReviewResultStatus = tradingLabMockPortfolioPerformanceRecalculationReviewResultStatus || tradingLabDashboardStatus?.mockPortfolioPerformanceRecalculationReviewResultStatus || {};
+  const labMockPerformanceReviewResult = labMockPortfolioPerformanceRecalculationReviewResultStatus?.reviewResult || {};
+  const labMockPerformanceReviewReceipt = labMockPortfolioPerformanceRecalculationReviewResultStatus?.receipt || {};
+  const labMockPerformanceReviewSummary = labMockPortfolioPerformanceRecalculationReviewResultStatus?.reviewSummary || {};
+  const labMockPerformanceReviewDecisionSummary = labMockPortfolioPerformanceRecalculationReviewResultStatus?.decisionSummary || {};
+  const labMockPerformanceReviewValidation = labMockPortfolioPerformanceRecalculationReviewResultStatus?.validation || {};
+  const labMockPerformanceReviewHistory = Array.isArray(labMockPortfolioPerformanceRecalculationReviewResultStatus?.mockHistory)
+    ? labMockPortfolioPerformanceRecalculationReviewResultStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2039,6 +2052,78 @@ export function TradingReadinessPanel() {
               ))}
               {!labMockPerformanceRecalculationResult.status ? (
                 <li>Mock performance recalculation preflight remains validation-required; no real account, DB, provider, order, fill, execution, cash, position, ledger, or performance mutation is performed.</li>
+              ) : null}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockPerformanceRecalculationReviewResult" data-admin-panel-key="trading-lab-mock-portfolio-performance-recalculation-review-result">
+            <span>Mock portfolio performance recalculation review result</span>
+            <h4>{formatStatus(labMockPerformanceReviewResult.reviewStatus || labMockPortfolioPerformanceRecalculationReviewResultStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock performance recalculation review receipt. It does not confirm real investment performance, update DB state, update actual cash or positions, mutate a real portfolio ledger, query account balances, submit orders, or open KIS/provider/live gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockPerformanceRecalculationReviewCards">
+              <div>
+                <span>Review status</span>
+                <strong>{formatStatus(labMockPerformanceReviewResult.reviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockPerformanceReviewResult.decision || "blocked")}</small>
+              </div>
+              <div>
+                <span>Redacted receipt</span>
+                <strong>{labMockPerformanceReviewReceipt.redacted === true ? "redacted" : "blocked"}</strong>
+                <small>{labMockPerformanceReviewReceipt.receiptId || "step155_mock_performance_recalculation_review_receipt"}</small>
+              </div>
+              <div>
+                <span>Equity review</span>
+                <strong>{formatStatus(labMockPerformanceReviewSummary.equitySeriesReviewStatus || labMockPerformanceReviewResult.equitySeriesReviewStatus || "validation_required")}</strong>
+                <small>{Number(labMockPerformanceReviewResult.equityAfterPreview || labMockPerformanceRecalculationResult.equityAfterPreview || 0).toLocaleString("ko-KR")}</small>
+              </div>
+              <div>
+                <span>Return review</span>
+                <strong>{formatStatus(labMockPerformanceReviewSummary.dailyReturnReviewStatus || labMockPerformanceReviewResult.dailyReturnReviewStatus || "validation_required")}</strong>
+                <small>{Number(labMockPerformanceReviewResult.dailyReturnPreview || labMockPerformanceRecalculationResult.dailyReturnPreview || 0).toFixed(4)}% / {Number(labMockPerformanceReviewResult.cumulativeReturnPreview || labMockPerformanceRecalculationResult.cumulativeReturnPreview || 0).toFixed(4)}%</small>
+              </div>
+              <div>
+                <span>Drawdown / MDD review</span>
+                <strong>{formatStatus(labMockPerformanceReviewSummary.drawdownReviewStatus || labMockPerformanceReviewResult.drawdownReviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockPerformanceReviewSummary.mddReviewStatus || labMockPerformanceReviewResult.mddReviewStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Allocation / KPI review</span>
+                <strong>{formatStatus(labMockPerformanceReviewSummary.allocationReviewStatus || labMockPerformanceReviewResult.allocationReviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockPerformanceReviewSummary.kpiReviewStatus || labMockPerformanceReviewResult.kpiReviewStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockPerformanceReviewResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockPerformanceReviewResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockPerformanceReviewResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockPerformanceReviewResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockPerformanceRecalculationReviewList" aria-label="Mock portfolio performance recalculation review result guardrails">
+              <li>{labMockPerformanceReviewResult.mockPerformanceRecalculationReviewResultId || "step155_mock_portfolio_performance_recalculation_review_result"} / {formatStatus(labMockPerformanceReviewResult.scope || "mock_only")} / real performance update blocked</li>
+              <li>Actual performance record update, actual cash update, actual position update, and real portfolio ledger update remain blocked.</li>
+              <li>Not actual investment performance confirmation, not investment advice, and not real return guarantee.</li>
+              <li>No DB write, no provider call, no KIS token, no quote query, no order submission, and no account balance query.</li>
+              <li>Next allowed step: {formatStatus(labMockPerformanceReviewReceipt.nextAllowedStep || labMockPerformanceReviewResult.nextAllowedStep || "mock_portfolio_performance_recalculation_core")}</li>
+              {(labMockPerformanceReviewDecisionSummary.decisionSummary || labMockPerformanceReviewResult.summary || []).map((message, index) => (
+                <li key={`mock-performance-recalculation-review-decision-${index}`}>{message}</li>
+              ))}
+              {(labMockPerformanceReviewValidation.blockerSummary || labMockPerformanceReviewValidation.blockers || []).map((message, index) => (
+                <li key={`mock-performance-recalculation-review-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockPerformanceReviewValidation.warningSummary || labMockPerformanceReviewValidation.warnings || []).map((message, index) => (
+                <li key={`mock-performance-recalculation-review-warning-${index}`}>{message}</li>
+              ))}
+              {labMockPerformanceReviewHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-performance-recalculation-review-history-${index}`}>{item.historyId || `mock_performance_recalculation_review_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_portfolio_performance_recalculation_core")}</li>
+              ))}
+              {!labMockPerformanceReviewResult.reviewStatus ? (
+                <li>Mock performance recalculation review result remains validation-required; no real account, DB, provider, order, fill, execution, cash, position, ledger, or performance mutation is performed.</li>
               ) : null}
             </ul>
           </article>
