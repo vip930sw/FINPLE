@@ -10,6 +10,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCoreStatus,
+  fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus,
   fetchAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus,
   fetchAdminTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus,
   fetchAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus,
@@ -285,6 +286,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockPortfolioLedgerUpdateReviewResultStatus, setTradingLabMockPortfolioLedgerUpdateReviewResultStatus] = useState(null);
   const [tradingLabMockPortfolioLedgerUpdateCorePreflightStatus, setTradingLabMockPortfolioLedgerUpdateCorePreflightStatus] = useState(null);
   const [tradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus, setTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus] = useState(null);
+  const [tradingLabMockPortfolioLedgerUpdateCoreStatus, setTradingLabMockPortfolioLedgerUpdateCoreStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -327,6 +329,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioLedgerUpdateCorePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockPortfolioLedgerUpdateCoreStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -364,6 +367,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockPortfolioLedgerUpdateReviewResultStatus(payload?.[31] || null);
         setTradingLabMockPortfolioLedgerUpdateCorePreflightStatus(payload?.[32] || null);
         setTradingLabMockPortfolioLedgerUpdateCoreReviewResultStatus(payload?.[33] || null);
+        setTradingLabMockPortfolioLedgerUpdateCoreStatus(payload?.[34] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -603,6 +607,17 @@ export function TradingReadinessPanel() {
   const labMockLedgerUpdateCoreReviewValidation = labMockPortfolioLedgerUpdateCoreReviewResultStatus?.validation || {};
   const labMockLedgerUpdateCoreReviewHistory = Array.isArray(labMockPortfolioLedgerUpdateCoreReviewResultStatus?.mockHistory)
     ? labMockPortfolioLedgerUpdateCoreReviewResultStatus.mockHistory
+    : [];
+  const labMockPortfolioLedgerUpdateCoreStatus = tradingLabMockPortfolioLedgerUpdateCoreStatus || tradingLabDashboardStatus?.mockPortfolioLedgerUpdateCoreStatus || {};
+  const labMockLedgerUpdateCoreFinalResult = labMockPortfolioLedgerUpdateCoreStatus?.ledgerUpdateResult || {};
+  const labMockCashLedgerUpdateCoreResult = labMockPortfolioLedgerUpdateCoreStatus?.cashLedgerUpdateResult || {};
+  const labMockPositionLedgerUpdateCoreResult = labMockPortfolioLedgerUpdateCoreStatus?.positionLedgerUpdateResult || {};
+  const labMockPortfolioValueUpdateCoreResult = labMockPortfolioLedgerUpdateCoreStatus?.portfolioValueUpdateResult || {};
+  const labMockPnlPlaceholderCoreResult = labMockPortfolioLedgerUpdateCoreStatus?.pnlPlaceholderResult || {};
+  const labMockLedgerUpdateCoreFinalSummary = labMockPortfolioLedgerUpdateCoreStatus?.summary || {};
+  const labMockLedgerUpdateCoreFinalValidation = labMockPortfolioLedgerUpdateCoreStatus?.validation || {};
+  const labMockLedgerUpdateCoreFinalHistory = Array.isArray(labMockPortfolioLedgerUpdateCoreStatus?.mockHistory)
+    ? labMockPortfolioLedgerUpdateCoreStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1874,6 +1889,74 @@ export function TradingReadinessPanel() {
               ))}
               {!labMockLedgerUpdateCoreReviewResult.reviewStatus ? (
                 <li>Mock ledger update core review remains validation-required; no real portfolio ledger update, account balance query, cash or position update, DB write, provider call, or order submission is performed.</li>
+              ) : null}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockLedgerUpdateCoreResult" data-admin-panel-key="trading-lab-mock-portfolio-ledger-update-core">
+            <span>Mock portfolio ledger update result</span>
+            <h4>{formatStatus(labMockPortfolioLedgerUpdateCoreStatus.status || labMockLedgerUpdateCoreFinalResult.updateStatus || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock ledger update result. It does not update a real account ledger, write DB state, update actual cash or positions, create fills or executions, submit orders, or open KIS/provider/live gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockLedgerUpdateCoreResultCards">
+              <div>
+                <span>Mock update status</span>
+                <strong>{formatStatus(labMockLedgerUpdateCoreFinalResult.updateStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateCoreFinalSummary.nextAllowedStep || "mock_portfolio_performance_recalculation_preflight")}</small>
+              </div>
+              <div>
+                <span>Mock cash ledger</span>
+                <strong>{formatStatus(labMockCashLedgerUpdateCoreResult.cashUpdateStatus || labMockLedgerUpdateCoreFinalValidation.cashUpdateStatus || "validation_required")}</strong>
+                <small>{Number(labMockCashLedgerUpdateCoreResult.cashBefore || labMockLedgerUpdateCoreFinalResult.cashBefore || 0).toLocaleString("ko-KR")}{" -> "}{Number(labMockCashLedgerUpdateCoreResult.cashAfter || labMockLedgerUpdateCoreFinalResult.cashAfter || 0).toLocaleString("ko-KR")}</small>
+              </div>
+              <div>
+                <span>Mock position ledger</span>
+                <strong>{formatStatus(labMockPositionLedgerUpdateCoreResult.positionUpdateStatus || labMockLedgerUpdateCoreFinalValidation.positionUpdateStatus || "validation_required")}</strong>
+                <small>{Number(labMockPositionLedgerUpdateCoreResult.positionBefore || labMockLedgerUpdateCoreFinalResult.positionBefore || 0).toLocaleString("ko-KR")}{" -> "}{Number(labMockPositionLedgerUpdateCoreResult.positionAfter || labMockLedgerUpdateCoreFinalResult.positionAfter || 0).toLocaleString("ko-KR")}</small>
+              </div>
+              <div>
+                <span>Mock portfolio value</span>
+                <strong>{formatStatus(labMockPortfolioValueUpdateCoreResult.valuationStatus || labMockLedgerUpdateCoreFinalValidation.valuationStatus || "validation_required")}</strong>
+                <small>{Number(labMockPortfolioValueUpdateCoreResult.portfolioValueBefore || labMockLedgerUpdateCoreFinalResult.portfolioValueBefore || 0).toLocaleString("ko-KR")}{" -> "}{Number(labMockPortfolioValueUpdateCoreResult.portfolioValueAfter || labMockLedgerUpdateCoreFinalResult.portfolioValueAfter || 0).toLocaleString("ko-KR")}</small>
+              </div>
+              <div>
+                <span>P/L placeholders</span>
+                <strong>{formatStatus(labMockPnlPlaceholderCoreResult.pnlStatus || labMockLedgerUpdateCoreFinalValidation.pnlStatus || "placeholder_only")}</strong>
+                <small>{Number(labMockPnlPlaceholderCoreResult.realizedPnlPlaceholder || labMockLedgerUpdateCoreFinalResult.realizedPnlPlaceholder || 0).toLocaleString("ko-KR")} / {Number(labMockPnlPlaceholderCoreResult.unrealizedPnlPlaceholder || labMockLedgerUpdateCoreFinalResult.unrealizedPnlPlaceholder || 0).toLocaleString("ko-KR")}</small>
+              </div>
+              <div>
+                <span>Ledger consistency</span>
+                <strong>{formatStatus(labMockLedgerUpdateCoreFinalResult.ledgerConsistencyStatus || labMockLedgerUpdateCoreFinalValidation.ledgerConsistencyStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateCoreFinalValidation.deterministicCalculationStatus || "deterministic")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockLedgerUpdateCoreFinalResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateCoreFinalResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockLedgerUpdateCoreFinalResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockLedgerUpdateCoreFinalResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockLedgerUpdateCoreResultList" aria-label="Mock portfolio ledger update core result guardrails">
+              <li>{labMockLedgerUpdateCoreFinalResult.ledgerUpdateResultId || "step153_mock_portfolio_ledger_update_result"} / {formatStatus(labMockLedgerUpdateCoreFinalResult.scope || "mock_only")} / real DB ledger update blocked</li>
+              <li>Cash delta {Number(labMockLedgerUpdateCoreFinalResult.cashDelta || 0).toLocaleString("ko-KR")} / position delta {Number(labMockLedgerUpdateCoreFinalResult.positionDelta || 0).toLocaleString("ko-KR")} / deterministic calculation only</li>
+              <li>Portfolio value delta {Number(labMockLedgerUpdateCoreFinalResult.portfolioValueDelta || 0).toLocaleString("ko-KR")} / no actual account balance query</li>
+              <li>Not a real fill result, not a real order candidate, and not a KIS order/execution/fill payload.</li>
+              {(labMockLedgerUpdateCoreFinalValidation.blockerSummary || labMockLedgerUpdateCoreFinalValidation.blockers || []).map((message, index) => (
+                <li key={`mock-ledger-update-core-result-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockLedgerUpdateCoreFinalValidation.warningSummary || []).map((message, index) => (
+                <li key={`mock-ledger-update-core-result-warning-${index}`}>{message}</li>
+              ))}
+              {labMockLedgerUpdateCoreFinalHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-ledger-update-core-result-history-${index}`}>{item.historyId || `mock_ledger_update_core_result_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_portfolio_performance_recalculation_preflight")}</li>
+              ))}
+              {!labMockLedgerUpdateCoreFinalResult.updateStatus ? (
+                <li>Mock ledger update result remains validation-required; no actual cash, position, portfolio ledger, fill, execution, order, provider, or DB update is performed.</li>
               ) : null}
             </ul>
           </article>
