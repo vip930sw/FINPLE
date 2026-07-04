@@ -6,6 +6,7 @@ import {
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
+  fetchAdminTradingLabMockOrderGenerationReviewResultStatus,
   fetchAdminTradingLabMockRunCandidatePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearancePreflightStatus,
   fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus,
@@ -261,6 +262,7 @@ export function TradingReadinessPanel() {
   const [tradingLabStrategyDraftClearanceReviewResultStatus, setTradingLabStrategyDraftClearanceReviewResultStatus] = useState(null);
   const [tradingLabMockRunCandidatePreflightStatus, setTradingLabMockRunCandidatePreflightStatus] = useState(null);
   const [tradingLabMockOrderGenerationPreflightStatus, setTradingLabMockOrderGenerationPreflightStatus] = useState(null);
+  const [tradingLabMockOrderGenerationReviewResultStatus, setTradingLabMockOrderGenerationReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -291,6 +293,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabStrategyDraftClearanceReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockRunCandidatePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockOrderGenerationPreflightStatus().catch(() => null),
+      fetchAdminTradingLabMockOrderGenerationReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -316,6 +319,7 @@ export function TradingReadinessPanel() {
         setTradingLabStrategyDraftClearanceReviewResultStatus(payload?.[19] || null);
         setTradingLabMockRunCandidatePreflightStatus(payload?.[20] || null);
         setTradingLabMockOrderGenerationPreflightStatus(payload?.[21] || null);
+        setTradingLabMockOrderGenerationReviewResultStatus(payload?.[22] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -392,6 +396,21 @@ export function TradingReadinessPanel() {
     : Array.isArray(labMockOrderGenerationPreflight?.mockOrderIntents)
       ? labMockOrderGenerationPreflight.mockOrderIntents
       : [];
+  const labMockOrderGenerationReviewResultStatus = tradingLabMockOrderGenerationReviewResultStatus || tradingLabDashboardStatus?.mockOrderGenerationReviewResultStatus || {};
+  const labMockOrderGenerationReviewGate = labMockOrderGenerationReviewResultStatus?.recordingGate || {};
+  const labMockOrderGenerationReviewResult = labMockOrderGenerationReviewResultStatus?.reviewResult || labMockOrderGenerationReviewGate?.reviewResult || {};
+  const labMockOrderGenerationReviewReceipt = labMockOrderGenerationReviewResultStatus?.receipt || labMockOrderGenerationReviewGate?.receipt || {};
+  const labMockOrderGenerationIntentReviewSummary = labMockOrderGenerationReviewResultStatus?.intentReviewSummary || labMockOrderGenerationReviewGate?.intentReviewSummary || {};
+  const labMockOrderGenerationReviewDecisionSummary = labMockOrderGenerationReviewResultStatus?.decisionSummary || labMockOrderGenerationReviewGate?.decisionSummary || {};
+  const labMockOrderGenerationReviewBlockerSummary = labMockOrderGenerationReviewResultStatus?.blockerSummary || labMockOrderGenerationReviewGate?.blockerSummary || {};
+  const labMockOrderGenerationReviewHistory = Array.isArray(labMockOrderGenerationReviewResultStatus?.mockHistory)
+    ? labMockOrderGenerationReviewResultStatus.mockHistory
+    : Array.isArray(labMockOrderGenerationReviewGate?.mockHistory)
+      ? labMockOrderGenerationReviewGate.mockHistory
+      : [];
+  const labMockOrderGenerationIntentReviewRows = Array.isArray(labMockOrderGenerationIntentReviewSummary?.rows)
+    ? labMockOrderGenerationIntentReviewSummary.rows
+    : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -955,6 +974,63 @@ export function TradingReadinessPanel() {
               ))}
               {labMockOrderIntents.slice(0, 3).map((intent, index) => (
                 <li key={`mock-order-intent-${index}`}>{intent.symbol || "SYMBOL_PLACEHOLDER"} · {formatStatus(intent.side || "mock_hold")} · {Number(intent.weightGap || 0).toFixed(2)}pp</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockOrderGenerationReviewResult" data-admin-panel-key="trading-lab-mock-order-generation-review-result">
+            <span>Mock order generation review result</span>
+            <h4>{formatStatus(labMockOrderGenerationReviewResult.reviewStatus || labMockOrderGenerationReviewResultStatus.status || "blocked")}</h4>
+            <p className="tradingLabMutedText">
+              This result is for FINPLE internal mock order preview review only. It does not execute orders, create order drafts, build KIS payloads, or change live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockOrderReviewCards">
+              <div>
+                <span>Redacted receipt</span>
+                <strong>{formatStatus(labMockOrderGenerationReviewReceipt.reviewStatus || "blocked")}</strong>
+                <small>{formatStatus(labMockOrderGenerationReviewReceipt.nextAllowedStep || "mock_execution_preflight")}</small>
+              </div>
+              <div>
+                <span>Mock intent review</span>
+                <strong>{Number(labMockOrderGenerationIntentReviewSummary.intentCount || labMockOrderGenerationReviewReceipt.intentCount || 0)}</strong>
+                <small>{Number(labMockOrderGenerationIntentReviewSummary.blockedIntentCount || 0)} blocked / {Number(labMockOrderGenerationIntentReviewSummary.warningIntentCount || 0)} warning</small>
+              </div>
+              <div>
+                <span>Decision</span>
+                <strong>{formatStatus(labMockOrderGenerationReviewResult.decision || labMockOrderGenerationReviewDecisionSummary.decision || "blocked")}</strong>
+                <small>mock review only</small>
+              </div>
+              <div>
+                <span>KIS impact</span>
+                <strong>{formatStatus(labMockOrderGenerationReviewResult.providerCallImpact || "blocked")}</strong>
+                <small>payload none</small>
+              </div>
+              <div>
+                <span>Actual artifact</span>
+                <strong>{labMockOrderGenerationReviewResult.actualOrderCandidateCreated ? "created" : "none"}</strong>
+                <small>{labMockOrderGenerationReviewResult.actualOrderDraftCreated ? "draft_created" : "draft_none"}</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockOrderGenerationReviewResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockOrderGenerationReviewResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockOrderReviewList" aria-label="Mock order generation review result blockers warnings and decisions">
+              {(labMockOrderGenerationReviewDecisionSummary.decisionMessages || ["KIS calls and order submission remain blocked."]).map((message, index) => (
+                <li key={`mock-order-generation-review-decision-${index}`}>{message}</li>
+              ))}
+              {(labMockOrderGenerationReviewBlockerSummary.blockerMessages || []).map((message, index) => (
+                <li key={`mock-order-generation-review-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockOrderGenerationReviewBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-order-generation-review-warning-${index}`}>{message}</li>
+              ))}
+              {labMockOrderGenerationIntentReviewRows.slice(0, 3).map((row, index) => (
+                <li key={`mock-order-generation-review-row-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(row.displaySide || row.side || "mock_hold")} / {Number(row.weightGap || 0).toFixed(2)}pp</li>
+              ))}
+              {labMockOrderGenerationReviewHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-order-generation-review-history-${index}`}>{item.historyId || `review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
               ))}
             </ul>
           </article>
