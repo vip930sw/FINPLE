@@ -841,6 +841,10 @@ nav {
   background: #f0fdf4;
 }
 
+.tradingLabMockLedgerUpdateReviewCards div {
+  background: #f8fafc;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -942,6 +946,12 @@ nav {
   background: #f0fdf4;
   border-color: rgba(22, 163, 74, 0.16);
   color: #166534;
+}
+
+.tradingLabMockLedgerUpdateReviewList li {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #334155;
 }
 
 .tradingLabTableSection {

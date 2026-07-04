@@ -228,6 +228,18 @@ export const STEP149_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_PREFLIGHT_FL
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP150_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_FLAGS = Object.freeze({
+  ...STEP149_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_PREFLIGHT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -1430,6 +1442,74 @@ export const TRADING_LAB_MOCK_LEDGER_UPDATE_PREFLIGHT_RESULT_SCHEMA = Object.fre
   orderSubmissionImpact: "blocked",
   liveTradingImpact: "blocked",
   nextAllowedStep: "mock_portfolio_ledger_update_review_result",
+});
+
+export const TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_MODEL = Object.freeze({
+  ledgerUpdateReviewResultId: "string",
+  ledgerUpdatePreflightId: "string",
+  ledgerUpdateCandidateId: "string",
+  mockFillResultId: "string",
+  calculationInputId: "string",
+  fillCoreReviewResultId: "string",
+  mockRunCandidateId: "string",
+  strategyDraftId: "string",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_ledger_update_review_recorded | blocked | rejected",
+  reviewedAt: "placeholder",
+  reviewedBy: "admin_placeholder",
+  summary: "string[]",
+  blockers: "string[]",
+  warnings: "string[]",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_RECEIPT_SCHEMA = Object.freeze({
+  receiptId: "string",
+  ledgerUpdateReviewResultId: "string",
+  ledgerUpdatePreflightId: "string",
+  ledgerUpdateCandidateId: "string",
+  mockFillResultId: "string",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_ledger_update_review_recorded | blocked | rejected",
+  redacted: true,
+  recordedAt: "placeholder",
+  blockerCount: "number",
+  warningCount: "number",
+  cashDeltaReviewStatus: "reviewed | blocked | validation_required",
+  positionDeltaReviewStatus: "reviewed | blocked | validation_required",
+  portfolioValueImpactReviewStatus: "reviewed | blocked | validation_required",
+  ledgerConsistencyReviewStatus: "deterministic | blocked | validation_required",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_portfolio_ledger_update_core_preflight",
+});
+
+export const TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_DECISION_SUMMARY_MODEL = Object.freeze({
+  summaryId: "string",
+  sourceStep: "step150",
+  decision: "mock_ledger_update_review_recorded | blocked | rejected",
+  blockerCount: "number",
+  warningCount: "number",
+  externalOrderAuthorityRequired: true,
+  actualLedgerUpdateAllowed: false,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_LEDGER_UPDATE_IMPACT_REVIEW_SUMMARY_MODEL = Object.freeze({
+  summaryId: "string",
+  sourceStep: "step150",
+  cashDeltaReviewStatus: "reviewed | blocked | validation_required",
+  positionDeltaReviewStatus: "reviewed | blocked | validation_required",
+  portfolioValueImpactReviewStatus: "reviewed | blocked | validation_required",
+  ledgerConsistencyReviewStatus: "deterministic | blocked | validation_required",
+  dependencyReviewStatus: "satisfied | blocked | validation_required",
+  redacted: true,
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -8946,6 +9026,362 @@ export function buildAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus(inp
   return buildTradingLabMockPortfolioLedgerUpdatePreflight(input, options);
 }
 
+function getStep150MockPortfolioLedgerUpdateReviewContext(input = {}, options = {}) {
+  const hasPreflightStatus = Object.prototype.hasOwnProperty.call(input, "mockPortfolioLedgerUpdatePreflightStatus");
+  const mockPortfolioLedgerUpdatePreflightStatus = hasPreflightStatus
+    ? input.mockPortfolioLedgerUpdatePreflightStatus
+    : buildAdminTradingLabMockPortfolioLedgerUpdatePreflightStatus(input, options);
+  const result = input.ledgerUpdatePreflightResult || mockPortfolioLedgerUpdatePreflightStatus?.result || null;
+  const validation = input.ledgerUpdatePreflightValidation || mockPortfolioLedgerUpdatePreflightStatus?.validation || {};
+  const ledgerUpdateCandidates = Array.isArray(input.ledgerUpdateCandidates)
+    ? input.ledgerUpdateCandidates
+    : Array.isArray(mockPortfolioLedgerUpdatePreflightStatus?.ledgerUpdateCandidates)
+      ? mockPortfolioLedgerUpdatePreflightStatus.ledgerUpdateCandidates
+      : [];
+  const summary = input.ledgerUpdateSummary || mockPortfolioLedgerUpdatePreflightStatus?.summary || {};
+
+  return {
+    mockPortfolioLedgerUpdatePreflightStatus,
+    result,
+    validation,
+    ledgerUpdateCandidates,
+    summary,
+  };
+}
+
+export function buildTradingLabMockLedgerUpdateImpactReviewSummary(input = {}, options = {}) {
+  const context = getStep150MockPortfolioLedgerUpdateReviewContext(input, options);
+  const validation = context.validation || {};
+
+  return {
+    summaryId: "step150_mock_ledger_update_impact_review_summary",
+    sourceStep: "step150",
+    cashDeltaReviewStatus: validation.cashDeltaStatus === "valid" ? "reviewed" : validation.cashDeltaStatus || "validation_required",
+    cashAfterPreviewStatus: context.ledgerUpdateCandidates.some((candidate) => toFiniteNumber(candidate.cashAfterPreview, 0) < 0)
+      ? "validation_required"
+      : "reviewed",
+    positionDeltaReviewStatus: validation.positionDeltaStatus === "valid" ? "reviewed" : validation.positionDeltaStatus || "validation_required",
+    positionAfterPreviewStatus: context.ledgerUpdateCandidates.some((candidate) => toFiniteNumber(candidate.positionAfterPreview, 0) < 0)
+      ? "validation_required"
+      : "reviewed",
+    portfolioValueImpactReviewStatus: validation.portfolioValueImpactStatus === "valid" ? "reviewed" : validation.portfolioValueImpactStatus || "validation_required",
+    realizedPnlPlaceholderStatus: validation.realizedPnlStatus || "placeholder_only",
+    unrealizedPnlPlaceholderStatus: validation.unrealizedPnlStatus || "placeholder_only",
+    ledgerConsistencyReviewStatus: validation.ledgerConsistencyStatus || "validation_required",
+    dependencyReviewStatus: validation.dependencyStatus || "validation_required",
+    actualLedgerUpdateAllowed: false,
+    actualCashUpdateAllowed: false,
+    actualPositionUpdateAllowed: false,
+    persistentDbWriteAllowed: false,
+    deterministic: true,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+  };
+}
+
+export function buildTradingLabMockLedgerUpdateReviewDecisionSummary(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockPortfolioLedgerUpdateReviewResult(input, options);
+  const decision = validation.status === "recorded" ? "mock_ledger_update_review_recorded" : validation.status === "validation_required" ? "rejected" : "blocked";
+
+  return {
+    summaryId: "step150_mock_ledger_update_review_decision_summary",
+    sourceStep: "step150",
+    decision,
+    decisionSummary: [
+      "mock ledger update review recorded",
+      "mock portfolio ledger update review only",
+      "not an actual account ledger update",
+      "no real cash or position update",
+      "not an actual fill, execution, or order result",
+      "KIS calls and order submission remain blocked",
+      "live trading readiness stays blocked",
+      "external order authority evidence remains required",
+    ],
+    blockerCount: validation.blockerCount,
+    warningCount: validation.warningCount,
+    blockerSummary: validation.blockerSummary,
+    warningSummary: validation.warningSummary,
+    externalOrderAuthorityRequired: true,
+    actualLedgerUpdateAllowed: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForLiveGuardedTrading: false,
+    redacted: true,
+  };
+}
+
+export function validateTradingLabMockPortfolioLedgerUpdateReviewResult(input = {}, options = {}) {
+  const context = getStep150MockPortfolioLedgerUpdateReviewContext(input, options);
+  const result = context.result || {};
+  const validation = context.validation || {};
+  const candidates = context.ledgerUpdateCandidates;
+  const blockers = [];
+  const warnings = [];
+
+  if (!context.mockPortfolioLedgerUpdatePreflightStatus) blockers.push("mock_portfolio_ledger_update_preflight_missing");
+  if (!context.result) blockers.push("mock_portfolio_ledger_update_preflight_result_missing");
+  if (context.mockPortfolioLedgerUpdatePreflightStatus && context.mockPortfolioLedgerUpdatePreflightStatus.status !== "admin_only_trading_lab_mock_portfolio_ledger_update_preflight_fail_closed") warnings.push("mock_portfolio_ledger_update_preflight_status_review_required");
+  if (result.redacted !== true) blockers.push("mock_portfolio_ledger_update_preflight_result_not_redacted");
+  if (result.scope !== "mock_only") blockers.push("mock_portfolio_ledger_update_preflight_scope_not_mock_only");
+  if (result.readinessImpact !== "none") blockers.push("preflight_readiness_impact_not_none");
+  if (result.providerCallImpact !== "blocked") blockers.push("preflight_provider_call_impact_not_blocked");
+  if (result.orderSubmissionImpact !== "blocked") blockers.push("preflight_order_submission_impact_not_blocked");
+  if (result.liveTradingImpact !== "blocked") blockers.push("preflight_live_trading_impact_not_blocked");
+  if (result.nextAllowedStep && result.nextAllowedStep !== "mock_portfolio_ledger_update_review_result") blockers.push("preflight_next_step_not_ledger_update_review_result");
+  if (validation.status === "blocked" || result.status === "blocked") blockers.push("mock_portfolio_ledger_update_preflight_blocked");
+  if (validation.status === "validation_required" || result.status === "validation_required") warnings.push("mock_portfolio_ledger_update_preflight_validation_required");
+  if (!Array.isArray(candidates) || candidates.length === 0) blockers.push("mock_ledger_update_candidate_missing");
+  if (candidates.some((candidate) => candidate.redacted !== true)) blockers.push("mock_ledger_update_candidate_not_redacted");
+  if (candidates.some((candidate) => candidate.scope !== "mock_only")) blockers.push("mock_ledger_update_candidate_scope_not_mock_only");
+  if (candidates.some((candidate) => candidate.actualLedgerEntryCreated !== false)) blockers.push("actual_ledger_entry_must_not_be_created");
+  if (candidates.some((candidate) => candidate.actualPortfolioLedgerUpdated !== false)) blockers.push("actual_portfolio_ledger_update_must_not_run");
+  if (candidates.some((candidate) => candidate.persistentStorageUsed !== false || candidate.dbWriteUsed !== false)) blockers.push("persistent_db_write_must_not_run");
+  if (candidates.some((candidate) => candidate.actualCashUpdated !== false)) blockers.push("actual_cash_update_must_not_run");
+  if (candidates.some((candidate) => candidate.actualPositionUpdated !== false)) blockers.push("actual_position_update_must_not_run");
+  if (candidates.some((candidate) => candidate.accountBalanceQueried !== false)) blockers.push("actual_account_balance_query_must_not_run");
+  if (candidates.some((candidate) => toFiniteNumber(candidate.cashAfterPreview, 0) < 0)) warnings.push("cash_after_preview_negative");
+  if (candidates.some((candidate) => toFiniteNumber(candidate.positionAfterPreview, 0) < 0)) warnings.push("position_after_preview_negative");
+  if (candidates.some((candidate) => toFiniteNumber(candidate.portfolioValueAfterPreview, 0) < 0)) warnings.push("portfolio_value_after_preview_negative");
+  if (containsUnsafeReviewResultInput(input.reviewResultInput || input.ledgerUpdateReviewInput || {})) blockers.push("unsafe_private_or_payload_value_rejected");
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const status = uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "recorded";
+  const firstCandidate = candidates[0] || {};
+
+  return {
+    validationId: "step150_mock_portfolio_ledger_update_review_result_validation",
+    sourceStep: "step150",
+    status,
+    ledgerUpdatePreflightId: result.ledgerUpdatePreflightId || "step150_missing_ledger_update_preflight",
+    ledgerUpdateCandidateId: firstCandidate.ledgerUpdateCandidateId || result.ledgerUpdateCandidateId || "step150_missing_ledger_update_candidate",
+    mockFillResultId: result.mockFillResultId || firstCandidate.mockFillResultId || "step150_missing_mock_fill_result",
+    calculationInputId: firstCandidate.calculationInputId || "step150_missing_calculation_input",
+    fillCoreReviewResultId: firstCandidate.fillCoreReviewResultId || validation.fillCoreReviewResultId || "step150_missing_fill_core_review_result",
+    mockRunCandidateId: firstCandidate.mockRunCandidateId || validation.mockRunCandidateId || "step150_missing_mock_run_candidate",
+    strategyDraftId: firstCandidate.strategyDraftId || validation.strategyDraftId || "step150_missing_strategy_draft",
+    candidateCount: Array.isArray(candidates) ? candidates.length : 0,
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    cashDeltaReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("cash")) ? "blocked" : uniqueWarnings.includes("cash_after_preview_negative") ? "validation_required" : "reviewed",
+    positionDeltaReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("position")) ? "blocked" : uniqueWarnings.includes("position_after_preview_negative") ? "validation_required" : "reviewed",
+    portfolioValueImpactReviewStatus: uniqueWarnings.includes("portfolio_value_after_preview_negative") ? "validation_required" : "reviewed",
+    ledgerConsistencyReviewStatus: uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "deterministic",
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    actualLedgerEntryCreated: false,
+    actualPortfolioLedgerUpdated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redaction: makeLabRedaction({ schema: "step150_mock_portfolio_ledger_update_review_result_validation_v1" }),
+  };
+}
+
+export function buildTradingLabMockPortfolioLedgerUpdateReviewResult(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockPortfolioLedgerUpdateReviewResult(input, options);
+  const reviewStatus = validation.status === "recorded" ? "recorded" : validation.status;
+  const decision = reviewStatus === "recorded" ? "mock_ledger_update_review_recorded" : reviewStatus === "validation_required" ? "rejected" : "blocked";
+
+  return {
+    ledgerUpdateReviewResultId: "step150_mock_portfolio_ledger_update_review_result",
+    ledgerUpdatePreflightId: validation.ledgerUpdatePreflightId,
+    ledgerUpdateCandidateId: validation.ledgerUpdateCandidateId,
+    mockFillResultId: validation.mockFillResultId,
+    calculationInputId: validation.calculationInputId,
+    fillCoreReviewResultId: validation.fillCoreReviewResultId,
+    mockRunCandidateId: validation.mockRunCandidateId,
+    strategyDraftId: validation.strategyDraftId,
+    reviewStatus,
+    decision,
+    reviewedAt: "placeholder_reviewed_at",
+    reviewedBy: "admin_placeholder",
+    summary: [
+      "mock portfolio ledger update review only",
+      "not an actual account ledger update",
+      "no real cash or position update",
+      "no persistent DB write",
+      "not an actual fill, execution, or order result",
+      "KIS calls and order submission remain blocked",
+    ],
+    blockers: validation.blockers,
+    warnings: validation.warnings,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    actualLedgerEntryCreated: false,
+    actualPortfolioLedgerUpdated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+  };
+}
+
+export function buildTradingLabMockPortfolioLedgerUpdateReviewResultRecordingGate(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabMockPortfolioLedgerUpdateReviewResult(input, options);
+  const reviewResult = input.reviewResult || buildTradingLabMockPortfolioLedgerUpdateReviewResult({ ...input, validation }, options);
+  const impactReviewSummary = input.impactReviewSummary || buildTradingLabMockLedgerUpdateImpactReviewSummary(input, options);
+  const decisionSummary = input.decisionSummary || buildTradingLabMockLedgerUpdateReviewDecisionSummary({ ...input, validation }, options);
+
+  return {
+    ok: true,
+    step: "Step 150: Admin trading lab mock portfolio ledger update review result recording gate",
+    status: "admin_only_trading_lab_mock_portfolio_ledger_update_review_result_fail_closed",
+    sourceStep: "step150",
+    mockPortfolioLedgerUpdateReviewResultModel: TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_MODEL,
+    mockLedgerUpdateReviewReceiptSchema: TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_RECEIPT_SCHEMA,
+    mockLedgerUpdateReviewDecisionSummaryModel: TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_DECISION_SUMMARY_MODEL,
+    mockLedgerUpdateImpactReviewSummaryModel: TRADING_LAB_MOCK_LEDGER_UPDATE_IMPACT_REVIEW_SUMMARY_MODEL,
+    validation,
+    reviewResult,
+    impactReviewSummary,
+    decisionSummary,
+    receipt: {
+      receiptId: "step150_mock_ledger_update_review_receipt",
+      ledgerUpdateReviewResultId: reviewResult.ledgerUpdateReviewResultId,
+      ledgerUpdatePreflightId: reviewResult.ledgerUpdatePreflightId,
+      ledgerUpdateCandidateId: reviewResult.ledgerUpdateCandidateId,
+      mockFillResultId: reviewResult.mockFillResultId,
+      reviewStatus: reviewResult.reviewStatus,
+      decision: reviewResult.decision,
+      redacted: true,
+      recordedAt: "placeholder_recorded_at",
+      blockerCount: validation.blockerCount,
+      warningCount: validation.warningCount,
+      cashDeltaReviewStatus: validation.cashDeltaReviewStatus,
+      positionDeltaReviewStatus: validation.positionDeltaReviewStatus,
+      portfolioValueImpactReviewStatus: validation.portfolioValueImpactReviewStatus,
+      ledgerConsistencyReviewStatus: validation.ledgerConsistencyReviewStatus,
+      readinessImpact: "none",
+      providerCallImpact: "blocked",
+      orderSubmissionImpact: "blocked",
+      liveTradingImpact: "blocked",
+      nextAllowedStep: "mock_portfolio_ledger_update_core_preflight",
+    },
+    mockHistory: [
+      {
+        historyId: "step150_mock_ledger_update_review_history_1",
+        sourceStep: "step150",
+        status: reviewResult.reviewStatus,
+        decision: reviewResult.decision,
+        redacted: true,
+        recordedAt: "placeholder_recorded_at",
+        nextAllowedStep: "mock_portfolio_ledger_update_core_preflight",
+      },
+    ],
+    flags: { ...STEP150_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    readinessPromoted: false,
+    actualOrderCandidateCreated: false,
+    actualOrderDraftCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    actualExecutionCreated: false,
+    executionRecordCreated: false,
+    actualFillRecordCreated: false,
+    fillRecordCreated: false,
+    fillCreated: false,
+    actualLedgerEntryCreated: false,
+    actualPortfolioLedgerUpdated: false,
+    accountBalanceQueried: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      scenarioMonthlyReturnsTouched: false,
+      scenarioRuntimeTouched: false,
+      actualLedgerUpdateAllowed: false,
+    },
+    redaction: makeLabRedaction({ schema: "step150_mock_portfolio_ledger_update_review_result_status_v1" }),
+  };
+}
+
+export function buildAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus(input = {}, options = {}) {
+  return buildTradingLabMockPortfolioLedgerUpdateReviewResultRecordingGate(input, options);
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -9396,6 +9832,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockPortfolioLedgerUpdateReviewResultStatus = input.mockPortfolioLedgerUpdateReviewResultStatus || buildAdminTradingLabMockPortfolioLedgerUpdateReviewResultStatus(
+    {
+      ...input,
+      mockPortfolioLedgerUpdatePreflightStatus,
+    },
+    options,
+  );
   const performance = input.performance || buildTradingLabCumulativePerformance({ ...options, mockLedger, dailyReturns });
   const strategy = input.strategy || buildTradingLabStrategyConfig({ ...options, strategyDraft: strategyDraftStatus.strategyDraft });
   const positions = input.positions || buildTradingLabPositionSnapshot({ ...options, mockLedger, positionLedger });
@@ -9415,7 +9858,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
 
   return {
     ok: true,
-    step: "Step 149: Admin trading lab mock portfolio ledger update preflight",
+    step: "Step 150: Admin trading lab mock portfolio ledger update review result recording gate",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -9441,6 +9884,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockFillSimulationCoreReviewResultStatus,
     mockFillSimulationCoreStatus,
     mockPortfolioLedgerUpdatePreflightStatus,
+    mockPortfolioLedgerUpdateReviewResultStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -9514,6 +9958,10 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockPortfolioLedgerUpdatePreflightModel: TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_PREFLIGHT_MODEL,
     mockLedgerUpdateCandidateModel: TRADING_LAB_MOCK_LEDGER_UPDATE_CANDIDATE_MODEL,
     mockLedgerUpdatePreflightResultSchema: TRADING_LAB_MOCK_LEDGER_UPDATE_PREFLIGHT_RESULT_SCHEMA,
+    mockPortfolioLedgerUpdateReviewResultModel: TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_MODEL,
+    mockLedgerUpdateReviewReceiptSchema: TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_RECEIPT_SCHEMA,
+    mockLedgerUpdateReviewDecisionSummaryModel: TRADING_LAB_MOCK_LEDGER_UPDATE_REVIEW_DECISION_SUMMARY_MODEL,
+    mockLedgerUpdateImpactReviewSummaryModel: TRADING_LAB_MOCK_LEDGER_UPDATE_IMPACT_REVIEW_SUMMARY_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -9546,7 +9994,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP149_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_PREFLIGHT_FLAGS },
+    flags: { ...STEP150_ADMIN_TRADING_LAB_MOCK_PORTFOLIO_LEDGER_UPDATE_REVIEW_RESULT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,
