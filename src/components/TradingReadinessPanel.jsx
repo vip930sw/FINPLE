@@ -8,6 +8,7 @@ import {
   fetchAdminTradingLabMockExecutionPreflightStatus,
   fetchAdminTradingLabMockExecutionReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationPreflightStatus,
+  fetchAdminTradingLabMockFillSimulationReviewResultStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
   fetchAdminTradingLabMockOrderGenerationReviewResultStatus,
   fetchAdminTradingLabMockRunCandidatePreflightStatus,
@@ -269,6 +270,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockExecutionPreflightStatus, setTradingLabMockExecutionPreflightStatus] = useState(null);
   const [tradingLabMockExecutionReviewResultStatus, setTradingLabMockExecutionReviewResultStatus] = useState(null);
   const [tradingLabMockFillSimulationPreflightStatus, setTradingLabMockFillSimulationPreflightStatus] = useState(null);
+  const [tradingLabMockFillSimulationReviewResultStatus, setTradingLabMockFillSimulationReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -303,6 +305,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockExecutionPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockExecutionReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationPreflightStatus().catch(() => null),
+      fetchAdminTradingLabMockFillSimulationReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -332,6 +335,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockExecutionPreflightStatus(payload?.[23] || null);
         setTradingLabMockExecutionReviewResultStatus(payload?.[24] || null);
         setTradingLabMockFillSimulationPreflightStatus(payload?.[25] || null);
+        setTradingLabMockFillSimulationReviewResultStatus(payload?.[26] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -482,6 +486,21 @@ export function TradingReadinessPanel() {
       : [];
   const labMockFillSimulationPositionRows = Array.isArray(labMockFillSimulationPositionImpact?.rows)
     ? labMockFillSimulationPositionImpact.rows
+    : [];
+  const labMockFillSimulationReviewResultStatus = tradingLabMockFillSimulationReviewResultStatus || tradingLabDashboardStatus?.mockFillSimulationReviewResultStatus || {};
+  const labMockFillSimulationReviewGate = labMockFillSimulationReviewResultStatus?.recordingGate || {};
+  const labMockFillSimulationReviewResult = labMockFillSimulationReviewResultStatus?.reviewResult || labMockFillSimulationReviewGate?.reviewResult || {};
+  const labMockFillSimulationReviewReceipt = labMockFillSimulationReviewResultStatus?.receipt || labMockFillSimulationReviewGate?.receipt || {};
+  const labMockFillSimulationReviewImpactSummary = labMockFillSimulationReviewResultStatus?.impactSummary || labMockFillSimulationReviewGate?.impactSummary || {};
+  const labMockFillSimulationReviewDecisionSummary = labMockFillSimulationReviewResultStatus?.decisionSummary || labMockFillSimulationReviewGate?.decisionSummary || {};
+  const labMockFillSimulationReviewBlockerSummary = labMockFillSimulationReviewResultStatus?.blockerSummary || labMockFillSimulationReviewGate?.blockerSummary || {};
+  const labMockFillSimulationReviewHistory = Array.isArray(labMockFillSimulationReviewResultStatus?.mockHistory)
+    ? labMockFillSimulationReviewResultStatus.mockHistory
+    : Array.isArray(labMockFillSimulationReviewGate?.mockHistory)
+      ? labMockFillSimulationReviewGate.mockHistory
+      : [];
+  const labMockFillSimulationReviewImpactRows = Array.isArray(labMockFillSimulationReviewImpactSummary?.rows)
+    ? labMockFillSimulationReviewImpactSummary.rows
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1274,6 +1293,63 @@ export function TradingReadinessPanel() {
               ))}
               {labMockFillSimulationPositionRows.slice(0, 2).map((row, index) => (
                 <li key={`mock-fill-position-impact-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected {Number(row.projectedMockQuantity || 0).toLocaleString("ko-KR")} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockFillSimulationReview" data-admin-panel-key="trading-lab-mock-fill-simulation-review-result">
+            <span>Mock fill simulation review result</span>
+            <h4>{formatStatus(labMockFillSimulationReviewResult.reviewStatus || labMockFillSimulationReviewGate.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This receipt is a FINPLE internal mock fill simulation review only. It does not create live fills, execution records, KIS fill payloads, DB writes, or live/provider/order gate changes.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockFillSimulationReviewCards">
+              <div>
+                <span>Review receipt</span>
+                <strong>{formatStatus(labMockFillSimulationReviewReceipt.reviewStatus || labMockFillSimulationReviewResult.reviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockFillSimulationReviewReceipt.nextAllowedStep || "mock_fill_simulation_core_preflight")}</small>
+              </div>
+              <div>
+                <span>Decision</span>
+                <strong>{formatStatus(labMockFillSimulationReviewResult.decision || labMockFillSimulationReviewDecisionSummary.decision || "blocked")}</strong>
+                <small>{Number(labMockFillSimulationReviewReceipt.blockerCount || 0)} blockers / {Number(labMockFillSimulationReviewReceipt.warningCount || 0)} warnings</small>
+              </div>
+              <div>
+                <span>Slippage / fee review</span>
+                <strong>{formatStatus(labMockFillSimulationReviewImpactSummary.slippageReviewStatus || labMockFillSimulationReviewResult.slippageReviewStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillSimulationReviewImpactSummary.estimatedMockFee || 0).toLocaleString("ko-KR")} mock fee</small>
+              </div>
+              <div>
+                <span>Cash review</span>
+                <strong>{formatStatus(labMockFillSimulationReviewImpactSummary.cashImpactReviewStatus || labMockFillSimulationReviewResult.cashImpactReviewStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillSimulationReviewImpactSummary.cashAfterMockFillPlaceholder || 0).toLocaleString("ko-KR")} mock cash</small>
+              </div>
+              <div>
+                <span>Position review</span>
+                <strong>{formatStatus(labMockFillSimulationReviewImpactSummary.positionImpactReviewStatus || labMockFillSimulationReviewResult.positionImpactReviewStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillSimulationReviewImpactRows.length || 0)} mock rows</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockFillSimulationReviewResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockFillSimulationReviewResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockFillSimulationReviewList" aria-label="Mock fill simulation review result blockers warnings and decisions">
+              {(labMockFillSimulationReviewDecisionSummary.messages || ["KIS calls and order submission remain blocked."]).map((message, index) => (
+                <li key={`mock-fill-simulation-review-decision-${index}`}>{message}</li>
+              ))}
+              {(labMockFillSimulationReviewBlockerSummary.blockerMessages || []).map((message, index) => (
+                <li key={`mock-fill-simulation-review-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockFillSimulationReviewBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-fill-simulation-review-warning-${index}`}>{message}</li>
+              ))}
+              {labMockFillSimulationReviewImpactRows.slice(0, 3).map((row, index) => (
+                <li key={`mock-fill-simulation-review-impact-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected {Number(row.projectedMockQuantity || 0).toLocaleString("ko-KR")} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
+              ))}
+              {labMockFillSimulationReviewHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-fill-simulation-review-history-${index}`}>{item.historyId || `mock_fill_simulation_review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
               ))}
             </ul>
           </article>
