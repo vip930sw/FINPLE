@@ -9,6 +9,7 @@ import {
   fetchAdminTradingLabMockExecutionReviewResultStatus,
   fetchAdminTradingLabMockFillSimulationCorePreflightStatus,
   fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus,
+  fetchAdminTradingLabMockFillSimulationCoreStatus,
   fetchAdminTradingLabMockFillSimulationPreflightStatus,
   fetchAdminTradingLabMockFillSimulationReviewResultStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
@@ -275,6 +276,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockFillSimulationReviewResultStatus, setTradingLabMockFillSimulationReviewResultStatus] = useState(null);
   const [tradingLabMockFillSimulationCorePreflightStatus, setTradingLabMockFillSimulationCorePreflightStatus] = useState(null);
   const [tradingLabMockFillSimulationCoreReviewResultStatus, setTradingLabMockFillSimulationCoreReviewResultStatus] = useState(null);
+  const [tradingLabMockFillSimulationCoreStatus, setTradingLabMockFillSimulationCoreStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -312,6 +314,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockFillSimulationReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationCorePreflightStatus().catch(() => null),
       fetchAdminTradingLabMockFillSimulationCoreReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockFillSimulationCoreStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -344,6 +347,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockFillSimulationReviewResultStatus(payload?.[26] || null);
         setTradingLabMockFillSimulationCorePreflightStatus(payload?.[27] || null);
         setTradingLabMockFillSimulationCoreReviewResultStatus(payload?.[28] || null);
+        setTradingLabMockFillSimulationCoreStatus(payload?.[29] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -535,6 +539,18 @@ export function TradingReadinessPanel() {
     : Array.isArray(labMockFillSimulationCoreReviewGate?.mockHistory)
       ? labMockFillSimulationCoreReviewGate.mockHistory
       : [];
+  const labMockFillSimulationCoreStatus = tradingLabMockFillSimulationCoreStatus || tradingLabDashboardStatus?.mockFillSimulationCoreStatus || {};
+  const labMockFillResultSummary = labMockFillSimulationCoreStatus?.summary || {};
+  const labMockFillResults = Array.isArray(labMockFillSimulationCoreStatus?.fillResults)
+    ? labMockFillSimulationCoreStatus.fillResults
+    : [];
+  const labMockFillCalculationInputs = Array.isArray(labMockFillSimulationCoreStatus?.calculationInputs)
+    ? labMockFillSimulationCoreStatus.calculationInputs
+    : [];
+  const labMockFillCoreValidation = labMockFillSimulationCoreStatus?.validation || {};
+  const labMockFillCoreHistory = Array.isArray(labMockFillSimulationCoreStatus?.mockHistory)
+    ? labMockFillSimulationCoreStatus.mockHistory
+    : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -1494,6 +1510,63 @@ export function TradingReadinessPanel() {
               {labMockFillCoreReviewHistory.slice(0, 2).map((item, index) => (
                 <li key={`mock-fill-core-review-history-${index}`}>{item.historyId || `mock_fill_core_review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
               ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockFillCoreResult" data-admin-panel-key="trading-lab-mock-fill-simulation-core">
+            <span>Mock fill simulation core</span>
+            <h4>{formatStatus(labMockFillSimulationCoreStatus.status || labMockFillCoreValidation.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This result is a FINPLE internal mock fill simulation calculation only. It does not execute orders, create actual fills, update real cash or positions, call KIS, write DB state, or open live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockFillCoreResultCards">
+              <div>
+                <span>Mock fill result</span>
+                <strong>{Number(labMockFillResultSummary.fillResultCount || labMockFillResults.length || 0)}</strong>
+                <small>{formatStatus(labMockFillResultSummary.nextAllowedStep || "mock_portfolio_ledger_update_preflight")}</small>
+              </div>
+              <div>
+                <span>Fill status</span>
+                <strong>{formatStatus(labMockFillCoreValidation.calculationStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillResultSummary.partialCount || 0)} partial / {Number(labMockFillResultSummary.rejectedCount || 0)} rejected</small>
+              </div>
+              <div>
+                <span>Price / slippage / fee</span>
+                <strong>{Number(labMockFillResultSummary.totalMockFee || 0).toLocaleString("ko-KR")}</strong>
+                <small>{Number(labMockFillResultSummary.totalMockSlippage || 0).toLocaleString("ko-KR")} mock slippage</small>
+              </div>
+              <div>
+                <span>Gross / net amount</span>
+                <strong>{Number(labMockFillResultSummary.totalGrossAmount || 0).toLocaleString("ko-KR")}</strong>
+                <small>{Number(labMockFillResultSummary.totalNetAmount || 0).toLocaleString("ko-KR")} mock net</small>
+              </div>
+              <div>
+                <span>Cash / position delta</span>
+                <strong>{Number(labMockFillResultSummary.cashDelta || 0).toLocaleString("ko-KR")}</strong>
+                <small>{Number(labMockFillResultSummary.positionDeltaCount || 0)} mock position deltas</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockFillResultSummary.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockFillResultSummary.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockFillCoreResultList" aria-label="Mock fill simulation core result rows and guardrails">
+              {labMockFillResults.slice(0, 4).map((result, index) => (
+                <li key={`mock-fill-core-result-${index}`}>{result.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(result.fillStatus || "validation_required")} / qty {Number(result.filledQuantity || 0).toLocaleString("ko-KR")} / cash {Number(result.cashDelta || 0).toLocaleString("ko-KR")}</li>
+              ))}
+              {(labMockFillCoreValidation.blockerSummary || labMockFillCoreValidation.blockers || []).map((message, index) => (
+                <li key={`mock-fill-core-result-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockFillCoreValidation.warningSummary || []).map((message, index) => (
+                <li key={`mock-fill-core-result-warning-${index}`}>{message}</li>
+              ))}
+              {labMockFillCoreHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-fill-core-result-history-${index}`}>{item.historyId || `mock_fill_result_history_${index + 1}`} / {formatStatus(item.status || "blocked")} / {Number(item.fillResultCount || 0)} mock rows</li>
+              ))}
+              {labMockFillCalculationInputs.length === 0 ? (
+                <li>Mock calculation input remains validation-required; KIS calls and order submission stay blocked.</li>
+              ) : null}
             </ul>
           </article>
 
