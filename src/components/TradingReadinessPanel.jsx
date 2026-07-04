@@ -6,6 +6,7 @@ import {
   fetchAdminTradingKisReadOnlyProviderCallInventoryPreflightStatus,
   fetchAdminTradingLabDashboardStatus,
   fetchAdminTradingLabMockExecutionPreflightStatus,
+  fetchAdminTradingLabMockExecutionReviewResultStatus,
   fetchAdminTradingLabMockOrderGenerationPreflightStatus,
   fetchAdminTradingLabMockOrderGenerationReviewResultStatus,
   fetchAdminTradingLabMockRunCandidatePreflightStatus,
@@ -265,6 +266,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockOrderGenerationPreflightStatus, setTradingLabMockOrderGenerationPreflightStatus] = useState(null);
   const [tradingLabMockOrderGenerationReviewResultStatus, setTradingLabMockOrderGenerationReviewResultStatus] = useState(null);
   const [tradingLabMockExecutionPreflightStatus, setTradingLabMockExecutionPreflightStatus] = useState(null);
+  const [tradingLabMockExecutionReviewResultStatus, setTradingLabMockExecutionReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -297,6 +299,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockOrderGenerationPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockOrderGenerationReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockExecutionPreflightStatus().catch(() => null),
+      fetchAdminTradingLabMockExecutionReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -324,6 +327,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockOrderGenerationPreflightStatus(payload?.[21] || null);
         setTradingLabMockOrderGenerationReviewResultStatus(payload?.[22] || null);
         setTradingLabMockExecutionPreflightStatus(payload?.[23] || null);
+        setTradingLabMockExecutionReviewResultStatus(payload?.[24] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -434,6 +438,30 @@ export function TradingReadinessPanel() {
       : [];
   const labMockPositionImpactRows = Array.isArray(labMockExecutionPositionImpact?.rows)
     ? labMockExecutionPositionImpact.rows
+    : [];
+  const labMockExecutionReviewResultStatus = tradingLabMockExecutionReviewResultStatus || tradingLabDashboardStatus?.mockExecutionReviewResultStatus || {};
+  const labMockExecutionReviewGate = labMockExecutionReviewResultStatus?.recordingGate || {};
+  const labMockExecutionReviewResult = labMockExecutionReviewResultStatus?.reviewResult || labMockExecutionReviewGate?.reviewResult || {};
+  const labMockExecutionReviewReceipt = labMockExecutionReviewResultStatus?.receipt || labMockExecutionReviewGate?.receipt || {};
+  const labMockExecutionIntentReviewSummary = labMockExecutionReviewResultStatus?.intentReviewSummary || labMockExecutionReviewGate?.intentReviewSummary || {};
+  const labMockFillPlanReviewSummary = labMockExecutionReviewResultStatus?.fillPlanReviewSummary || labMockExecutionReviewGate?.fillPlanReviewSummary || {};
+  const labMockCashImpactReviewSummary = labMockExecutionReviewResultStatus?.cashImpactReviewSummary || labMockExecutionReviewGate?.cashImpactReviewSummary || {};
+  const labMockPositionImpactReviewSummary = labMockExecutionReviewResultStatus?.positionImpactReviewSummary || labMockExecutionReviewGate?.positionImpactReviewSummary || {};
+  const labMockExecutionReviewDecisionSummary = labMockExecutionReviewResultStatus?.decisionSummary || labMockExecutionReviewGate?.decisionSummary || {};
+  const labMockExecutionReviewBlockerSummary = labMockExecutionReviewResultStatus?.blockerSummary || labMockExecutionReviewGate?.blockerSummary || {};
+  const labMockExecutionReviewHistory = Array.isArray(labMockExecutionReviewResultStatus?.mockHistory)
+    ? labMockExecutionReviewResultStatus.mockHistory
+    : Array.isArray(labMockExecutionReviewGate?.mockHistory)
+      ? labMockExecutionReviewGate.mockHistory
+      : [];
+  const labMockExecutionIntentReviewRows = Array.isArray(labMockExecutionIntentReviewSummary?.rows)
+    ? labMockExecutionIntentReviewSummary.rows
+    : [];
+  const labMockFillPlanReviewRows = Array.isArray(labMockFillPlanReviewSummary?.rows)
+    ? labMockFillPlanReviewSummary.rows
+    : [];
+  const labMockPositionImpactReviewRows = Array.isArray(labMockPositionImpactReviewSummary?.rows)
+    ? labMockPositionImpactReviewSummary.rows
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1109,6 +1137,69 @@ export function TradingReadinessPanel() {
               ))}
               {labMockPositionImpactRows.slice(0, 2).map((row, index) => (
                 <li key={`mock-position-impact-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected {Number(row.projectedMockQuantity || 0).toLocaleString("ko-KR")} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
+              ))}
+            </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockExecutionReviewResult" data-admin-panel-key="trading-lab-mock-execution-review-result">
+            <span>Mock execution review result</span>
+            <h4>{formatStatus(labMockExecutionReviewResult.reviewStatus || labMockExecutionReviewResultStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This result is for FINPLE internal mock execution preview review only. It does not execute orders, create live fills, query balances, call KIS, or change live/provider/order gates.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockExecutionReviewCards">
+              <div>
+                <span>Redacted receipt</span>
+                <strong>{formatStatus(labMockExecutionReviewReceipt.reviewStatus || "blocked")}</strong>
+                <small>{formatStatus(labMockExecutionReviewReceipt.nextAllowedStep || "mock_fill_simulation_preflight")}</small>
+              </div>
+              <div>
+                <span>Intent review</span>
+                <strong>{Number(labMockExecutionIntentReviewSummary.executionIntentCount || labMockExecutionReviewReceipt.executionIntentCount || 0)}</strong>
+                <small>{Number(labMockExecutionIntentReviewSummary.blockedExecutionIntentCount || 0)} blocked / {Number(labMockExecutionIntentReviewSummary.warningExecutionIntentCount || 0)} warning</small>
+              </div>
+              <div>
+                <span>Fill plan review</span>
+                <strong>{formatStatus(labMockFillPlanReviewSummary.status || labMockExecutionReviewResult.fillPlanStatus || "validation_required")}</strong>
+                <small>{Number(labMockFillPlanReviewSummary.fillPlanCount || labMockFillPlanReviewRows.length || 0)} mock plans</small>
+              </div>
+              <div>
+                <span>Cash review</span>
+                <strong>{formatStatus(labMockCashImpactReviewSummary.status || labMockExecutionReviewResult.cashImpactStatus || "validation_required")}</strong>
+                <small>no actual balance query</small>
+              </div>
+              <div>
+                <span>Position review</span>
+                <strong>{formatStatus(labMockPositionImpactReviewSummary.status || labMockExecutionReviewResult.positionImpactStatus || "validation_required")}</strong>
+                <small>{Number(labMockPositionImpactReviewSummary.rowCount || labMockPositionImpactReviewRows.length || 0)} mock rows</small>
+              </div>
+              <div>
+                <span>Live readiness</span>
+                <strong>{formatStatus(labMockExecutionReviewResult.liveTradingImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockExecutionReviewResult.readinessImpact || "none")}</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockExecutionReviewList" aria-label="Mock execution review result blockers warnings and decisions">
+              {(labMockExecutionReviewDecisionSummary.messages || ["KIS calls and order submission remain blocked."]).map((message, index) => (
+                <li key={`mock-execution-review-decision-${index}`}>{message}</li>
+              ))}
+              {(labMockExecutionReviewBlockerSummary.blockerMessages || []).map((message, index) => (
+                <li key={`mock-execution-review-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockExecutionReviewBlockerSummary.warningMessages || []).map((message, index) => (
+                <li key={`mock-execution-review-warning-${index}`}>{message}</li>
+              ))}
+              {labMockExecutionIntentReviewRows.slice(0, 3).map((row, index) => (
+                <li key={`mock-execution-review-intent-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(row.sideLabel || "mock hold intent")} / {row.fillPlanBasis || "static mock price series only"}</li>
+              ))}
+              {labMockFillPlanReviewRows.slice(0, 2).map((row, index) => (
+                <li key={`mock-execution-review-fill-plan-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / {formatStatus(row.fillPolicy || "mock_close_price")} / {formatStatus(row.mockPriceSource || "static_mock_series")}</li>
+              ))}
+              {labMockPositionImpactReviewRows.slice(0, 2).map((row, index) => (
+                <li key={`mock-execution-review-position-${index}`}>{row.symbol || "SYMBOL_PLACEHOLDER"} / projected weight {Number(row.projectedWeight || 0).toFixed(2)} / gap {Number(row.projectedWeightGap || 0).toFixed(2)}pp</li>
+              ))}
+              {labMockExecutionReviewHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-execution-review-history-${index}`}>{item.historyId || `mock_execution_review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.decision || "blocked")}</li>
               ))}
             </ul>
           </article>
