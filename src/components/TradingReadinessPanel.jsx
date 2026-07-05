@@ -12,6 +12,7 @@ import {
   fetchAdminTradingLabMockFillSimulationCoreStatus,
   fetchAdminTradingLabMockDashboardCleanupPreflightStatus,
   fetchAdminTradingLabMockDashboardCleanupReviewResultStatus,
+  fetchAdminTradingLabMockDashboardCleanupCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
@@ -307,6 +308,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockTradingRunSummaryCoreStatus, setTradingLabMockTradingRunSummaryCoreStatus] = useState(null);
   const [tradingLabMockDashboardCleanupPreflightStatus, setTradingLabMockDashboardCleanupPreflightStatus] = useState(null);
   const [tradingLabMockDashboardCleanupReviewResultStatus, setTradingLabMockDashboardCleanupReviewResultStatus] = useState(null);
+  const [tradingLabMockDashboardCleanupCoreStatus, setTradingLabMockDashboardCleanupCoreStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -360,6 +362,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockTradingRunSummaryCoreStatus().catch(() => null),
       fetchAdminTradingLabMockDashboardCleanupPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockDashboardCleanupReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabMockDashboardCleanupCoreStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -408,6 +411,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockTradingRunSummaryCoreStatus(payload?.[42] || null);
         setTradingLabMockDashboardCleanupPreflightStatus(payload?.[43] || null);
         setTradingLabMockDashboardCleanupReviewResultStatus(payload?.[44] || null);
+        setTradingLabMockDashboardCleanupCoreStatus(payload?.[45] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -762,6 +766,20 @@ export function TradingReadinessPanel() {
   const labMockDashboardCleanupReviewDecisionSummary = labMockDashboardCleanupReviewResultStatus?.decisionSummary || {};
   const labMockDashboardCleanupReviewHistory = Array.isArray(labMockDashboardCleanupReviewResultStatus?.mockHistory)
     ? labMockDashboardCleanupReviewResultStatus.mockHistory
+    : [];
+  const labMockDashboardCleanupCoreStatus = tradingLabMockDashboardCleanupCoreStatus || tradingLabDashboardStatus?.mockDashboardCleanupCoreStatus || {};
+  const labMockDashboardCleanupCoreResult = labMockDashboardCleanupCoreStatus?.result || {};
+  const labMockDashboardSummaryFirstLayout = labMockDashboardCleanupCoreStatus?.summaryFirstLayout || labMockDashboardCleanupCoreResult?.summaryFirstLayout || {};
+  const labMockDashboardCollapsibleDetailGroupResult = labMockDashboardCleanupCoreStatus?.collapsibleDetailGroupResult || {};
+  const labMockDashboardCleanupCoreValidation = labMockDashboardCleanupCoreStatus?.validation || {};
+  const labMockDashboardCleanupCoreHistory = Array.isArray(labMockDashboardCleanupCoreStatus?.mockHistory)
+    ? labMockDashboardCleanupCoreStatus.mockHistory
+    : [];
+  const labMockDashboardCleanupCoreGroups = Array.isArray(labMockDashboardCollapsibleDetailGroupResult?.groups)
+    ? labMockDashboardCollapsibleDetailGroupResult.groups
+    : [];
+  const labMockDashboardCleanupCoreVisibleSections = Array.isArray(labMockDashboardCleanupCoreResult?.visiblePrimarySections)
+    ? labMockDashboardCleanupCoreResult.visiblePrimarySections
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2663,6 +2681,137 @@ export function TradingReadinessPanel() {
                 <li>Mock trading run summary review remains validation-required; live/provider/order gates stay blocked and all readiness flags remain false.</li>
               ) : null}
             </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockDashboardCleanupCore" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-core">
+            <span>Mock dashboard cleanup core</span>
+            <h4>{formatStatus(labMockDashboardCleanupCoreResult.cleanupStatus || labMockDashboardCleanupCoreStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock dashboard cleanup core result. It reorganizes the admin mock dashboard into summary-first read-only groups using the Step161 mock trading run summary result, does not delete existing sections, does not write DB state, and keeps KIS/provider/order/live gates blocked.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockDashboardCleanupCoreCards">
+              <div>
+                <span>Cleanup result</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.cleanupStatus || "validation_required")}</strong>
+                <small>{labMockDashboardCleanupCoreResult.dashboardCleanupResultId || "step164_mock_dashboard_cleanup_result"}</small>
+              </div>
+              <div>
+                <span>Summary source</span>
+                <strong>{labMockDashboardCleanupCoreResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result"}</strong>
+                <small>Step161 mock summary</small>
+              </div>
+              <div>
+                <span>Summary-first layout</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreValidation.summaryFirstLayoutStatus || labMockDashboardSummaryFirstLayout.status || "validation_required")}</strong>
+                <small>{labMockDashboardSummaryFirstLayout.summaryFirst ? "summary first" : "validation required"}</small>
+              </div>
+              <div>
+                <span>KPI source alignment</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.kpiSourceAlignment || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardSummaryFirstLayout.kpi?.sourceAlignment || "step161_summary_result")}</small>
+              </div>
+              <div>
+                <span>Chart source alignment</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.chartSourceAlignment || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardSummaryFirstLayout.charts?.sourceAlignment || "step161_chart_aggregation")}</small>
+              </div>
+              <div>
+                <span>Allocation source alignment</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.allocationSourceAlignment || "validation_required")}</strong>
+                <small>Step161 mock aggregation</small>
+              </div>
+              <div>
+                <span>Collapsible detail groups</span>
+                <strong>{labMockDashboardCollapsibleDetailGroupResult.groupCount ?? labMockDashboardCleanupCoreGroups.length}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreValidation.collapsibleDetailGroupStatus || labMockDashboardCollapsibleDetailGroupResult.status || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Safety separation</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.safetyPanelSeparationStatus || "blocked")}</strong>
+                <small>Lab and safety stay separated</small>
+              </div>
+              <div>
+                <span>Dangerous action labels</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.dangerousActionLabelStatus || "absent")}</strong>
+                <small>No live action labels</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Next step</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreResult.nextAllowedStep || "mock_dashboard_cleanup_core_review")}</strong>
+                <small>Admin mock-only</small>
+              </div>
+            </div>
+            <div className="tradingLabDashboardSummaryFirstGrid" aria-label="Mock dashboard cleanup core summary-first layout">
+              <section>
+                <span>Overview</span>
+                <strong>{formatStatus(labMockDashboardSummaryFirstLayout.overview?.summaryStatus || labMockTradingRunSummaryCoreResult.summaryStatus || "validation_required")}</strong>
+                <small>Not real trading / no KIS call / no order submission / no DB write</small>
+              </section>
+              <section>
+                <span>KPI</span>
+                <strong>{Number(labMockDashboardSummaryFirstLayout.kpi?.totalEquity || labMockTradingRunSummaryPerformanceSummary.totalEquity || 0).toLocaleString("ko-KR")}</strong>
+                <small>Return {Number(labMockDashboardSummaryFirstLayout.kpi?.cumulativeReturn || labMockTradingRunSummaryPerformanceSummary.cumulativeReturn || 0).toFixed(4)}% / MDD {Number(labMockDashboardSummaryFirstLayout.kpi?.mdd || labMockTradingRunSummaryPerformanceSummary.mdd || 0).toFixed(4)}%</small>
+              </section>
+              <section>
+                <span>Strategy</span>
+                <strong>{labMockDashboardSummaryFirstLayout.strategy?.strategyName || labMockTradingRunSummaryStrategySummary.strategyName || "Admin mock strategy draft"}</strong>
+                <small>{formatStatus(labMockDashboardSummaryFirstLayout.strategy?.mode || "mock")}</small>
+              </section>
+              <section>
+                <span>Mock run summary</span>
+                <strong>{formatStatus(labMockDashboardSummaryFirstLayout.mockRunSummary?.performanceStatus || "mock_only")}</strong>
+                <small>{formatStatus(labMockDashboardSummaryFirstLayout.mockRunSummary?.safetyStatus || "blocked")}</small>
+              </section>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockDashboardCleanupCoreList" aria-label="Mock dashboard cleanup core guardrails">
+              <li>{labMockDashboardCleanupCoreResult.dashboardCleanupReviewResultId || "step163_mock_dashboard_cleanup_review_result"} / Step163 dependency required / Step164 mock dashboard cleanup core only</li>
+              <li>No KIS/provider call, no KIS token, no quote query, no order submission, no DB write, and no account balance query.</li>
+              <li>No actual trading run id, order id, execution id, fill id, performance record, cash update, position update, portfolio ledger update, or trading run summary update is created.</li>
+              <li>Existing Step132B through Step163 sections remain available; this core only adds a summary-first grouping result.</li>
+              <li>Admin mock cleanup core is visible only in the trading lab; My Page, homepage, and public routes do not expose this UI.</li>
+              <li>Next allowed step: {formatStatus(labMockDashboardCleanupCoreResult.nextAllowedStep || "mock_dashboard_cleanup_core_review")}</li>
+              {(labMockDashboardCleanupCoreValidation.blockerSummary || labMockDashboardCleanupCoreValidation.blockers || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-core-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockDashboardCleanupCoreValidation.warningSummary || labMockDashboardCleanupCoreValidation.warnings || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-core-warning-${index}`}>{message}</li>
+              ))}
+              {labMockDashboardCleanupCoreHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-dashboard-cleanup-core-history-${index}`}>{item.historyId || `mock_dashboard_cleanup_core_history_${index + 1}`} / {formatStatus(item.cleanupStatus || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_dashboard_cleanup_core_review")}</li>
+              ))}
+            </ul>
+            <details className="tradingLabCleanupDetails">
+              <summary>Primary summary sections</summary>
+              <ul className="tradingLabReviewList tradingLabMockDashboardCleanupCoreList">
+                {labMockDashboardCleanupCoreVisibleSections.map((sectionId) => (
+                  <li key={`mock-dashboard-cleanup-core-primary-${sectionId}`}>{sectionId} / summary-first primary surface</li>
+                ))}
+                {labMockDashboardCleanupCoreVisibleSections.length === 0 ? (
+                  <li>Summary-first primary sections remain validation-required; no existing admin mock section is removed.</li>
+                ) : null}
+              </ul>
+            </details>
+            <details className="tradingLabCleanupDetails">
+              <summary>Collapsible detail chain groups</summary>
+              <ul className="tradingLabReviewList tradingLabMockDashboardCleanupCoreList">
+                {labMockDashboardCleanupCoreGroups.map((group) => (
+                  <li key={`mock-dashboard-cleanup-core-group-${group.groupId}`}>{group.groupId} / {group.title} / {group.defaultCollapsed ? "default collapsed" : "validation required"} / preserved</li>
+                ))}
+                {labMockDashboardCleanupCoreGroups.length === 0 ? (
+                  <li>Detail grouping remains validation-required; no existing admin mock section is removed.</li>
+                ) : null}
+              </ul>
+            </details>
           </article>
 
           <article className="tradingLabSection tradingLabMockDashboardCleanupPreflight" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-preflight">

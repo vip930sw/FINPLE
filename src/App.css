@@ -897,6 +897,42 @@ nav {
   background: #f0fdfa;
 }
 
+.tradingLabMockDashboardCleanupCoreCards div {
+  background: #f8fafc;
+}
+
+.tradingLabDashboardSummaryFirstGrid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin-top: 0.8rem;
+}
+
+.tradingLabDashboardSummaryFirstGrid section {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.8rem;
+}
+
+.tradingLabDashboardSummaryFirstGrid span,
+.tradingLabDashboardSummaryFirstGrid small {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDashboardSummaryFirstGrid strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
 .tradingLabReviewList {
   display: grid;
   gap: 0.4rem;
@@ -1082,6 +1118,12 @@ nav {
   background: #f0fdfa;
   border-color: rgba(13, 148, 136, 0.16);
   color: #115e59;
+}
+
+.tradingLabMockDashboardCleanupCoreList li {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #334155;
 }
 
 .tradingLabCleanupDetails {

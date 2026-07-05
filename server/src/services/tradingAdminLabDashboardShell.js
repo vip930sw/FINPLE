@@ -396,6 +396,18 @@ export const STEP163_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_RESULT_FLAG
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP164_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_FLAGS = Object.freeze({
+  ...STEP163_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_RESULT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -2983,6 +2995,99 @@ export const TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_SECTION_SUMMARY_MODEL = O
   safetyPanelSeparationReviewStatus: "reviewed | blocked | validation_required",
   sourceAlignmentReviewStatus: "reviewed | blocked | validation_required",
   redacted: true,
+});
+
+export const TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_MODEL = Object.freeze({
+  dashboardCleanupCoreId: "string",
+  sourceStep: "step164",
+  dashboardCleanupReviewResultId: "string",
+  dashboardCleanupPreflightId: "string",
+  tradingRunSummaryResultId: "string",
+  scope: "mock_only",
+  mode: "mock",
+  coreStatus: "mock_dashboard_cleanup_applied | blocked | validation_required",
+  summaryFirstLayoutStatus: "applied | blocked | validation_required",
+  collapsibleDetailGroupStatus: "applied | blocked | validation_required",
+  sourceAlignmentStatus: "aligned | blocked | validation_required",
+  deterministic: true,
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_MODEL = Object.freeze({
+  dashboardCleanupResultId: "string",
+  sourceStep: "step164",
+  dashboardCleanupReviewResultId: "string",
+  dashboardCleanupPreflightId: "string",
+  tradingRunSummaryResultId: "string",
+  scope: "mock_only",
+  cleanupStatus: "mock_dashboard_cleanup_applied | blocked | validation_required",
+  summaryFirstLayout: "redacted_summary_first_layout_result",
+  kpiSourceAlignment: "aligned | blocked | validation_required",
+  chartSourceAlignment: "aligned | blocked | validation_required",
+  allocationSourceAlignment: "aligned | blocked | validation_required",
+  collapsibleGroups: "redacted_collapsible_detail_group[]",
+  visiblePrimarySections: "string[]",
+  visibleDetailGroups: "string[]",
+  safetyPanelSeparationStatus: "separated | blocked | validation_required",
+  dangerousActionLabelStatus: "absent | blocked | validation_required",
+  deterministic: true,
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_DASHBOARD_SUMMARY_FIRST_LAYOUT_RESULT_MODEL = Object.freeze({
+  summaryFirstLayoutResultId: "string",
+  sourceStep: "step164",
+  overview: "redacted_mock_dashboard_overview",
+  kpi: "redacted_mock_dashboard_kpi",
+  charts: "redacted_mock_dashboard_charts",
+  strategy: "redacted_mock_dashboard_strategy",
+  mockRunSummary: "redacted_mock_run_summary",
+  detailChain: "redacted_collapsible_detail_groups",
+  summaryFirst: true,
+  deterministic: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_DASHBOARD_COLLAPSIBLE_DETAIL_GROUP_RESULT_MODEL = Object.freeze({
+  collapsibleDetailGroupResultId: "string",
+  sourceStep: "step164",
+  defaultCollapsed: true,
+  groups: "redacted_collapsible_detail_group[]",
+  preservesExistingSections: true,
+  deletesExistingSections: false,
+  deterministic: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_SCHEMA = Object.freeze({
+  dashboardCleanupResultId: "string",
+  sourceStep: "step164",
+  dashboardCleanupReviewResultId: "string",
+  dashboardCleanupPreflightId: "string",
+  tradingRunSummaryResultId: "string",
+  cleanupStatus: "mock_dashboard_cleanup_applied | blocked | validation_required",
+  scope: "mock_only",
+  redacted: true,
+  summaryFirstLayoutStatus: "applied | blocked | validation_required",
+  collapsibleDetailGroupStatus: "applied | blocked | validation_required",
+  kpiSourceAlignment: "aligned | blocked | validation_required",
+  chartSourceAlignment: "aligned | blocked | validation_required",
+  allocationSourceAlignment: "aligned | blocked | validation_required",
+  safetyPanelSeparationStatus: "separated | blocked | validation_required",
+  dangerousActionLabelStatus: "absent | blocked | validation_required",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_dashboard_cleanup_core_review",
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -16515,6 +16620,463 @@ export function buildAdminTradingLabMockDashboardCleanupReviewResultStatus(input
   return buildTradingLabMockDashboardCleanupReviewResultRecordingGate(input, options);
 }
 
+function getStep164MockDashboardCleanupCoreContext(input = {}, options = {}) {
+  const mockDashboardCleanupReviewResultStatus = input.mockDashboardCleanupReviewResultStatus || buildAdminTradingLabMockDashboardCleanupReviewResultStatus(input, options);
+  const reviewResult = input.reviewResult || mockDashboardCleanupReviewResultStatus.reviewResult || {};
+  const receipt = input.receipt || mockDashboardCleanupReviewResultStatus.receipt || {};
+  const mockTradingRunSummaryCoreStatus = input.mockTradingRunSummaryCoreStatus || buildAdminTradingLabMockTradingRunSummaryCoreStatus(input, options);
+  const summaryResult = input.summaryResult || mockTradingRunSummaryCoreStatus.result || {};
+  const dashboardAggregation = input.dashboardAggregation || mockTradingRunSummaryCoreStatus.dashboardAggregation || summaryResult.dashboardAggregation || {};
+  const chartAggregation = input.chartAggregation || mockTradingRunSummaryCoreStatus.chartAggregation || summaryResult.chartAggregation || {};
+  const cleanupPreflightStatus = input.mockDashboardCleanupPreflightStatus || buildAdminTradingLabMockDashboardCleanupPreflightStatus(
+    {
+      ...input,
+      mockTradingRunSummaryCoreStatus,
+    },
+    options,
+  );
+  const preflightResult = input.preflightResult || cleanupPreflightStatus.result || {};
+
+  return {
+    mockDashboardCleanupReviewResultStatus,
+    reviewResult,
+    receipt,
+    mockTradingRunSummaryCoreStatus,
+    summaryResult,
+    dashboardAggregation,
+    chartAggregation,
+    cleanupPreflightStatus,
+    preflightResult,
+  };
+}
+
+export function buildTradingLabMockDashboardSummaryFirstLayoutResult(input = {}, options = {}) {
+  const context = getStep164MockDashboardCleanupCoreContext(input, options);
+  const summaryResult = context.summaryResult || {};
+  const dashboardAggregation = context.dashboardAggregation || {};
+  const chartAggregation = context.chartAggregation || {};
+  const strategySummary = summaryResult.strategySummary || {};
+  const performanceSummary = summaryResult.performanceSummary || {};
+  const ledgerSummary = summaryResult.ledgerSummary || {};
+  const orderSummary = summaryResult.orderSummary || {};
+  const executionSummary = summaryResult.executionSummary || {};
+  const fillSummary = summaryResult.fillSummary || {};
+  const riskSummary = summaryResult.riskSummary || {};
+
+  return {
+    summaryFirstLayoutResultId: "step164_mock_dashboard_summary_first_layout_result",
+    sourceStep: "step164",
+    tradingRunSummaryResultId: summaryResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result",
+    overview: {
+      title: "Mock trading run summary",
+      mockOnlyNotice: "FINPLE internal mock dashboard cleanup core only",
+      badges: [
+        "not_real_trading",
+        "no_kis_call",
+        "no_order_submission",
+        "no_db_write",
+      ],
+      summaryStatus: summaryResult.summaryStatus || "validation_required",
+      redacted: true,
+    },
+    kpi: {
+      totalEquity: performanceSummary.totalEquity ?? dashboardAggregation.totalEquity ?? 0,
+      cumulativeReturn: performanceSummary.cumulativeReturn ?? dashboardAggregation.cumulativeReturn ?? 0,
+      dailyReturn: dashboardAggregation.dailyReturn ?? 0,
+      mdd: performanceSummary.mdd ?? dashboardAggregation.mdd ?? 0,
+      cashWeight: ledgerSummary.cashWeight ?? dashboardAggregation.cashWeight ?? 0,
+      mockRunStatus: summaryResult.summaryStatus || "validation_required",
+      sourceAlignment: "step161_summary_result",
+      redacted: true,
+    },
+    charts: {
+      equity: chartAggregation.equityChartData || dashboardAggregation.equityChartSummary || [],
+      returns: chartAggregation.returnChartData || dashboardAggregation.returnChartSummary || [],
+      drawdown: chartAggregation.drawdownChartData || dashboardAggregation.drawdownChartSummary || [],
+      allocation: chartAggregation.allocationChartData || dashboardAggregation.allocationSummary || [],
+      sourceAlignment: "step161_chart_aggregation",
+      redacted: true,
+    },
+    strategy: {
+      strategyDraftId: strategySummary.strategyDraftId || summaryResult.strategyDraftId || "step134_strategy_draft",
+      strategyName: strategySummary.strategyName || "Admin mock strategy draft",
+      mode: strategySummary.mode || "mock",
+      targetWeightStatus: strategySummary.targetWeightStatus || "mock_only",
+      rebalanceRuleStatus: strategySummary.rebalanceRuleStatus || "mock_only",
+      redacted: true,
+    },
+    mockRunSummary: {
+      orderStatus: orderSummary.status || orderSummary.orderSummaryStatus || "mock_only",
+      executionStatus: executionSummary.status || executionSummary.executionSummaryStatus || "mock_only",
+      fillStatus: fillSummary.status || fillSummary.fillSummaryStatus || "mock_only",
+      ledgerStatus: ledgerSummary.status || "mock_only",
+      performanceStatus: performanceSummary.status || "mock_only",
+      safetyStatus: riskSummary.safetyStatus || "blocked",
+      redacted: true,
+    },
+    detailChain: {
+      defaultCollapsed: true,
+      groups: "see_collapsible_detail_group_result",
+      redacted: true,
+    },
+    summaryFirst: true,
+    deterministic: input.deterministic !== false,
+    redacted: input.redacted !== false,
+    status: input.deterministic === false || input.redacted === false ? "validation_required" : "applied",
+  };
+}
+
+export function buildTradingLabMockDashboardCollapsibleDetailGroupResult(input = {}, options = {}) {
+  const context = getStep164MockDashboardCleanupCoreContext(input, options);
+  const groups = input.groups || [
+    {
+      groupId: "strategy_draft_review_chain",
+      title: "Strategy draft and review",
+      sourceSteps: ["step134", "step135", "step136", "step137", "step138"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "mock_order_execution_fill_chain",
+      title: "Mock order execution fill flow",
+      sourceSteps: ["step139", "step140", "step141", "step142", "step143", "step144", "step145", "step146", "step147", "step148"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "mock_ledger_update_chain",
+      title: "Mock portfolio ledger update",
+      sourceSteps: ["step149", "step150", "step151", "step152", "step153"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "mock_performance_calculation_chain",
+      title: "Mock performance calculation",
+      sourceSteps: ["step154", "step155", "step156", "step157", "step158"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "mock_trading_run_summary_chain",
+      title: "Mock trading run summary",
+      sourceSteps: ["step159", "step160", "step161"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "mock_dashboard_cleanup_chain",
+      title: "Mock dashboard cleanup",
+      sourceSteps: ["step162", "step163", "step164"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      redacted: true,
+    },
+    {
+      groupId: "safety_detail_chain",
+      title: "Safety detail",
+      sourceSteps: ["step116", "step117", "step118", "step119", "step120", "step121", "step122", "step123", "step124", "step125", "step126", "step127", "step128", "step129", "step130"],
+      defaultCollapsed: true,
+      preservesExistingSections: true,
+      safetyPanelSeparated: true,
+      redacted: true,
+    },
+  ];
+  const unsafeGroup = groups.find((group) => group.defaultCollapsed !== true || group.preservesExistingSections !== true || group.redacted !== true);
+
+  return {
+    collapsibleDetailGroupResultId: "step164_mock_dashboard_collapsible_detail_group_result",
+    sourceStep: "step164",
+    dashboardCleanupReviewResultId: context.reviewResult.dashboardCleanupReviewResultId || "step163_mock_dashboard_cleanup_review_result",
+    groups,
+    groupCount: groups.length,
+    visibleDetailGroups: groups.map((group) => group.groupId),
+    defaultCollapsed: true,
+    preservesExistingSections: true,
+    deletesExistingSections: false,
+    safetyPanelSeparated: true,
+    deterministic: input.deterministic !== false,
+    redacted: input.redacted !== false,
+    status: unsafeGroup || input.deterministic === false || input.redacted === false ? "validation_required" : "applied",
+  };
+}
+
+export function validateTradingLabMockDashboardCleanupCore(input = {}, options = {}) {
+  const context = getStep164MockDashboardCleanupCoreContext(input, options);
+  const reviewStatus = context.mockDashboardCleanupReviewResultStatus || {};
+  const reviewResult = context.reviewResult || {};
+  const receipt = context.receipt || {};
+  const summaryResult = context.summaryResult || {};
+  const preflightResult = context.preflightResult || {};
+  const summaryFirstLayout = input.summaryFirstLayout || buildTradingLabMockDashboardSummaryFirstLayoutResult(input, options);
+  const collapsibleDetailGroupResult = input.collapsibleDetailGroupResult || buildTradingLabMockDashboardCollapsibleDetailGroupResult(input, options);
+  const blockers = [];
+  const warnings = [];
+
+  if (!reviewStatus || Object.keys(reviewStatus).length === 0) blockers.push("step163_dashboard_cleanup_review_status_required");
+  if (!reviewResult || Object.keys(reviewResult).length === 0) blockers.push("step163_dashboard_cleanup_review_result_required");
+  if (reviewResult.redacted !== true) blockers.push("step163_dashboard_cleanup_review_result_must_be_redacted");
+  if (reviewResult.reviewStatus !== "recorded") warnings.push("step163_dashboard_cleanup_review_not_recorded");
+  if (reviewResult.readinessImpact !== "none") blockers.push("readiness_impact_must_remain_none");
+  if (reviewResult.providerCallImpact !== "blocked") blockers.push("provider_call_impact_must_remain_blocked");
+  if (reviewResult.orderSubmissionImpact !== "blocked") blockers.push("order_submission_impact_must_remain_blocked");
+  if (reviewResult.liveTradingImpact !== "blocked") blockers.push("live_trading_impact_must_remain_blocked");
+  if (receipt.redacted !== true) blockers.push("step163_receipt_must_be_redacted");
+  if (receipt.nextAllowedStep !== "mock_dashboard_cleanup_core") warnings.push("step163_next_step_requires_dashboard_cleanup_core");
+  if (!summaryResult || Object.keys(summaryResult).length === 0) blockers.push("step161_summary_result_required");
+  if (summaryResult.redacted !== true) blockers.push("step161_summary_result_must_be_redacted");
+  if (summaryResult.scope !== "mock_only") blockers.push("step161_summary_scope_must_be_mock_only");
+  if (preflightResult.redacted !== true) warnings.push("step162_preflight_result_should_be_redacted");
+  if (summaryFirstLayout.redacted !== true || summaryFirstLayout.deterministic !== true) blockers.push("summary_first_layout_must_be_redacted_deterministic");
+  if (summaryFirstLayout.summaryFirst !== true || summaryFirstLayout.status !== "applied") blockers.push("summary_first_layout_must_be_applied");
+  if (collapsibleDetailGroupResult.redacted !== true || collapsibleDetailGroupResult.deterministic !== true) blockers.push("collapsible_detail_groups_must_be_redacted_deterministic");
+  if (collapsibleDetailGroupResult.defaultCollapsed !== true) blockers.push("detail_groups_must_default_collapsed");
+  if (collapsibleDetailGroupResult.deletesExistingSections === true) blockers.push("cleanup_core_must_not_delete_existing_sections");
+  if (collapsibleDetailGroupResult.safetyPanelSeparated !== true) blockers.push("safety_panel_must_remain_separated");
+  if ((collapsibleDetailGroupResult.groupCount || 0) < 6) warnings.push("detail_chain_groups_should_cover_step134_to_step164");
+
+  const unsafeKeys = [
+    "credential",
+    "accountIdentifier",
+    "providerPayload",
+    "orderPayload",
+    "kisOrderPayload",
+    "kisExecutionPayload",
+    "kisFillPayload",
+    "rawProviderResponse",
+    "privatePath",
+    "hash",
+    "digest",
+    "token",
+    "appKey",
+    "appSecret",
+    "accountNumber",
+    "realOrderIdentifier",
+    "realExecutionIdentifier",
+    "realFillIdentifier",
+    "realAccountBalance",
+    "realPerformanceRecordIdentifier",
+    "realTradingRunIdentifier",
+  ];
+  if (unsafeKeys.some((key) => Object.prototype.hasOwnProperty.call(reviewResult, key) || Object.prototype.hasOwnProperty.call(summaryResult, key) || Object.prototype.hasOwnProperty.call(input, key))) {
+    blockers.push("unsafe_actual_or_private_identifier_rejected");
+  }
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const cleanupStatus = uniqueBlockers.length > 0 ? "blocked" : uniqueWarnings.length > 0 ? "validation_required" : "mock_dashboard_cleanup_applied";
+
+  return {
+    validationId: "step164_mock_dashboard_cleanup_core_validation",
+    sourceStep: "step164",
+    cleanupStatus,
+    dashboardCleanupReviewResultId: reviewResult.dashboardCleanupReviewResultId || "step163_mock_dashboard_cleanup_review_result",
+    dashboardCleanupPreflightId: reviewResult.dashboardCleanupPreflightId || preflightResult.mockDashboardCleanupPreflightId || "step162_mock_dashboard_cleanup_preflight",
+    tradingRunSummaryResultId: reviewResult.tradingRunSummaryResultId || summaryResult.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result",
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    summaryFirstLayoutStatus: summaryFirstLayout.status,
+    collapsibleDetailGroupStatus: collapsibleDetailGroupResult.status,
+    kpiSourceAlignment: summaryFirstLayout.kpi?.sourceAlignment === "step161_summary_result" ? "aligned" : "validation_required",
+    chartSourceAlignment: summaryFirstLayout.charts?.sourceAlignment === "step161_chart_aggregation" ? "aligned" : "validation_required",
+    allocationSourceAlignment: summaryFirstLayout.charts?.sourceAlignment === "step161_chart_aggregation" ? "aligned" : "validation_required",
+    safetyPanelSeparationStatus: collapsibleDetailGroupResult.safetyPanelSeparated === true ? "separated" : "blocked",
+    dangerousActionLabelStatus: "absent",
+    publicDashboardExposed: false,
+    myPageDashboardExposed: false,
+    homepageDashboardExposed: false,
+    existingSectionsDeleted: false,
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    orderPayloadCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    executionRecordCreated: false,
+    fillRecordCreated: false,
+    realTradingRunIdentifierCreated: false,
+    realOrderIdentifierCreated: false,
+    realExecutionIdentifierCreated: false,
+    realFillIdentifierCreated: false,
+    portfolioLedgerPersisted: false,
+    performanceRecordPersisted: false,
+    actualPerformanceRecordUpdated: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    accountBalanceQueried: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    dashboardCleanupCoreExecuted: false,
+    redacted: true,
+    redaction: makeLabRedaction({ schema: "step164_mock_dashboard_cleanup_core_validation_v1" }),
+  };
+}
+
+export function buildTradingLabMockDashboardCleanupCore(input = {}, options = {}) {
+  const context = getStep164MockDashboardCleanupCoreContext(input, options);
+  const summaryFirstLayout = input.summaryFirstLayout || buildTradingLabMockDashboardSummaryFirstLayoutResult(input, options);
+  const collapsibleDetailGroupResult = input.collapsibleDetailGroupResult || buildTradingLabMockDashboardCollapsibleDetailGroupResult(input, options);
+  const validation = input.validation || validateTradingLabMockDashboardCleanupCore(
+    {
+      ...input,
+      mockDashboardCleanupReviewResultStatus: context.mockDashboardCleanupReviewResultStatus,
+      reviewResult: context.reviewResult,
+      receipt: context.receipt,
+      mockTradingRunSummaryCoreStatus: context.mockTradingRunSummaryCoreStatus,
+      summaryResult: context.summaryResult,
+      preflightResult: context.preflightResult,
+      summaryFirstLayout,
+      collapsibleDetailGroupResult,
+    },
+    options,
+  );
+  const result = {
+    dashboardCleanupResultId: "step164_mock_dashboard_cleanup_result",
+    sourceStep: "step164",
+    dashboardCleanupReviewResultId: validation.dashboardCleanupReviewResultId,
+    dashboardCleanupPreflightId: validation.dashboardCleanupPreflightId,
+    tradingRunSummaryResultId: validation.tradingRunSummaryResultId,
+    scope: "mock_only",
+    mode: "mock",
+    cleanupStatus: validation.cleanupStatus,
+    summaryFirstLayout,
+    kpiSourceAlignment: validation.kpiSourceAlignment,
+    chartSourceAlignment: validation.chartSourceAlignment,
+    allocationSourceAlignment: validation.allocationSourceAlignment,
+    collapsibleGroups: collapsibleDetailGroupResult.groups,
+    visiblePrimarySections: ["overview", "kpi", "charts", "strategy", "mockRunSummary"],
+    visibleDetailGroups: collapsibleDetailGroupResult.visibleDetailGroups || [],
+    safetyPanelSeparationStatus: validation.safetyPanelSeparationStatus,
+    dangerousActionLabelStatus: validation.dangerousActionLabelStatus,
+    deterministic: true,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_dashboard_cleanup_core_review",
+  };
+
+  return {
+    ok: true,
+    step: "Step 164: Admin trading lab mock dashboard cleanup core",
+    status: "admin_only_trading_lab_mock_dashboard_cleanup_core_fail_closed",
+    sourceStep: "step164",
+    mockDashboardCleanupCoreModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_MODEL,
+    mockDashboardCleanupResultModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_MODEL,
+    mockDashboardSummaryFirstLayoutResultModel: TRADING_LAB_MOCK_DASHBOARD_SUMMARY_FIRST_LAYOUT_RESULT_MODEL,
+    mockDashboardCollapsibleDetailGroupResultModel: TRADING_LAB_MOCK_DASHBOARD_COLLAPSIBLE_DETAIL_GROUP_RESULT_MODEL,
+    mockDashboardCleanupResultSchema: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_SCHEMA,
+    dependency: {
+      dependencyId: "step164_mock_dashboard_cleanup_core_dependency",
+      sourceStep: "step164",
+      step163Required: true,
+      dashboardCleanupReviewResultId: validation.dashboardCleanupReviewResultId,
+      reviewStatus: context.reviewResult.reviewStatus || "blocked",
+      tradingRunSummaryResultId: validation.tradingRunSummaryResultId,
+      redacted: true,
+    },
+    validation,
+    result,
+    summaryFirstLayout,
+    collapsibleDetailGroupResult,
+    mockHistory: [
+      {
+        historyId: "step164_mock_dashboard_cleanup_core_history_1",
+        sourceStep: "step164",
+        cleanupStatus: validation.cleanupStatus,
+        redacted: true,
+        recordedAt: "placeholder_recorded_at",
+        nextAllowedStep: "mock_dashboard_cleanup_core_review",
+      },
+    ],
+    flags: { ...STEP164_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    orderPayloadCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    executionRecordCreated: false,
+    fillRecordCreated: false,
+    realTradingRunIdentifierCreated: false,
+    realOrderIdentifierCreated: false,
+    realExecutionIdentifierCreated: false,
+    realFillIdentifierCreated: false,
+    portfolioLedgerPersisted: false,
+    performanceRecordPersisted: false,
+    actualPerformanceRecordUpdated: false,
+    actualCashUpdated: false,
+    actualPositionUpdated: false,
+    accountBalanceQueried: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    actualInvestmentPerformanceConfirmed: false,
+    returnGuaranteeProvided: false,
+    investmentAdviceProvided: false,
+    dashboardCleanupCoreExecuted: false,
+    existingSectionsDeleted: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      realTradingRunIdentifierAllowed: false,
+      realPerformanceRecordAllowed: false,
+      accountBalanceQueryAllowed: false,
+      cashPositionMutationAllowed: false,
+      dashboardCleanupCorePersistenceAllowed: false,
+      existingDashboardSectionDeleted: false,
+    },
+    redaction: makeLabRedaction({ schema: "step164_mock_dashboard_cleanup_core_status_v1" }),
+  };
+}
+
+export function buildAdminTradingLabMockDashboardCleanupCoreStatus(input = {}, options = {}) {
+  return buildTradingLabMockDashboardCleanupCore(input, options);
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -17106,10 +17668,19 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockDashboardCleanupCoreStatus = input.mockDashboardCleanupCoreStatus || buildAdminTradingLabMockDashboardCleanupCoreStatus(
+    {
+      ...input,
+      mockDashboardCleanupReviewResultStatus,
+      mockTradingRunSummaryCoreStatus,
+      mockDashboardCleanupPreflightStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
-    step: "Step 163: Admin trading lab mock dashboard cleanup review result recording gate",
+    step: "Step 164: Admin trading lab mock dashboard cleanup core",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -17149,6 +17720,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockTradingRunSummaryCoreStatus,
     mockDashboardCleanupPreflightStatus,
     mockDashboardCleanupReviewResultStatus,
+    mockDashboardCleanupCoreStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -17293,6 +17865,11 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockDashboardCleanupReviewReceiptSchema: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_RECEIPT_SCHEMA,
     mockDashboardCleanupReviewDecisionSummaryModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_DECISION_SUMMARY_MODEL,
     mockDashboardCleanupReviewSectionSummaryModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_SECTION_SUMMARY_MODEL,
+    mockDashboardCleanupCoreModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_MODEL,
+    mockDashboardCleanupResultModel: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_MODEL,
+    mockDashboardSummaryFirstLayoutResultModel: TRADING_LAB_MOCK_DASHBOARD_SUMMARY_FIRST_LAYOUT_RESULT_MODEL,
+    mockDashboardCollapsibleDetailGroupResultModel: TRADING_LAB_MOCK_DASHBOARD_COLLAPSIBLE_DETAIL_GROUP_RESULT_MODEL,
+    mockDashboardCleanupResultSchema: TRADING_LAB_MOCK_DASHBOARD_CLEANUP_RESULT_SCHEMA,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -17325,7 +17902,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP163_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_REVIEW_RESULT_FLAGS },
+    flags: { ...STEP164_ADMIN_TRADING_LAB_MOCK_DASHBOARD_CLEANUP_CORE_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,
