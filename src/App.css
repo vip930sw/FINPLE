@@ -14017,6 +14017,61 @@ body,
   font-weight: 950;
 }
 
+.adminDataTable td .adminRefundReviewBadge {
+  display: inline-block;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ecfeff;
+  color: #0e7490;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.adminPaginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.adminPaginationControls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adminPaginationControls select {
+  min-height: 34px;
+  padding: 0 28px 0 10px;
+  border: 1px solid #cfe2ff;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.adminPaginationControls button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #cfe2ff;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  cursor: pointer;
+}
+
+.adminPaginationControls button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .adminWarningText {
   color: #dc2626 !important;
 }

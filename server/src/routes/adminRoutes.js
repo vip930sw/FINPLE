@@ -456,6 +456,7 @@ router.get("/subscriptions", (request, response, next) => {
         query(
           `WITH latest_payments AS (
              SELECT DISTINCT ON (user_id)
+               id,
                user_id,
                amount,
                currency,
@@ -489,6 +490,7 @@ router.get("/subscriptions", (request, response, next) => {
              subscriptions.canceled_at,
              latest_entitlements.entitlement_plan,
              latest_entitlements.entitlement_valid_until,
+             latest_payments.id AS latest_payment_id,
              latest_payments.amount AS latest_payment_amount,
              latest_payments.currency AS latest_payment_currency,
              latest_payments.status AS latest_payment_status,
@@ -543,6 +545,78 @@ router.get("/subscriptions", (request, response, next) => {
         planStatusBreakdown: buildPlanBreakdown(visibleSubscriptions),
         duplicateSubscriptionCandidates: hiddenDuplicateSubscriptions,
         subscriptions: visibleSubscriptions,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.post("/payments/:paymentId/refund-preview", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+
+      const paymentId = String(request.params.paymentId || "").trim();
+      if (!paymentId) {
+        response.status(400).json({ ok: false, code: "PAYMENT_ID_REQUIRED", message: "검토할 결제 ID가 필요합니다." });
+        return;
+      }
+
+      const result = await query(
+        `SELECT payments.id,
+                payments.user_id,
+                users.email,
+                payments.provider,
+                payments.provider_payment_id,
+                payments.provider_order_id,
+                payments.amount,
+                payments.currency,
+                payments.status,
+                payments.metadata,
+                payments.paid_at,
+                payments.created_at
+           FROM payments
+           JOIN users ON users.id = payments.user_id
+          WHERE payments.id = $1
+          LIMIT 1`,
+        [paymentId]
+      );
+      const payment = result.rows[0];
+      if (!payment) {
+        response.status(404).json({ ok: false, code: "PAYMENT_NOT_FOUND", message: "결제 내역을 찾을 수 없습니다." });
+        return;
+      }
+
+      const metadata = payment.metadata && typeof payment.metadata === "object" ? payment.metadata : {};
+      const paymentKey = payment.provider_payment_id || metadata.paymentKey || metadata.payment?.paymentKey || null;
+      const alreadyCanceled = ["canceled", "cancelled", "refunded", "partially_refunded"].includes(String(payment.status || "").toLowerCase()) ||
+        Array.isArray(metadata.cancels) && metadata.cancels.length > 0;
+
+      response.json({
+        ok: true,
+        dryRun: true,
+        refundExecutionEnabled: false,
+        payment: {
+          id: payment.id,
+          userId: payment.user_id,
+          email: payment.email,
+          provider: payment.provider,
+          providerOrderId: payment.provider_order_id || null,
+          hasPaymentKey: Boolean(paymentKey),
+          amount: Number(payment.amount || 0),
+          currency: payment.currency || "KRW",
+          status: payment.status,
+          paidAt: payment.paid_at || payment.created_at || null,
+        },
+        review: {
+          eligibleForOperatorReview: Boolean(paymentKey) && !alreadyCanceled,
+          alreadyCanceled,
+          requiredOperatorInputs: ["cancelReason", "Idempotency-Key"],
+          optionalOperatorInputs: ["cancelAmount"],
+          tossCancelApi: "POST /v1/payments/{paymentKey}/cancel",
+          note: "이번 endpoint는 검토 전용이며 Toss 결제 취소 API를 호출하지 않습니다.",
+        },
       });
     } catch (error) {
       next(error);

@@ -109,6 +109,7 @@ export function mapAdminSubscriptionRow(row = {}, now = new Date()) {
     canceledAt: row.canceled_at,
     daysUntilEnd: periodEndMs === null ? null : Math.ceil((periodEndMs - nowMs) / DAY_MS),
     latestPaymentAmount: row.latest_payment_amount === null ? null : Number(row.latest_payment_amount || 0),
+    latestPaymentId: row.latest_payment_id || null,
     latestPaymentCurrency: row.latest_payment_currency || "KRW",
     latestPaymentStatus: row.latest_payment_status || null,
     latestPaymentAt: row.latest_payment_at || null,

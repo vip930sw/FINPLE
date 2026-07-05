@@ -25,6 +25,8 @@ let isIssuingBillingKey = false;
 let billingIssueResult = null;
 let billingIssueError = "";
 let billingIssueStarted = false;
+const ALREADY_PERSONAL_BILLING_MESSAGE = "이미 Personal 구독을 이용 중입니다. 현재 이용 기간 종료 전에는 추가 결제를 시작하지 않습니다.";
+const BILLING_TIMEOUT_MESSAGE = "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
 
 function normalizePathname(pathname) {
   return String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -178,18 +180,31 @@ function getSetupStatusMessage() {
     return "필수 확인 항목을 체크하면 결제수단 등록/변경을 진행할 수 있습니다.";
   }
 
-  if (isStartingBillingAuth) return "Personal 구독 시작을 준비하고 있습니다.";
+  if (isStartingBillingAuth) return "구독 상태를 확인하고 있습니다.";
   if (billingAuthError) return billingAuthError;
   return "필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.";
 }
 
 function getSafeBillingStartErrorMessage(error) {
-  if (error?.code === "ALREADY_PERSONAL_ACTIVE" || error?.payload?.code === "ALREADY_PERSONAL_ACTIVE") {
-    return "이미 Personal 구독을 이용 중입니다. 현재 이용 기간 종료 전에는 추가 결제를 시작하지 않습니다.";
+  if (
+    error?.code === "ALREADY_PERSONAL_ACTIVE" ||
+    error?.code === "ALREADY_SUBSCRIBED" ||
+    error?.payload?.code === "ALREADY_PERSONAL_ACTIVE" ||
+    error?.payload?.code === "ALREADY_SUBSCRIBED"
+  ) {
+    return ALREADY_PERSONAL_BILLING_MESSAGE;
   }
 
+  if (error?.code === "REQUEST_TIMEOUT" || error?.name === "AbortError") return BILLING_TIMEOUT_MESSAGE;
   if (error?.code === "AUTH_REQUIRED") return "Personal 구독 시작을 위해 로그인이 필요합니다.";
   return "Personal 구독 시작을 진행하지 못했습니다. 잠시 후 다시 시도하거나 결제 문의를 이용해 주세요.";
+}
+
+function getStartButtonLabel() {
+  if (isStartingBillingAuth) return "구독 상태 확인 중";
+  if (billingAuthError === ALREADY_PERSONAL_BILLING_MESSAGE) return "이미 Personal 이용 중";
+  if (billingAuthError) return "다시 시도";
+  return "Personal 구독 시작하기";
 }
 
 function updateSetupUi() {
@@ -210,7 +225,7 @@ function updateSetupUi() {
 
   if (startButton) {
     startButton.disabled = !allChecked || isStartingBillingAuth;
-    setText(startButton, isStartingBillingAuth ? "구독 시작 준비 중" : "Personal 구독 시작하기");
+    setText(startButton, getStartButtonLabel());
   }
 }
 
@@ -224,8 +239,8 @@ async function handleStartBillingAuth() {
   try {
     const isCardUpdate = getPaymentMethodMode() === "card_update";
     const preparePayload = isCardUpdate ? await prepareBillingMethodUpdate() : await prepareBillingAuth();
-    if (preparePayload?.alreadySubscribed || preparePayload?.code === "ALREADY_PERSONAL_ACTIVE") {
-      billingAuthError = preparePayload.message || "이미 Personal 구독을 이용 중입니다. 현재 이용 기간 종료 전에는 추가 결제를 시작하지 않습니다.";
+    if (preparePayload?.alreadySubscribed || preparePayload?.code === "ALREADY_PERSONAL_ACTIVE" || preparePayload?.code === "ALREADY_SUBSCRIBED") {
+      billingAuthError = ALREADY_PERSONAL_BILLING_MESSAGE;
       isStartingBillingAuth = false;
       updateSetupUi();
       return;

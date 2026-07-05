@@ -12,12 +12,12 @@ import {
   getRandomLoadingMessageIndex,
 } from "./loadingMessages";
 
-const MAX_WAIT_MS = 900;
-const OAUTH_MAX_WAIT_MS = 3600;
+const MAX_WAIT_MS = 10000;
+const OAUTH_MAX_WAIT_MS = 10000;
 const MIN_WAIT_MS = 80;
 const STYLE_ID = "finple-mypage-render-stabilization-style";
 const LOADER_ID = "finple-mypage-loading-overlay";
-const FAILSAFE_WAIT_MS = 2600;
+const FAILSAFE_WAIT_MS = 12000;
 const OAUTH_RECOVERY_SESSION_KEY = "finple-oauth-mypage-recovery-signature";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
@@ -156,6 +156,11 @@ function installStabilizationStyle() {
       pointer-events: none;
     }
 
+    .finpleMyPageLoadingOverlay.isFallback {
+      pointer-events: auto;
+      background: rgba(248, 250, 252, 0.98);
+    }
+
     .finpleMyPageLoaderSpinner {
       position: relative;
       width: 148px;
@@ -185,6 +190,35 @@ function installStabilizationStyle() {
 
     .finpleMyPageLoadingMessage.isChanging {
       animation: finpleMyPageLoadingMessageRise 420ms ease both;
+    }
+
+    .finpleMyPageFallbackActions {
+      display: none;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .finpleMyPageLoadingOverlay.isFallback .finpleMyPageFallbackActions {
+      display: flex;
+    }
+
+    .finpleMyPageFallbackActions button {
+      min-height: 42px;
+      padding: 0 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #fff;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .finpleMyPageFallbackActions button:first-child {
+      border-color: #0f172a;
+      background: #0f172a;
+      color: #fff;
     }
 
     .finpleMyPageLoaderBar {
@@ -270,6 +304,11 @@ function ensureLoadingOverlay() {
         <span class="finpleMyPageLoaderBar"></span>
       </div>
       <p class="finpleMyPageLoadingMessage isChanging" data-finple-loading-message>${escapeHtml(getCurrentLoadingMessage())}</p>
+      <div class="finpleMyPageFallbackActions" data-finple-mypage-fallback-actions>
+        <button type="button" data-finple-mypage-retry>다시 시도</button>
+        <button type="button" data-finple-mypage-home>홈으로 이동</button>
+        <button type="button" data-finple-mypage-login>로그인 화면으로 이동</button>
+      </div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -279,6 +318,37 @@ function ensureLoadingOverlay() {
 function removeLoadingOverlay() {
   stopLoadingMessageRotation();
   document.getElementById(LOADER_ID)?.remove();
+}
+
+function updateFallbackMessage() {
+  const messageNode = document.querySelector("[data-finple-loading-message]");
+  if (!messageNode) return;
+  messageNode.textContent = "서버 응답이 지연되고 있습니다. 다시 시도해 주세요.";
+  messageNode.classList.remove("isChanging");
+}
+
+function showMyPageFallback() {
+  installStabilizationStyle();
+  ensureLoadingOverlay();
+  stopLoadingMessageRotation();
+  const overlay = document.getElementById(LOADER_ID);
+  overlay?.classList.add("isFallback");
+  overlay?.setAttribute("aria-hidden", "false");
+  updateFallbackMessage();
+  document.documentElement.classList.remove("finple-mypage-booting");
+  document.body?.classList.remove("finple-mypage-stabilizing");
+}
+
+function handleFallbackAction(event) {
+  const target = event.target?.closest?.("[data-finple-mypage-retry], [data-finple-mypage-home], [data-finple-mypage-login]");
+  if (!target) return;
+
+  event.preventDefault();
+  if (target.hasAttribute("data-finple-mypage-retry")) {
+    window.location.reload();
+    return;
+  }
+  window.location.assign(target.hasAttribute("data-finple-mypage-login") ? "/login" : "/");
 }
 
 function getSidebarText() {
@@ -316,8 +386,8 @@ function revealMyPage() {
 function revealMyPageFailsafe(bootId) {
   window.setTimeout(() => {
     if (bootId !== activeBootId) return;
-    if (isOAuthMyPagePath() && !hasRenderableMyPageContent()) {
-      recoverBlankOAuthMyPage(window.location.href);
+    if (isMyPagePath() && !isShellReady()) {
+      showMyPageFallback();
       return;
     }
     revealMyPage();
@@ -339,9 +409,15 @@ function waitForFinalLayout(bootId) {
     const timedOut = elapsed >= (isOAuthRoute ? OAUTH_MAX_WAIT_MS : MAX_WAIT_MS);
     const forcedExpiredAwayFromMyPage = !isMyPagePath() && Date.now() >= forcedLoaderUntil;
 
-    if (shellReady || (!isOAuthRoute && timedOut) || (isOAuthRoute && timedOut && hasRenderableMyPageContent()) || forcedExpiredAwayFromMyPage) {
+    if (shellReady || (isOAuthRoute && timedOut && hasRenderableMyPageContent()) || forcedExpiredAwayFromMyPage) {
       revealed = true;
       revealMyPage();
+      return;
+    }
+
+    if (timedOut) {
+      revealed = true;
+      showMyPageFallback();
       return;
     }
 
@@ -418,6 +494,7 @@ function patchHistoryNavigation() {
 if (typeof window !== "undefined") {
   installStabilizationStyle();
   patchHistoryNavigation();
+  document.addEventListener("click", handleFallbackAction);
   window.__finpleShowMyPageLoader = showImmediateMyPageLoader;
   window.__finpleShowRouteTransitionLoader = showImmediateMyPageLoader;
 

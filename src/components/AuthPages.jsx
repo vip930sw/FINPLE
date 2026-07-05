@@ -51,7 +51,7 @@ function GoogleGIcon() {
 function triggerMyPageTransitionLoader() {
   if (typeof window === "undefined") return;
   if (typeof window.__finpleShowMyPageLoader === "function") {
-    window.__finpleShowMyPageLoader(2200);
+    window.__finpleShowMyPageLoader(12000);
   }
   window.dispatchEvent(new Event("finple-mypage-transition-start"));
 }

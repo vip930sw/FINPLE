@@ -46,9 +46,12 @@ export function getStoredFinpleAuthUser() {
 export function setStoredFinpleAuthUser(user) {
   if (typeof window === "undefined") return null;
 
-  const displayEmail = user?.email === "trial@finple.local"
+  const previousUser = readJson(AUTH_USER_STORAGE_KEY, null);
+  const previousEmail = previousUser?.id && previousUser.id === user?.id ? previousUser.email : "";
+  const stableEmail = user?.email || previousEmail;
+  const displayEmail = stableEmail === "trial@finple.local"
     ? "trial@finple.local"
-    : user?.email || "trial@finple.local";
+    : stableEmail || "trial@finple.local";
   const displayName = user?.name === "FINPLE 체험 사용자"
     ? "FINPLE 체험 사용자"
     : user?.name || user?.nickname || "FINPLE 체험 사용자";

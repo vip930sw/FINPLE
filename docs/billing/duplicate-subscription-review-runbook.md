@@ -6,8 +6,25 @@ This runbook is for operator review only. Do not run production writes from this
 
 - Do not hard delete users, subscriptions, payments, or payment methods.
 - Do not auto-refund or auto-cancel duplicated payments from the app patch.
+- Do not call Toss Payments cancel APIs automatically from duplicate detection.
 - Treat subscription cancellation as stopping the next renewal while keeping the already-paid access period available until period end.
 - Treat duplicate or error payments as support cases that require operator review before refund or cancellation decisions.
+
+## Toss Payment Cancellation Design
+
+- Card and recurring-payment refunds are handled as payment cancellations in Toss Payments.
+- The Toss API shape is `POST /v1/payments/{paymentKey}/cancel`.
+- `cancelReason` is required.
+- Omit `cancelAmount` for a full cancellation, or send it for a partial cancellation.
+- Send an `Idempotency-Key` header to prevent duplicate cancellation attempts.
+- Successful cancellation responses include cancellation history in the Payment object's `cancels` array.
+- Virtual-account refunds may require `refundReceiveAccount`; FINPLE Personal card recurring payments normally do not use that path.
+
+Current FINPLE policy for this patch:
+
+- `POST /api/admin/payments/:paymentId/refund-preview` is admin-only and dry-run only.
+- The preview endpoint must not call Toss.
+- The actual refund endpoint remains disabled or future-work only until a separate operator approval step is opened.
 
 ## User-Facing Guidance
 
@@ -75,6 +92,33 @@ SELECT rpm.id,
 FROM recurring_payment_methods rpm
 JOIN target_user tu ON tu.id = rpm.user_id
 ORDER BY rpm.is_default DESC, rpm.issued_at DESC NULLS LAST, rpm.updated_at DESC NULLS LAST;
+```
+
+```sql
+WITH target_user AS (
+  SELECT id
+  FROM users
+  WHERE email = 'vip930sw@gmail.com'
+),
+candidate_payments AS (
+  SELECT p.*,
+         COALESCE(p.paid_at, p.requested_at, p.created_at) AS payment_at
+  FROM payments p
+  JOIN target_user tu ON tu.id = p.user_id
+  WHERE p.status IN ('paid', 'confirmed')
+)
+SELECT user_id,
+       plan,
+       amount,
+       DATE_TRUNC('day', payment_at) AS payment_day,
+       COUNT(*) AS payment_count,
+       ARRAY_AGG(id ORDER BY payment_at DESC) AS payment_ids,
+       ARRAY_AGG(provider_payment_id ORDER BY payment_at DESC) AS provider_payment_ids,
+       ARRAY_AGG(provider_order_id ORDER BY payment_at DESC) AS provider_order_ids
+FROM candidate_payments
+GROUP BY user_id, plan, amount, DATE_TRUNC('day', payment_at)
+HAVING COUNT(*) > 1
+ORDER BY payment_day DESC;
 ```
 
 ## Review Steps

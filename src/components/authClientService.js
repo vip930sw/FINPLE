@@ -21,11 +21,11 @@ const EDUCATION_LOCAL_STORAGE_KEYS = [
   "finple-simulator-state",
   "finple-mbti-simulator-preset",
 ];
-const OAUTH_WAKEUP_TIMEOUT_MS = 12000;
-const OAUTH_WAKEUP_MAX_ATTEMPTS = 3;
-const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
+const OAUTH_WAKEUP_TIMEOUT_MS = 9000;
+const OAUTH_WAKEUP_MAX_ATTEMPTS = 1;
+const OAUTH_LOADING_MESSAGE = "서버 상태를 확인하고 있습니다.";
 const OAUTH_READY_MESSAGE = "곧 이동합니다.";
-const OAUTH_RETRY_MESSAGE = "일시적으로 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+const OAUTH_RETRY_MESSAGE = "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;

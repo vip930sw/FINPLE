@@ -28,6 +28,10 @@
   gap: 14px;
 }
 
+.accountStatusPanel .accountStatusGrid.accountStatusGrid--sixCards > .accountStatusEmailCard {
+  grid-column: 1 / -1;
+}
+
 .accountStatusInfoCard span {
   font-size: 12px;
   font-weight: 900;

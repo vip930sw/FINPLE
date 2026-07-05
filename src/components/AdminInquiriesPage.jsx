@@ -16,6 +16,7 @@ import {
   sendSupportInquiryReply,
   updateSupportInquiryStatus,
 } from "./portfolio/services/serverPortfolioService";
+import { ADMIN_PAGE_SIZE_OPTIONS, getAdminPaginationState } from "./adminPagination";
 import { TradingReadinessPanel } from "./TradingReadinessPanel";
 
 const ADMIN_MENU_ITEMS = [
@@ -138,6 +139,33 @@ function AdminMetricCard({ label, value, note }) {
       <span>{label}</span>
       <strong>{value}</strong>
       <em>{note}</em>
+    </div>
+  );
+}
+
+function AdminPaginationControls({ pagination, pageSize, onPageChange, onPageSizeChange }) {
+  if (!pagination || pagination.totalItems <= 0) return null;
+
+  return (
+    <div className="adminPaginationControls">
+      <span>
+        {pagination.totalItems}건 중 {pagination.startIndex + 1}-{pagination.endIndex}
+      </span>
+      <label>
+        <span>페이지 크기</span>
+        <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+          {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+      <button type="button" onClick={() => onPageChange(pagination.currentPage - 1)} disabled={!pagination.hasPreviousPage}>
+        이전
+      </button>
+      <strong>{pagination.currentPage} / {pagination.totalPages}</strong>
+      <button type="button" onClick={() => onPageChange(pagination.currentPage + 1)} disabled={!pagination.hasNextPage}>
+        다음
+      </button>
     </div>
   );
 }
@@ -891,6 +919,13 @@ function MemberManagementPanel({
 }) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const planBreakdown = Array.isArray(data?.planBreakdown) ? data.planBreakdown : [];
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const pagination = useMemo(() => getAdminPaginationState(members, { page, pageSize }), [members, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [members.length, pageSize]);
 
   return (
     <section className="accountCard adminManagementPanel">
@@ -941,6 +976,12 @@ function MemberManagementPanel({
       </div>
 
       <div className="adminTableWrap">
+        <AdminPaginationControls
+          pagination={pagination}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
         <table className="adminDataTable">
           <thead>
             <tr>
@@ -955,8 +996,8 @@ function MemberManagementPanel({
             </tr>
           </thead>
           <tbody>
-            {members.length > 0 ? (
-              members.map((member) => (
+            {pagination.visibleItems.length > 0 ? (
+              pagination.visibleItems.map((member) => (
                 <tr key={member.id}>
                   <td><strong>{member.email || member.name || "이메일 없음"}</strong><span>{member.nickname || member.name || "-"}</span></td>
                   <td>{member.plan || "free"}</td>
@@ -993,6 +1034,9 @@ function AiUsageManagementPanel({
   const statusBreakdown = Array.isArray(usage.statusBreakdown24h) ? usage.statusBreakdown24h : [];
   const planBreakdown = Array.isArray(usage.planBreakdown24h) ? usage.planBreakdown24h : [];
   const recentEvents = Array.isArray(usage.recentEvents) ? usage.recentEvents : [];
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const pagination = useMemo(() => getAdminPaginationState(recentEvents, { page, pageSize }), [recentEvents, page, pageSize]);
   const failed24h = statusBreakdown
     .filter((item) => item.status === "failed" || item.status === "canceled")
     .reduce((sum, item) => sum + Number(item.count || 0), 0);
@@ -1001,6 +1045,10 @@ function AiUsageManagementPanel({
     .reduce((sum, item) => sum + Number(item.count || 0), 0);
   const total24h = Number(usage.total24h || 0);
   const successRate = total24h > 0 ? (succeeded24h / total24h) * 100 : 0;
+
+  useEffect(() => {
+    setPage(1);
+  }, [recentEvents.length, pageSize]);
 
   return (
     <section className="accountCard adminManagementPanel">
@@ -1061,6 +1109,12 @@ function AiUsageManagementPanel({
       </div>
 
       <div className="adminTableWrap">
+        <AdminPaginationControls
+          pagination={pagination}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
         <table className="adminDataTable">
           <thead>
             <tr>
@@ -1073,8 +1127,8 @@ function AiUsageManagementPanel({
             </tr>
           </thead>
           <tbody>
-            {recentEvents.length > 0 ? (
-              recentEvents.map((event) => (
+            {pagination.visibleItems.length > 0 ? (
+              pagination.visibleItems.map((event) => (
                 <tr key={event.id}>
                   <td>{formatServerDate(event.reservedAt)}</td>
                   <td>{AI_USAGE_STATUS_LABELS[event.status] || event.status || "-"}</td>
@@ -1107,6 +1161,9 @@ function EducationAccountManagementPanel({
 }) {
   const accounts = useMemo(() => (Array.isArray(data?.accounts) ? data.accounts : []), [data]);
   const summary = data?.summary || {};
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const pagination = useMemo(() => getAdminPaginationState(accounts, { page, pageSize }), [accounts, page, pageSize]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkFormError, setBulkFormError] = useState("");
   const [bulkForm, setBulkForm] = useState({
@@ -1121,11 +1178,15 @@ function EducationAccountManagementPanel({
     [accounts, selectedIds]
   );
   const selectedIdSet = useMemo(() => new Set(selectedAccountIds), [selectedAccountIds]);
-  const allAccountsSelected = accounts.length > 0 && accounts.every((account) => selectedIdSet.has(account.id));
+  const allAccountsSelected = pagination.visibleItems.length > 0 && pagination.visibleItems.every((account) => selectedIdSet.has(account.id));
   const expiredAccountCount = Number(
     summary.expiredAccounts ??
     accounts.filter((account) => (account.effectiveStatus || account.status) === "expired").length
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [accounts.length, pageSize]);
 
   function updateBulkField(field, value) {
     setBulkFormError("");
@@ -1163,7 +1224,11 @@ function EducationAccountManagementPanel({
   }
 
   function toggleSelectAllAccounts() {
-    setSelectedIds(allAccountsSelected ? [] : accounts.map((account) => account.id));
+    const visibleIds = pagination.visibleItems.map((account) => account.id);
+    setSelectedIds((current) => {
+      if (allAccountsSelected) return current.filter((accountId) => !visibleIds.includes(accountId));
+      return [...new Set([...current, ...visibleIds])];
+    });
   }
 
   async function handleDeleteSelected() {
@@ -1240,6 +1305,12 @@ function EducationAccountManagementPanel({
       ) : null}
 
       <div className="adminTableWrap">
+        <AdminPaginationControls
+          pagination={pagination}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
         <table className="adminDataTable">
           <thead>
             <tr>
@@ -1249,7 +1320,7 @@ function EducationAccountManagementPanel({
                   aria-label="교육 계정 전체 선택"
                   checked={allAccountsSelected}
                   onChange={toggleSelectAllAccounts}
-                  disabled={accounts.length === 0 || isLoading}
+                  disabled={pagination.visibleItems.length === 0 || isLoading}
                 />
               </th>
               <th>교육용 ID</th>
@@ -1262,8 +1333,8 @@ function EducationAccountManagementPanel({
             </tr>
           </thead>
           <tbody>
-            {accounts.length > 0 ? (
-              accounts.map((account) => (
+            {pagination.visibleItems.length > 0 ? (
+              pagination.visibleItems.map((account) => (
                 <EducationAccountRow
                   key={`${account.id}-${account.validUntil || ""}`}
                   account={account}
@@ -1327,8 +1398,15 @@ function SubscriptionManagementPanel({
 }) {
   const subscriptions = Array.isArray(data?.subscriptions) ? data.subscriptions : [];
   const breakdown = Array.isArray(data?.planStatusBreakdown) ? data.planStatusBreakdown : [];
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const pagination = useMemo(() => getAdminPaginationState(subscriptions, { page, pageSize }), [subscriptions, page, pageSize]);
   const removedPeriodEndedSubscriptions = Number(data?.summary?.removedPeriodEndedSubscriptions || 0);
   const hiddenDuplicateSubscriptions = Number(data?.summary?.hiddenDuplicateSubscriptions || data?.duplicateSubscriptionCandidates || 0);
+
+  useEffect(() => {
+    setPage(1);
+  }, [subscriptions.length, pageSize]);
 
   return (
     <section className="accountCard adminManagementPanel">
@@ -1382,6 +1460,12 @@ function SubscriptionManagementPanel({
       </div>
 
       <div className="adminTableWrap">
+        <AdminPaginationControls
+          pagination={pagination}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
         <table className="adminDataTable">
           <thead>
             <tr>
@@ -1391,11 +1475,12 @@ function SubscriptionManagementPanel({
               <th>결제 기간</th>
               <th>남은 기간</th>
               <th>최근 결제</th>
+              <th>환불 검토</th>
             </tr>
           </thead>
           <tbody>
-            {subscriptions.length > 0 ? (
-              subscriptions.map((subscription) => {
+            {pagination.visibleItems.length > 0 ? (
+              pagination.visibleItems.map((subscription) => {
                 const daysUntilEnd = getDaysUntil(subscription.currentPeriodEnd);
                 return (
                   <tr key={subscription.id}>
@@ -1413,11 +1498,16 @@ function SubscriptionManagementPanel({
                       {daysUntilEnd === null ? "-" : `${daysUntilEnd}일`}
                     </td>
                     <td>{subscription.latestPaymentAmount === null ? "-" : formatKrw(subscription.latestPaymentAmount)}</td>
+                    <td>
+                      {subscription.latestPaymentId ? (
+                        <span className="adminRefundReviewBadge">검토 가능</span>
+                      ) : "-"}
+                    </td>
                   </tr>
                 );
               })
             ) : (
-              <tr><td colSpan="6">구독 통계를 아직 불러오지 않았습니다.</td></tr>
+              <tr><td colSpan="7">구독 통계를 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>

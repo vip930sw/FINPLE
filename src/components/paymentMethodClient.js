@@ -24,6 +24,29 @@ function getAuthHeaders() {
   };
 }
 
+const BILLING_PREPARE_TIMEOUT_MS = 10000;
+
+async function fetchPaymentJsonWithTimeout(url, options = {}, timeoutMs = BILLING_PREPARE_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error("서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.");
+      timeoutError.code = "REQUEST_TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export function getTossClientKey() {
   return String(import.meta.env.VITE_TOSS_CLIENT_KEY || import.meta.env.VITE_TOSS_BILLING_CLIENT_KEY || "").trim();
 }
@@ -38,7 +61,7 @@ export async function prepareBillingAuth() {
     throw error;
   }
 
-  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/prepare`, {
+  const response = await fetchPaymentJsonWithTimeout(`${getFinpleApiBaseUrl()}/payments/toss/billing/prepare`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ plan: "personal" }),
@@ -66,7 +89,7 @@ export async function prepareBillingMethodUpdate() {
     throw error;
   }
 
-  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/method/prepare`, {
+  const response = await fetchPaymentJsonWithTimeout(`${getFinpleApiBaseUrl()}/payments/toss/billing/method/prepare`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ purpose: "card_update" }),

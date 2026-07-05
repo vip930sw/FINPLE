@@ -22,7 +22,7 @@
 }
 
 /* 사용자 ID는 베타 사용자가 이해할 필요가 낮아 숨김 */
-.accountStatusPanel .accountStatusGrid > div:nth-child(4) {
+.accountStatusPanel .accountStatusGrid > div:nth-child(4):not(.accountStatusEmailCard) {
   display: none !important;
 }
 
