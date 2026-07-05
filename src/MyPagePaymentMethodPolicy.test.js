@@ -30,12 +30,34 @@ test("mypage payment method requests use force only on explicit refresh and rese
 
 test("mypage sidebar patch skips heavy reapply after the shell is stable", async () => {
   const source = await readFile(SIDEBAR_SOURCE, "utf8");
+  const fastPathBody = source.match(/if \(sidebarPatchStable && isSidebarPatchStable\(\)\) \{[\s\S]*?\n  \}/)?.[0] || "";
 
   assert.match(source, /let sidebarPatchStable = false;/);
   assert.match(source, /function isSidebarPatchStable\(\)/);
   assert.match(source, /function applyMyPageSidebarIfNeeded\(\)/);
   assert.match(source, /window\.setTimeout\(applyMyPageSidebarIfNeeded, delay\)/);
   assert.match(source, /sidebarPatchStable = isSidebarPatchStable\(\)/);
+  assert.match(fastPathBody, /markPanelKeys\(\)/);
+  assert.match(fastPathBody, /normalizePanelStackPlacement\(\)/);
+  assert.match(fastPathBody, /setActivePanel\(activeMenuKey\)/);
+});
+
+test("mypage sidebar keeps all late panels keyed and inside the single active stack", async () => {
+  const source = await readFile(SIDEBAR_SOURCE, "utf8");
+  const markBody = source.match(/function markPanelKeys\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const placementBody = source.match(/function normalizePanelStackPlacement\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const activeBody = source.match(/function setActivePanel\(nextKey, options = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
+
+  assert.match(source, /const PANEL_KEY_SELECTORS = \[/);
+  assert.match(source, /const PANEL_ORDER_SELECTORS = \[/);
+  assert.match(markBody, /querySelectorAll\(selector\)/);
+  assert.match(markBody, /setAttribute\("data-mypage-panel-key", item\.key\)/);
+  assert.match(source, /\{ key: "billing", selectors: \["\[data-subscription-status-panel\]", "\.subscriptionStatusPanel", "\.planStatusPanel"\] \}/);
+  assert.match(placementBody, /document\.querySelector\("\.accountPanelStack"\)/);
+  assert.match(placementBody, /stack\.insertBefore\(panel, nextSibling\)/);
+  assert.match(activeBody, /markPanelKeys\(\)/);
+  assert.match(activeBody, /normalizePanelStackPlacement\(\)/);
+  assert.match(activeBody, /\.accountPanelStack > \[data-mypage-panel-key\]/);
 });
 
 test("payment method client dedupes in-flight requests and does not query assets or KIS", async () => {
@@ -72,10 +94,13 @@ test("mypage shell-ready events do not restart the whole fallback overlay", asyn
 
 test("mypage shell bridge observer is throttled and disconnects after stable shell", async () => {
   const source = await readFile(SHELL_BRIDGE_SOURCE, "utf8");
+  const scheduleBody = source.match(/function scheduleShellBridgeApply\(delay = 40\) \{[\s\S]*?\n\}/)?.[0] || "";
 
   assert.match(source, /let shellBridgeScheduled = false;/);
   assert.match(source, /let shellBridgeStable = false;/);
   assert.match(source, /function scheduleShellBridgeApply\(delay = 40\)/);
+  assert.match(source, /function syncShellBridgeActiveState\(\)/);
+  assert.match(scheduleBody, /syncShellBridgeActiveState\(\)/);
   assert.match(source, /observer\.disconnect\(\)/);
   assert.match(source, /shellBridgeStable && isShellBridgeStable\(\)/);
 });

@@ -60,11 +60,30 @@ const INQUIRY_STATUS_LABELS = {
 const MENU_ITEMS = [
   { key: "account", label: "계정 상태", description: "로그인·사용자", selector: ".accountStatusPanel" },
   { key: "investment-profile", label: "내 투자성향", description: "투자 MBTI", selector: "[data-investment-profile-panel]" },
-  { key: "billing", label: "구독 / 결제", description: "플랜·해지", selector: "[data-subscription-status-panel]" },
+  { key: "billing", label: "구독 / 결제", description: "플랜·해지", selector: "[data-subscription-status-panel], .planStatusPanel" },
   { key: "plan", label: "요금제 상태", description: "한도·권한", selector: ".planStatusPanel" },
   { key: "payment-method", label: "결제수단", description: "자동결제 등록", selector: "[data-payment-method-panel]" },
   { key: "inquiries", label: "내 문의내역", description: "접수·처리 현황", selector: "[data-my-inquiries-panel]" },
   { key: "storage", label: "서버 저장", description: "저장·불러오기", selector: ".serverStoragePanel" },
+];
+const PANEL_KEY_SELECTORS = [
+  { key: "account", selectors: [".accountStatusPanel"] },
+  { key: "investment-profile", selectors: ["[data-investment-profile-panel]"] },
+  { key: "billing", selectors: ["[data-subscription-status-panel]", ".subscriptionStatusPanel", ".planStatusPanel"] },
+  { key: "payment-method", selectors: ["[data-payment-method-panel]"] },
+  { key: "payment-history", selectors: ["[data-payment-history-panel]"] },
+  { key: "inquiries", selectors: ["[data-my-inquiries-panel]"] },
+  { key: "storage", selectors: [".serverStoragePanel"] },
+];
+const PANEL_ORDER_SELECTORS = [
+  ".accountStatusPanel",
+  "[data-investment-profile-panel]",
+  "[data-subscription-status-panel]",
+  ".planStatusPanel",
+  "[data-payment-method-panel]",
+  "[data-payment-history-panel]",
+  "[data-my-inquiries-panel]",
+  ".serverStoragePanel",
 ];
 
 const STANDALONE_PANELS_TO_HIDE = [".adminInquiryPanel"];
@@ -439,9 +458,38 @@ function getMyInquiriesPanelHtml() {
 }
 
 function markPanelKeys() {
-  getVisibleMenuItems().forEach((item) => {
-    const panel = document.querySelector(item.selector);
-    if (panel) panel.setAttribute("data-mypage-panel-key", item.key);
+  PANEL_KEY_SELECTORS.forEach((item) => {
+    item.selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((panel) => {
+        panel.setAttribute("data-mypage-panel-key", item.key);
+      });
+    });
+  });
+}
+function getOrderedMyPagePanels() {
+  const panels = [];
+  const seen = new Set();
+  PANEL_ORDER_SELECTORS.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((panel) => {
+      if (seen.has(panel)) return;
+      seen.add(panel);
+      panels.push(panel);
+    });
+  });
+  return panels;
+}
+function normalizePanelStackPlacement() {
+  const stack = document.querySelector(".accountPanelStack");
+  if (!stack) return;
+
+  let anchor = null;
+  getOrderedMyPagePanels().forEach((panel) => {
+    if (panel === stack || panel.closest(".myPageSidebar")) return;
+    const nextSibling = anchor ? anchor.nextSibling : stack.firstChild;
+    if (panel.parentElement !== stack || panel.previousElementSibling !== anchor) {
+      stack.insertBefore(panel, nextSibling);
+    }
+    anchor = panel;
   });
 }
 function hideStandalonePanels() {
@@ -693,6 +741,8 @@ function setActiveMenu(activeKey) {
   });
 }
 function setActivePanel(nextKey, options = {}) {
+  markPanelKeys();
+  normalizePanelStackPlacement();
   activeMenuKey = getVisibleMenuItems().some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
   if (!document.querySelector(`[data-mypage-panel-key="${activeMenuKey}"]`)) activeMenuKey = getFallbackActiveKey();
   window.__finpleMyPageActiveKey = activeMenuKey;
@@ -738,6 +788,10 @@ function isSidebarPatchStable() {
 }
 function applyMyPageSidebarIfNeeded() {
   if (sidebarPatchStable && isSidebarPatchStable()) {
+    markPanelKeys();
+    normalizePanelStackPlacement();
+    hideStandalonePanels();
+    setActivePanel(activeMenuKey);
     updateTopButtonVisibility();
     updateBillingMethodUi();
     updateInvestmentProfileUi();
@@ -753,6 +807,7 @@ function applyMyPageSidebar() {
   ensurePaymentMethodPanel();
   ensureMyInquiriesPanel();
   markPanelKeys();
+  normalizePanelStackPlacement();
   hideStandalonePanels();
   wrapMyPageLayout();
   ensureTopButton();

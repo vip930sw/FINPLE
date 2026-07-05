@@ -106,6 +106,7 @@ function getCleanDisplayLabel(value, last4 = "") {
     .trim();
 
   if (!label || /^\d+$/.test(label)) return "";
+  if (/^[*\s.\-()·]+$/.test(label)) return "";
   if (/^(card registered|registered card|payment method registered)$/i.test(label)) return "";
   if (/^(카드 등록 완료|등록된 결제수단|등록 카드)$/.test(label)) return "";
   return label;

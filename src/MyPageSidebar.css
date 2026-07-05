@@ -41,6 +41,10 @@
   gap: 0;
 }
 
+.myPageDashboardLayout .accountPanelStack > [data-mypage-panel-key][hidden] {
+  display: none !important;
+}
+
 .myPagePanelHidden {
   display: none !important;
 }

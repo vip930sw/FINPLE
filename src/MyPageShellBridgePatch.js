@@ -17,6 +17,15 @@ const MENU_ITEMS = [
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]);
+const PANEL_KEY_SELECTORS = [
+  { key: "account", selectors: [".accountStatusPanel"] },
+  { key: "investment-profile", selectors: ["[data-investment-profile-panel]"] },
+  { key: "billing", selectors: ["[data-subscription-status-panel]", ".subscriptionStatusPanel", ".planStatusPanel"] },
+  { key: "payment-method", selectors: ["[data-payment-method-panel]"] },
+  { key: "payment-history", selectors: ["[data-payment-history-panel]"] },
+  { key: "inquiries", selectors: ["[data-my-inquiries-panel]"] },
+  { key: "storage", selectors: [".serverStoragePanel"] },
+];
 
 let activeMenuKey = "account";
 let observer = null;
@@ -100,14 +109,13 @@ function ensureShellLayout() {
 }
 
 function markPanelKeys() {
-  document.querySelector(".accountStatusPanel")?.setAttribute("data-mypage-panel-key", "account");
-  document.querySelector("[data-investment-profile-panel]")?.setAttribute("data-mypage-panel-key", "investment-profile");
-  document.querySelector("[data-subscription-status-panel]")?.setAttribute("data-mypage-panel-key", "billing");
-  document.querySelector(".planStatusPanel")?.setAttribute("data-mypage-panel-key", "billing");
-  document.querySelector("[data-payment-method-panel]")?.setAttribute("data-mypage-panel-key", "payment-method");
-  document.querySelector("[data-payment-history-panel]")?.setAttribute("data-mypage-panel-key", "payment-history");
-  document.querySelector("[data-my-inquiries-panel]")?.setAttribute("data-mypage-panel-key", "inquiries");
-  document.querySelector(".serverStoragePanel")?.setAttribute("data-mypage-panel-key", "storage");
+  PANEL_KEY_SELECTORS.forEach((item) => {
+    item.selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((panel) => {
+        panel.setAttribute("data-mypage-panel-key", item.key);
+      });
+    });
+  });
   document.querySelectorAll(".adminInquiryPanel").forEach((panel) => {
     panel.classList.add("myPagePanelHidden");
     panel.hidden = true;
@@ -179,6 +187,15 @@ function applyShellBridge() {
   shellBridgeStable = isShellBridgeStable();
 }
 
+function syncShellBridgeActiveState() {
+  if (!isMyPagePath()) return;
+
+  activeMenuKey = window.__finpleMyPageActiveKey || activeMenuKey || getFallbackKey();
+  markPanelKeys();
+  wireMenu();
+  activatePanel(activeMenuKey);
+}
+
 function isShellBridgeStable() {
   return Boolean(
     document.querySelector(".myPageDashboardLayout") &&
@@ -192,7 +209,10 @@ function scheduleShellBridgeApply(delay = 40) {
   shellBridgeScheduled = true;
   window.setTimeout(() => {
     shellBridgeScheduled = false;
-    if (shellBridgeStable && isShellBridgeStable()) return;
+    if (shellBridgeStable && isShellBridgeStable()) {
+      syncShellBridgeActiveState();
+      return;
+    }
     applyShellBridge();
     if (shellBridgeStable && observer) {
       observer.disconnect();
