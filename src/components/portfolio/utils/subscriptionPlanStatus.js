@@ -22,6 +22,25 @@ function isFutureDate(value) {
   return Number.isFinite(timestamp) && timestamp > Date.now();
 }
 
+function hasDateValue(value) {
+  return Boolean(value);
+}
+
+function getPeriodEnd(subscription = {}) {
+  return subscription?.current_period_end || subscription?.currentPeriodEnd || null;
+}
+
+function getEntitlementValidUntil(entitlement = {}) {
+  return entitlement?.valid_until || entitlement?.validUntil || null;
+}
+
+function getPayloadStatus({ payload, plan, subscription, entitlement }) {
+  if (payload?.status) return payload.status;
+  if (subscription?.status) return subscription.status;
+  if (plan === "personal" && getEntitlementValidUntil(entitlement)) return "active";
+  return "beta_free";
+}
+
 export function isBlockedSubscriptionStatus(status) {
   return PERSONAL_BLOCKED_STATUSES.has(normalizeBillingStatus(status));
 }
@@ -31,27 +50,43 @@ export function hasUsablePersonalEntitlement({ plan, status, subscription, entit
   const normalizedStatus = normalizeBillingStatus(status);
   if (PERSONAL_BLOCKED_STATUSES.has(normalizedStatus)) return false;
   if (!PERSONAL_ACCESS_STATUSES.has(normalizedStatus)) return false;
-  if (normalizedStatus !== "cancel_at_period_end") return true;
 
-  return isFutureDate(
-    subscription?.current_period_end ||
-      subscription?.currentPeriodEnd ||
-      entitlement?.valid_until ||
-      entitlement?.validUntil
-  );
+  const periodEnd = getPeriodEnd(subscription);
+  if (hasDateValue(periodEnd)) return isFutureDate(periodEnd);
+
+  const entitlementValidUntil = getEntitlementValidUntil(entitlement);
+  if (hasDateValue(entitlementValidUntil)) return isFutureDate(entitlementValidUntil);
+
+  return normalizedStatus === "active" || normalizedStatus === "trialing";
+}
+
+export function getSubscriptionPlanDecision(payload) {
+  const subscription = payload?.subscription || {};
+  const entitlement = payload?.entitlement || {};
+  const plan = normalizeFinplePlan(payload?.plan || entitlement?.plan || subscription?.plan || "free");
+  const status = getPayloadStatus({ payload, plan, subscription, entitlement });
+  const warnings = [];
+
+  if (!payload?.authenticated) {
+    return { plan: "free", status: "guest", warnings };
+  }
+
+  if (hasUsablePersonalEntitlement({ plan, status, subscription, entitlement })) {
+    if (!getPeriodEnd(subscription) && !getEntitlementValidUntil(entitlement)) {
+      warnings.push("personal_period_end_missing_temporary_access");
+    }
+    return { plan: "personal", status: normalizeBillingStatus(status), warnings };
+  }
+
+  return {
+    plan: plan === "pro" ? "pro" : "free",
+    status: plan === "personal" && PERSONAL_ACCESS_STATUSES.has(normalizeBillingStatus(status))
+      ? "expired"
+      : normalizeBillingStatus(status),
+    warnings: plan === "personal" ? ["personal_entitlement_expired"] : warnings,
+  };
 }
 
 export function getPlanFromPayload(payload) {
-  if (!payload?.authenticated) return "free";
-
-  const subscription = payload.subscription || {};
-  const entitlement = payload.entitlement || {};
-  const plan = normalizeFinplePlan(payload?.plan || entitlement?.plan || subscription?.plan || "free");
-  const status = payload?.status || subscription?.status || "beta_free";
-
-  if (hasUsablePersonalEntitlement({ plan, status, subscription, entitlement })) {
-    return "personal";
-  }
-
-  return plan === "pro" ? "pro" : "free";
+  return getSubscriptionPlanDecision(payload).plan;
 }

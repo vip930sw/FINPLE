@@ -15,6 +15,7 @@ import { getStoredFinpleAuthSession } from "./components/authClientService";
 import { normalizeFinplePlan, setStoredFinplePlan } from "./components/portfolio/config/planConfig";
 import {
   getPlanFromPayload,
+  getSubscriptionPlanDecision,
   isBlockedSubscriptionStatus,
 } from "./components/portfolio/utils/subscriptionPlanStatus";
 
@@ -75,7 +76,8 @@ function getSubscriptionMessage(payload) {
   if (!payload.authenticated) return payload.message || "로그인 후 구독 상태를 확인할 수 있습니다.";
 
   const subscription = payload.subscription || {};
-  const status = payload.status || subscription.status || "beta_free";
+  const decision = getSubscriptionPlanDecision(payload);
+  const status = decision.status || payload.status || subscription.status || "beta_free";
   const plan = getPlanFromPayload(payload);
   const periodEndLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || payload.entitlement?.valid_until || payload.entitlement?.validUntil);
 
@@ -191,7 +193,7 @@ function syncSubscriptionPayloadToBrowser(payload) {
     setStoredFinpleAuthUser({
       ...storedUser,
       plan,
-      billingStatus: payload.status || payload.subscription?.status || "beta_free",
+      billingStatus: getSubscriptionPlanDecision(payload).status || payload.status || payload.subscription?.status || "beta_free",
       subscriptionId: payload.subscription?.id || storedUser.subscriptionId || null,
       entitlementValidUntil: payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null,
     });
@@ -261,8 +263,9 @@ function updateSubscriptionPanel() {
   const payload = lastSubscriptionPayload;
   const subscription = payload?.subscription || {};
   const entitlement = payload?.entitlement || {};
+  const decision = getSubscriptionPlanDecision(payload);
   const plan = getPlanFromPayload(payload);
-  const status = payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
+  const status = decision.status || payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
   const scheduled = plan === "personal" && isPeriodEndScheduled(status, subscription);
   const periodEndValue = getPeriodEndValue(subscription, entitlement);
 

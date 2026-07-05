@@ -7,7 +7,11 @@ import {
   restoreMbtiProfileFromPortfolios,
   storeMbtiProfileFromResult,
 } from "../src/components/portfolio/utils/mbtiProfileStorage.js";
-import { getPlanFromPayload } from "../src/components/portfolio/utils/subscriptionPlanStatus.js";
+import {
+  getPlanFromPayload,
+  getSubscriptionPlanDecision,
+} from "../src/components/portfolio/utils/subscriptionPlanStatus.js";
+import { getEffectiveSubscriptionState } from "../server/src/services/subscriptionEffectiveStatus.js";
 
 function createStorage() {
   const values = new Map();
@@ -135,6 +139,59 @@ test("subscription payload free or failed status recovers browser plan to free",
   }), "free");
 });
 
+test("active subscription requires future period or entitlement date", () => {
+  assert.equal(getPlanFromPayload({
+    authenticated: true,
+    plan: "personal",
+    status: "active",
+    subscription: {
+      plan: "personal",
+      status: "active",
+      currentPeriodEnd: "2000-01-01T00:00:00.000Z",
+    },
+  }), "free");
+
+  assert.equal(getSubscriptionPlanDecision({
+    authenticated: true,
+    plan: "personal",
+    status: "active",
+    subscription: {
+      plan: "personal",
+      status: "active",
+      currentPeriodEnd: "2000-01-01T00:00:00.000Z",
+    },
+  }).status, "expired");
+
+  assert.equal(getPlanFromPayload({
+    authenticated: true,
+    plan: "personal",
+    status: "active",
+    subscription: {
+      plan: "personal",
+      status: "active",
+      currentPeriodEnd: "2999-01-01T00:00:00.000Z",
+    },
+  }), "personal");
+
+  assert.equal(getPlanFromPayload({
+    authenticated: true,
+    plan: "personal",
+    entitlement: {
+      plan: "personal",
+      validUntil: "2999-01-01T00:00:00.000Z",
+    },
+  }), "personal");
+
+  assert.equal(getPlanFromPayload({
+    authenticated: true,
+    plan: "personal",
+    entitlement: {
+      plan: "personal",
+      validUntil: "2000-01-01T00:00:00.000Z",
+    },
+  }), "free");
+});
+
 test("cancel_at_period_end remains personal only while the entitlement is still in the future", () => {
   assert.equal(getPlanFromPayload({
     authenticated: true,
@@ -157,4 +214,73 @@ test("cancel_at_period_end remains personal only while the entitlement is still 
       currentPeriodEnd: "2000-01-01T00:00:00.000Z",
     },
   }), "free");
+});
+
+test("server subscription response state expires active personal when period is in the past", () => {
+  const activePast = getEffectiveSubscriptionState({
+    user: { plan: "personal" },
+    subscription: {
+      plan: "personal",
+      status: "active",
+      current_period_end: "2000-01-01T00:00:00.000Z",
+    },
+    now: new Date("2026-07-05T00:00:00.000Z"),
+  });
+
+  assert.equal(activePast.plan, "free");
+  assert.equal(activePast.status, "expired");
+  assert.equal(activePast.effectiveStatus, "expired");
+
+  const activeFuture = getEffectiveSubscriptionState({
+    user: { plan: "personal" },
+    subscription: {
+      plan: "personal",
+      status: "active",
+      current_period_end: "2999-01-01T00:00:00.000Z",
+    },
+    now: new Date("2026-07-05T00:00:00.000Z"),
+  });
+
+  assert.equal(activeFuture.plan, "personal");
+  assert.equal(activeFuture.status, "active");
+
+  const entitlementPast = getEffectiveSubscriptionState({
+    user: { plan: "personal" },
+    entitlement: {
+      plan: "personal",
+      valid_until: "2000-01-01T00:00:00.000Z",
+    },
+    subscription: {
+      plan: "personal",
+      status: "active",
+    },
+    now: new Date("2026-07-05T00:00:00.000Z"),
+  });
+
+  assert.equal(entitlementPast.plan, "free");
+  assert.equal(entitlementPast.effectiveStatus, "expired");
+
+  const entitlementOnlyFuture = getEffectiveSubscriptionState({
+    user: { plan: "personal" },
+    entitlement: {
+      plan: "personal",
+      valid_until: "2999-01-01T00:00:00.000Z",
+    },
+    now: new Date("2026-07-05T00:00:00.000Z"),
+  });
+
+  assert.equal(entitlementOnlyFuture.plan, "personal");
+  assert.equal(entitlementOnlyFuture.effectiveStatus, "active");
+
+  const entitlementOnlyPast = getEffectiveSubscriptionState({
+    user: { plan: "personal" },
+    entitlement: {
+      plan: "personal",
+      valid_until: "2000-01-01T00:00:00.000Z",
+    },
+    now: new Date("2026-07-05T00:00:00.000Z"),
+  });
+
+  assert.equal(entitlementOnlyPast.plan, "free");
+  assert.equal(entitlementOnlyPast.effectiveStatus, "expired");
 });
