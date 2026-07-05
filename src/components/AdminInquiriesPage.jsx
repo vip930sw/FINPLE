@@ -47,8 +47,14 @@ const SUBSCRIPTION_STATUS_LABELS = {
   trialing: "체험",
   cancel_at_period_end: "기간 종료 예정",
   canceled: "해지",
+  cancelled: "해지",
   expired: "만료",
+  payment_failed: "결제 실패",
+  past_due: "결제 재시도 대기",
+  refunded: "환불",
+  free: "Free",
   beta_free: "베타 Free",
+  superseded: "대체됨",
 };
 
 const EDUCATION_STATUS_LABELS = {
@@ -1285,6 +1291,7 @@ function SubscriptionManagementPanel({
 }) {
   const subscriptions = Array.isArray(data?.subscriptions) ? data.subscriptions : [];
   const breakdown = Array.isArray(data?.planStatusBreakdown) ? data.planStatusBreakdown : [];
+  const removedPeriodEndedSubscriptions = Number(data?.summary?.removedPeriodEndedSubscriptions || 0);
 
   return (
     <section className="accountCard adminManagementPanel">
@@ -1297,9 +1304,10 @@ function SubscriptionManagementPanel({
       </div>
 
       <div className="accountStatusGrid adminMetricGrid">
-        <AdminMetricCard label="총 구독 건수" value={`${totalSubscriptions}건`} note="전체 구독 이력" />
+        <AdminMetricCard label="총 구독 건수" value={`${totalSubscriptions}건`} note="관리 대상 구독" />
         <AdminMetricCard label="활성 구독자 수" value={`${activeSubscriptions}건`} note="active/trialing/종료 예정" />
         <AdminMetricCard label="7일 내 기간 종료" value={`${churnWatchCount}건`} note="환불·해지 대응 후보" />
+        <AdminMetricCard label="기간 종료 제외" value={`${removedPeriodEndedSubscriptions}건`} note="만료·대체 row 미표시" />
         <AdminMetricCard label="확정 결제액" value={formatKrw(data?.summary?.confirmedRevenue)} note="confirmed payments 합계" />
       </div>
 

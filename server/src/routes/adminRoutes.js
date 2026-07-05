@@ -14,9 +14,14 @@ import {
 } from "../db/educationAccountRepository.js";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import { getAiAnalysisUsageAdminSummary } from "../services/aiAnalysisUsageRepository.js";
+import {
+  buildPlanBreakdown,
+  mapAdminMemberRow,
+  mapAdminSubscriptionRow,
+  shouldKeepAdminSubscriptionRow,
+} from "../services/adminSubscriptionEffectiveStatus.js";
 
 const router = express.Router();
-const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "trialing", "cancel_at_period_end"];
 
 router.get("/health", (request, response) => {
   response.json({
@@ -25,40 +30,6 @@ router.get("/health", (request, response) => {
     databaseConfigured: isDatabaseConfigured(),
   });
 });
-
-function mapMemberRow(row) {
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    nickname: row.nickname,
-    plan: row.plan || "free",
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastLoginAt: row.last_login_at,
-    activeSubscriptionCount: Number(row.active_subscription_count || 0),
-    portfolioCount: Number(row.portfolio_count || 0),
-    inquiryCount: Number(row.inquiry_count || 0),
-  };
-}
-
-function mapSubscriptionRow(row) {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    email: row.email,
-    name: row.name,
-    plan: row.plan || "free",
-    status: row.status || "active",
-    startedAt: row.started_at,
-    currentPeriodEnd: row.current_period_end,
-    canceledAt: row.canceled_at,
-    latestPaymentAmount: row.latest_payment_amount === null ? null : Number(row.latest_payment_amount || 0),
-    latestPaymentCurrency: row.latest_payment_currency || "KRW",
-    latestPaymentStatus: row.latest_payment_status || null,
-    latestPaymentAt: row.latest_payment_at || null,
-  };
-}
 
 function requireDatabase(response) {
   if (isDatabaseConfigured()) return true;
@@ -75,43 +46,32 @@ router.get("/members", (request, response, next) => {
     try {
       if (!requireDatabase(response)) return;
 
-      const activeStatuses = ACTIVE_SUBSCRIPTION_STATUSES;
-      const [summaryResult, recentMembersResult, planResult] = await Promise.all([
+      const [membersResult, educationMembersResult] = await Promise.all([
         query(
-          `WITH active_subscriptions AS (
-             SELECT user_id, COUNT(*) AS active_subscription_count
+          `WITH latest_subscriptions AS (
+             SELECT DISTINCT ON (user_id)
+                    id AS subscription_id,
+                    user_id,
+                    plan AS subscription_plan,
+                    status AS subscription_status,
+                    current_period_start,
+                    current_period_end,
+                    cancel_at_period_end
                FROM subscriptions
-              WHERE status = ANY($1)
-              GROUP BY user_id
+              ORDER BY user_id,
+                       current_period_start DESC NULLS LAST,
+                       current_period_end DESC NULLS LAST,
+                       id DESC
            ),
-           education_users AS (
-             SELECT user_id
-               FROM education_accounts
-           )
-           SELECT
-             COUNT(*)::int AS total_members,
-             COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS new_members_30d,
-             COUNT(*) FILTER (WHERE last_login_at >= NOW() - INTERVAL '30 days')::int AS active_members_30d,
-             COUNT(*) FILTER (WHERE education_users.user_id IS NOT NULL)::int AS education_members,
-             COUNT(*) FILTER (
-               WHERE education_users.user_id IS NULL
-                 AND (
-                   COALESCE(plan, 'free') <> 'free'
-                   OR COALESCE(active_subscription_count, 0) > 0
-                 )
-            )::int AS subscriber_members
-            FROM users
-            LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id
-            LEFT JOIN education_users ON education_users.user_id = users.id
-           WHERE education_users.user_id IS NULL`,
-          [activeStatuses]
-        ),
-        query(
-          `WITH active_subscriptions AS (
-             SELECT user_id, COUNT(*) AS active_subscription_count
-               FROM subscriptions
-              WHERE status = ANY($1)
-              GROUP BY user_id
+           latest_entitlements AS (
+             SELECT DISTINCT ON (user_id)
+                    user_id,
+                    plan AS entitlement_plan,
+                    valid_until AS entitlement_valid_until
+               FROM user_entitlements
+              ORDER BY user_id,
+                       updated_at DESC NULLS LAST,
+                       valid_until DESC NULLS LAST
            ),
            portfolio_counts AS (
              SELECT user_id, COUNT(*) AS portfolio_count
@@ -132,51 +92,57 @@ router.get("/members", (request, response, next) => {
              users.email,
              users.name,
              users.nickname,
-             users.plan,
+             users.plan AS user_plan,
              users.created_at,
              users.updated_at,
              users.last_login_at,
-             COALESCE(active_subscriptions.active_subscription_count, 0) AS active_subscription_count,
+             latest_subscriptions.subscription_id,
+             latest_subscriptions.subscription_plan,
+             latest_subscriptions.subscription_status,
+             latest_subscriptions.current_period_start,
+             latest_subscriptions.current_period_end,
+             latest_subscriptions.cancel_at_period_end,
+             latest_entitlements.entitlement_plan,
+             latest_entitlements.entitlement_valid_until,
              COALESCE(portfolio_counts.portfolio_count, 0) AS portfolio_count,
              COALESCE(inquiry_counts.inquiry_count, 0) AS inquiry_count
             FROM users
-            LEFT JOIN active_subscriptions ON active_subscriptions.user_id = users.id
+            LEFT JOIN latest_subscriptions ON latest_subscriptions.user_id = users.id
+            LEFT JOIN latest_entitlements ON latest_entitlements.user_id = users.id
             LEFT JOIN portfolio_counts ON portfolio_counts.user_id = users.id
             LEFT JOIN inquiry_counts ON inquiry_counts.user_id = users.id
             LEFT JOIN education_users ON education_users.user_id = users.id
            WHERE education_users.user_id IS NULL
-            ORDER BY users.created_at DESC
-            LIMIT 50`,
-          [activeStatuses]
+            ORDER BY users.created_at DESC`
         ),
         query(
-          `SELECT COALESCE(plan, 'free') AS plan, COUNT(*)::int AS members
-             FROM users
-            WHERE NOT EXISTS (
-              SELECT 1
-                FROM education_accounts
-               WHERE education_accounts.user_id = users.id
-            )
-            GROUP BY COALESCE(plan, 'free')
-            ORDER BY members DESC, plan ASC`
+          `SELECT COUNT(DISTINCT user_id)::int AS education_members
+             FROM education_accounts`
         ),
       ]);
 
-      const summary = summaryResult.rows[0] || {};
+      const now = new Date();
+      const members = membersResult.rows.map((row) => mapAdminMemberRow(row, now));
+      const planCounts = members.reduce((counts, member) => {
+        const plan = member.effectivePlan || member.plan || "free";
+        counts.set(plan, (counts.get(plan) || 0) + 1);
+        return counts;
+      }, new Map());
+
       response.json({
         ok: true,
         summary: {
-          totalMembers: Number(summary.total_members || 0),
-          newMembers30d: Number(summary.new_members_30d || 0),
-          activeMembers30d: Number(summary.active_members_30d || 0),
-          subscriberMembers: Number(summary.subscriber_members || 0),
-          educationMembers: Number(summary.education_members || 0),
+          totalMembers: members.length,
+          newMembers30d: members.filter((member) => Date.parse(member.createdAt) >= Date.now() - 30 * 86400000).length,
+          activeMembers30d: members.filter((member) => Date.parse(member.lastLoginAt) >= Date.now() - 30 * 86400000).length,
+          subscriberMembers: members.filter((member) => member.effectivePlan === "personal").length,
+          educationMembers: Number(educationMembersResult.rows[0]?.education_members || 0),
         },
-        planBreakdown: planResult.rows.map((row) => ({
-          plan: row.plan || "free",
-          members: Number(row.members || 0),
-        })),
-        members: recentMembersResult.rows.map(mapMemberRow),
+        planBreakdown: Array.from(planCounts.entries()).map(([plan, count]) => ({
+          plan,
+          members: count,
+        })).sort((a, b) => b.members - a.members || a.plan.localeCompare(b.plan)),
+        members: members.slice(0, 50),
       });
     } catch (error) {
       next(error);
@@ -298,31 +264,7 @@ router.get("/subscriptions", (request, response, next) => {
     try {
       if (!requireDatabase(response)) return;
 
-      const activeStatuses = ACTIVE_SUBSCRIPTION_STATUSES;
-      const [summaryResult, planStatusResult, subscriptionsResult] = await Promise.all([
-        query(
-          `SELECT
-             (SELECT COUNT(*) FROM subscriptions)::int AS total_subscriptions,
-             (SELECT COUNT(DISTINCT user_id) FROM subscriptions WHERE status = ANY($1))::int AS active_subscriptions,
-             (SELECT COUNT(*)
-                FROM subscriptions
-               WHERE current_period_end IS NOT NULL
-                 AND current_period_end >= NOW()
-                 AND current_period_end < NOW() + INTERVAL '7 days')::int AS period_ending_7d,
-             (SELECT COALESCE(SUM(amount), 0)
-                FROM payments
-               WHERE status = 'confirmed')::numeric AS confirmed_revenue`,
-          [activeStatuses]
-        ),
-        query(
-          `SELECT
-             subscriptions.plan,
-             subscriptions.status,
-             COUNT(*)::int AS subscriptions
-            FROM subscriptions
-            GROUP BY subscriptions.plan, subscriptions.status
-            ORDER BY subscriptions DESC, subscriptions.plan ASC, subscriptions.status ASC`
-        ),
+      const [subscriptionsResult, revenueResult] = await Promise.all([
         query(
           `WITH latest_payments AS (
              SELECT DISTINCT ON (user_id)
@@ -333,17 +275,32 @@ router.get("/subscriptions", (request, response, next) => {
                COALESCE(paid_at, created_at) AS latest_payment_at
               FROM payments
               ORDER BY user_id, COALESCE(paid_at, created_at) DESC
+           ),
+           latest_entitlements AS (
+             SELECT DISTINCT ON (user_id)
+               user_id,
+               plan AS entitlement_plan,
+               valid_until AS entitlement_valid_until
+              FROM user_entitlements
+              ORDER BY user_id,
+                       updated_at DESC NULLS LAST,
+                       valid_until DESC NULLS LAST
            )
            SELECT
-             subscriptions.id,
+             subscriptions.id AS subscription_id,
              subscriptions.user_id,
              users.email,
              users.name,
-             subscriptions.plan,
-             subscriptions.status,
+             users.plan AS user_plan,
+             subscriptions.plan AS subscription_plan,
+             subscriptions.status AS subscription_status,
              subscriptions.started_at,
+             subscriptions.current_period_start,
              subscriptions.current_period_end,
+             subscriptions.cancel_at_period_end,
              subscriptions.canceled_at,
+             latest_entitlements.entitlement_plan,
+             latest_entitlements.entitlement_valid_until,
              latest_payments.amount AS latest_payment_amount,
              latest_payments.currency AS latest_payment_currency,
              latest_payments.status AS latest_payment_status,
@@ -351,26 +308,43 @@ router.get("/subscriptions", (request, response, next) => {
             FROM subscriptions
             JOIN users ON users.id = subscriptions.user_id
             LEFT JOIN latest_payments ON latest_payments.user_id = subscriptions.user_id
+            LEFT JOIN latest_entitlements ON latest_entitlements.user_id = subscriptions.user_id
             ORDER BY COALESCE(subscriptions.current_period_end, subscriptions.started_at) DESC
             LIMIT 50`
         ),
+        query(
+          `SELECT COALESCE(SUM(amount), 0)::numeric AS confirmed_revenue
+             FROM payments
+            WHERE status = 'confirmed'`
+        ),
       ]);
 
-      const summary = summaryResult.rows[0] || {};
+      const now = new Date();
+      const mappedRows = subscriptionsResult.rows.map((row) => mapAdminSubscriptionRow(row, now));
+      const managedSubscriptions = mappedRows.filter((row, index) => (
+        shouldKeepAdminSubscriptionRow(subscriptionsResult.rows[index], now)
+      ));
+      const removedPeriodEndedSubscriptions = mappedRows.length - managedSubscriptions.length;
+      const periodEnding7d = managedSubscriptions.filter((subscription) => (
+        subscription.daysUntilEnd !== null &&
+        subscription.daysUntilEnd >= 0 &&
+        subscription.daysUntilEnd <= 7
+      )).length;
+      const activeSubscriptions = managedSubscriptions.filter((subscription) => (
+        subscription.effectivePlan === "personal"
+      )).length;
+
       response.json({
         ok: true,
         summary: {
-          totalSubscriptions: Number(summary.total_subscriptions || 0),
-          activeSubscriptions: Number(summary.active_subscriptions || 0),
-          periodEnding7d: Number(summary.period_ending_7d || 0),
-          confirmedRevenue: Number(summary.confirmed_revenue || 0),
+          totalSubscriptions: managedSubscriptions.length,
+          activeSubscriptions,
+          periodEnding7d,
+          removedPeriodEndedSubscriptions,
+          confirmedRevenue: Number(revenueResult.rows[0]?.confirmed_revenue || 0),
         },
-        planStatusBreakdown: planStatusResult.rows.map((row) => ({
-          plan: row.plan || "free",
-          status: row.status || "active",
-          subscriptions: Number(row.subscriptions || 0),
-        })),
-        subscriptions: subscriptionsResult.rows.map(mapSubscriptionRow),
+        planStatusBreakdown: buildPlanBreakdown(managedSubscriptions),
+        subscriptions: managedSubscriptions,
       });
     } catch (error) {
       next(error);

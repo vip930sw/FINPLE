@@ -11,6 +11,12 @@ import {
   getPlanFromPayload,
   getSubscriptionPlanDecision,
 } from "../src/components/portfolio/utils/subscriptionPlanStatus.js";
+import {
+  buildPlanBreakdown,
+  mapAdminMemberRow,
+  mapAdminSubscriptionRow,
+  shouldKeepAdminSubscriptionRow,
+} from "../server/src/services/adminSubscriptionEffectiveStatus.js";
 import { getEffectiveSubscriptionState } from "../server/src/services/subscriptionEffectiveStatus.js";
 
 function createStorage() {
@@ -283,4 +289,68 @@ test("server subscription response state expires active personal when period is 
 
   assert.equal(entitlementOnlyPast.plan, "free");
   assert.equal(entitlementOnlyPast.effectiveStatus, "expired");
+});
+
+test("admin member plan uses effective subscription instead of stale users.plan", () => {
+  const member = mapAdminMemberRow({
+    id: "user-1",
+    email: "lsw_28@naver.com",
+    user_plan: "personal",
+    subscription_id: "sub-1",
+    subscription_plan: "personal",
+    subscription_status: "active",
+    current_period_end: "2026-06-29T00:00:00.000Z",
+    portfolio_count: 0,
+    inquiry_count: 0,
+  }, new Date("2026-07-05T00:00:00.000Z"));
+
+  assert.equal(member.plan, "free");
+  assert.equal(member.effectivePlan, "free");
+  assert.equal(member.billingStatus, "expired");
+  assert.equal(member.activeSubscriptionCount, 0);
+});
+
+test("admin subscription management removes period-ended and superseded rows", () => {
+  const now = new Date("2026-07-05T00:00:00.000Z");
+  const activeFutureRow = {
+    subscription_id: "sub-active",
+    user_id: "user-1",
+    user_plan: "personal",
+    subscription_plan: "personal",
+    subscription_status: "active",
+    current_period_start: "2026-07-01T00:00:00.000Z",
+    current_period_end: "2026-07-20T00:00:00.000Z",
+  };
+  const activePastRow = {
+    subscription_id: "sub-ended",
+    user_id: "user-2",
+    user_plan: "personal",
+    subscription_plan: "personal",
+    subscription_status: "active",
+    current_period_start: "2026-05-29T00:00:00.000Z",
+    current_period_end: "2026-06-29T00:00:00.000Z",
+  };
+  const supersededRow = {
+    subscription_id: "sub-superseded",
+    user_id: "user-3",
+    user_plan: "personal",
+    subscription_plan: "personal",
+    subscription_status: "superseded",
+    current_period_start: "2026-05-20T00:00:00.000Z",
+    current_period_end: "2026-06-20T00:00:00.000Z",
+  };
+
+  assert.equal(shouldKeepAdminSubscriptionRow(activeFutureRow, now), true);
+  assert.equal(shouldKeepAdminSubscriptionRow(activePastRow, now), false);
+  assert.equal(shouldKeepAdminSubscriptionRow(supersededRow, now), false);
+
+  const visible = [activeFutureRow, activePastRow, supersededRow]
+    .filter((row) => shouldKeepAdminSubscriptionRow(row, now))
+    .map((row) => mapAdminSubscriptionRow(row, now));
+
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].plan, "personal");
+  assert.deepEqual(buildPlanBreakdown(visible), [
+    { plan: "personal", status: "active", subscriptions: 1 },
+  ]);
 });

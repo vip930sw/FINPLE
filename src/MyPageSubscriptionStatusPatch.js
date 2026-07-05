@@ -194,8 +194,8 @@ function syncSubscriptionPayloadToBrowser(payload) {
       ...storedUser,
       plan,
       billingStatus: getSubscriptionPlanDecision(payload).status || payload.status || payload.subscription?.status || "beta_free",
-      subscriptionId: payload.subscription?.id || storedUser.subscriptionId || null,
-      entitlementValidUntil: payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null,
+      subscriptionId: plan === "personal" ? payload.subscription?.id || storedUser.subscriptionId || null : null,
+      entitlementValidUntil: plan === "personal" ? payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null : null,
     });
   }
 
@@ -267,7 +267,7 @@ function updateSubscriptionPanel() {
   const plan = getPlanFromPayload(payload);
   const status = decision.status || payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
   const scheduled = plan === "personal" && isPeriodEndScheduled(status, subscription);
-  const periodEndValue = getPeriodEndValue(subscription, entitlement);
+  const periodEndValue = plan === "personal" ? getPeriodEndValue(subscription, entitlement) : null;
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
   setText(panel.querySelector("[data-subscription-plan]"), formatPlanLabel(plan));
