@@ -82,6 +82,17 @@ test("stored payment method display safely parses code-prefixed labels when last
   assert.doesNotMatch(summary.displayLabel, /^33\b/);
 });
 
+test("stored payment method display keeps a safe company-only fallback", () => {
+  const summary = buildStoredPaymentMethodSummary({
+    display_label: "우리은행 등록 완료",
+    card_company: "33",
+  });
+
+  assert.equal(summary.displayLabel, "우리은행 등록 완료");
+  assert.equal(summary.cardLast4, null);
+  assert.doesNotMatch(summary.displayLabel, /\b33\b/);
+});
+
 test("payment method display extracts safe tails from stored masked values", () => {
   assert.equal(getMaskedTail("****-****-****-9121"), "9121");
   assert.equal(getMaskedTail("9121"), "9121");

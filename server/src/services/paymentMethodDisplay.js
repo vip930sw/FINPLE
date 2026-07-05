@@ -172,6 +172,18 @@ export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
   const metadataSummary = buildPaymentMethodSummary(...metadataSources);
   if (metadataSummary) return { ...metadataSummary, source: metadataSummary.source || "payment_metadata" };
 
+  if (row.card_company) {
+    const company = resolveCardCompany(row.card_company);
+    return {
+      displayLabel: formatCardDisplayLabel(company, ""),
+      cardCompany: company,
+      cardLast4: null,
+      maskedCardNumber: null,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_card_company_only",
+    };
+  }
+
   return {
     displayLabel: "카드 등록 완료",
     cardCompany: null,

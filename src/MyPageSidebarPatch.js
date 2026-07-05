@@ -5,7 +5,11 @@
    - 각 도구별 진입 링크를 분리합니다.
 ========================================================= */
 
-import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
+import {
+  clearBillingMethodStatusCache,
+  fetchBillingMethodStatus,
+  getSafeBillingMethodDisplayLabel,
+} from "./components/paymentMethodClient";
 import { fetchMySupportInquiries } from "./components/portfolio/services/serverPortfolioService";
 import {
   MBTI_PRESET_STORAGE_KEY,
@@ -67,8 +71,9 @@ const STANDALONE_PANELS_TO_HIDE = [".adminInquiryPanel"];
 
 let activeMenuKey = "account";
 let isInvestmentResultOpen = false;
+let sidebarPatchStable = false;
 let billingMethodRequested = false;
-let billingMethodState = { loading: false, registered: false, method: null, error: "" };
+let billingMethodState = { loading: false, refreshing: false, registered: false, method: null, error: "" };
 let myInquiriesRequested = false;
 let myInquiriesState = { loading: false, inquiries: [], error: "" };
 
@@ -510,15 +515,16 @@ function updateBillingMethodUi() {
   const updated = document.querySelector("[data-billing-method-updated]");
   const message = document.querySelector("[data-billing-method-message]");
   if (!badge || !status || !label || !message) return;
+  if (billingMethodState.registered && billingMethodState.method) {
+    const method = billingMethodState.method;
+    const displayLabel = getSafeBillingMethodDisplayLabel(method) || method.displayLabel || "등록된 결제수단";
+    setText(badge, "등록됨"); setText(status, "등록 완료"); setText(statusNote, billingMethodState.refreshing ? "서버 조회 중" : "자동결제 가능"); setText(label, displayLabel); setText(updated, method.issuedAt ? `등록일 ${String(method.issuedAt).slice(0, 10)}` : "카드번호 원문 저장 없음"); setText(message, billingMethodState.error || (billingMethodState.refreshing ? "등록된 결제수단을 유지하며 최신 상태를 확인하고 있습니다." : "등록된 결제수단으로 다음 정기결제를 진행할 수 있습니다.")); return;
+  }
   if (billingMethodState.loading) {
     setText(badge, "확인 중"); setText(status, "확인 중"); setText(statusNote, "서버 조회 중"); setText(label, "확인 중"); setText(updated, "카드번호 원문 저장 없음"); setText(message, "등록된 결제수단을 확인하고 있습니다."); return;
   }
   if (billingMethodState.error) {
     setText(badge, "확인 필요"); setText(status, "확인 필요"); setText(statusNote, "다시 조회 필요"); setText(label, "확인 실패"); setText(updated, "카드번호 원문 저장 없음"); setText(message, billingMethodState.error); return;
-  }
-  if (billingMethodState.registered && billingMethodState.method) {
-    const method = billingMethodState.method;
-    setText(badge, "등록됨"); setText(status, "등록 완료"); setText(statusNote, "자동결제 가능"); setText(label, method.displayLabel || "등록된 결제수단"); setText(updated, method.issuedAt ? `등록일 ${String(method.issuedAt).slice(0, 10)}` : "카드번호 원문 저장 없음"); setText(message, "등록된 결제수단으로 다음 정기결제를 진행할 수 있습니다."); return;
   }
   setText(badge, "미등록"); setText(status, "미등록"); setText(statusNote, "등록 필요"); setText(label, "등록된 결제수단 없음"); setText(updated, "카드번호 원문 저장 없음"); setText(message, "자동결제를 이용하려면 결제수단을 등록해 주세요.");
 }
@@ -526,13 +532,23 @@ async function loadBillingMethodStatus(options = {}) {
   if (!isMyPagePath() || billingMethodState.loading) return;
   if (billingMethodRequested && !options.force) { updateBillingMethodUi(); return; }
   billingMethodRequested = true;
-  billingMethodState = { loading: true, registered: false, method: null, error: "" };
+  billingMethodState = {
+    ...billingMethodState,
+    loading: !billingMethodState.method,
+    refreshing: Boolean(billingMethodState.method),
+    error: "",
+  };
   updateBillingMethodUi();
   try {
-    const payload = await fetchBillingMethodStatus();
-    billingMethodState = { loading: false, registered: Boolean(payload?.registered), method: payload?.method || null, error: "" };
+    const payload = await fetchBillingMethodStatus({ force: Boolean(options.force) });
+    billingMethodState = { loading: false, refreshing: false, registered: Boolean(payload?.registered), method: payload?.method || null, error: "" };
   } catch (error) {
-    billingMethodState = { loading: false, registered: false, method: null, error: error?.message || "결제수단 상태를 확인하지 못했습니다." };
+    billingMethodState = {
+      ...billingMethodState,
+      loading: false,
+      refreshing: false,
+      error: error?.message || "결제수단 상태를 확인하지 못했습니다.",
+    };
   }
   updateBillingMethodUi();
 }
@@ -651,6 +667,30 @@ function setActivePanel(nextKey, options = {}) {
     window.scrollTo({ top, behavior: "smooth" });
   }
 }
+function resetBillingMethodRequestState() {
+  billingMethodRequested = false;
+  billingMethodState = { loading: false, refreshing: false, registered: false, method: null, error: "" };
+  clearBillingMethodStatusCache();
+}
+function isSidebarPatchStable() {
+  return Boolean(
+    document.querySelector(".myPageDashboardLayout") &&
+      document.querySelector("[data-payment-method-panel]") &&
+      document.querySelector("[data-my-inquiries-panel]") &&
+      document.querySelector("[data-mypage-menu-key]")
+  );
+}
+function applyMyPageSidebarIfNeeded() {
+  if (sidebarPatchStable && isSidebarPatchStable()) {
+    updateTopButtonVisibility();
+    updateBillingMethodUi();
+    updateInvestmentProfileUi();
+    updateMyInquiriesUi();
+    return;
+  }
+
+  applyMyPageSidebar();
+}
 function applyMyPageSidebar() {
   if (!isMyPagePath()) return;
   ensureInvestmentProfilePanel();
@@ -665,12 +705,20 @@ function applyMyPageSidebar() {
   updateBillingMethodUi();
   updateInvestmentProfileUi();
   updateMyInquiriesUi();
+  sidebarPatchStable = isSidebarPatchStable();
 }
 function bootMyPageSidebarPatch() {
-  [80, 180, 420, 900, 1600, 2600].forEach((delay) => window.setTimeout(applyMyPageSidebar, delay));
+  [80, 180, 420, 900, 1600, 2600].forEach((delay) => window.setTimeout(applyMyPageSidebarIfNeeded, delay));
   window.addEventListener("scroll", updateTopButtonVisibility, { passive: true });
-  window.addEventListener("popstate", () => window.setTimeout(applyMyPageSidebar, 80));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(applyMyPageSidebar, 120));
+  window.addEventListener("popstate", () => {
+    sidebarPatchStable = false;
+    window.setTimeout(applyMyPageSidebar, 80);
+  });
+  window.addEventListener("finple-auth-updated", () => {
+    sidebarPatchStable = false;
+    resetBillingMethodRequestState();
+    window.setTimeout(applyMyPageSidebar, 120);
+  });
 }
 if (typeof window !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootMyPageSidebarPatch, { once: true });

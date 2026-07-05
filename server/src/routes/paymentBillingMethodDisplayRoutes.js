@@ -207,14 +207,20 @@ function serializePaymentMethod(row) {
   const paymentSummary = buildStoredPaymentMethodSummary(row, row.payment_metadata, row.metadata) || summarizeCardFromPayload(row.payment_metadata, row);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
+  const displayLabel = summary?.displayLabel || "카드 등록 완료";
+  const cardCompany = summary?.cardCompany || null;
+  const cardLast4 = summary?.cardLast4 || null;
 
   return {
     id: row.id,
     provider: row.provider,
     methodType: row.method_type,
-    displayLabel: summary?.displayLabel || "등록된 결제수단",
-    cardCompany: summary?.cardCompany || row.card_company || null,
-    cardLast4: summary?.cardLast4 || row.card_last4 || null,
+    displayLabel,
+    display_label: displayLabel,
+    cardCompany,
+    card_company: cardCompany,
+    cardLast4,
+    card_last4: cardLast4,
     cardBrandKey: summary?.cardBrandKey || null,
     displaySource: summary?.source || "unknown",
     isDefault: Boolean(row.is_default),

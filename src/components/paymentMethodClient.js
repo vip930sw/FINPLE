@@ -25,6 +25,15 @@ function getAuthHeaders() {
 }
 
 const BILLING_PREPARE_TIMEOUT_MS = 10000;
+const BILLING_METHOD_STATUS_TIMEOUT_MS = 8000;
+export const BILLING_METHOD_STATUS_CACHE_TTL_MS = 45000;
+
+const billingMethodStatusCache = new Map();
+const billingMethodStatusInflight = new Map();
+const CARD_COMPANY_LABELS = {
+  33: "우리은행",
+  W1: "우리은행",
+};
 
 async function fetchPaymentJsonWithTimeout(url, options = {}, timeoutMs = BILLING_PREPARE_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -49,6 +58,106 @@ async function fetchPaymentJsonWithTimeout(url, options = {}, timeoutMs = BILLIN
 
 export function getTossClientKey() {
   return String(import.meta.env.VITE_TOSS_CLIENT_KEY || import.meta.env.VITE_TOSS_BILLING_CLIENT_KEY || "").trim();
+}
+
+function getBillingMethodStatusCacheKey() {
+  const user = getStoredFinpleAuthUser();
+  return `${getFinpleApiBaseUrl()}::${user?.id || user?.email || "current-user"}::billing-method`;
+}
+
+function getDigitsTail(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : "";
+}
+
+function getPaymentMethodLast4(method = {}) {
+  return (
+    getDigitsTail(method.cardLast4) ||
+    getDigitsTail(method.card_last4) ||
+    getDigitsTail(method.last4) ||
+    getDigitsTail(method.maskedCardNumber) ||
+    getDigitsTail(method.masked_card_number) ||
+    getDigitsTail(method.displayLabel) ||
+    getDigitsTail(method.display_label)
+  );
+}
+
+function getPaymentMethodCompany(method = {}) {
+  return String(
+    method.cardCompany ||
+      method.card_company ||
+      method.issuer ||
+      method.bank ||
+      method.company ||
+      ""
+  ).trim();
+}
+
+function getCleanDisplayLabel(value, last4 = "") {
+  let label = String(value || "").trim();
+  if (!label) return "";
+
+  if (last4) {
+    label = label.replace(new RegExp(`\\s*${last4}\\s*$`), "").trim();
+  }
+  label = label
+    .replace(/^[0-9A-Z]{2,3}\s*/i, "")
+    .replace(/[\s*.\-()]+$/g, "")
+    .trim();
+
+  if (!label || /^\d+$/.test(label)) return "";
+  if (/^(card registered|registered card|payment method registered)$/i.test(label)) return "";
+  if (/^(카드 등록 완료|등록된 결제수단|등록 카드)$/.test(label)) return "";
+  return label;
+}
+
+function resolvePaymentMethodCompanyLabel(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const code = raw.match(/^\s*([0-9A-Z]{2,3})\b/i)?.[1]?.toUpperCase() || "";
+  if (code && CARD_COMPANY_LABELS[code]) return CARD_COMPANY_LABELS[code];
+  if (/^[0-9A-Z]{2,3}$/i.test(raw)) return "";
+  return raw;
+}
+
+export function getSafeBillingMethodDisplayLabel(method = {}) {
+  if (!method || typeof method !== "object") return "";
+
+  const last4 = getPaymentMethodLast4(method);
+  const company =
+    getCleanDisplayLabel(resolvePaymentMethodCompanyLabel(getPaymentMethodCompany(method)), last4) ||
+    getCleanDisplayLabel(resolvePaymentMethodCompanyLabel(method.displayLabel || method.display_label), last4);
+  const storedLabel = getCleanDisplayLabel(method.displayLabel || method.display_label, last4);
+  const labelCompany = company || storedLabel;
+
+  if (labelCompany && last4) return `${labelCompany} · **** ${last4}`;
+  if (last4) return `등록 카드 · **** ${last4}`;
+  if (labelCompany) return `${labelCompany} 등록 완료`;
+  return "카드 등록 완료";
+}
+
+function normalizeBillingMethodStatusPayload(payload) {
+  if (!payload || typeof payload !== "object" || !payload.method || typeof payload.method !== "object") {
+    return payload;
+  }
+
+  const method = { ...payload.method };
+  const safeLabel = getSafeBillingMethodDisplayLabel(method);
+  const safeLast4 = getPaymentMethodLast4(method);
+
+  method.displayLabel = safeLabel;
+  if (safeLast4) method.cardLast4 = safeLast4;
+
+  return {
+    ...payload,
+    method,
+  };
+}
+
+export function clearBillingMethodStatusCache() {
+  billingMethodStatusCache.clear();
+  billingMethodStatusInflight.clear();
 }
 
 export async function prepareBillingAuth() {
@@ -163,7 +272,7 @@ export async function issueBillingMethodUpdate({ authKey, orderId, customerKey }
   return payload;
 }
 
-export async function fetchBillingMethodStatus() {
+export async function fetchBillingMethodStatus(options = {}) {
   const session = getStoredFinpleAuthSession();
   const user = getStoredFinpleAuthUser();
 
@@ -173,21 +282,42 @@ export async function fetchBillingMethodStatus() {
     throw error;
   }
 
-  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/method`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  const payload = await readResponseJson(response);
-
-  if (!response.ok || payload?.ok === false) {
-    const error = new Error(payload?.message || "결제수단 상태를 확인하지 못했습니다.");
-    error.code = payload?.code || "BILLING_METHOD_STATUS_FAILED";
-    error.payload = payload;
-    throw error;
+  const cacheKey = getBillingMethodStatusCacheKey();
+  const cached = billingMethodStatusCache.get(cacheKey);
+  const now = Date.now();
+  if (!options.force && cached && now - cached.cachedAt < BILLING_METHOD_STATUS_CACHE_TTL_MS) {
+    return { ...cached.payload, fromCache: true };
   }
 
-  return payload;
+  if (!options.force && billingMethodStatusInflight.has(cacheKey)) {
+    return billingMethodStatusInflight.get(cacheKey);
+  }
+
+  const requestPromise = (async () => {
+    const response = await fetchPaymentJsonWithTimeout(`${getFinpleApiBaseUrl()}/payments/toss/billing/method`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    }, BILLING_METHOD_STATUS_TIMEOUT_MS);
+
+    const payload = normalizeBillingMethodStatusPayload(await readResponseJson(response));
+
+    if (!response.ok || payload?.ok === false) {
+      const error = new Error(payload?.message || "결제수단 상태를 확인하지 못했습니다.");
+      error.code = payload?.code || "BILLING_METHOD_STATUS_FAILED";
+      error.payload = payload;
+      throw error;
+    }
+
+    billingMethodStatusCache.set(cacheKey, { cachedAt: Date.now(), payload });
+    return payload;
+  })();
+
+  billingMethodStatusInflight.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    billingMethodStatusInflight.delete(cacheKey);
+  }
 }
 
 function loadTossPaymentsSdk() {
