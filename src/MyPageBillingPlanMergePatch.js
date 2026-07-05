@@ -126,7 +126,17 @@ function restorePricingButton(subscriptionPanel) {
 function hideMergedPlanPanel(planPanel) {
   if (!planPanel) return;
   planPanel.setAttribute("data-billing-plan-merged", "true");
+  planPanel.setAttribute("data-mypage-panel-key", "billing");
+  planPanel.setAttribute("data-mypage-panel-hidden", "true");
+  planPanel.setAttribute("hidden", "true");
   planPanel.classList.add("billingMergedPlanPanelHidden");
+  planPanel.classList.add("myPagePanelHidden");
+  planPanel.classList.remove("myPagePanelActive");
+  planPanel.style.setProperty("display", "none", "important");
+}
+
+function syncMyPageActivePanel() {
+  window.__finpleSyncMyPageActivePanel?.(window.__finpleMyPageActiveKey || "account");
 }
 
 function applyBillingPlanMergePatch() {
@@ -145,6 +155,7 @@ function applyBillingPlanMergePatch() {
   moveUsageMessage(subscriptionPanel, planPanel);
   restorePricingButton(subscriptionPanel);
   hideMergedPlanPanel(planPanel);
+  syncMyPageActivePanel();
 }
 
 function bootBillingPlanMergePatch() {

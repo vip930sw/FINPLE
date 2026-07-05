@@ -45,6 +45,10 @@
   display: none !important;
 }
 
+.myPageDashboardLayout [data-mypage-panel-hidden="true"] {
+  display: none !important;
+}
+
 .myPagePanelHidden {
   display: none !important;
 }

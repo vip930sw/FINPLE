@@ -131,6 +131,17 @@ function getActiveKey(nextKey) {
   return getFallbackKey();
 }
 
+function setPanelVisibility(panel, isActive) {
+  const isMergedPlanPanel = panel.matches?.('.planStatusPanel[data-billing-plan-merged="true"]');
+  const shouldShow = Boolean(isActive && !isMergedPlanPanel);
+  panel.classList.toggle("myPagePanelActive", shouldShow);
+  panel.classList.toggle("myPagePanelHidden", !shouldShow);
+  panel.toggleAttribute("hidden", !shouldShow);
+  panel.setAttribute("data-mypage-panel-hidden", shouldShow ? "false" : "true");
+  if (shouldShow) panel.style.removeProperty("display");
+  else panel.style.setProperty("display", "none", "important");
+}
+
 function activatePanel(nextKey, options = {}) {
   activeMenuKey = getActiveKey(nextKey);
   window.__finpleMyPageActiveKey = activeMenuKey;
@@ -145,9 +156,7 @@ function activatePanel(nextKey, options = {}) {
 
   document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
     const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;
-    panel.classList.toggle("myPagePanelActive", isActive);
-    panel.classList.toggle("myPagePanelHidden", !isActive);
-    panel.toggleAttribute("hidden", !isActive);
+    setPanelVisibility(panel, isActive);
   });
 
   if (options.scrollToTop) {

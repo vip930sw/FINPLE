@@ -177,6 +177,10 @@ function navigateTo(path) {
   window.location.href = path;
 }
 
+function syncMyPageActivePanel() {
+  window.__finpleSyncMyPageActivePanel?.(window.__finpleMyPageActiveKey || "account");
+}
+
 function isSubscriptionPanelVisible() {
   const panel = document.querySelector("[data-subscription-status-panel]");
   if (!panel) return false;
@@ -193,8 +197,11 @@ function upsertSubscriptionPanel() {
   if (!target?.parentNode) return;
 
   target.insertAdjacentHTML("afterend", getSubscriptionPanelHtml());
+  const panel = document.querySelector("[data-subscription-status-panel]");
+  panel?.setAttribute("data-mypage-panel-key", "billing");
   wireSubscriptionPanelActions();
   updateSubscriptionPanel();
+  syncMyPageActivePanel();
 }
 
 function wireSubscriptionPanelActions() {
@@ -332,6 +339,7 @@ function updateSubscriptionPanel() {
   updatePeriodEndButton({ panel, plan, status, subscription });
   panel.classList.toggle("subscriptionStatusPanel--error", Boolean(lastSubscriptionError));
   panel.classList.toggle("subscriptionStatusPanel--scheduled", scheduled);
+  syncMyPageActivePanel();
 }
 
 function getAuthHeaders() {
@@ -491,6 +499,7 @@ function scheduleSubscriptionPatch(delay = 80) {
     subscriptionPatchScheduled = false;
     resetWhenLeavingMyPage();
     upsertSubscriptionPanel();
+    syncMyPageActivePanel();
     requestSubscriptionStatusWhenVisible();
   }, delay);
 }

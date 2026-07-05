@@ -8,6 +8,9 @@ const SUBSCRIPTION_SOURCE = new URL("./MyPageSubscriptionStatusPatch.js", import
 const SHELL_BRIDGE_SOURCE = new URL("./MyPageShellBridgePatch.js", import.meta.url);
 const STABILIZATION_SOURCE = new URL("./MyPageRenderStabilizationPatch.js", import.meta.url);
 const PAYMENT_HISTORY_SOURCE = new URL("./MyPagePaymentHistoryPatch.js", import.meta.url);
+const MENU_FINAL_SOURCE = new URL("./MyPageMenuFinalOrderPatch.js", import.meta.url);
+const BILLING_MERGE_SOURCE = new URL("./MyPageBillingPlanMergePatch.js", import.meta.url);
+const SIDEBAR_CSS_SOURCE = new URL("./MyPageSidebar.css", import.meta.url);
 const SERVER_PORTFOLIO_SERVICE_SOURCE = new URL("./components/portfolio/services/serverPortfolioService.js", import.meta.url);
 const INVESTMENT_MBTI_PAGE_SOURCE = new URL("./components/InvestmentMbtiPage.jsx", import.meta.url);
 
@@ -49,9 +52,11 @@ test("mypage sidebar keeps all late panels keyed and inside the single active st
   const markBody = source.match(/function markPanelKeys\(\) \{[\s\S]*?\n\}/)?.[0] || "";
   const placementBody = source.match(/function normalizePanelStackPlacement\(\) \{[\s\S]*?\n\}/)?.[0] || "";
   const activeBody = source.match(/function setActivePanel\(nextKey, options = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const cssSource = await readFile(SIDEBAR_CSS_SOURCE, "utf8");
 
   assert.match(source, /const PANEL_KEY_SELECTORS = \[/);
   assert.match(source, /const PANEL_ORDER_SELECTORS = \[/);
+  assert.match(source, /const SINGLE_PANEL_SELECTORS = \[/);
   assert.match(markBody, /querySelectorAll\(selector\)/);
   assert.match(markBody, /setAttribute\("data-mypage-panel-key", item\.key\)/);
   assert.match(source, /\{ key: "billing", selectors: \["\[data-subscription-status-panel\]", "\.subscriptionStatusPanel", "\.planStatusPanel"\] \}/);
@@ -59,7 +64,30 @@ test("mypage sidebar keeps all late panels keyed and inside the single active st
   assert.match(placementBody, /stack\.insertBefore\(panel, nextSibling\)/);
   assert.match(activeBody, /markPanelKeys\(\)/);
   assert.match(activeBody, /normalizePanelStackPlacement\(\)/);
-  assert.match(activeBody, /\.accountPanelStack > \[data-mypage-panel-key\]/);
+  assert.match(activeBody, /getSinglePanelNodes\(\)/);
+  assert.match(activeBody, /setPanelVisibility\(panel, isActive\)/);
+  assert.match(source, /window\.__finpleSyncMyPageActivePanel = syncActivePanelController/);
+  assert.match(source, /data-mypage-panel-hidden/);
+  assert.match(source, /planStatusPanel\[data-billing-plan-merged="true"\]/);
+  assert.match(cssSource, /\[data-mypage-panel-hidden="true"\]/);
+});
+
+test("mypage billing merge cannot leave plan or payment panels visible under another active panel", async () => {
+  const menuSource = await readFile(MENU_FINAL_SOURCE, "utf8");
+  const billingMergeSource = await readFile(BILLING_MERGE_SOURCE, "utf8");
+  const subscriptionSource = await readFile(SUBSCRIPTION_SOURCE, "utf8");
+  const paymentHistorySource = await readFile(PAYMENT_HISTORY_SOURCE, "utf8");
+
+  assert.match(menuSource, /mergedPlanPanel/);
+  assert.match(menuSource, /planPanel\.style\.setProperty\("display", "none", "important"\)/);
+  assert.match(menuSource, /window\.__finpleSyncMyPageActivePanel\?\./);
+  assert.match(billingMergeSource, /data-billing-plan-merged/);
+  assert.match(billingMergeSource, /data-mypage-panel-hidden", "true"/);
+  assert.match(billingMergeSource, /planPanel\.style\.setProperty\("display", "none", "important"\)/);
+  assert.match(billingMergeSource, /window\.__finpleSyncMyPageActivePanel\?\./);
+  assert.match(subscriptionSource, /data-mypage-panel-key", "billing"/);
+  assert.match(subscriptionSource, /syncMyPageActivePanel\(\)/);
+  assert.match(paymentHistorySource, /syncMyPageActivePanel\("payment-history"\)/);
 });
 
 test("payment method client dedupes in-flight requests and does not query assets or KIS", async () => {

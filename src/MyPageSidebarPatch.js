@@ -91,6 +91,10 @@ const PANEL_ORDER_SELECTORS = [
 ];
 
 const STANDALONE_PANELS_TO_HIDE = [".adminInquiryPanel"];
+const SINGLE_PANEL_SELECTORS = [
+  ".accountPanelStack > [data-mypage-panel-key]",
+  ".myPageDashboardLayout [data-mypage-panel-key]",
+];
 
 let activeMenuKey = "account";
 let isInvestmentResultOpen = false;
@@ -599,6 +603,28 @@ function normalizePanelStackPlacement() {
 function hideStandalonePanels() {
   STANDALONE_PANELS_TO_HIDE.forEach((selector) => document.querySelectorAll(selector).forEach((panel) => { panel.classList.add("myPagePanelHidden"); panel.toggleAttribute("hidden", true); }));
 }
+function getSinglePanelNodes() {
+  const panels = [];
+  const seen = new Set();
+  SINGLE_PANEL_SELECTORS.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((panel) => {
+      if (seen.has(panel) || panel.closest(".myPageSidebar")) return;
+      seen.add(panel);
+      panels.push(panel);
+    });
+  });
+  return panels;
+}
+function setPanelVisibility(panel, isActive) {
+  const isMergedPlanPanel = panel.matches?.('.planStatusPanel[data-billing-plan-merged="true"]');
+  const shouldShow = Boolean(isActive && !isMergedPlanPanel);
+  panel.classList.toggle("myPagePanelActive", shouldShow);
+  panel.classList.toggle("myPagePanelHidden", !shouldShow);
+  panel.toggleAttribute("hidden", !shouldShow);
+  panel.setAttribute("data-mypage-panel-hidden", shouldShow ? "false" : "true");
+  if (shouldShow) panel.style.removeProperty("display");
+  else panel.style.setProperty("display", "none", "important");
+}
 function bindPaymentMethodPanelActions() {
   const setupButton = document.querySelector("[data-payment-method-setup]");
   if (setupButton && setupButton.getAttribute("data-payment-method-wired") !== "true") {
@@ -850,11 +876,9 @@ function setActivePanel(nextKey, options = {}) {
   activeMenuKey = getVisibleMenuItems().some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
   if (!document.querySelector(`[data-mypage-panel-key="${activeMenuKey}"]`)) activeMenuKey = getFallbackActiveKey();
   window.__finpleMyPageActiveKey = activeMenuKey;
-  document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
+  getSinglePanelNodes().forEach((panel) => {
     const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;
-    panel.classList.toggle("myPagePanelActive", isActive);
-    panel.classList.toggle("myPagePanelHidden", !isActive);
-    panel.toggleAttribute("hidden", !isActive);
+    setPanelVisibility(panel, isActive);
   });
   setActiveMenu(activeMenuKey);
   if (activeMenuKey === "payment-method") loadBillingMethodStatus();
@@ -865,6 +889,13 @@ function setActivePanel(nextKey, options = {}) {
     const top = layout ? Math.max(0, layout.getBoundingClientRect().top + window.scrollY - 90) : 0;
     window.scrollTo({ top, behavior: "smooth" });
   }
+}
+function syncActivePanelController(nextKey = activeMenuKey) {
+  if (!isMyPagePath()) return;
+  markPanelKeys();
+  normalizePanelStackPlacement();
+  hideStandalonePanels();
+  setActivePanel(nextKey || window.__finpleMyPageActiveKey || activeMenuKey || "account");
 }
 function resetBillingMethodRequestState() {
   billingMethodRequested = false;
@@ -928,6 +959,7 @@ function applyMyPageSidebar() {
   sidebarPatchStable = isSidebarPatchStable();
 }
 function bootMyPageSidebarPatch() {
+  window.__finpleSyncMyPageActivePanel = syncActivePanelController;
   [80, 180, 420, 900, 1600, 2600].forEach((delay) => window.setTimeout(applyMyPageSidebarIfNeeded, delay));
   window.addEventListener("scroll", updateTopButtonVisibility, { passive: true });
   window.addEventListener("popstate", () => {

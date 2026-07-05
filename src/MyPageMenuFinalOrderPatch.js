@@ -91,11 +91,22 @@ function groupPlanPanelWithSubscription() {
   }
 
   const billingActive = document.querySelector('[data-mypage-menu-key="billing"]')?.classList.contains("active");
-  if (billingActive) {
+  const mergedPlanPanel = planPanel.getAttribute("data-billing-plan-merged") === "true";
+  if (billingActive && !mergedPlanPanel) {
     planPanel.classList.add("myPagePanelActive");
     planPanel.classList.remove("myPagePanelHidden");
     planPanel.removeAttribute("hidden");
+    planPanel.setAttribute("data-mypage-panel-hidden", "false");
+    planPanel.style.removeProperty("display");
+  } else {
+    planPanel.classList.remove("myPagePanelActive");
+    planPanel.classList.add("myPagePanelHidden");
+    planPanel.setAttribute("hidden", "true");
+    planPanel.setAttribute("data-mypage-panel-hidden", "true");
+    planPanel.style.setProperty("display", "none", "important");
   }
+
+  window.__finpleSyncMyPageActivePanel?.(window.__finpleMyPageActiveKey || (billingActive ? "billing" : "account"));
 }
 
 function wireBillingMenuMerge() {

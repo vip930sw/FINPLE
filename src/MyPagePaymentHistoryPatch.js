@@ -164,6 +164,14 @@ function getCurrentUserKey() {
   }
 }
 
+function syncMyPageActivePanel(nextKey = window.__finpleMyPageActiveKey || "account") {
+  if (typeof window.__finpleSyncMyPageActivePanel === "function") {
+    window.__finpleSyncMyPageActivePanel(nextKey);
+    return true;
+  }
+  return false;
+}
+
 async function loadPaymentHistory(options = {}) {
   if (!isMyPagePath() || paymentHistoryState.loading) return;
   if (paymentHistoryRequested && !options.force) { updatePaymentHistoryUi(); return; }
@@ -199,6 +207,7 @@ function ensurePaymentHistoryPanel() {
   const target = inquiryPanel || paymentMethodPanel;
   if (target?.parentNode) target.insertAdjacentHTML("afterend", getPanelHtml());
   else stack.insertAdjacentHTML("beforeend", getPanelHtml());
+  syncMyPageActivePanel();
 }
 
 function ensurePaymentHistoryMenu() {
@@ -211,6 +220,11 @@ function ensurePaymentHistoryMenu() {
 }
 
 function setPaymentHistoryActive() {
+  window.__finpleMyPageActiveKey = "payment-history";
+  if (syncMyPageActivePanel("payment-history")) {
+    loadPaymentHistory();
+    return;
+  }
   document.querySelectorAll("[data-mypage-menu-key]").forEach((button) => {
     button.classList.toggle("active", button.getAttribute("data-mypage-menu-key") === "payment-history");
   });
@@ -236,6 +250,7 @@ function applyPaymentHistoryPatch() {
   ensurePaymentHistoryPanel();
   ensurePaymentHistoryMenu();
   bindPaymentHistoryMenu();
+  syncMyPageActivePanel();
   updatePaymentHistoryUi();
 }
 
