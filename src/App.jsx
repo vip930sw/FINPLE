@@ -194,7 +194,7 @@ function schedulePageTopScroll(delay = 70) {
 
 function rememberPostLoginRedirectPage(page) {
   if (typeof window === "undefined") return;
-  if (page !== "personal") return;
+  if (!["mypage", "personal"].includes(page)) return;
   window.sessionStorage.setItem(POST_LOGIN_REDIRECT_STORAGE_KEY, page);
 }
 
@@ -229,6 +229,13 @@ function App() {
       return;
     }
 
+    if (page === "mypage" && !isFinpleUserLoggedIn()) {
+      rememberPostLoginRedirectPage(page);
+      setCurrentPage("login");
+      if (options.scrollTop !== false) schedulePageTopScroll();
+      return;
+    }
+
     if (page === "login" && !options.preserveLoginRedirect) {
       clearPostLoginRedirectPage();
     }
@@ -254,6 +261,7 @@ function App() {
     let redirectPage = null;
 
     if (currentPage === "mypage" && !isFinpleUserLoggedIn()) {
+      rememberPostLoginRedirectPage("mypage");
       redirectPage = "login";
     }
 

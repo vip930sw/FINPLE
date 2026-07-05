@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateAdminEducationAccounts,
-  deleteAdminMember,
   deleteAdminEducationAccount,
   deleteAdminEducationAccounts,
   deleteExpiredAdminEducationAccounts,
@@ -323,6 +322,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const handleLoadMembers = useCallback(async function handleLoadMembers() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
+    setMemberMessage("회원 통계를 불러오는 중입니다.");
     try {
       const data = await fetchAdminMembersSummary();
       setMemberData(data);
@@ -334,36 +334,10 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }, []);
 
-  async function handleDeleteMember(member) {
-    const targetLabel = member?.email || member?.id || "";
-    if (!member?.id || !targetLabel) {
-      setMemberMessage("삭제할 회원 정보를 확인하지 못했습니다.");
-      return;
-    }
-
-    if (typeof window !== "undefined") {
-      const typed = window.prompt(`${targetLabel} 계정을 삭제하려면 ${targetLabel} 를 입력해 주세요.`);
-      if (typed !== targetLabel) {
-        setMemberMessage("회원 삭제가 취소되었습니다.");
-        return;
-      }
-    }
-
-    setIsLoading(true);
-    try {
-      await deleteAdminMember(member.id, member.email ? { confirmEmail: member.email } : { confirmUserId: member.id });
-      setMemberMessage(`${targetLabel} 회원 계정을 soft delete 처리했습니다. 결제 권한은 비활성화되고 이력은 보존됩니다.`);
-      await handleLoadMembers();
-    } catch (error) {
-      setMemberMessage(error?.message || "회원 계정을 삭제하지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   const handleLoadSubscriptions = useCallback(async function handleLoadSubscriptions() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
+    setSubscriptionMessage("구독 통계를 불러오는 중입니다.");
     try {
       const data = await fetchAdminSubscriptionsSummary();
       setSubscriptionData(data);
@@ -378,6 +352,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const handleLoadAiUsage = useCallback(async function handleLoadAiUsage() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
+    setAiUsageMessage("AI 사용량 요약을 불러오는 중입니다.");
     try {
       const data = await fetchAdminAiAnalysisUsageSummary();
       setAiUsageData(data);
@@ -392,6 +367,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
   const handleLoadEducationAccounts = useCallback(async function handleLoadEducationAccounts() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
+    setEducationMessage("교육 계정 목록을 불러오는 중입니다.");
     try {
       const data = await fetchAdminEducationAccounts();
       setEducationData(data);
@@ -644,7 +620,6 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadMembers}
-              onDeleteMember={handleDeleteMember}
             />
           ) : null}
 
@@ -915,7 +890,6 @@ function MemberManagementPanel({
   isAdminMode,
   isLoading,
   onLoad,
-  onDeleteMember,
 }) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const planBreakdown = Array.isArray(data?.planBreakdown) ? data.planBreakdown : [];
@@ -990,9 +964,9 @@ function MemberManagementPanel({
               <th>가입일</th>
               <th>최근 로그인</th>
               <th>구독</th>
+              <th>투자 MBTI</th>
               <th>포트폴리오</th>
               <th>문의</th>
-              <th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -1004,13 +978,9 @@ function MemberManagementPanel({
                   <td>{formatShortDate(member.createdAt)}</td>
                   <td>{formatShortDate(member.lastLoginAt)}</td>
                   <td>{member.activeSubscriptionCount || 0}건</td>
+                  <td>{member.mbtiNickname || "검사 없음"}</td>
                   <td>{member.portfolioCount || 0}개</td>
                   <td>{member.inquiryCount || 0}건</td>
-                  <td>
-                    <button type="button" className="dangerSubtle" onClick={() => onDeleteMember(member)} disabled={isLoading}>
-                      삭제
-                    </button>
-                  </td>
                 </tr>
               ))
             ) : (

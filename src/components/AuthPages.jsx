@@ -36,6 +36,7 @@ const EMAIL_DOMAIN_OPTIONS = [
 const OAUTH_LOADING_MESSAGE = "잠시만 기다려주세요. 불러오는 중입니다.";
 const OAUTH_READY_MESSAGE = "곧 이동합니다.";
 const POST_LOGIN_REDIRECT_STORAGE_KEY = "finple-post-login-redirect-page";
+const ALLOWED_POST_LOGIN_REDIRECT_PAGES = new Set(["home", "mypage", "personal"]);
 
 function GoogleGIcon() {
   return (
@@ -74,11 +75,11 @@ function getOAuthProviderParam(authMode = "") {
   return "social";
 }
 
-function consumePostLoginRedirectPage(fallbackPage = "mypage") {
+function consumePostLoginRedirectPage(fallbackPage = "home") {
   if (typeof window === "undefined") return fallbackPage;
   const storedPage = window.sessionStorage.getItem(POST_LOGIN_REDIRECT_STORAGE_KEY);
   window.sessionStorage.removeItem(POST_LOGIN_REDIRECT_STORAGE_KEY);
-  return storedPage === "personal" ? storedPage : fallbackPage;
+  return ALLOWED_POST_LOGIN_REDIRECT_PAGES.has(storedPage) ? storedPage : fallbackPage;
 }
 
 function moveToPageAfterOAuth({ authMode, onNavigate }) {
@@ -95,6 +96,19 @@ function moveToPageAfterOAuth({ authMode, onNavigate }) {
     }
 
     window.location.replace("/start");
+    return;
+  }
+
+  if (nextPage === "home") {
+    triggerRouteTransitionLoader();
+    window.history.replaceState({ page: "home" }, "", "/");
+
+    if (typeof onNavigate === "function") {
+      onNavigate("home");
+      return;
+    }
+
+    window.location.replace("/");
     return;
   }
 

@@ -49,6 +49,58 @@ function normalizeConfirmValue(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+async function getLatestPortfolioMbtiByUser() {
+  const candidateColumns = ["mbti", "metadata", "portfolio_data", "data"];
+
+  try {
+    const columnResult = await query(
+      `SELECT column_name
+         FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'portfolios'
+          AND data_type IN ('json', 'jsonb')
+          AND column_name = ANY($1::text[])`,
+      [candidateColumns]
+    );
+    const columns = new Set(columnResult.rows.map((row) => row.column_name));
+    const expressions = [];
+
+    if (columns.has("mbti")) {
+      expressions.push("mbti #>> '{nickname}'");
+      expressions.push("mbti #>> '{type,nickname}'");
+    }
+    for (const columnName of ["metadata", "portfolio_data", "data"]) {
+      if (!columns.has(columnName)) continue;
+      expressions.push(`${columnName} #>> '{mbti,nickname}'`);
+      expressions.push(`${columnName} #>> '{portfolio,mbti,nickname}'`);
+      expressions.push(`${columnName} #>> '{investmentMbti,nickname}'`);
+    }
+
+    if (expressions.length === 0) return new Map();
+
+    const mbtiResult = await query(
+      `SELECT DISTINCT ON (user_id)
+              user_id,
+              NULLIF(BTRIM(COALESCE(${expressions.join(", ")})), '') AS mbti_nickname
+         FROM portfolios
+        WHERE COALESCE(${expressions.join(", ")}) IS NOT NULL
+        ORDER BY user_id,
+                 updated_at DESC NULLS LAST,
+                 created_at DESC NULLS LAST,
+                 id DESC`
+    );
+
+    return new Map(
+      mbtiResult.rows
+        .filter((row) => row.user_id && row.mbti_nickname)
+        .map((row) => [row.user_id, row.mbti_nickname])
+    );
+  } catch (error) {
+    console.warn("Admin MBTI summary skipped:", error?.message || error);
+    return new Map();
+  }
+}
+
 async function getAdminMemberDeletionCandidate(tx, userId) {
   const result = await tx(
     `WITH latest_subscriptions AS (
@@ -109,7 +161,7 @@ router.get("/members", (request, response, next) => {
 
       await ensureEducationAccountSchema(query);
 
-      const [membersResult, educationMembersResult] = await Promise.all([
+      const [membersResult, educationMembersResult, mbtiByUserId] = await Promise.all([
         query(
           `WITH latest_subscriptions AS (
              SELECT DISTINCT ON (user_id)
@@ -183,10 +235,14 @@ router.get("/members", (request, response, next) => {
           `SELECT COUNT(DISTINCT user_id)::int AS education_members
              FROM education_accounts`
         ),
+        getLatestPortfolioMbtiByUser(),
       ]);
 
       const now = new Date();
-      const members = membersResult.rows.map((row) => mapAdminMemberRow(row, now));
+      const members = membersResult.rows.map((row) => mapAdminMemberRow({
+        ...row,
+        mbti_nickname: mbtiByUserId.get(row.id) || null,
+      }, now));
       const planCounts = members.reduce((counts, member) => {
         const plan = member.effectivePlan || member.plan || "free";
         counts.set(plan, (counts.get(plan) || 0) + 1);

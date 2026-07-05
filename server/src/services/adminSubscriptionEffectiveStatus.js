@@ -81,6 +81,7 @@ export function mapAdminMemberRow(row = {}, now = new Date()) {
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
     activeSubscriptionCount: effective.effectivePlan === "personal" ? 1 : 0,
+    mbtiNickname: row.mbti_nickname || row.mbtiNickname || null,
     portfolioCount: Number(row.portfolio_count || 0),
     inquiryCount: Number(row.inquiry_count || 0),
   };

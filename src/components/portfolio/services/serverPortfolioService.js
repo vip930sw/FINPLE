@@ -684,7 +684,12 @@ async function requestJson(path, options = {}, config = {}) {
     });
   } catch {
     if (controller.signal.aborted && !externalSignal?.aborted) {
-      throw new Error("문의 저장 시간이 초과되었습니다. 사진 용량이나 네트워크 상태를 확인한 뒤 다시 시도해 주세요.");
+      throw new Error(
+        config.timeoutMessage ||
+          (isFormData
+            ? "문의 저장 시간이 초과되었습니다. 사진 용량이나 네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+            : "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.")
+      );
     }
     throw new Error(
       `API 요청에 실패했습니다. 호출 주소: ${requestUrl}. VITE_FINPLE_API_BASE_URL 또는 백엔드 CORS_ORIGIN 설정을 확인해 주세요.`

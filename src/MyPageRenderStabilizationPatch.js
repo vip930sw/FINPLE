@@ -158,7 +158,7 @@ function installStabilizationStyle() {
 
     .finpleMyPageLoadingOverlay.isFallback {
       pointer-events: auto;
-      background: rgba(248, 250, 252, 0.98);
+      background: #f8fafc;
     }
 
     .finpleMyPageLoaderSpinner {
@@ -173,6 +173,19 @@ function installStabilizationStyle() {
       justify-items: center;
       gap: 20px;
       width: min(380px, calc(100vw - 48px));
+    }
+
+    .finpleMyPageLoadingOverlay.isFallback .finpleMyPageLoadingStack {
+      width: min(440px, calc(100vw - 48px));
+      padding: 28px;
+      border: 1px solid #d7e6ff;
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+    }
+
+    .finpleMyPageLoadingOverlay.isFallback .finpleMyPageLoaderSpinner {
+      display: none;
     }
 
     .finpleMyPageLoadingMessage {
