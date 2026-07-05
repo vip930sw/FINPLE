@@ -17,6 +17,7 @@ import { requireAdminAccess } from "../middleware/adminGuard.js";
 import { getAiAnalysisUsageAdminSummary } from "../services/aiAnalysisUsageRepository.js";
 import {
   buildPlanBreakdown,
+  collapseAdminSubscriptionsByUser,
   mapAdminMemberRow,
   mapAdminSubscriptionRow,
   getAdminSubscriptionEffectiveState,
@@ -516,28 +517,32 @@ router.get("/subscriptions", (request, response, next) => {
       const managedSubscriptions = mappedRows.filter((row, index) => (
         shouldKeepAdminSubscriptionRow(subscriptionsResult.rows[index], now)
       ));
+      const visibleSubscriptions = collapseAdminSubscriptionsByUser(managedSubscriptions);
+      const hiddenDuplicateSubscriptions = managedSubscriptions.length - visibleSubscriptions.length;
       const removedPeriodEndedSubscriptions = mappedRows.length - managedSubscriptions.length;
-      const periodEnding7d = managedSubscriptions.filter((subscription) => (
+      const periodEnding7d = visibleSubscriptions.filter((subscription) => (
         subscription.daysUntilEnd !== null &&
         subscription.daysUntilEnd >= 0 &&
         subscription.daysUntilEnd <= 7
       )).length;
-      const activeSubscriptions = managedSubscriptions.filter((subscription) => (
+      const activeSubscriptions = visibleSubscriptions.filter((subscription) => (
         subscription.effectivePlan === "personal"
       )).length;
 
       response.json({
         ok: true,
         summary: {
-          totalSubscriptions: managedSubscriptions.length,
+          totalSubscriptions: visibleSubscriptions.length,
           activeSubscriptions,
           periodEnding7d,
           removedPeriodEndedSubscriptions,
+          hiddenDuplicateSubscriptions,
           monthlyConfirmedRevenue: Number(revenueResult.rows[0]?.monthly_confirmed_revenue || 0),
           confirmedRevenue: Number(revenueResult.rows[0]?.confirmed_revenue || 0),
         },
-        planStatusBreakdown: buildPlanBreakdown(managedSubscriptions),
-        subscriptions: managedSubscriptions,
+        planStatusBreakdown: buildPlanBreakdown(visibleSubscriptions),
+        duplicateSubscriptionCandidates: hiddenDuplicateSubscriptions,
+        subscriptions: visibleSubscriptions,
       });
     } catch (error) {
       next(error);

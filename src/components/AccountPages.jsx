@@ -1443,9 +1443,6 @@ function AccountStatusPanel({ onNavigate }) {
         <button type="button" className="secondaryButton betaHiddenAction" onClick={() => onNavigate("login")}>로그인 화면</button>
         <button type="button" className="secondaryButton dangerSubtle betaHiddenAction" onClick={handleLogout} disabled={isLoading || !authUser}>로그아웃 데모</button>
       </div>
-      {!canChangePassword ? (
-        <div className="accountProviderHintBox">소셜 로그인 계정의 비밀번호는 해당 로그인 제공자에서 관리합니다.</div>
-      ) : null}
       <div className="accountWithdrawalZone">
         <div>
           <strong>계정 관리</strong>

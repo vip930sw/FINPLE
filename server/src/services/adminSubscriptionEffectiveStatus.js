@@ -135,3 +135,22 @@ export function buildPlanBreakdown(rows = []) {
     a.status.localeCompare(b.status)
   ));
 }
+
+export function collapseAdminSubscriptionsByUser(rows = []) {
+  const subscriptionsByUser = new Map();
+
+  rows.forEach((subscription) => {
+    const key = subscription.userId || subscription.email || subscription.id;
+    if (!subscriptionsByUser.has(key)) subscriptionsByUser.set(key, []);
+    subscriptionsByUser.get(key).push(subscription);
+  });
+
+  return Array.from(subscriptionsByUser.values()).map((group) => {
+    const [primary, ...duplicates] = group;
+    return {
+      ...primary,
+      duplicateSubscriptionCount: duplicates.length,
+      duplicateSubscriptionIds: duplicates.map((duplicate) => duplicate.id).filter(Boolean),
+    };
+  });
+}

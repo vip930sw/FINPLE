@@ -109,17 +109,19 @@ function getAccountStatusCards(user, panel) {
   const authMode = formatAuthMode(user, panel);
   const userName = user?.name || user?.nickname || "-";
   const plan = formatPlanLabel(getEffectivePlanFromSubscriptionStatus() || user?.plan);
+  const email = user?.email || "-";
 
   return [
     { label: "가입 방식", value: authMode },
     { label: "사용자", value: userName },
     { label: "현재 플랜/요금제", value: plan },
+    { label: "로그인 이메일", value: email, className: "monoText", cardClassName: "accountStatusEmailCard" },
   ];
 }
 
 function getCardsHtml(cards) {
   return cards.map((card) => `
-    <div class="accountStatusInfoCard">
+    <div class="accountStatusInfoCard ${escapeHtml(card.cardClassName || "")}">
       <span>${escapeHtml(card.label)}</span>
       <strong class="${escapeHtml(card.className || "")}">${escapeHtml(card.value)}</strong>
     </div>
@@ -171,7 +173,6 @@ function ensureAccountStatusHeader(panel) {
 }
 
 function ensureAccountInfoNote(panel, user) {
-  const email = user?.email || "-";
   const purposeText = getEmailPurposeText();
   const plan = formatPlanLabel(getEffectivePlanFromSubscriptionStatus() || user?.plan);
   const showPasswordChangeButton = canShowPasswordChangeButton(user);
@@ -187,10 +188,6 @@ function ensureAccountInfoNote(panel, user) {
   }
 
   note.innerHTML = `
-    <div class="accountStatusTextRow">
-      <span>로그인 이메일</span>
-      <strong>${escapeHtml(email)}</strong>
-    </div>
     <div class="accountStatusPurposeBox${showPasswordChangeButton ? " accountStatusPurposeBoxWithAction" : ""}">
       <span>${escapeHtml(purposeText)}</span>
       ${showPasswordChangeButton ? '<button type="button" class="secondaryButton accountPasswordChangeButton" data-account-password-change="true">비밀번호 변경</button>' : ""}

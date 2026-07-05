@@ -1328,6 +1328,7 @@ function SubscriptionManagementPanel({
   const subscriptions = Array.isArray(data?.subscriptions) ? data.subscriptions : [];
   const breakdown = Array.isArray(data?.planStatusBreakdown) ? data.planStatusBreakdown : [];
   const removedPeriodEndedSubscriptions = Number(data?.summary?.removedPeriodEndedSubscriptions || 0);
+  const hiddenDuplicateSubscriptions = Number(data?.summary?.hiddenDuplicateSubscriptions || data?.duplicateSubscriptionCandidates || 0);
 
   return (
     <section className="accountCard adminManagementPanel">
@@ -1344,6 +1345,7 @@ function SubscriptionManagementPanel({
         <AdminMetricCard label="활성 구독자 수" value={`${activeSubscriptions}건`} note="active/trialing/종료 예정" />
         <AdminMetricCard label="7일 내 기간 종료" value={`${churnWatchCount}건`} note="환불·해지 대응 후보" />
         <AdminMetricCard label="기간 종료 제외" value={`${removedPeriodEndedSubscriptions}건`} note="만료·대체 row 미표시" />
+        <AdminMetricCard label="중복 후보 숨김" value={`${hiddenDuplicateSubscriptions}건`} note="동일 사용자 중복 row 접기" />
         <AdminMetricCard label="월별 결제액" value={formatKrw(data?.summary?.monthlyConfirmedRevenue)} note="이번 달 confirmed payments" />
         <AdminMetricCard label="누적 확정 결제액" value={formatKrw(data?.summary?.confirmedRevenue)} note="confirmed payments 전체" />
       </div>
@@ -1375,7 +1377,7 @@ function SubscriptionManagementPanel({
         </article>
         <article>
           <strong>환불 대응 제안</strong>
-          <p>결제 기간 종료 7일 이내 구독은 환불·해지 문의가 들어올 가능성이 높으므로, 최근 결제 상태와 기간 종료일을 우선 확인하세요.</p>
+          <p>구독 해지는 다음 결제부터 자동 갱신을 중단하는 절차입니다. 중복 결제나 시스템 오류 의심 건은 결제 문의 접수 후 운영 확인을 거쳐 환불 또는 취소 가능 여부를 판단하세요.</p>
         </article>
       </div>
 
@@ -1397,7 +1399,13 @@ function SubscriptionManagementPanel({
                 const daysUntilEnd = getDaysUntil(subscription.currentPeriodEnd);
                 return (
                   <tr key={subscription.id}>
-                    <td><strong>{subscription.email || subscription.name || "회원 정보 없음"}</strong><span>{String(subscription.userId || "").slice(0, 8)}</span></td>
+                    <td>
+                      <strong>{subscription.email || subscription.name || "회원 정보 없음"}</strong>
+                      <span>{String(subscription.userId || "").slice(0, 8)}</span>
+                      {Number(subscription.duplicateSubscriptionCount || 0) > 0 ? (
+                        <span className="adminDuplicateSubscriptionBadge">중복 후보 {subscription.duplicateSubscriptionCount}건 숨김</span>
+                      ) : null}
+                    </td>
                     <td>{subscription.plan || "free"}</td>
                     <td>{SUBSCRIPTION_STATUS_LABELS[subscription.status] || subscription.status || "-"}</td>
                     <td>{formatShortDate(subscription.startedAt)} - {formatShortDate(subscription.currentPeriodEnd)}</td>

@@ -183,6 +183,15 @@ function getSetupStatusMessage() {
   return "필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.";
 }
 
+function getSafeBillingStartErrorMessage(error) {
+  if (error?.code === "ALREADY_PERSONAL_ACTIVE" || error?.payload?.code === "ALREADY_PERSONAL_ACTIVE") {
+    return "이미 Personal 구독을 이용 중입니다. 현재 이용 기간 종료 전에는 추가 결제를 시작하지 않습니다.";
+  }
+
+  if (error?.code === "AUTH_REQUIRED") return "Personal 구독 시작을 위해 로그인이 필요합니다.";
+  return "Personal 구독 시작을 진행하지 못했습니다. 잠시 후 다시 시도하거나 결제 문의를 이용해 주세요.";
+}
+
 function updateSetupUi() {
   const root = document.getElementById("root");
   if (!root) return;
@@ -224,7 +233,7 @@ async function handleStartBillingAuth() {
     await requestTossBillingAuth(preparePayload);
   } catch (error) {
     isStartingBillingAuth = false;
-    billingAuthError = error?.message || "Personal 구독 시작을 진행하지 못했습니다.";
+    billingAuthError = getSafeBillingStartErrorMessage(error);
     updateSetupUi();
   }
 }
@@ -284,8 +293,9 @@ function getSetupCardHtml() {
 
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
       <strong>구독 시작 및 환불 안내</strong>
-      <p data-payment-method-status>필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.</p>
+      <p data-payment-method-status>Personal 구독은 결제 완료 후 즉시 활성화됩니다.</p>
       <p>구독 취소는 다음 갱신 중단을 의미하며, 이미 결제된 이용기간은 종료일까지 제공됩니다. 디지털 기능 제공이 시작된 뒤에는 결제 금액 환불이 어려울 수 있습니다.</p>
+      <p>중복 결제 또는 시스템 오류가 의심되면 결제 문의를 통해 운영 확인 후 환불 또는 취소 가능 여부를 안내받을 수 있습니다.</p>
     </div>
 
     <ul class="billingResultBulletList paymentMethodUserNoticeList">

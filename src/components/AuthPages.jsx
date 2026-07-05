@@ -298,7 +298,7 @@ export function LoginPage({ onNavigate }) {
     event.preventDefault();
     const targetEmail = recoveryEmail.trim();
     if (!targetEmail) {
-      setRecoveryMessage("계정 확인에 사용할 이메일을 입력해 주세요.");
+      setRecoveryMessage("확인할 이메일을 입력해 주세요.");
       return;
     }
 
@@ -309,7 +309,7 @@ export function LoginPage({ onNavigate }) {
       const payload = recoveryMode === "password"
         ? await requestFinplePasswordResetGuide({ email: targetEmail })
         : await requestFinpleLoginMethodGuide({ email: targetEmail });
-      setRecoveryMessage(payload?.message || "입력하신 정보로 안내가 가능한 경우 이메일 안내가 발송됩니다.");
+      setRecoveryMessage(payload?.message || "확인 가능한 경우 이메일로 안내합니다.");
     } catch (error) {
       setRecoveryMessage(error?.message || "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -329,7 +329,10 @@ export function LoginPage({ onNavigate }) {
   const isSocialLoading = isGoogleLoading || isKakaoLoading || isNaverLoading;
   const isEducationMode = loginMode === "education";
   const recoveryTitle = recoveryMode === "password" ? "비밀번호 찾기" : "로그인 이메일 찾기";
-  const recoverySubmitLabel = recoveryMode === "password" ? "재설정 안내 받기" : "로그인 이메일 안내 받기";
+  const recoveryLead = recoveryMode === "password"
+    ? "확인 가능한 경우 재설정 메일을 보냅니다."
+    : "확인 가능한 경우 이메일로 안내합니다.";
+  const recoverySubmitLabel = recoveryMode === "password" ? "재설정 메일 받기" : "이메일 안내 받기";
 
   return (
     <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
@@ -403,7 +406,7 @@ export function LoginPage({ onNavigate }) {
               <button type="button" className="loginRecoveryCloseButton" aria-label="닫기" onClick={closeRecoveryModal} disabled={isRecoveryLoading}>×</button>
               <p className="accountMiniLabel">Account Help</p>
               <h3 id="loginRecoveryTitle">{recoveryTitle}</h3>
-              <p className="loginRecoveryLead">입력하신 정보로 안내가 가능한 경우에만 이메일 안내가 발송됩니다.</p>
+              <p className="loginRecoveryLead">{recoveryLead}</p>
               <form className="loginRecoveryForm" onSubmit={handleRecoverySubmit}>
                 <label>
                   이메일

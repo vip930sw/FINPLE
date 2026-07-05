@@ -8613,17 +8613,6 @@ body {
   font-weight: 700;
 }
 
-.accountProviderHintBox {
-  margin: -6px 0 8px;
-  padding: 12px 14px;
-  border: 1px solid #d7e6fb;
-  border-radius: 14px;
-  background: #f3f8ff;
-  color: #34445c;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .loginRecoveryModalBackdrop {
   position: fixed;
   inset: 0;
@@ -8636,8 +8625,8 @@ body {
 
 .loginRecoveryModal {
   position: relative;
-  width: min(420px, 100%);
-  padding: 28px;
+  width: min(400px, 100%);
+  padding: 26px 28px 28px;
   border: 1px solid #d7e6fb;
   border-radius: 20px;
   background: #fff;
@@ -8651,7 +8640,7 @@ body {
 }
 
 .loginRecoveryLead {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   color: #43536b;
   font-size: 13px;
   font-weight: 700;
@@ -8660,7 +8649,7 @@ body {
 
 .loginRecoveryForm {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .loginRecoveryCloseButton {
@@ -8717,6 +8706,10 @@ body {
   border-radius: 16px;
   background: #f8fbff;
   padding: 14px 16px;
+}
+
+.accountStatusGrid > .accountStatusEmailCard {
+  grid-column: 1 / -1;
 }
 
 .accountStatusGrid span {
@@ -14010,6 +14003,18 @@ body,
   color: #64748b;
   font-size: 12px;
   font-weight: 800;
+}
+
+.adminDataTable td .adminDuplicateSubscriptionBadge {
+  display: inline-block;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 950;
 }
 
 .adminWarningText {
