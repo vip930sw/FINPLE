@@ -2,6 +2,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query } from "../db/database.js";
+import { buildStoredPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
 
 const router = express.Router();
 
@@ -47,6 +48,11 @@ async function ensureRecurringPaymentMethodSchema() {
 function serializePaymentMethod(row) {
   if (!row) return null;
 
+  const summary = buildStoredPaymentMethodSummary(row);
+  if (summary?.displayLabel) row.display_label = summary.displayLabel;
+  if (summary?.cardCompany) row.card_company = summary.cardCompany;
+  if (summary?.cardLast4) row.card_last4 = summary.cardLast4;
+
   return {
     id: row.id,
     provider: row.provider,
@@ -88,7 +94,7 @@ router.get("/toss/billing/method", async (request, response, next) => {
     await ensureRecurringPaymentMethodSchema();
 
     const result = await query(
-      `SELECT id, provider, method_type, display_label, card_company, card_last4,
+      `SELECT id, provider, method_type, display_label, card_company, card_last4, masked_card_number,
               is_default, status, issued_at, updated_at
        FROM recurring_payment_methods
        WHERE provider = 'toss-payments'

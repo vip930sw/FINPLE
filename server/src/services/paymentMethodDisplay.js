@@ -109,34 +109,52 @@ function normalizeStoredDisplayLabel(value) {
     .trim();
 }
 
+function getStoredCardCompanyLast4Summary(row = {}, source) {
+  const cardLast4 = getMaskedTail(row.card_last4);
+  if (!row.card_company || !cardLast4) return null;
+
+  const company = resolveCardCompany(row.card_company);
+  return {
+    displayLabel: formatCardDisplayLabel(company, cardLast4),
+    cardCompany: company,
+    cardLast4,
+    maskedCardNumber: row.masked_card_number || null,
+    cardBrandKey: normalizeCardCode(row.card_company),
+    source,
+  };
+}
+
+function getSafeStoredDisplayLabelSummary(row = {}, storedLabel = "") {
+  const label = normalizeStoredDisplayLabel(storedLabel);
+  const tail = getMaskedTail(label);
+  if (!label || !tail || isGenericPaymentLabel(label)) return null;
+
+  const leadingCode = label.match(/^\s*([0-9A-Z]{2,3})\b/i)?.[1] || "";
+  const companyText = label
+    .replace(new RegExp(`${tail}\\s*$`), "")
+    .replace(/[\s*.\-·ㆍ]+$/u, "")
+    .trim();
+  const company = resolveCardCompany(row.card_company, leadingCode, companyText);
+
+  return {
+    displayLabel: formatCardDisplayLabel(company, tail),
+    cardCompany: company,
+    cardLast4: tail,
+    maskedCardNumber: row.masked_card_number || null,
+    cardBrandKey: normalizeCardCode(row.card_company || leadingCode),
+    source: "stored_display_label",
+  };
+}
+
 export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
   if (!row || typeof row !== "object") return null;
 
-  const storedLabel = normalizeStoredDisplayLabel(row.display_label);
-  const storedLabelTail = getMaskedTail(storedLabel);
-  if (storedLabel && storedLabelTail && !isGenericPaymentLabel(storedLabel)) {
-    return {
-      displayLabel: storedLabel,
-      cardCompany: row.card_company || null,
-      cardLast4: storedLabelTail,
-      maskedCardNumber: row.masked_card_number || null,
-      cardBrandKey: normalizeCardCode(row.card_company),
-      source: "stored_display_label",
-    };
-  }
+  const storedCardSummary = getStoredCardCompanyLast4Summary(row, "stored_card_company_last4");
+  if (storedCardSummary) return storedCardSummary;
 
-  const cardLast4 = getMaskedTail(row.card_last4);
-  if (row.card_company && cardLast4) {
-    const company = resolveCardCompany(row.card_company);
-    return {
-      displayLabel: formatCardDisplayLabel(company, cardLast4),
-      cardCompany: company,
-      cardLast4,
-      maskedCardNumber: row.masked_card_number || null,
-      cardBrandKey: normalizeCardCode(row.card_company),
-      source: "stored_card_company_last4",
-    };
-  }
+  const storedLabel = normalizeStoredDisplayLabel(row.display_label);
+  const storedDisplaySummary = getSafeStoredDisplayLabelSummary(row, storedLabel);
+  if (storedDisplaySummary) return storedDisplaySummary;
 
   const maskedTail = getMaskedTail(row.masked_card_number);
   if (maskedTail) {

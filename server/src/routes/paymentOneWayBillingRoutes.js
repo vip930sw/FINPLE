@@ -249,6 +249,62 @@ function getBillingCardSummary(...sources) {
   };
 }
 
+async function getActivePersonalSubscription(userId, tx = query) {
+  if (!isDatabaseConfigured() || !userId) return null;
+
+  const result = await tx(
+    `SELECT id, plan, status, current_period_start, current_period_end,
+            cancel_at_period_end, provider, provider_subscription_id
+     FROM subscriptions
+     WHERE user_id = $1
+       AND plan = 'personal'
+       AND status IN ('active', 'trialing', 'cancel_at_period_end')
+       AND COALESCE(current_period_end, NOW() + INTERVAL '100 years') > NOW()
+     ORDER BY current_period_end DESC NULLS LAST, current_period_start DESC NULLS LAST
+     LIMIT 1`,
+    [userId]
+  );
+
+  return result.rows[0] || null;
+}
+
+function buildAlreadySubscribedStorage(subscription) {
+  const currentPeriodEnd = subscription?.current_period_end || null;
+  return {
+    stored: false,
+    reason: "already_personal_active",
+    code: "ALREADY_PERSONAL_ACTIVE",
+    alreadySubscribed: true,
+    subscriptionActivated: false,
+    effectivePlan: "personal",
+    effectiveStatus: subscription?.status || "active",
+    accessUntil: currentPeriodEnd,
+    currentPeriodEnd,
+    subscription,
+    serverNow: new Date().toISOString(),
+    message: "?대? Personal???댁슜 以묒엯?덈떎. ?꾩옱 ?댁슜湲곌컙 醫낅즺?쇨퉴吏 異붽? 寃곗젣 ?놁씠 Personal 湲곕뒫???ъ슜?????덉뒿?덈떎.",
+  };
+}
+
+function buildAlreadySubscribedResponse(subscription) {
+  const storage = buildAlreadySubscribedStorage(subscription);
+  return {
+    ok: false,
+    provider: "toss-payments",
+    mode: getRequestedPaymentMode() === "live" ? "billing-live-one-way" : "billing-test-one-way",
+    plan: PERSONAL_PLAN,
+    code: storage.code,
+    alreadySubscribed: true,
+    effectivePlan: storage.effectivePlan,
+    effectiveStatus: storage.effectiveStatus,
+    accessUntil: storage.accessUntil,
+    currentPeriodEnd: storage.currentPeriodEnd,
+    subscription: storage.subscription,
+    storage,
+    message: storage.message,
+  };
+}
+
 function getPeriodEndIso() {
   const periodEnd = new Date();
   periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -302,6 +358,36 @@ async function storeMethodAndActivateSubscription({ user, authOrderId, firstPaym
   try {
     return await withTransaction(async (tx) => {
       await ensureRecurringPaymentMethodSchema(tx);
+
+      const activeSubscription = await getActivePersonalSubscription(user.id, tx);
+      if (activeSubscription) return buildAlreadySubscribedStorage(activeSubscription);
+
+      const duplicatePaymentResult = await tx(
+        `SELECT id, subscription_id, provider_payment_id, provider_order_id
+         FROM payments
+         WHERE provider = 'toss-payments'
+           AND user_id = $1
+           AND (
+             (provider_payment_id IS NOT NULL AND provider_payment_id = $2)
+             OR (provider_order_id IS NOT NULL AND provider_order_id = $3)
+           )
+         ORDER BY requested_at DESC NULLS LAST
+         LIMIT 1`,
+        [user.id, paymentKey, firstPaymentOrderId]
+      );
+      const duplicatePayment = duplicatePaymentResult.rows[0] || null;
+      if (duplicatePayment) {
+        return {
+          stored: true,
+          existingPayment: true,
+          duplicateGuard: true,
+          subscriptionActivated: false,
+          paymentId: duplicatePayment.id,
+          subscriptionId: duplicatePayment.subscription_id || null,
+          status: "active",
+          message: "이미 처리된 결제 요청입니다. 기존 결제 내역을 기준으로 표시합니다.",
+        };
+      }
 
       await tx(
         `UPDATE recurring_payment_methods
@@ -559,6 +645,12 @@ router.post("/toss/billing/issue", async (request, response, next) => {
     const user = await getRequestUser(request);
     if (!user) {
       response.status(401).json({ ok: false, code: "AUTH_REQUIRED", message: "Personal 구독 시작을 위해 로그인이 필요합니다." });
+      return;
+    }
+
+    const activeSubscription = await getActivePersonalSubscription(user.id);
+    if (activeSubscription) {
+      response.status(409).json(buildAlreadySubscribedResponse(activeSubscription));
       return;
     }
 

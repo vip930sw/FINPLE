@@ -23,6 +23,7 @@ let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
 let lastSubscriptionError = "";
 let isRequestingPeriodEnd = false;
+const SUBSCRIPTION_EFFECTIVE_STORAGE_KEY = "finple-subscription-effective-status";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -187,13 +188,30 @@ function syncSubscriptionPayloadToBrowser(payload) {
   if (!payload?.authenticated) return;
 
   const plan = getPlanFromPayload(payload);
+  const decision = getSubscriptionPlanDecision(payload);
   const storedUser = getStoredFinpleAuthUser();
+  const subscription = payload.subscription || {};
+  const entitlement = payload.entitlement || {};
+  const accessUntil = payload.accessUntil || payload.currentPeriodEnd || subscription.current_period_end || subscription.currentPeriodEnd || entitlement.valid_until || entitlement.validUntil || null;
+
+  try {
+    window.localStorage.setItem(SUBSCRIPTION_EFFECTIVE_STORAGE_KEY, JSON.stringify({
+      effectivePlan: plan,
+      effectiveStatus: decision.status || payload.status || subscription.status || "beta_free",
+      accessUntil,
+      currentPeriodEnd: payload.currentPeriodEnd || subscription.current_period_end || subscription.currentPeriodEnd || null,
+      nextBillingAt: payload.nextBillingAt || subscription.next_billing_at || subscription.nextBillingAt || null,
+      serverNow: payload.serverNow || new Date().toISOString(),
+    }));
+  } catch (error) {
+    // Ignore storage sync failures; the visible panel still updates from payload.
+  }
 
   if (storedUser?.id) {
     setStoredFinpleAuthUser({
       ...storedUser,
       plan,
-      billingStatus: getSubscriptionPlanDecision(payload).status || payload.status || payload.subscription?.status || "beta_free",
+      billingStatus: decision.status || payload.status || payload.subscription?.status || "beta_free",
       subscriptionId: plan === "personal" ? payload.subscription?.id || storedUser.subscriptionId || null : null,
       entitlementValidUntil: plan === "personal" ? payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null : null,
     });
@@ -208,6 +226,19 @@ function syncSubscriptionPayloadToBrowser(payload) {
 
 function syncSubscriptionFailureToBrowser() {
   const storedUser = getStoredFinpleAuthUser();
+
+  try {
+    window.localStorage.setItem(SUBSCRIPTION_EFFECTIVE_STORAGE_KEY, JSON.stringify({
+      effectivePlan: "free",
+      effectiveStatus: "subscription_status_unverified",
+      accessUntil: null,
+      currentPeriodEnd: null,
+      nextBillingAt: null,
+      serverNow: new Date().toISOString(),
+    }));
+  } catch (error) {
+    // Ignore storage sync failures.
+  }
 
   if (storedUser?.id && normalizeFinplePlan(storedUser.plan) === "personal") {
     setStoredFinpleAuthUser({
@@ -224,14 +255,14 @@ function syncSubscriptionFailureToBrowser() {
   window.dispatchEvent(new Event("finple-local-storage-updated"));
 }
 
-function getPeriodEndValue(subscription, entitlement) {
+function getPeriodEndValue(payload, subscription, entitlement) {
   return payload?.accessUntil || subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil || null;
 }
 
-function getNextBillingLabel({ plan, status, subscription, entitlement }) {
+function getNextBillingLabel({ payload, plan, status, subscription, entitlement }) {
   if (plan !== "personal") return "해당 없음";
   if (isPeriodEndScheduled(status, subscription)) return "다음 결제 없음";
-  return readDateLabel(subscription?.next_billing_at || subscription?.nextBillingAt || getPeriodEndValue(subscription, entitlement));
+  return readDateLabel(payload?.nextBillingAt || subscription?.next_billing_at || subscription?.nextBillingAt || getPeriodEndValue(payload, subscription, entitlement));
 }
 
 function updatePeriodEndButton({ panel, plan, status, subscription }) {
@@ -267,12 +298,12 @@ function updateSubscriptionPanel() {
   const plan = getPlanFromPayload(payload);
   const status = decision.status || payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
   const scheduled = plan === "personal" && isPeriodEndScheduled(status, subscription);
-  const periodEndValue = plan === "personal" ? getPeriodEndValue(subscription, entitlement) : null;
+  const periodEndValue = plan === "personal" ? getPeriodEndValue(payload, subscription, entitlement) : null;
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
   setText(panel.querySelector("[data-subscription-plan]"), formatPlanLabel(plan));
   setText(panel.querySelector("[data-subscription-status]"), formatStatusLabel(status));
-  setText(panel.querySelector("[data-subscription-next-billing]"), getNextBillingLabel({ plan, status, subscription, entitlement }));
+  setText(panel.querySelector("[data-subscription-next-billing]"), getNextBillingLabel({ payload, plan, status, subscription, entitlement }));
   setText(panel.querySelector("[data-subscription-next-billing-note]"), scheduled ? "해지 예약됨" : "정기결제 기준");
   setText(panel.querySelector("[data-subscription-period-end]"), readDateLabel(periodEndValue));
   setText(panel.querySelector("[data-subscription-period-end-note]"), scheduled ? "종료 예정" : "현재 이용기간 기준");

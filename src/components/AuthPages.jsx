@@ -185,6 +185,8 @@ export function LoginPage({ onNavigate }) {
   const [password, setPassword] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [recoveryMode, setRecoveryMode] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -279,31 +281,55 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
-  async function handleRecoveryRequest(mode) {
-    const recoveryEmail = email.trim();
-    if (!recoveryEmail) {
-      setStatusMessage("계정 확인에 사용할 이메일을 입력해 주세요.");
-      setRecoveryMode(mode);
+  function handleRecoveryRequest(mode) {
+    setRecoveryMode(mode);
+    setRecoveryEmail(email.trim());
+    setRecoveryMessage("");
+    setStatusMessage("");
+  }
+
+  function closeRecoveryModal() {
+    if (isRecoveryLoading) return;
+    setRecoveryMode("");
+    setRecoveryMessage("");
+  }
+
+  async function handleRecoverySubmit(event) {
+    event.preventDefault();
+    const targetEmail = recoveryEmail.trim();
+    if (!targetEmail) {
+      setRecoveryMessage("계정 확인에 사용할 이메일을 입력해 주세요.");
       return;
     }
 
-    setRecoveryMode(mode);
     setIsRecoveryLoading(true);
+    setRecoveryMessage("");
     setStatusMessage("");
     try {
-      const payload = mode === "password"
-        ? await requestFinplePasswordResetGuide({ email: recoveryEmail })
-        : await requestFinpleLoginMethodGuide({ email: recoveryEmail });
-      setStatusMessage(payload?.message || "입력하신 이메일로 계정 확인 또는 비밀번호 재설정 안내를 발송할 수 있는 경우 안내가 발송됩니다.");
+      const payload = recoveryMode === "password"
+        ? await requestFinplePasswordResetGuide({ email: targetEmail })
+        : await requestFinpleLoginMethodGuide({ email: targetEmail });
+      setRecoveryMessage(payload?.message || "입력하신 정보로 안내가 가능한 경우 이메일 안내가 발송됩니다.");
     } catch (error) {
-      setStatusMessage(error?.message || "계정 확인 안내 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setRecoveryMessage(error?.message || "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsRecoveryLoading(false);
     }
   }
 
+  useEffect(() => {
+    if (!recoveryMode) return undefined;
+    function handleRecoveryKeydown(event) {
+      if (event.key === "Escape") closeRecoveryModal();
+    }
+    window.addEventListener("keydown", handleRecoveryKeydown);
+    return () => window.removeEventListener("keydown", handleRecoveryKeydown);
+  }, [recoveryMode, isRecoveryLoading]);
+
   const isSocialLoading = isGoogleLoading || isKakaoLoading || isNaverLoading;
   const isEducationMode = loginMode === "education";
+  const recoveryTitle = recoveryMode === "password" ? "비밀번호 찾기" : "로그인 이메일 찾기";
+  const recoverySubmitLabel = recoveryMode === "password" ? "재설정 안내 받기" : "로그인 이메일 안내 받기";
 
   return (
     <AccountShell eyebrow="" title="" description="" onNavigate={onNavigate} pageClassName="legalPage loginSimplePage">
@@ -363,14 +389,42 @@ export function LoginPage({ onNavigate }) {
           <div className="loginUtilityRow">
             <label className="loginKeepLabel"><input type="checkbox" /> <span>로그인 유지</span></label>
             <span className="loginRecoveryActions">
-              <button type="button" className="loginTextButton" onClick={() => handleRecoveryRequest("login-method")} disabled={isRecoveryLoading || isEducationMode}>아이디 찾기</button>
+              <button type="button" className="loginTextButton" onClick={() => handleRecoveryRequest("login-method")} disabled={isRecoveryLoading || isEducationMode}>로그인 이메일 찾기</button>
               <button type="button" className="loginTextButton" onClick={() => handleRecoveryRequest("password")} disabled={isRecoveryLoading || isEducationMode}>비밀번호 찾기</button>
             </span>
           </div>
-          {recoveryMode ? <p className="loginRecoveryHint">FINPLE ID는 이메일 주소입니다. 입력한 이메일 기준으로 안내가 가능한 경우에만 안내가 발송됩니다.</p> : null}
           {statusMessage ? <p className="accountInlineStatus">{statusMessage}</p> : null}
           <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isSocialLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>
+
+        {recoveryMode ? (
+          <div className="loginRecoveryModalBackdrop" role="presentation" onMouseDown={closeRecoveryModal}>
+            <section className="loginRecoveryModal" role="dialog" aria-modal="true" aria-labelledby="loginRecoveryTitle" onMouseDown={(event) => event.stopPropagation()}>
+              <button type="button" className="loginRecoveryCloseButton" aria-label="닫기" onClick={closeRecoveryModal} disabled={isRecoveryLoading}>×</button>
+              <p className="accountMiniLabel">Account Help</p>
+              <h3 id="loginRecoveryTitle">{recoveryTitle}</h3>
+              <p className="loginRecoveryLead">입력하신 정보로 안내가 가능한 경우에만 이메일 안내가 발송됩니다.</p>
+              <form className="loginRecoveryForm" onSubmit={handleRecoverySubmit}>
+                <label>
+                  이메일
+                  <input
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={(event) => setRecoveryEmail(event.target.value)}
+                    placeholder="example@finple.co.kr"
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </label>
+                {recoveryMessage ? <p className="accountInlineStatus">{recoveryMessage}</p> : null}
+                <div className="serverStorageActions compactActions loginRecoveryModalActions">
+                  <button type="submit" className="primaryButton" disabled={isRecoveryLoading}>{isRecoveryLoading ? "요청 중" : recoverySubmitLabel}</button>
+                  <button type="button" className="secondaryButton" onClick={closeRecoveryModal} disabled={isRecoveryLoading}>취소</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        ) : null}
 
         {!isEducationMode ? (
           <>

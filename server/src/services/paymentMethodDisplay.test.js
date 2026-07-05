@@ -58,6 +58,30 @@ test("stored payment method display prefers stored card company and last4 over s
   assert.equal(summary.source, "stored_card_company_last4");
 });
 
+test("stored payment method display does not expose issuer-code prefixes from stale labels", () => {
+  const summary = buildStoredPaymentMethodSummary({
+    display_label: "33 **** 2912",
+    card_company: "33",
+    card_last4: "9121",
+  });
+
+  assert.equal(summary.cardLast4, "9121");
+  assert.equal(summary.source, "stored_card_company_last4");
+  assert.match(summary.displayLabel, /9121$/);
+  assert.doesNotMatch(summary.displayLabel, /^33\b/);
+});
+
+test("stored payment method display safely parses code-prefixed labels when last4 is missing", () => {
+  const summary = buildStoredPaymentMethodSummary({
+    display_label: "33 **** 2912",
+  });
+
+  assert.equal(summary.cardLast4, "2912");
+  assert.equal(summary.source, "stored_display_label");
+  assert.match(summary.displayLabel, /2912$/);
+  assert.doesNotMatch(summary.displayLabel, /^33\b/);
+});
+
 test("payment method display extracts safe tails from stored masked values", () => {
   assert.equal(getMaskedTail("****-****-****-9121"), "9121");
   assert.equal(getMaskedTail("9121"), "9121");

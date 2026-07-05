@@ -88,10 +88,9 @@ function movePlanUsageCards(subscriptionPanel, planPanel) {
 
 function movePlanBadge(subscriptionPanel, planPanel) {
   const subscriptionBadge = subscriptionPanel?.querySelector("[data-subscription-badge]");
-  const planBadge = planPanel?.querySelector(".serverStorageHeader .serverStatusBadge");
-  if (!subscriptionBadge || !planBadge) return;
+  if (!subscriptionBadge) return;
 
-  const label = planBadge.textContent?.trim();
+  const label = subscriptionPanel?.querySelector("[data-subscription-plan]")?.textContent?.trim();
   if (label) subscriptionBadge.textContent = label;
   subscriptionBadge.classList.add("billingMergedPlanBadge");
 }

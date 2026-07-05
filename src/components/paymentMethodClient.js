@@ -49,6 +49,35 @@ export async function prepareBillingAuth() {
   if (!response.ok || payload?.ok === false) {
     const error = new Error(payload?.message || "자동결제 등록 준비 요청에 실패했습니다.");
     error.code = payload?.code || "BILLING_AUTH_PREPARE_FAILED";
+    error.payload = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
+export async function prepareBillingMethodUpdate() {
+  const session = getStoredFinpleAuthSession();
+  const user = getStoredFinpleAuthUser();
+
+  if (!session?.token && !user?.id) {
+    const error = new Error("자동결제 결제수단 등록/변경을 위해 로그인이 필요합니다.");
+    error.code = "AUTH_REQUIRED";
+    throw error;
+  }
+
+  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/method/prepare`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ purpose: "card_update" }),
+  });
+
+  const payload = await readResponseJson(response);
+
+  if (!response.ok || payload?.ok === false) {
+    const error = new Error(payload?.message || "자동결제 결제수단 등록/변경 준비 요청에 실패했습니다.");
+    error.code = payload?.code || "BILLING_METHOD_PREPARE_FAILED";
+    error.payload = payload;
     throw error;
   }
 
@@ -76,6 +105,34 @@ export async function issueBillingKey({ authKey, orderId, customerKey }) {
   if (!response.ok || payload?.ok === false) {
     const error = new Error(payload?.message || "자동결제 결제수단 저장에 실패했습니다.");
     error.code = payload?.code || "BILLING_KEY_ISSUE_FAILED";
+    error.payload = payload;
+    throw error;
+  }
+
+  return payload;
+}
+
+export async function issueBillingMethodUpdate({ authKey, orderId, customerKey }) {
+  const session = getStoredFinpleAuthSession();
+  const user = getStoredFinpleAuthUser();
+
+  if (!session?.token && !user?.id) {
+    const error = new Error("자동결제 결제수단 저장을 위해 로그인이 필요합니다.");
+    error.code = "AUTH_REQUIRED";
+    throw error;
+  }
+
+  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/toss/billing/method/issue`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ authKey, orderId, customerKey }),
+  });
+
+  const payload = await readResponseJson(response);
+
+  if (!response.ok || payload?.ok === false) {
+    const error = new Error(payload?.message || "자동결제 결제수단 저장에 실패했습니다.");
+    error.code = payload?.code || "BILLING_METHOD_ISSUE_FAILED";
     error.payload = payload;
     throw error;
   }

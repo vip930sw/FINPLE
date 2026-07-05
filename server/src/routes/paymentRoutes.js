@@ -738,6 +738,12 @@ router.get("/subscription/me", async (request, response, next) => {
         : effective.warnings?.includes("personal_period_end_missing_temporary_access")
           ? "missing_period_end_temporary_access"
           : effective.effectiveStatus || "not_paid";
+    const currentPeriodEnd = subscription?.current_period_end || subscription?.currentPeriodEnd || null;
+    const currentPeriodStart = subscription?.current_period_start || subscription?.currentPeriodStart || null;
+    const nextBillingAt =
+      effective.effectivePlan === "personal" && effective.effectiveStatus !== "cancel_at_period_end"
+        ? currentPeriodEnd
+        : null;
 
     response.json({
       ok: true,
@@ -753,6 +759,9 @@ router.get("/subscription/me", async (request, response, next) => {
       effectivePlan: effective.effectivePlan,
       effectiveStatus: effective.effectiveStatus,
       accessUntil,
+      currentPeriodStart,
+      currentPeriodEnd,
+      nextBillingAt,
       accessReason,
       rawPlan: entitlement?.plan || user.plan || "free",
       rawStatus: subscription?.status || "beta_free",

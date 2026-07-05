@@ -172,6 +172,42 @@ function getBillingCardSummary(...sources) {
   };
 }
 
+async function getActivePersonalSubscription(userId) {
+  if (!isDatabaseConfigured() || !userId) return null;
+
+  const result = await query(
+    `SELECT id, plan, status, current_period_start, current_period_end,
+            cancel_at_period_end, provider, provider_subscription_id
+     FROM subscriptions
+     WHERE user_id = $1
+       AND plan = 'personal'
+       AND status IN ('active', 'trialing', 'cancel_at_period_end')
+       AND COALESCE(current_period_end, NOW() + INTERVAL '100 years') > NOW()
+     ORDER BY current_period_end DESC NULLS LAST, current_period_start DESC NULLS LAST
+     LIMIT 1`,
+    [userId]
+  );
+
+  return result.rows[0] || null;
+}
+
+function buildAlreadySubscribedResponse(subscription) {
+  const currentPeriodEnd = subscription?.current_period_end || null;
+  return {
+    ok: false,
+    code: "ALREADY_PERSONAL_ACTIVE",
+    alreadySubscribed: true,
+    provider: "toss-payments",
+    effectivePlan: "personal",
+    effectiveStatus: subscription?.status || "active",
+    accessUntil: currentPeriodEnd,
+    currentPeriodEnd,
+    subscription,
+    serverNow: new Date().toISOString(),
+    message: "?대? Personal???댁슜 以묒엯?덈떎. ?꾩옱 ?댁슜湲곌컙 醫낅즺?쇨퉴吏 異붽? 寃곗젣 ?놁씠 Personal 湲곕뒫???ъ슜?????덉뒿?덈떎.",
+  };
+}
+
 function sanitizeBillingKeyIssuePayload(payload) {
   if (!payload || typeof payload !== "object") return {};
   const { billingKey, ...safePayload } = payload;
@@ -402,6 +438,12 @@ router.post("/toss/billing/prepare", async (request, response, next) => {
       return;
     }
 
+    const activeSubscription = await getActivePersonalSubscription(user.id);
+    if (activeSubscription) {
+      response.status(409).json(buildAlreadySubscribedResponse(activeSubscription));
+      return;
+    }
+
     const orderId = createBillingAuthOrderId(user.id);
     const customerKey = createCustomerKey(user.id);
     const requestedMode = getRequestedPaymentMode();
@@ -456,6 +498,142 @@ router.post("/toss/billing/prepare", async (request, response, next) => {
   }
 });
 
+router.post("/toss/billing/method/prepare", async (request, response, next) => {
+  try {
+    const user = await getRequestUser(request);
+
+    if (!user) {
+      response.status(401).json({
+        ok: false,
+        code: "AUTH_REQUIRED",
+        message: "?먮룞寃곗젣 寃곗젣?섎떒 ?깅줉???꾪빐 濡쒓렇?몄씠 ?꾩슂?⑸땲??",
+      });
+      return;
+    }
+
+    const orderId = createBillingAuthOrderId(user.id);
+    const customerKey = createCustomerKey(user.id);
+    const requestedMode = getRequestedPaymentMode();
+    const clientKeyConfigured = Boolean(process.env.TOSS_CLIENT_KEY || process.env.TOSS_BILLING_CLIENT_KEY);
+    const secretKeyConfigured = Boolean(process.env.TOSS_SECRET_KEY);
+    const successUrl = `${getSiteUrl()}${getBillingAuthSuccessPath()}?mode=card_update&orderId=${encodeURIComponent(orderId)}`;
+    const failUrl = `${getSiteUrl()}${getBillingAuthFailPath()}?mode=card_update&orderId=${encodeURIComponent(orderId)}`;
+    const payload = {
+      plan: "personal",
+      purpose: "card_update",
+      amount: 0,
+      billingCycle: "monthly",
+      orderName: "FINPLE 자동결제 결제수단 등록/변경",
+      successUrl,
+      failUrl,
+      requestedMode,
+      customer: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    };
+    const storage = await recordBillingAuthPrepare({ user, orderId, customerKey, payload });
+
+    response.json({
+      ok: true,
+      provider: "toss-payments",
+      mode: requestedMode === "live" ? "billing-method-live-prepare" : "billing-method-test-prepare",
+      billingAuthAvailable: true,
+      billingKeyIssueReady: secretKeyConfigured,
+      clientKeyConfigured,
+      clientKeyLocation: "Vercel environment or optional Render environment",
+      secretKeyLocation: "Render environment only",
+      orderId,
+      customerKey,
+      orderName: payload.orderName,
+      plan: payload.plan,
+      purpose: payload.purpose,
+      amount: payload.amount,
+      billingCycle: payload.billingCycle,
+      successUrl,
+      failUrl,
+      customer: payload.customer,
+      storage,
+      warnings: [
+        ...(clientKeyConfigured ? [] : ["TOSS_CLIENT_KEY is not configured on Render. The browser can still use VITE_TOSS_CLIENT_KEY if configured on Vercel."]),
+        ...(secretKeyConfigured ? [] : ["TOSS_SECRET_KEY is not configured. BillingKey issuing after auth will remain disabled."]),
+      ],
+      message: "자동결제 결제수단 등록/변경 준비 정보가 생성되었습니다. 이 경로에서는 즉시 첫 결제를 실행하지 않습니다.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/toss/billing/method/issue", async (request, response, next) => {
+  try {
+    const user = await getRequestUser(request);
+
+    if (!user) {
+      response.status(401).json({
+        ok: false,
+        code: "AUTH_REQUIRED",
+        message: "?먮룞寃곗젣 寃곗젣?섎떒 ??μ쓣 ?꾪빐 濡쒓렇?몄씠 ?꾩슂?⑸땲??",
+      });
+      return;
+    }
+
+    const authKey = String(request.body?.authKey || "").trim();
+    const orderId = String(request.body?.orderId || "").trim();
+    const inputCustomerKey = String(request.body?.customerKey || "").trim();
+
+    if (!authKey) {
+      response.status(400).json({
+        ok: false,
+        code: "AUTH_KEY_REQUIRED",
+        message: "Toss 寃곗젣?섎떒 ?몄쬆媛믪씠 ?놁뒿?덈떎.",
+      });
+      return;
+    }
+
+    const prepared = await resolvePreparedBillingAuth({ user, orderId, customerKey: inputCustomerKey });
+    const customerKey = prepared.customerKey;
+
+    if (!customerKey) {
+      response.status(400).json({
+        ok: false,
+        code: "CUSTOMER_KEY_REQUIRED",
+        message: "?먮룞寃곗젣 ?깅줉 怨좉컼 ?앸퀎媛믪쓣 ?뺤씤?섏? 紐삵뻽?듬땲??",
+      });
+      return;
+    }
+
+    const issuePayload = await requestTossBillingKeyIssue({ authKey, customerKey, orderId });
+    assertBillingKeyIssueResponse(issuePayload, customerKey);
+
+    const storage = await storeBillingKeyIssue({ user, orderId, authKey, customerKey, issuePayload });
+
+    response.status(storage.stored ? 200 : 500).json({
+      ok: Boolean(storage.stored),
+      provider: "toss-payments",
+      mode: getRequestedPaymentMode() === "live" ? "billing-method-live" : "billing-method-test",
+      plan: "personal",
+      purpose: "card_update",
+      customerKey,
+      orderId,
+      stored: Boolean(storage.stored),
+      subscriptionActivated: false,
+      storage,
+      method: storage.stored ? {
+        displayLabel: storage.displayLabel,
+        cardCompany: storage.cardCompany,
+        cardLast4: storage.cardLast4,
+      } : getBillingCardSummary(issuePayload),
+      message: storage.stored
+        ? "결제수단이 등록/변경되었습니다. 이 경로에서는 즉시 첫 결제나 구독 재생성을 실행하지 않았습니다."
+        : storage.message || "결제수단 저장에 실패했습니다.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/toss/billing/issue", async (request, response, next) => {
   try {
     const user = await getRequestUser(request);
@@ -466,6 +644,12 @@ router.post("/toss/billing/issue", async (request, response, next) => {
         code: "AUTH_REQUIRED",
         message: "자동결제 결제수단 저장을 위해 로그인이 필요합니다.",
       });
+      return;
+    }
+
+    const activeSubscription = await getActivePersonalSubscription(user.id);
+    if (activeSubscription) {
+      response.status(409).json(buildAlreadySubscribedResponse(activeSubscription));
       return;
     }
 

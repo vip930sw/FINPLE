@@ -8613,6 +8613,75 @@ body {
   font-weight: 700;
 }
 
+.accountProviderHintBox {
+  margin: -6px 0 8px;
+  padding: 12px 14px;
+  border: 1px solid #d7e6fb;
+  border-radius: 14px;
+  background: #f3f8ff;
+  color: #34445c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.loginRecoveryModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.loginRecoveryModal {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 28px;
+  border: 1px solid #d7e6fb;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.loginRecoveryModal h3 {
+  margin: 6px 0 8px;
+  color: #071226;
+  font-size: 22px;
+}
+
+.loginRecoveryLead {
+  margin: 0 0 18px;
+  color: #43536b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.loginRecoveryForm {
+  display: grid;
+  gap: 14px;
+}
+
+.loginRecoveryCloseButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d7e6fb;
+  border-radius: 50%;
+  background: #fff;
+  color: #52627a;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.loginRecoveryModalActions {
+  margin-top: 2px;
+}
+
 @media screen and (max-width: 900px) {
   .serverPortfolioList {
     grid-template-columns: 1fr;

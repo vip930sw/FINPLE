@@ -435,7 +435,7 @@ function bindPaymentMethodPanelActions() {
   const setupButton = document.querySelector("[data-payment-method-setup]");
   if (setupButton && setupButton.getAttribute("data-payment-method-wired") !== "true") {
     setupButton.setAttribute("data-payment-method-wired", "true");
-    setupButton.addEventListener("click", () => navigateTo("/payment-method/setup"));
+    setupButton.addEventListener("click", () => navigateTo("/payment-method/setup?mode=card_update&source=mypage"));
   }
   const pricingButton = document.querySelector("[data-payment-method-pricing]");
   if (pricingButton && pricingButton.getAttribute("data-payment-method-wired") !== "true") {

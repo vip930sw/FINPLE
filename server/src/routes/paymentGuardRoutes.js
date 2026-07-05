@@ -105,7 +105,7 @@ async function getActivePersonalSubscription(userId) {
        LEFT JOIN user_entitlements ue ON ue.user_id = s.user_id
        WHERE s.user_id = $1
          AND s.plan = 'personal'
-         AND s.status = 'active'
+         AND s.status IN ('active', 'trialing', 'cancel_at_period_end')
          AND COALESCE(s.current_period_end, NOW() + INTERVAL '100 years') > NOW()
        ORDER BY s.current_period_end DESC NULLS LAST, s.current_period_start DESC NULLS LAST
        LIMIT 1`,
@@ -152,6 +152,11 @@ router.post("/toss/prepare", async (request, response, next) => {
       plan: planConfig.plan,
       amount,
       billingCycle: planConfig.billingCycle,
+      effectivePlan: "personal",
+      effectiveStatus: activeSubscription.status || "active",
+      accessUntil: activeSubscription.current_period_end || activeSubscription.entitlement_valid_until || null,
+      currentPeriodEnd: activeSubscription.current_period_end || null,
+      serverNow: new Date().toISOString(),
       customer: {
         id: user.id,
         email: user.email,

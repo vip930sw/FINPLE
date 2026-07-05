@@ -4,7 +4,13 @@
    - success 페이지에서 authKey를 서버로 전달해 billingKey 발급, 첫 달 결제, Personal 활성화를 진행합니다.
 ========================================================= */
 
-import { issueBillingKey, prepareBillingAuth, requestTossBillingAuth } from "./components/paymentMethodClient";
+import {
+  issueBillingKey,
+  issueBillingMethodUpdate,
+  prepareBillingAuth,
+  prepareBillingMethodUpdate,
+  requestTossBillingAuth,
+} from "./components/paymentMethodClient";
 
 const PAYMENT_METHOD_PATHS = new Set([
   "/payment-method/setup",
@@ -45,6 +51,10 @@ function handleLogout() {
 
 function getQueryValue(key) {
   return new URLSearchParams(window.location.search).get(key) || "";
+}
+
+function getPaymentMethodMode() {
+  return getQueryValue("mode") === "card_update" ? "card_update" : "subscription_start";
 }
 
 function escapeHtml(value) {
@@ -108,6 +118,17 @@ function getGlobalHeaderHtml() {
 
 function getPageCopy(path) {
   if (path === "/payment-method/success") {
+    if (getPaymentMethodMode() === "card_update") {
+      return {
+        eyebrow: "Payment Method",
+        title: "결제수단 등록/변경 완료",
+        description: "자동결제에 사용할 결제수단 저장 결과를 확인합니다. 이 경로에서는 즉시 첫 결제가 실행되지 않습니다.",
+        tone: "success",
+        badge: "PAYMENT METHOD",
+        statusLabel: "처리 중",
+      };
+    }
+
     return {
       eyebrow: "Personal Billing",
       title: "Personal 구독을 시작하고 있습니다.",
@@ -129,6 +150,17 @@ function getPageCopy(path) {
     };
   }
 
+  if (path === "/payment-method/setup" && getPaymentMethodMode() === "card_update") {
+    return {
+      eyebrow: "Payment Method",
+      title: "결제수단 등록/변경",
+      description: "자동결제에 사용할 카드를 인증하고 저장합니다. 이 경로에서는 즉시 첫 결제나 구독 재생성을 실행하지 않습니다.",
+      tone: "neutral",
+      badge: "카드 등록/변경",
+      statusLabel: "준비 중",
+    };
+  }
+
   return {
     eyebrow: "Personal Billing",
     title: "Personal 구독 시작",
@@ -140,6 +172,12 @@ function getPageCopy(path) {
 }
 
 function getSetupStatusMessage() {
+  if (getPaymentMethodMode() === "card_update") {
+    if (isStartingBillingAuth) return "결제수단 등록/변경을 준비하고 있습니다.";
+    if (billingAuthError) return billingAuthError;
+    return "필수 확인 항목을 체크하면 결제수단 등록/변경을 진행할 수 있습니다.";
+  }
+
   if (isStartingBillingAuth) return "Personal 구독 시작을 준비하고 있습니다.";
   if (billingAuthError) return billingAuthError;
   return "필수 확인 항목을 체크하면 Personal 구독 시작을 진행할 수 있습니다.";
@@ -175,7 +213,14 @@ async function handleStartBillingAuth() {
   updateSetupUi();
 
   try {
-    const preparePayload = await prepareBillingAuth();
+    const isCardUpdate = getPaymentMethodMode() === "card_update";
+    const preparePayload = isCardUpdate ? await prepareBillingMethodUpdate() : await prepareBillingAuth();
+    if (preparePayload?.alreadySubscribed || preparePayload?.code === "ALREADY_PERSONAL_ACTIVE") {
+      billingAuthError = preparePayload.message || "이미 Personal 구독을 이용 중입니다. 현재 이용 기간 종료 전에는 추가 결제를 시작하지 않습니다.";
+      isStartingBillingAuth = false;
+      updateSetupUi();
+      return;
+    }
     await requestTossBillingAuth(preparePayload);
   } catch (error) {
     isStartingBillingAuth = false;
@@ -185,6 +230,37 @@ async function handleStartBillingAuth() {
 }
 
 function getSetupCardHtml() {
+  if (getPaymentMethodMode() === "card_update") {
+    return `
+    <div class="paymentMethodNoticeGrid paymentMethodNoticeGrid--compact">
+      <div>
+        <span>처리 방식</span>
+        <strong>카드 인증</strong>
+        <em>즉시 결제 없음</em>
+      </div>
+      <div>
+        <span>저장 범위</span>
+        <strong>자동결제 결제수단</strong>
+        <em>카드번호 원문 저장 없음</em>
+      </div>
+    </div>
+
+    <div class="paymentMethodChecklist">
+      <label><input type="checkbox" data-payment-method-check /> 결제수단 등록/변경을 위해 카드 인증을 진행하며, 이 경로에서는 즉시 첫 결제가 실행되지 않는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> FINPLE은 카드번호 원문을 서버에 직접 저장하지 않고, 토스페이먼츠 자동결제용 식별값을 사용한다는 점을 확인했습니다.</label>
+    </div>
+
+    <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
+      <strong>결제수단 등록/변경 안내</strong>
+      <p data-payment-method-status>필수 확인 항목을 체크하면 결제수단 등록/변경을 진행할 수 있습니다.</p>
+    </div>
+
+    <div class="billingResultActions">
+      <button type="button" class="primaryButton" data-payment-method-start disabled>결제수단 등록/변경</button>
+    </div>
+  `;
+  }
+
   return `
     <div class="paymentMethodNoticeGrid paymentMethodNoticeGrid--compact">
       <div>
@@ -285,7 +361,10 @@ async function handleIssueBillingKeyFromSuccess() {
   updateSuccessUi();
 
   try {
-    billingIssueResult = await issueBillingKey({ authKey, orderId, customerKey });
+    const isCardUpdate = getPaymentMethodMode() === "card_update";
+    billingIssueResult = isCardUpdate
+      ? await issueBillingMethodUpdate({ authKey, orderId, customerKey })
+      : await issueBillingKey({ authKey, orderId, customerKey });
   } catch (error) {
     billingIssueError = error?.message || "Personal 구독 시작 처리에 실패했습니다.";
   } finally {

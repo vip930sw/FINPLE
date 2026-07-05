@@ -6,6 +6,7 @@
 ========================================================= */
 
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
+const SUBSCRIPTION_EFFECTIVE_STORAGE_KEY = "finple-subscription-effective-status";
 const MY_PAGE_LABEL_STYLE_ID = "finple-mypage-mini-label-blue-style";
 let accountStatusRenderTimer = null;
 let lastKnownAuthModeLabel = "";
@@ -97,10 +98,17 @@ function formatPlanLabel(value) {
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Free";
 }
 
+function getEffectivePlanFromSubscriptionStatus() {
+  const status = readJson(SUBSCRIPTION_EFFECTIVE_STORAGE_KEY);
+  const plan = String(status?.effectivePlan || "").trim().toLowerCase();
+  if (plan === "personal" || plan === "free" || plan === "pro") return plan;
+  return "";
+}
+
 function getAccountStatusCards(user, panel) {
   const authMode = formatAuthMode(user, panel);
   const userName = user?.name || user?.nickname || "-";
-  const plan = formatPlanLabel(user?.plan);
+  const plan = formatPlanLabel(getEffectivePlanFromSubscriptionStatus() || user?.plan);
 
   return [
     { label: "가입 방식", value: authMode },
@@ -165,7 +173,7 @@ function ensureAccountStatusHeader(panel) {
 function ensureAccountInfoNote(panel, user) {
   const email = user?.email || "-";
   const purposeText = getEmailPurposeText();
-  const plan = formatPlanLabel(user?.plan);
+  const plan = formatPlanLabel(getEffectivePlanFromSubscriptionStatus() || user?.plan);
   const showPasswordChangeButton = canShowPasswordChangeButton(user);
   const header = ensureAccountStatusHeader(panel);
   let note = panel.querySelector("[data-account-info-note]");
