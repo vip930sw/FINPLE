@@ -7,8 +7,12 @@
 
 import { fetchBillingMethodStatus } from "./components/paymentMethodClient";
 import { fetchMySupportInquiries } from "./components/portfolio/services/serverPortfolioService";
+import {
+  MBTI_PRESET_STORAGE_KEY,
+  restoreMbtiProfileFromPortfolios,
+} from "./components/portfolio/utils/mbtiProfileStorage";
 
-const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
+const PORTFOLIO_STORAGE_KEY = "finple-portfolio-list";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]);
 const ASSET_LABELS = {
@@ -330,6 +334,9 @@ function updateInvestmentResultDetails(panel, result, hasResult) {
 function updateInvestmentProfileUi() {
   const panel = document.querySelector("[data-investment-profile-panel]");
   if (!panel) return;
+  restoreMbtiProfileFromPortfolios(readJson(PORTFOLIO_STORAGE_KEY) || [], {
+    source: "mypage-investment-profile-panel",
+  });
   const result = readJson(MBTI_PRESET_STORAGE_KEY);
   const hasResult = Boolean(result?.typeId || result?.nickname || result?.finpleType);
   setText(panel.querySelector("[data-investment-profile-badge]"), hasResult ? "저장됨" : "미검사");

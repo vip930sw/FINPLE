@@ -5,7 +5,12 @@
    - MutationObserver 반복 감지를 제거해 /mypage 렉을 방지합니다.
 ========================================================= */
 
-const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
+import {
+  MBTI_PRESET_STORAGE_KEY,
+  restoreMbtiProfileFromPortfolios,
+} from "./components/portfolio/utils/mbtiProfileStorage";
+
+const PORTFOLIO_STORAGE_KEY = "finple-portfolio-list";
 
 const ASSET_DISPLAY_LABELS = {
   growthStock: "성장주",
@@ -160,6 +165,9 @@ function getInvestmentProfileSignature(result) {
 function applyInvestmentProfileDisplayPatch() {
   if (!isMyPagePath()) return;
 
+  restoreMbtiProfileFromPortfolios(readJson(PORTFOLIO_STORAGE_KEY) || [], {
+    source: "mypage-investment-profile-display",
+  });
   const result = readJson(MBTI_PRESET_STORAGE_KEY);
   const copyChanged = normalizeInvestmentProfileResultCopy(result);
   const signature = getInvestmentProfileSignature(result);

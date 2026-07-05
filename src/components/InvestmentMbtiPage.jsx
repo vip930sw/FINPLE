@@ -1,5 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { hydrateAssetFromScreenerCandidate } from "../data/tickers/screenerCandidateLoader";
+import {
+  MBTI_PRESET_MAP,
+  storeMbtiProfileFromResult,
+} from "./portfolio/utils/mbtiProfileStorage";
 import "./InvestmentMbtiPage.css";
 import "./InvestmentMbtiPage.step111.css";
 
@@ -7,7 +11,6 @@ const PORTFOLIO_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
 const LEGACY_STORAGE_KEY = "finple-portfolio-simulator";
-const MBTI_PRESET_STORAGE_KEY = "finple-mbti-simulator-preset";
 
 const ASSET_LABELS = {
   growthStock: "성장주",
@@ -74,25 +77,6 @@ const MBTI_DISPLAY_NAMES = {
   "성장-기회-자동-확신": "예리한 선구자형",
   "성장-기회-주도-분산": "능동적인 지휘관형",
   "성장-기회-주도-확신": "용감한 승부사형",
-};
-
-const MBTI_PRESET_MAP = {
-  "안정-장기-자동-분산": { growthStock: 10, valueStock: 28, bond: 24, longBond: 8, reit: 6, gold: 8, cash: 16 },
-  "안정-장기-자동-확신": { growthStock: 8, valueStock: 36, longBond: 32, gold: 8, cash: 16 },
-  "안정-장기-주도-분산": { growthStock: 15, valueStock: 26, bond: 20, longBond: 8, reit: 7, gold: 8, cash: 16 },
-  "안정-장기-주도-확신": { growthStock: 12, valueStock: 40, longBond: 28, gold: 8, cash: 12 },
-  "안정-기회-자동-분산": { growthStock: 8, valueStock: 26, bond: 20, longBond: 6, reit: 5, gold: 15, cash: 20 },
-  "안정-기회-자동-확신": { growthStock: 5, valueStock: 25, longBond: 25, gold: 25, cash: 20 },
-  "안정-기회-주도-분산": { growthStock: 15, valueStock: 25, bond: 14, longBond: 8, reit: 8, gold: 15, cash: 15 },
-  "안정-기회-주도-확신": { growthStock: 12, valueStock: 23, longBond: 20, gold: 25, crypto: 5, cash: 15 },
-  "성장-장기-자동-분산": { growthStock: 35, valueStock: 25, bond: 10, longBond: 5, reit: 7, gold: 8, cash: 10 },
-  "성장-장기-자동-확신": { growthStock: 50, valueStock: 20, bond: 8, longBond: 4, gold: 8, cash: 10 },
-  "성장-장기-주도-분산": { growthStock: 45, valueStock: 22, bond: 8, longBond: 4, reit: 7, gold: 8, cash: 6 },
-  "성장-장기-주도-확신": { growthStock: 60, valueStock: 18, longBond: 8, gold: 4, crypto: 5, cash: 5 },
-  "성장-기회-자동-분산": { growthStock: 35, valueStock: 20, bond: 6, longBond: 4, reit: 7, gold: 15, crypto: 3, cash: 10 },
-  "성장-기회-자동-확신": { growthStock: 45, valueStock: 15, longBond: 8, gold: 15, crypto: 10, cash: 7 },
-  "성장-기회-주도-분산": { growthStock: 45, valueStock: 18, bond: 4, longBond: 4, reit: 8, gold: 12, crypto: 5, cash: 4 },
-  "성장-기회-주도-확신": { growthStock: 70, valueStock: 5, gold: 5, crypto: 15, cash: 5 },
 };
 
 const TYPE_COPY = {
@@ -296,23 +280,6 @@ function getBufferAssetLabels(preset = {}) {
   return ["bond", "longBond", "gold", "cash", "reit"].filter((key) => Number(preset[key] || 0) > 0).map((key) => `${ASSET_LABELS[key]} ${preset[key]}%`);
 }
 
-function getSectorsFromPreset(preset = {}) {
-  const sectors = [];
-  const push = (condition, label) => {
-    if (condition && !sectors.includes(label)) sectors.push(label);
-  };
-
-  push(Number(preset.growthStock || 0) > 0, "성장·기술");
-  push(Number(preset.valueStock || 0) > 0, "배당·가치");
-  push(Number(preset.bond || 0) > 0 || Number(preset.longBond || 0) > 0, "채권·금리");
-  push(Number(preset.reit || 0) > 0, "리츠·부동산");
-  push(Number(preset.gold || 0) > 0, "금·원자재");
-  push(Number(preset.crypto || 0) > 0, "블록체인 테마");
-  push(Number(preset.cash || 0) >= 10, "현금성·대기자금");
-
-  return sectors.slice(0, 5);
-}
-
 function buildTypeDetails(axes, preset, riskProfile, nickname) {
   const copy = TYPE_COPY[getTypeKey(axes)] || {};
   const axisText = displayAxisValues(axes).join(" · ");
@@ -457,26 +424,11 @@ function saveResultToSimulator(result, marketMode = "US") {
     localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
     localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
-    localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify({
-      typeId: type.typeId,
-      nickname: type.nickname,
-      finpleType: type.finpleType,
-      riskProfile: result.calculatedRiskProfile,
-      riskScore: result.riskScore,
-      axes: result.axes,
-      axisScores: result.axisScores,
-      sectors: getSectorsFromPreset(type.preset),
+    storeMbtiProfileFromResult(result, {
       marketMode,
-      portfolioPreset: type.preset,
-      preset: type.preset,
-      summary: type.summary,
-      strengths: type.strengths,
-      cautions: type.cautions,
-      actions: type.actions,
-      details: type.details,
-      simulatorDefaults: type.defaults,
       createdAt: now,
-    }));
+      source: "investment-mbti-simulator",
+    });
     return true;
   } catch (error) { console.error("투자 MBTI 프리셋 저장 실패", error); return false; }
 }
@@ -546,6 +498,11 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const type = result.type;
   const entries = Object.entries(type.preset);
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
+
+  useEffect(() => {
+    storeMbtiProfileFromResult(result, { source: "investment-mbti-result" });
+  }, [result]);
+
   async function handleShareResult() {
     const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/mbti` : "https://finple.co.kr/mbti";
     const shareText = [`저의 FINPLE 투자 MBTI는 “${type.nickname}”입니다.`, "", `성향: ${displayAxisValues(result.axes).join(" · ")}`, `FINPLE 유형: ${type.finpleType}`, `위험성향: ${result.calculatedRiskProfile}`, "", "FINPLE에서 나의 투자 성향도 확인해보세요.", "본 결과는 투자 성향 이해를 돕기 위한 참고용이며, 특정 금융상품의 매수·매도 권유가 아닙니다."].join("\n");

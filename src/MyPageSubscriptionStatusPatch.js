@@ -13,6 +13,10 @@ import {
 } from "./components/portfolio/services/serverPortfolioService";
 import { getStoredFinpleAuthSession } from "./components/authClientService";
 import { normalizeFinplePlan, setStoredFinplePlan } from "./components/portfolio/config/planConfig";
+import {
+  getPlanFromPayload,
+  isBlockedSubscriptionStatus,
+} from "./components/portfolio/utils/subscriptionPlanStatus";
 
 let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
@@ -72,7 +76,7 @@ function getSubscriptionMessage(payload) {
 
   const subscription = payload.subscription || {};
   const status = payload.status || subscription.status || "beta_free";
-  const plan = String(payload.plan || payload.entitlement?.plan || subscription.plan || "free").toLowerCase();
+  const plan = getPlanFromPayload(payload);
   const periodEndLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || payload.entitlement?.valid_until || payload.entitlement?.validUntil);
 
   if (plan === "personal" && isPeriodEndScheduled(status, subscription)) {
@@ -81,6 +85,10 @@ function getSubscriptionMessage(payload) {
 
   if (plan === "personal") {
     return `Personal 이용 중입니다. 다음 결제 예정일과 현재 이용기간 종료 예정일은 ${periodEndLabel} 기준으로 표시됩니다.`;
+  }
+
+  if (isBlockedSubscriptionStatus(status)) {
+    return payload.message || "서버 기준 유료 권한이 확인되지 않아 Free 기준으로 표시합니다. 결제 갱신/권한 상태는 관리자 확인이 필요합니다.";
   }
 
   return payload.message || "서버 기준 구독 상태를 확인했습니다.";
@@ -173,10 +181,6 @@ function wireSubscriptionPanelActions() {
   panel.querySelector("[data-subscription-end-at-period]")?.addEventListener("click", requestPeriodEndSchedule);
 }
 
-function getPlanFromPayload(payload) {
-  return normalizeFinplePlan(payload?.plan || payload?.entitlement?.plan || payload?.subscription?.plan || "free");
-}
-
 function syncSubscriptionPayloadToBrowser(payload) {
   if (!payload?.authenticated) return;
 
@@ -195,6 +199,24 @@ function syncSubscriptionPayloadToBrowser(payload) {
 
   setStoredFinplePlan(plan);
 
+  window.dispatchEvent(new Event("finple-auth-updated"));
+  window.dispatchEvent(new Event("finple-plan-updated"));
+  window.dispatchEvent(new Event("finple-local-storage-updated"));
+}
+
+function syncSubscriptionFailureToBrowser() {
+  const storedUser = getStoredFinpleAuthUser();
+
+  if (storedUser?.id && normalizeFinplePlan(storedUser.plan) === "personal") {
+    setStoredFinpleAuthUser({
+      ...storedUser,
+      plan: "free",
+      billingStatus: "subscription_status_unverified",
+      subscriptionId: null,
+    });
+  }
+
+  setStoredFinplePlan("free");
   window.dispatchEvent(new Event("finple-auth-updated"));
   window.dispatchEvent(new Event("finple-plan-updated"));
   window.dispatchEvent(new Event("finple-local-storage-updated"));
@@ -241,7 +263,7 @@ function updateSubscriptionPanel() {
   const entitlement = payload?.entitlement || {};
   const plan = getPlanFromPayload(payload);
   const status = payload?.status || subscription?.status || (payload?.authenticated ? "beta_free" : "guest");
-  const scheduled = isPeriodEndScheduled(status, subscription);
+  const scheduled = plan === "personal" && isPeriodEndScheduled(status, subscription);
   const periodEndValue = getPeriodEndValue(subscription, entitlement);
 
   setText(panel.querySelector("[data-subscription-badge]"), formatStatusLabel(status));
@@ -360,6 +382,7 @@ async function requestSubscriptionStatusOnce() {
   } catch (error) {
     lastSubscriptionPayload = null;
     lastSubscriptionError = error?.message || "구독 상태를 불러오지 못했습니다.";
+    syncSubscriptionFailureToBrowser();
   }
 
   updateSubscriptionPanel();

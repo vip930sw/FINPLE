@@ -1,3 +1,8 @@
+import {
+  readStoredMbtiProfile,
+  restoreMbtiProfileFromPortfolios,
+} from "../utils/mbtiProfileStorage";
+
 const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
@@ -119,6 +124,7 @@ export function getLocalPortfolioSnapshot() {
     activePortfolioId,
     activePortfolioName: activePortfolio?.name || "",
     globalSettings,
+    mbtiProfile: readStoredMbtiProfile(),
     capturedAt: new Date().toISOString(),
   };
 }
@@ -144,6 +150,7 @@ export async function syncLocalPortfoliosToServer(snapshot = getLocalPortfolioSn
       portfolioList,
       activePortfolioId: snapshot.activePortfolioId,
       globalSettings: snapshot.globalSettings,
+      mbtiProfile: snapshot.mbtiProfile || readStoredMbtiProfile(),
       importedFrom: snapshot.source || "browser-local-storage",
       importedAt: new Date().toISOString(),
     }),
@@ -547,6 +554,10 @@ export function importServerPortfoliosToBrowser(serverPortfolios = [], options =
 
   window.localStorage.setItem(PORTFOLIO_LIST_STORAGE_KEY, JSON.stringify(nextList));
   window.localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, nextList[0]?.id || "");
+  restoreMbtiProfileFromPortfolios(nextList, {
+    activePortfolioId: nextList[0]?.id || "",
+    source: "server-portfolio-import",
+  });
 
   if (normalizedServerPortfolios[0]) {
     const first = normalizedServerPortfolios[0];
@@ -600,6 +611,7 @@ function normalizeServerPortfolioForLocal(portfolio, index = 0) {
     inflationRate: Number(portfolio.inflationRate ?? portfolio.inflation_rate ?? 2.5),
     dividendReinvest: Boolean(portfolio.dividendReinvest ?? portfolio.dividend_reinvest ?? true),
     assets,
+    mbti: portfolio.mbti || null,
     source: "server-db",
     serverId: portfolio.id || null,
     createdAt: portfolio.createdAt || portfolio.created_at || null,
