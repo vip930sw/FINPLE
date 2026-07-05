@@ -22,11 +22,29 @@ import {
 let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
 let lastSubscriptionError = "";
+let isFetchingSubscriptionStatus = false;
 let isRequestingPeriodEnd = false;
+let subscriptionPatchScheduled = false;
+let subscriptionObserver = null;
+let lastSubscriptionUserKey = "";
 const SUBSCRIPTION_EFFECTIVE_STORAGE_KEY = "finple-subscription-effective-status";
+const FINPLE_PLAN_STORAGE_KEY = "finple-selected-plan";
+const SUBSCRIPTION_STATUS_CACHE_TTL_MS = 45000;
+const subscriptionStatusCache = new Map();
+const subscriptionStatusInflight = new Map();
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
+}
+
+function getSubscriptionStatusCacheKey() {
+  const user = getStoredFinpleAuthUser();
+  return `${getFinpleApiBaseUrl()}::${user?.id || user?.email || "current-user"}::subscription-status`;
+}
+
+function getCurrentSubscriptionUserKey() {
+  const user = getStoredFinpleAuthUser();
+  return `${user?.id || ""}::${user?.email || ""}`;
 }
 
 function formatPlanLabel(plan) {
@@ -186,7 +204,7 @@ function wireSubscriptionPanelActions() {
   panel.querySelector("[data-subscription-support]")?.addEventListener("click", () => navigateTo("/support"));
   panel.querySelector("[data-subscription-refresh]")?.addEventListener("click", () => {
     hasRequestedSubscriptionStatus = false;
-    requestSubscriptionStatusOnce();
+    requestSubscriptionStatusOnce({ force: true });
   });
   panel.querySelector("[data-subscription-end-at-period]")?.addEventListener("click", requestPeriodEndSchedule);
 }
@@ -220,51 +238,40 @@ function syncSubscriptionPayloadToBrowser(payload) {
   }
 
   if (storedUser?.id) {
+    const nextBillingStatus = decision.status || payload.status || payload.subscription?.status || "beta_free";
+    const nextSubscriptionId = plan === "personal" ? payload.subscription?.id || storedUser.subscriptionId || null : null;
+    const nextEntitlementValidUntil = plan === "personal" ? payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null : null;
+    const hasUserChange =
+      normalizeFinplePlan(storedUser.plan) !== plan ||
+      storedUser.billingStatus !== nextBillingStatus ||
+      storedUser.subscriptionId !== nextSubscriptionId ||
+      storedUser.entitlementValidUntil !== nextEntitlementValidUntil;
+
+    if (!hasUserChange) {
+      setStoredFinplePlanIfChanged(plan);
+      return;
+    }
+
     setStoredFinpleAuthUser({
       ...storedUser,
       plan,
-      billingStatus: decision.status || payload.status || payload.subscription?.status || "beta_free",
-      subscriptionId: plan === "personal" ? payload.subscription?.id || storedUser.subscriptionId || null : null,
-      entitlementValidUntil: plan === "personal" ? payload.entitlement?.valid_until || payload.entitlement?.validUntil || storedUser.entitlementValidUntil || null : null,
+      billingStatus: nextBillingStatus,
+      subscriptionId: nextSubscriptionId,
+      entitlementValidUntil: nextEntitlementValidUntil,
     });
+  }
+
+  setStoredFinplePlanIfChanged(plan);
+}
+
+function setStoredFinplePlanIfChanged(plan) {
+  try {
+    if (window.localStorage.getItem(FINPLE_PLAN_STORAGE_KEY) === plan) return;
+  } catch (error) {
+    // Fall through to the shared setter; it handles storage availability.
   }
 
   setStoredFinplePlan(plan);
-
-  window.dispatchEvent(new Event("finple-auth-updated"));
-  window.dispatchEvent(new Event("finple-plan-updated"));
-  window.dispatchEvent(new Event("finple-local-storage-updated"));
-}
-
-function syncSubscriptionFailureToBrowser() {
-  const storedUser = getStoredFinpleAuthUser();
-
-  try {
-    window.localStorage.setItem(SUBSCRIPTION_EFFECTIVE_STORAGE_KEY, JSON.stringify({
-      effectivePlan: "free",
-      effectiveStatus: "subscription_status_unverified",
-      accessUntil: null,
-      currentPeriodEnd: null,
-      nextBillingAt: null,
-      serverNow: new Date().toISOString(),
-    }));
-  } catch (error) {
-    // Ignore storage sync failures.
-  }
-
-  if (storedUser?.id && normalizeFinplePlan(storedUser.plan) === "personal") {
-    setStoredFinpleAuthUser({
-      ...storedUser,
-      plan: "free",
-      billingStatus: "subscription_status_unverified",
-      subscriptionId: null,
-    });
-  }
-
-  setStoredFinplePlan("free");
-  window.dispatchEvent(new Event("finple-auth-updated"));
-  window.dispatchEvent(new Event("finple-plan-updated"));
-  window.dispatchEvent(new Event("finple-local-storage-updated"));
 }
 
 function getPeriodEndValue(payload, subscription, entitlement) {
@@ -338,24 +345,46 @@ function getAuthHeaders() {
   };
 }
 
-async function fetchSubscriptionStatus() {
-  const response = await fetch(`${getFinpleApiBaseUrl()}/payments/subscription/me`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+async function fetchSubscriptionStatus(options = {}) {
+  const cacheKey = getSubscriptionStatusCacheKey();
+  const cached = subscriptionStatusCache.get(cacheKey);
+  const now = Date.now();
 
-  let payload = null;
+  if (!options.force && cached && now - cached.cachedAt < SUBSCRIPTION_STATUS_CACHE_TTL_MS) {
+    return { ...cached.payload, fromCache: true };
+  }
+
+  if (!options.force && subscriptionStatusInflight.has(cacheKey)) {
+    return subscriptionStatusInflight.get(cacheKey);
+  }
+
+  const requestPromise = (async () => {
+    const response = await fetch(`${getFinpleApiBaseUrl()}/payments/subscription/me`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      payload = null;
+    }
+
+    if (!response.ok || payload?.ok === false) {
+      throw new Error(payload?.message || "구독 상태를 불러오지 못했습니다.");
+    }
+
+    subscriptionStatusCache.set(cacheKey, { cachedAt: Date.now(), payload });
+    return payload;
+  })();
+
+  subscriptionStatusInflight.set(cacheKey, requestPromise);
   try {
-    payload = await response.json();
-  } catch (error) {
-    payload = null;
+    return await requestPromise;
+  } finally {
+    subscriptionStatusInflight.delete(cacheKey);
   }
-
-  if (!response.ok || payload?.ok === false) {
-    throw new Error(payload?.message || "구독 상태를 불러오지 못했습니다.");
-  }
-
-  return payload;
 }
 
 async function postPeriodEndSchedule() {
@@ -406,7 +435,7 @@ async function requestPeriodEndSchedule() {
     };
     syncSubscriptionPayloadToBrowser(lastSubscriptionPayload);
     hasRequestedSubscriptionStatus = false;
-    await requestSubscriptionStatusOnce();
+    await requestSubscriptionStatusOnce({ force: true });
   } catch (error) {
     lastSubscriptionError = error?.message || "구독 해지 예약을 처리하지 못했습니다.";
   } finally {
@@ -415,20 +444,23 @@ async function requestPeriodEndSchedule() {
   }
 }
 
-async function requestSubscriptionStatusOnce() {
-  if (hasRequestedSubscriptionStatus || !isMyPagePath()) return;
+async function requestSubscriptionStatusOnce(options = {}) {
+  if (!isMyPagePath() || isFetchingSubscriptionStatus) return;
+  if (hasRequestedSubscriptionStatus && !options.force) return;
 
   hasRequestedSubscriptionStatus = true;
+  isFetchingSubscriptionStatus = true;
+  lastSubscriptionUserKey = getCurrentSubscriptionUserKey();
   lastSubscriptionError = "";
   updateSubscriptionPanel();
 
   try {
-    lastSubscriptionPayload = await fetchSubscriptionStatus();
+    lastSubscriptionPayload = await fetchSubscriptionStatus({ force: Boolean(options.force) });
     syncSubscriptionPayloadToBrowser(lastSubscriptionPayload);
   } catch (error) {
-    lastSubscriptionPayload = null;
-    lastSubscriptionError = error?.message || "구독 상태를 불러오지 못했습니다.";
-    syncSubscriptionFailureToBrowser();
+    lastSubscriptionError = error?.message || "구독 상태 새로고침에 실패했습니다.";
+  } finally {
+    isFetchingSubscriptionStatus = false;
   }
 
   updateSubscriptionPanel();
@@ -441,19 +473,40 @@ function resetWhenLeavingMyPage() {
   lastSubscriptionError = "";
 }
 
-function bootMyPageSubscriptionPatch() {
-  const observer = new MutationObserver(() => {
-    resetWhenLeavingMyPage();
-    upsertSubscriptionPanel();
-    requestSubscriptionStatusWhenVisible();
-  });
-
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+function scheduleSubscriptionPatch(delay = 80) {
+  if (subscriptionPatchScheduled) return;
+  subscriptionPatchScheduled = true;
   window.setTimeout(() => {
+    subscriptionPatchScheduled = false;
     resetWhenLeavingMyPage();
     upsertSubscriptionPanel();
     requestSubscriptionStatusWhenVisible();
-  }, 150);
+  }, delay);
+}
+
+function resetSubscriptionForUserChange() {
+  const nextUserKey = getCurrentSubscriptionUserKey();
+  if (nextUserKey === lastSubscriptionUserKey) {
+    scheduleSubscriptionPatch(120);
+    return;
+  }
+
+  lastSubscriptionUserKey = nextUserKey;
+  hasRequestedSubscriptionStatus = false;
+  lastSubscriptionPayload = null;
+  lastSubscriptionError = "";
+  isFetchingSubscriptionStatus = false;
+  subscriptionStatusCache.clear();
+  subscriptionStatusInflight.clear();
+  scheduleSubscriptionPatch(120);
+}
+
+function bootMyPageSubscriptionPatch() {
+  if (subscriptionObserver) subscriptionObserver.disconnect();
+  subscriptionObserver = new MutationObserver(() => scheduleSubscriptionPatch(80));
+
+  subscriptionObserver.observe(document.documentElement, { childList: true, subtree: true });
+  window.setTimeout(() => scheduleSubscriptionPatch(0), 150);
   document.addEventListener("click", (event) => {
     if (!event.target?.closest?.('[data-mypage-menu-key="billing"], [data-mypage-menu-key="plan"]')) return;
     window.setTimeout(requestSubscriptionStatusWhenVisible, 80);
@@ -462,6 +515,7 @@ function bootMyPageSubscriptionPatch() {
     if (!event.target?.matches?.("[data-mypage-mobile-menu]")) return;
     window.setTimeout(requestSubscriptionStatusWhenVisible, 80);
   });
+  window.addEventListener("finple-auth-updated", resetSubscriptionForUserChange);
 }
 
 if (typeof window !== "undefined") {

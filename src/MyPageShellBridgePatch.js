@@ -21,6 +21,8 @@ const EDUCATION_HIDDEN_MENU_KEYS = new Set(["payment-method", "payment-history"]
 let activeMenuKey = "account";
 let observer = null;
 let observerStartedAt = 0;
+let shellBridgeScheduled = false;
+let shellBridgeStable = false;
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -174,28 +176,58 @@ function applyShellBridge() {
   markPanelKeys();
   wireMenu();
   activatePanel(activeMenuKey);
+  shellBridgeStable = isShellBridgeStable();
+}
+
+function isShellBridgeStable() {
+  return Boolean(
+    document.querySelector(".myPageDashboardLayout") &&
+      document.querySelector(".myPageSidebarNav") &&
+      document.querySelector(".accountPanelStack > [data-mypage-panel-key]")
+  );
+}
+
+function scheduleShellBridgeApply(delay = 40) {
+  if (shellBridgeScheduled) return;
+  shellBridgeScheduled = true;
+  window.setTimeout(() => {
+    shellBridgeScheduled = false;
+    if (shellBridgeStable && isShellBridgeStable()) return;
+    applyShellBridge();
+    if (shellBridgeStable && observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  }, delay);
 }
 
 function bootShellBridge() {
   if (!isMyPagePath()) return;
 
   [0, 40, 120, 260, 520, 900, 1500, 2600].forEach((delay) => {
-    window.setTimeout(applyShellBridge, delay);
+    window.setTimeout(() => scheduleShellBridgeApply(0), delay);
   });
 
   if (observer) observer.disconnect();
   observerStartedAt = Date.now();
+  shellBridgeStable = false;
   observer = new MutationObserver(() => {
-    applyShellBridge();
-    if (Date.now() - observerStartedAt > 3600) {
+    scheduleShellBridgeApply(40);
+    if ((shellBridgeStable && isShellBridgeStable()) || Date.now() - observerStartedAt > 3600) {
       observer.disconnect();
       observer = null;
     }
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
-  window.addEventListener("popstate", () => window.setTimeout(applyShellBridge, 80));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(applyShellBridge, 120));
+  window.addEventListener("popstate", () => {
+    shellBridgeStable = false;
+    window.setTimeout(applyShellBridge, 80);
+  });
+  window.addEventListener("finple-auth-updated", () => {
+    shellBridgeStable = false;
+    window.setTimeout(applyShellBridge, 120);
+  });
 }
 
 if (typeof window !== "undefined") {

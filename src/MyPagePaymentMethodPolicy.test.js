@@ -4,6 +4,10 @@ import test from "node:test";
 
 const SIDEBAR_SOURCE = new URL("./MyPageSidebarPatch.js", import.meta.url);
 const CLIENT_SOURCE = new URL("./components/paymentMethodClient.js", import.meta.url);
+const SUBSCRIPTION_SOURCE = new URL("./MyPageSubscriptionStatusPatch.js", import.meta.url);
+const SHELL_BRIDGE_SOURCE = new URL("./MyPageShellBridgePatch.js", import.meta.url);
+const STABILIZATION_SOURCE = new URL("./MyPageRenderStabilizationPatch.js", import.meta.url);
+const PAYMENT_HISTORY_SOURCE = new URL("./MyPagePaymentHistoryPatch.js", import.meta.url);
 
 test("mypage payment method refresh preserves stale registered data while loading", async () => {
   const source = await readFile(SIDEBAR_SOURCE, "utf8");
@@ -41,4 +45,47 @@ test("payment method client dedupes in-flight requests and does not query assets
   assert.match(source, /billingMethodStatusInflight\.set\(cacheKey, requestPromise\)/);
   assert.match(source, /BILLING_METHOD_STATUS_CACHE_TTL_MS = 45000/);
   assert.doesNotMatch(source, /\/api\/assets|\/assets\/batch|kis|KIS|token issuance|quote/i);
+});
+
+test("mypage subscription observer does not directly trigger repeated network requests", async () => {
+  const source = await readFile(SUBSCRIPTION_SOURCE, "utf8");
+  const bootBody = source.match(/function bootMyPageSubscriptionPatch\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const requestBody = source.match(/async function requestSubscriptionStatusOnce\(options = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
+
+  assert.match(source, /SUBSCRIPTION_STATUS_CACHE_TTL_MS = 45000/);
+  assert.match(source, /subscriptionStatusInflight\.has\(cacheKey\)/);
+  assert.match(bootBody, /new MutationObserver\(\(\) => scheduleSubscriptionPatch\(80\)\)/);
+  assert.doesNotMatch(bootBody, /fetchSubscriptionStatus\(|requestSubscriptionStatusOnce\(/);
+  assert.match(requestBody, /lastSubscriptionPayload = await fetchSubscriptionStatus\(\{ force: Boolean\(options\.force\) \}\)/);
+  assert.doesNotMatch(requestBody, /lastSubscriptionPayload = null/);
+});
+
+test("mypage shell-ready events do not restart the whole fallback overlay", async () => {
+  const source = await readFile(STABILIZATION_SOURCE, "utf8");
+
+  assert.match(source, /function bootStabilizationUnlessShellReady\(\)/);
+  assert.match(source, /isMyPagePath\(\) && isShellReady\(\)/);
+  assert.match(source, /revealMyPage\(\)/);
+  assert.match(source, /window\.addEventListener\("finple-auth-updated", bootStabilizationUnlessShellReady\)/);
+  assert.match(source, /window\.addEventListener\("finple-local-storage-updated", bootStabilizationUnlessShellReady\)/);
+});
+
+test("mypage shell bridge observer is throttled and disconnects after stable shell", async () => {
+  const source = await readFile(SHELL_BRIDGE_SOURCE, "utf8");
+
+  assert.match(source, /let shellBridgeScheduled = false;/);
+  assert.match(source, /let shellBridgeStable = false;/);
+  assert.match(source, /function scheduleShellBridgeApply\(delay = 40\)/);
+  assert.match(source, /observer\.disconnect\(\)/);
+  assert.match(source, /shellBridgeStable && isShellBridgeStable\(\)/);
+});
+
+test("mypage payment history keeps stale data during refresh failures", async () => {
+  const source = await readFile(PAYMENT_HISTORY_SOURCE, "utf8");
+  const loadBody = source.match(/async function loadPaymentHistory\(options = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
+
+  assert.match(source, /refreshing: false/);
+  assert.match(loadBody, /\.\.\.paymentHistoryState/);
+  assert.match(loadBody, /loading: !paymentHistoryState\.payments\.length/);
+  assert.doesNotMatch(loadBody, /payments: \[\], error/);
 });

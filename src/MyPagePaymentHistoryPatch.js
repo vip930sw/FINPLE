@@ -3,7 +3,8 @@ import { fetchFinplePaymentHistory } from "./PaymentHistoryClientPatch.js";
 const AUTH_USER_STORAGE_KEY = "finple-trial-auth-user";
 
 let paymentHistoryRequested = false;
-let paymentHistoryState = { loading: false, payments: [], error: "" };
+let paymentHistoryState = { loading: false, refreshing: false, payments: [], error: "" };
+let lastPaymentHistoryUserKey = "";
 
 function isMyPagePath() {
   return window.location.pathname === "/mypage";
@@ -122,7 +123,10 @@ function updatePaymentHistoryUi() {
   const list = document.querySelector("[data-payment-history-list]");
   if (!badge || !total || !latest || !amount || !message || !list) return;
 
-  if (paymentHistoryState.loading) {
+  const payments = Array.isArray(paymentHistoryState.payments) ? paymentHistoryState.payments : [];
+  const hasStalePayments = payments.length > 0;
+
+  if (paymentHistoryState.loading && !hasStalePayments) {
     setText(badge, "조회 중");
     setText(total, "확인 중");
     setText(latest, "확인 중");
@@ -132,7 +136,7 @@ function updatePaymentHistoryUi() {
     return;
   }
 
-  if (paymentHistoryState.error) {
+  if (paymentHistoryState.error && !hasStalePayments) {
     setText(badge, "확인 필요");
     setText(total, "-");
     setText(latest, "-");
@@ -142,27 +146,46 @@ function updatePaymentHistoryUi() {
     return;
   }
 
-  const payments = Array.isArray(paymentHistoryState.payments) ? paymentHistoryState.payments : [];
   const first = payments[0];
-  setText(badge, payments.length ? "조회됨" : "내역 없음");
+  setText(badge, paymentHistoryState.refreshing ? "조회 중" : (payments.length ? "조회됨" : "내역 없음"));
   setText(total, `${payments.length}건`);
   setText(latest, first ? formatDate(first.paidAt || first.createdAt) : "없음");
   setText(amount, first ? formatAmount(first.amount, first.currency) : "없음");
-  setText(message, payments.length ? "최근 결제내역을 최신순으로 표시합니다." : "아직 결제내역이 없습니다. 구독 결제 후 이 영역에 표시됩니다.");
+  setText(message, paymentHistoryState.error || (paymentHistoryState.refreshing ? "기존 결제내역을 유지하며 최신 내역을 확인하고 있습니다." : (payments.length ? "최근 결제내역을 최신순으로 표시합니다." : "아직 결제내역이 없습니다. 구독 결제 후 이 영역에 표시됩니다.")));
   setHtml(list, getPaymentListHtml(payments));
+}
+
+function getCurrentUserKey() {
+  try {
+    const user = JSON.parse(window.localStorage.getItem(AUTH_USER_STORAGE_KEY) || "null");
+    return `${user?.id || ""}::${user?.email || ""}`;
+  } catch {
+    return "";
+  }
 }
 
 async function loadPaymentHistory(options = {}) {
   if (!isMyPagePath() || paymentHistoryState.loading) return;
   if (paymentHistoryRequested && !options.force) { updatePaymentHistoryUi(); return; }
   paymentHistoryRequested = true;
-  paymentHistoryState = { loading: true, payments: [], error: "" };
+  lastPaymentHistoryUserKey = getCurrentUserKey();
+  paymentHistoryState = {
+    ...paymentHistoryState,
+    loading: !paymentHistoryState.payments.length,
+    refreshing: paymentHistoryState.payments.length > 0,
+    error: "",
+  };
   updatePaymentHistoryUi();
   try {
     const payments = await fetchFinplePaymentHistory();
-    paymentHistoryState = { loading: false, payments, error: "" };
+    paymentHistoryState = { loading: false, refreshing: false, payments, error: "" };
   } catch (error) {
-    paymentHistoryState = { loading: false, payments: [], error: error?.message || "결제내역을 확인하지 못했습니다." };
+    paymentHistoryState = {
+      ...paymentHistoryState,
+      loading: false,
+      refreshing: false,
+      error: error?.message || "결제내역 새로고침에 실패했습니다.",
+    };
   }
   updatePaymentHistoryUi();
 }
@@ -219,7 +242,15 @@ function applyPaymentHistoryPatch() {
 function bootPaymentHistoryPatch() {
   [160, 360, 800, 1400, 2400, 3200].forEach((delay) => window.setTimeout(applyPaymentHistoryPatch, delay));
   window.addEventListener("popstate", () => window.setTimeout(applyPaymentHistoryPatch, 120));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(applyPaymentHistoryPatch, 120));
+  window.addEventListener("finple-auth-updated", () => {
+    const nextUserKey = getCurrentUserKey();
+    if (nextUserKey !== lastPaymentHistoryUserKey) {
+      lastPaymentHistoryUserKey = nextUserKey;
+      paymentHistoryRequested = false;
+      paymentHistoryState = { loading: false, refreshing: false, payments: [], error: "" };
+    }
+    window.setTimeout(applyPaymentHistoryPatch, 120);
+  });
 }
 
 if (typeof window !== "undefined") {

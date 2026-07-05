@@ -75,7 +75,11 @@ let sidebarPatchStable = false;
 let billingMethodRequested = false;
 let billingMethodState = { loading: false, refreshing: false, registered: false, method: null, error: "" };
 let myInquiriesRequested = false;
-let myInquiriesState = { loading: false, inquiries: [], error: "" };
+let myInquiriesState = { loading: false, refreshing: false, inquiries: [], error: "" };
+let lastSidebarUserKey = "";
+const MY_INQUIRIES_CACHE_TTL_MS = 45000;
+const myInquiriesCache = new Map();
+const myInquiriesInflight = new Map();
 
 function isMyPagePath() { return window.location.pathname === "/mypage"; }
 function navigateTo(path) { window.location.href = path; }
@@ -94,6 +98,13 @@ function setHtml(node, value) {
 }
 function readJson(key) {
   try { return JSON.parse(window.localStorage.getItem(key) || "null"); } catch { return null; }
+}
+function getCurrentSidebarUserKey() {
+  const user = readJson(AUTH_USER_STORAGE_KEY);
+  return `${user?.id || ""}::${user?.email || ""}`;
+}
+function getMyInquiriesCacheKey() {
+  return `${getCurrentSidebarUserKey()}::my-inquiries`;
 }
 function isEducationAccountUser() {
   const user = readJson(AUTH_USER_STORAGE_KEY);
@@ -580,37 +591,71 @@ function updateMyInquiriesUi() {
   const list = document.querySelector("[data-my-inquiries-list]");
   if (!badge || !total || !active || !latest || !message || !list) return;
 
-  if (myInquiriesState.loading) {
+  const inquiries = Array.isArray(myInquiriesState.inquiries) ? myInquiriesState.inquiries : [];
+  const hasStaleInquiries = inquiries.length > 0;
+
+  if (myInquiriesState.loading && !hasStaleInquiries) {
     setText(badge, "조회 중"); setText(total, "확인 중"); setText(active, "확인 중"); setText(latest, "확인 중"); setText(message, "내 문의내역을 불러오고 있습니다.");
     setHtml(list, `<article class="myInquiryItem myInquiryItem--empty"><strong>문의내역 조회 중입니다.</strong></article>`);
     return;
   }
-  if (myInquiriesState.error) {
+
+  if (myInquiriesState.error && !hasStaleInquiries) {
     setText(badge, "확인 필요"); setText(total, "-"); setText(active, "-"); setText(latest, "-"); setText(message, myInquiriesState.error);
     setHtml(list, `<article class="myInquiryItem myInquiryItem--empty"><strong>문의내역을 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></article>`);
     return;
   }
 
-  const inquiries = Array.isArray(myInquiriesState.inquiries) ? myInquiriesState.inquiries : [];
   const activeCount = inquiries.filter((inquiry) => ["open", "in_progress"].includes(inquiry.status || "open")).length;
-  setText(badge, inquiries.length ? "조회됨" : "내역 없음");
+  setText(badge, myInquiriesState.refreshing ? "조회 중" : (inquiries.length ? "조회됨" : "내역 없음"));
   setText(total, `${inquiries.length}건`);
   setText(active, `${activeCount}건`);
   setText(latest, inquiries[0] ? formatShortDate(inquiries[0].createdAt || inquiries[0].created_at) : "없음");
-  setText(message, inquiries.length ? "최근 문의내역을 최신순으로 표시합니다." : "아직 접수된 문의내역이 없습니다. 문의사항 화면에서 새 문의를 남길 수 있습니다.");
+  setText(message, myInquiriesState.error || (myInquiriesState.refreshing ? "기존 문의내역을 유지하며 최신 내역을 확인하고 있습니다." : (inquiries.length ? "최근 문의내역을 최신순으로 표시합니다." : "아직 접수된 문의내역이 없습니다. 문의사항 화면에서 새 문의를 남길 수 있습니다.")));
   setHtml(list, getInquiryListHtml(inquiries));
+}
+async function fetchMySupportInquiriesCached(options = {}) {
+  const cacheKey = getMyInquiriesCacheKey();
+  const cached = myInquiriesCache.get(cacheKey);
+  const now = Date.now();
+  if (!options.force && cached && now - cached.cachedAt < MY_INQUIRIES_CACHE_TTL_MS) return cached.inquiries;
+  if (!options.force && myInquiriesInflight.has(cacheKey)) return myInquiriesInflight.get(cacheKey);
+
+  const requestPromise = (async () => {
+    const inquiries = await fetchMySupportInquiries();
+    const normalized = Array.isArray(inquiries) ? inquiries : [];
+    myInquiriesCache.set(cacheKey, { cachedAt: Date.now(), inquiries: normalized });
+    return normalized;
+  })();
+
+  myInquiriesInflight.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    myInquiriesInflight.delete(cacheKey);
+  }
 }
 async function loadMyInquiries(options = {}) {
   if (!isMyPagePath() || myInquiriesState.loading) return;
   if (myInquiriesRequested && !options.force) { updateMyInquiriesUi(); return; }
   myInquiriesRequested = true;
-  myInquiriesState = { loading: true, inquiries: [], error: "" };
+  myInquiriesState = {
+    ...myInquiriesState,
+    loading: !myInquiriesState.inquiries.length,
+    refreshing: myInquiriesState.inquiries.length > 0,
+    error: "",
+  };
   updateMyInquiriesUi();
   try {
-    const inquiries = await fetchMySupportInquiries();
-    myInquiriesState = { loading: false, inquiries: Array.isArray(inquiries) ? inquiries : [], error: "" };
+    const inquiries = await fetchMySupportInquiriesCached({ force: Boolean(options.force) });
+    myInquiriesState = { loading: false, refreshing: false, inquiries: Array.isArray(inquiries) ? inquiries : [], error: "" };
   } catch (error) {
-    myInquiriesState = { loading: false, inquiries: [], error: error?.message || "문의내역을 확인하지 못했습니다." };
+    myInquiriesState = {
+      ...myInquiriesState,
+      loading: false,
+      refreshing: false,
+      error: error?.message || "문의내역 새로고침에 실패했습니다.",
+    };
   }
   updateMyInquiriesUi();
 }
@@ -672,6 +717,17 @@ function resetBillingMethodRequestState() {
   billingMethodState = { loading: false, refreshing: false, registered: false, method: null, error: "" };
   clearBillingMethodStatusCache();
 }
+function resetSidebarDataForUserChange() {
+  const nextUserKey = getCurrentSidebarUserKey();
+  if (nextUserKey === lastSidebarUserKey) return;
+
+  lastSidebarUserKey = nextUserKey;
+  resetBillingMethodRequestState();
+  myInquiriesRequested = false;
+  myInquiriesState = { loading: false, refreshing: false, inquiries: [], error: "" };
+  myInquiriesCache.clear();
+  myInquiriesInflight.clear();
+}
 function isSidebarPatchStable() {
   return Boolean(
     document.querySelector(".myPageDashboardLayout") &&
@@ -716,7 +772,7 @@ function bootMyPageSidebarPatch() {
   });
   window.addEventListener("finple-auth-updated", () => {
     sidebarPatchStable = false;
-    resetBillingMethodRequestState();
+    resetSidebarDataForUserChange();
     window.setTimeout(applyMyPageSidebar, 120);
   });
 }

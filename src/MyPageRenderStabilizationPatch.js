@@ -483,6 +483,15 @@ function handleRouteMaybeChanged() {
   window.setTimeout(bootMyPageRenderStabilization, 0);
 }
 
+function bootStabilizationUnlessShellReady() {
+  if (isMyPagePath() && isShellReady()) {
+    revealMyPage();
+    return;
+  }
+
+  window.setTimeout(bootMyPageRenderStabilization, 0);
+}
+
 function patchHistoryNavigation() {
   if (isHistoryPatched) return;
   isHistoryPatched = true;
@@ -497,8 +506,8 @@ function patchHistoryNavigation() {
   });
 
   window.addEventListener("popstate", () => window.setTimeout(handleRouteMaybeChanged, 0));
-  window.addEventListener("finple-auth-updated", () => window.setTimeout(bootMyPageRenderStabilization, 0));
-  window.addEventListener("finple-local-storage-updated", () => window.setTimeout(bootMyPageRenderStabilization, 0));
+  window.addEventListener("finple-auth-updated", bootStabilizationUnlessShellReady);
+  window.addEventListener("finple-local-storage-updated", bootStabilizationUnlessShellReady);
   window.addEventListener("finple-mypage-transition-start", () => {
     showImmediateMyPageLoader(2200);
     window.setTimeout(bootMyPageRenderStabilization, 0);
