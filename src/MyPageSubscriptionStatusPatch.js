@@ -158,6 +158,14 @@ function navigateTo(path) {
   window.location.href = path;
 }
 
+function isSubscriptionPanelVisible() {
+  const panel = document.querySelector("[data-subscription-status-panel]");
+  if (!panel) return false;
+  if (panel.hidden || panel.classList.contains("myPagePanelHidden")) return false;
+  const activeKey = window.__finpleMyPageActiveKey || "";
+  return activeKey === "billing" || activeKey === "plan" || panel.classList.contains("myPagePanelActive");
+}
+
 function upsertSubscriptionPanel() {
   if (!isMyPagePath()) return;
   if (document.querySelector("[data-subscription-status-panel]")) return;
@@ -168,7 +176,6 @@ function upsertSubscriptionPanel() {
   target.insertAdjacentHTML("afterend", getSubscriptionPanelHtml());
   wireSubscriptionPanelActions();
   updateSubscriptionPanel();
-  requestSubscriptionStatusOnce();
 }
 
 function wireSubscriptionPanelActions() {
@@ -182,6 +189,11 @@ function wireSubscriptionPanelActions() {
     requestSubscriptionStatusOnce();
   });
   panel.querySelector("[data-subscription-end-at-period]")?.addEventListener("click", requestPeriodEndSchedule);
+}
+
+function requestSubscriptionStatusWhenVisible() {
+  if (!isMyPagePath() || !isSubscriptionPanelVisible()) return;
+  requestSubscriptionStatusOnce();
 }
 
 function syncSubscriptionPayloadToBrowser(payload) {
@@ -433,13 +445,23 @@ function bootMyPageSubscriptionPatch() {
   const observer = new MutationObserver(() => {
     resetWhenLeavingMyPage();
     upsertSubscriptionPanel();
+    requestSubscriptionStatusWhenVisible();
   });
 
   observer.observe(document.documentElement, { childList: true, subtree: true });
   window.setTimeout(() => {
     resetWhenLeavingMyPage();
     upsertSubscriptionPanel();
+    requestSubscriptionStatusWhenVisible();
   }, 150);
+  document.addEventListener("click", (event) => {
+    if (!event.target?.closest?.('[data-mypage-menu-key="billing"], [data-mypage-menu-key="plan"]')) return;
+    window.setTimeout(requestSubscriptionStatusWhenVisible, 80);
+  });
+  document.addEventListener("change", (event) => {
+    if (!event.target?.matches?.("[data-mypage-mobile-menu]")) return;
+    window.setTimeout(requestSubscriptionStatusWhenVisible, 80);
+  });
 }
 
 if (typeof window !== "undefined") {

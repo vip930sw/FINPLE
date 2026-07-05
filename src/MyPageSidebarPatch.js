@@ -634,6 +634,7 @@ function setActiveMenu(activeKey) {
 function setActivePanel(nextKey, options = {}) {
   activeMenuKey = getVisibleMenuItems().some((item) => item.key === nextKey) ? nextKey : getFallbackActiveKey();
   if (!document.querySelector(`[data-mypage-panel-key="${activeMenuKey}"]`)) activeMenuKey = getFallbackActiveKey();
+  window.__finpleMyPageActiveKey = activeMenuKey;
   document.querySelectorAll(".accountPanelStack > [data-mypage-panel-key]").forEach((panel) => {
     const isActive = panel.getAttribute("data-mypage-panel-key") === activeMenuKey;
     panel.classList.toggle("myPagePanelActive", isActive);

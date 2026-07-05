@@ -24,4 +24,5 @@ test("admin pagination controls keep top spacing around tables and refresh areas
   const source = await readFile(CSS_SOURCE_PATH, "utf8");
 
   assert.match(source, /\.adminPaginationControls\s*\{[\s\S]*margin: 18px 0 14px;/);
+  assert.match(source, /\.adminPaginationControls\s*\{[\s\S]*padding-right: 16px;/);
 });

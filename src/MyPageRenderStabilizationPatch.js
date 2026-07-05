@@ -97,7 +97,8 @@ function getOAuthRecoverySignature() {
 
 function hasRenderableMyPageContent() {
   return Boolean(
-    document.querySelector(".myPageDashboardLayout .accountStatusPanel") ||
+    document.querySelector(".accountPage.myPage .accountPanelStack .accountStatusPanel") ||
+      document.querySelector(".myPageDashboardLayout .accountStatusPanel") ||
       document.querySelector('.accountStatusPanel[data-mypage-panel-key="account"]') ||
       document.querySelector(".accountPanelStack .accountStatusPanel")
   );
@@ -358,7 +359,12 @@ function handleFallbackAction(event) {
 
   event.preventDefault();
   if (target.hasAttribute("data-finple-mypage-retry")) {
-    window.location.reload();
+    activeBootId += 1;
+    forcedLoaderUntil = Math.max(forcedLoaderUntil, Date.now() + 2200);
+    removeLoadingOverlay();
+    document.documentElement.classList.add("finple-mypage-booting");
+    document.body?.classList.add("finple-mypage-stabilizing");
+    window.setTimeout(bootMyPageRenderStabilization, 0);
     return;
   }
   window.location.assign(target.hasAttribute("data-finple-mypage-login") ? "/login" : "/");
@@ -373,19 +379,14 @@ function hasOldSidebarLabels(sidebarText) {
 }
 
 function isShellReady() {
-  const sidebarText = getSidebarText();
-  const isEducationAccount = isEducationAccountUser();
-  const hasLayout = Boolean(document.querySelector(".myPageDashboardLayout") && document.querySelector(".myPageSidebarNav"));
-  const hasFinalMenuNames = sidebarText.includes("내 계정")
-    && sidebarText.includes("내 구독/플랜")
-    && (isEducationAccount || sidebarText.includes("내 결제수단"))
-    && (isEducationAccount || sidebarText.includes("내 결제내역"))
-    && sidebarText.includes("내 문의내역")
-    && sidebarText.includes("내 저장내역");
-  const hasNoOldMenuNames = !hasOldSidebarLabels(sidebarText);
-  const hasAccountPanel = Boolean(document.querySelector('.accountStatusPanel[data-mypage-panel-key="account"]'));
+  const hasMyPageRoot = Boolean(document.querySelector(".accountPage.myPage"));
+  const hasAccountPanel = Boolean(
+    document.querySelector('.accountStatusPanel[data-mypage-panel-key="account"]') ||
+      document.querySelector(".accountPage.myPage .accountPanelStack .accountStatusPanel")
+  );
+  const hasDashboardShell = Boolean(document.querySelector(".myPageDashboardLayout") && document.querySelector(".myPageSidebarNav"));
 
-  return hasLayout && hasFinalMenuNames && hasNoOldMenuNames && hasAccountPanel;
+  return hasMyPageRoot && hasAccountPanel && (hasDashboardShell || Boolean(document.querySelector(".accountPage.myPage .accountPanelStack")));
 }
 
 function revealMyPage() {
@@ -410,6 +411,7 @@ function revealMyPageFailsafe(bootId) {
 function waitForFinalLayout(bootId) {
   const startedAt = Date.now();
   let revealed = false;
+  let fallbackShown = false;
 
   function tryReveal() {
     if (revealed || bootId !== activeBootId) return;
@@ -429,8 +431,11 @@ function waitForFinalLayout(bootId) {
     }
 
     if (timedOut) {
-      revealed = true;
-      showMyPageFallback();
+      if (!fallbackShown) {
+        fallbackShown = true;
+        showMyPageFallback();
+      }
+      window.setTimeout(tryReveal, 500);
       return;
     }
 
