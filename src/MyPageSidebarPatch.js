@@ -12,6 +12,10 @@ import {
 } from "./components/paymentMethodClient";
 import { fetchMySupportInquiries } from "./components/portfolio/services/serverPortfolioService";
 import {
+  fetchInvestmentMbtiProfile,
+  upsertInvestmentMbtiProfile,
+} from "./components/portfolio/services/serverPortfolioService";
+import {
   MBTI_PRESET_STORAGE_KEY,
   restoreMbtiProfileFromPortfolios,
 } from "./components/portfolio/utils/mbtiProfileStorage";
@@ -95,10 +99,16 @@ let billingMethodRequested = false;
 let billingMethodState = { loading: false, refreshing: false, registered: false, method: null, error: "" };
 let myInquiriesRequested = false;
 let myInquiriesState = { loading: false, refreshing: false, inquiries: [], error: "" };
+let investmentMbtiRequested = false;
+let investmentMbtiState = { loading: false, refreshing: false, profile: null, error: "" };
 let lastSidebarUserKey = "";
 const MY_INQUIRIES_CACHE_TTL_MS = 45000;
+const INVESTMENT_MBTI_CACHE_TTL_MS = 45000;
 const myInquiriesCache = new Map();
 const myInquiriesInflight = new Map();
+const investmentMbtiCache = new Map();
+const investmentMbtiInflight = new Map();
+const investmentMbtiBackfillAttempted = new Set();
 
 function isMyPagePath() { return window.location.pathname === "/mypage"; }
 function navigateTo(path) { window.location.href = path; }
@@ -124,6 +134,9 @@ function getCurrentSidebarUserKey() {
 }
 function getMyInquiriesCacheKey() {
   return `${getCurrentSidebarUserKey()}::my-inquiries`;
+}
+function getInvestmentMbtiCacheKey() {
+  return `${getCurrentSidebarUserKey()}::investment-mbti`;
 }
 function isEducationAccountUser() {
   const user = readJson(AUTH_USER_STORAGE_KEY);
@@ -374,14 +387,105 @@ function updateInvestmentProfileUi() {
   });
   const result = readJson(MBTI_PRESET_STORAGE_KEY);
   const hasResult = Boolean(result?.typeId || result?.nickname || result?.finpleType);
-  setText(panel.querySelector("[data-investment-profile-badge]"), hasResult ? "저장됨" : "미검사");
+  setText(panel.querySelector("[data-investment-profile-badge]"), investmentMbtiState.loading && !hasResult ? "조회 중" : (hasResult ? "저장됨" : "미검사"));
   setText(panel.querySelector("[data-investment-profile-nickname]"), result?.nickname || "검사 결과 없음");
   setText(panel.querySelector("[data-investment-profile-type]"), result?.finpleType || "-영역");
   setText(panel.querySelector("[data-investment-profile-risk]"), result?.riskProfile || "-영역");
-  setText(panel.querySelector("[data-investment-profile-message]"), hasResult
-    ? "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다."
-    : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요.");
+  setText(panel.querySelector("[data-investment-profile-message]"), investmentMbtiState.error
+    ? investmentMbtiState.error
+    : (hasResult
+      ? (investmentMbtiState.refreshing ? "저장된 투자 MBTI 결과를 유지하며 서버 최신값을 확인하고 있습니다." : "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다.")
+      : (investmentMbtiState.loading ? "서버에 저장된 투자 MBTI 결과를 확인하고 있습니다." : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요.")));
   updateInvestmentResultDetails(panel, result, hasResult);
+}
+
+function writeInvestmentMbtiProfileToCache(profile) {
+  if (!profile || typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(MBTI_PRESET_STORAGE_KEY, JSON.stringify(profile));
+    window.dispatchEvent(new Event("finple-mbti-profile-updated"));
+    window.dispatchEvent(new Event("finple-local-storage-updated"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchInvestmentMbtiProfileCached(options = {}) {
+  const cacheKey = getInvestmentMbtiCacheKey();
+  const cached = investmentMbtiCache.get(cacheKey);
+  const now = Date.now();
+  if (!options.force && cached && now - cached.cachedAt < INVESTMENT_MBTI_CACHE_TTL_MS) return cached.profile;
+  if (!options.force && investmentMbtiInflight.has(cacheKey)) return investmentMbtiInflight.get(cacheKey);
+
+  const requestPromise = (async () => {
+    const profile = await fetchInvestmentMbtiProfile();
+    investmentMbtiCache.set(cacheKey, { cachedAt: Date.now(), profile: profile || null });
+    return profile || null;
+  })();
+
+  investmentMbtiInflight.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } finally {
+    investmentMbtiInflight.delete(cacheKey);
+  }
+}
+
+async function backfillInvestmentMbtiProfileIfNeeded(localProfile) {
+  if (!localProfile?.typeId) return;
+  const cacheKey = getInvestmentMbtiCacheKey();
+  if (investmentMbtiBackfillAttempted.has(cacheKey)) return;
+  investmentMbtiBackfillAttempted.add(cacheKey);
+  try {
+    const savedProfile = await upsertInvestmentMbtiProfile({
+      ...localProfile,
+      source: localProfile.source || "mypage-local-cache-backfill",
+    });
+    if (savedProfile?.typeId) writeInvestmentMbtiProfileToCache(savedProfile);
+  } catch (error) {
+    investmentMbtiState = {
+      ...investmentMbtiState,
+      error: "브라우저에 저장된 투자 MBTI 결과는 유지되며, 서버 저장은 나중에 다시 시도됩니다.",
+    };
+  }
+}
+
+async function loadInvestmentMbtiProfile(options = {}) {
+  if (!isMyPagePath() || investmentMbtiState.loading) return;
+  if (investmentMbtiRequested && !options.force) { updateInvestmentProfileUi(); return; }
+
+  const localProfile = readJson(MBTI_PRESET_STORAGE_KEY);
+  investmentMbtiRequested = true;
+  investmentMbtiState = {
+    ...investmentMbtiState,
+    loading: !localProfile,
+    refreshing: Boolean(localProfile),
+    error: "",
+  };
+  updateInvestmentProfileUi();
+
+  try {
+    const profile = await fetchInvestmentMbtiProfileCached({ force: Boolean(options.force) });
+    if (profile?.typeId) {
+      writeInvestmentMbtiProfileToCache(profile);
+      investmentMbtiState = { loading: false, refreshing: false, profile, error: "" };
+    } else {
+      investmentMbtiState = { loading: false, refreshing: false, profile: null, error: "" };
+      await backfillInvestmentMbtiProfileIfNeeded(localProfile);
+    }
+  } catch (error) {
+    investmentMbtiState = {
+      ...investmentMbtiState,
+      loading: false,
+      refreshing: false,
+      error: localProfile
+        ? "저장된 투자 MBTI 결과를 유지하며, 서버 최신값 확인은 나중에 다시 시도합니다."
+        : (error?.message || "투자 MBTI 결과를 불러오지 못했습니다."),
+    };
+  }
+
+  updateInvestmentProfileUi();
 }
 
 function bindInvestmentProfileActions() {
@@ -754,7 +858,7 @@ function setActivePanel(nextKey, options = {}) {
   });
   setActiveMenu(activeMenuKey);
   if (activeMenuKey === "payment-method") loadBillingMethodStatus();
-  if (activeMenuKey === "investment-profile") updateInvestmentProfileUi();
+  if (activeMenuKey === "investment-profile") loadInvestmentMbtiProfile();
   if (activeMenuKey === "inquiries") loadMyInquiries();
   if (options.scrollToTop) {
     const layout = document.querySelector(".myPageDashboardLayout");
@@ -777,6 +881,11 @@ function resetSidebarDataForUserChange() {
   myInquiriesState = { loading: false, refreshing: false, inquiries: [], error: "" };
   myInquiriesCache.clear();
   myInquiriesInflight.clear();
+  investmentMbtiRequested = false;
+  investmentMbtiState = { loading: false, refreshing: false, profile: null, error: "" };
+  investmentMbtiCache.clear();
+  investmentMbtiInflight.clear();
+  investmentMbtiBackfillAttempted.clear();
 }
 function isSidebarPatchStable() {
   return Boolean(

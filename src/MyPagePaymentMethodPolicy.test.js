@@ -8,6 +8,8 @@ const SUBSCRIPTION_SOURCE = new URL("./MyPageSubscriptionStatusPatch.js", import
 const SHELL_BRIDGE_SOURCE = new URL("./MyPageShellBridgePatch.js", import.meta.url);
 const STABILIZATION_SOURCE = new URL("./MyPageRenderStabilizationPatch.js", import.meta.url);
 const PAYMENT_HISTORY_SOURCE = new URL("./MyPagePaymentHistoryPatch.js", import.meta.url);
+const SERVER_PORTFOLIO_SERVICE_SOURCE = new URL("./components/portfolio/services/serverPortfolioService.js", import.meta.url);
+const INVESTMENT_MBTI_PAGE_SOURCE = new URL("./components/InvestmentMbtiPage.jsx", import.meta.url);
 
 test("mypage payment method refresh preserves stale registered data while loading", async () => {
   const source = await readFile(SIDEBAR_SOURCE, "utf8");
@@ -75,11 +77,32 @@ test("mypage subscription observer does not directly trigger repeated network re
   const requestBody = source.match(/async function requestSubscriptionStatusOnce\(options = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
 
   assert.match(source, /SUBSCRIPTION_STATUS_CACHE_TTL_MS = 45000/);
+  assert.match(source, /let lastSubscriptionFetchAt = 0;/);
   assert.match(source, /subscriptionStatusInflight\.has\(cacheKey\)/);
   assert.match(bootBody, /new MutationObserver\(\(\) => scheduleSubscriptionPatch\(80\)\)/);
   assert.doesNotMatch(bootBody, /fetchSubscriptionStatus\(|requestSubscriptionStatusOnce\(/);
+  assert.match(requestBody, /now - lastSubscriptionFetchAt < SUBSCRIPTION_STATUS_CACHE_TTL_MS/);
   assert.match(requestBody, /lastSubscriptionPayload = await fetchSubscriptionStatus\(\{ force: Boolean\(options\.force\) \}\)/);
+  assert.match(requestBody, /lastSubscriptionFetchAt = Date\.now\(\)/);
   assert.doesNotMatch(requestBody, /lastSubscriptionPayload = null/);
+});
+
+test("mypage investment MBTI prefers server profile with local cache fallback and backfill", async () => {
+  const sidebarSource = await readFile(SIDEBAR_SOURCE, "utf8");
+  const serviceSource = await readFile(SERVER_PORTFOLIO_SERVICE_SOURCE, "utf8");
+  const mbtiPageSource = await readFile(INVESTMENT_MBTI_PAGE_SOURCE, "utf8");
+
+  assert.match(serviceSource, /export async function fetchInvestmentMbtiProfile\(\)/);
+  assert.match(serviceSource, /\/account\/investment-mbti/);
+  assert.match(serviceSource, /export async function upsertInvestmentMbtiProfile\(profile\)/);
+  assert.match(sidebarSource, /INVESTMENT_MBTI_CACHE_TTL_MS = 45000/);
+  assert.match(sidebarSource, /fetchInvestmentMbtiProfileCached/);
+  assert.match(sidebarSource, /writeInvestmentMbtiProfileToCache\(profile\)/);
+  assert.match(sidebarSource, /backfillInvestmentMbtiProfileIfNeeded\(localProfile\)/);
+  assert.match(sidebarSource, /storage.*server|서버 저장은 나중에 다시 시도됩니다/s);
+  assert.match(mbtiPageSource, /buildMbtiProfileFromResult/);
+  assert.match(mbtiPageSource, /saveMbtiProfileToServer\(profile\)/);
+  assert.match(mbtiPageSource, /window\.__finpleMbtiServerSavePending/);
 });
 
 test("mypage shell-ready events do not restart the whole fallback overlay", async () => {

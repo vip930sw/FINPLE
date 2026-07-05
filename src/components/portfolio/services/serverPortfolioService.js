@@ -165,6 +165,19 @@ export async function fetchServerPortfolios() {
   return Array.isArray(response?.portfolios) ? response.portfolios : [];
 }
 
+export async function fetchInvestmentMbtiProfile() {
+  const payload = await requestJson("/account/investment-mbti");
+  return payload?.profile || null;
+}
+
+export async function upsertInvestmentMbtiProfile(profile) {
+  const payload = await requestJson("/account/investment-mbti", {
+    method: "PUT",
+    body: JSON.stringify({ profile }),
+  });
+
+  return payload?.profile || profile || null;
+}
 
 export async function submitSupportInquiry(inquiry) {
   const attachments = Array.isArray(inquiry?.attachments) ? inquiry.attachments : [];

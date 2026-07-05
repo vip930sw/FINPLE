@@ -60,6 +60,7 @@ function serializePaymentMethod(row) {
     displayLabel: row.display_label || row.card_company || "등록된 결제수단",
     cardCompany: row.card_company || null,
     cardLast4: row.card_last4 || null,
+    maskedCardNumber: row.masked_card_number || null,
     isDefault: Boolean(row.is_default),
     status: row.status,
     issuedAt: row.issued_at,

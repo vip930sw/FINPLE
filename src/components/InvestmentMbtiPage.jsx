@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { hydrateAssetFromScreenerCandidate } from "../data/tickers/screenerCandidateLoader";
 import {
   MBTI_PRESET_MAP,
+  buildMbtiProfileFromResult,
   storeMbtiProfileFromResult,
 } from "./portfolio/utils/mbtiProfileStorage";
+import { upsertInvestmentMbtiProfile } from "./portfolio/services/serverPortfolioService";
 import "./InvestmentMbtiPage.css";
 import "./InvestmentMbtiPage.step111.css";
 
@@ -409,6 +411,20 @@ function scheduleSimulatorAutoLookup() {
   }, 900);
 }
 
+function saveMbtiProfileToServer(profile) {
+  if (!profile?.typeId) return Promise.resolve(null);
+  return upsertInvestmentMbtiProfile(profile).catch((error) => {
+    if (typeof window !== "undefined") {
+      window.__finpleMbtiServerSavePending = {
+        profile,
+        error: error?.message || "투자 MBTI 결과 서버 저장에 실패했습니다.",
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return null;
+  });
+}
+
 function saveResultToSimulator(result, marketMode = "US") {
   if (!result?.type) return false;
   const now = new Date().toISOString();
@@ -424,11 +440,17 @@ function saveResultToSimulator(result, marketMode = "US") {
     localStorage.setItem(ACTIVE_PORTFOLIO_STORAGE_KEY, id);
     localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify({ portfolioList: nextList, activePortfolioId: id, activePortfolio: portfolio, assets, settings, globalSettings: settings, updatedAt: now }));
+    const profile = buildMbtiProfileFromResult(result, {
+      marketMode,
+      createdAt: now,
+      source: "investment-mbti-simulator",
+    });
     storeMbtiProfileFromResult(result, {
       marketMode,
       createdAt: now,
       source: "investment-mbti-simulator",
     });
+    saveMbtiProfileToServer(profile);
     return true;
   } catch (error) { console.error("투자 MBTI 프리셋 저장 실패", error); return false; }
 }
@@ -500,7 +522,9 @@ function MbtiResult({ result, onReset, onApplyUs, onApplyKr }) {
   const hasCrypto = Number(type.preset.crypto || 0) > 0;
 
   useEffect(() => {
+    const profile = buildMbtiProfileFromResult(result, { source: "investment-mbti-result" });
     storeMbtiProfileFromResult(result, { source: "investment-mbti-result" });
+    saveMbtiProfileToServer(profile);
   }, [result]);
 
   async function handleShareResult() {

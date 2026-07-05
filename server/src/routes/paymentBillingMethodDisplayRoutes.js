@@ -17,8 +17,8 @@ const CARD_ISSUER_NAMES = {
   "41": "신한카드",
   "62": "신협카드",
   "36": "씨티카드",
-  "33": "우리카드",
-  W1: "우리카드",
+  "33": "우리은행",
+  W1: "우리은행",
   "37": "우체국카드",
   "39": "저축은행카드",
   "35": "전북카드",
@@ -210,6 +210,7 @@ function serializePaymentMethod(row) {
   const displayLabel = summary?.displayLabel || "카드 등록 완료";
   const cardCompany = summary?.cardCompany || null;
   const cardLast4 = summary?.cardLast4 || null;
+  const maskedCardNumber = summary?.maskedCardNumber || row.masked_card_number || null;
 
   return {
     id: row.id,
@@ -221,6 +222,8 @@ function serializePaymentMethod(row) {
     card_company: cardCompany,
     cardLast4,
     card_last4: cardLast4,
+    maskedCardNumber,
+    masked_card_number: maskedCardNumber,
     cardBrandKey: summary?.cardBrandKey || null,
     displaySource: summary?.source || "unknown",
     isDefault: Boolean(row.is_default),
@@ -306,6 +309,7 @@ router.get("/toss/billing/method", async (request, response, next) => {
           displayLabel: paymentSummary.displayLabel,
           cardCompany: paymentSummary.cardCompany,
           cardLast4: paymentSummary.cardLast4,
+          maskedCardNumber: paymentSummary.maskedCardNumber || null,
           cardBrandKey: paymentSummary.cardBrandKey,
           displaySource: "latest_confirmed_payment",
           isDefault: false,

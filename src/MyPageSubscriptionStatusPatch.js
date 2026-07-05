@@ -22,6 +22,7 @@ import {
 let hasRequestedSubscriptionStatus = false;
 let lastSubscriptionPayload = null;
 let lastSubscriptionError = "";
+let lastSubscriptionFetchAt = 0;
 let isFetchingSubscriptionStatus = false;
 let isRequestingPeriodEnd = false;
 let subscriptionPatchScheduled = false;
@@ -446,7 +447,15 @@ async function requestPeriodEndSchedule() {
 
 async function requestSubscriptionStatusOnce(options = {}) {
   if (!isMyPagePath() || isFetchingSubscriptionStatus) return;
-  if (hasRequestedSubscriptionStatus && !options.force) return;
+  const now = Date.now();
+  if (!options.force && lastSubscriptionPayload && now - lastSubscriptionFetchAt < SUBSCRIPTION_STATUS_CACHE_TTL_MS) {
+    updateSubscriptionPanel();
+    return;
+  }
+  if (hasRequestedSubscriptionStatus && !options.force && !lastSubscriptionPayload && !lastSubscriptionError) {
+    updateSubscriptionPanel();
+    return;
+  }
 
   hasRequestedSubscriptionStatus = true;
   isFetchingSubscriptionStatus = true;
@@ -456,6 +465,7 @@ async function requestSubscriptionStatusOnce(options = {}) {
 
   try {
     lastSubscriptionPayload = await fetchSubscriptionStatus({ force: Boolean(options.force) });
+    lastSubscriptionFetchAt = Date.now();
     syncSubscriptionPayloadToBrowser(lastSubscriptionPayload);
   } catch (error) {
     lastSubscriptionError = error?.message || "구독 상태 새로고침에 실패했습니다.";
@@ -471,6 +481,7 @@ function resetWhenLeavingMyPage() {
   hasRequestedSubscriptionStatus = false;
   lastSubscriptionPayload = null;
   lastSubscriptionError = "";
+  lastSubscriptionFetchAt = 0;
 }
 
 function scheduleSubscriptionPatch(delay = 80) {
@@ -495,6 +506,7 @@ function resetSubscriptionForUserChange() {
   hasRequestedSubscriptionStatus = false;
   lastSubscriptionPayload = null;
   lastSubscriptionError = "";
+  lastSubscriptionFetchAt = 0;
   isFetchingSubscriptionStatus = false;
   subscriptionStatusCache.clear();
   subscriptionStatusInflight.clear();
