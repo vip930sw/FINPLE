@@ -2,7 +2,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query } from "../db/database.js";
-import { buildPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
+import { buildPaymentMethodSummary, buildStoredPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
 
 const router = express.Router();
 
@@ -204,7 +204,7 @@ function summarizeCardFromRow(row) {
 function serializePaymentMethod(row) {
   if (!row) return null;
 
-  const paymentSummary = buildPaymentMethodSummary(row.payment_metadata, row.metadata, row) || summarizeCardFromPayload(row.payment_metadata, row);
+  const paymentSummary = buildStoredPaymentMethodSummary(row, row.payment_metadata, row.metadata) || summarizeCardFromPayload(row.payment_metadata, row);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
 

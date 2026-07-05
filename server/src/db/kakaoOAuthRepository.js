@@ -7,6 +7,11 @@ const KAKAO_TOKEN_URL = "https://kauth.kakao.com/oauth/token";
 const KAKAO_PROFILE_URL = "https://kapi.kakao.com/v2/user/me";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
 const KAKAO_PROVIDER = "kakao";
+const BLOCKED_AUTH_STATUSES = new Set(["admin_deleted", "deleted", "withdrawn"]);
+
+function isBlockedAuthStatus(status) {
+  return BLOCKED_AUTH_STATUSES.has(String(status || "").trim().toLowerCase());
+}
 
 function getRequiredEnv(name) {
   const value = String(process.env[name] || "").trim();
@@ -296,6 +301,12 @@ export async function completeKakaoOAuthLogin({ code, state, error, error_descri
         [email]
       );
       user = mapUser(existingUserResult.rows[0]);
+    }
+
+    if (isBlockedAuthStatus(user?.authStatus)) {
+      const error = new Error("This account is not available for login.");
+      error.statusCode = 403;
+      throw error;
     }
 
     if (!user) {

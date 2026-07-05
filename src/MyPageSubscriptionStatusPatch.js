@@ -79,7 +79,7 @@ function getSubscriptionMessage(payload) {
   const decision = getSubscriptionPlanDecision(payload);
   const status = decision.status || payload.status || subscription.status || "beta_free";
   const plan = getPlanFromPayload(payload);
-  const periodEndLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || payload.entitlement?.valid_until || payload.entitlement?.validUntil);
+  const periodEndLabel = readDateLabel(payload.accessUntil || subscription?.current_period_end || subscription?.currentPeriodEnd || payload.entitlement?.valid_until || payload.entitlement?.validUntil);
 
   if (plan === "personal" && isPeriodEndScheduled(status, subscription)) {
     return `구독 해지가 예약되었습니다. ${periodEndLabel}까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.`;
@@ -225,7 +225,7 @@ function syncSubscriptionFailureToBrowser() {
 }
 
 function getPeriodEndValue(subscription, entitlement) {
-  return subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil || null;
+  return payload?.accessUntil || subscription?.current_period_end || subscription?.currentPeriodEnd || entitlement?.valid_until || entitlement?.validUntil || null;
 }
 
 function getNextBillingLabel({ plan, status, subscription, entitlement }) {
@@ -340,7 +340,7 @@ async function requestPeriodEndSchedule() {
   if (isRequestingPeriodEnd) return;
 
   const subscription = lastSubscriptionPayload?.subscription || {};
-  const endLabel = readDateLabel(subscription?.current_period_end || subscription?.currentPeriodEnd || lastSubscriptionPayload?.entitlement?.valid_until);
+  const endLabel = readDateLabel(lastSubscriptionPayload?.accessUntil || subscription?.current_period_end || subscription?.currentPeriodEnd || lastSubscriptionPayload?.entitlement?.valid_until);
   const confirmed = window.confirm(
     `구독 해지를 예약하시겠습니까?\n\n${endLabel}까지 Personal 기능을 계속 사용할 수 있고, 다음 결제부터 자동 갱신이 중단됩니다.`
   );

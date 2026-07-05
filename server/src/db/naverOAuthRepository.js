@@ -7,6 +7,11 @@ const NAVER_TOKEN_URL = "https://nid.naver.com/oauth2.0/token";
 const NAVER_PROFILE_URL = "https://openapi.naver.com/v1/nid/me";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
 const NAVER_PROVIDER = "naver";
+const BLOCKED_AUTH_STATUSES = new Set(["admin_deleted", "deleted", "withdrawn"]);
+
+function isBlockedAuthStatus(status) {
+  return BLOCKED_AUTH_STATUSES.has(String(status || "").trim().toLowerCase());
+}
 
 function getRequiredEnv(name) {
   const value = String(process.env[name] || "").trim();
@@ -282,6 +287,12 @@ export async function completeNaverOAuthLogin({ code, state, error, error_descri
         [email]
       );
       user = mapUser(existingUserResult.rows[0]);
+    }
+
+    if (isBlockedAuthStatus(user?.authStatus)) {
+      const error = new Error("This account is not available for login.");
+      error.statusCode = 403;
+      throw error;
     }
 
     if (!user) {

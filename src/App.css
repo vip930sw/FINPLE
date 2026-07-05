@@ -8588,10 +8588,29 @@ body {
   background: #edf5ff;
 }
 
-.serverStorageActions .dangerSubtle {
-  color: #ef4444 !important;
+.dangerSubtle {
+  color: #dc2626 !important;
   border-color: #fecaca !important;
-  background: #fff7f7 !important;
+  background: #fff !important;
+}
+
+.dangerSubtle:hover:not(:disabled) {
+  background: #fef2f2 !important;
+}
+
+.loginRecoveryActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.loginRecoveryHint,
+.accountProviderHint {
+  margin: 0;
+  color: #52627a;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media screen and (max-width: 900px) {

@@ -12,6 +12,7 @@ const PASSWORD_HASH_KEYLEN = 32;
 const PASSWORD_HASH_DIGEST = "sha256";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
 const EMAIL_VERIFICATION_HOURS = Number(process.env.FINPLE_EMAIL_VERIFICATION_HOURS || 24);
+const DELETED_AUTH_STATUSES = new Set(["admin_deleted", "deleted", "withdrawn"]);
 const EDUCATION_ACCOUNT_VALIDITY_SQL = `(
   education_accounts.valid_until IS NULL
   OR education_accounts.valid_until >= NOW()
@@ -23,6 +24,21 @@ const EDUCATION_ACCOUNT_VALIDITY_SQL = `(
 
 function normalizeEmail(email = "") {
   return String(email || "").trim().toLowerCase();
+}
+
+function isDeletedAuthStatus(status) {
+  return DELETED_AUTH_STATUSES.has(String(status || "").trim().toLowerCase());
+}
+
+export function normalizeNicknameForProfile(value) {
+  const nickname = String(value || "").trim();
+  if (nickname.length < 2 || nickname.length > 20) {
+    const error = new Error("Nickname must be 2 to 20 characters.");
+    error.statusCode = 400;
+    error.code = "NICKNAME_LENGTH_INVALID";
+    throw error;
+  }
+  return nickname;
 }
 
 function assertEmail(email) {
@@ -177,6 +193,7 @@ async function getUserById(userId) {
      FROM users
      LEFT JOIN education_accounts ON education_accounts.user_id = users.id
      WHERE users.id = $1
+       AND COALESCE(users.auth_status, 'active') NOT IN ('admin_deleted', 'deleted', 'withdrawn')
        AND (
          education_accounts.id IS NULL
          OR (
@@ -388,6 +405,12 @@ export async function loginWithEmail(input = {}, requestMeta = {}) {
       throw error;
     }
 
+    if (isDeletedAuthStatus(row.auth_status)) {
+      const error = new Error("Please check your email or password.");
+      error.statusCode = 401;
+      throw error;
+    }
+
     if (row.locked_until && new Date(row.locked_until).getTime() > Date.now()) {
       const error = new Error("로그인 시도가 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
       error.statusCode = 423;
@@ -474,6 +497,12 @@ export async function loginWithEducationAccount(input = {}, requestMeta = {}) {
     const row = result.rows[0];
     if (!row) {
       const error = new Error("교육용 ID 또는 비밀번호를 확인해 주세요.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (isDeletedAuthStatus(row.auth_status)) {
+      const error = new Error("Please check your education ID or password.");
       error.statusCode = 401;
       throw error;
     }
@@ -655,6 +684,47 @@ export async function changeUserPassword(userId, input = {}) {
   });
 }
 
+export async function updateUserProfile(userId, input = {}) {
+  if (!userId) {
+    const error = new Error("Profile update requires login.");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const nickname = normalizeNicknameForProfile(input.nickname);
+
+  return withTransaction(async (tx) => {
+    const current = await tx(
+      `SELECT id, nickname, auth_status
+         FROM users
+        WHERE id = $1
+        LIMIT 1`,
+      [userId]
+    );
+    const row = current.rows[0];
+    if (!row || isDeletedAuthStatus(row.auth_status)) {
+      const error = new Error("Profile account was not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (String(row.nickname || "").trim() === nickname) {
+      return { ok: true, unchanged: true, user: await getUserById(userId) };
+    }
+
+    const updated = await tx(
+      `UPDATE users
+          SET nickname = $2,
+              updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, email, name, nickname, plan, auth_status, email_verified_at, created_at, updated_at, last_login_at`,
+      [userId, nickname]
+    );
+
+    return { ok: true, unchanged: false, user: mapUser(updated.rows[0]) };
+  });
+}
+
 export async function verifyEmailToken(token) {
   const rawToken = String(token || "").trim();
   if (!rawToken) {
@@ -762,6 +832,7 @@ export async function getUserBySessionToken(sessionToken) {
      WHERE user_sessions.refresh_token_hash = $1
        AND user_sessions.revoked_at IS NULL
        AND user_sessions.expires_at > NOW()
+       AND COALESCE(users.auth_status, 'active') NOT IN ('admin_deleted', 'deleted', 'withdrawn')
        AND (
          education_accounts.id IS NULL
          OR (

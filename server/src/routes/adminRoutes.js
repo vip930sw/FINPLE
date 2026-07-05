@@ -12,6 +12,7 @@ import {
   listEducationAccounts,
   updateEducationAccount,
 } from "../db/educationAccountRepository.js";
+import { ensureEducationAccountSchema } from "../db/educationAccountSchema.js";
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import { getAiAnalysisUsageAdminSummary } from "../services/aiAnalysisUsageRepository.js";
 import {
@@ -23,6 +24,7 @@ import {
 } from "../services/adminSubscriptionEffectiveStatus.js";
 
 const router = express.Router();
+const ADMIN_DELETED_AUTH_STATUS = "admin_deleted";
 
 router.get("/health", (request, response) => {
   response.json({
@@ -104,6 +106,8 @@ router.get("/members", (request, response, next) => {
     try {
       if (!requireDatabase(response)) return;
 
+      await ensureEducationAccountSchema(query);
+
       const [membersResult, educationMembersResult] = await Promise.all([
         query(
           `WITH latest_subscriptions AS (
@@ -164,13 +168,14 @@ router.get("/members", (request, response, next) => {
              latest_entitlements.entitlement_valid_until,
              COALESCE(portfolio_counts.portfolio_count, 0) AS portfolio_count,
              COALESCE(inquiry_counts.inquiry_count, 0) AS inquiry_count
-            FROM users
+           FROM users
             LEFT JOIN latest_subscriptions ON latest_subscriptions.user_id = users.id
             LEFT JOIN latest_entitlements ON latest_entitlements.user_id = users.id
             LEFT JOIN portfolio_counts ON portfolio_counts.user_id = users.id
             LEFT JOIN inquiry_counts ON inquiry_counts.user_id = users.id
             LEFT JOIN education_users ON education_users.user_id = users.id
            WHERE education_users.user_id IS NULL
+             AND COALESCE(users.auth_status, 'active') <> 'admin_deleted'
             ORDER BY users.created_at DESC`
         ),
         query(
@@ -235,6 +240,13 @@ router.delete("/members/:id", (request, response, next) => {
           throw error;
         }
 
+        if (member.auth_status === ADMIN_DELETED_AUTH_STATUS) {
+          const error = new Error("This member account is already soft-deleted.");
+          error.statusCode = 409;
+          error.code = "ADMIN_MEMBER_ALREADY_SOFT_DELETED";
+          throw error;
+        }
+
         const expectedEmail = normalizeConfirmValue(member.email);
         const expectedUserId = normalizeConfirmValue(member.id);
         const confirmedByEmail = expectedEmail && confirmEmail === expectedEmail;
@@ -276,22 +288,48 @@ router.delete("/members/:id", (request, response, next) => {
           [member.id, deletionMeta]
         );
 
-        await tx("DELETE FROM inquiries WHERE user_id = $1", [member.id]);
-        await tx("DELETE FROM api_usage_logs WHERE user_id = $1", [member.id]);
-        await tx("DELETE FROM payment_events WHERE user_id = $1", [member.id]);
-        const deleteResult = await tx("DELETE FROM users WHERE id = $1 RETURNING id, email", [member.id]);
+        await tx(
+          `UPDATE user_entitlements
+              SET plan = 'free',
+                  valid_until = COALESCE(valid_until, NOW()),
+                  source = 'admin_soft_delete',
+                  updated_at = NOW()
+            WHERE user_id = $1`,
+          [member.id]
+        );
+
+        await tx(
+          `UPDATE user_sessions
+              SET revoked_at = COALESCE(revoked_at, NOW())
+            WHERE user_id = $1`,
+          [member.id]
+        );
+
+        const updateResult = await tx(
+          `UPDATE users
+              SET auth_status = $2,
+                  plan = 'free',
+                  updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, email, auth_status`,
+          [member.id, ADMIN_DELETED_AUTH_STATUS]
+        );
 
         return {
-          deleted: deleteResult.rowCount > 0,
-          member: deleteResult.rows[0] || { id: member.id, email: member.email },
+          deleted: updateResult.rowCount > 0,
+          softDeleted: updateResult.rowCount > 0,
+          hardDeleted: false,
+          member: updateResult.rows[0] || { id: member.id, email: member.email, auth_status: ADMIN_DELETED_AUTH_STATUS },
         };
       });
 
       response.json({
         ok: true,
         deleted: Boolean(result.deleted),
+        softDeleted: Boolean(result.softDeleted),
+        hardDeleted: false,
         member: result.member,
-        message: "회원 계정과 연결된 개인정보가 삭제되었습니다.",
+        message: "Member account was soft-deleted. Billing access was disabled and historical records were preserved.",
       });
     } catch (error) {
       next(error);

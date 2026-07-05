@@ -7,6 +7,11 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 const SESSION_DAYS = Number(process.env.FINPLE_SESSION_DAYS || 30);
 const GOOGLE_PROVIDER = "google";
+const BLOCKED_AUTH_STATUSES = new Set(["admin_deleted", "deleted", "withdrawn"]);
+
+function isBlockedAuthStatus(status) {
+  return BLOCKED_AUTH_STATUSES.has(String(status || "").trim().toLowerCase());
+}
 
 function getRequiredEnv(name) {
   const value = String(process.env[name] || "").trim();
@@ -276,6 +281,12 @@ export async function completeGoogleOAuthLogin({ code, state }, requestMeta = {}
         [email]
       );
       user = mapUser(existingUserResult.rows[0]);
+    }
+
+    if (isBlockedAuthStatus(user?.authStatus)) {
+      const error = new Error("This account is not available for login.");
+      error.statusCode = 403;
+      throw error;
     }
 
     if (!user) {

@@ -86,7 +86,82 @@ function getCardNumberCandidates(payload = {}, row = {}) {
 export function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록완료`;
+  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
+}
+
+function isGenericPaymentLabel(label) {
+  const text = String(label || "").trim().toLowerCase();
+  if (!text) return true;
+  return [
+    "card registered",
+    "registered card",
+    "payment method registered",
+    "카드 등록 완료",
+    "등록된 결제수단",
+    "등록된 카드",
+  ].some((generic) => text === generic.toLowerCase());
+}
+
+function normalizeStoredDisplayLabel(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s*기본\s*$/u, "")
+    .trim();
+}
+
+export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
+  if (!row || typeof row !== "object") return null;
+
+  const storedLabel = normalizeStoredDisplayLabel(row.display_label);
+  const storedLabelTail = getMaskedTail(storedLabel);
+  if (storedLabel && storedLabelTail && !isGenericPaymentLabel(storedLabel)) {
+    return {
+      displayLabel: storedLabel,
+      cardCompany: row.card_company || null,
+      cardLast4: storedLabelTail,
+      maskedCardNumber: row.masked_card_number || null,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_display_label",
+    };
+  }
+
+  const cardLast4 = getMaskedTail(row.card_last4);
+  if (row.card_company && cardLast4) {
+    const company = resolveCardCompany(row.card_company);
+    return {
+      displayLabel: formatCardDisplayLabel(company, cardLast4),
+      cardCompany: company,
+      cardLast4,
+      maskedCardNumber: row.masked_card_number || null,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_card_company_last4",
+    };
+  }
+
+  const maskedTail = getMaskedTail(row.masked_card_number);
+  if (maskedTail) {
+    const company = resolveCardCompany(row.card_company);
+    return {
+      displayLabel: formatCardDisplayLabel(company, maskedTail),
+      cardCompany: company,
+      cardLast4: maskedTail,
+      maskedCardNumber: row.masked_card_number || null,
+      cardBrandKey: normalizeCardCode(row.card_company),
+      source: "stored_masked_card_number",
+    };
+  }
+
+  const metadataSummary = buildPaymentMethodSummary(...metadataSources);
+  if (metadataSummary) return { ...metadataSummary, source: metadataSummary.source || "payment_metadata" };
+
+  return {
+    displayLabel: "카드 등록 완료",
+    cardCompany: null,
+    cardLast4: null,
+    maskedCardNumber: null,
+    cardBrandKey: null,
+    source: "stored_method_safe_fallback",
+  };
 }
 
 export function buildPaymentMethodSummary(...sources) {

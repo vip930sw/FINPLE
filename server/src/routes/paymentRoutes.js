@@ -725,10 +725,24 @@ router.get("/subscription/me", async (request, response, next) => {
     }
 
     const effective = getEffectiveSubscriptionState({ user, subscription, entitlement });
+    const accessUntil =
+      subscription?.current_period_end ||
+      subscription?.currentPeriodEnd ||
+      entitlement?.valid_until ||
+      entitlement?.validUntil ||
+      null;
+    const accessReason = subscription?.current_period_end || subscription?.currentPeriodEnd
+      ? "subscription_current_period_end"
+      : entitlement?.valid_until || entitlement?.validUntil
+        ? "entitlement_valid_until"
+        : effective.warnings?.includes("personal_period_end_missing_temporary_access")
+          ? "missing_period_end_temporary_access"
+          : effective.effectiveStatus || "not_paid";
 
     response.json({
       ok: true,
       authenticated: true,
+      serverNow: new Date().toISOString(),
       user: {
         id: user.id,
         email: user.email,
@@ -738,6 +752,8 @@ router.get("/subscription/me", async (request, response, next) => {
       status: effective.status,
       effectivePlan: effective.effectivePlan,
       effectiveStatus: effective.effectiveStatus,
+      accessUntil,
+      accessReason,
       rawPlan: entitlement?.plan || user.plan || "free",
       rawStatus: subscription?.status || "beta_free",
       subscription,

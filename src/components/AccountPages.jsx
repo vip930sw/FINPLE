@@ -24,7 +24,7 @@ import {
   getPlanUsageStatus,
   getFreeApiUsageStatus,
 } from "./portfolio/config/planConfig";
-import { changeFinplePassword, deleteFinpleAccount } from "./authClientService";
+import { changeFinplePassword, deleteFinpleAccount, updateFinpleProfile } from "./authClientService";
 
 function isEducationAuthUser(user) {
   return Boolean(
@@ -1156,10 +1156,15 @@ function AccountStatusPanel({ onNavigate }) {
     confirmPassword: "",
   });
   const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
+  const [isNicknameEditOpen, setIsNicknameEditOpen] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState(() => String(authUser?.nickname || "").trim());
+  const [nicknameMessage, setNicknameMessage] = useState("");
 
   useEffect(() => {
     function handleAuthUpdate() {
-      setAuthUser(getStoredFinpleAuthUser());
+      const currentUser = getStoredFinpleAuthUser();
+      setAuthUser(currentUser);
+      setNicknameDraft(String(currentUser?.nickname || "").trim());
     }
 
     window.addEventListener("finple-auth-updated", handleAuthUpdate);
@@ -1290,6 +1295,51 @@ function AccountStatusPanel({ onNavigate }) {
     }
   }
 
+  function openNicknameEdit() {
+    setNicknameDraft(String(authUser?.nickname || "").trim());
+    setNicknameMessage("");
+    setIsNicknameEditOpen(true);
+  }
+
+  function closeNicknameEdit() {
+    if (isLoading) return;
+    setIsNicknameEditOpen(false);
+    setNicknameMessage("");
+    setNicknameDraft(String(authUser?.nickname || "").trim());
+  }
+
+  async function handleChangeNickname() {
+    const nickname = nicknameDraft.trim();
+    if (!authUser?.id) {
+      setNicknameMessage("닉네임 변경을 위해 다시 로그인해 주세요.");
+      return;
+    }
+    if (nickname.length < 2 || nickname.length > 20) {
+      setNicknameMessage("닉네임은 2자 이상 20자 이하로 입력해 주세요.");
+      return;
+    }
+    if (nickname === String(authUser?.nickname || "").trim()) {
+      setNicknameMessage("현재 닉네임과 동일합니다.");
+      return;
+    }
+
+    setIsLoading(true);
+    setNicknameMessage("");
+    try {
+      const payload = await updateFinpleProfile({ nickname });
+      if (payload?.user) {
+        setAuthUser(payload.user);
+        setNicknameDraft(String(payload.user.nickname || "").trim());
+      }
+      setIsNicknameEditOpen(false);
+      setStatusMessage("닉네임이 변경되었습니다.");
+    } catch (error) {
+      setNicknameMessage(error?.message || "닉네임을 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleDeleteAccount() {
     if (!authUser?.id) {
       setWithdrawalMessage("회원탈퇴를 진행하려면 먼저 로그인해 주세요.");
@@ -1331,6 +1381,14 @@ function AccountStatusPanel({ onNavigate }) {
     passwordForm.newPassword.length >= 8 &&
     passwordForm.newPassword === passwordForm.confirmPassword &&
     !isLoading;
+  const trimmedNicknameDraft = nicknameDraft.trim();
+  const canSubmitNicknameChange =
+    authUser?.id &&
+    trimmedNicknameDraft.length >= 2 &&
+    trimmedNicknameDraft.length <= 20 &&
+    trimmedNicknameDraft !== String(authUser?.nickname || "").trim() &&
+    !isLoading;
+  const canChangePassword = authUser?.id && authUser.authMode === "email-password" && !isEducationAccount;
   const loginStatusLabel = authUser
     ? isEducationAccount ? "교육용 계정 연결됨" : "체험 사용자 연결됨"
     : "미연결";
@@ -1358,6 +1416,10 @@ function AccountStatusPanel({ onNavigate }) {
           <strong>{authUser?.name || serverUser?.name || "-"}</strong>
         </div>
         <div>
+          <span>닉네임</span>
+          <strong>{authUser?.nickname || serverUser?.nickname || "-"}</strong>
+        </div>
+        <div>
           <span>플랜</span>
           <strong>{planStatusLabel}</strong>
         </div>
@@ -1374,6 +1436,12 @@ function AccountStatusPanel({ onNavigate }) {
           {authUser ? "계정 상태 새로고침" : "체험 사용자 연결"}
         </button>
         <button type="button" className="secondaryButton betaHiddenAction" onClick={handleRefreshServerUser} disabled={isLoading || !authUser}>서버 사용자 확인</button>
+        <button type="button" className="secondaryButton" onClick={openNicknameEdit} disabled={isLoading || !authUser}>닉네임 변경</button>
+        {canChangePassword ? (
+          <button type="button" className="secondaryButton" onClick={() => setIsPasswordChangeOpen(true)} disabled={isLoading}>비밀번호 변경</button>
+        ) : (
+          <span className="accountProviderHint">소셜 로그인 계정의 비밀번호는 해당 로그인 제공자에서 관리합니다.</span>
+        )}
         <button type="button" className="secondaryButton betaHiddenAction" onClick={() => onNavigate("login")}>로그인 화면</button>
         <button type="button" className="secondaryButton dangerSubtle betaHiddenAction" onClick={handleLogout} disabled={isLoading || !authUser}>로그아웃 데모</button>
       </div>
@@ -1381,8 +1449,8 @@ function AccountStatusPanel({ onNavigate }) {
         <div>
           <strong>계정 관리</strong>
           <p>
-            <span className="accountWithdrawalDescriptionDesktop">계정 삭제가 필요한 경우에만 회원탈퇴를 진행해 주세요.</span>
-            <span className="accountWithdrawalDescriptionMobile">계정 삭제 시 회원탈퇴를 진행해 주세요.</span>
+            <span className="accountWithdrawalDescriptionDesktop">계정 접근 비활성화가 필요한 경우에만 회원탈퇴를 진행해 주세요.</span>
+            <span className="accountWithdrawalDescriptionMobile">계정 접근 비활성화 시 회원탈퇴를 진행해 주세요.</span>
           </p>
         </div>
         <button type="button" className="secondaryButton accountWithdrawalButton" onClick={() => setIsWithdrawalOpen(true)} disabled={isLoading || !authUser}>
@@ -1390,13 +1458,39 @@ function AccountStatusPanel({ onNavigate }) {
         </button>
       </div>
 
+      {isNicknameEditOpen ? (
+        <div className="accountWithdrawalModalBackdrop" role="presentation">
+          <section className="accountWithdrawalModal" role="dialog" aria-modal="true" aria-labelledby="accountNicknameTitle">
+            <p className="accountMiniLabel">Profile</p>
+            <h3 id="accountNicknameTitle">닉네임 변경</h3>
+            <p className="accountWithdrawalLead">서비스 화면에 표시할 닉네임을 2자 이상 20자 이하로 입력해 주세요.</p>
+            <label className="accountWithdrawalConfirm">
+              닉네임
+              <input
+                type="text"
+                value={nicknameDraft}
+                onChange={(event) => setNicknameDraft(event.target.value)}
+                minLength={2}
+                maxLength={20}
+                autoComplete="nickname"
+              />
+            </label>
+            {nicknameMessage ? <p className="accountInlineStatus">{nicknameMessage}</p> : null}
+            <div className="serverStorageActions compactActions">
+              <button type="button" className="primaryButton" onClick={handleChangeNickname} disabled={!canSubmitNicknameChange}>저장</button>
+              <button type="button" className="secondaryButton" onClick={closeNicknameEdit} disabled={isLoading}>취소</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       {isWithdrawalOpen ? (
         <div className="accountWithdrawalModalBackdrop" role="presentation">
           <section className="accountWithdrawalModal" role="dialog" aria-modal="true" aria-labelledby="accountWithdrawalTitle">
             <p className="accountMiniLabel">Account Withdrawal</p>
             <h3 id="accountWithdrawalTitle">회원탈퇴 전 확인해 주세요</h3>
             <p className="accountWithdrawalLead">
-              탈퇴 후 FINPLE 계정과 저장된 개인정보는 복구할 수 없도록 삭제됩니다.
+              탈퇴 후 FINPLE 계정 접근은 비활성화되며, 결제 및 문의 이력은 운영 확인을 위해 보존됩니다.
             </p>
 
             <div className="accountWithdrawalWarning">
@@ -1413,7 +1507,7 @@ function AccountStatusPanel({ onNavigate }) {
                 checked={withdrawalChecks.privacyDeletionConfirmed}
                 onChange={() => updateWithdrawalCheck("privacyDeletionConfirmed")}
               />
-              <span>회원탈퇴 후 계정과 개인정보가 복구되지 않는다는 점을 확인했습니다.</span>
+              <span>회원탈퇴 후 계정 접근이 비활성화되고 운영 이력은 보존된다는 점을 확인했습니다.</span>
             </label>
             <label className="accountWithdrawalCheck">
               <input

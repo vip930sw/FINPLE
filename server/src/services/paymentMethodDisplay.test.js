@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildPaymentMethodSummary,
+  buildStoredPaymentMethodSummary,
   formatCardDisplayLabel,
   getMaskedTail,
   resolveCardCompany,
@@ -11,7 +12,7 @@ import {
 test("payment method display maps Woori issuer codes to the requested bank label", () => {
   assert.equal(resolveCardCompany("33"), "우리은행");
   assert.equal(resolveCardCompany("W1"), "우리은행");
-  assert.equal(formatCardDisplayLabel("33", "9121"), "우리은행 9121");
+  assert.equal(formatCardDisplayLabel("33", "9121"), "우리은행 · **** 9121");
 });
 
 test("payment method display prefers latest payment card tail over billing issue fallback", () => {
@@ -30,9 +31,31 @@ test("payment method display prefers latest payment card tail over billing issue
 
   const summary = buildPaymentMethodSummary(latestPayment, billingIssue);
 
-  assert.equal(summary.displayLabel, "우리은행 9121");
+  assert.equal(summary.displayLabel, "우리은행 · **** 9121");
   assert.equal(summary.cardCompany, "우리은행");
   assert.equal(summary.cardLast4, "9121");
+});
+
+test("stored payment method display prefers stored card company and last4 over stale metadata", () => {
+  const summary = buildStoredPaymentMethodSummary(
+    {
+      display_label: "카드 등록 완료",
+      card_company: "33",
+      card_last4: "9121",
+      masked_card_number: "****-****-****-9121",
+    },
+    {
+      card: {
+        issuerCode: "33",
+        number: "**** **** **** 2912",
+      },
+    }
+  );
+
+  assert.equal(summary.displayLabel, "우리은행 · **** 9121");
+  assert.equal(summary.cardCompany, "우리은행");
+  assert.equal(summary.cardLast4, "9121");
+  assert.equal(summary.source, "stored_card_company_last4");
 });
 
 test("payment method display extracts safe tails from stored masked values", () => {

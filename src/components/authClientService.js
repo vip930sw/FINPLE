@@ -368,6 +368,30 @@ export async function changeFinplePassword({ currentPassword, newPassword }) {
   );
 }
 
+export async function updateFinpleProfile({ nickname }) {
+  const payload = await requestAuth(
+    "/auth/me",
+    { nickname },
+    { method: "PATCH" }
+  );
+  if (payload?.user) {
+    setStoredFinpleAuthUser(payload.user);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("finple-auth-updated"));
+      window.dispatchEvent(new Event("finple-local-storage-updated"));
+    }
+  }
+  return payload;
+}
+
+export async function requestFinpleLoginMethodGuide({ email }) {
+  return requestAuth("/auth/login-method/request", { email });
+}
+
+export async function requestFinplePasswordResetGuide({ email }) {
+  return requestAuth("/auth/password-reset/request", { email });
+}
+
 export async function deleteFinpleAccount({
   confirmText,
   privacyDeletionConfirmed,

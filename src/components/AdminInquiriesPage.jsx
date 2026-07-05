@@ -324,7 +324,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     setIsLoading(true);
     try {
       await deleteAdminMember(member.id, member.email ? { confirmEmail: member.email } : { confirmUserId: member.id });
-      setMemberMessage(`${targetLabel} 회원 계정을 삭제했습니다.`);
+      setMemberMessage(`${targetLabel} 회원 계정을 soft delete 처리했습니다. 결제 권한은 비활성화되고 이력은 보존됩니다.`);
       await handleLoadMembers();
     } catch (error) {
       setMemberMessage(error?.message || "회원 계정을 삭제하지 못했습니다.");

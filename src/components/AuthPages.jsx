@@ -15,6 +15,8 @@ import {
   loginWithEducationAccount,
   loginWithEmailPassword,
   logoutFinpleAuth,
+  requestFinpleLoginMethodGuide,
+  requestFinplePasswordResetGuide,
   resendVerificationEmail,
   signupWithEmailPassword,
   startGoogleOAuthLogin,
@@ -182,6 +184,8 @@ export function LoginPage({ onNavigate }) {
   const [educationLoginId, setEducationLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [recoveryMode, setRecoveryMode] = useState("");
+  const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
@@ -275,6 +279,29 @@ export function LoginPage({ onNavigate }) {
     }
   }
 
+  async function handleRecoveryRequest(mode) {
+    const recoveryEmail = email.trim();
+    if (!recoveryEmail) {
+      setStatusMessage("계정 확인에 사용할 이메일을 입력해 주세요.");
+      setRecoveryMode(mode);
+      return;
+    }
+
+    setRecoveryMode(mode);
+    setIsRecoveryLoading(true);
+    setStatusMessage("");
+    try {
+      const payload = mode === "password"
+        ? await requestFinplePasswordResetGuide({ email: recoveryEmail })
+        : await requestFinpleLoginMethodGuide({ email: recoveryEmail });
+      setStatusMessage(payload?.message || "입력하신 이메일로 계정 확인 또는 비밀번호 재설정 안내를 발송할 수 있는 경우 안내가 발송됩니다.");
+    } catch (error) {
+      setStatusMessage(error?.message || "계정 확인 안내 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsRecoveryLoading(false);
+    }
+  }
+
   const isSocialLoading = isGoogleLoading || isKakaoLoading || isNaverLoading;
   const isEducationMode = loginMode === "education";
 
@@ -335,8 +362,12 @@ export function LoginPage({ onNavigate }) {
           </label>
           <div className="loginUtilityRow">
             <label className="loginKeepLabel"><input type="checkbox" /> <span>로그인 유지</span></label>
-            <button type="button" className="loginTextButton" onClick={() => setStatusMessage("아이디·비밀번호 찾기는 추후 연결 예정입니다.")}>아이디·비밀번호 찾기</button>
+            <span className="loginRecoveryActions">
+              <button type="button" className="loginTextButton" onClick={() => handleRecoveryRequest("login-method")} disabled={isRecoveryLoading || isEducationMode}>아이디 찾기</button>
+              <button type="button" className="loginTextButton" onClick={() => handleRecoveryRequest("password")} disabled={isRecoveryLoading || isEducationMode}>비밀번호 찾기</button>
+            </span>
           </div>
+          {recoveryMode ? <p className="loginRecoveryHint">FINPLE ID는 이메일 주소입니다. 입력한 이메일 기준으로 안내가 가능한 경우에만 안내가 발송됩니다.</p> : null}
           {statusMessage ? <p className="accountInlineStatus">{statusMessage}</p> : null}
           <button type="submit" className="primaryButton loginSubmitButton" disabled={isLoading || isSocialLoading}>{isLoading ? "로그인 중..." : "로그인"}</button>
         </form>

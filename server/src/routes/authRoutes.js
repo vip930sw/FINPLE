@@ -11,6 +11,7 @@ import {
   logoutSession,
   resendVerificationEmail,
   signupWithEmail,
+  updateUserProfile,
   verifyEmailToken,
 } from "../db/authRepository.js";
 import {
@@ -187,6 +188,52 @@ router.get("/me", async (request, response, next) => {
   }
 });
 
+router.patch("/me", async (request, response, next) => {
+  try {
+    if (!isDatabaseConfigured()) {
+      response.status(503).json({ ok: false, code: "DATABASE_NOT_CONFIGURED", message: "Profile update requires database connection." });
+      return;
+    }
+
+    const user = await getRequestUser(request);
+    if (!user?.id) {
+      response.status(401).json({ ok: false, code: "AUTH_REQUIRED", message: "Profile update requires login." });
+      return;
+    }
+
+    const result = await updateUserProfile(user.id, request.body);
+    response.json({ ok: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/login-method/request", async (request, response, next) => {
+  try {
+    const email = String(request.body?.email || "").trim().toLowerCase();
+    response.json({
+      ok: true,
+      email: email || null,
+      message: "입력하신 이메일로 계정 확인 또는 비밀번호 재설정 안내를 발송할 수 있는 경우 안내가 발송됩니다.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/password-reset/request", async (request, response, next) => {
+  try {
+    const email = String(request.body?.email || "").trim().toLowerCase();
+    response.json({
+      ok: true,
+      email: email || null,
+      message: "입력하신 이메일로 계정 확인 또는 비밀번호 재설정 안내를 발송할 수 있는 경우 안내가 발송됩니다.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch("/password", async (request, response, next) => {
   try {
     if (!isDatabaseConfigured()) {
@@ -269,19 +316,43 @@ router.delete("/me", async (request, response, next) => {
         ]
       );
 
-      await tx("DELETE FROM inquiries WHERE user_id = $1", [user.id]);
-      await tx("DELETE FROM api_usage_logs WHERE user_id = $1", [user.id]);
-      await tx("DELETE FROM payment_events WHERE user_id = $1", [user.id]);
-      const deleteResult = await tx("DELETE FROM users WHERE id = $1 RETURNING id", [user.id]);
-      return { deleted: deleteResult.rowCount > 0 };
+      await tx(
+        `UPDATE user_entitlements
+            SET plan = 'free',
+                valid_until = COALESCE(valid_until, NOW()),
+                source = 'account_withdrawal',
+                updated_at = NOW()
+          WHERE user_id = $1`,
+        [user.id]
+      );
+
+      await tx(
+        `UPDATE user_sessions
+            SET revoked_at = COALESCE(revoked_at, NOW())
+          WHERE user_id = $1`,
+        [user.id]
+      );
+
+      const updateResult = await tx(
+        `UPDATE users
+            SET auth_status = 'withdrawn',
+                plan = 'free',
+                updated_at = NOW()
+          WHERE id = $1
+          RETURNING id`,
+        [user.id]
+      );
+      return { deleted: updateResult.rowCount > 0, softDeleted: updateResult.rowCount > 0 };
     });
 
     response.json({
       ok: true,
       deleted: Boolean(result.deleted),
+      softDeleted: Boolean(result.softDeleted),
+      hardDeleted: false,
       subscriptionCanceled: true,
-      personalDataDeleted: true,
-      message: "회원탈퇴가 완료되었습니다.",
+      personalDataDeleted: false,
+      message: "회원탈퇴가 접수되어 계정 접근이 비활성화되었습니다. 이력은 보존됩니다.",
     });
   } catch (error) {
     next(error);
