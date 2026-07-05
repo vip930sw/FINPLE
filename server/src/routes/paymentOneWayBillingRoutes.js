@@ -5,6 +5,7 @@ import express from "express";
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
 import { sendSubscriptionAdminNotification } from "../services/inquiryNotificationService.js";
+import { buildPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
 import { sendSubscriptionNotification } from "../services/userNotificationService.js";
 
 const router = express.Router();
@@ -237,6 +238,17 @@ function getCardSummary(payload) {
   };
 }
 
+function getBillingCardSummary(...sources) {
+  const primary = sources[0] || {};
+  return buildPaymentMethodSummary(...sources) || {
+    method: primary?.method || "card",
+    cardCompany: "card",
+    cardLast4: null,
+    maskedCardNumber: null,
+    displayLabel: "card registered",
+  };
+}
+
 function getPeriodEndIso() {
   const periodEnd = new Date();
   periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -282,7 +294,7 @@ async function storeMethodAndActivateSubscription({ user, authOrderId, firstPaym
   }
 
   const periodEndIso = getPeriodEndIso();
-  const cardSummary = getCardSummary(issuePayload);
+  const cardSummary = getBillingCardSummary(paymentPayload, issuePayload);
   const safeIssuePayload = sanitizeBillingKeyIssuePayload(issuePayload);
   const paymentKey = paymentPayload?.paymentKey || firstPaymentOrderId;
   const receiptUrl = paymentPayload?.receipt?.url || paymentPayload?.checkout?.url || null;
@@ -628,7 +640,13 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       storage,
       notification,
       adminNotification,
-      method: getCardSummary(issuePayload),
+      method: storage.stored
+        ? {
+            displayLabel: storage.displayLabel,
+            cardCompany: storage.cardCompany,
+            cardLast4: storage.cardLast4,
+          }
+        : getBillingCardSummary(firstPayment, issuePayload),
       firstPayment: firstPayment?.skipped ? { skipped: true, reason: firstPayment.reason } : {
         paymentKey: firstPayment?.paymentKey || null,
         orderId: firstPayment?.orderId || firstPaymentOrderId,

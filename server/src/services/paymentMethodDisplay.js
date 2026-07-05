@@ -1,0 +1,128 @@
+const CARD_ISSUER_NAMES = {
+  "3K": "IBK기업은행",
+  "46": "광주은행",
+  "71": "롯데카드",
+  "30": "KDB산업은행",
+  "31": "BC카드",
+  "51": "삼성카드",
+  "38": "새마을금고",
+  "41": "신한카드",
+  "62": "신협",
+  "36": "씨티카드",
+  "33": "우리은행",
+  W1: "우리은행",
+  "37": "우체국",
+  "39": "저축은행",
+  "35": "전북은행",
+  "42": "제주은행",
+  "15": "카카오뱅크",
+  "3A": "케이뱅크",
+  "24": "토스뱅크",
+  "21": "하나카드",
+  "61": "현대카드",
+  "11": "KB국민카드",
+  "91": "NH농협카드",
+  "34": "수협은행",
+};
+
+function normalizeCardCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function isCodeLike(value) {
+  const code = normalizeCardCode(value);
+  return /^[0-9A-Z]{2,3}$/.test(code) && Boolean(CARD_ISSUER_NAMES[code] || /^\d{2,3}$/.test(code));
+}
+
+export function resolveCardCompany(...values) {
+  for (const value of values) {
+    const raw = String(value || "").trim();
+    if (!raw) continue;
+
+    const code = normalizeCardCode(raw);
+    if (CARD_ISSUER_NAMES[code]) return CARD_ISSUER_NAMES[code];
+    if (!isCodeLike(raw)) return raw;
+  }
+
+  return "카드";
+}
+
+export function getMaskedTail(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const compact = raw.replace(/[^0-9*]/g, "");
+  if (!compact) return "";
+
+  if (compact.includes("*")) {
+    const tail = compact.slice(-4);
+    return /[0-9]/.test(tail) ? tail.replace(/\*/g, "") : "";
+  }
+
+  const digits = compact.replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : "";
+}
+
+function getNestedCard(payload = {}) {
+  return payload?.card && typeof payload.card === "object" ? payload.card : {};
+}
+
+function getCardNumberCandidates(payload = {}, row = {}) {
+  const card = getNestedCard(payload);
+  return [
+    card.number,
+    card.cardNumber,
+    card.maskedNumber,
+    card.maskedCardNumber,
+    payload.maskedCardNumber,
+    payload.masked_card_number,
+    payload.cardNumber,
+    payload.card_number,
+    row.masked_card_number,
+    row.card_last4,
+  ];
+}
+
+export function formatCardDisplayLabel(company, tail) {
+  const safeCompany = resolveCardCompany(company);
+  const safeTail = getMaskedTail(tail);
+  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록완료`;
+}
+
+export function buildPaymentMethodSummary(...sources) {
+  const payloads = sources.filter((source) => source && typeof source === "object");
+  if (payloads.length === 0) return null;
+
+  const companyCandidates = [];
+  const numberCandidates = [];
+  const brandCandidates = [];
+
+  payloads.forEach((payload) => {
+    const card = getNestedCard(payload);
+    companyCandidates.push(
+      card.company,
+      card.cardCompany,
+      payload.cardCompany,
+      payload.card_company,
+      card.issuerCode,
+      card.acquirerCode,
+      payload.method,
+      payload.card_company
+    );
+    brandCandidates.push(card.issuerCode, card.acquirerCode, payload.card_company);
+    numberCandidates.push(...getCardNumberCandidates(payload, payload));
+  });
+
+  const tail = numberCandidates.map(getMaskedTail).find(Boolean);
+  if (!tail) return null;
+
+  const company = resolveCardCompany(...companyCandidates);
+
+  return {
+    displayLabel: formatCardDisplayLabel(company, tail),
+    cardCompany: company,
+    cardLast4: tail,
+    maskedCardNumber: null,
+    cardBrandKey: normalizeCardCode(brandCandidates.find(Boolean)),
+  };
+}

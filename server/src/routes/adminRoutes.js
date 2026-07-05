@@ -1,6 +1,6 @@
 import express from "express";
 
-import { isDatabaseConfigured, query } from "../db/database.js";
+import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
 import {
   buildEducationAccountsCsv,
   buildEducationCredentialsCsv,
@@ -18,6 +18,7 @@ import {
   buildPlanBreakdown,
   mapAdminMemberRow,
   mapAdminSubscriptionRow,
+  getAdminSubscriptionEffectiveState,
   shouldKeepAdminSubscriptionRow,
 } from "../services/adminSubscriptionEffectiveStatus.js";
 
@@ -39,6 +40,63 @@ function requireDatabase(response) {
     message: "DATABASE_URL이 설정되어 있지 않습니다.",
   });
   return false;
+}
+
+function normalizeConfirmValue(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function getAdminMemberDeletionCandidate(tx, userId) {
+  const result = await tx(
+    `WITH latest_subscriptions AS (
+       SELECT DISTINCT ON (user_id)
+              id AS subscription_id,
+              user_id,
+              plan AS subscription_plan,
+              status AS subscription_status,
+              current_period_start,
+              current_period_end,
+              cancel_at_period_end
+         FROM subscriptions
+        ORDER BY user_id,
+                 current_period_start DESC NULLS LAST,
+                 current_period_end DESC NULLS LAST,
+                 id DESC
+     ),
+     latest_entitlements AS (
+       SELECT DISTINCT ON (user_id)
+              user_id,
+              plan AS entitlement_plan,
+              valid_until AS entitlement_valid_until
+         FROM user_entitlements
+        ORDER BY user_id,
+                 updated_at DESC NULLS LAST,
+                 valid_until DESC NULLS LAST
+     )
+     SELECT
+       users.id,
+       users.email,
+       users.name,
+       users.nickname,
+       users.plan AS user_plan,
+       users.auth_status,
+       latest_subscriptions.subscription_id,
+       latest_subscriptions.subscription_plan,
+       latest_subscriptions.subscription_status,
+       latest_subscriptions.current_period_start,
+       latest_subscriptions.current_period_end,
+       latest_subscriptions.cancel_at_period_end,
+       latest_entitlements.entitlement_plan,
+       latest_entitlements.entitlement_valid_until
+      FROM users
+      LEFT JOIN latest_subscriptions ON latest_subscriptions.user_id = users.id
+      LEFT JOIN latest_entitlements ON latest_entitlements.user_id = users.id
+     WHERE users.id = $1
+     LIMIT 1`,
+    [userId]
+  );
+
+  return result.rows[0] || null;
 }
 
 router.get("/members", (request, response, next) => {
@@ -143,6 +201,97 @@ router.get("/members", (request, response, next) => {
           members: count,
         })).sort((a, b) => b.members - a.members || a.plan.localeCompare(b.plan)),
         members: members.slice(0, 50),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+});
+
+router.delete("/members/:id", (request, response, next) => {
+  requireAdminAccess(request, response, async () => {
+    try {
+      if (!requireDatabase(response)) return;
+
+      const userId = String(request.params.id || "").trim();
+      const confirmEmail = normalizeConfirmValue(request.body?.confirmEmail);
+      const confirmUserId = normalizeConfirmValue(request.body?.confirmUserId);
+
+      if (!userId) {
+        response.status(400).json({
+          ok: false,
+          code: "ADMIN_MEMBER_ID_REQUIRED",
+          message: "삭제할 회원 ID가 필요합니다.",
+        });
+        return;
+      }
+
+      const result = await withTransaction(async (tx) => {
+        const member = await getAdminMemberDeletionCandidate(tx, userId);
+        if (!member) {
+          const error = new Error("삭제할 회원을 찾지 못했습니다.");
+          error.statusCode = 404;
+          error.code = "ADMIN_MEMBER_NOT_FOUND";
+          throw error;
+        }
+
+        const expectedEmail = normalizeConfirmValue(member.email);
+        const expectedUserId = normalizeConfirmValue(member.id);
+        const confirmedByEmail = expectedEmail && confirmEmail === expectedEmail;
+        const confirmedById = confirmUserId === expectedUserId;
+
+        if (!confirmedByEmail && !confirmedById) {
+          const error = new Error("회원 삭제 확인값이 일치하지 않습니다. 이메일 또는 회원 ID를 다시 입력해 주세요.");
+          error.statusCode = 400;
+          error.code = "ADMIN_MEMBER_DELETE_CONFIRMATION_REQUIRED";
+          throw error;
+        }
+
+        const effective = getAdminSubscriptionEffectiveState(member);
+        const deletionMeta = JSON.stringify({
+          reason: "admin_member_delete",
+          deletedBy: "admin",
+          deletedAt: new Date().toISOString(),
+          effectivePlan: effective.effectivePlan || effective.plan || "free",
+          effectiveStatus: effective.effectiveStatus || effective.status || "beta_free",
+        });
+
+        await tx(
+          `UPDATE subscriptions
+              SET status = 'canceled',
+                  cancel_at_period_end = FALSE,
+                  canceled_at = COALESCE(canceled_at, NOW()),
+                  ended_at = COALESCE(ended_at, NOW()),
+                  metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb
+            WHERE user_id = $1`,
+          [member.id, deletionMeta]
+        );
+
+        await tx(
+          `UPDATE recurring_payment_methods
+              SET status = 'disabled',
+                  disabled_at = COALESCE(disabled_at, NOW()),
+                  metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb
+            WHERE user_id = $1`,
+          [member.id, deletionMeta]
+        );
+
+        await tx("DELETE FROM inquiries WHERE user_id = $1", [member.id]);
+        await tx("DELETE FROM api_usage_logs WHERE user_id = $1", [member.id]);
+        await tx("DELETE FROM payment_events WHERE user_id = $1", [member.id]);
+        const deleteResult = await tx("DELETE FROM users WHERE id = $1 RETURNING id, email", [member.id]);
+
+        return {
+          deleted: deleteResult.rowCount > 0,
+          member: deleteResult.rows[0] || { id: member.id, email: member.email },
+        };
+      });
+
+      response.json({
+        ok: true,
+        deleted: Boolean(result.deleted),
+        member: result.member,
+        message: "회원 계정과 연결된 개인정보가 삭제되었습니다.",
       });
     } catch (error) {
       next(error);
@@ -313,9 +462,14 @@ router.get("/subscriptions", (request, response, next) => {
             LIMIT 50`
         ),
         query(
-          `SELECT COALESCE(SUM(amount), 0)::numeric AS confirmed_revenue
-             FROM payments
-            WHERE status = 'confirmed'`
+          `SELECT
+             COALESCE(SUM(amount) FILTER (WHERE status = 'confirmed'), 0)::numeric AS confirmed_revenue,
+             COALESCE(SUM(amount) FILTER (
+               WHERE status = 'confirmed'
+                 AND COALESCE(paid_at, requested_at, created_at) >= date_trunc('month', NOW())
+                 AND COALESCE(paid_at, requested_at, created_at) < date_trunc('month', NOW()) + INTERVAL '1 month'
+             ), 0)::numeric AS monthly_confirmed_revenue
+             FROM payments`
         ),
       ]);
 
@@ -341,6 +495,7 @@ router.get("/subscriptions", (request, response, next) => {
           activeSubscriptions,
           periodEnding7d,
           removedPeriodEndedSubscriptions,
+          monthlyConfirmedRevenue: Number(revenueResult.rows[0]?.monthly_confirmed_revenue || 0),
           confirmedRevenue: Number(revenueResult.rows[0]?.confirmed_revenue || 0),
         },
         planStatusBreakdown: buildPlanBreakdown(managedSubscriptions),

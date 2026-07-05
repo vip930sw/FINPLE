@@ -261,6 +261,17 @@ export async function fetchAdminSubscriptionsSummary() {
   return requestJson("/admin/subscriptions", {}, { includeAdminToken: true });
 }
 
+export async function deleteAdminMember(userId, input = {}) {
+  return requestJson(
+    `/admin/members/${encodeURIComponent(userId)}`,
+    {
+      method: "DELETE",
+      body: JSON.stringify(input),
+    },
+    { includeAdminToken: true }
+  );
+}
+
 export async function fetchAdminAiAnalysisUsageSummary() {
   return requestJson("/admin/ai-analysis-usage", {}, { includeAdminToken: true });
 }

@@ -2,6 +2,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query } from "../db/database.js";
+import { buildPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
 
 const router = express.Router();
 
@@ -203,7 +204,7 @@ function summarizeCardFromRow(row) {
 function serializePaymentMethod(row) {
   if (!row) return null;
 
-  const paymentSummary = summarizeCardFromPayload(row.payment_metadata, row);
+  const paymentSummary = buildPaymentMethodSummary(row.payment_metadata, row.metadata, row) || summarizeCardFromPayload(row.payment_metadata, row);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
 
@@ -251,7 +252,7 @@ router.get("/toss/billing/method", async (request, response, next) => {
 
     const result = await query(
       `SELECT rpm.id, rpm.provider, rpm.method_type, rpm.display_label, rpm.card_company,
-              rpm.card_last4, rpm.masked_card_number, rpm.is_default, rpm.status,
+              rpm.card_last4, rpm.masked_card_number, rpm.metadata, rpm.is_default, rpm.status,
               rpm.issued_at, rpm.updated_at, latest_payment.metadata AS payment_metadata
        FROM recurring_payment_methods rpm
        LEFT JOIN LATERAL (
@@ -276,7 +277,38 @@ router.get("/toss/billing/method", async (request, response, next) => {
       [user.id]
     );
 
-    const method = serializePaymentMethod(result.rows[0]);
+    let method = serializePaymentMethod(result.rows[0]);
+
+    if (!method) {
+      const paymentResult = await query(
+        `SELECT id, provider, metadata, COALESCE(paid_at, requested_at, created_at) AS latest_payment_at
+           FROM payments
+          WHERE provider = 'toss-payments'
+            AND user_id = $1
+            AND status = 'confirmed'
+          ORDER BY COALESCE(paid_at, requested_at, created_at) DESC NULLS LAST
+          LIMIT 1`,
+        [user.id]
+      );
+      const latestPayment = paymentResult.rows[0] || null;
+      const paymentSummary = buildPaymentMethodSummary(latestPayment?.metadata);
+      if (paymentSummary) {
+        method = {
+          id: latestPayment.id,
+          provider: latestPayment.provider,
+          methodType: "card",
+          displayLabel: paymentSummary.displayLabel,
+          cardCompany: paymentSummary.cardCompany,
+          cardLast4: paymentSummary.cardLast4,
+          cardBrandKey: paymentSummary.cardBrandKey,
+          displaySource: "latest_confirmed_payment",
+          isDefault: false,
+          status: "confirmed",
+          issuedAt: latestPayment.latest_payment_at,
+          updatedAt: latestPayment.latest_payment_at,
+        };
+      }
+    }
 
     response.json({
       ok: true,

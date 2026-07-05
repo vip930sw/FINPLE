@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   bulkCreateAdminEducationAccounts,
+  deleteAdminMember,
   deleteAdminEducationAccount,
   deleteAdminEducationAccounts,
   deleteExpiredAdminEducationAccounts,
@@ -305,6 +306,33 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
     }
   }, []);
 
+  async function handleDeleteMember(member) {
+    const targetLabel = member?.email || member?.id || "";
+    if (!member?.id || !targetLabel) {
+      setMemberMessage("삭제할 회원 정보를 확인하지 못했습니다.");
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const typed = window.prompt(`${targetLabel} 계정을 삭제하려면 ${targetLabel} 를 입력해 주세요.`);
+      if (typed !== targetLabel) {
+        setMemberMessage("회원 삭제가 취소되었습니다.");
+        return;
+      }
+    }
+
+    setIsLoading(true);
+    try {
+      await deleteAdminMember(member.id, member.email ? { confirmEmail: member.email } : { confirmUserId: member.id });
+      setMemberMessage(`${targetLabel} 회원 계정을 삭제했습니다.`);
+      await handleLoadMembers();
+    } catch (error) {
+      setMemberMessage(error?.message || "회원 계정을 삭제하지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const handleLoadSubscriptions = useCallback(async function handleLoadSubscriptions() {
     if (!getFinpleAdminToken()) return;
     setIsLoading(true);
@@ -588,6 +616,7 @@ export default function AdminInquiriesPage({ onNavigate, initialSection = "inqui
               isAdminMode={isAdminMode}
               isLoading={isLoading}
               onLoad={handleLoadMembers}
+              onDeleteMember={handleDeleteMember}
             />
           ) : null}
 
@@ -858,6 +887,7 @@ function MemberManagementPanel({
   isAdminMode,
   isLoading,
   onLoad,
+  onDeleteMember,
 }) {
   const members = Array.isArray(data?.members) ? data.members : [];
   const planBreakdown = Array.isArray(data?.planBreakdown) ? data.planBreakdown : [];
@@ -921,6 +951,7 @@ function MemberManagementPanel({
               <th>구독</th>
               <th>포트폴리오</th>
               <th>문의</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -934,10 +965,15 @@ function MemberManagementPanel({
                   <td>{member.activeSubscriptionCount || 0}건</td>
                   <td>{member.portfolioCount || 0}개</td>
                   <td>{member.inquiryCount || 0}건</td>
+                  <td>
+                    <button type="button" className="dangerSubtle" onClick={() => onDeleteMember(member)} disabled={isLoading}>
+                      삭제
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="7">회원 통계를 아직 불러오지 않았습니다.</td></tr>
+              <tr><td colSpan="8">회원 통계를 아직 불러오지 않았습니다.</td></tr>
             )}
           </tbody>
         </table>
@@ -1308,7 +1344,8 @@ function SubscriptionManagementPanel({
         <AdminMetricCard label="활성 구독자 수" value={`${activeSubscriptions}건`} note="active/trialing/종료 예정" />
         <AdminMetricCard label="7일 내 기간 종료" value={`${churnWatchCount}건`} note="환불·해지 대응 후보" />
         <AdminMetricCard label="기간 종료 제외" value={`${removedPeriodEndedSubscriptions}건`} note="만료·대체 row 미표시" />
-        <AdminMetricCard label="확정 결제액" value={formatKrw(data?.summary?.confirmedRevenue)} note="confirmed payments 합계" />
+        <AdminMetricCard label="월별 결제액" value={formatKrw(data?.summary?.monthlyConfirmedRevenue)} note="이번 달 confirmed payments" />
+        <AdminMetricCard label="누적 확정 결제액" value={formatKrw(data?.summary?.confirmedRevenue)} note="confirmed payments 전체" />
       </div>
 
       <p className="serverStorageMessage compact">{statusMessage}</p>

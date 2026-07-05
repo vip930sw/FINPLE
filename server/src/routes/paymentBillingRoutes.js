@@ -4,6 +4,7 @@ import express from "express";
 
 import { getUserByAuthHeader, getUserBySessionToken } from "../db/authRepository.js";
 import { isDatabaseConfigured, query, withTransaction } from "../db/database.js";
+import { buildPaymentMethodSummary } from "../services/paymentMethodDisplay.js";
 
 const router = express.Router();
 const TOSS_BILLING_KEY_ISSUE_ENDPOINT = "https://api.tosspayments.com/v1/billing/authorizations/issue";
@@ -160,6 +161,17 @@ function getCardSummary(payload) {
   };
 }
 
+function getBillingCardSummary(...sources) {
+  const primary = sources[0] || {};
+  return buildPaymentMethodSummary(...sources) || {
+    method: primary?.method || "card",
+    cardCompany: "card",
+    cardLast4: null,
+    maskedCardNumber: null,
+    displayLabel: "card registered",
+  };
+}
+
 function sanitizeBillingKeyIssuePayload(payload) {
   if (!payload || typeof payload !== "object") return {};
   const { billingKey, ...safePayload } = payload;
@@ -240,7 +252,7 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
     };
   }
 
-  const cardSummary = getCardSummary(issuePayload);
+  const cardSummary = getBillingCardSummary(issuePayload);
   const safeIssuePayload = sanitizeBillingKeyIssuePayload(issuePayload);
 
   try {
@@ -496,7 +508,13 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       orderId,
       stored: Boolean(storage.stored),
       storage,
-      method: getCardSummary(issuePayload),
+      method: storage.stored
+        ? {
+            displayLabel: storage.displayLabel,
+            cardCompany: storage.cardCompany,
+            cardLast4: storage.cardLast4,
+          }
+        : getBillingCardSummary(issuePayload),
       message: storage.stored
         ? "자동결제 결제수단이 등록되었습니다."
         : "billingKey 발급은 완료되었지만 서버 저장에 실패했습니다.",

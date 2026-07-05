@@ -258,7 +258,7 @@ function updateSuccessUi() {
   setText(statusTitle, copy.title);
   setText(statusMessage, copy.message);
   setText(statusLabel, stateLabel);
-  setText(methodLabel, billingIssueResult?.method?.displayLabel || billingIssueResult?.storage?.displayLabel || "확인 중");
+  setText(methodLabel, billingIssueResult?.storage?.displayLabel || billingIssueResult?.method?.displayLabel || "확인 중");
   setText(nextStep, billingIssueResult?.subscriptionActivated ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "처리 중");
 
   statusBox?.classList.toggle("billingResultMessageBox--success", !billingIssueError);
