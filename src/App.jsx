@@ -13,12 +13,12 @@ import UpdatesPage from "./components/UpdatesPage";
 import AboutPage from "./components/AboutPage";
 import SiteHeader from "./components/SiteHeader";
 import AdminInquiriesPage from "./components/AdminInquiriesPage";
+import MyPageRoute from "./components/mypage/MyPageRoute";
 import { getFinpleAdminToken, getStoredFinpleAuthUser } from "./components/portfolio/services/serverPortfolioService";
 import { logoutFinpleAuth } from "./components/authClientService";
 import { LoginPage, SignupPage, VerifyEmailPage } from "./components/AuthPages";
 import {
   AdminLoginPage,
-  MyPage,
   PricingPage,
   SupportPage,
 } from "./components/AccountPages";
@@ -494,7 +494,7 @@ function App() {
   if (currentPage === "signup") return renderShell(<SignupPage onNavigate={navigateToPage} />);
   if (currentPage === "verify-email") return renderShell(<VerifyEmailPage onNavigate={navigateToPage} />);
   if (currentPage === "mypage" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={navigateToPage} />);
-  if (currentPage === "mypage") return renderShell(<MyPage onNavigate={navigateToPage} />);
+  if (currentPage === "mypage") return renderShell(<MyPageRoute onNavigate={navigateToPage} />);
   if (currentPage === "pricing") return renderShell(<PricingPage onNavigate={navigateToPage} />);
   if (currentPage === "support") return renderShell(<SupportPage onNavigate={navigateToPage} />);
   if (currentPage === "updates") return renderShell(<UpdatesPage onNavigate={navigateToPage} />);

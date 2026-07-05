@@ -9,8 +9,8 @@ const CARD_ISSUER_NAMES = {
   "41": "신한카드",
   "62": "신협",
   "36": "씨티카드",
-  "33": "우리은행",
-  W1: "우리은행",
+  "33": "우리",
+  W1: "우리",
   "37": "우체국",
   "39": "저축은행",
   "35": "전북은행",
@@ -41,7 +41,7 @@ export function resolveCardCompany(...values) {
 
     const code = normalizeCardCode(raw);
     if (CARD_ISSUER_NAMES[code]) return CARD_ISSUER_NAMES[code];
-    if (!isCodeLike(raw)) return raw;
+    if (!isCodeLike(raw)) return raw.replace(/\s*은행$/u, "").trim();
   }
 
   return "카드";
@@ -86,7 +86,7 @@ function getCardNumberCandidates(payload = {}, row = {}) {
 export function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
+  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록 완료`;
 }
 
 function isGenericPaymentLabel(label) {

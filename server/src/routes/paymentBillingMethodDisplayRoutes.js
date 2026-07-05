@@ -17,8 +17,8 @@ const CARD_ISSUER_NAMES = {
   "41": "신한카드",
   "62": "신협카드",
   "36": "씨티카드",
-  "33": "우리은행",
-  W1: "우리은행",
+  "33": "우리",
+  W1: "우리",
   "37": "우체국카드",
   "39": "저축은행카드",
   "35": "전북카드",
@@ -87,7 +87,10 @@ function resolveCardCompany(...values) {
     if (!raw) continue;
     const code = normalizeCardCode(raw);
     if (CARD_ISSUER_NAMES[code]) return CARD_ISSUER_NAMES[code];
-    if (!isCodeLike(raw)) return raw.endsWith("카드") ? raw : `${raw}카드`;
+    if (!isCodeLike(raw)) {
+      const cardCompany = raw.replace(/\s*은행$/u, "").trim();
+      return cardCompany;
+    }
   }
   return "카드";
 }
@@ -111,7 +114,7 @@ function getMaskedTail(value) {
 function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} (${safeTail})` : `${safeCompany} 등록완료`;
+  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록 완료`;
 }
 
 function normalizeStoredDisplayLabel(value) {

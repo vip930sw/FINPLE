@@ -9,11 +9,11 @@ test("payment method client includes safe bank and last4 display normalization",
   const safeDisplayBody = source.match(/export function getSafeBillingMethodDisplayLabel\(method = \{\}\) \{[\s\S]*?\n\}/)?.[0] || "";
 
   assert.match(source, /getSafeBillingMethodDisplayLabel/);
-  assert.match(source, /33: "우리은행"/);
-  assert.match(source, /W1: "우리은행"/);
+  assert.match(source, /33: "우리"/);
+  assert.match(source, /W1: "우리"/);
   assert.match(source, /getPaymentMethodLast4\(method\)/);
   assert.match(source, /getCleanDisplayLabel\(resolvePaymentMethodCompanyLabel\(getPaymentMethodCompany\(method\)\), last4\)/);
-  assert.match(safeDisplayBody, /`등록 카드 · \*\*\*\* \$\{last4\}`/);
+  assert.match(safeDisplayBody, /`등록 카드 \$\{last4\}`/);
   assert.ok(source.includes('if (/^[*\\s.\\-()·]+$/.test(label)) return "";'));
   assert.doesNotMatch(safeDisplayBody, /billingKey|customerKey|cardNumber|raw provider/i);
 });

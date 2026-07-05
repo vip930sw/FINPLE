@@ -1,0 +1,56 @@
+.myPageReactRoute {
+  background: #f8fbff;
+}
+
+.myPageReactHero {
+  max-width: 1180px;
+  margin: 0 auto 24px;
+}
+
+.myPageReactPanel {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.myPageReactSingleGrid {
+  grid-template-columns: 1fr;
+  margin-top: 14px;
+}
+
+.myPageDangerBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid #fecaca;
+  border-radius: 18px;
+  background: #fff7f7;
+}
+
+.myPageDangerBox strong {
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.myPageDangerBox p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.myPageDangerBox .dangerButton {
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+  background: #ffffff !important;
+}
+
+@media (max-width: 760px) {
+  .myPageDangerBox {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
