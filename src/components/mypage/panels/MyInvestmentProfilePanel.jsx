@@ -2,6 +2,27 @@ import PanelShell from "./PanelShell";
 
 export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
   const profile = mbti.profile;
+  function openMbtiResult() {
+    if (typeof window !== "undefined") {
+      window.history.pushState({ page: "personal", path: "/mbti", view: "investment-mbti-result" }, "", "/mbti?view=result");
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("finple-open-personal-view", { detail: { view: "investment-mbti", resultView: true } }));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 0);
+    }
+    onNavigate?.("personal", { scrollTop: false });
+  }
+
+  function restartMbti() {
+    if (typeof window !== "undefined") {
+      window.history.pushState({ page: "personal", path: "/mbti", view: "investment-mbti" }, "", "/mbti");
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("finple-open-personal-view", { detail: { view: "investment-mbti" } }));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 0);
+    }
+    onNavigate?.("personal", { scrollTop: false });
+  }
 
   return (
     <PanelShell
@@ -11,12 +32,12 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
       badge={profile ? "저장됨" : "미저장"}
       actions={(
         <>
-          <button type="button" className="primaryButton" onClick={() => onNavigate?.("personal")}>결과 자세히 보기</button>
-          <button type="button" className="secondaryButton" onClick={() => onNavigate?.("personal")}>투자 MBTI 다시 하기</button>
+          <button type="button" className="primaryButton" onClick={openMbtiResult}>결과 자세히 보기</button>
+          <button type="button" className="secondaryButton" onClick={restartMbti}>투자 MBTI 다시 하기</button>
         </>
       )}
     >
-      <div className="accountStatusGrid">
+      <div className="accountStatusGrid myPageSummaryGrid myPageSummaryGrid--three">
         <div><span>투자 MBTI</span><strong>{profile?.nickname || "저장된 결과 없음"}</strong></div>
         <div><span>투자성향</span><strong>{profile?.finpleType || "확인 필요"}</strong></div>
         <div><span>위험성향</span><strong>{profile?.riskProfile || "확인 필요"}</strong></div>

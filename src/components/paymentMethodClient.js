@@ -31,8 +31,8 @@ export const BILLING_METHOD_STATUS_CACHE_TTL_MS = 45000;
 const billingMethodStatusCache = new Map();
 const billingMethodStatusInflight = new Map();
 const CARD_COMPANY_LABELS = {
-  33: "우리",
-  W1: "우리",
+  33: "우리카드",
+  W1: "우리카드",
 };
 
 async function fetchPaymentJsonWithTimeout(url, options = {}, timeoutMs = BILLING_PREPARE_TIMEOUT_MS) {
@@ -102,7 +102,7 @@ function getCleanDisplayLabel(value, last4 = "") {
   }
   label = label
     .replace(/^[0-9A-Z]{2,3}\s*/i, "")
-    .replace(/[\s*.\-()]+$/g, "")
+    .replace(/[\s*.\-()·]+$/g, "")
     .trim();
 
   if (!label || /^\d+$/.test(label)) return "";
@@ -132,8 +132,8 @@ export function getSafeBillingMethodDisplayLabel(method = {}) {
   const storedLabel = getCleanDisplayLabel(method.displayLabel || method.display_label, last4);
   const labelCompany = company || storedLabel;
 
-  if (labelCompany && last4) return `${labelCompany} ${last4}`;
-  if (last4) return `등록 카드 ${last4}`;
+  if (labelCompany && last4) return `${labelCompany} · **** ${last4}`;
+  if (last4) return `등록 카드 · **** ${last4}`;
   if (labelCompany) return `${labelCompany} 등록 완료`;
   return "카드 등록 완료";
 }

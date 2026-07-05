@@ -3,6 +3,7 @@ import { hydrateAssetFromScreenerCandidate } from "../data/tickers/screenerCandi
 import {
   MBTI_PRESET_MAP,
   buildMbtiProfileFromResult,
+  readStoredMbtiProfile,
   storeMbtiProfileFromResult,
 } from "./portfolio/utils/mbtiProfileStorage";
 import { upsertInvestmentMbtiProfile } from "./portfolio/services/serverPortfolioService";
@@ -350,6 +351,11 @@ function formatWon(value) {
   return Number(value || 0).toLocaleString("ko-KR");
 }
 
+function isStoredResultViewRequested() {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("view") === "result";
+}
+
 async function copyTextToClipboard(text) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     try { await navigator.clipboard.writeText(text); return true; } catch (error) { console.warn("클립보드 API 복사 실패", error); }
@@ -458,7 +464,9 @@ function saveResultToSimulator(result, marketMode = "US") {
 function InvestmentMbtiPage({ onBack, onNavigate }) {
   const [answers, setAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showStoredResult, setShowStoredResult] = useState(isStoredResultViewRequested);
   const result = useMemo(() => calculateResult(answers), [answers]);
+  const storedProfile = useMemo(() => (showStoredResult ? readStoredMbtiProfile() : null), [showStoredResult]);
   const question = QUESTIONS[currentIndex];
   const selectedOptionId = answers[question.id];
   const progress = Math.round((result.answeredCount / result.totalCount) * 100);
@@ -466,8 +474,18 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
   function handleSelect(optionId) { setAnswers((previous) => ({ ...previous, [question.id]: optionId })); }
   function goNext() { if (!selectedOptionId) return; setCurrentIndex((index) => Math.min(index + 1, QUESTIONS.length - 1)); }
   function goPrev() { setCurrentIndex((index) => Math.max(index - 1, 0)); }
-  function resetTest() { setAnswers({}); setCurrentIndex(0); }
+  function resetTest() {
+    setShowStoredResult(false);
+    setAnswers({});
+    setCurrentIndex(0);
+    if (typeof window !== "undefined" && window.location.pathname === "/mbti") {
+      window.history.replaceState({ page: "personal", path: "/mbti" }, "", "/mbti");
+    }
+  }
   function applyToSimulator(marketMode = "US") { const saved = saveResultToSimulator(result, marketMode); onNavigate?.("personal"); if (saved) scheduleSimulatorAutoLookup(); }
+  if (showStoredResult && storedProfile) {
+    return <main className="page investmentMbtiPage"><StoredMbtiResult profile={storedProfile} onReset={resetTest} /></main>;
+  }
   if (result.isComplete && isLastQuestion) {
     return <main className="page investmentMbtiPage"><MbtiResult result={result} onReset={resetTest} onApplyUs={() => applyToSimulator("US")} onApplyKr={() => applyToSimulator("KR")} /></main>;
   }
@@ -477,6 +495,44 @@ function InvestmentMbtiPage({ onBack, onNavigate }) {
       <section className="investmentMbtiSingleCard"><div className="investmentMbtiProgress"><span>{currentIndex + 1} / {QUESTIONS.length}</span><strong>{progress}%</strong></div><div className="investmentMbtiProgressTrack"><i style={{ width: `${progress}%` }} /></div><article className="investmentMbtiQuestionCard focused"><strong>Q{currentIndex + 1}</strong><h2>{question.title}</h2><div className="investmentMbtiOptionGrid">{question.options.map((option) => <button key={option.id} type="button" className={selectedOptionId === option.id ? "selected" : ""} onClick={() => handleSelect(option.id)}><span>{option.id.toUpperCase()}</span>{option.label}</button>)}</div><div className="investmentMbtiActions"><button type="button" className="secondaryButton" onClick={goPrev} disabled={currentIndex === 0}>이전</button><button type="button" className="primaryButton" onClick={goNext} disabled={!selectedOptionId || isLastQuestion}>다음</button></div>{isLastQuestion ? <div className="investmentMbtiFinishBox"><strong>마지막 문항입니다.</strong><p>답변을 선택하면 결과가 자동으로 표시됩니다.</p></div> : null}</article></section>
       <section className="investmentMbtiNotice" role="note"><strong>유의사항</strong><p>본 결과는 사용자의 투자 성향 이해를 돕기 위한 참고자료입니다. 특정 금융상품의 매수·매도 추천, 투자자문, 투자일임 또는 수익 보장을 의미하지 않습니다.</p></section>
     </main>
+  );
+}
+
+function StoredMbtiResult({ profile, onReset }) {
+  const preset = profile?.portfolioPreset || profile?.preset || MBTI_PRESET_MAP[profile?.typeId] || {};
+  const entries = Object.entries(preset).filter(([, value]) => Number(value || 0) > 0);
+  const axisLabels = displayAxisValues(profile?.axes).join(" · ") || profile?.finpleType || "투자 성향";
+
+  return (
+    <section className="investmentMbtiResultPage investmentMbtiStoredResultPage" data-investment-mbti-stored-result>
+      <div className="investmentMbtiResultHero">
+        <p className="sectionLabel">Investment MBTI Result</p>
+        <h1>저장된 FINPLE 투자 MBTI<br /><span className="investmentMbtiResultName">“{profile?.nickname || "투자 MBTI"}”</span></h1>
+        <p>최근 저장된 투자 MBTI 결과를 불러왔습니다. 포트폴리오 비율과 권장 액션은 참고용으로만 확인해 주세요.</p>
+      </div>
+      <article className="investmentMbtiPanel investmentMbtiStoryPanel">
+        <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Summary</p><h3>결과 요약</h3></div></div>
+        <div className="investmentMbtiMiniGrid">
+          <div><strong>투자성향</strong><p>{profile?.finpleType || axisLabels}</p></div>
+          <div><strong>위험성향</strong><p>{profile?.riskProfile || "확인 필요"}</p></div>
+        </div>
+        <p>{profile?.summary || `${axisLabels} 성향을 기반으로 저장된 투자 MBTI 결과입니다.`}</p>
+      </article>
+      <article className="investmentMbtiPanel investmentMbtiPresetPanel">
+        <div className="investmentMbtiPanelHeader"><div><p className="sectionLabel">Portfolio</p><h3>예시 포트폴리오 비율</h3></div></div>
+        <div className="investmentMbtiPortfolioBars">
+          {entries.length ? entries.map(([key, value]) => (
+            <div key={key} className="investmentMbtiPortfolioRow">
+              <div className="investmentMbtiPortfolioLabel"><strong>{ASSET_LABELS[key] || key}</strong><span>{value}%</span></div>
+              <div className="investmentMbtiBarTrack"><i style={{ width: `${value}%` }} /></div>
+            </div>
+          )) : <p>저장된 예시 비율이 없습니다.</p>}
+        </div>
+      </article>
+      <div className="investmentMbtiShareActions">
+        <button type="button" className="secondaryMbtiButton" onClick={onReset}>투자 MBTI 다시 하기</button>
+      </div>
+    </section>
   );
 }
 

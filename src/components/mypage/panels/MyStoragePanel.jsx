@@ -11,7 +11,7 @@ export default function MyStoragePanel({ snapshot, effectivePlan }) {
       description="브라우저 저장 포트폴리오와 서버 저장 가능 상태를 확인합니다."
       badge={serverStorageEnabled ? "지원" : "제한"}
     >
-      <div className="serverStorageStats">
+      <div className="serverStorageStats myPageSummaryGrid myPageSummaryGrid--three">
         <div><span>브라우저 포트폴리오</span><strong>{portfolioCount}건</strong></div>
         <div><span>활성 포트폴리오</span><strong>{snapshot?.activePortfolioName || "없음"}</strong></div>
         <div><span>서버 저장</span><strong>{serverStorageEnabled ? "지원" : "제한"}</strong></div>

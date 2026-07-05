@@ -10,6 +10,11 @@ const SUBSCRIPTION_HOOK_SOURCE = new URL("./components/mypage/hooks/useSubscript
 const PAYMENT_METHOD_HOOK_SOURCE = new URL("./components/mypage/hooks/usePaymentMethod.js", import.meta.url);
 const PAYMENT_HISTORY_HOOK_SOURCE = new URL("./components/mypage/hooks/usePaymentHistory.js", import.meta.url);
 const MBTI_HOOK_SOURCE = new URL("./components/mypage/hooks/useInvestmentMbti.js", import.meta.url);
+const INVESTMENT_PANEL_SOURCE = new URL("./components/mypage/panels/MyInvestmentProfilePanel.jsx", import.meta.url);
+const PAYMENT_HISTORY_PANEL_SOURCE = new URL("./components/mypage/panels/MyPaymentHistoryPanel.jsx", import.meta.url);
+const INQUIRIES_PANEL_SOURCE = new URL("./components/mypage/panels/MyInquiriesPanel.jsx", import.meta.url);
+const STORAGE_PANEL_SOURCE = new URL("./components/mypage/panels/MyStoragePanel.jsx", import.meta.url);
+const INVESTMENT_MBTI_SOURCE = new URL("./components/InvestmentMbtiPage.jsx", import.meta.url);
 
 const LEGACY_MYPAGE_PATCH_IMPORTS = [
   "MyPageRenderStabilizationPatch.js",
@@ -72,4 +77,31 @@ test("mypage subscription and payment method use bounded cached status reads", a
   assert.match(subscriptionHook, /fetchJsonWithTimeout\("\/payments\/subscription\/me"/);
   assert.match(paymentMethodHook, /fetchBillingMethodStatus\(\{ force: Boolean\(options\.force\) \}\)/);
   assert.doesNotMatch(subscriptionHook + paymentMethodHook, /\/api\/assets|KIS|kis|quote|currentPrice/);
+});
+
+test("mypage follow-up UX keeps result route, collapsible lists, sanitized inquiry text, and top scroll", async () => {
+  const routeSource = await readFile(ROUTE_SOURCE, "utf8");
+  const investmentPanel = await readFile(INVESTMENT_PANEL_SOURCE, "utf8");
+  const paymentHistoryPanel = await readFile(PAYMENT_HISTORY_PANEL_SOURCE, "utf8");
+  const inquiriesPanel = await readFile(INQUIRIES_PANEL_SOURCE, "utf8");
+  const storagePanel = await readFile(STORAGE_PANEL_SOURCE, "utf8");
+  const investmentMbtiSource = await readFile(INVESTMENT_MBTI_SOURCE, "utf8");
+
+  assert.match(routeSource, /function scrollMyPageContentTop/);
+  assert.match(routeSource, /requestAnimationFrame\(scroll\)/);
+  assert.match(routeSource, /setTimeout\(scroll, 180\)/);
+  assert.match(investmentPanel, /\/mbti\?view=result/);
+  assert.match(investmentPanel, /finple-open-personal-view/);
+  assert.match(investmentMbtiSource, /readStoredMbtiProfile/);
+  assert.match(investmentMbtiSource, /data-investment-mbti-stored-result/);
+  assert.match(paymentHistoryPanel, /useState\(false\)/);
+  assert.match(paymentHistoryPanel, /결제내역 보기/);
+  assert.match(paymentHistoryPanel, /결제내역 숨기기/);
+  assert.match(inquiriesPanel, /sanitizeInquiryMessage/);
+  assert.match(inquiriesPanel, /User Agent/);
+  assert.match(inquiriesPanel, /페이지 URL/);
+  assert.match(inquiriesPanel, /문의내역 보기/);
+  assert.match(inquiriesPanel, /문의내역 숨기기/);
+  assert.match(investmentPanel, /myPageSummaryGrid--three/);
+  assert.match(storagePanel, /myPageSummaryGrid--three/);
 });

@@ -25,6 +25,17 @@ function getInitialSection() {
   return allowed.has(section) ? section : "account";
 }
 
+function scrollMyPageContentTop() {
+  if (typeof window === "undefined") return;
+  const target = document.querySelector(".myPageReactRoute") || document.querySelector(".accountHero") || document.body;
+  const headerOffset = 84;
+  const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerOffset);
+  const scroll = () => window.scrollTo({ top, behavior: "smooth" });
+  window.requestAnimationFrame(scroll);
+  window.setTimeout(scroll, 80);
+  window.setTimeout(scroll, 180);
+}
+
 export default function MyPageRoute({ onNavigate }) {
   const [activeSection, setActiveSection] = useState(getInitialSection);
   const [user, setUser] = useState(() => getStoredFinpleAuthUser());
@@ -68,6 +79,7 @@ export default function MyPageRoute({ onNavigate }) {
     if (typeof window !== "undefined") {
       const nextUrl = section === "account" ? "/mypage" : `/mypage?section=${encodeURIComponent(section)}`;
       window.history.replaceState({ page: "mypage", section }, "", nextUrl);
+      scrollMyPageContentTop();
     }
   }, []);
 

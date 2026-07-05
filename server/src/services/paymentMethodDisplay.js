@@ -9,8 +9,8 @@ const CARD_ISSUER_NAMES = {
   "41": "신한카드",
   "62": "신협",
   "36": "씨티카드",
-  "33": "우리",
-  W1: "우리",
+  "33": "우리카드",
+  W1: "우리카드",
   "37": "우체국",
   "39": "저축은행",
   "35": "전북은행",
@@ -74,10 +74,20 @@ function getCardNumberCandidates(payload = {}, row = {}) {
     card.cardNumber,
     card.maskedNumber,
     card.maskedCardNumber,
+    card.last4,
+    card.cardLast4,
+    card.card_last4,
+    card.lastFour,
+    card.lastFourDigits,
     payload.maskedCardNumber,
     payload.masked_card_number,
     payload.cardNumber,
     payload.card_number,
+    payload.cardLast4,
+    payload.card_last4,
+    payload.last4,
+    payload.lastFour,
+    payload.lastFourDigits,
     row.masked_card_number,
     row.card_last4,
   ];
@@ -86,7 +96,7 @@ function getCardNumberCandidates(payload = {}, row = {}) {
 export function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록 완료`;
+  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
 }
 
 function isGenericPaymentLabel(label) {
@@ -211,10 +221,12 @@ export function buildPaymentMethodSummary(...sources) {
       payload.card_company,
       card.issuerCode,
       card.acquirerCode,
+      payload.issuerCode,
+      payload.acquirerCode,
       payload.method,
       payload.card_company
     );
-    brandCandidates.push(card.issuerCode, card.acquirerCode, payload.card_company);
+    brandCandidates.push(card.issuerCode, card.acquirerCode, payload.issuerCode, payload.acquirerCode, payload.card_company);
     numberCandidates.push(...getCardNumberCandidates(payload, payload));
   });
 

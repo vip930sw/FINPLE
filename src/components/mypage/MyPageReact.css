@@ -17,6 +17,12 @@
   margin-top: 14px;
 }
 
+.myPageSummaryGrid.myPageSummaryGrid--three {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .myPageDangerBox {
   display: flex;
   align-items: center;
@@ -49,6 +55,10 @@
 }
 
 @media (max-width: 760px) {
+  .myPageSummaryGrid.myPageSummaryGrid--three {
+    grid-template-columns: 1fr;
+  }
+
   .myPageDangerBox {
     align-items: stretch;
     flex-direction: column;

@@ -17,8 +17,8 @@ const CARD_ISSUER_NAMES = {
   "41": "신한카드",
   "62": "신협카드",
   "36": "씨티카드",
-  "33": "우리",
-  W1: "우리",
+  "33": "우리카드",
+  W1: "우리카드",
   "37": "우체국카드",
   "39": "저축은행카드",
   "35": "전북카드",
@@ -114,7 +114,7 @@ function getMaskedTail(value) {
 function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} ${safeTail}` : `${safeCompany} 등록 완료`;
+  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
 }
 
 function normalizeStoredDisplayLabel(value) {
@@ -136,8 +136,18 @@ function getCardNumberCandidates(card = {}, payload = {}, row = {}) {
     card.cardNumber,
     card.maskedNumber,
     card.maskedCardNumber,
+    card.last4,
+    card.cardLast4,
+    card.card_last4,
+    card.lastFour,
+    card.lastFourDigits,
     payload.maskedCardNumber,
     payload.masked_card_number,
+    payload.cardLast4,
+    payload.card_last4,
+    payload.last4,
+    payload.lastFour,
+    payload.lastFourDigits,
     row.masked_card_number,
     row.card_last4,
   ];
@@ -153,6 +163,8 @@ function summarizeCardFromPayload(payload, row = {}) {
     payload.cardCompany,
     card.issuerCode,
     card.acquirerCode,
+    payload.issuerCode,
+    payload.acquirerCode,
     row.card_company
   );
   const tail = getCardNumberCandidates(card, payload, row).map(getMaskedTail).find(Boolean);
@@ -273,12 +285,15 @@ router.get("/toss/billing/method", async (request, response, next) => {
          WHERE p.provider = 'toss-payments'
            AND p.user_id = rpm.user_id
            AND p.status = 'confirmed'
-           AND (
-             p.metadata->>'recurringPaymentMethodId' = rpm.id::text
-             OR p.metadata->>'customerKey' = rpm.customer_key
-             OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
-           )
-         ORDER BY p.requested_at DESC NULLS LAST, p.created_at DESC NULLS LAST
+         ORDER BY
+           CASE
+             WHEN p.metadata->>'recurringPaymentMethodId' = rpm.id::text
+               OR p.metadata->>'customerKey' = rpm.customer_key
+               OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
+             THEN 0
+             ELSE 1
+           END,
+           COALESCE(p.paid_at, p.requested_at, p.created_at) DESC NULLS LAST
          LIMIT 1
        ) latest_payment ON TRUE
        WHERE rpm.provider = 'toss-payments'

@@ -16,8 +16,9 @@ test("billing method display route is mounted before legacy route and returns on
     indexSource.indexOf("paymentBillingMethodDisplayRoutes") < indexSource.indexOf("paymentBillingMethodRoutes"),
     "display route must be mounted before the legacy billing method route"
   );
-  assert.match(displaySource, /"33": "우리"/);
-  assert.match(displaySource, /W1: "우리"/);
+  assert.match(displaySource, /"33": "우리카드"/);
+  assert.match(displaySource, /W1: "우리카드"/);
+  assert.match(displaySource, /CASE\s+WHEN[\s\S]*recurringPaymentMethodId[\s\S]*ELSE 1/);
   assert.match(displaySource, /maskedCardNumber/);
   assert.match(displaySource, /cardLast4/);
   assert.match(displaySource, /cardCompany/);
