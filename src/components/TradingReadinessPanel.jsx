@@ -13,6 +13,7 @@ import {
   fetchAdminTradingLabMockDashboardCleanupPreflightStatus,
   fetchAdminTradingLabMockDashboardCleanupReviewResultStatus,
   fetchAdminTradingLabMockDashboardCleanupCoreStatus,
+  fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
@@ -309,6 +310,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockDashboardCleanupPreflightStatus, setTradingLabMockDashboardCleanupPreflightStatus] = useState(null);
   const [tradingLabMockDashboardCleanupReviewResultStatus, setTradingLabMockDashboardCleanupReviewResultStatus] = useState(null);
   const [tradingLabMockDashboardCleanupCoreStatus, setTradingLabMockDashboardCleanupCoreStatus] = useState(null);
+  const [tradingLabMockDashboardCleanupCoreReviewResultStatus, setTradingLabMockDashboardCleanupCoreReviewResultStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -363,6 +365,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockDashboardCleanupPreflightStatus().catch(() => null),
       fetchAdminTradingLabMockDashboardCleanupReviewResultStatus().catch(() => null),
       fetchAdminTradingLabMockDashboardCleanupCoreStatus().catch(() => null),
+      fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -412,6 +415,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockDashboardCleanupPreflightStatus(payload?.[43] || null);
         setTradingLabMockDashboardCleanupReviewResultStatus(payload?.[44] || null);
         setTradingLabMockDashboardCleanupCoreStatus(payload?.[45] || null);
+        setTradingLabMockDashboardCleanupCoreReviewResultStatus(payload?.[46] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -780,6 +784,15 @@ export function TradingReadinessPanel() {
     : [];
   const labMockDashboardCleanupCoreVisibleSections = Array.isArray(labMockDashboardCleanupCoreResult?.visiblePrimarySections)
     ? labMockDashboardCleanupCoreResult.visiblePrimarySections
+    : [];
+  const labMockDashboardCleanupCoreReviewResultStatus = tradingLabMockDashboardCleanupCoreReviewResultStatus || tradingLabDashboardStatus?.mockDashboardCleanupCoreReviewResultStatus || {};
+  const labMockDashboardCleanupCoreReviewResult = labMockDashboardCleanupCoreReviewResultStatus?.reviewResult || {};
+  const labMockDashboardCleanupCoreReviewReceipt = labMockDashboardCleanupCoreReviewResultStatus?.receipt || {};
+  const labMockDashboardCleanupCoreReviewValidation = labMockDashboardCleanupCoreReviewResultStatus?.validation || {};
+  const labMockDashboardCleanupCoreReviewSummary = labMockDashboardCleanupCoreReviewResultStatus?.reviewSummary || {};
+  const labMockDashboardCleanupCoreReviewDecisionSummary = labMockDashboardCleanupCoreReviewResultStatus?.decisionSummary || {};
+  const labMockDashboardCleanupCoreReviewHistory = Array.isArray(labMockDashboardCleanupCoreReviewResultStatus?.mockHistory)
+    ? labMockDashboardCleanupCoreReviewResultStatus.mockHistory
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -2812,6 +2825,97 @@ export function TradingReadinessPanel() {
                 ) : null}
               </ul>
             </details>
+          </article>
+
+          <article className="tradingLabSection tradingLabMockDashboardCleanupCoreReview" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-core-review-result">
+            <span>Mock dashboard cleanup core review result</span>
+            <h4>{formatStatus(labMockDashboardCleanupCoreReviewResult.reviewStatus || labMockDashboardCleanupCoreReviewResultStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              This is a FINPLE internal mock dashboard cleanup core review receipt only. It reviews the Step164 summary-first dashboard cleanup result, does not run additional cleanup, does not delete sections, does not write DB state, and keeps KIS/provider/order/live gates blocked.
+            </p>
+            <div className="tradingLabReviewCards tradingLabMockDashboardCleanupCoreReviewCards">
+              <div>
+                <span>Review receipt</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.reviewStatus || "validation_required")}</strong>
+                <small>{labMockDashboardCleanupCoreReviewReceipt.receiptId || "step165_mock_dashboard_cleanup_core_review_receipt"}</small>
+              </div>
+              <div>
+                <span>Decision</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewResult.decision || "blocked")}</strong>
+                <small>Mock review only</small>
+              </div>
+              <div>
+                <span>Summary-first review</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.summaryFirstLayoutReviewStatus || "validation_required")}</strong>
+                <small>{labMockDashboardCleanupCoreReviewReceipt.dashboardCleanupResultId || "step164_mock_dashboard_cleanup_result"}</small>
+              </div>
+              <div>
+                <span>KPI source review</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.kpiSourceAlignmentReviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreReviewSummary.kpiSourceAlignment || "aligned")}</small>
+              </div>
+              <div>
+                <span>Chart source review</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.chartSourceAlignmentReviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreReviewSummary.chartSourceAlignment || "aligned")}</small>
+              </div>
+              <div>
+                <span>Allocation source review</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.allocationSourceAlignmentReviewStatus || "validation_required")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreReviewSummary.allocationSourceAlignment || "aligned")}</small>
+              </div>
+              <div>
+                <span>Collapsible groups</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.collapsibleGroupReviewStatus || "validation_required")}</strong>
+                <small>{labMockDashboardCleanupCoreReviewSummary.collapsibleGroupCount ?? 0} reviewed groups</small>
+              </div>
+              <div>
+                <span>Safety separation</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.safetyPanelSeparationReviewStatus || "validation_required")}</strong>
+                <small>Lab and safety stay separated</small>
+              </div>
+              <div>
+                <span>Action labels</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewSummary.dangerousActionLabelReviewStatus || "validation_required")}</strong>
+                <small>No live action labels</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Next step</span>
+                <strong>{formatStatus(labMockDashboardCleanupCoreReviewReceipt.nextAllowedStep || "mock_trading_lab_dashboard_ux_polish_preflight")}</strong>
+                <small>Admin mock-only</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabMockDashboardCleanupCoreReviewList" aria-label="Mock dashboard cleanup core review result guardrails">
+              <li>{labMockDashboardCleanupCoreReviewResult.dashboardCleanupCoreReviewResultId || "step165_mock_dashboard_cleanup_core_review_result"} / Step165 redacted receipt / FINPLE internal mock dashboard cleanup core review only</li>
+              <li>{labMockDashboardCleanupCoreReviewReceipt.dashboardCleanupResultId || "step164_mock_dashboard_cleanup_result"} / Step164 dependency required / no additional cleanup execution.</li>
+              <li>No KIS/provider call, no KIS token, no quote query, no order submission, no DB write, and no account balance query.</li>
+              <li>No real trading run identifier, order identifier, execution identifier, fill identifier, performance record, cash update, position update, portfolio ledger update, or trading run summary update is created.</li>
+              <li>Safety panel and mock trading lab stay separated; dangerous live action labels remain absent.</li>
+              <li>My Page, homepage, and public routes do not expose this mock dashboard cleanup core review UI.</li>
+              <li>Next allowed step: {formatStatus(labMockDashboardCleanupCoreReviewReceipt.nextAllowedStep || "mock_trading_lab_dashboard_ux_polish_preflight")}</li>
+              {(labMockDashboardCleanupCoreReviewValidation.blockerSummary || labMockDashboardCleanupCoreReviewValidation.blockers || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-core-review-blocker-${index}`}>{message}</li>
+              ))}
+              {(labMockDashboardCleanupCoreReviewValidation.warningSummary || labMockDashboardCleanupCoreReviewValidation.warnings || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-core-review-warning-${index}`}>{message}</li>
+              ))}
+              {(labMockDashboardCleanupCoreReviewDecisionSummary.summary || []).map((message, index) => (
+                <li key={`mock-dashboard-cleanup-core-review-decision-${index}`}>{message}</li>
+              ))}
+              {labMockDashboardCleanupCoreReviewHistory.slice(0, 2).map((item, index) => (
+                <li key={`mock-dashboard-cleanup-core-review-history-${index}`}>{item.historyId || `mock_dashboard_cleanup_core_review_history_${index + 1}`} / {formatStatus(item.reviewStatus || "blocked")} / {formatStatus(item.nextAllowedStep || "mock_trading_lab_dashboard_ux_polish_preflight")}</li>
+              ))}
+            </ul>
           </article>
 
           <article className="tradingLabSection tradingLabMockDashboardCleanupPreflight" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-preflight">
