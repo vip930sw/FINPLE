@@ -105,11 +105,15 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(accountPanel, /authMode === "email-password"/);
   assert.doesNotMatch(accountPanel, /onNavigate\?\.\("support"\)/);
   assert.match(billingPanel, /requestPortfolioAiAnalysisStatus/);
-  assert.match(billingPanel, /AI 분석 사용량/);
+  assert.match(billingPanel, /현재 플랜[\s\S]*구독 상태[\s\S]*다음 결제일[\s\S]*포트폴리오[\s\S]*AI 분석 사용량[\s\S]*이용 종료 예정일/);
   assert.doesNotMatch(billingPanel, /admin\/ai-analysis-usage/);
   assert.match(investmentPanel, /data-mypage-mbti-detail/);
+  assert.match(investmentPanel, /data-mypage-mbti-axis-chart/);
+  assert.match(investmentPanel, /data-mypage-mbti-allocation-chart/);
   assert.match(investmentPanel, /결과 자세히 보기/);
   assert.match(investmentPanel, /결과 접기/);
+  assert.match(investmentPanel, /추종/);
+  assert.doesNotMatch(investmentPanel, /left: "자동"|right: "자동"|>자동</);
   assert.doesNotMatch(investmentPanel, /\/start|\/mbti\?view=result/);
   assert.match(paymentMethodPanel, /paymentMethod\.displayLabel/);
   assert.match(paymentHistoryPanel, /결제내역 보기/);

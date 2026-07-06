@@ -17,11 +17,12 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 36px;
+  margin-top: 40px;
 }
 
 .myPageReactPanel .myPageSummaryGrid > div {
-  min-height: 84px;
+  min-height: 96px;
+  padding: 22px 24px;
 }
 
 .myPageReactSingleGrid {
@@ -82,12 +83,98 @@
   font-size: 14px;
 }
 
+.myPageDetailBox {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.myPageDetailBox:first-of-type {
+  margin-top: 18px;
+}
+
+.myPageDetailBox > strong,
+.myPageDetailSubTitle {
+  display: block;
+  margin: 0 0 12px;
+  color: #10213d;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.myPageDetailBox ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .myPageDetailBlock p,
-.myPageDetailBlock li {
+.myPageDetailBlock li,
+.myPageDetailBox p,
+.myPageDetailBox li {
   color: #334155;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.65;
+}
+
+.myPageAxisChart {
+  display: grid;
+  gap: 16px;
+}
+
+.myPageAxisRow {
+  display: grid;
+  gap: 8px;
+}
+
+.myPageAxisHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #10213d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.myPageAxisHeader strong {
+  flex: 0 0 auto;
+  color: #2563eb;
+}
+
+.myPageAxisScale {
+  display: grid;
+  grid-template-columns: minmax(38px, auto) minmax(120px, 1fr) minmax(38px, auto);
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.myPageAxisScale > span:last-child {
+  text-align: right;
+}
+
+.myPageAxisTrack {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #bfdbfe 0%, #d1fae5 100%);
+}
+
+.myPageAxisTrack i {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.24);
+  transform: translate(-50%, -50%);
 }
 
 .myPageTagList {

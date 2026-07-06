@@ -89,9 +89,10 @@ test("stored payment method display keeps a safe company-only fallback", () => {
     card_company: "33",
   });
 
-  assert.equal(summary.displayLabel, "우리카드 등록 완료");
+  assert.equal(summary.displayLabel, "우리카드");
   assert.equal(summary.cardLast4, null);
   assert.doesNotMatch(summary.displayLabel, /\b33\b/);
+  assert.doesNotMatch(summary.displayLabel, /등록 완료/);
 });
 
 test("payment method display extracts safe tails from stored masked values", () => {

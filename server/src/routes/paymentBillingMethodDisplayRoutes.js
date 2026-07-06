@@ -114,7 +114,7 @@ function getMaskedTail(value) {
 function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
+  return safeTail ? `${safeCompany} · **** ${safeTail}` : (safeCompany === "카드" ? "등록된 카드" : safeCompany);
 }
 
 function normalizeStoredDisplayLabel(value) {
@@ -122,12 +122,13 @@ function normalizeStoredDisplayLabel(value) {
   if (!label) return "";
 
   const withoutDefaultBadge = label.replace(/\s*기본\s*$/g, "").trim();
-  const legacyMatch = withoutDefaultBadge.match(/^(.+?)\s*[·-]\s*\*+\s*([0-9*]{3,4})$/);
+  const withoutRegisteredBadge = withoutDefaultBadge.replace(/\s*등록\s*완료\s*$/u, "").trim();
+  const legacyMatch = withoutRegisteredBadge.match(/^(.+?)\s*[·-]\s*\*+\s*([0-9*]{3,4})$/);
   if (legacyMatch) {
     return formatCardDisplayLabel(legacyMatch[1], legacyMatch[2]);
   }
 
-  return withoutDefaultBadge;
+  return withoutRegisteredBadge;
 }
 
 function getCardNumberCandidates(card = {}, payload = {}, row = {}) {
@@ -208,7 +209,7 @@ function summarizeCardFromRow(row) {
   }
 
   return {
-    displayLabel: "카드 등록 완료",
+    displayLabel: "등록된 카드",
     cardCompany: null,
     cardLast4: null,
     cardBrandKey: null,
@@ -222,7 +223,7 @@ function serializePaymentMethod(row) {
   const paymentSummary = buildStoredPaymentMethodSummary(row, row.payment_metadata, row.metadata) || summarizeCardFromPayload(row.payment_metadata, row);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
-  const displayLabel = summary?.displayLabel || "카드 등록 완료";
+  const displayLabel = summary?.displayLabel || "등록된 카드";
   const cardCompany = summary?.cardCompany || null;
   const cardLast4 = summary?.cardLast4 || null;
   const maskedCardNumber = summary?.maskedCardNumber || row.masked_card_number || null;

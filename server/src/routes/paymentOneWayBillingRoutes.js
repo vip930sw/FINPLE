@@ -228,7 +228,7 @@ function getCardSummary(payload) {
   const digits = rawCardValue.replace(/\D/g, "");
   const last4 = digits.length >= 4 ? digits.slice(-4) : "";
   const company = String(card.company || card.issuerCode || payload?.method || "카드").trim();
-  const label = last4 ? `${company} · **** ${last4}` : `${company} 등록 완료`;
+  const label = last4 ? `${company} · **** ${last4}` : (company === "카드" ? "등록된 카드" : company);
   return {
     method: payload?.method || "카드",
     cardCompany: company,
@@ -245,7 +245,7 @@ function getBillingCardSummary(...sources) {
     cardCompany: "card",
     cardLast4: null,
     maskedCardNumber: null,
-    displayLabel: "카드 등록 완료",
+    displayLabel: "등록된 카드",
   };
 }
 

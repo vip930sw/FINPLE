@@ -1,52 +1,105 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import PanelShell from "./PanelShell";
 
-const AXIS_LABELS = {
-  returnStyle: "수익 성향",
-  timeStyle: "투자 기간",
-  controlStyle: "운용 방식",
-  concentrationStyle: "분산 성향",
-};
+const AXIS_CONFIGS = [
+  { key: "returnStyle", label: "수익 성향", left: "안정", right: "성장" },
+  { key: "timeStyle", label: "투자 기간", left: "장기", right: "기회" },
+  { key: "controlStyle", label: "운용 방식", left: "추종", right: "주도" },
+  { key: "concentrationStyle", label: "분산 성향", left: "분산", right: "확신" },
+];
 
 const ASSET_LABELS = {
   growthStock: "성장주",
-  valueStock: "가치/배당주",
-  bond: "채권",
-  longBond: "장기채",
+  valueStock: "가치·배당",
+  bond: "종합채권",
+  longBond: "장기국채",
+  longbond: "장기국채",
   reit: "리츠",
   gold: "금",
-  crypto: "가상자산",
   cash: "현금",
+  crypto: "가상자산/테마",
 };
 
-function getPresetEntries(profile) {
-  const preset = profile?.portfolioPreset || profile?.preset || {};
-  return Object.entries(preset)
-    .map(([key, value]) => [key, Number(value || 0)])
-    .filter(([, value]) => value > 0);
+function normalizeMbtiTerm(value) {
+  return String(value || "").replace(/자동/g, "추종").trim();
+}
+
+function clampPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Math.max(0, Math.min(100, number));
+}
+
+function getTypeIdAxes(typeId) {
+  const parts = String(typeId || "").split("-");
+  return {
+    returnStyle: parts[0] || "",
+    timeStyle: parts[1] || "",
+    controlStyle: parts[2] || "",
+    concentrationStyle: parts[3] || "",
+  };
+}
+
+function getAxisPercent(profile, config, value) {
+  const fromScore = clampPercent(profile?.axisScores?.[config.key]);
+  if (fromScore !== null) return fromScore;
+  return value === config.right ? 78 : 22;
 }
 
 function getAxisEntries(profile) {
-  const axes = profile?.axes && typeof profile.axes === "object" ? profile.axes : {};
-  return Object.entries(axes).filter(([, value]) => Boolean(value));
+  if (!profile) return [];
+  const typeAxes = getTypeIdAxes(profile.typeId);
+  const axes = profile.axes || {};
+
+  return AXIS_CONFIGS.map((config) => {
+    const value = normalizeMbtiTerm(axes[config.key] || typeAxes[config.key] || config.left);
+    return {
+      ...config,
+      value,
+      percent: getAxisPercent(profile, config, value),
+    };
+  });
+}
+
+function getPresetEntries(profile) {
+  const preset = profile?.presetWeights || profile?.portfolioPreset || profile?.preset || {};
+  return Object.entries(preset)
+    .map(([key, rawValue]) => [key, Number(rawValue)])
+    .filter(([, value]) => Number.isFinite(value) && value > 0)
+    .sort(([, a], [, b]) => b - a);
+}
+
+function getTextList(value, fallback) {
+  if (Array.isArray(value)) return value.map(normalizeMbtiTerm).filter(Boolean);
+  const text = normalizeMbtiTerm(value);
+  return text ? [text] : fallback;
 }
 
 export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
   const [expanded, setExpanded] = useState(false);
+  const detailRef = useRef(null);
   const profile = mbti.profile;
-  const presetEntries = useMemo(() => getPresetEntries(profile), [profile]);
   const axisEntries = useMemo(() => getAxisEntries(profile), [profile]);
-  const actions = Array.isArray(profile?.actions) ? profile.actions.filter(Boolean).slice(0, 3) : [];
+  const presetEntries = useMemo(() => getPresetEntries(profile), [profile]);
+  const summaryList = getTextList(profile?.summary, ["최근 투자 MBTI 결과와 포트폴리오 프리셋을 기준으로 표시합니다."]);
+  const actionList = getTextList(profile?.actions || profile?.recommendations, ["분산 비중을 먼저 확인하고 리밸런싱 주기를 정해 보세요."]);
+  const cautionList = getTextList(profile?.cautions, ["예시 비중은 투자 판단을 돕기 위한 참고 정보이며, 실제 투자 결과를 보장하지 않습니다."]);
+
+  function toggleDetail() {
+    setExpanded((current) => {
+      const next = !current;
+      if (!current) {
+        window.setTimeout(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 0);
+      }
+      return next;
+    });
+  }
 
   function restartMbti() {
     if (typeof window !== "undefined") {
-      window.history.pushState({ page: "personal", path: "/mbti", view: "investment-mbti" }, "", "/mbti");
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("finple-open-personal-view", { detail: { view: "investment-mbti" } }));
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 0);
+      window.location.hash = "#investment-mbti";
     }
-    onNavigate?.("personal", { scrollTop: false });
+    onNavigate?.("investment");
   }
 
   return (
@@ -54,71 +107,101 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
       eyebrow="MY INVESTMENT PROFILE"
       title="내 투자성향"
       description="최근 투자 MBTI 결과와 예시 포트폴리오 프리셋을 다시 확인합니다."
-      badge={profile ? "저장됨" : "미저장"}
-      actions={(
+      badge={profile ? "저장됨" : "미완료"}
+    >
+      {profile ? (
         <>
-          <button type="button" className="primaryButton" onClick={() => setExpanded((value) => !value)} disabled={!profile}>
-            {expanded ? "결과 접기" : "결과 자세히 보기"}
-          </button>
-          <button type="button" className="secondaryButton" onClick={restartMbti}>투자 MBTI 다시 하기</button>
+          <div className="accountStatusGrid myPageSummaryGrid myPageSummaryGrid--three">
+            <div><span>투자 MBTI</span><strong>{normalizeMbtiTerm(profile.nickname || profile.typeId)}</strong></div>
+            <div><span>투자성향</span><strong>{normalizeMbtiTerm(profile.finpleType || profile.personality || "균형형")}</strong></div>
+            <div><span>위험성향</span><strong>{normalizeMbtiTerm(profile.riskProfile || profile.riskLabel || "중립형")}</strong></div>
+          </div>
+
+          <p className="serverStorageMessage compact">
+            서버 DB 값을 우선 복원하고 localStorage는 캐시로만 사용합니다.
+          </p>
+
+          <div className="serverStorageActions compactActions myPageInlineActions" data-mypage-mbti-actions>
+            <button type="button" className="primaryButton" onClick={toggleDetail}>
+              {expanded ? "결과 접기" : "결과 자세히 보기"}
+            </button>
+            <button type="button" className="secondaryButton" onClick={restartMbti}>투자 MBTI 다시 하기</button>
+          </div>
+
+          {expanded ? (
+            <section ref={detailRef} className="myPageExpandableDetail myPageMbtiDetail" data-mypage-mbti-detail>
+              <div className="myPageDetailHeader">
+                <div>
+                  <span>MY INVESTMENT MBTI</span>
+                  <h3>{normalizeMbtiTerm(profile.nickname || profile.typeId)}</h3>
+                </div>
+                <span>{normalizeMbtiTerm(profile.typeId)}</span>
+              </div>
+
+              <div className="myPageDetailBox myPageDetailOverview" data-mypage-mbti-overview>
+                <strong>결과 요약</strong>
+                <ul>
+                  {summaryList.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+
+              <div className="myPageDetailBox" data-mypage-mbti-axis-chart>
+                <strong>성향 축</strong>
+                <div className="myPageAxisChart">
+                  {axisEntries.map((axis) => (
+                    <div className="myPageAxisRow" key={axis.key}>
+                      <div className="myPageAxisHeader">
+                        <span>{axis.label}</span>
+                        <strong>{axis.value}</strong>
+                      </div>
+                      <div className="myPageAxisScale">
+                        <span>{axis.left}</span>
+                        <div className="myPageAxisTrack"><i style={{ left: `${axis.percent}%` }} /></div>
+                        <span>{axis.right}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="myPageDetailBox" data-mypage-mbti-allocation-chart>
+                <strong>예시 포트폴리오 비중</strong>
+                <div className="myPagePortfolioBars">
+                  {presetEntries.length > 0 ? presetEntries.map(([key, value]) => (
+                    <div className="myPagePortfolioRow" key={key}>
+                      <div><span>{ASSET_LABELS[key] || key}</span><strong>{value}%</strong></div>
+                      <i style={{ width: `${Math.min(100, value)}%` }} />
+                    </div>
+                  )) : <p>저장된 프리셋 비중이 없어 기본 성향 정보만 표시합니다.</p>}
+                </div>
+              </div>
+
+              <div className="myPageDetailBox" data-mypage-mbti-guidance>
+                <strong>권장 액션</strong>
+                <ul>
+                  {actionList.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                <strong className="myPageDetailSubTitle">주의할 점</strong>
+                <ul>
+                  {cautionList.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </section>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <div className="accountStatusGrid myPageSummaryGrid myPageSummaryGrid--three">
+            <div><span>투자 MBTI</span><strong>미완료</strong></div>
+            <div><span>투자성향</span><strong>결과 없음</strong></div>
+            <div><span>위험성향</span><strong>결과 없음</strong></div>
+          </div>
+          <p className="serverStorageMessage compact">투자 MBTI를 완료하면 MY PAGE에서 결과와 예시 비중을 확인할 수 있습니다.</p>
+          <div className="serverStorageActions compactActions myPageInlineActions">
+            <button type="button" className="primaryButton" onClick={restartMbti}>투자 MBTI 시작하기</button>
+          </div>
         </>
       )}
-    >
-      <div className="accountStatusGrid myPageSummaryGrid myPageSummaryGrid--three">
-        <div><span>투자 MBTI</span><strong>{profile?.nickname || "저장된 결과 없음"}</strong></div>
-        <div><span>투자성향</span><strong>{profile?.finpleType || "확인 필요"}</strong></div>
-        <div><span>위험성향</span><strong>{profile?.riskProfile || "확인 필요"}</strong></div>
-      </div>
-      <p className="serverStorageMessage compact">
-        {mbti.error || (profile ? "최근 투자 MBTI 결과가 저장되어 있습니다." : "투자 MBTI 결과를 저장하면 이 영역에 표시됩니다.")}
-      </p>
-      {expanded && profile ? (
-        <section className="myPageExpandableDetail" data-mypage-mbti-detail>
-          <div className="myPageDetailHeader">
-            <div>
-              <p className="accountMiniLabel">Investment MBTI Detail</p>
-              <h3>{profile.nickname || "투자 MBTI"}</h3>
-            </div>
-            <span>{profile.riskProfile || "위험성향 확인 필요"}</span>
-          </div>
-          <div className="myPageSummaryGrid myPageSummaryGrid--three myPageDetailGrid">
-            <div><span>FINPLE 유형</span><strong>{profile.finpleType || "확인 필요"}</strong></div>
-            <div><span>위험성향</span><strong>{profile.riskProfile || "확인 필요"}</strong></div>
-            <div><span>시장 기준</span><strong>{profile.marketMode || "US"}</strong></div>
-          </div>
-          {axisEntries.length ? (
-            <div className="myPageDetailBlock">
-              <strong>4개 축 결과</strong>
-              <div className="myPageTagList">
-                {axisEntries.map(([key, value]) => <span key={key}>{AXIS_LABELS[key] || key}: {value}</span>)}
-              </div>
-            </div>
-          ) : null}
-          {presetEntries.length ? (
-            <div className="myPageDetailBlock">
-              <strong>포트폴리오 예시 비중</strong>
-              <div className="myPagePortfolioBars">
-                {presetEntries.map(([key, value]) => (
-                  <div className="myPagePortfolioRow" key={key}>
-                    <div><span>{ASSET_LABELS[key] || key}</span><em>{value}%</em></div>
-                    <i style={{ width: `${Math.min(100, value)}%` }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className="myPageDetailBlock">
-            <strong>권장 액션 및 주의사항</strong>
-            <p>{profile.summary || "저장된 투자성향 결과를 확인할 수 있습니다."}</p>
-            {actions.length ? (
-              <ul>
-                {actions.map((action) => <li key={action}>{action}</li>)}
-              </ul>
-            ) : null}
-            {profile.cautions ? <p>{profile.cautions}</p> : null}
-          </div>
-        </section>
-      ) : null}
     </PanelShell>
   );
 }

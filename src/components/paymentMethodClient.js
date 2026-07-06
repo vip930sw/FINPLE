@@ -102,13 +102,14 @@ function getCleanDisplayLabel(value, last4 = "") {
   }
   label = label
     .replace(/^[0-9A-Z]{2,3}\s*/i, "")
+    .replace(/\s*등록\s*완료\s*$/u, "")
     .replace(/[\s*.\-()·]+$/g, "")
     .trim();
 
   if (!label || /^\d+$/.test(label)) return "";
   if (/^[*\s.\-()·]+$/.test(label)) return "";
   if (/^(card registered|registered card|payment method registered)$/i.test(label)) return "";
-  if (/^(카드 등록 완료|등록된 결제수단|등록 카드)$/.test(label)) return "";
+  if (/^(카드|카드 등록 완료|등록 완료|등록된 결제수단|등록 카드|등록된 카드)$/.test(label)) return "";
   return label;
 }
 
@@ -134,8 +135,8 @@ export function getSafeBillingMethodDisplayLabel(method = {}) {
 
   if (labelCompany && last4) return `${labelCompany} · **** ${last4}`;
   if (last4) return `등록 카드 · **** ${last4}`;
-  if (labelCompany) return `${labelCompany} 등록 완료`;
-  return "카드 등록 완료";
+  if (labelCompany) return labelCompany;
+  return "등록된 카드";
 }
 
 function normalizeBillingMethodStatusPayload(payload) {

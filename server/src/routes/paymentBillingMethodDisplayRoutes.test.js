@@ -22,6 +22,8 @@ test("billing method display route is mounted before legacy route and returns on
   assert.match(displaySource, /maskedCardNumber/);
   assert.match(displaySource, /cardLast4/);
   assert.match(displaySource, /cardCompany/);
+  assert.match(displaySource, /등록된 카드/);
+  assert.doesNotMatch(displaySource, /카드 등록 완료/);
   assert.doesNotMatch(displayReturnBody, /billingKeyEncrypted|billing_key_encrypted|customerKey|customer_key/i);
   assert.doesNotMatch(legacySource.match(/return \{[\s\S]*?issuedAt: row\.issued_at,[\s\S]*?\};/)?.[0] || "", /customerKey|billingKey/i);
 });

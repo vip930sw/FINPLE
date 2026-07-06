@@ -96,7 +96,7 @@ function getCardNumberCandidates(payload = {}, row = {}) {
 export function formatCardDisplayLabel(company, tail) {
   const safeCompany = resolveCardCompany(company);
   const safeTail = getMaskedTail(tail);
-  return safeTail ? `${safeCompany} · **** ${safeTail}` : `${safeCompany} 등록 완료`;
+  return safeTail ? `${safeCompany} · **** ${safeTail}` : (safeCompany === "카드" ? "등록된 카드" : safeCompany);
 }
 
 function isGenericPaymentLabel(label) {
@@ -106,6 +106,7 @@ function isGenericPaymentLabel(label) {
     "card registered",
     "registered card",
     "payment method registered",
+    "등록 완료",
     "카드 등록 완료",
     "등록된 결제수단",
     "등록된 카드",
@@ -116,6 +117,7 @@ function normalizeStoredDisplayLabel(value) {
   return String(value || "")
     .trim()
     .replace(/\s*기본\s*$/u, "")
+    .replace(/\s*등록\s*완료\s*$/u, "")
     .trim();
 }
 
@@ -195,7 +197,7 @@ export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
   }
 
   return {
-    displayLabel: "카드 등록 완료",
+    displayLabel: "등록된 카드",
     cardCompany: null,
     cardLast4: null,
     maskedCardNumber: null,

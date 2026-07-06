@@ -14,6 +14,9 @@ test("payment method client includes safe bank and last4 display normalization",
   assert.match(source, /getPaymentMethodLast4\(method\)/);
   assert.match(source, /getCleanDisplayLabel\(resolvePaymentMethodCompanyLabel\(getPaymentMethodCompany\(method\)\), last4\)/);
   assert.match(safeDisplayBody, /`등록 카드 · \*\*\*\* \$\{last4\}`/);
+  assert.match(safeDisplayBody, /return labelCompany/);
+  assert.match(safeDisplayBody, /return "등록된 카드"/);
+  assert.doesNotMatch(safeDisplayBody, /등록 완료/);
   assert.ok(source.includes('if (/^[*\\s.\\-()·]+$/.test(label)) return "";'));
   assert.doesNotMatch(safeDisplayBody, /billingKey|customerKey|cardNumber|raw provider/i);
 });
