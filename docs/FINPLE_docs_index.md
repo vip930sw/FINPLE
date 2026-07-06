@@ -82,6 +82,7 @@ P0 경쟁력·지표·데이터·기술부채
 - [Step 112 결제·MY PAGE 인수인계](./FINPLE_step112_payment_mypage_handoff.md)
 - [Step 112-5 MY PAGE 안정화·통합 계획](./FINPLE_step112_5_mypage_stabilization_plan.md)
 - [Step 112-6 MY PAGE UI·CSS 인수인계](./FINPLE_step112_6_mypage_ui_handoff.md)
+- [2026-07-06 MY PAGE 재구축 작업기록](./FINPLE_mypage_rebuild_worklog_2026_07_06.md)
 - [2026-06-20 운영·문의·메일 인수인계](./FINPLE_worklog_handoff_2026_06_20.md)
 
 ## UI 안정성
