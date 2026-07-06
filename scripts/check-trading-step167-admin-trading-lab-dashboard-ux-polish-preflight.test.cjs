@@ -1,0 +1,41 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const test = require("node:test");
+
+test("Step 167 checker covers dashboard UX polish preflight implementation and safety boundaries", () => {
+  const checkText = fs.readFileSync("scripts/check-trading-step167-admin-trading-lab-dashboard-ux-polish-preflight.cjs", "utf8");
+  const packageText = fs.readFileSync("package.json", "utf8");
+
+  assert.match(checkText, /STEP167_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_FLAGS/);
+  assert.match(checkText, /TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_MODEL/);
+  assert.match(checkText, /TRADING_LAB_UX_POLISH_TARGET_INVENTORY_MODEL/);
+  assert.match(checkText, /TRADING_LAB_UX_POLISH_DUPLICATE_VERBOSE_DETECTION_MODEL/);
+  assert.match(checkText, /TRADING_LAB_UX_POLISH_KOREAN_LABEL_INVENTORY_MODEL/);
+  assert.match(checkText, /TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_RESULT_SCHEMA/);
+  assert.match(checkText, /validateTradingLabDashboardUxPolishPreflight/);
+  assert.match(checkText, /buildAdminTradingLabDashboardUxPolishPreflightStatus/);
+  assert.match(checkText, /trading-lab-dashboard-ux-polish-preflight/);
+  assert.match(checkText, /requireAdminAccess/);
+  assert.match(checkText, /check-step166-account-plan-mbti\.test\.mjs/);
+  assert.match(checkText, /MY_PAGE_FILES/);
+  assert.match(checkText, /scenario_monthly_returns\.csv/);
+  assert.match(checkText, /scenario runtime files must remain untouched/);
+  assert.match(checkText, /providerCallsAllowed: true/);
+  assert.match(checkText, /orderSubmissionAllowed: true/);
+  assert.match(checkText, /kisOrderPayloadCreated: true/);
+  assert.match(checkText, /kisExecutionPayloadCreated: true/);
+  assert.match(checkText, /kisFillPayloadCreated: true/);
+  assert.match(checkText, /executionRecordCreated: true/);
+  assert.match(checkText, /fillRecordCreated: true/);
+  assert.match(checkText, /portfolioLedgerPersisted: true/);
+  assert.match(checkText, /performanceRecordPersisted: true/);
+  assert.match(checkText, /tradingRunSummaryPersisted: true/);
+  assert.match(checkText, /accountBalanceQueried: true/);
+  assert.match(checkText, /realTradingRunIdentifierCreated: true/);
+  assert.match(checkText, /dashboardUxPolishExecuted: true/);
+  assert.match(checkText, /dashboardSectionDeleted: true/);
+  assert.match(checkText, /myPageRouteChanged: true/);
+  assert.match(checkText, /accountSubscriptionBillingChanged: true/);
+  assert.match(checkText, /dashboardUxPolishPersistenceAllowed: true/);
+  assert.match(packageText, /check:trading-step167-admin-trading-lab-dashboard-ux-polish-preflight/);
+});

@@ -905,6 +905,10 @@ nav {
   background: #ecfeff;
 }
 
+.tradingLabDashboardUxPolishCards div {
+  background: #f0fdfa;
+}
+
 .tradingLabDashboardSummaryFirstGrid {
   display: grid;
   gap: 0.7rem;
@@ -1134,6 +1138,13 @@ nav {
   background: #ecfeff;
   border-color: rgba(8, 145, 178, 0.16);
   color: #155e75;
+}
+
+.tradingLabDashboardUxPolishList li,
+.tradingLabDashboardUxPolishTargetList li {
+  background: #f0fdfa;
+  border-color: rgba(13, 148, 136, 0.18);
+  color: #115e59;
 }
 
 .tradingLabCleanupDetails {
