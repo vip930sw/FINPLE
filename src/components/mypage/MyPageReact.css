@@ -53,6 +53,7 @@
 .accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid,
 .accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid.myPageSummaryGrid--three {
   margin-top: var(--my-page-summary-top-gap) !important;
+  margin-bottom: 0 !important;
 }
 
 .accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid > div {

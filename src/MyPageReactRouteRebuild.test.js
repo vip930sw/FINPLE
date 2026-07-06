@@ -144,6 +144,7 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(cssSource, /\.myPageReactSingleGrid[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important/);
   assert.match(cssSource, /\.myPageReactSingleGrid > div[\s\S]*grid-column: 1 \/ -1/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid[\s\S]*margin-top: var\(--my-page-summary-top-gap\) !important/);
+  assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid[\s\S]*margin-bottom: 0 !important/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid > div[\s\S]*min-height: var\(--my-page-summary-card-min-height\)/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid > div[\s\S]*background: #f8fafc/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageReactSingleGrid > div[\s\S]*min-height: var\(--my-page-followup-card-min-height\)/);
