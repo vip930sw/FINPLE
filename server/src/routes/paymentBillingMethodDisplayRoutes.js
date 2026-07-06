@@ -220,7 +220,13 @@ function summarizeCardFromRow(row) {
 function serializePaymentMethod(row) {
   if (!row) return null;
 
-  const paymentSummary = buildStoredPaymentMethodSummary(row, row.payment_metadata, row.metadata) || summarizeCardFromPayload(row.payment_metadata, row);
+  const paymentMetadataCandidates = Array.isArray(row.payment_metadata_candidates)
+    ? row.payment_metadata_candidates.filter((metadata) => metadata && typeof metadata === "object")
+    : [];
+  const paymentSummary =
+    buildStoredPaymentMethodSummary(row, row.payment_metadata, ...paymentMetadataCandidates, row.metadata) ||
+    summarizeCardFromPayload(row.payment_metadata, row) ||
+    paymentMetadataCandidates.map((metadata) => summarizeCardFromPayload(metadata, row)).find(Boolean);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
   const displayLabel = summary?.displayLabel || "등록된 카드";
@@ -278,7 +284,8 @@ router.get("/toss/billing/method", async (request, response, next) => {
     const result = await query(
       `SELECT rpm.id, rpm.provider, rpm.method_type, rpm.display_label, rpm.card_company,
               rpm.card_last4, rpm.masked_card_number, rpm.metadata, rpm.is_default, rpm.status,
-              rpm.issued_at, rpm.updated_at, latest_payment.metadata AS payment_metadata
+              rpm.issued_at, rpm.updated_at, latest_payment.metadata AS payment_metadata,
+              payment_candidates.metadata_list AS payment_metadata_candidates
        FROM recurring_payment_methods rpm
        LEFT JOIN LATERAL (
          SELECT p.metadata
@@ -297,6 +304,30 @@ router.get("/toss/billing/method", async (request, response, next) => {
            COALESCE(p.paid_at, p.requested_at, p.created_at) DESC NULLS LAST
          LIMIT 1
        ) latest_payment ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(
+           jsonb_agg(candidate.metadata ORDER BY candidate.relation_rank, candidate.payment_at DESC NULLS LAST),
+           '[]'::jsonb
+         ) AS metadata_list
+         FROM (
+           SELECT p.metadata,
+                  COALESCE(p.paid_at, p.requested_at, p.created_at) AS payment_at,
+                  CASE
+                    WHEN p.metadata->>'recurringPaymentMethodId' = rpm.id::text
+                      OR p.metadata->>'customerKey' = rpm.customer_key
+                      OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
+                    THEN 0
+                    ELSE 1
+                  END AS relation_rank
+             FROM payments p
+            WHERE p.provider = 'toss-payments'
+              AND p.user_id = rpm.user_id
+              AND p.status = 'confirmed'
+              AND p.metadata IS NOT NULL
+            ORDER BY relation_rank, payment_at DESC NULLS LAST
+            LIMIT 5
+         ) candidate
+       ) payment_candidates ON TRUE
        WHERE rpm.provider = 'toss-payments'
          AND rpm.user_id = $1
          AND rpm.status = 'active'
