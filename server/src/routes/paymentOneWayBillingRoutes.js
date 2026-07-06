@@ -409,10 +409,14 @@ async function storeMethodAndActivateSubscription({ user, authOrderId, firstPaym
          DO UPDATE SET
            user_id = EXCLUDED.user_id,
            billing_key_encrypted = EXCLUDED.billing_key_encrypted,
-           display_label = EXCLUDED.display_label,
-           card_company = EXCLUDED.card_company,
-           card_last4 = EXCLUDED.card_last4,
-           masked_card_number = EXCLUDED.masked_card_number,
+           display_label = CASE
+             WHEN EXCLUDED.card_last4 IS NOT NULL OR EXCLUDED.masked_card_number IS NOT NULL THEN EXCLUDED.display_label
+             WHEN recurring_payment_methods.card_last4 IS NOT NULL OR recurring_payment_methods.masked_card_number IS NOT NULL THEN recurring_payment_methods.display_label
+             ELSE EXCLUDED.display_label
+           END,
+           card_company = COALESCE(EXCLUDED.card_company, recurring_payment_methods.card_company),
+           card_last4 = COALESCE(EXCLUDED.card_last4, recurring_payment_methods.card_last4),
+           masked_card_number = COALESCE(EXCLUDED.masked_card_number, recurring_payment_methods.masked_card_number),
            is_default = TRUE,
            status = 'active',
            disabled_at = NULL,

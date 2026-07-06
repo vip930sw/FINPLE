@@ -172,6 +172,38 @@ function getBillingCardSummary(...sources) {
   };
 }
 
+function normalizeCardCompanyLabel(value) {
+  return String(value || "").replace(/\s+/g, "").trim().toLowerCase();
+}
+
+function canUseRecentPaymentCardSummary(issueSummary, paymentSummary) {
+  if (!paymentSummary?.cardLast4 && !paymentSummary?.maskedCardNumber) return false;
+
+  const issueCompany = normalizeCardCompanyLabel(issueSummary?.cardCompany);
+  const paymentCompany = normalizeCardCompanyLabel(paymentSummary?.cardCompany);
+  if (!issueCompany || issueCompany === "card" || issueCompany === "카드") return true;
+  if (!paymentCompany || paymentCompany === "card" || paymentCompany === "카드") return true;
+  return issueCompany === paymentCompany;
+}
+
+async function getRecentConfirmedPaymentCardSummary(userId, tx = query) {
+  if (!userId) return null;
+
+  const result = await tx(
+    `SELECT metadata
+       FROM payments
+      WHERE provider = 'toss-payments'
+        AND user_id = $1
+        AND status = 'confirmed'
+        AND metadata IS NOT NULL
+      ORDER BY COALESCE(paid_at, requested_at, created_at) DESC NULLS LAST
+      LIMIT 5`,
+    [userId]
+  );
+
+  return buildPaymentMethodSummary(...result.rows.map((row) => row.metadata));
+}
+
 async function getActivePersonalSubscription(userId) {
   if (!isDatabaseConfigured() || !userId) return null;
 
@@ -294,6 +326,12 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
   try {
     return await withTransaction(async (tx) => {
       await ensureRecurringPaymentMethodSchema(tx);
+      const recentPaymentCardSummary = cardSummary.cardLast4
+        ? null
+        : await getRecentConfirmedPaymentCardSummary(user.id, tx);
+      const storedCardSummary = canUseRecentPaymentCardSummary(cardSummary, recentPaymentCardSummary)
+        ? recentPaymentCardSummary
+        : cardSummary;
 
       await tx(
         `UPDATE recurring_payment_methods
@@ -316,10 +354,14 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
          DO UPDATE SET
            user_id = EXCLUDED.user_id,
            billing_key_encrypted = EXCLUDED.billing_key_encrypted,
-           display_label = EXCLUDED.display_label,
-           card_company = EXCLUDED.card_company,
-           card_last4 = EXCLUDED.card_last4,
-           masked_card_number = EXCLUDED.masked_card_number,
+           display_label = CASE
+             WHEN EXCLUDED.card_last4 IS NOT NULL OR EXCLUDED.masked_card_number IS NOT NULL THEN EXCLUDED.display_label
+             WHEN recurring_payment_methods.card_last4 IS NOT NULL OR recurring_payment_methods.masked_card_number IS NOT NULL THEN recurring_payment_methods.display_label
+             ELSE EXCLUDED.display_label
+           END,
+           card_company = COALESCE(EXCLUDED.card_company, recurring_payment_methods.card_company),
+           card_last4 = COALESCE(EXCLUDED.card_last4, recurring_payment_methods.card_last4),
+           masked_card_number = COALESCE(EXCLUDED.masked_card_number, recurring_payment_methods.masked_card_number),
            is_default = TRUE,
            status = 'active',
            disabled_at = NULL,
@@ -331,10 +373,10 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
           user.id,
           customerKey,
           encryptedBillingKey,
-          cardSummary.displayLabel,
-          cardSummary.cardCompany,
-          cardSummary.cardLast4,
-          cardSummary.maskedCardNumber,
+          storedCardSummary.displayLabel,
+          storedCardSummary.cardCompany,
+          storedCardSummary.cardLast4,
+          storedCardSummary.maskedCardNumber,
           JSON.stringify({
             orderId,
             authKeyReceived: Boolean(authKey),
@@ -387,9 +429,9 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
       return {
         stored: true,
         recurringPaymentMethodId: method?.id || null,
-        displayLabel: method?.display_label || cardSummary.displayLabel,
-        cardCompany: method?.card_company || cardSummary.cardCompany,
-        cardLast4: method?.card_last4 || cardSummary.cardLast4,
+        displayLabel: method?.display_label || storedCardSummary.displayLabel,
+        cardCompany: method?.card_company || storedCardSummary.cardCompany,
+        cardLast4: method?.card_last4 || storedCardSummary.cardLast4,
         status: method?.status || "active",
         issuedAt: method?.issued_at || null,
       };
