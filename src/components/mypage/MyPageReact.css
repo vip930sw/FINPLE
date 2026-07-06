@@ -10,34 +10,40 @@
 .myPageReactPanel {
   width: 100%;
   margin: 0 !important;
-  --my-page-summary-top-gap: 40px;
-  --my-page-summary-card-min-height: 96px;
-  --my-page-summary-card-padding: 22px 24px;
+  --my-page-summary-top-gap: 20px;
+  --my-page-summary-card-min-height: 84px;
+  --my-page-summary-card-padding: 16px;
   --my-page-followup-row-gap: 20px;
-  --my-page-followup-card-min-height: 78px;
-  --my-page-followup-card-padding: 14px 16px;
+  --my-page-followup-card-min-height: 84px;
+  --my-page-followup-card-padding: 16px;
 }
 
 .myPageReactPanel .myPageSummaryGrid,
 .myPageSummaryGrid.myPageSummaryGrid--three {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
   margin-top: var(--my-page-summary-top-gap);
 }
 
 .myPageReactPanel .myPageSummaryGrid > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: var(--my-page-summary-card-min-height);
   padding: var(--my-page-summary-card-padding);
   box-sizing: border-box;
 }
 
 .myPageReactSingleGrid {
-  grid-template-columns: 1fr !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   margin-top: var(--my-page-followup-row-gap) !important;
 }
 
 .myPageReactSingleGrid > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: var(--my-page-followup-card-min-height);
   padding: var(--my-page-followup-card-padding);
   box-sizing: border-box;
@@ -326,7 +332,11 @@
   .myPageReactPanel .myPageSummaryGrid,
   .myPageSummaryGrid.myPageSummaryGrid--three {
     grid-template-columns: 1fr;
-    margin-top: 26px;
+    margin-top: var(--my-page-summary-top-gap);
+  }
+
+  .myPageReactSingleGrid {
+    grid-template-columns: 1fr !important;
   }
 
   .myPageDetailHeader {

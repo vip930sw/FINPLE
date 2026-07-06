@@ -135,11 +135,13 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(investmentPanel, /myPageSummaryGrid--three/);
   assert.match(storagePanel, /myPageSummaryGrid--three/);
   assert.match(cssSource, /myPageReactPanel \.myPageSummaryGrid/);
-  assert.match(cssSource, /--my-page-summary-top-gap: 40px/);
-  assert.match(cssSource, /--my-page-summary-card-min-height: 96px/);
+  assert.match(cssSource, /--my-page-summary-top-gap: 20px/);
+  assert.match(cssSource, /--my-page-summary-card-min-height: 84px/);
   assert.match(cssSource, /--my-page-followup-row-gap: 20px/);
-  assert.match(cssSource, /--my-page-followup-card-min-height: 78px/);
+  assert.match(cssSource, /--my-page-followup-card-min-height: 84px/);
   assert.match(cssSource, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(cssSource, /gap: 12px/);
+  assert.match(cssSource, /\.myPageReactSingleGrid[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid[\s\S]*margin-top: var\(--my-page-summary-top-gap\) !important/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid > div[\s\S]*min-height: var\(--my-page-summary-card-min-height\)/);
   assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageReactSingleGrid > div[\s\S]*min-height: var\(--my-page-followup-card-min-height\)/);
