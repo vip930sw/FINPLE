@@ -135,7 +135,14 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(investmentPanel, /myPageSummaryGrid--three/);
   assert.match(storagePanel, /myPageSummaryGrid--three/);
   assert.match(cssSource, /myPageReactPanel \.myPageSummaryGrid/);
+  assert.match(cssSource, /--my-page-summary-top-gap: 40px/);
+  assert.match(cssSource, /--my-page-summary-card-min-height: 96px/);
+  assert.match(cssSource, /--my-page-followup-row-gap: 20px/);
+  assert.match(cssSource, /--my-page-followup-card-min-height: 78px/);
   assert.match(cssSource, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid[\s\S]*margin-top: var\(--my-page-summary-top-gap\) !important/);
+  assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageSummaryGrid > div[\s\S]*min-height: var\(--my-page-summary-card-min-height\)/);
+  assert.match(cssSource, /\.accountPage \.accountPanelStack \.myPageReactPanel \.myPageReactSingleGrid > div[\s\S]*min-height: var\(--my-page-followup-card-min-height\)/);
   assert.match(cssSource, /\.myPageDetailEyebrow[\s\S]*color: #2563eb/);
   assert.match(cssSource, /\.myPageDetailEyebrow[\s\S]*font-size: 12px/);
   assert.match(cssSource, /\.myPageAxisTrack[\s\S]*grid-template-columns: auto 1fr auto 1fr auto/);
