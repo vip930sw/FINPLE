@@ -110,6 +110,9 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(investmentPanel, /data-mypage-mbti-detail/);
   assert.match(investmentPanel, /data-mypage-mbti-axis-chart/);
   assert.match(investmentPanel, /data-mypage-mbti-allocation-chart/);
+  assert.match(investmentPanel, /className="myPageDetailEyebrow">MY INVESTMENT MBTI/);
+  assert.match(investmentPanel, /className="myPageAxisTrack"[\s\S]*<span>-<\/span>[\s\S]*<span>0<\/span>[\s\S]*<span>\+<\/span>/);
+  assert.match(investmentPanel, /className="myPagePortfolioTrack"/);
   assert.match(investmentPanel, /결과 자세히 보기/);
   assert.match(investmentPanel, /결과 접기/);
   assert.match(investmentPanel, /투자 MBTI 검사 결과가 저장되어 있습니다/);
@@ -131,4 +134,7 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(storagePanel, /myPageSummaryGrid--three/);
   assert.match(cssSource, /myPageReactPanel \.myPageSummaryGrid/);
   assert.match(cssSource, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(cssSource, /\.myPageDetailEyebrow[\s\S]*color: #2563eb/);
+  assert.match(cssSource, /\.myPageAxisTrack[\s\S]*grid-template-columns: auto 1fr auto 1fr auto/);
+  assert.match(cssSource, /\.myPagePortfolioTrack[\s\S]*background: #e2e8f0/);
 });

@@ -24,10 +24,11 @@ function normalizeMbtiTerm(value) {
   return String(value || "").replace(/자동/g, "추종").trim();
 }
 
-function clampPercent(value) {
+function clampAxisScore(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
-  return Math.max(0, Math.min(100, number));
+  if (number > 6 && number <= 100) return Math.round(((number - 50) / 50) * 6);
+  return Math.max(-6, Math.min(6, Math.round(number)));
 }
 
 function getTypeIdAxes(typeId) {
@@ -41,8 +42,8 @@ function getTypeIdAxes(typeId) {
 }
 
 function getAxisPercent(profile, config, value) {
-  const fromScore = clampPercent(profile?.axisScores?.[config.key]);
-  if (fromScore !== null) return fromScore;
+  const score = clampAxisScore(profile?.axisScores?.[config.key]);
+  if (score !== null) return Math.max(7, Math.min(93, ((score + 6) / 12) * 100));
   return value === config.right ? 78 : 22;
 }
 
@@ -53,9 +54,11 @@ function getAxisEntries(profile) {
 
   return AXIS_CONFIGS.map((config) => {
     const value = normalizeMbtiTerm(axes[config.key] || typeAxes[config.key] || config.left);
+    const score = clampAxisScore(profile?.axisScores?.[config.key]);
     return {
       ...config,
       value,
+      score: score ?? (value === config.right ? 3 : -3),
       percent: getAxisPercent(profile, config, value),
     };
   });
@@ -132,7 +135,7 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
             <section ref={detailRef} className="myPageExpandableDetail myPageMbtiDetail" data-mypage-mbti-detail>
               <div className="myPageDetailHeader">
                 <div>
-                  <span>MY INVESTMENT MBTI</span>
+                  <span className="myPageDetailEyebrow">MY INVESTMENT MBTI</span>
                   <h3>{normalizeMbtiTerm(profile.nickname || profile.typeId)}</h3>
                 </div>
                 <span>{normalizeMbtiTerm(profile.typeId)}</span>
@@ -151,13 +154,17 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
                   {axisEntries.map((axis) => (
                     <div className="myPageAxisRow" key={axis.key}>
                       <div className="myPageAxisHeader">
-                        <span>{axis.label}</span>
-                        <strong>{axis.value}</strong>
-                      </div>
-                      <div className="myPageAxisScale">
                         <span>{axis.left}</span>
-                        <div className="myPageAxisTrack"><i style={{ left: `${axis.percent}%` }} /></div>
+                        <strong>{axis.value}</strong>
                         <span>{axis.right}</span>
+                      </div>
+                      <div className="myPageAxisTrack" aria-label={`${axis.left}-${axis.right} 점수 ${axis.score}`}>
+                        <span>-</span>
+                        <i />
+                        <span>0</span>
+                        <i />
+                        <span>+</span>
+                        <b style={{ left: `${axis.percent}%` }}>{axis.score > 0 ? `+${axis.score}` : axis.score}</b>
                       </div>
                     </div>
                   ))}
@@ -170,7 +177,7 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
                   {presetEntries.length > 0 ? presetEntries.map(([key, value]) => (
                     <div className="myPagePortfolioRow" key={key}>
                       <div><span>{ASSET_LABELS[key] || key}</span><strong>{value}%</strong></div>
-                      <i style={{ width: `${Math.min(100, value)}%` }} />
+                      <div className="myPagePortfolioTrack"><i style={{ width: `${Math.min(100, value)}%` }} /></div>
                     </div>
                   )) : <p>저장된 프리셋 비중이 없어 기본 성향 정보만 표시합니다.</p>}
                 </div>
