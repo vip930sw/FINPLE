@@ -64,7 +64,59 @@ export function getMaskedTail(value) {
 }
 
 function getNestedCard(payload = {}) {
-  return payload?.card && typeof payload.card === "object" ? payload.card : {};
+  if (payload?.card && typeof payload.card === "object") return payload.card;
+  return isCardLikePayload(payload) ? payload : {};
+}
+
+function isCardLikePayload(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return [
+    "number",
+    "cardNumber",
+    "maskedNumber",
+    "maskedCardNumber",
+    "last4",
+    "cardLast4",
+    "card_last4",
+    "lastFour",
+    "lastFourDigits",
+    "issuerCode",
+    "acquirerCode",
+    "company",
+    "cardCompany",
+    "card_company",
+  ].some((key) => Object.prototype.hasOwnProperty.call(value, key));
+}
+
+function collectPaymentPayloads(source, depth = 0, seen = new Set()) {
+  if (!source || typeof source !== "object" || depth > 5 || seen.has(source)) return [];
+  seen.add(source);
+
+  const payloads = [source];
+  Object.entries(source).forEach(([key, value]) => {
+    if (!value || typeof value !== "object") return;
+    const normalizedKey = key.replace(/[_-]/g, "").toLowerCase();
+    const shouldInspect =
+      isCardLikePayload(value) ||
+      [
+        "card",
+        "payment",
+        "paymentpayload",
+        "firstpayment",
+        "billingissue",
+        "issuepayload",
+        "providerresponse",
+        "providerpayload",
+        "tosspayment",
+        "metadata",
+      ].includes(normalizedKey);
+
+    if (shouldInspect) {
+      payloads.push(...collectPaymentPayloads(value, depth + 1, seen));
+    }
+  });
+
+  return payloads;
 }
 
 function getCardNumberCandidates(payload = {}, row = {}) {
@@ -207,7 +259,9 @@ export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
 }
 
 export function buildPaymentMethodSummary(...sources) {
-  const payloads = sources.filter((source) => source && typeof source === "object");
+  const payloads = sources
+    .filter((source) => source && typeof source === "object")
+    .flatMap((source) => collectPaymentPayloads(source));
   if (payloads.length === 0) return null;
 
   const companyCandidates = [];

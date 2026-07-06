@@ -95,6 +95,52 @@ test("stored payment method display keeps a safe company-only fallback", () => {
   assert.doesNotMatch(summary.displayLabel, /등록 완료/);
 });
 
+test("stored payment method display restores last4 from nested latest payment metadata", () => {
+  const summary = buildStoredPaymentMethodSummary(
+    {
+      display_label: "우리카드",
+      card_company: "33",
+      card_last4: null,
+      masked_card_number: null,
+    },
+    {
+      payment: {
+        card: {
+          issuerCode: "33",
+          number: "**** **** **** 9121",
+        },
+      },
+    },
+    {
+      providerResponse: {
+        card: {
+          issuerCode: "33",
+          number: "33********2912",
+        },
+      },
+    }
+  );
+
+  assert.equal(summary.displayLabel, "우리카드 · **** 9121");
+  assert.equal(summary.cardCompany, "우리카드");
+  assert.equal(summary.cardLast4, "9121");
+  assert.equal(summary.source, "payment_metadata");
+});
+
+test("payment method display reads Toss card aliases from provider response metadata", () => {
+  const summary = buildPaymentMethodSummary({
+    providerResponse: {
+      card: {
+        issuerCode: "33",
+        lastFourDigits: "9121",
+      },
+    },
+  });
+
+  assert.equal(summary.displayLabel, "우리카드 · **** 9121");
+  assert.equal(summary.cardLast4, "9121");
+});
+
 test("payment method display extracts safe tails from stored masked values", () => {
   assert.equal(getMaskedTail("****-****-****-9121"), "9121");
   assert.equal(getMaskedTail("9121"), "9121");
