@@ -108,11 +108,13 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(billingPanel, /현재 플랜[\s\S]*구독 상태[\s\S]*다음 결제일[\s\S]*포트폴리오[\s\S]*AI 분석 사용량[\s\S]*이용 종료 예정일/);
   assert.doesNotMatch(billingPanel, /admin\/ai-analysis-usage/);
   assert.match(investmentPanel, /data-mypage-mbti-detail/);
+  assert.doesNotMatch(investmentPanel, /data-mypage-mbti-overview|결과 요약/);
   assert.match(investmentPanel, /data-mypage-mbti-axis-chart/);
   assert.match(investmentPanel, /data-mypage-mbti-allocation-chart/);
   assert.match(investmentPanel, /className="myPageDetailEyebrow">MY INVESTMENT MBTI/);
   assert.match(investmentPanel, /className="myPageAxisTrack"[\s\S]*<span>-<\/span>[\s\S]*<span>0<\/span>[\s\S]*<span>\+<\/span>/);
   assert.match(investmentPanel, /className="myPagePortfolioTrack"/);
+  assert.match(investmentPanel, /<br className="myPageGuidanceBreak" aria-hidden="true" \/>/);
   assert.match(investmentPanel, /결과 자세히 보기/);
   assert.match(investmentPanel, /결과 접기/);
   assert.match(investmentPanel, /투자 MBTI 검사 결과가 저장되어 있습니다/);
@@ -135,6 +137,9 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(cssSource, /myPageReactPanel \.myPageSummaryGrid/);
   assert.match(cssSource, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(cssSource, /\.myPageDetailEyebrow[\s\S]*color: #2563eb/);
+  assert.match(cssSource, /\.myPageDetailEyebrow[\s\S]*font-size: 12px/);
   assert.match(cssSource, /\.myPageAxisTrack[\s\S]*grid-template-columns: auto 1fr auto 1fr auto/);
+  assert.match(cssSource, /\.myPageDetailBox > strong,[\s\S]*font-size: 16px/);
+  assert.match(cssSource, /\.myPageGuidanceBreak[\s\S]*height: 10px/);
   assert.match(cssSource, /\.myPagePortfolioTrack[\s\S]*background: #e2e8f0/);
 });

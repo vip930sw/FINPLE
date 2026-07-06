@@ -84,7 +84,6 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
   const profile = mbti.profile;
   const axisEntries = useMemo(() => getAxisEntries(profile), [profile]);
   const presetEntries = useMemo(() => getPresetEntries(profile), [profile]);
-  const summaryList = getTextList(profile?.summary, ["최근 투자 MBTI 결과와 포트폴리오 프리셋을 기준으로 표시합니다."]);
   const actionList = getTextList(profile?.actions || profile?.recommendations, ["분산 비중을 먼저 확인하고 리밸런싱 주기를 정해 보세요."]);
   const cautionList = getTextList(profile?.cautions, ["예시 비중은 투자 판단을 돕기 위한 참고 정보이며, 실제 투자 결과를 보장하지 않습니다."]);
 
@@ -141,13 +140,6 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
                 <span>{normalizeMbtiTerm(profile.typeId)}</span>
               </div>
 
-              <div className="myPageDetailBox myPageDetailOverview" data-mypage-mbti-overview>
-                <strong>결과 요약</strong>
-                <ul>
-                  {summaryList.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              </div>
-
               <div className="myPageDetailBox" data-mypage-mbti-axis-chart>
                 <strong>성향 축</strong>
                 <div className="myPageAxisChart">
@@ -188,6 +180,7 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
                 <ul>
                   {actionList.map((item) => <li key={item}>{item}</li>)}
                 </ul>
+                <br className="myPageGuidanceBreak" aria-hidden="true" />
                 <strong className="myPageDetailSubTitle">주의할 점</strong>
                 <ul>
                   {cautionList.map((item) => <li key={item}>{item}</li>)}
