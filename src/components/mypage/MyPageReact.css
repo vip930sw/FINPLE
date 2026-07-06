@@ -13,7 +13,7 @@
   --my-page-summary-top-gap: 20px;
   --my-page-summary-card-min-height: 84px;
   --my-page-summary-card-padding: 16px;
-  --my-page-followup-row-gap: 20px;
+  --my-page-followup-row-gap: 12px;
   --my-page-followup-card-min-height: 84px;
   --my-page-followup-card-padding: 16px;
 }
@@ -44,6 +44,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  grid-column: 1 / -1;
   min-height: var(--my-page-followup-card-min-height);
   padding: var(--my-page-followup-card-padding);
   box-sizing: border-box;
@@ -55,8 +56,14 @@
 }
 
 .accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: var(--my-page-summary-card-min-height);
   padding: var(--my-page-summary-card-padding);
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fafc;
   box-sizing: border-box;
 }
 
@@ -65,9 +72,34 @@
 }
 
 .accountPage .accountPanelStack .myPageReactPanel .myPageReactSingleGrid > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  grid-column: 1 / -1;
   min-height: var(--my-page-followup-card-min-height);
   padding: var(--my-page-followup-card-padding);
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fafc;
   box-sizing: border-box;
+}
+
+.accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid span,
+.accountPage .accountPanelStack .myPageReactPanel .myPageReactSingleGrid span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.accountPage .accountPanelStack .myPageReactPanel .myPageSummaryGrid strong,
+.accountPage .accountPanelStack .myPageReactPanel .myPageReactSingleGrid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 950;
+  word-break: break-word;
 }
 
 .myPageInlineActions {
