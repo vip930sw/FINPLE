@@ -118,7 +118,7 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
           </div>
 
           <p className="serverStorageMessage compact">
-            서버 DB 값을 우선 복원하고 localStorage는 캐시로만 사용합니다.
+            투자 MBTI 검사 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 확인할 수 있습니다.
           </p>
 
           <div className="serverStorageActions compactActions myPageInlineActions" data-mypage-mbti-actions>
@@ -196,7 +196,7 @@ export default function MyInvestmentProfilePanel({ mbti, onNavigate }) {
             <div><span>투자성향</span><strong>결과 없음</strong></div>
             <div><span>위험성향</span><strong>결과 없음</strong></div>
           </div>
-          <p className="serverStorageMessage compact">투자 MBTI를 완료하면 MY PAGE에서 결과와 예시 비중을 확인할 수 있습니다.</p>
+          <p className="serverStorageMessage compact">아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI 검사를 진행하고 결과를 저장해 보세요.</p>
           <div className="serverStorageActions compactActions myPageInlineActions">
             <button type="button" className="primaryButton" onClick={restartMbti}>투자 MBTI 시작하기</button>
           </div>

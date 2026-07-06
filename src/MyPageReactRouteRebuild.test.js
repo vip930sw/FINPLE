@@ -112,6 +112,9 @@ test("mypage account, billing, and panel UX restore follow-up behavior", async (
   assert.match(investmentPanel, /data-mypage-mbti-allocation-chart/);
   assert.match(investmentPanel, /결과 자세히 보기/);
   assert.match(investmentPanel, /결과 접기/);
+  assert.match(investmentPanel, /투자 MBTI 검사 결과가 저장되어 있습니다/);
+  assert.match(investmentPanel, /투자 MBTI 검사를 진행하고 결과를 저장해 보세요/);
+  assert.doesNotMatch(investmentPanel, /서버 DB 값을 우선 복원|localStorage는 캐시/);
   assert.match(investmentPanel, /추종/);
   assert.doesNotMatch(investmentPanel, /left: "자동"|right: "자동"|>자동</);
   assert.doesNotMatch(investmentPanel, /\/start|\/mbti\?view=result/);

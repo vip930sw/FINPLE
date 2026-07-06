@@ -398,8 +398,8 @@ function updateInvestmentProfileUi() {
   setText(panel.querySelector("[data-investment-profile-message]"), investmentMbtiState.error
     ? investmentMbtiState.error
     : (hasResult
-      ? (investmentMbtiState.refreshing ? "저장된 투자 MBTI 결과를 유지하며 서버 최신값을 확인하고 있습니다." : "최근 투자 MBTI 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 다시 확인할 수 있습니다.")
-      : (investmentMbtiState.loading ? "서버에 저장된 투자 MBTI 결과를 확인하고 있습니다." : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI를 먼저 진행해 주세요.")));
+      ? (investmentMbtiState.refreshing ? "검사 결과가 저장되어 있습니다. 최신 결과를 확인하고 있습니다." : "투자 MBTI 검사 결과가 저장되어 있습니다. 결과 자세히 보기에서 포트폴리오 비율과 권장 액션을 확인할 수 있습니다.")
+      : (investmentMbtiState.loading ? "저장된 투자 MBTI 검사 결과를 확인하고 있습니다." : "아직 저장된 투자 MBTI 결과가 없습니다. 투자 MBTI 검사를 진행하고 결과를 저장해 보세요.")));
   updateInvestmentResultDetails(panel, result, hasResult);
 }
 
