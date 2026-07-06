@@ -189,7 +189,7 @@ function canUseRecentPaymentCardSummary(issueSummary, paymentSummary) {
 async function getRecentConfirmedPaymentCardSummary(userId, tx = query) {
   if (!userId) return null;
 
-  const result = await tx(
+  const paymentResult = await tx(
     `SELECT metadata
        FROM payments
       WHERE provider = 'toss-payments'
@@ -200,8 +200,22 @@ async function getRecentConfirmedPaymentCardSummary(userId, tx = query) {
       LIMIT 5`,
     [userId]
   );
+  const eventResult = await tx(
+    `SELECT payload
+       FROM payment_events
+      WHERE provider = 'toss-payments'
+        AND user_id = $1
+        AND processing_status IN ('confirmed', 'processed')
+        AND payload IS NOT NULL
+      ORDER BY processed_at DESC NULLS LAST
+      LIMIT 10`,
+    [userId]
+  );
 
-  return buildPaymentMethodSummary(...result.rows.map((row) => row.metadata));
+  return buildPaymentMethodSummary(
+    ...paymentResult.rows.map((row) => row.metadata),
+    ...eventResult.rows.map((row) => row.payload)
+  );
 }
 
 async function getActivePersonalSubscription(userId) {

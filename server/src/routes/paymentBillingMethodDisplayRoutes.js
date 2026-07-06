@@ -223,9 +223,13 @@ function serializePaymentMethod(row) {
   const paymentMetadataCandidates = Array.isArray(row.payment_metadata_candidates)
     ? row.payment_metadata_candidates.filter((metadata) => metadata && typeof metadata === "object")
     : [];
+  const paymentEventCandidates = Array.isArray(row.payment_event_candidates)
+    ? row.payment_event_candidates.filter((metadata) => metadata && typeof metadata === "object")
+    : [];
   const paymentSummary =
-    buildStoredPaymentMethodSummary(row, row.payment_metadata, ...paymentMetadataCandidates, row.metadata) ||
+    buildStoredPaymentMethodSummary(row, row.payment_metadata, ...paymentMetadataCandidates, ...paymentEventCandidates, row.metadata) ||
     summarizeCardFromPayload(row.payment_metadata, row) ||
+    paymentEventCandidates.map((metadata) => summarizeCardFromPayload(metadata, row)).find(Boolean) ||
     paymentMetadataCandidates.map((metadata) => summarizeCardFromPayload(metadata, row)).find(Boolean);
   const rowSummary = summarizeCardFromRow(row);
   const summary = paymentSummary || rowSummary;
@@ -285,7 +289,8 @@ router.get("/toss/billing/method", async (request, response, next) => {
       `SELECT rpm.id, rpm.provider, rpm.method_type, rpm.display_label, rpm.card_company,
               rpm.card_last4, rpm.masked_card_number, rpm.metadata, rpm.is_default, rpm.status,
               rpm.issued_at, rpm.updated_at, latest_payment.metadata AS payment_metadata,
-              payment_candidates.metadata_list AS payment_metadata_candidates
+              payment_candidates.metadata_list AS payment_metadata_candidates,
+              payment_events.payload_list AS payment_event_candidates
        FROM recurring_payment_methods rpm
        LEFT JOIN LATERAL (
          SELECT p.metadata
@@ -328,6 +333,22 @@ router.get("/toss/billing/method", async (request, response, next) => {
             LIMIT 5
          ) candidate
        ) payment_candidates ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT COALESCE(
+           jsonb_agg(event_candidate.payload ORDER BY event_candidate.processed_at DESC NULLS LAST),
+           '[]'::jsonb
+         ) AS payload_list
+         FROM (
+           SELECT pe.payload, pe.processed_at
+             FROM payment_events pe
+            WHERE pe.provider = 'toss-payments'
+              AND pe.user_id = rpm.user_id
+              AND pe.processing_status IN ('confirmed', 'processed')
+              AND pe.payload IS NOT NULL
+            ORDER BY pe.processed_at DESC NULLS LAST
+            LIMIT 10
+         ) event_candidate
+       ) payment_events ON TRUE
        WHERE rpm.provider = 'toss-payments'
          AND rpm.user_id = $1
          AND rpm.status = 'active'

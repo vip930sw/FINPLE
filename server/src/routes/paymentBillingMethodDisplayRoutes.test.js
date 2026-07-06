@@ -20,8 +20,12 @@ test("billing method display route is mounted before legacy route and returns on
   assert.match(displaySource, /W1: "우리카드"/);
   assert.match(displaySource, /CASE\s+WHEN[\s\S]*recurringPaymentMethodId[\s\S]*ELSE 1/);
   assert.match(displaySource, /payment_metadata_candidates/);
+  assert.match(displaySource, /payment_event_candidates/);
   assert.match(displaySource, /jsonb_agg\(candidate\.metadata/);
+  assert.match(displaySource, /jsonb_agg\(event_candidate\.payload/);
+  assert.match(displaySource, /FROM payment_events/);
   assert.match(displaySource, /LIMIT 5/);
+  assert.match(displaySource, /LIMIT 10/);
   assert.match(displaySource, /maskedCardNumber/);
   assert.match(displaySource, /cardLast4/);
   assert.match(displaySource, /cardCompany/);

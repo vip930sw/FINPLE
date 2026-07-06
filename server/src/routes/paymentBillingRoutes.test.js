@@ -10,7 +10,8 @@ test("billing method update can restore safe tail from recent confirmed payment 
 
   assert.match(source, /function getRecentConfirmedPaymentCardSummary/);
   assert.match(source, /FROM payments[\s\S]*status = 'confirmed'[\s\S]*LIMIT 5/);
-  assert.match(source, /buildPaymentMethodSummary\(\.\.\.result\.rows\.map\(\(row\) => row\.metadata\)\)/);
+  assert.match(source, /FROM payment_events[\s\S]*processing_status IN \('confirmed', 'processed'\)[\s\S]*LIMIT 10/);
+  assert.match(source, /buildPaymentMethodSummary\([\s\S]*paymentResult\.rows\.map\(\(row\) => row\.metadata\)[\s\S]*eventResult\.rows\.map\(\(row\) => row\.payload\)/);
   assert.match(source, /canUseRecentPaymentCardSummary\(cardSummary, recentPaymentCardSummary\)/);
   assert.match(source, /storedCardSummary\.cardLast4/);
   assert.match(source, /storedCardSummary\.maskedCardNumber/);
