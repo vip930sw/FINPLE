@@ -224,16 +224,16 @@ function sanitizeBillingKeyIssuePayload(payload) {
 
 function getCardSummary(payload) {
   const card = payload?.card || {};
-  const maskedNumber = String(card.number || card.cardNumber || "").trim();
-  const digits = maskedNumber.replace(/\D/g, "");
+  const rawCardValue = String(card.last4 || card.cardLast4 || card.card_last4 || card.lastFourDigits || card.number || card.cardNumber || "").trim();
+  const digits = rawCardValue.replace(/\D/g, "");
   const last4 = digits.length >= 4 ? digits.slice(-4) : "";
   const company = String(card.company || card.issuerCode || payload?.method || "카드").trim();
-  const label = last4 ? `${company} **** ${last4}` : company;
+  const label = last4 ? `${company} · **** ${last4}` : `${company} 등록 완료`;
   return {
     method: payload?.method || "카드",
     cardCompany: company,
     cardLast4: last4 || null,
-    maskedCardNumber: maskedNumber || null,
+    maskedCardNumber: null,
     displayLabel: label,
   };
 }
@@ -245,7 +245,7 @@ function getBillingCardSummary(...sources) {
     cardCompany: "card",
     cardLast4: null,
     maskedCardNumber: null,
-    displayLabel: "card registered",
+    displayLabel: "카드 등록 완료",
   };
 }
 

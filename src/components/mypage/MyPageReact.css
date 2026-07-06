@@ -12,15 +12,116 @@
   margin: 0 !important;
 }
 
-.myPageReactSingleGrid {
-  grid-template-columns: 1fr;
-  margin-top: 14px;
-}
-
+.myPageReactPanel .myPageSummaryGrid,
 .myPageSummaryGrid.myPageSummaryGrid--three {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 36px;
+}
+
+.myPageReactPanel .myPageSummaryGrid > div {
+  min-height: 84px;
+}
+
+.myPageReactSingleGrid {
+  grid-template-columns: 1fr !important;
+  margin-top: 14px !important;
+}
+
+.myPageInlineActions {
+  margin-top: 20px;
+}
+
+.myPageExpandableDetail {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.myPageDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.myPageDetailHeader h3 {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.myPageDetailHeader > span,
+.myPageTagList span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  color: #047857;
+  background: #ecfdf5;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.myPageDetailGrid {
+  margin-top: 18px !important;
+}
+
+.myPageDetailBlock {
+  margin-top: 18px;
+}
+
+.myPageDetailBlock > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #10213d;
+  font-size: 14px;
+}
+
+.myPageDetailBlock p,
+.myPageDetailBlock li {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.myPageTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.myPagePortfolioBars {
+  display: grid;
+  gap: 10px;
+}
+
+.myPagePortfolioRow > div {
+  display: flex;
+  justify-content: space-between;
   gap: 12px;
+  color: #10213d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.myPagePortfolioRow > i {
+  display: block;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.myPageAnswerPreview {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #dbeafe;
 }
 
 .myPageDangerBox {
@@ -55,8 +156,14 @@
 }
 
 @media (max-width: 760px) {
+  .myPageReactPanel .myPageSummaryGrid,
   .myPageSummaryGrid.myPageSummaryGrid--three {
     grid-template-columns: 1fr;
+    margin-top: 26px;
+  }
+
+  .myPageDetailHeader {
+    flex-direction: column;
   }
 
   .myPageDangerBox {

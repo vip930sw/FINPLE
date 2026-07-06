@@ -17,7 +17,7 @@ export default function MyPaymentMethodPanel({ paymentMethod, onNavigate }) {
         </>
       )}
     >
-      <div className="paymentMethodEntryGrid">
+      <div className="paymentMethodEntryGrid myPageSummaryGrid myPageSummaryGrid--three">
         <div><span>결제 방식</span><strong>월 구독 자동결제</strong></div>
         <div><span>등록 상태</span><strong>{paymentMethod.registered ? "등록 완료" : "미등록"}</strong></div>
         <div><span>결제수단</span><strong>{paymentMethod.loading && !paymentMethod.payload ? "확인 중" : paymentMethod.displayLabel}</strong></div>

@@ -6,6 +6,8 @@ const INQUIRY_META_MARKERS = [
   "--- 문의 메타 정보 ---",
   "--- 문의 메타 정보---",
   "--- 문의 메타",
+  "--- Meta",
+  "--- metadata",
 ];
 
 const INQUIRY_META_LINE_PATTERNS = [
@@ -16,6 +18,8 @@ const INQUIRY_META_LINE_PATTERNS = [
   /^browser metadata\s*:/i,
   /^debug metadata\s*:/i,
   /^internal admin notes\s*:/i,
+  /^answer email\s*:/i,
+  /^page url\s*:/i,
 ];
 
 function sanitizeInquiryMessage(message = "") {
@@ -33,7 +37,11 @@ function sanitizeInquiryMessage(message = "") {
 }
 
 function getInquiryMessagePreview(inquiry) {
-  return sanitizeInquiryMessage(inquiry?.message) || "문의 내용 확인 중";
+  return sanitizeInquiryMessage(inquiry?.message || inquiry?.content) || "문의 내용 확인 중";
+}
+
+function getInquiryAnswerPreview(inquiry) {
+  return sanitizeInquiryMessage(inquiry?.answer || inquiry?.reply || inquiry?.adminReply || "");
 }
 
 export default function MyInquiriesPanel({ inquiriesState, onNavigate }) {
@@ -46,32 +54,34 @@ export default function MyInquiriesPanel({ inquiriesState, onNavigate }) {
       title="내 문의내역"
       description="접수한 문의와 처리 현황을 확인합니다."
       badge={inquiriesState.loading ? "조회 중" : `${inquiries.length}건`}
-      actions={(
-        <>
-          <button type="button" className="primaryButton" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? "문의내역 숨기기" : "문의내역 보기"}
-          </button>
-          <button type="button" className="secondaryButton" onClick={inquiriesState.refresh} disabled={inquiriesState.loading || inquiriesState.refreshing}>문의내역 새로고침</button>
-          <button type="button" className="secondaryButton" onClick={() => onNavigate?.("support")}>문의하기</button>
-        </>
-      )}
     >
       <p className="serverStorageMessage compact">{inquiriesState.error || (inquiries.length ? "최근 문의내역을 최신순으로 표시합니다." : "아직 문의내역이 없습니다.")}</p>
-      {expanded ? (
-      <div className="paymentHistoryList" data-mypage-inquiries-list>
-        {inquiries.length ? inquiries.slice(0, 10).map((inquiry) => (
-          <article className="paymentHistoryItem" key={inquiry.id || inquiry.createdAt}>
-            <div className="paymentHistoryItemTop">
-              <span className="paymentStatusBadge">{inquiry.status || "open"}</span>
-              <em>{formatShortDate(inquiry.createdAt || inquiry.created_at)}</em>
-            </div>
-            <strong>{inquiry.title || "문의"}</strong>
-            <p>{getInquiryMessagePreview(inquiry)}</p>
-          </article>
-        )) : (
-          <article className="paymentHistoryItem paymentHistoryItem--empty"><strong>아직 문의내역이 없습니다.</strong></article>
-        )}
+      <div className="serverStorageActions compactActions myPageInlineActions">
+        <button type="button" className="primaryButton" onClick={() => setExpanded((value) => !value)}>
+          {expanded ? "문의내역 숨기기" : "문의내역 보기"}
+        </button>
+        <button type="button" className="secondaryButton" onClick={inquiriesState.refresh} disabled={inquiriesState.loading || inquiriesState.refreshing}>문의내역 새로고침</button>
+        <button type="button" className="secondaryButton" onClick={() => onNavigate?.("support")}>문의하기</button>
       </div>
+      {expanded ? (
+        <div className="paymentHistoryList" data-mypage-inquiries-list>
+          {inquiries.length ? inquiries.slice(0, 10).map((inquiry) => {
+            const answerPreview = getInquiryAnswerPreview(inquiry);
+            return (
+              <article className="paymentHistoryItem" key={inquiry.id || inquiry.createdAt}>
+                <div className="paymentHistoryItemTop">
+                  <span className="paymentStatusBadge">{inquiry.status || "open"}</span>
+                  <em>{formatShortDate(inquiry.createdAt || inquiry.created_at)}</em>
+                </div>
+                <strong>{inquiry.title || "문의"}</strong>
+                <p>{getInquiryMessagePreview(inquiry)}</p>
+                {answerPreview ? <p className="myPageAnswerPreview">답변: {answerPreview}</p> : null}
+              </article>
+            );
+          }) : (
+            <article className="paymentHistoryItem paymentHistoryItem--empty"><strong>아직 문의내역이 없습니다.</strong></article>
+          )}
+        </div>
       ) : null}
     </PanelShell>
   );

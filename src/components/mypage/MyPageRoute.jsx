@@ -29,7 +29,8 @@ function scrollMyPageContentTop() {
   if (typeof window === "undefined") return;
   const target = document.querySelector(".myPageReactRoute") || document.querySelector(".accountHero") || document.body;
   const headerOffset = 84;
-  const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - headerOffset);
+  const panelTop = document.querySelector(".accountPanelStack") || target;
+  const top = Math.max(0, window.scrollY + panelTop.getBoundingClientRect().top - headerOffset);
   const scroll = () => window.scrollTo({ top, behavior: "smooth" });
   window.requestAnimationFrame(scroll);
   window.setTimeout(scroll, 80);
@@ -99,7 +100,7 @@ export default function MyPageRoute({ onNavigate }) {
         return <MyStoragePanel snapshot={snapshot} effectivePlan={effectivePlan} />;
       case "account":
       default:
-        return <MyAccountPanel user={user} effectivePlan={effectivePlan} onNavigate={onNavigate} />;
+        return <MyAccountPanel user={user} effectivePlan={effectivePlan} onNavigate={onNavigate} onUserUpdated={setUser} />;
     }
   }, [activeSection, effectivePlan, inquiriesState, mbti, onNavigate, paymentHistory, paymentMethod, snapshot, subscription, user]);
 

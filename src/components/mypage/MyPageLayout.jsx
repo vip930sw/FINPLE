@@ -6,7 +6,7 @@ export default function MyPageLayout({ activeSection, onSectionChange, children,
       <section className="accountHero myPageReactHero">
         <p className="sectionLabel">MY PAGE</p>
         <h1>MY PAGE</h1>
-        <p>계정, 구독, 결제수단과 저장 상태를 한 곳에서 확인합니다.</p>
+        <p>계정, 구독, 결제수단과 저장 상태를 한곳에서 확인합니다.</p>
       </section>
 
       <section className="myPageDashboardLayout myPageDashboardLayout--singlePanel">

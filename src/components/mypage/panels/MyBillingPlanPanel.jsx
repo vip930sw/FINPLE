@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { requestPortfolioAiAnalysisStatus } from "../../portfolio/services/aiAnalysisService";
 import PanelShell from "./PanelShell";
 import { formatPlanLabel } from "../utils";
 
@@ -20,8 +22,33 @@ function getStatusLabel(status) {
   return labels[normalized] || normalized;
 }
 
+function formatAiUsageLabel(aiUsage) {
+  if (aiUsage.loading) return "확인 중";
+  const usage = aiUsage.payload?.usage;
+  const policy = aiUsage.payload?.usagePolicy;
+  const used = Number(usage?.used);
+  const limit = Number(usage?.limit ?? policy?.limit);
+  if (Number.isFinite(used) && Number.isFinite(limit)) return `${used} / ${limit}`;
+  if (Number.isFinite(limit)) return `0 / ${limit}`;
+  return "준비 중";
+}
+
 export default function MyBillingPlanPanel({ subscription, onNavigate }) {
+  const [aiUsage, setAiUsage] = useState({ loading: true, payload: null, error: "" });
   const planLabel = formatPlanLabel(subscription.effectivePlan);
+
+  useEffect(() => {
+    let alive = true;
+    setAiUsage((previous) => ({ ...previous, loading: true, error: "" }));
+    requestPortfolioAiAnalysisStatus()
+      .then((payload) => {
+        if (alive) setAiUsage({ loading: false, payload, error: "" });
+      })
+      .catch(() => {
+        if (alive) setAiUsage({ loading: false, payload: null, error: "AI 분석 사용량은 준비 중입니다." });
+      });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <PanelShell
@@ -39,16 +66,16 @@ export default function MyBillingPlanPanel({ subscription, onNavigate }) {
         </>
       )}
     >
-      <div className="subscriptionStatusGrid">
+      <div className="subscriptionStatusGrid myPageSummaryGrid myPageSummaryGrid--three">
         <div><span>현재 플랜</span><strong>{planLabel}</strong><em>서버 effective plan</em></div>
         <div><span>구독 상태</span><strong>{getStatusLabel(subscription.effectiveStatus)}</strong><em>결제 상태</em></div>
         <div><span>다음 결제일</span><strong>{subscription.nextBillingLabel}</strong><em>정기결제 기준</em></div>
         <div><span>이용 종료 예정일</span><strong>{subscription.accessUntilLabel}</strong><em>권한 종료 기준</em></div>
         <div><span>포트폴리오</span><strong>{subscription.effectivePlan === "personal" ? "30개" : "1개"}</strong><em>플랜 한도</em></div>
-        <div><span>서버 저장</span><strong>{subscription.effectivePlan === "personal" ? "지원" : "제한"}</strong><em>저장 권한</em></div>
+        <div><span>AI 분석 사용량</span><strong>{formatAiUsageLabel(aiUsage)}</strong><em>{aiUsage.error || "월간 사용량"}</em></div>
       </div>
       <p className="serverStorageMessage compact">
-        {subscription.error || (subscription.loading ? "구독 상태를 확인하고 있습니다." : "서버 기준 유료 권한을 확인해 플랜 표시를 통일했습니다.")}
+        {subscription.error || (subscription.loading ? "구독 상태를 확인하고 있습니다." : "서버 기준 유료 권한을 확인해 플랜 표시를 동기화합니다.")}
       </p>
     </PanelShell>
   );
