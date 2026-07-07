@@ -432,6 +432,18 @@ export const STEP167_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_FLAGS = Obj
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP168_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_FLAGS = Object.freeze({
+  ...STEP167_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -3273,6 +3285,70 @@ export const TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_RESULT_SCHEMA = Object.fr
   orderSubmissionImpact: "blocked",
   liveTradingImpact: "blocked",
   nextAllowedStep: "mock_dashboard_ux_polish_review_result",
+});
+
+export const TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_MODEL = Object.freeze({
+  uxPolishReviewResultId: "string",
+  uxPolishPreflightId: "string",
+  dashboardCleanupCoreReviewResultId: "string",
+  dashboardCleanupResultId: "string",
+  tradingRunSummaryResultId: "string",
+  mockRunCandidateId: "string",
+  strategyDraftId: "string",
+  sourceStep: "step168",
+  scope: "mock_only",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_dashboard_ux_polish_review_recorded | blocked | rejected",
+  reviewedAt: "placeholder",
+  reviewedBy: "admin_placeholder",
+  summary: "string[]",
+  blockers: "string[]",
+  warnings: "string[]",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RECEIPT_SCHEMA = Object.freeze({
+  receiptId: "string",
+  uxPolishReviewResultId: "string",
+  uxPolishPreflightId: "string",
+  sourceStep: "step168",
+  scope: "mock_only",
+  reviewStatus: "recorded | blocked | validation_required | mock_only",
+  decision: "mock_dashboard_ux_polish_review_recorded | blocked | rejected",
+  redacted: true,
+  recordedAt: "placeholder",
+  blockerCount: "number",
+  warningCount: "number",
+  targetInventoryReviewStatus: "reviewed | blocked | validation_required",
+  duplicateVerboseReviewStatus: "reviewed | blocked | validation_required",
+  koreanLabelReviewStatus: "reviewed | blocked | validation_required",
+  summaryFirstReadabilityReviewStatus: "reviewed | blocked | validation_required",
+  collapsibleDefaultReviewStatus: "reviewed | blocked | validation_required",
+  kpiReadabilityReviewStatus: "reviewed | blocked | validation_required",
+  chartReadabilityReviewStatus: "reviewed | blocked | validation_required",
+  allocationReadabilityReviewStatus: "reviewed | blocked | validation_required",
+  safetyNoticeReviewStatus: "reviewed | blocked | validation_required",
+  dangerousActionLabelReviewStatus: "reviewed | blocked | validation_required",
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+  nextAllowedStep: "mock_dashboard_ux_polish_core",
+});
+
+export const TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_DECISION_SUMMARY_MODEL = Object.freeze({
+  decisionSummaryId: "string",
+  sourceStep: "step168",
+  decision: "mock_dashboard_ux_polish_review_recorded | blocked | rejected",
+  summary: "string[]",
+  blockers: "string[]",
+  warnings: "string[]",
+  externalOrderAuthorityRequired: true,
+  redacted: true,
 });
 
 export const TRADING_LAB_DAILY_RETURN_SERIES_SCHEMA = Object.freeze({
@@ -18118,6 +18194,391 @@ export function buildAdminTradingLabDashboardUxPolishPreflightStatus(input = {},
   return buildTradingLabDashboardUxPolishPreflightResult(input, options);
 }
 
+function getStep168TradingLabDashboardUxPolishReviewContext(input = {}, options = {}) {
+  if (input.step168Context) return input.step168Context;
+  const dashboardUxPolishPreflightStatus = input.dashboardUxPolishPreflightStatus || buildAdminTradingLabDashboardUxPolishPreflightStatus(input, options);
+  return {
+    dashboardUxPolishPreflightStatus,
+    preflightResult: input.preflightResult || dashboardUxPolishPreflightStatus.result || {},
+    validation: input.validation || dashboardUxPolishPreflightStatus.validation || {},
+    targetInventory: input.targetInventory || dashboardUxPolishPreflightStatus.targetInventory || [],
+    duplicateVerboseDetection: input.duplicateVerboseDetection || dashboardUxPolishPreflightStatus.duplicateVerboseDetection || {},
+    koreanLabelInventory: input.koreanLabelInventory || dashboardUxPolishPreflightStatus.koreanLabelInventory || {},
+    summaryFirstReadability: input.summaryFirstReadability || dashboardUxPolishPreflightStatus.summaryFirstReadability || {},
+    safetyNoticeVisibility: input.safetyNoticeVisibility || dashboardUxPolishPreflightStatus.safetyNoticeVisibility || {},
+    dangerousActionLabelCheck: input.dangerousActionLabelCheck || dashboardUxPolishPreflightStatus.dangerousActionLabelCheck || {},
+  };
+}
+
+export function validateTradingLabDashboardUxPolishReviewResult(input = {}, options = {}) {
+  const context = getStep168TradingLabDashboardUxPolishReviewContext(input, options);
+  const status = context.dashboardUxPolishPreflightStatus || {};
+  const result = context.preflightResult || {};
+  const validation = context.validation || {};
+  const targetInventory = Array.isArray(context.targetInventory) ? context.targetInventory : [];
+  const labelMappings = Array.isArray(context.koreanLabelInventory?.mappings) ? context.koreanLabelInventory.mappings : [];
+  const blockers = [];
+  const warnings = [];
+
+  if (!status || Object.keys(status).length === 0) blockers.push("step167_ux_polish_preflight_required");
+  if (!result || Object.keys(result).length === 0) blockers.push("step167_ux_polish_preflight_result_required");
+  if (status.redaction?.redacted === false || status.redacted === false) blockers.push("step167_ux_polish_status_must_be_redacted");
+  if (result.redacted !== true) blockers.push("step167_ux_polish_result_must_be_redacted");
+  if (result.scope !== "mock_only") blockers.push("step167_ux_polish_scope_must_be_mock_only");
+  if (result.status !== "mock_ux_polish_ready") blockers.push("step167_ux_polish_preflight_must_be_ready");
+  if (result.nextAllowedStep !== "mock_dashboard_ux_polish_review_result") blockers.push("step167_next_allowed_step_must_point_to_review_result");
+  if (result.readinessImpact !== "none") blockers.push("readiness_impact_must_remain_none");
+  if (result.providerCallImpact !== "blocked") blockers.push("provider_call_impact_must_remain_blocked");
+  if (result.orderSubmissionImpact !== "blocked") blockers.push("order_submission_impact_must_remain_blocked");
+  if (result.liveTradingImpact !== "blocked") blockers.push("live_trading_impact_must_remain_blocked");
+
+  if (targetInventory.length < 6) blockers.push("ux_polish_target_inventory_review_required");
+  if (targetInventory.some((target) => target.redacted !== true || target.sourceStep !== "step167")) blockers.push("ux_polish_target_inventory_must_remain_redacted_step167");
+  if (context.duplicateVerboseDetection.redacted !== true || context.duplicateVerboseDetection.deterministic !== true) blockers.push("duplicate_verbose_review_must_be_redacted_deterministic");
+  if (context.koreanLabelInventory.redacted !== true || context.koreanLabelInventory.deterministic !== true || labelMappings.length < 10) blockers.push("korean_label_review_must_be_redacted_deterministic");
+  if (context.summaryFirstReadability.redacted !== true || context.summaryFirstReadability.mockRunSummaryProminent !== true) blockers.push("summary_first_readability_review_required");
+  if (context.summaryFirstReadability.detailChainDefaultCollapsed !== true) blockers.push("collapsible_default_review_required");
+  if (context.safetyNoticeVisibility.redacted !== true || context.safetyNoticeVisibility.noDbWriteNoticeVisible !== true) blockers.push("safety_notice_visibility_review_required");
+  if (context.dangerousActionLabelCheck.redacted !== true || context.dangerousActionLabelCheck.dangerousActionLabelsPresent !== false) blockers.push("dangerous_action_label_review_must_remain_absent");
+  if (result.duplicateSectionStatus === "polish_recommended") warnings.push("duplicate_section_polish_review_recorded");
+  if (result.verboseSectionStatus === "polish_recommended") warnings.push("verbose_section_polish_review_recorded");
+
+  const unsafeKeyPattern = /(credential|payload|token|secret|account|private|hash|digest|raw|actual|real.*identifier)/i;
+  const unsafeEntries = [
+    ...Object.entries(status),
+    ...Object.entries(result),
+    ...Object.entries(input),
+  ];
+  if (unsafeEntries.some(([key, value]) => unsafeKeyPattern.test(key) && value !== false && value !== null && value !== undefined)) {
+    blockers.push("unsafe_real_or_private_identifier_rejected");
+  }
+
+  const sideEffectChecks = [
+    "providerCallsAllowed",
+    "orderSubmissionAllowed",
+    "readyForReadOnlyProviderCalls",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+    "tokenIssuanceAttempted",
+    "quoteRequestAttempted",
+    "networkCallAttempted",
+    "orderSubmissionAttempted",
+    "orderCandidateCreated",
+    "orderDraftCreated",
+    "orderPayloadCreated",
+    "kisOrderPayloadCreated",
+    "kisExecutionPayloadCreated",
+    "kisFillPayloadCreated",
+    "executionRecordCreated",
+    "fillRecordCreated",
+    "portfolioLedgerPersisted",
+    "performanceRecordPersisted",
+    "tradingRunSummaryPersisted",
+    "persistentStorageUsed",
+    "dbWriteUsed",
+    "dashboardUxPolishExecuted",
+    "dashboardSectionDeleted",
+    "myPageRouteChanged",
+    "accountSubscriptionBillingChanged",
+  ];
+  if (sideEffectChecks.some((key) => status[key] === true || result[key] === true || validation[key] === true || input[key] === true)) {
+    blockers.push("side_effects_must_remain_false");
+  }
+
+  const uniqueBlockers = [...new Set(blockers)];
+  const uniqueWarnings = [...new Set(warnings)];
+  const reviewStatus = uniqueBlockers.length > 0 ? "blocked" : "recorded";
+  const decision = uniqueBlockers.length > 0 ? "blocked" : "mock_dashboard_ux_polish_review_recorded";
+
+  return {
+    validationId: "step168_dashboard_ux_polish_review_validation",
+    sourceStep: "step168",
+    status: reviewStatus,
+    decision,
+    dependencyStatus: uniqueBlockers.some((blocker) => blocker.startsWith("step167")) ? "blocked" : "ready",
+    uxPolishPreflightId: result.uxPolishPreflightId || "step167_dashboard_ux_polish_preflight",
+    dashboardCleanupCoreReviewResultId: result.dashboardCleanupCoreReviewResultId || "step165_mock_dashboard_cleanup_core_review_result",
+    dashboardCleanupResultId: result.dashboardCleanupResultId || "step164_mock_dashboard_cleanup_result",
+    tradingRunSummaryResultId: result.tradingRunSummaryResultId || "step161_mock_trading_run_summary_result",
+    mockRunCandidateId: result.mockRunCandidateId || "step139_mock_run_candidate",
+    strategyDraftId: result.strategyDraftId || "step134_strategy_draft",
+    blockerCount: uniqueBlockers.length,
+    warningCount: uniqueWarnings.length,
+    blockers: uniqueBlockers,
+    warnings: uniqueWarnings,
+    blockerSummary: summarizeReviewBlockers(uniqueBlockers),
+    warningSummary: summarizeReviewBlockers(uniqueWarnings),
+    targetInventoryReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("target_inventory")) ? "blocked" : "reviewed",
+    duplicateVerboseReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("duplicate") || blocker.includes("verbose")) ? "blocked" : "reviewed",
+    koreanLabelReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("korean_label")) ? "blocked" : "reviewed",
+    summaryFirstReadabilityReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("summary_first")) ? "blocked" : "reviewed",
+    collapsibleDefaultReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("collapsible")) ? "blocked" : "reviewed",
+    kpiReadabilityReviewStatus: result.kpiReadabilityStatus === "ready" ? "reviewed" : "validation_required",
+    chartReadabilityReviewStatus: result.chartReadabilityStatus === "ready" ? "reviewed" : "validation_required",
+    allocationReadabilityReviewStatus: result.allocationReadabilityStatus === "ready" ? "reviewed" : "validation_required",
+    safetyNoticeReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("safety_notice")) ? "blocked" : "reviewed",
+    dangerousActionLabelReviewStatus: uniqueBlockers.some((blocker) => blocker.includes("dangerous_action")) ? "blocked" : "reviewed",
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    redacted: true,
+    redaction: makeLabRedaction({ schema: "step168_dashboard_ux_polish_review_validation_v1" }),
+  };
+}
+
+export function buildTradingLabDashboardUxPolishReviewDecisionSummary(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabDashboardUxPolishReviewResult(input, options);
+  return {
+    decisionSummaryId: "step168_dashboard_ux_polish_review_decision_summary",
+    sourceStep: "step168",
+    decision: validation.decision,
+    summary: validation.decision === "mock_dashboard_ux_polish_review_recorded"
+      ? [
+          "Mock dashboard UX polish review recorded.",
+          "FINPLE internal mock trading lab screen polish review only.",
+          "No provider calls, order submission, DB write, cash or position mutation.",
+          "Live trading readiness remains blocked.",
+          "External order authority approval evidence is still required.",
+        ]
+      : summarizeReviewBlockers(validation.blockers),
+    blockers: validation.blockerSummary,
+    warnings: validation.warningSummary,
+    externalOrderAuthorityRequired: true,
+    redacted: true,
+  };
+}
+
+export function buildTradingLabDashboardUxPolishReviewReceipt(input = {}, options = {}) {
+  const validation = input.validation || validateTradingLabDashboardUxPolishReviewResult(input, options);
+  return {
+    receiptId: "step168_dashboard_ux_polish_review_receipt",
+    sourceStep: "step168",
+    uxPolishReviewResultId: "step168_dashboard_ux_polish_review_result",
+    uxPolishPreflightId: validation.uxPolishPreflightId,
+    reviewStatus: validation.status,
+    decision: validation.decision,
+    redacted: true,
+    recordedAt: "placeholder_recorded_at",
+    blockerCount: validation.blockerCount,
+    warningCount: validation.warningCount,
+    targetInventoryReviewStatus: validation.targetInventoryReviewStatus,
+    duplicateVerboseReviewStatus: validation.duplicateVerboseReviewStatus,
+    koreanLabelReviewStatus: validation.koreanLabelReviewStatus,
+    summaryFirstReadabilityReviewStatus: validation.summaryFirstReadabilityReviewStatus,
+    collapsibleDefaultReviewStatus: validation.collapsibleDefaultReviewStatus,
+    kpiReadabilityReviewStatus: validation.kpiReadabilityReviewStatus,
+    chartReadabilityReviewStatus: validation.chartReadabilityReviewStatus,
+    allocationReadabilityReviewStatus: validation.allocationReadabilityReviewStatus,
+    safetyNoticeReviewStatus: validation.safetyNoticeReviewStatus,
+    dangerousActionLabelReviewStatus: validation.dangerousActionLabelReviewStatus,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "mock_dashboard_ux_polish_core",
+    redaction: makeLabRedaction({ schema: "step168_dashboard_ux_polish_review_receipt_v1" }),
+  };
+}
+
+export function buildTradingLabDashboardUxPolishReviewResult(input = {}, options = {}) {
+  const context = getStep168TradingLabDashboardUxPolishReviewContext(input, options);
+  const contextInput = { ...input, step168Context: context };
+  const validation = input.validation || validateTradingLabDashboardUxPolishReviewResult(contextInput, options);
+  const decisionSummary = input.decisionSummary || buildTradingLabDashboardUxPolishReviewDecisionSummary(
+    { ...contextInput, validation },
+    options,
+  );
+  const receipt = input.receipt || buildTradingLabDashboardUxPolishReviewReceipt(
+    { ...contextInput, validation },
+    options,
+  );
+  const reviewResult = {
+    uxPolishReviewResultId: "step168_dashboard_ux_polish_review_result",
+    uxPolishPreflightId: validation.uxPolishPreflightId,
+    dashboardCleanupCoreReviewResultId: validation.dashboardCleanupCoreReviewResultId,
+    dashboardCleanupResultId: validation.dashboardCleanupResultId,
+    tradingRunSummaryResultId: validation.tradingRunSummaryResultId,
+    mockRunCandidateId: validation.mockRunCandidateId,
+    strategyDraftId: validation.strategyDraftId,
+    sourceStep: "step168",
+    scope: "mock_only",
+    reviewStatus: validation.status,
+    decision: validation.decision,
+    reviewedAt: "placeholder_reviewed_at",
+    reviewedBy: "admin_placeholder",
+    summary: decisionSummary.summary,
+    blockers: validation.blockers,
+    warnings: validation.warnings,
+    targetInventoryReviewStatus: validation.targetInventoryReviewStatus,
+    duplicateVerboseReviewStatus: validation.duplicateVerboseReviewStatus,
+    koreanLabelReviewStatus: validation.koreanLabelReviewStatus,
+    summaryFirstReadabilityReviewStatus: validation.summaryFirstReadabilityReviewStatus,
+    collapsibleDefaultReviewStatus: validation.collapsibleDefaultReviewStatus,
+    kpiReadabilityReviewStatus: validation.kpiReadabilityReviewStatus,
+    chartReadabilityReviewStatus: validation.chartReadabilityReviewStatus,
+    allocationReadabilityReviewStatus: validation.allocationReadabilityReviewStatus,
+    safetyNoticeReviewStatus: validation.safetyNoticeReviewStatus,
+    dangerousActionLabelReviewStatus: validation.dangerousActionLabelReviewStatus,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+  };
+
+  return {
+    ok: true,
+    step: "Step 168: Admin trading lab dashboard UX polish review result recording gate",
+    status: "admin_only_trading_lab_dashboard_ux_polish_review_result_fail_closed",
+    sourceStep: "step168",
+    dashboardUxPolishReviewResultModel: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_MODEL,
+    dashboardUxPolishReviewReceiptSchema: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RECEIPT_SCHEMA,
+    dashboardUxPolishReviewDecisionSummaryModel: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_DECISION_SUMMARY_MODEL,
+    dependency: {
+      dependencyId: "step168_dashboard_ux_polish_review_dependency",
+      sourceStep: "step168",
+      step167Required: true,
+      uxPolishPreflightId: validation.uxPolishPreflightId,
+      preflightStatus: context.preflightResult.status || "blocked",
+      redacted: true,
+    },
+    validation,
+    reviewResult,
+    receipt,
+    decisionSummary,
+    targetInventoryReviewSummary: {
+      summaryId: "step168_dashboard_ux_polish_target_inventory_review_summary",
+      sourceStep: "step168",
+      status: validation.targetInventoryReviewStatus,
+      targetCount: context.targetInventory.length,
+      deterministic: true,
+      redacted: true,
+    },
+    duplicateVerboseReviewSummary: {
+      summaryId: "step168_dashboard_ux_polish_duplicate_verbose_review_summary",
+      sourceStep: "step168",
+      status: validation.duplicateVerboseReviewStatus,
+      duplicateSectionStatus: context.duplicateVerboseDetection.duplicateSectionStatus || "validation_required",
+      verboseSectionStatus: context.duplicateVerboseDetection.verboseSectionStatus || "validation_required",
+      deterministic: true,
+      redacted: true,
+    },
+    koreanLabelReviewSummary: {
+      summaryId: "step168_dashboard_ux_polish_korean_label_review_summary",
+      sourceStep: "step168",
+      status: validation.koreanLabelReviewStatus,
+      labelMappingCount: Array.isArray(context.koreanLabelInventory.mappings) ? context.koreanLabelInventory.mappings.length : 0,
+      deterministic: true,
+      redacted: true,
+    },
+    readabilityReviewSummary: {
+      summaryId: "step168_dashboard_ux_polish_readability_review_summary",
+      sourceStep: "step168",
+      summaryFirstReadabilityReviewStatus: validation.summaryFirstReadabilityReviewStatus,
+      collapsibleDefaultReviewStatus: validation.collapsibleDefaultReviewStatus,
+      kpiReadabilityReviewStatus: validation.kpiReadabilityReviewStatus,
+      chartReadabilityReviewStatus: validation.chartReadabilityReviewStatus,
+      allocationReadabilityReviewStatus: validation.allocationReadabilityReviewStatus,
+      mockRunSummaryProminenceReviewStatus: context.summaryFirstReadability.mockRunSummaryProminent ? "reviewed" : "validation_required",
+      deterministic: true,
+      redacted: true,
+    },
+    safetyReviewSummary: {
+      summaryId: "step168_dashboard_ux_polish_safety_review_summary",
+      sourceStep: "step168",
+      safetyNoticeReviewStatus: validation.safetyNoticeReviewStatus,
+      dangerousActionLabelReviewStatus: validation.dangerousActionLabelReviewStatus,
+      noProviderCallNoticeVisible: context.safetyNoticeVisibility.noProviderCallNoticeVisible === true,
+      noOrderSubmissionNoticeVisible: context.safetyNoticeVisibility.noOrderSubmissionNoticeVisible === true,
+      noDbWriteNoticeVisible: context.safetyNoticeVisibility.noDbWriteNoticeVisible === true,
+      dangerousActionLabelsPresent: false,
+      redacted: true,
+    },
+    mockHistory: [
+      {
+        historyId: "step168_dashboard_ux_polish_review_history_1",
+        sourceStep: "step168",
+        reviewStatus: reviewResult.reviewStatus,
+        decision: reviewResult.decision,
+        redacted: true,
+        recordedAt: "placeholder_recorded_at",
+        nextAllowedStep: receipt.nextAllowedStep,
+      },
+    ],
+    flags: { ...STEP168_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    orderCandidateCreated: false,
+    orderDraftCreated: false,
+    orderPayloadCreated: false,
+    kisOrderPayloadCreated: false,
+    kisExecutionPayloadCreated: false,
+    kisFillPayloadCreated: false,
+    executionRecordCreated: false,
+    fillRecordCreated: false,
+    portfolioLedgerPersisted: false,
+    performanceRecordPersisted: false,
+    tradingRunSummaryPersisted: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    dashboardUxPolishExecuted: false,
+    dashboardSectionDeleted: false,
+    myPageRouteChanged: false,
+    accountSubscriptionBillingChanged: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      rawReceiptExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      persistentDbWriteRequired: false,
+      realTradingRunIdentifierAllowed: false,
+      realPerformanceRecordAllowed: false,
+      accountBalanceQueryAllowed: false,
+      cashPositionMutationAllowed: false,
+      dashboardUxPolishPersistenceAllowed: false,
+      myPageRouteTouched: false,
+      accountSubscriptionBillingTouched: false,
+    },
+    redaction: makeLabRedaction({ schema: "step168_dashboard_ux_polish_review_status_v1" }),
+  };
+}
+
+export function buildTradingLabDashboardUxPolishReviewResultRecordingGate(input = {}, options = {}) {
+  return buildTradingLabDashboardUxPolishReviewResult(input, options);
+}
+
+export function buildAdminTradingLabDashboardUxPolishReviewResultStatus(input = {}, options = {}) {
+  return buildTradingLabDashboardUxPolishReviewResultRecordingGate(input, options);
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -18732,10 +19193,17 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const dashboardUxPolishReviewResultStatus = input.dashboardUxPolishReviewResultStatus || buildAdminTradingLabDashboardUxPolishReviewResultStatus(
+    {
+      ...input,
+      dashboardUxPolishPreflightStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
-    step: "Step 167: Admin trading lab dashboard UX polish preflight",
+    step: "Step 168: Admin trading lab dashboard UX polish review result recording gate",
     status: "admin_only_trading_lab_dashboard_shell_fail_closed",
     calculationMode: "strategy_draft_mock_recalculation_admin_only",
     step133CalculationMode: "mock_ledger_calculation_admin_only",
@@ -18778,6 +19246,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockDashboardCleanupCoreStatus,
     mockDashboardCleanupCoreReviewResultStatus,
     dashboardUxPolishPreflightStatus,
+    dashboardUxPolishReviewResultStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -18936,6 +19405,9 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     uxPolishDuplicateVerboseDetectionModel: TRADING_LAB_UX_POLISH_DUPLICATE_VERBOSE_DETECTION_MODEL,
     uxPolishKoreanLabelInventoryModel: TRADING_LAB_UX_POLISH_KOREAN_LABEL_INVENTORY_MODEL,
     dashboardUxPolishPreflightResultSchema: TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_RESULT_SCHEMA,
+    dashboardUxPolishReviewResultModel: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_MODEL,
+    dashboardUxPolishReviewReceiptSchema: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RECEIPT_SCHEMA,
+    dashboardUxPolishReviewDecisionSummaryModel: TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_DECISION_SUMMARY_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
@@ -18968,7 +19440,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     positions,
     orderCandidates,
     auditLogs,
-    flags: { ...STEP167_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_PREFLIGHT_FLAGS },
+    flags: { ...STEP168_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_REVIEW_RESULT_FLAGS },
     providerCallsAllowed: false,
     orderSubmissionAllowed: false,
     readyForReadOnlyProviderCalls: false,

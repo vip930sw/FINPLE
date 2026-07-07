@@ -909,6 +909,10 @@ nav {
   background: #f0fdfa;
 }
 
+.tradingLabDashboardUxPolishReviewCards div {
+  background: #eef2ff;
+}
+
 .tradingLabDashboardSummaryFirstGrid {
   display: grid;
   gap: 0.7rem;
@@ -1145,6 +1149,12 @@ nav {
   background: #f0fdfa;
   border-color: rgba(13, 148, 136, 0.18);
   color: #115e59;
+}
+
+.tradingLabDashboardUxPolishReviewList li {
+  background: #eef2ff;
+  border-color: rgba(79, 70, 229, 0.18);
+  color: #3730a3;
 }
 
 .tradingLabCleanupDetails {

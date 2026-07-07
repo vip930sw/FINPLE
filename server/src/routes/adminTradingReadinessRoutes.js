@@ -2,6 +2,7 @@ import express from "express";
 
 import { requireAdminAccess } from "../middleware/adminGuard.js";
 import {
+  buildAdminTradingLabDashboardUxPolishReviewResultStatus,
   buildAdminTradingLabDashboardUxPolishPreflightStatus,
   buildAdminTradingLabDashboardStatus,
   buildAdminTradingLabMockFillSimulationCorePreflightStatus,
@@ -343,6 +344,12 @@ router.get("/trading-lab-mock-dashboard-cleanup-core-review-result", (request, r
 router.get("/trading-lab-dashboard-ux-polish-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabDashboardUxPolishPreflightStatus());
+  });
+});
+
+router.get("/trading-lab-dashboard-ux-polish-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabDashboardUxPolishReviewResultStatus());
   });
 });
 
