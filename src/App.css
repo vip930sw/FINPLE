@@ -913,6 +913,14 @@ nav {
   background: #eef2ff;
 }
 
+.tradingLabDashboardUxPolishCoreCards div {
+  background: #fefce8;
+}
+
+.tradingLabDashboardUxPolishCoreBadges {
+  margin-top: 0.85rem;
+}
+
 .tradingLabDashboardSummaryFirstGrid {
   display: grid;
   gap: 0.7rem;
@@ -1155,6 +1163,17 @@ nav {
   background: #eef2ff;
   border-color: rgba(79, 70, 229, 0.18);
   color: #3730a3;
+}
+
+.tradingLabDashboardUxPolishCoreList li {
+  background: #fefce8;
+  border-color: rgba(202, 138, 4, 0.18);
+  color: #713f12;
+}
+
+.tradingLabDashboardUxPolishCoreDetails {
+  border-color: rgba(202, 138, 4, 0.2);
+  background: #fffdf3;
 }
 
 .tradingLabCleanupDetails {

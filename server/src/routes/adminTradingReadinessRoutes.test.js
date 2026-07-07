@@ -57,6 +57,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/trading-lab-mock-dashboard-cleanup-core-review-result"/);
   assert.match(routeText, /router\.get\("\/trading-lab-dashboard-ux-polish-preflight"/);
   assert.match(routeText, /router\.get\("\/trading-lab-dashboard-ux-polish-review-result"/);
+  assert.match(routeText, /router\.get\("\/trading-lab-dashboard-ux-polish-core"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });

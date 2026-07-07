@@ -16,6 +16,7 @@ import {
   fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus,
   fetchAdminTradingLabDashboardUxPolishPreflightStatus,
   fetchAdminTradingLabDashboardUxPolishReviewResultStatus,
+  fetchAdminTradingLabDashboardUxPolishCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
@@ -315,6 +316,7 @@ export function TradingReadinessPanel() {
   const [tradingLabMockDashboardCleanupCoreReviewResultStatus, setTradingLabMockDashboardCleanupCoreReviewResultStatus] = useState(null);
   const [tradingLabDashboardUxPolishPreflightStatus, setTradingLabDashboardUxPolishPreflightStatus] = useState(null);
   const [tradingLabDashboardUxPolishReviewResultStatus, setTradingLabDashboardUxPolishReviewResultStatus] = useState(null);
+  const [tradingLabDashboardUxPolishCoreStatus, setTradingLabDashboardUxPolishCoreStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -372,6 +374,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabMockDashboardCleanupCoreReviewResultStatus().catch(() => null),
       fetchAdminTradingLabDashboardUxPolishPreflightStatus().catch(() => null),
       fetchAdminTradingLabDashboardUxPolishReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabDashboardUxPolishCoreStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -424,6 +427,7 @@ export function TradingReadinessPanel() {
         setTradingLabMockDashboardCleanupCoreReviewResultStatus(payload?.[46] || null);
         setTradingLabDashboardUxPolishPreflightStatus(payload?.[47] || null);
         setTradingLabDashboardUxPolishReviewResultStatus(payload?.[48] || null);
+        setTradingLabDashboardUxPolishCoreStatus(payload?.[49] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -837,6 +841,34 @@ export function TradingReadinessPanel() {
   const labDashboardUxPolishDecisionMessages = Array.isArray(labDashboardUxPolishReviewDecisionSummary.summary)
     ? labDashboardUxPolishReviewDecisionSummary.summary
     : [];
+  const labDashboardUxPolishCoreStatus = tradingLabDashboardUxPolishCoreStatus || tradingLabDashboardStatus?.dashboardUxPolishCoreStatus || {};
+  const labDashboardUxPolishCoreResult = labDashboardUxPolishCoreStatus?.coreResult || {};
+  const labDashboardUxPolishCoreValidation = labDashboardUxPolishCoreStatus?.validation || {};
+  const labDashboardUxPolishSummaryFirstLayout = labDashboardUxPolishCoreStatus?.summaryFirstLayout || {};
+  const labDashboardUxPolishDetailChain = labDashboardUxPolishCoreStatus?.collapsibleDetailChain || {};
+  const labDashboardUxPolishKoreanLabelPolish = labDashboardUxPolishCoreStatus?.koreanLabelPolish || {};
+  const labDashboardUxPolishSafetyNoticePolish = labDashboardUxPolishCoreStatus?.safetyNoticePolish || {};
+  const labDashboardUxPolishReadabilityPolish = labDashboardUxPolishCoreStatus?.readabilityPolish || {};
+  const labDashboardUxPolishDuplicateVerboseCleanup = labDashboardUxPolishCoreStatus?.duplicateVerboseCleanup || {};
+  const labDashboardUxPolishCoreGroups = Array.isArray(labDashboardUxPolishDetailChain.groups)
+    ? labDashboardUxPolishDetailChain.groups
+    : [];
+  const labDashboardUxPolishCoreLabels = Array.isArray(labDashboardUxPolishKoreanLabelPolish.labels)
+    ? labDashboardUxPolishKoreanLabelPolish.labels
+    : [];
+  const labDashboardUxPolishCoreTopOrder = Array.isArray(labDashboardUxPolishSummaryFirstLayout.topOrder)
+    ? labDashboardUxPolishSummaryFirstLayout.topOrder
+    : [];
+  const labDashboardUxPolishCoreBlockers = Array.isArray(labDashboardUxPolishCoreValidation.blockerSummary)
+    ? labDashboardUxPolishCoreValidation.blockerSummary
+    : Array.isArray(labDashboardUxPolishCoreValidation.blockers)
+      ? labDashboardUxPolishCoreValidation.blockers
+      : [];
+  const labDashboardUxPolishCoreWarnings = Array.isArray(labDashboardUxPolishCoreValidation.warningSummary)
+    ? labDashboardUxPolishCoreValidation.warningSummary
+    : Array.isArray(labDashboardUxPolishCoreValidation.warnings)
+      ? labDashboardUxPolishCoreValidation.warnings
+      : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -3134,6 +3166,116 @@ export function TradingReadinessPanel() {
                 <li key={`dashboard-ux-polish-review-warning-${index}`}>{message}</li>
               ))}
             </ul>
+          </article>
+
+          <article className="tradingLabSection tradingLabDashboardUxPolishCore" data-admin-panel-key="trading-lab-dashboard-ux-polish-core">
+            <span>대시보드 UX 정리 core</span>
+            <h4>{formatStatus(labDashboardUxPolishCoreResult.polishStatus || labDashboardUxPolishCoreStatus.status || "validation_required")}</h4>
+            <p className="tradingLabMutedText">
+              이 화면은 FINPLE 내부 mock trading lab입니다. KIS/provider 호출, 주문 제출, 실계좌 조회, DB 저장 없이 관리자 전용 모의 계산 결과만 summary-first로 정리합니다.
+            </p>
+            <div className="tradingLabSafetyBadges tradingLabDashboardUxPolishCoreBadges" aria-label="Dashboard UX polish core safety badges">
+              <span>실거래 아님</span>
+              <span>KIS 호출 없음</span>
+              <span>주문 제출 없음</span>
+              <span>DB 저장 없음</span>
+              <span>거래 권한 차단 유지</span>
+            </div>
+            <div className="tradingLabReviewCards tradingLabDashboardUxPolishCoreCards">
+              <div>
+                <span>모의 거래 실행 요약</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.polishStatus || "blocked")}</strong>
+                <small>{labDashboardUxPolishCoreResult.uxPolishCoreResultId || "step169_dashboard_ux_polish_core_result"}</small>
+              </div>
+              <div>
+                <span>주요 KPI cards</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.kpiReadabilityStatus || "validation_required")}</strong>
+                <small>summary-first</small>
+              </div>
+              <div>
+                <span>수익률 경로</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.chartReadabilityStatus || "validation_required")}</strong>
+                <small>chart before detail chain</small>
+              </div>
+              <div>
+                <span>현재 자산분포</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.allocationReadabilityStatus || "validation_required")}</strong>
+                <small>allocation snapshot</small>
+              </div>
+              <div>
+                <span>상세 검토 체인</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.collapsibleDetailStatus || "validation_required")}</strong>
+                <small>{labDashboardUxPolishCoreGroups.length} collapsed groups</small>
+              </div>
+              <div>
+                <span>한글 라벨</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.koreanLabelStatus || "validation_required")}</strong>
+                <small>{labDashboardUxPolishCoreLabels.length} labels</small>
+              </div>
+              <div>
+                <span>안전 안내</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.safetyNoticeStatus || "validation_required")}</strong>
+                <small>{labDashboardUxPolishSafetyNoticePolish.noDbWriteNoticeVisible ? "DB 저장 없음 표시" : "validation required"}</small>
+              </div>
+              <div>
+                <span>위험한 action label</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.dangerousActionLabelStatus || "validation_required")}</strong>
+                <small>{labDashboardUxPolishSafetyNoticePolish.dangerousActionLabelsPresent ? "review required" : "미노출"}</small>
+              </div>
+              <div>
+                <span>중복/장문 정리</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.duplicateVerboseStatus || "validation_required")}</strong>
+                <small>{formatStatus(labDashboardUxPolishDuplicateVerboseCleanup.verboseSectionStatus || "validation_required")}</small>
+              </div>
+              <div>
+                <span>Readiness impact</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.readinessImpact || "none")}</strong>
+                <small>{formatStatus(labDashboardUxPolishCoreResult.liveTradingImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Provider / order impact</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.providerCallImpact || "blocked")}</strong>
+                <small>{formatStatus(labDashboardUxPolishCoreResult.orderSubmissionImpact || "blocked")}</small>
+              </div>
+              <div>
+                <span>Next step</span>
+                <strong>{formatStatus(labDashboardUxPolishCoreResult.nextAllowedStep || "mock_dashboard_ux_polish_review")}</strong>
+                <small>Admin mock-only</small>
+              </div>
+            </div>
+            <ul className="tradingLabReviewList tradingLabDashboardUxPolishCoreList" aria-label="Dashboard UX polish core guardrails">
+              <li>{labDashboardUxPolishCoreResult.uxPolishReviewResultId || "step168_dashboard_ux_polish_review_result"} / Step168 dependency required / redacted review result only.</li>
+              <li>요약, KPI, 차트, 자산분포를 먼저 보여주고 세부 검토 체인은 접힌 그룹으로 아래에 둡니다.</li>
+              <li>{labDashboardUxPolishSafetyNoticePolish.noticeText || "KIS/provider 호출, 주문 제출, 실계좌 조회, DB 저장 없음."}</li>
+              <li>{labDashboardUxPolishSafetyNoticePolish.orderAuthorityNoticeText || "거래 권한은 차단 상태이며 관리자 전용 모의 계산 결과만 표시합니다."}</li>
+              <li>Safety panel and mock trading lab stay separated; My Page, homepage, and public routes do not expose this UX polish core UI.</li>
+              <li>다음 허용 단계: {formatStatus(labDashboardUxPolishCoreResult.nextAllowedStep || "mock_dashboard_ux_polish_review")}</li>
+              {labDashboardUxPolishCoreTopOrder.map((item, index) => (
+                <li key={`dashboard-ux-polish-core-order-${item}`}>{index + 1}. {formatStatus(item)}</li>
+              ))}
+              {labDashboardUxPolishCoreBlockers.map((message, index) => (
+                <li key={`dashboard-ux-polish-core-blocker-${index}`}>{message}</li>
+              ))}
+              {labDashboardUxPolishCoreWarnings.map((message, index) => (
+                <li key={`dashboard-ux-polish-core-warning-${index}`}>{message}</li>
+              ))}
+            </ul>
+            <details className="tradingLabCleanupDetails tradingLabDashboardUxPolishCoreDetails">
+              <summary>상세 검토 체인 그룹</summary>
+              <ul className="tradingLabReviewList tradingLabDashboardUxPolishCoreList">
+                {labDashboardUxPolishCoreGroups.map((group) => (
+                  <li key={group.groupId}>{group.label} / {group.stepRange} / {group.defaultCollapsed ? "기본 접힘" : "펼침 검토 필요"}</li>
+                ))}
+              </ul>
+            </details>
+            <details className="tradingLabCleanupDetails tradingLabDashboardUxPolishCoreDetails">
+              <summary>한글 라벨 정리</summary>
+              <ul className="tradingLabReviewList tradingLabDashboardUxPolishCoreList">
+                {labDashboardUxPolishCoreLabels.map((label) => (
+                  <li key={label.sourceLabel}>{label.sourceLabel} / {label.displayLabel}</li>
+                ))}
+              </ul>
+            </details>
           </article>
 
           <article className="tradingLabSection tradingLabMockDashboardCleanupPreflight" data-admin-panel-key="trading-lab-mock-dashboard-cleanup-preflight">
