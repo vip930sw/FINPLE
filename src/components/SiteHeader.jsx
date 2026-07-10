@@ -35,6 +35,13 @@ export default function SiteHeader({
 
   const activeKey = activePage === "personal" ? "start" : activePage;
   const stateKey = `${activeKey}|${isLoggedIn ? "in" : "out"}`;
+  const headerClassName = [
+    "header",
+    "homeHeader",
+    "siteHeader",
+    "finpleUnifiedHeader",
+    activePage === "admin-trading" ? "adminTradingHeaderActive" : "",
+  ].filter(Boolean).join(" ");
   const navItems = [
     { key: "home", label: "홈", path: "/", className: "", onClick: handleHomeClick },
     { key: "start", label: "시작하기", path: "/start", className: "finpleGlobalStartButton", onClick: handleStartClick },
@@ -44,7 +51,7 @@ export default function SiteHeader({
   ];
 
   return (
-    <header className="header homeHeader siteHeader finpleUnifiedHeader" data-finple-global-nav-state={stateKey}>
+    <header className={headerClassName} data-finple-global-nav-state={stateKey}>
       <button type="button" className="brandLogo resetButton" onClick={handleHomeClick}>
         <div className="brandIcon"><span>F</span><i /></div>
         <div className="brandText"><strong>FINPLE</strong><span>Portfolio Lab</span></div>

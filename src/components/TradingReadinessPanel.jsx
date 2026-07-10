@@ -153,6 +153,18 @@ const KPI_LABELS = {
   mock_order_candidates: "주문 후보",
 };
 
+const TRADING_LAB_DETAIL_GROUPS = [
+  { groupId: "strategy_draft_review", title: "전략 초안 및 검토", stepRange: "Step134~Step138" },
+  { groupId: "mock_order_execution_fill", title: "모의 실행 후보 및 주문·체결 흐름", stepRange: "Step139~Step148" },
+  { groupId: "mock_ledger_update", title: "모의 장부 업데이트", stepRange: "Step149~Step153" },
+  { groupId: "mock_performance_recalculation", title: "모의 성과 재계산", stepRange: "Step154~Step158" },
+  { groupId: "mock_trading_run_summary", title: "모의 거래 실행 요약", stepRange: "Step159~Step161" },
+  { groupId: "dashboard_cleanup_ux_polish", title: "대시보드 정리 및 UX polish", stepRange: "Step162~Step169" },
+];
+
+const TRADING_LAB_EMPTY_CHART_NOTICE =
+  "표시할 mock run 데이터가 아직 없습니다. 현재 화면은 안전 검증과 mock-only 상태 점검용입니다.";
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -896,6 +908,10 @@ export function TradingReadinessPanel() {
     : labPositions;
   const equitySparklinePoints = buildSparklinePoints(labEquityPoints, "equityPlaceholder");
   const cumulativeReturnSparklinePoints = buildSparklinePoints(labReturnPoints, "cumulativeReturnPct");
+  const hasMockEquityChartData = labEquityPoints.length > 1 && equitySparklinePoints.length > 0;
+  const hasMockReturnChartData = labReturnPoints.length > 1 && cumulativeReturnSparklinePoints.length > 0;
+  const hasMockAllocationData = labAllocations.length > 0;
+  const detailGroupCount = TRADING_LAB_DETAIL_GROUPS.length;
 
   function handleTradingPanelTabChange(nextTab) {
     setActiveTradingPanelTab(nextTab);
@@ -1015,6 +1031,20 @@ export function TradingReadinessPanel() {
           <strong>{formatStatus(tradingLabDashboardStatus?.status || "admin_only")}</strong>
         </div>
 
+        <div className="tradingLabConsolidatedSafetyNotice" data-admin-panel-key="trading-lab-dashboard-section-consolidation">
+          <p>
+            이 화면은 FINPLE 내부 mock trading lab입니다. 실제 KIS 호출, 주문 제출, 실계좌 잔고 조회, DB write를 수행하지 않습니다.
+          </p>
+          <div className="tradingLabSafetyBadges tradingLabConsolidatedBadges" aria-label="모의 운용 대시보드 안전 배지">
+            <span>mock-only</span>
+            <span>admin-only</span>
+            <span>blocked</span>
+            <span>KIS 호출 없음</span>
+            <span>주문 제출 없음</span>
+            <span>DB 저장 없음</span>
+          </div>
+        </div>
+
         <div className="tradingLabKpiGrid" aria-label="모의 운용 KPI 요약">
           {labKpiCards.map((card) => (
             <article className="tradingLabKpiCard" key={card.cardId}>
@@ -1028,52 +1058,93 @@ export function TradingReadinessPanel() {
         <div className="tradingLabChartGrid">
           <article className="tradingLabChartCard">
             <span>일별 자산 변화</span>
-            <svg className="tradingLabLineChart" viewBox="0 0 320 120" role="img" aria-label="모의 일별 자산 변화">
-              <polyline points={equitySparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
-            </svg>
-            <div className="tradingLabChartLegend">
-              {labEquityPoints.map((point) => (
-                <span key={point.date}>{point.date}</span>
-              ))}
-            </div>
+            {hasMockEquityChartData ? (
+              <>
+                <svg className="tradingLabLineChart" viewBox="0 0 320 120" role="img" aria-label="모의 일별 자산 변화">
+                  <polyline points={equitySparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
+                </svg>
+                <div className="tradingLabChartLegend">
+                  {labEquityPoints.map((point) => (
+                    <span key={point.date}>{point.date}</span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="tradingLabEmptyChartPlaceholder" role="note">
+                <strong>mock run 데이터 대기</strong>
+                <p>{TRADING_LAB_EMPTY_CHART_NOTICE}</p>
+              </div>
+            )}
           </article>
 
           <article className="tradingLabChartCard">
             <span>수익률 경로</span>
-            <svg className="tradingLabLineChart return" viewBox="0 0 320 120" role="img" aria-label="모의 누적 수익률 경로">
-              <polyline points={cumulativeReturnSparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
-            </svg>
-            <div className="tradingLabReturnBars" aria-label="일별 수익률 막대">
-              {labReturnPoints.map((point) => (
-                <span
-                  key={point.date}
-                  className={Number(point.dailyReturnPct || 0) >= 0 ? "positive" : "negative"}
-                  style={{ height: `${24 + clampPercent(Math.abs(point.dailyReturnPct || 0) * 120)}px` }}
-                  title={`${point.date} ${Number(point.dailyReturnPct || 0).toFixed(2)}%`}
-                />
-              ))}
-            </div>
+            {hasMockReturnChartData ? (
+              <>
+                <svg className="tradingLabLineChart return" viewBox="0 0 320 120" role="img" aria-label="모의 누적 수익률 경로">
+                  <polyline points={cumulativeReturnSparklinePoints} fill="none" stroke="currentColor" strokeWidth="3" />
+                </svg>
+                <div className="tradingLabReturnBars" aria-label="일별 수익률 막대">
+                  {labReturnPoints.map((point) => (
+                    <span
+                      key={point.date}
+                      className={Number(point.dailyReturnPct || 0) >= 0 ? "positive" : "negative"}
+                      style={{ height: `${24 + clampPercent(Math.abs(point.dailyReturnPct || 0) * 120)}px` }}
+                      title={`${point.date} ${Number(point.dailyReturnPct || 0).toFixed(2)}%`}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="tradingLabEmptyChartPlaceholder" role="note">
+                <strong>수익률 경로 대기</strong>
+                <p>모의 운용 결과가 준비되면 이 영역에 수익률 경로와 drawdown 정보를 표시합니다.</p>
+              </div>
+            )}
           </article>
 
           <article className="tradingLabChartCard tradingLabAllocationCard">
             <span>현재 자산분포</span>
-            <div className="tradingLabAllocationBars" aria-label="모의 자산분포 막대">
-              {labAllocations.map((allocation) => (
-                <div className="tradingLabAllocationRow" key={allocation.symbol}>
-                  <div>
-                    <strong>{allocation.symbol}</strong>
-                    <small>{Number(allocation.weightPct || 0).toFixed(2)}%</small>
+            {hasMockAllocationData ? (
+              <div className="tradingLabAllocationBars" aria-label="모의 자산분포 막대">
+                {labAllocations.map((allocation) => (
+                  <div className="tradingLabAllocationRow" key={allocation.symbol}>
+                    <div>
+                      <strong>{allocation.symbol}</strong>
+                      <small>{Number(allocation.weightPct || 0).toFixed(2)}%</small>
+                    </div>
+                    <span>
+                      <i style={{ width: `${clampPercent(allocation.weightPct)}%` }} />
+                    </span>
                   </div>
-                  <span>
-                    <i style={{ width: `${clampPercent(allocation.weightPct)}%` }} />
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="tradingLabEmptyChartPlaceholder" role="note">
+                <strong>자산분포 대기</strong>
+                <p>모의 포지션 데이터가 준비되면 현재 자산분포가 표시됩니다.</p>
+              </div>
+            )}
           </article>
         </div>
 
-        <div className="tradingLabGrid">
+        <details className="tradingLabDetailChainShell" data-admin-panel-key="trading-lab-detail-chain" data-default-collapsed="true">
+          <summary>
+            <span>상세 검증 로그</span>
+            <strong>{detailGroupCount}개 그룹</strong>
+            <em>기본 접힘 · 필요 시 펼쳐보기</em>
+          </summary>
+          <div className="tradingLabDetailChainGroups" aria-label="상세 검증 로그 그룹 요약">
+            {TRADING_LAB_DETAIL_GROUPS.map((group) => (
+              <article key={group.groupId} data-trading-lab-detail-group={group.groupId}>
+                <span>{group.stepRange}</span>
+                <strong>{group.title}</strong>
+                <small>접힌 상세 로그에서 확인</small>
+              </article>
+            ))}
+          </div>
+          <div className="tradingLabDetailChainBody">
+        <div className="tradingLabGrid tradingLabDetailChainGrid">
           <article className="tradingLabSection tradingLabStrategyDraftControls" data-admin-panel-key="trading-lab-strategy-draft-controls">
             <span>Strategy draft</span>
             <h4>{labStrategyDraftPreview.strategyName || "Admin mock strategy draft"}</h4>
@@ -3781,6 +3852,8 @@ export function TradingReadinessPanel() {
             ))}
           </article>
         </div>
+          </div>
+        </details>
       </div>
 
     </section>

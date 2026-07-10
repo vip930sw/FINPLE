@@ -1176,6 +1176,132 @@ nav {
   background: #fffdf3;
 }
 
+.tradingLabConsolidatedSafetyNotice {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+}
+
+.tradingLabConsolidatedSafetyNotice p {
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tradingLabConsolidatedBadges {
+  margin-top: 0;
+}
+
+.tradingLabEmptyChartPlaceholder {
+  align-items: center;
+  background: #ffffff;
+  border: 1px dashed rgba(37, 99, 235, 0.28);
+  border-radius: 8px;
+  color: #475569;
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  min-height: 140px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.tradingLabEmptyChartPlaceholder strong {
+  color: #1e3a8a;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.tradingLabEmptyChartPlaceholder p {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tradingLabDetailChainShell {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.tradingLabDetailChainShell > summary {
+  align-items: center;
+  color: #0f172a;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  list-style-position: inside;
+}
+
+.tradingLabDetailChainShell > summary span,
+.tradingLabDetailChainShell > summary strong,
+.tradingLabDetailChainShell > summary em {
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDetailChainShell > summary em {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.tradingLabDetailChainGroups {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 0.85rem;
+}
+
+.tradingLabDetailChainGroups article {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.tradingLabDetailChainGroups span,
+.tradingLabDetailChainGroups small {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.tradingLabDetailChainGroups strong {
+  color: #0f172a;
+  font-size: 0.86rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDetailChainBody {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.85rem;
+}
+
+.tradingLabDetailChainGrid {
+  margin-top: 0;
+}
+
+.adminTradingHeaderActive .brandIcon i {
+  display: none;
+}
+
 .tradingLabCleanupDetails {
   margin-top: 12px;
   border: 1px solid rgba(8, 145, 178, 0.18);
