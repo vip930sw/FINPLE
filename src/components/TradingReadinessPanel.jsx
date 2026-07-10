@@ -198,6 +198,38 @@ const TRADING_LAB_SMOKE_REVIEW_RESULT_ITEMS = [
   { key: "step166_preserved", label: "Step166 계정·구독·결제 sync", result: "보존" },
 ];
 
+const TRADING_LAB_FINAL_STABILIZATION_ITEMS = [
+  { key: "admin_route_stable", label: "/admin/trading route", result: "정상 표시" },
+  { key: "mock_dashboard_stable", label: "모의 운용 대시보드", result: "정상 표시" },
+  { key: "safety_panel_stable", label: "거래 안전평가", result: "정상 표시" },
+  { key: "safety_notice_stable", label: "안전 안내", result: "정상 표시" },
+  { key: "badge_separation_stable", label: "상태 badge 분리", result: "정상 표시" },
+  { key: "empty_chart_placeholder_stable", label: "빈 chart placeholder", result: "정상 표시" },
+  { key: "detail_log_collapsed_stable", label: "상세 검증 로그", result: "접힘 유지" },
+  { key: "step170_consolidation_stable", label: "Step170 section consolidation", result: "반영 유지" },
+  { key: "step171_badge_polish_stable", label: "Step171 badge polish", result: "반영 유지" },
+  { key: "step172_smoke_review_stable", label: "Step172 smoke review", result: "반영 유지" },
+  { key: "step166_account_plan_billing_stable", label: "Step166 account/plan/billing sync", result: "보존" },
+  { key: "public_surfaces_stable", label: "My Page·homepage", result: "미노출 유지" },
+  { key: "provider_order_live_blocked", label: "provider/order/live gate", result: "차단 유지" },
+];
+
+const TRADING_LAB_DEPLOYMENT_METADATA_NOTICE_ITEMS = [
+  { key: "render_api_health", label: "Render API health", result: "정상" },
+  { key: "render_db_health", label: "Render DB health", result: "정상" },
+  { key: "render_commit_metadata", label: "Render health commit metadata", result: "최신 GitHub main과 불일치 가능" },
+  { key: "github_vercel_reference", label: "GitHub/Vercel 기준", result: "별도 확인 필요" },
+  { key: "readiness_impact", label: "실거래 readiness 영향", result: "없음" },
+  { key: "provider_order_impact", label: "provider/order 권한 영향", result: "없음" },
+];
+
+const TRADING_LAB_SMOKE_REVIEW_HISTORY_ITEMS = [
+  { key: "step169_admin_readiness_data", label: "Step169 admin readiness data", result: "재사용" },
+  { key: "step171_smoke_preflight", label: "Step171 smoke preflight", result: "통과 기준 유지" },
+  { key: "step172_smoke_review_result", label: "Step172 smoke review result", result: "반영 유지" },
+  { key: "step173_final_stabilization", label: "Step173 final stabilization", result: "read-only notice" },
+];
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -1134,6 +1166,89 @@ export function TradingReadinessPanel() {
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className="tradingLabFinalStabilizationSummary" data-admin-panel-key="trading-lab-final-stabilization-deployment-metadata-notice">
+          <div>
+            <span>final stabilization</span>
+            <strong>관리자 거래 실험실 최종 안정화 상태</strong>
+            <p>
+              Step169/admin readiness data와 Step171~172 smoke review 결과를 재사용해 내부 mock trading lab 1차 안정화 상태를 read-only로 정리합니다. 새 endpoint는 추가하지 않으며, KIS/provider 호출·주문 제출·DB write·live readiness는 계속 차단됩니다.
+            </p>
+          </div>
+          <div className="tradingLabDeploymentMetadataNotice" aria-label="배포 metadata 점검">
+            <article>
+              <span>배포 metadata 점검</span>
+              <strong>Render health commit metadata stale 가능</strong>
+              <p>
+                Render API/DB health 자체가 정상이어도 health endpoint의 commit metadata가 최신 GitHub main과 다를 수 있습니다. 이 상태는 단순 notice이며 실거래 준비, provider 호출, 주문 권한, DB 권한을 여는 근거가 아닙니다.
+              </p>
+            </article>
+            <article>
+              <span>운영 상태 분리</span>
+              <strong>GitHub/Vercel/Render health 별도 확인</strong>
+              <p>
+                실제 배포 판단은 GitHub commit status, Vercel production response, Render API health, Render DB health를 분리해서 확인합니다. metadata stale은 health 실패와 구분해서 표시합니다.
+              </p>
+            </article>
+          </div>
+          <div className="tradingLabFinalStabilizationCards" aria-label="관리자 거래 실험실 최종 안정화 요약">
+            <article>
+              <span>Smoke review history</span>
+              <strong>Step169~Step173 흐름 유지</strong>
+              <small>기존 admin readiness data와 smoke review UI/check 재사용</small>
+            </article>
+            <article>
+              <span>badge/header/detail log</span>
+              <strong>regression 방지</strong>
+              <small>badge 분리, header artifact fix, 상세 로그 접힘 유지</small>
+            </article>
+            <article>
+              <span>public surface</span>
+              <strong>미노출 유지</strong>
+              <small>My Page·homepage trading UI 없음</small>
+            </article>
+            <article>
+              <span>provider/order/live</span>
+              <strong>차단 유지</strong>
+              <small>readiness/provider/order/live flags false 유지</small>
+            </article>
+          </div>
+          <div className="tradingLabFinalStabilizationLists">
+            <section aria-label="최종 안정화 세부 상태">
+              <span>내부 mock trading lab 1차 완료 전 점검</span>
+              <ul>
+                {TRADING_LAB_FINAL_STABILIZATION_ITEMS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="배포 metadata notice 세부 상태">
+              <span>배포 metadata notice</span>
+              <ul>
+                {TRADING_LAB_DEPLOYMENT_METADATA_NOTICE_ITEMS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="smoke review history 세부 상태">
+              <span>Smoke review history</span>
+              <ul>
+                {TRADING_LAB_SMOKE_REVIEW_HISTORY_ITEMS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
         </div>
 
         <div className="tradingLabKpiGrid" aria-label="모의 운용 KPI 요약">
