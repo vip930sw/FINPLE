@@ -286,6 +286,64 @@ const TRADING_LAB_MVP_HANDOFF_NOTICE_ITEMS = [
   { key: "redacted", label: "redacted", result: "true" },
 ];
 
+const TRADING_LAB_MVP_FINAL_REVIEW_STATUS_ITEMS = [
+  { key: "finalReviewStatus", label: "finalReviewStatus", result: "internal_mock_mvp_final_review_ready" },
+  { key: "scope", label: "scope", result: "admin_only_mock_trading_lab" },
+  { key: "reviewSurface", label: "reviewSurface", result: "/admin/trading only" },
+  { key: "safetyBoundary", label: "safetyBoundary", result: "fail_closed" },
+  { key: "providerCallsAllowed", label: "providerCallsAllowed", result: "false" },
+  { key: "orderSubmissionAllowed", label: "orderSubmissionAllowed", result: "false" },
+  { key: "persistentDbWrite", label: "persistentDbWrite", result: "blocked" },
+  { key: "actualLiveTradingReadiness", label: "actual live trading readiness", result: "false" },
+  { key: "orderAuthorityExternalBlocker", label: "order authority external blocker", result: "external approval/evidence needed" },
+  { key: "redacted", label: "redacted", result: "true" },
+];
+
+const TRADING_LAB_MVP_FINAL_REVIEW_COMPLETED_SCOPE = [
+  { key: "admin_only_trading_shell", label: "admin-only trading lab shell", result: "reviewed" },
+  { key: "mock_dashboard_sections", label: "mock dashboard sections", result: "reviewed" },
+  { key: "safety_tab_split", label: "safety tab separation", result: "preserved" },
+  { key: "strategy_draft_review", label: "strategy draft/review/clearance", result: "reviewed" },
+  { key: "mock_run_candidate_chain", label: "mock run candidate chain", result: "reviewed" },
+  { key: "mock_order_generation_chain", label: "mock order generation chain", result: "reviewed" },
+  { key: "mock_execution_chain", label: "mock execution chain", result: "reviewed" },
+  { key: "mock_fill_simulation_chain", label: "mock fill simulation chain", result: "reviewed" },
+  { key: "mock_ledger_performance_chain", label: "mock ledger/performance chain", result: "reviewed" },
+  { key: "mock_trading_run_summary", label: "mock trading run summary", result: "reviewed" },
+  { key: "dashboard_consolidation_polish", label: "dashboard consolidation and badge polish", result: "reviewed" },
+  { key: "mvp_completion_handoff", label: "MVP completion handoff", result: "reviewed" },
+  { key: "public_surface_absence", label: "My Page and homepage exposure", result: "not exposed" },
+  { key: "readiness_flags", label: "readiness/provider/order/live flags", result: "false preserved" },
+];
+
+const TRADING_LAB_MVP_FINAL_REVIEW_EXCLUDED_SCOPE = [
+  { key: "kis_provider_call", label: "actual KIS/provider call", result: "excluded" },
+  { key: "kis_token_issuance", label: "KIS token issuance", result: "excluded" },
+  { key: "kis_quote_query", label: "KIS quote query", result: "excluded" },
+  { key: "kis_order_payload", label: "KIS order payload", result: "excluded" },
+  { key: "actual_order_submission", label: "actual order submission", result: "excluded" },
+  { key: "actual_execution_fill", label: "actual execution/fill record", result: "excluded" },
+  { key: "actual_balance_cash_position", label: "actual balance/cash/position query", result: "excluded" },
+  { key: "db_trading_history", label: "DB-backed trading history", result: "excluded" },
+  { key: "persistent_strategy", label: "persistent live strategy storage", result: "excluded" },
+  { key: "user_trading_dashboard", label: "user-facing trading dashboard", result: "excluded" },
+  { key: "automated_order_action", label: "automated or discretionary order action", result: "excluded" },
+];
+
+const TRADING_LAB_MVP_FINAL_REVIEW_KNOWN_ISSUES = [
+  { key: "render_commit_metadata_stale", label: "Render health commit metadata", result: "stale metadata possible" },
+  { key: "legacy_check_runner_timeout", label: "legacy trading check runner", result: "command-level timeout possible" },
+  { key: "node_test_reference", label: "full node --test result", result: "source-of-truth regression check" },
+  { key: "temp_cleanup_backlog", label: "local TEMP finple cleanup", result: "separate hygiene task recommended" },
+];
+
+const TRADING_LAB_MVP_FINAL_REVIEW_NEXT_SPRINT_OPTIONS = [
+  { key: "legacy_runner_cleanup", label: "1. Legacy trading check runner cleanup", result: "recommended first" },
+  { key: "db_mock_history", label: "2. DB-backed mock trading history", result: "requires DB-write design gate" },
+  { key: "ai_ml_strategy_console", label: "3. AI/ML strategy console", result: "requires admin/model approval gate" },
+  { key: "kis_read_only_quote", label: "4. KIS read-only quote boundary", result: "requires credential/token boundary review" },
+];
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -1402,6 +1460,86 @@ export function TradingReadinessPanel() {
               <span>handoff status model</span>
               <ul>
                 {TRADING_LAB_MVP_HANDOFF_NOTICE_ITEMS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div className="tradingLabMvpFinalReviewSummary" data-admin-panel-key="trading-lab-mvp-final-review">
+          <div>
+            <span>MVP final review</span>
+            <strong>내부 mock trading lab 1차 MVP 최종 검토</strong>
+            <p>
+              Step116~Step174 범위의 관리자 전용 mock trading lab을 최종 검토용 read-only 요약으로 정리합니다. 이 영역은 새 endpoint, provider 호출, 주문 제출, 체결 생성, DB write, 사용자 공개 trading UI를 만들지 않습니다.
+            </p>
+          </div>
+          <div className="tradingLabMvpFinalReviewCards" aria-label="MVP final review status">
+            {TRADING_LAB_MVP_FINAL_REVIEW_STATUS_ITEMS.map((item) => (
+              <article key={item.key}>
+                <span>{item.label}</span>
+                <strong>{item.result}</strong>
+              </article>
+            ))}
+          </div>
+          <div className="tradingLabMvpFinalReviewNotice" aria-label="MVP final review safety notice">
+            <article>
+              <span>Final review decision</span>
+              <strong>internal_mock_mvp_final_review_ready</strong>
+              <p>
+                이 결과는 FINPLE 내부 mock trading lab MVP 검토 상태만 표시하며, 실제 주문 권한·KIS 호출·실거래 준비 상태에는 영향을 주지 않습니다.
+              </p>
+            </article>
+            <article>
+              <span>Operational blocker separation</span>
+              <strong>order authority external blocker 유지</strong>
+              <p>
+                내부 mock UI와 검증 흐름은 정리되었지만, 외부 주문 권한 승인/증빙과 provider/order/live 운영 gate는 별도이며 계속 차단 상태입니다.
+              </p>
+            </article>
+          </div>
+          <div className="tradingLabMvpFinalReviewLists">
+            <section aria-label="MVP final review completed scope">
+              <span>completed scope</span>
+              <ul>
+                {TRADING_LAB_MVP_FINAL_REVIEW_COMPLETED_SCOPE.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="MVP final review excluded scope">
+              <span>excluded scope</span>
+              <ul>
+                {TRADING_LAB_MVP_FINAL_REVIEW_EXCLUDED_SCOPE.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="MVP final review known issues">
+              <span>known issues</span>
+              <ul>
+                {TRADING_LAB_MVP_FINAL_REVIEW_KNOWN_ISSUES.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="MVP final review next sprint options">
+              <span>next sprint options</span>
+              <ul>
+                {TRADING_LAB_MVP_FINAL_REVIEW_NEXT_SPRINT_OPTIONS.map((item) => (
                   <li key={item.key}>
                     <span>{item.label}</span>
                     <strong>{item.result}</strong>
