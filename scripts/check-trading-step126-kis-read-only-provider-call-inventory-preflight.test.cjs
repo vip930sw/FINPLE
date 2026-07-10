@@ -32,7 +32,7 @@ function makeWorkspace() {
 }
 
 function runCheck(workspace) {
-  return spawnSync(process.execPath, [SCRIPT_PATH], { cwd: workspace, encoding: "utf8" });
+  return spawnSync(process.execPath, [SCRIPT_PATH], { cwd: workspace, encoding: "utf8", timeout: 30000 });
 }
 
 test("passes with current Step 126 KIS read-only provider-call inventory preflight", () => {
