@@ -230,6 +230,62 @@ const TRADING_LAB_SMOKE_REVIEW_HISTORY_ITEMS = [
   { key: "step173_final_stabilization", label: "Step173 final stabilization", result: "read-only notice" },
 ];
 
+const TRADING_LAB_MVP_HANDOFF_IMPLEMENTED_AREAS = [
+  { key: "admin_shell", label: "admin-only /admin/trading shell", result: "구현 완료" },
+  { key: "safety_panel", label: "거래 안전평가 탭", result: "구현 완료" },
+  { key: "mock_dashboard", label: "모의 운용 대시보드 탭", result: "구현 완료" },
+  { key: "fail_closed_flags", label: "fail-closed readiness flags", result: "false 유지" },
+  { key: "provider_order_live_gate", label: "provider/order/live gate", result: "차단 유지" },
+  { key: "strategy_review_chain", label: "strategy draft/review/clearance chain", result: "구현 완료" },
+  { key: "mock_run_candidate", label: "mock run candidate", result: "구현 완료" },
+  { key: "mock_order_execution_fill_chain", label: "mock order/execution/fill simulation chain", result: "구현 완료" },
+  { key: "mock_ledger_performance_chain", label: "mock ledger/performance chain", result: "구현 완료" },
+  { key: "mock_trading_run_summary", label: "mock trading run summary", result: "구현 완료" },
+  { key: "dashboard_polish_smoke_review", label: "dashboard polish/smoke review", result: "구현 완료" },
+  { key: "render_metadata_notice", label: "Render metadata stale notice", result: "반영 완료" },
+  { key: "public_surface_absence", label: "My Page·homepage exposure", result: "미노출 유지" },
+];
+
+const TRADING_LAB_MVP_HANDOFF_EXCLUDED_AREAS = [
+  { key: "kis_provider_call", label: "actual KIS/provider network call", result: "미구현/차단" },
+  { key: "kis_token_issuance", label: "KIS token issuance", result: "미구현/차단" },
+  { key: "kis_quote_query", label: "KIS quote query", result: "미구현/차단" },
+  { key: "kis_order_submission", label: "KIS mock/real order submission", result: "미구현/차단" },
+  { key: "actual_balance_query", label: "actual account balance query", result: "미구현/차단" },
+  { key: "persistent_trading_history", label: "DB-backed trading history", result: "미구현/차단" },
+  { key: "persistent_strategy_storage", label: "strategy persistent storage", result: "미구현/차단" },
+  { key: "user_trading_dashboard", label: "user-facing trading dashboard", result: "미구현/차단" },
+  { key: "mypage_trading_connection", label: "My Page trading integration", result: "미구현/차단" },
+  { key: "automated_ordering", label: "auto trading or discretionary order action", result: "미구현/차단" },
+];
+
+const TRADING_LAB_MVP_HANDOFF_REMAINING_TRACKS = [
+  { key: "persistent_mock_history", label: "A. DB 저장형 전략/모의거래 이력", result: "별도 승인 필요" },
+  { key: "kis_read_only_quote", label: "B. KIS read-only 현재가 조회", result: "credential/token boundary 필요" },
+  { key: "ai_strategy_console", label: "C. ML/AI 전략 분석 콘솔", result: "model/admin approval workflow 필요" },
+  { key: "user_feature_connection", label: "D. 사용자 기능 연결", result: "plan/access/public UI 검토 필요" },
+];
+
+const TRADING_LAB_MVP_HANDOFF_READINESS_FLAGS = [
+  { key: "providerCallsAllowed", label: "providerCallsAllowed", result: "false" },
+  { key: "orderSubmissionAllowed", label: "orderSubmissionAllowed", result: "false" },
+  { key: "readyForReadOnlyProviderCalls", label: "readyForReadOnlyProviderCalls", result: "false" },
+  { key: "readyForOrderSubmission", label: "readyForOrderSubmission", result: "false" },
+  { key: "readyForLiveGuardedTrading", label: "readyForLiveGuardedTrading", result: "false" },
+  { key: "actualLiveTradingReadiness", label: "actual live trading readiness", result: "false" },
+  { key: "orderAuthorityExternalBlocker", label: "order authority external blocker", result: "외부 승인/증빙 필요" },
+];
+
+const TRADING_LAB_MVP_HANDOFF_NOTICE_ITEMS = [
+  { key: "scope", label: "scope", result: "admin_mock_trading_lab" },
+  { key: "mvpStatus", label: "mvpStatus", result: "internal_mock_mvp_ready_for_final_review" },
+  { key: "safetyBoundary", label: "safetyBoundary", result: "admin-only, mock-only, fail-closed" },
+  { key: "deploymentMetadataNotice", label: "deploymentMetadataNotice", result: "Render commit metadata stale 가능" },
+  { key: "legacyCheckNotice", label: "legacyCheckNotice", result: "일부 legacy check shell timeout 가능" },
+  { key: "nextRecommendedStep", label: "nextRecommendedStep", result: "mock trading lab MVP final review" },
+  { key: "redacted", label: "redacted", result: "true" },
+];
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -1241,6 +1297,111 @@ export function TradingReadinessPanel() {
               <span>Smoke review history</span>
               <ul>
                 {TRADING_LAB_SMOKE_REVIEW_HISTORY_ITEMS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div className="tradingLabMvpHandoffSummary" data-admin-panel-key="trading-lab-mvp-completion-handoff-summary">
+          <div>
+            <span>MVP completion handoff</span>
+            <strong>내부 mock trading lab 1차 완료 요약</strong>
+            <p>
+              Step116~Step173까지의 관리자 전용 mock trading lab 범위를 handoff summary로 정리합니다. 이 요약은 read-only이며 새 endpoint, provider 호출, 주문 제출, DB write, 사용자 공개 trading UI를 만들지 않습니다.
+            </p>
+          </div>
+          <div className="tradingLabMvpHandoffCards" aria-label="관리자 거래 실험실 handoff summary">
+            <article>
+              <span>handoffSummaryId</span>
+              <strong>admin-mock-trading-lab-step174</strong>
+              <small>redacted deterministic UI summary</small>
+            </article>
+            <article>
+              <span>mvpStatus</span>
+              <strong>internal_mock_mvp_ready_for_final_review</strong>
+              <small>실거래 준비 완료가 아님</small>
+            </article>
+            <article>
+              <span>safety boundary</span>
+              <strong>admin-only · mock-only · fail-closed</strong>
+              <small>provider/order/live gate 차단 유지</small>
+            </article>
+            <article>
+              <span>legacy check notice</span>
+              <strong>check runner 정리 필요</strong>
+              <small>전체 node --test 통과와 개별 shell timeout 가능성을 분리 기록</small>
+            </article>
+          </div>
+          <div className="tradingLabMvpHandoffNotice" aria-label="MVP handoff 운영 이슈">
+            <article>
+              <span>Render metadata stale notice</span>
+              <strong>운영 점검 항목으로 분리</strong>
+              <p>
+                Render API/DB health는 정상이어도 health endpoint commit metadata가 최신 GitHub main과 다를 수 있습니다. 이는 provider/order/live readiness를 여는 근거가 아니며 운영 metadata 점검 항목입니다.
+              </p>
+            </article>
+            <article>
+              <span>Legacy check timeout notice</span>
+              <strong>pass log와 command timeout을 분리 기록</strong>
+              <p>
+                일부 legacy trading check script는 개별 shell에서 pass log를 출력한 뒤 무거운 service test runner 종료 문제로 timeout 가능성이 있습니다. 전체 node --test 통과 상태와 별도로, 향후 check runner 정리 또는 smoke bundle 단순화가 필요합니다.
+              </p>
+            </article>
+          </div>
+          <div className="tradingLabMvpHandoffLists">
+            <section aria-label="구현 완료 범위">
+              <span>구현 완료 범위</span>
+              <ul>
+                {TRADING_LAB_MVP_HANDOFF_IMPLEMENTED_AREAS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="아직 구현하지 않은 범위">
+              <span>아직 구현하지 않은 범위</span>
+              <ul>
+                {TRADING_LAB_MVP_HANDOFF_EXCLUDED_AREAS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="다음 개발 갈림길">
+              <span>다음 개발 갈림길</span>
+              <ul>
+                {TRADING_LAB_MVP_HANDOFF_REMAINING_TRACKS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="현재 readiness 상태">
+              <span>현재 readiness 상태</span>
+              <ul>
+                {TRADING_LAB_MVP_HANDOFF_READINESS_FLAGS.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.label}</span>
+                    <strong>{item.result}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="handoff status model">
+              <span>handoff status model</span>
+              <ul>
+                {TRADING_LAB_MVP_HANDOFF_NOTICE_ITEMS.map((item) => (
                   <li key={item.key}>
                     <span>{item.label}</span>
                     <strong>{item.result}</strong>
