@@ -180,6 +180,24 @@ const TRADING_LAB_SMOKE_PREFLIGHT_ITEMS = [
   { key: "header_artifact", label: "header artifact regression", status: "정상" },
 ];
 
+const TRADING_LAB_SMOKE_REVIEW_RESULT_ITEMS = [
+  { key: "admin_trading_route", label: "관리자 거래 실험실 route 정상", result: "정상 표시" },
+  { key: "mock_dashboard_visible", label: "모의 운용 대시보드 정상 표시", result: "정상 표시" },
+  { key: "safety_panel_visible", label: "거래 안전평가 정상 표시", result: "정상 표시" },
+  { key: "summary_first_visible", label: "summary-first 영역 표시", result: "정상 표시" },
+  { key: "safety_notice_visible", label: "안전 안내 표시됨", result: "정상 표시" },
+  { key: "badge_display_ok", label: "상태 badge 정상 표시", result: "구분 표시" },
+  { key: "empty_chart_placeholder_ok", label: "빈 chart placeholder 표시", result: "정상 표시" },
+  { key: "detail_log_collapsed", label: "상세 검증 로그 접힘 유지", result: "유지" },
+  { key: "detail_groups_present", label: "Step134~Step169 detail group 존재", result: "유지" },
+  { key: "provider_gate_blocked", label: "내부 provider 호출 없음", result: "차단 유지" },
+  { key: "order_submission_blocked", label: "주문 제출 없음", result: "차단 유지" },
+  { key: "db_write_blocked", label: "DB 저장 없음", result: "차단 유지" },
+  { key: "live_readiness_blocked", label: "실거래 준비 상태", result: "차단 유지" },
+  { key: "public_surfaces_blocked", label: "My Page·homepage 미노출", result: "유지" },
+  { key: "step166_preserved", label: "Step166 계정·구독·결제 sync", result: "보존" },
+];
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -1073,6 +1091,46 @@ export function TradingReadinessPanel() {
               <li key={item.key}>
                 <span>{item.label}</span>
                 <strong>{item.status}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="tradingLabSmokeReviewResult" data-admin-panel-key="trading-lab-smoke-preflight-review-result">
+          <div>
+            <span>smoke preflight review result</span>
+            <strong>관리자 거래 실험실 smoke 검토 결과</strong>
+            <p>
+              Step171 smoke preflight를 read-only 검토 결과로 요약합니다. 새 endpoint 없이 기존 Step169/admin readiness data와 Step171 화면 점검 결과를 재사용하며, KIS/provider 호출·주문 제출·DB write는 계속 차단됩니다.
+            </p>
+          </div>
+          <div className="tradingLabSmokeReviewCards" aria-label="관리자 거래 실험실 smoke 검토 결과 요약">
+            <article>
+              <span>표시 상태</span>
+              <strong>정상 표시</strong>
+              <small>모의 운용 대시보드 · 거래 안전평가</small>
+            </article>
+            <article>
+              <span>badge regression</span>
+              <strong>정상</strong>
+              <small>각 badge 구분 표시</small>
+            </article>
+            <article>
+              <span>provider/order/live gate</span>
+              <strong>차단 유지</strong>
+              <small>실거래 준비 상태: 차단 유지</small>
+            </article>
+            <article>
+              <span>next cleanup</span>
+              <strong>추가 정리 필요 없음</strong>
+              <small>상세 이력은 접힘 유지</small>
+            </article>
+          </div>
+          <ul aria-label="관리자 거래 실험실 smoke 검토 세부 결과">
+            {TRADING_LAB_SMOKE_REVIEW_RESULT_ITEMS.map((item) => (
+              <li key={item.key}>
+                <span>{item.label}</span>
+                <strong>{item.result}</strong>
               </li>
             ))}
           </ul>

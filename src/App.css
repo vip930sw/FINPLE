@@ -1288,6 +1288,105 @@ nav {
   font-weight: 900;
 }
 
+.tradingLabSmokeReviewResult {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-left: 4px solid #0f766e;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem;
+}
+
+.tradingLabSmokeReviewResult > div:first-child {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.tradingLabSmokeReviewResult span,
+.tradingLabSmokeReviewResult strong,
+.tradingLabSmokeReviewResult small,
+.tradingLabSmokeReviewResult p {
+  overflow-wrap: anywhere;
+}
+
+.tradingLabSmokeReviewResult > div:first-child span {
+  color: #0f766e;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tradingLabSmokeReviewResult > div:first-child strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.tradingLabSmokeReviewResult p {
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tradingLabSmokeReviewCards {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.tradingLabSmokeReviewCards article {
+  background: #ffffff;
+  border: 1px solid rgba(13, 148, 136, 0.16);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem;
+}
+
+.tradingLabSmokeReviewCards span,
+.tradingLabSmokeReviewResult li span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.tradingLabSmokeReviewCards strong,
+.tradingLabSmokeReviewResult li strong {
+  color: #0f766e;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.tradingLabSmokeReviewCards small {
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.tradingLabSmokeReviewResult ul {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tradingLabSmokeReviewResult li {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.65rem;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
