@@ -165,6 +165,21 @@ const TRADING_LAB_DETAIL_GROUPS = [
 const TRADING_LAB_EMPTY_CHART_NOTICE =
   "표시할 mock run 데이터가 아직 없습니다. 현재 화면은 안전 검증과 mock-only 상태 점검용입니다.";
 
+const TRADING_LAB_SMOKE_PREFLIGHT_ITEMS = [
+  { key: "admin_route", label: "관리자 route 접근", status: "표시 가능" },
+  { key: "mock_dashboard", label: "모의 운용 대시보드 표시", status: "표시 가능" },
+  { key: "safety_summary", label: "summary-first 안전 안내", status: "표시 가능" },
+  { key: "blocked_badges", label: "차단 badge 구분 표시", status: "표시 가능" },
+  { key: "empty_chart_placeholder", label: "빈 chart placeholder", status: "표시 가능" },
+  { key: "detail_chain", label: "상세 검증 로그 기본 접힘", status: "유지" },
+  { key: "step_groups", label: "Step134~Step169 detail group", status: "유지" },
+  { key: "step169_endpoint", label: "Step169 admin-only endpoint", status: "유지" },
+  { key: "no_step171_endpoint", label: "Step171 신규 endpoint 없음", status: "유지" },
+  { key: "public_ui_blocked", label: "My Page·homepage trading UI 미노출", status: "유지" },
+  { key: "readiness_flags", label: "readiness/provider/order/live flags", status: "false 유지" },
+  { key: "header_artifact", label: "header artifact regression", status: "정상" },
+];
+
 const DEFAULT_STRATEGY_DRAFT_FORM = Object.freeze({
   strategyName: "Admin mock strategy draft",
   mode: "mock",
@@ -1036,13 +1051,31 @@ export function TradingReadinessPanel() {
             이 화면은 FINPLE 내부 mock trading lab입니다. 실제 KIS 호출, 주문 제출, 실계좌 잔고 조회, DB write를 수행하지 않습니다.
           </p>
           <div className="tradingLabSafetyBadges tradingLabConsolidatedBadges" aria-label="모의 운용 대시보드 안전 배지">
-            <span>mock-only</span>
-            <span>admin-only</span>
-            <span>blocked</span>
+            <span>모의 전용</span>
+            <span>관리자 전용</span>
+            <span>차단 유지</span>
             <span>KIS 호출 없음</span>
             <span>주문 제출 없음</span>
             <span>DB 저장 없음</span>
           </div>
+        </div>
+
+        <div className="tradingLabSmokePreflightSummary" data-admin-panel-key="trading-lab-smoke-test-preflight">
+          <div>
+            <span>smoke test preflight</span>
+            <strong>관리자 화면 표시 안정성 점검</strong>
+            <p>
+              이 점검은 `/admin/trading` 화면 표시와 기존 Step169 admin-only 상태 재사용만 확인합니다. KIS/provider 호출, 주문 제출, DB write, 실제 계좌 조회는 수행하지 않습니다.
+            </p>
+          </div>
+          <ul aria-label="관리자 trading lab smoke test preflight 결과">
+            {TRADING_LAB_SMOKE_PREFLIGHT_ITEMS.map((item) => (
+              <li key={item.key}>
+                <span>{item.label}</span>
+                <strong>{item.status}</strong>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="tradingLabKpiGrid" aria-label="모의 운용 KPI 요약">
@@ -1132,7 +1165,7 @@ export function TradingReadinessPanel() {
           <summary>
             <span>상세 검증 로그</span>
             <strong>{detailGroupCount}개 그룹</strong>
-            <em>기본 접힘 · 필요 시 펼쳐보기</em>
+            <em>최근 핵심 상태만 표시 · 상세 검증 이력 펼쳐보기</em>
           </summary>
           <div className="tradingLabDetailChainGroups" aria-label="상세 검증 로그 그룹 요약">
             {TRADING_LAB_DETAIL_GROUPS.map((group) => (
