@@ -1145,56 +1145,66 @@ export function TradingReadinessPanel() {
 
       {activeTradingPanelTab === "safety" ? (
     <section className="accountCard tradingReadinessPanel tradingSafetyPanel" data-admin-panel-key="trading-readiness">
-      <div className="serverStorageHeader">
-        <div>
-          <p className="accountMiniLabel">거래 안전상태</p>
-          <h2>거래 안전상태</h2>
-          <p>
-            이 화면은 개인계좌 기반 거래 기능을 실제로 실행하기 전, 관리자가 안전상태를 점검하기 위한 읽기 전용 화면입니다.
-            현재 실제 KIS 호출과 주문 제출은 모두 차단되어 있습니다.
-          </p>
-        </div>
-        <span className={`tradingReadinessBadge ${loadState}`}>{formatStatus(readiness?.status || loadState)}</span>
-      </div>
-
-      <div className="accountStatusGrid tradingReadinessMetrics">
-        <article>
-          <span>모드</span>
-          <strong>{formatStatus(readiness?.tradingMode || "mock")}</strong>
-          <p>모의 / 드라이런 / 섀도우 상태만 표시합니다.</p>
-        </article>
-        <article>
-          <span>비상 차단</span>
-          <strong>{formatStatus(readiness?.killSwitch?.status || "blocked")}</strong>
-          <p>{readiness?.killSwitch?.enabled === false ? "해제 확인 전" : "활성 또는 강제 차단"}</p>
-        </article>
-        <article>
-          <span>허용 종목</span>
-          <strong>{formatStatus(readiness?.allowedSymbols?.status || "blocked")}</strong>
-          <p>{Number(readiness?.allowedSymbols?.count || 0)}개 설정됨</p>
-        </article>
-        <article>
-          <span>차단 사유</span>
-          <strong>{blockerCount}</strong>
-          <p>오류 시 자동 차단 점검 활성</p>
-        </article>
-      </div>
-
-      <div className="tradingReadinessFlagGrid" aria-label="거래 안전상태 플래그">
-        {FLAG_LABELS.map(([key, label]) => (
-          <div key={key} className="tradingReadinessFlag">
-            <span>{label}</span>
-            <strong className={statusClass(flags[key])}>{boolStatus(flags[key])}</strong>
+      <div className="tradingSafetyAssessmentShell" data-admin-panel-key="trading-safety-assessment-layout-polish">
+        <div className="tradingSafetyAssessmentHeader">
+          <div>
+            <span>거래 안전상태 요약</span>
+            <h2>거래 안전평가</h2>
+            <p>
+              이 화면은 관리자 전용 안전상태 평가입니다. 실제 거래는 차단되어 있으며 KIS 호출, 주문 제출, DB 변경, 일반 사용자 화면 노출은 모두 막혀 있습니다.
+            </p>
           </div>
-        ))}
-      </div>
+          <strong className={`tradingReadinessBadge ${loadState}`}>{formatStatus(readiness?.status || loadState)}</strong>
+        </div>
 
-      <div className="tradingReadinessAudit">
-        <span>최근 감사 이벤트</span>
-        <strong>{formatStatus(readiness?.lastAuditEvent?.status || "placeholder_only")}</strong>
-        <p>{readiness?.lastAuditEvent?.message || FALLBACK_READINESS.lastAuditEvent.message}</p>
-      </div>
+        <div className="tradingSafetyNoticeChips" aria-label="거래 안전평가 차단 상태 요약">
+          <span>실제 거래 차단</span>
+          <span>KIS 호출 차단</span>
+          <span>주문 제출 차단</span>
+          <span>DB 변경 차단</span>
+          <span>일반 사용자 화면 미노출</span>
+          <span>오류 시 자동 차단</span>
+        </div>
 
+        <div className="tradingSafetyStatusCards" aria-label="거래 안전평가 핵심 상태 카드">
+          <article>
+            <span>모드</span>
+            <strong>{formatStatus(readiness?.tradingMode || "mock")}</strong>
+            <p>모의·dry-run·shadow 상태만 표시합니다.</p>
+          </article>
+          <article>
+            <span>비상 차단</span>
+            <strong>{formatStatus(readiness?.killSwitch?.status || "blocked")}</strong>
+            <p>{readiness?.killSwitch?.enabled === false ? "해제 여부 검토 필요" : "차단 상태 유지"}</p>
+          </article>
+          <article>
+            <span>허용 종목</span>
+            <strong>{Number(readiness?.allowedSymbols?.count || 0)}개</strong>
+            <p>{formatStatus(readiness?.allowedSymbols?.status || "blocked")} 상태입니다.</p>
+          </article>
+          <article>
+            <span>차단 사유</span>
+            <strong>{blockerCount}</strong>
+            <p>오류 시 자동 차단 평가 활성</p>
+          </article>
+        </div>
+
+        <div className="tradingSafetyFlagBadgeGrid" aria-label="거래 안전평가 차단 항목">
+          {FLAG_LABELS.map(([key, label]) => (
+            <div key={key} className="tradingSafetyFlagBadge">
+              <span>{label}</span>
+              <strong className={statusClass(flags[key])}>{boolStatus(flags[key])}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="tradingSafetyAuditEmptyState" role="note">
+          <span>최근 감사 이벤트</span>
+          <strong>{formatStatus(readiness?.lastAuditEvent?.status || "placeholder_only")}</strong>
+          <p>실제 거래 감사 이벤트는 아직 발생하지 않았습니다.</p>
+          <p>현재 화면은 관리자 전용 안전상태 평가입니다.</p>
+        </div>
+      </div>
     </section>
       ) : null}
 
@@ -4366,6 +4376,13 @@ export function TradingReadinessPanel() {
 
       {activeTradingPanelTab === "safety" ? (
     <section className="accountCard tradingReadinessPanel tradingSafetyPanel tradingSafetyPanelDetails" data-admin-panel-key="trading-safety-details">
+      <details className="tradingSafetyDetailChainShell" data-admin-panel-key="trading-safety-detail-chain" data-default-collapsed="true">
+        <summary>
+          <span>상세 검증 이력 펼쳐보기</span>
+          <strong>최근 운영 상태만 기본 표시</strong>
+          <em>read-only</em>
+        </summary>
+        <div className="tradingSafetyDetailChainBody">
       <div className="tradingReadinessAudit tradingShadowHistory">
         <span>섀도우 이용 상태</span>
         <strong>{formatStatus(shadowStatus?.status || "read_only_shadow_history")}</strong>
@@ -4528,6 +4545,8 @@ export function TradingReadinessPanel() {
           사전검증 경계만 표시하며 KIS token 발급, 시세 조회, provider 호출, 원본 설정 노출, 준비상태 승격은 없습니다.
         </p>
       </div>
+        </div>
+      </details>
     </section>
       ) : null}
     </div>
