@@ -1154,6 +1154,15 @@ export function TradingReadinessPanel() {
     : [];
   const labMockTradingHistoryPersistenceValidation = labMockTradingHistoryPersistenceArchitectureStatus?.validation || {};
   const labMockTradingHistoryPersistenceBlocked = labMockTradingHistoryPersistenceArchitectureStatus?.blockedConfirmation || {};
+  const labMockTradingHistorySupabaseSchemaDraftStatus = tradingLabDashboardStatus?.mockTradingHistorySupabaseSchemaDraftStatus || {};
+  const labMockTradingHistorySupabaseSchemaDraft = labMockTradingHistorySupabaseSchemaDraftStatus?.schemaDraft || {};
+  const labMockTradingHistorySupabaseTables = Array.isArray(labMockTradingHistorySupabaseSchemaDraftStatus?.tableSummary)
+    ? labMockTradingHistorySupabaseSchemaDraftStatus.tableSummary
+    : [];
+  const labMockTradingHistorySupabaseRelationships = labMockTradingHistorySupabaseSchemaDraftStatus?.relationshipSummary || {};
+  const labMockTradingHistorySupabaseQueries = labMockTradingHistorySupabaseSchemaDraftStatus?.queryContractSummary || {};
+  const labMockTradingHistorySupabaseValidation = labMockTradingHistorySupabaseSchemaDraftStatus?.validation || {};
+  const labMockTradingHistorySupabaseBlocked = labMockTradingHistorySupabaseSchemaDraftStatus?.blockedConfirmation || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -2172,6 +2181,122 @@ export function TradingReadinessPanel() {
                   <li>
                     <span>blockers / warnings</span>
                     <strong>{labMockTradingHistoryPersistenceValidation.blockerCount ?? 0} / {labMockTradingHistoryPersistenceValidation.warningCount ?? 0}</strong>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </details>
+
+        <details className="tradingLabPersistenceArchitectureDetails" data-admin-panel-key="mock-trading-history-supabase-schema-draft">
+          <summary>
+            <span>Mock trading history Supabase schema draft</span>
+            <strong>{formatStatus(labMockTradingHistorySupabaseSchemaDraft.status || "blocked")}</strong>
+            <em>{labMockTradingHistorySupabaseTables.length} tables - draft only</em>
+          </summary>
+          <div className="tradingLabPersistenceArchitectureBody">
+            <div className="tradingLabPersistenceArchitectureStatusGrid" aria-label="mock trading history Supabase schema draft status">
+              <article>
+                <span>database / platform</span>
+                <strong>{formatStatus(`${labMockTradingHistorySupabaseSchemaDraft.database || "postgres"}_${labMockTradingHistorySupabaseSchemaDraft.platform || "supabase"}`)}</strong>
+              </article>
+              <article>
+                <span>schema version</span>
+                <strong>{formatStatus(labMockTradingHistorySupabaseSchemaDraft.schemaVersion || "draft_v1")}</strong>
+              </article>
+              <article>
+                <span>SQL file</span>
+                <strong>{labMockTradingHistorySupabaseBlocked.sqlFileCreated === false ? "none" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>migration</span>
+                <strong>{labMockTradingHistorySupabaseBlocked.migrationFileCreated === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>DB write</span>
+                <strong>{labMockTradingHistorySupabaseBlocked.persistentDbWriteAttempted === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>next step</span>
+                <strong>{formatStatus(labMockTradingHistorySupabaseSchemaDraft.nextImplementationStep || "mock_trading_history_browser_ui")}</strong>
+              </article>
+            </div>
+            <p className="tradingLabPersistenceArchitectureNotice">
+              This schema draft describes table, column, relationship, index, constraint, RLS, retention, and query-contract candidates only. It does not create SQL files, migration files, DB schema changes, Supabase mutations, or persistent DB writes.
+            </p>
+            <div className="tradingLabPersistenceArchitectureLists">
+              <section aria-label="mock trading history Supabase schema table draft">
+                <span>table drafts</span>
+                <ul>
+                  {labMockTradingHistorySupabaseTables.slice(0, 9).map((table) => (
+                    <li key={table.tableName}>
+                      <span>{table.tableName}</span>
+                      <strong>{table.columnCount} columns</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section aria-label="mock trading history Supabase relationship and index draft">
+                <span>relationships / indexes</span>
+                <ul>
+                  <li>
+                    <span>relationships</span>
+                    <strong>{labMockTradingHistorySupabaseRelationships.relationshipCount ?? 0}</strong>
+                  </li>
+                  <li>
+                    <span>self reference</span>
+                    <strong>{labMockTradingHistorySupabaseRelationships.selfReferenceIncluded === true ? "parent_restore" : "blocked"}</strong>
+                  </li>
+                  <li>
+                    <span>delete policy</span>
+                    <strong>{formatStatus(labMockTradingHistorySupabaseRelationships.deletePolicy || "archive_or_invalidate_first")}</strong>
+                  </li>
+                </ul>
+              </section>
+              <section aria-label="mock trading history Supabase query contracts">
+                <span>browser / compare / restore contract</span>
+                <ul>
+                  <li>
+                    <span>browser fields</span>
+                    <strong>{labMockTradingHistorySupabaseQueries.browserFieldCount ?? 0}</strong>
+                  </li>
+                  <li>
+                    <span>compare runs</span>
+                    <strong>{labMockTradingHistorySupabaseQueries.compareRunLimit?.min || 2}-{labMockTradingHistorySupabaseQueries.compareRunLimit?.max || 3}</strong>
+                  </li>
+                  <li>
+                    <span>restore write now</span>
+                    <strong>{labMockTradingHistorySupabaseQueries.restoreWriteImplementedNow === false ? "blocked" : "blocked"}</strong>
+                  </li>
+                </ul>
+              </section>
+            </div>
+            <div className="tradingLabPersistenceArchitectureLists">
+              <section aria-label="mock trading history Supabase migration sequencing">
+                <span>migration sequencing draft</span>
+                <ul>
+                  {(labMockTradingHistorySupabaseSchemaDraft.migrationOrder || []).slice(0, 14).map((step) => (
+                    <li key={step}>
+                      <span>{step}</span>
+                      <strong>draft</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section aria-label="mock trading history Supabase RLS retention and blockers">
+                <span>RLS / retention / blockers</span>
+                <ul>
+                  <li>
+                    <span>RLS public and mypage</span>
+                    <strong>denied</strong>
+                  </li>
+                  <li>
+                    <span>retention</span>
+                    <strong>archive first</strong>
+                  </li>
+                  <li>
+                    <span>blockers / warnings</span>
+                    <strong>{labMockTradingHistorySupabaseValidation.blockerCount ?? 0} / {labMockTradingHistorySupabaseValidation.warningCount ?? 0}</strong>
                   </li>
                 </ul>
               </section>
