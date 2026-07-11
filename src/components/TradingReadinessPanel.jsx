@@ -467,6 +467,15 @@ const MOCK_HISTORY_SORT_LABELS = Object.freeze({
   final_equity_desc: "최종 모의 평가금액 높은 순",
 });
 
+const MOCK_HISTORY_COMPARE_METRICS = Object.freeze([
+  { key: "finalMockEquity", label: "최종 모의 평가금액", direction: "higher_better" },
+  { key: "cumulativeReturn", label: "누적 모의 수익률", direction: "higher_better", percent: true },
+  { key: "mdd", label: "MDD 방어력", direction: "lower_abs_better", percent: true },
+  { key: "volatility", label: "변동성 안정성", direction: "lower_better", percent: true },
+  { key: "sharpe", label: "Sharpe", direction: "higher_better" },
+  { key: "riskScore", label: "위험점수", direction: "lower_better" },
+]);
+
 function getMockHistoryRecordTime(record) {
   return Date.parse(record?.completedAt || record?.createdAt || "1970-01-01T00:00:00.000Z");
 }
@@ -527,6 +536,116 @@ function paginateMockHistoryRecords(records, page, pageSize) {
     pageCount,
     pageSize: normalizedPageSize,
     totalRecords: records.length,
+  };
+}
+
+function getMockHistoryCompareMetricValue(record, metricKey) {
+  if (metricKey === "mdd") return Math.abs(Number(record?.mdd || 0));
+  return Number(record?.[metricKey] || 0);
+}
+
+function deriveMockHistoryAllocation(record) {
+  const text = `${record?.strategyName || ""} ${record?.allocationSummary || ""}`.toLowerCase();
+  if (text.includes("cash defense")) return { equity: 30, income: 35, cash: 35, other: 0 };
+  if (text.includes("income") || text.includes("dividend")) return { equity: 25, income: 55, cash: 15, other: 5 };
+  if (text.includes("low volatility")) return { equity: 45, income: 30, cash: 20, other: 5 };
+  if (text.includes("tech")) return { equity: 75, income: 10, cash: 10, other: 5 };
+  if (text.includes("balanced")) return { equity: 60, income: 25, cash: 10, other: 5 };
+  return { equity: 50, income: 25, cash: 15, other: 10 };
+}
+
+function rankMockHistoryCompareMetric(records, metric) {
+  if (metric.direction === "neutral") return [];
+  const factor = metric.direction === "higher_better" ? -1 : 1;
+  return [...records].sort((a, b) => {
+    const left = getMockHistoryCompareMetricValue(a, metric.key);
+    const right = getMockHistoryCompareMetricValue(b, metric.key);
+    return (left - right) * factor || String(a.runId).localeCompare(String(b.runId));
+  });
+}
+
+function buildMockHistoryCompareUiModel(records, serverCompare = {}) {
+  const selectedRecords = Array.isArray(records) ? records : [];
+  const unsupportedCount = selectedRecords.filter((record) => !MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) || record.compareSupported !== true).length;
+  const calculationVersions = [...new Set(selectedRecords.map((record) => record.calculationVersion).filter(Boolean))];
+  const compareReady = selectedRecords.length >= 2 && selectedRecords.length <= 3 && unsupportedCount === 0;
+  const compatibilityStatus = calculationVersions.length <= 1
+    ? "compatible"
+    : calculationVersions.some((version) => version !== "mock_calc_v3")
+      ? "incompatible"
+      : "compatible_with_warning";
+  const baseline = selectedRecords[0] || null;
+  const metricComparisons = compareReady ? MOCK_HISTORY_COMPARE_METRICS.map((metric) => ({
+    ...metric,
+    baselineRunId: baseline?.runId || null,
+    values: selectedRecords.map((record) => {
+      const value = getMockHistoryCompareMetricValue(record, metric.key);
+      const baselineValue = baseline ? getMockHistoryCompareMetricValue(baseline, metric.key) : value;
+      return {
+        runId: record.runId,
+        value,
+        differenceFromBaseline: Number((value - baselineValue).toFixed(2)),
+      };
+    }),
+  })) : [];
+  const rankings = compareReady && compatibilityStatus !== "incompatible"
+    ? MOCK_HISTORY_COMPARE_METRICS.map((metric) => ({
+        metricKey: metric.key,
+        label: metric.label,
+        rows: rankMockHistoryCompareMetric(selectedRecords, metric).map((record, index) => ({
+          rank: index + 1,
+          runId: record.runId,
+          value: getMockHistoryCompareMetricValue(record, metric.key),
+        })),
+      }))
+    : [];
+  const allocationComparisons = compareReady ? selectedRecords.map((record) => ({
+    runId: record.runId,
+    allocation: deriveMockHistoryAllocation(record),
+  })) : [];
+  const riskComparisons = compareReady ? selectedRecords.map((record) => ({
+    runId: record.runId,
+    riskScore: record.riskScore,
+    warningCount: record.warningCount,
+    blockerCount: record.blockerCount,
+    riskLevel: Number(record.riskScore || 0) <= 30 ? "낮음" : Number(record.riskScore || 0) <= 60 ? "중간" : "높음",
+  })) : [];
+  const restoreCandidateEligibility = compareReady ? selectedRecords.map((record) => ({
+    restoreEligible: record.redacted === true && Boolean(record.strategyVersion) && Boolean(record.inputSummary),
+    restoreSourceRunId: record.runId,
+    sourceStrategyVersion: record.strategyVersion,
+    dbWriteStatus: "blocked",
+    reason: "Step190 restore candidate contract",
+  })) : [];
+
+  return {
+    compareId: serverCompare.compareId || "step189_mock_trading_history_compare_ui",
+    compareReady,
+    selectedRunIds: selectedRecords.map((record) => record.runId),
+    selectedRuns: selectedRecords,
+    compatibilityStatus,
+    unsupportedCount,
+    metricComparisons,
+    allocationComparisons,
+    riskComparisons,
+    rankings,
+    highlightedDifferences: metricComparisons.map((metric) => {
+      const values = metric.values || [];
+      if (values.length === 0) return null;
+      const highest = values.reduce((best, current) => (current.value > best.value ? current : best), values[0]);
+      const lowest = values.reduce((best, current) => (current.value < best.value ? current : best), values[0]);
+      return {
+        metricKey: metric.key,
+        label: metric.label,
+        highestRunId: highest.runId,
+        lowestRunId: lowest.runId,
+        spread: Number((highest.value - lowest.value).toFixed(2)),
+      };
+    }).filter(Boolean),
+    restoreCandidateEligibility,
+    dbReadStatus: serverCompare.dbReadStatus || "blocked",
+    dbWriteStatus: serverCompare.dbWriteStatus || "blocked",
+    nextStep: serverCompare.nextStep || "mock_strategy_restore_candidate",
   };
 }
 
@@ -1284,6 +1403,11 @@ export function TradingReadinessPanel() {
   const labMockHistoryCalculationVersions = [...new Set(labMockHistorySelectedRecords.map((record) => record.calculationVersion))];
   const labMockHistoryCompareReady = labMockHistorySelectedRecords.length >= 2 && labMockHistorySelectedRecords.length <= 3 && labMockHistoryUnsupportedSelectionCount === 0;
   const labMockHistoryCompareWarning = labMockHistoryCalculationVersions.length > 1 ? "calculation_version_mismatch_warning" : "compatible";
+  const labMockTradingHistoryCompareStatus = tradingLabDashboardStatus?.mockTradingHistoryCompareStatus || {};
+  const labMockTradingHistoryCompare = useMemo(
+    () => buildMockHistoryCompareUiModel(labMockHistorySelectedRecords, labMockTradingHistoryCompareStatus?.compare || {}),
+    [labMockHistorySelectedRecords, labMockTradingHistoryCompareStatus],
+  );
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   const updateMockHistoryFilter = (key, value) => {
     setMockHistoryFilters((current) => ({ ...current, [key]: value }));
@@ -2653,6 +2777,140 @@ export function TradingReadinessPanel() {
                 </ul>
               </section>
             </div>
+            <details className="tradingLabHistoryCompareDetails" data-admin-panel-key="mock-trading-history-compare-ui">
+              <summary>
+                <span>Mock trading history compare</span>
+                <strong>{labMockTradingHistoryCompare.compareReady ? "compare-ready" : "select 2-3 supported"}</strong>
+                <em>{labMockTradingHistoryCompare.selectedRunIds.length}/3 selected - DB blocked</em>
+              </summary>
+              <div className="tradingLabHistoryCompareBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  이 비교는 deterministic mock history 기반입니다. 실제 거래 성과나 실계좌 수익률이 아니며 DB read/write, Supabase mutation, provider calls, order submission은 계속 차단되어 있습니다. 비교 결과는 내부 mock 검토용 참고 자료입니다.
+                </p>
+                <div className="tradingLabHistoryCompareStatusGrid" aria-label="mock trading history compare status">
+                  <article>
+                    <span>선택 상태</span>
+                    <strong>{labMockTradingHistoryCompare.selectedRunIds.length}/3</strong>
+                  </article>
+                  <article>
+                    <span>compatibility</span>
+                    <strong>{formatStatus(labMockTradingHistoryCompare.compatibilityStatus)}</strong>
+                  </article>
+                  <article>
+                    <span>unsupported</span>
+                    <strong>{labMockTradingHistoryCompare.unsupportedCount}</strong>
+                  </article>
+                  <article>
+                    <span>DB read/write</span>
+                    <strong>{labMockTradingHistoryCompare.dbReadStatus} / {labMockTradingHistoryCompare.dbWriteStatus}</strong>
+                  </article>
+                  <article>
+                    <span>next step</span>
+                    <strong>{formatStatus(labMockTradingHistoryCompare.nextStep)}</strong>
+                  </article>
+                </div>
+                {!labMockTradingHistoryCompare.compareReady ? (
+                  <p className="tradingLabHistoryBrowserEmpty">
+                    비교할 모의 실행을 2개 이상 선택해주세요. 실패, 차단, 검토중 상태의 실행은 성과 비교 대상이 아니며 실제 거래 성과가 아닌 mock-only 결과입니다.
+                  </p>
+                ) : (
+                  <>
+                    {labMockTradingHistoryCompare.compatibilityStatus !== "compatible" ? (
+                      <p className="tradingLabHistoryBrowserEmpty">
+                        계산 버전이 달라 직접 우열 비교를 제한합니다. raw summary는 표시하지만 지표별 순위 해석에 주의가 필요합니다.
+                      </p>
+                    ) : null}
+                    <div className="tradingLabHistoryCompareCards" aria-label="selected mock trading history compare cards">
+                      {labMockTradingHistoryCompare.selectedRuns.map((record) => (
+                        <article key={record.runId}>
+                          <span>{record.runLabel}</span>
+                          <strong>{record.strategyName} / {record.strategyVersion}</strong>
+                          <ul>
+                            <li>status: {formatStatus(record.runStatus)}</li>
+                            <li>completed: {record.completedAt ? record.completedAt.slice(0, 10) : record.createdAt?.slice(0, 10)}</li>
+                            <li>assets/orders/fills: {record.assetCount}/{record.orderCount}/{record.fillCount}</li>
+                            <li>calc: {record.calculationVersion}</li>
+                          </ul>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="tradingLabHistoryCompareTableWrap">
+                      <table className="tradingLabHistoryCompareTable" aria-label="mock history metric comparison table">
+                        <thead>
+                          <tr>
+                            <th>metric</th>
+                            {labMockTradingHistoryCompare.selectedRuns.map((record) => (
+                              <th key={record.runId}>{record.runLabel}</th>
+                            ))}
+                            <th>difference note</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {labMockTradingHistoryCompare.metricComparisons.map((metric) => (
+                            <tr key={metric.key}>
+                              <td>{metric.label}</td>
+                              {metric.values.map((value) => (
+                                <td key={value.runId}>
+                                  {formatLabNumber(value.value, { percent: metric.percent })} <small>({value.differenceFromBaseline >= 0 ? "+" : ""}{formatLabNumber(value.differenceFromBaseline, { percent: metric.percent })})</small>
+                                </td>
+                              ))}
+                              <td>{metric.direction === "lower_abs_better" ? "MDD는 절댓값이 낮을수록 방어적 후보입니다." : metric.direction === "lower_better" ? "낮을수록 안정적 후보입니다." : "높을수록 우수 후보지만 내부 mock 검토용입니다."}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="tradingLabHistoryCompareGrid">
+                      <section aria-label="mock history allocation comparison">
+                        <span>allocation comparison</span>
+                        <ul>
+                          {labMockTradingHistoryCompare.allocationComparisons.map((entry) => (
+                            <li key={entry.runId}>
+                              {entry.runId}: 주식 {entry.allocation.equity}% / 인컴 {entry.allocation.income}% / 현금 {entry.allocation.cash}% / 기타 {entry.allocation.other}%
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock history risk comparison">
+                        <span>risk comparison</span>
+                        <ul>
+                          {labMockTradingHistoryCompare.riskComparisons.map((entry) => (
+                            <li key={entry.runId}>
+                              {entry.runId}: 위험 {entry.riskLevel}, score {entry.riskScore}, warning/blocker {entry.warningCount}/{entry.blockerCount}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock history metric rankings">
+                        <span>지표별 상대 순위</span>
+                        {labMockTradingHistoryCompare.rankings.length > 0 ? (
+                          <ul>
+                            {labMockTradingHistoryCompare.rankings.map((ranking) => (
+                              <li key={ranking.metricKey}>
+                                {ranking.label}: {ranking.rows.map((row) => `${row.rank}. ${row.runId}`).join(" / ")}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>계산 기준이 달라 순위 비교를 제한합니다.</p>
+                        )}
+                      </section>
+                      <section aria-label="mock strategy restore candidate eligibility">
+                        <span>restore candidate eligibility</span>
+                        <ul>
+                          {labMockTradingHistoryCompare.restoreCandidateEligibility.map((entry) => (
+                            <li key={entry.restoreSourceRunId}>
+                              {entry.restoreSourceRunId}: {entry.restoreEligible ? "Step190 후보 가능" : "후보 차단"} / DB write {entry.dbWriteStatus}
+                            </li>
+                          ))}
+                        </ul>
+                        <button type="button" disabled>전략 복원 후보 확인 - Step190에서 제공 예정</button>
+                      </section>
+                    </div>
+                  </>
+                )}
+              </div>
+            </details>
           </div>
         </details>
 

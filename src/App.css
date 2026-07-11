@@ -2670,6 +2670,113 @@ nav {
   padding: 0;
 }
 
+.tradingLabHistoryCompareDetails {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tradingLabHistoryCompareDetails summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.tradingLabHistoryCompareDetails summary span,
+.tradingLabHistoryCompareStatusGrid span,
+.tradingLabHistoryCompareCards span,
+.tradingLabHistoryCompareGrid section > span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tradingLabHistoryCompareDetails summary strong,
+.tradingLabHistoryCompareDetails summary em,
+.tradingLabHistoryCompareStatusGrid strong {
+  color: #0f172a;
+}
+
+.tradingLabHistoryCompareBody {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tradingLabHistoryCompareStatusGrid,
+.tradingLabHistoryCompareCards,
+.tradingLabHistoryCompareGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.tradingLabHistoryCompareStatusGrid article,
+.tradingLabHistoryCompareCards article,
+.tradingLabHistoryCompareGrid section {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tradingLabHistoryCompareCards article {
+  display: grid;
+  gap: 8px;
+}
+
+.tradingLabHistoryCompareCards ul,
+.tradingLabHistoryCompareGrid ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.tradingLabHistoryCompareTableWrap {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.tradingLabHistoryCompareTable {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+.tradingLabHistoryCompareTable th,
+.tradingLabHistoryCompareTable td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tradingLabHistoryCompareTable th {
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+.tradingLabHistoryCompareTable small {
+  color: #64748b;
+}
+
+.tradingLabHistoryCompareGrid button {
+  background: #e2e8f0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  color: #475569;
+  cursor: not-allowed;
+  margin-top: 10px;
+  padding: 8px 10px;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;

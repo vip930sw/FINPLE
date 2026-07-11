@@ -7,6 +7,10 @@ import {
   TRADING_LAB_MOCK_HISTORY_BROWSER_MODEL,
   buildAdminTradingLabMockHistoryBrowserStatus,
 } from "./tradingMockHistoryBrowser.js";
+import {
+  TRADING_LAB_MOCK_HISTORY_COMPARE_MODEL,
+  buildAdminTradingLabMockHistoryCompareStatus,
+} from "./tradingMockHistoryCompare.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21811,6 +21815,15 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockTradingHistoryCompareStatus = input.mockTradingHistoryCompareStatus || buildAdminTradingLabMockHistoryCompareStatus(
+    {
+      ...input,
+      records: mockTradingHistoryBrowserStatus.browser?.records,
+      selectedRunIds: mockTradingHistoryBrowserStatus.browser?.compareCandidateSummary?.selectedRunIds,
+      browserStatus: mockTradingHistoryBrowserStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21866,6 +21879,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockTradingHistoryPersistenceArchitectureStatus,
     mockTradingHistorySupabaseSchemaDraftStatus,
     mockTradingHistoryBrowserStatus,
+    mockTradingHistoryCompareStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22049,6 +22063,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockTradingHistoryPersistenceArchitectureModel: TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_MODEL,
     mockTradingHistorySupabaseSchemaDraftModel: TRADING_LAB_MOCK_HISTORY_SUPABASE_SCHEMA_DRAFT_MODEL,
     mockTradingHistoryBrowserModel: TRADING_LAB_MOCK_HISTORY_BROWSER_MODEL,
+    mockTradingHistoryCompareModel: TRADING_LAB_MOCK_HISTORY_COMPARE_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
