@@ -3,6 +3,10 @@ import {
   TRADING_LAB_MOCK_HISTORY_SUPABASE_SCHEMA_DRAFT_MODEL,
   buildAdminTradingLabMockHistorySupabaseSchemaDraftStatus,
 } from "./tradingMockHistorySupabaseSchemaDraft.js";
+import {
+  TRADING_LAB_MOCK_HISTORY_BROWSER_MODEL,
+  buildAdminTradingLabMockHistoryBrowserStatus,
+} from "./tradingMockHistoryBrowser.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21800,6 +21804,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockTradingHistoryBrowserStatus = input.mockTradingHistoryBrowserStatus || buildAdminTradingLabMockHistoryBrowserStatus(
+    {
+      ...input,
+      schemaDraftStatus: mockTradingHistorySupabaseSchemaDraftStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21854,6 +21865,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     dbBackedMockTradingHistoryMigrationReviewResultStatus,
     mockTradingHistoryPersistenceArchitectureStatus,
     mockTradingHistorySupabaseSchemaDraftStatus,
+    mockTradingHistoryBrowserStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22036,6 +22048,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     dbBackedMockTradingHistoryMigrationReviewReceiptSchema: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_REVIEW_RECEIPT_SCHEMA,
     mockTradingHistoryPersistenceArchitectureModel: TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_MODEL,
     mockTradingHistorySupabaseSchemaDraftModel: TRADING_LAB_MOCK_HISTORY_SUPABASE_SCHEMA_DRAFT_MODEL,
+    mockTradingHistoryBrowserModel: TRADING_LAB_MOCK_HISTORY_BROWSER_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,

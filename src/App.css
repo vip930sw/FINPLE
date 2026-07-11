@@ -2477,6 +2477,199 @@ nav {
   padding-top: 0.4rem;
 }
 
+.tradingLabHistoryBrowserDetails {
+  background: #f8fafc;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 8px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.tradingLabHistoryBrowserDetails summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  list-style: none;
+  padding: 0.82rem 0.95rem;
+}
+
+.tradingLabHistoryBrowserDetails summary span,
+.tradingLabHistoryBrowserStatusGrid span,
+.tradingLabHistoryBrowserControls span,
+.tradingLabHistoryBrowserDetailGrid section > span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.tradingLabHistoryBrowserDetails summary strong,
+.tradingLabHistoryBrowserDetails summary em,
+.tradingLabHistoryBrowserStatusGrid strong {
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.tradingLabHistoryBrowserBody {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0 0.95rem 0.95rem;
+}
+
+.tradingLabHistoryBrowserNotice,
+.tradingLabHistoryBrowserEmpty {
+  background: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 8px;
+  color: #1e3a8a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0.72rem;
+}
+
+.tradingLabHistoryBrowserStatusGrid,
+.tradingLabHistoryBrowserControls,
+.tradingLabHistoryBrowserDetailGrid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.tradingLabHistoryBrowserStatusGrid article,
+.tradingLabHistoryBrowserControls label,
+.tradingLabHistoryBrowserDetailGrid section {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.68rem;
+}
+
+.tradingLabHistoryBrowserControls select,
+.tradingLabHistoryBrowserPagination select {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 6px;
+  color: #0f172a;
+  min-height: 34px;
+  width: 100%;
+}
+
+.tradingLabHistoryBrowserTableWrap {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.tradingLabHistoryBrowserTable {
+  border-collapse: collapse;
+  color: #0f172a;
+  font-size: 0.76rem;
+  min-width: 980px;
+  width: 100%;
+}
+
+.tradingLabHistoryBrowserTable th,
+.tradingLabHistoryBrowserTable td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.55rem 0.62rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tradingLabHistoryBrowserTable th {
+  color: #475569;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.tradingLabHistoryBrowserTable tr.focused {
+  background: #eff6ff;
+}
+
+.tradingLabHistoryBrowserTable button {
+  background: transparent;
+  border: 0;
+  color: #1d4ed8;
+  cursor: pointer;
+  display: block;
+  font-weight: 900;
+  max-width: 240px;
+  padding: 0;
+  text-align: left;
+}
+
+.tradingLabHistoryBrowserTable small {
+  color: #64748b;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.tradingLabHistoryBrowserPagination {
+  align-items: center;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.55rem;
+}
+
+.tradingLabHistoryBrowserPagination label {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.tradingLabHistoryBrowserPagination button {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 6px;
+  color: #0f172a;
+  min-height: 34px;
+  padding: 0 0.72rem;
+}
+
+.tradingLabHistoryBrowserPagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.tradingLabHistoryBrowserDetailGrid dl {
+  display: grid;
+  gap: 0.45rem 0.7rem;
+  grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr);
+  margin: 0;
+}
+
+.tradingLabHistoryBrowserDetailGrid dt {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.tradingLabHistoryBrowserDetailGrid dd,
+.tradingLabHistoryBrowserDetailGrid li {
+  color: #0f172a;
+  font-weight: 800;
+  margin: 0;
+}
+
+.tradingLabHistoryBrowserDetailGrid ul {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;

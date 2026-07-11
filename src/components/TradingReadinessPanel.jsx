@@ -443,6 +443,93 @@ function formatPositionField(position, valueKey, placeholderKey, options = {}) {
   return formatLabNumber(position?.[valueKey], options) || formatStatus(position?.[placeholderKey] || "mock_only");
 }
 
+const MOCK_HISTORY_REFERENCE_NOW = Date.parse("2026-07-11T00:00:00.000Z");
+const MOCK_HISTORY_MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MOCK_HISTORY_COMPARE_STATUSES = new Set(["completed", "archived"]);
+
+const MOCK_HISTORY_FILTER_DEFAULTS = Object.freeze({
+  dateRange: "all",
+  strategyPreset: "all",
+  runStatus: "all",
+  archivedMode: "exclude_archived",
+  returnRange: "all",
+  mddRange: "all",
+  riskScoreRange: "all",
+});
+
+const MOCK_HISTORY_SORT_LABELS = Object.freeze({
+  completed_desc: "최근 실행일",
+  completed_asc: "오래된 실행일",
+  return_desc: "수익률 높은 순",
+  return_asc: "수익률 낮은 순",
+  mdd_asc: "MDD 낮은 순",
+  risk_asc: "위험점수 낮은 순",
+  final_equity_desc: "최종 모의 평가금액 높은 순",
+});
+
+function getMockHistoryRecordTime(record) {
+  return Date.parse(record?.completedAt || record?.createdAt || "1970-01-01T00:00:00.000Z");
+}
+
+function matchesMockHistoryDateRange(record, range) {
+  if (!range || range === "all") return true;
+  const days = { last_7_days: 7, last_30_days: 30, last_90_days: 90 }[range];
+  if (!days) return true;
+  return MOCK_HISTORY_REFERENCE_NOW - getMockHistoryRecordTime(record) <= days * MOCK_HISTORY_MS_PER_DAY;
+}
+
+function filterMockHistoryRecords(records, filters) {
+  return records.filter((record) => {
+    const drawdown = Math.abs(Number(record.mdd || 0));
+    const returnValue = Number(record.cumulativeReturn || 0);
+    const riskScore = Number(record.riskScore || 0);
+
+    if (!matchesMockHistoryDateRange(record, filters.dateRange)) return false;
+    if (filters.strategyPreset !== "all" && record.strategyPresetId !== filters.strategyPreset) return false;
+    if (filters.runStatus !== "all" && record.runStatus !== filters.runStatus) return false;
+    if (filters.archivedMode === "exclude_archived" && record.archived) return false;
+    if (filters.archivedMode === "archived_only" && !record.archived) return false;
+    if (filters.returnRange === "negative" && returnValue >= 0) return false;
+    if (filters.returnRange === "zero_to_three" && (returnValue < 0 || returnValue > 3)) return false;
+    if (filters.returnRange === "above_three" && returnValue <= 3) return false;
+    if (filters.mddRange === "mdd_under_two" && drawdown >= 2) return false;
+    if (filters.mddRange === "mdd_two_to_four" && (drawdown < 2 || drawdown > 4)) return false;
+    if (filters.mddRange === "mdd_above_four" && drawdown <= 4) return false;
+    if (filters.riskScoreRange === "low" && riskScore > 30) return false;
+    if (filters.riskScoreRange === "medium" && (riskScore <= 30 || riskScore > 60)) return false;
+    if (filters.riskScoreRange === "high" && riskScore <= 60) return false;
+    return true;
+  });
+}
+
+function sortMockHistoryRecords(records, sortKey) {
+  const compare = {
+    completed_desc: (a, b) => getMockHistoryRecordTime(b) - getMockHistoryRecordTime(a),
+    completed_asc: (a, b) => getMockHistoryRecordTime(a) - getMockHistoryRecordTime(b),
+    return_desc: (a, b) => Number(b.cumulativeReturn || 0) - Number(a.cumulativeReturn || 0),
+    return_asc: (a, b) => Number(a.cumulativeReturn || 0) - Number(b.cumulativeReturn || 0),
+    mdd_asc: (a, b) => Math.abs(Number(a.mdd || 0)) - Math.abs(Number(b.mdd || 0)),
+    risk_asc: (a, b) => Number(a.riskScore || 0) - Number(b.riskScore || 0),
+    final_equity_desc: (a, b) => Number(b.finalMockEquity || 0) - Number(a.finalMockEquity || 0),
+  }[sortKey] || ((a, b) => getMockHistoryRecordTime(b) - getMockHistoryRecordTime(a));
+
+  return [...records].sort((a, b) => compare(a, b) || String(a.runId).localeCompare(String(b.runId)));
+}
+
+function paginateMockHistoryRecords(records, page, pageSize) {
+  const normalizedPageSize = Math.min(Math.max(Number(pageSize || 5), 1), 20);
+  const pageCount = Math.max(1, Math.ceil(records.length / normalizedPageSize));
+  const normalizedPage = Math.min(Math.max(Number(page || 1), 1), pageCount);
+  const start = (normalizedPage - 1) * normalizedPageSize;
+  return {
+    records: records.slice(start, start + normalizedPageSize),
+    page: normalizedPage,
+    pageCount,
+    pageSize: normalizedPageSize,
+    totalRecords: records.length,
+  };
+}
+
 function getInitialTradingPanelTab() {
   if (typeof window === "undefined") return "lab";
   const params = new URLSearchParams(window.location.search);
@@ -516,6 +603,12 @@ export function TradingReadinessPanel() {
   const [tradingLabDbBackedMockTradingHistoryReviewResultStatus, setTradingLabDbBackedMockTradingHistoryReviewResultStatus] = useState(null);
   const [tradingLabDbBackedMockTradingHistoryMigrationPreflightStatus, setTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus] = useState(null);
   const [tradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus, setTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus] = useState(null);
+  const [mockHistoryFilters, setMockHistoryFilters] = useState(MOCK_HISTORY_FILTER_DEFAULTS);
+  const [mockHistorySort, setMockHistorySort] = useState("completed_desc");
+  const [mockHistoryPage, setMockHistoryPage] = useState(1);
+  const [mockHistoryPageSize, setMockHistoryPageSize] = useState(5);
+  const [mockHistorySelectedRunIds, setMockHistorySelectedRunIds] = useState([]);
+  const [mockHistoryFocusedRunId, setMockHistoryFocusedRunId] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -1163,6 +1256,46 @@ export function TradingReadinessPanel() {
   const labMockTradingHistorySupabaseQueries = labMockTradingHistorySupabaseSchemaDraftStatus?.queryContractSummary || {};
   const labMockTradingHistorySupabaseValidation = labMockTradingHistorySupabaseSchemaDraftStatus?.validation || {};
   const labMockTradingHistorySupabaseBlocked = labMockTradingHistorySupabaseSchemaDraftStatus?.blockedConfirmation || {};
+  const labMockTradingHistoryBrowserStatus = tradingLabDashboardStatus?.mockTradingHistoryBrowserStatus || {};
+  const labMockTradingHistoryBrowser = labMockTradingHistoryBrowserStatus?.browser || {};
+  const labMockHistoryRecords = Array.isArray(labMockTradingHistoryBrowser.records)
+    ? labMockTradingHistoryBrowser.records
+    : [];
+  const labMockHistoryFilteredRecords = useMemo(
+    () => sortMockHistoryRecords(filterMockHistoryRecords(labMockHistoryRecords, mockHistoryFilters), mockHistorySort),
+    [labMockHistoryRecords, mockHistoryFilters, mockHistorySort],
+  );
+  const labMockHistoryPagination = useMemo(
+    () => paginateMockHistoryRecords(labMockHistoryFilteredRecords, mockHistoryPage, mockHistoryPageSize),
+    [labMockHistoryFilteredRecords, mockHistoryPage, mockHistoryPageSize],
+  );
+  const labMockHistoryVisibleRecords = labMockHistoryPagination.records;
+  const labMockHistoryStrategyOptions = useMemo(() => {
+    const pairs = labMockHistoryRecords.map((record) => [record.strategyPresetId, record.strategyName]);
+    return [["all", "전체"], ...Array.from(new Map(pairs).entries())];
+  }, [labMockHistoryRecords]);
+  const labMockHistoryFocusedRecord = labMockHistoryRecords.find((record) => record.runId === mockHistoryFocusedRunId)
+    || labMockHistoryVisibleRecords[0]
+    || null;
+  const labMockHistorySelectedRecords = mockHistorySelectedRunIds
+    .map((runId) => labMockHistoryRecords.find((record) => record.runId === runId))
+    .filter(Boolean);
+  const labMockHistoryUnsupportedSelectionCount = labMockHistorySelectedRecords.filter((record) => !MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) || record.compareSupported !== true).length;
+  const labMockHistoryCalculationVersions = [...new Set(labMockHistorySelectedRecords.map((record) => record.calculationVersion))];
+  const labMockHistoryCompareReady = labMockHistorySelectedRecords.length >= 2 && labMockHistorySelectedRecords.length <= 3 && labMockHistoryUnsupportedSelectionCount === 0;
+  const labMockHistoryCompareWarning = labMockHistoryCalculationVersions.length > 1 ? "calculation_version_mismatch_warning" : "compatible";
+  const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
+  const updateMockHistoryFilter = (key, value) => {
+    setMockHistoryFilters((current) => ({ ...current, [key]: value }));
+    setMockHistoryPage(1);
+  };
+  const toggleMockHistorySelection = (runId) => {
+    setMockHistorySelectedRunIds((current) => {
+      if (current.includes(runId)) return current.filter((item) => item !== runId);
+      if (current.length >= 3) return current;
+      return [...current, runId];
+    });
+  };
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -2298,6 +2431,225 @@ export function TradingReadinessPanel() {
                     <span>blockers / warnings</span>
                     <strong>{labMockTradingHistorySupabaseValidation.blockerCount ?? 0} / {labMockTradingHistorySupabaseValidation.warningCount ?? 0}</strong>
                   </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </details>
+
+        <details className="tradingLabHistoryBrowserDetails" data-admin-panel-key="mock-trading-history-browser-ui">
+          <summary>
+            <span>Mock trading history browser</span>
+            <strong>{formatStatus(labMockTradingHistoryBrowser.status || "mock_only")}</strong>
+            <em>{labMockHistoryFilteredRecords.length}/{labMockHistoryRecords.length} records - DB blocked</em>
+          </summary>
+          <div className="tradingLabHistoryBrowserBody">
+            <p className="tradingLabHistoryBrowserNotice">
+              This list uses deterministic mock data before DB connection. It is not live trading history, account performance, or stored Supabase data. DB read/write, Supabase mutation, provider calls, and order submission remain blocked.
+            </p>
+            <div className="tradingLabHistoryBrowserStatusGrid" aria-label="mock trading history browser blocked status">
+              <article>
+                <span>source</span>
+                <strong>{formatStatus(labMockTradingHistoryBrowser.source || "deterministic_mock_history")}</strong>
+              </article>
+              <article>
+                <span>DB read</span>
+                <strong>{labMockHistoryBlocked.dbReadAttempted === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>DB write</span>
+                <strong>{labMockHistoryBlocked.dbWriteAttempted === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>compare candidate</span>
+                <strong>{labMockHistorySelectedRecords.length}/3</strong>
+              </article>
+              <article>
+                <span>compare ready</span>
+                <strong>{labMockHistoryCompareReady ? "ready placeholder" : "select 2-3 supported"}</strong>
+              </article>
+              <article>
+                <span>next step</span>
+                <strong>{formatStatus(labMockTradingHistoryBrowser.nextStep || "mock_history_compare")}</strong>
+              </article>
+            </div>
+            <div className="tradingLabHistoryBrowserControls" aria-label="mock trading history browser filters">
+              <label>
+                <span>기간</span>
+                <select value={mockHistoryFilters.dateRange} onChange={(event) => updateMockHistoryFilter("dateRange", event.target.value)}>
+                  <option value="all">전체</option>
+                  <option value="last_7_days">최근 7일</option>
+                  <option value="last_30_days">최근 30일</option>
+                  <option value="last_90_days">최근 90일</option>
+                </select>
+              </label>
+              <label>
+                <span>전략 preset</span>
+                <select value={mockHistoryFilters.strategyPreset} onChange={(event) => updateMockHistoryFilter("strategyPreset", event.target.value)}>
+                  {labMockHistoryStrategyOptions.map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>상태</span>
+                <select value={mockHistoryFilters.runStatus} onChange={(event) => updateMockHistoryFilter("runStatus", event.target.value)}>
+                  <option value="all">전체</option>
+                  <option value="completed">completed</option>
+                  <option value="blocked">blocked</option>
+                  <option value="failed">failed</option>
+                  <option value="archived">archived</option>
+                  <option value="in_review">in review</option>
+                </select>
+              </label>
+              <label>
+                <span>archive</span>
+                <select value={mockHistoryFilters.archivedMode} onChange={(event) => updateMockHistoryFilter("archivedMode", event.target.value)}>
+                  <option value="exclude_archived">archive 제외</option>
+                  <option value="include_archived">archive 포함</option>
+                  <option value="archived_only">archive만</option>
+                </select>
+              </label>
+              <label>
+                <span>수익률</span>
+                <select value={mockHistoryFilters.returnRange} onChange={(event) => updateMockHistoryFilter("returnRange", event.target.value)}>
+                  <option value="all">전체</option>
+                  <option value="negative">0% 미만</option>
+                  <option value="zero_to_three">0-3%</option>
+                  <option value="above_three">3% 초과</option>
+                </select>
+              </label>
+              <label>
+                <span>MDD</span>
+                <select value={mockHistoryFilters.mddRange} onChange={(event) => updateMockHistoryFilter("mddRange", event.target.value)}>
+                  <option value="all">전체</option>
+                  <option value="mdd_under_two">2% 미만</option>
+                  <option value="mdd_two_to_four">2-4%</option>
+                  <option value="mdd_above_four">4% 초과</option>
+                </select>
+              </label>
+              <label>
+                <span>위험점수</span>
+                <select value={mockHistoryFilters.riskScoreRange} onChange={(event) => updateMockHistoryFilter("riskScoreRange", event.target.value)}>
+                  <option value="all">전체</option>
+                  <option value="low">낮음</option>
+                  <option value="medium">중간</option>
+                  <option value="high">높음</option>
+                </select>
+              </label>
+              <label>
+                <span>정렬</span>
+                <select value={mockHistorySort} onChange={(event) => { setMockHistorySort(event.target.value); setMockHistoryPage(1); }}>
+                  {Object.entries(MOCK_HISTORY_SORT_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {labMockHistoryRecords.length === 0 ? (
+              <p className="tradingLabHistoryBrowserEmpty">현재 이력 목록은 deterministic mock data 기반이며 DB 연결은 아직 차단되어 있습니다.</p>
+            ) : labMockHistoryVisibleRecords.length === 0 ? (
+              <p className="tradingLabHistoryBrowserEmpty">조건에 맞는 모의 거래 이력이 없습니다.</p>
+            ) : (
+              <div className="tradingLabHistoryBrowserTableWrap">
+                <table className="tradingLabHistoryBrowserTable">
+                  <thead>
+                    <tr>
+                      <th>선택</th>
+                      <th>실행명</th>
+                      <th>전략</th>
+                      <th>상태</th>
+                      <th>완료일</th>
+                      <th>주문/체결</th>
+                      <th>최종 모의 평가</th>
+                      <th>누적 모의 수익률</th>
+                      <th>MDD</th>
+                      <th>위험</th>
+                      <th>경고/차단</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {labMockHistoryVisibleRecords.map((record) => {
+                      const selected = mockHistorySelectedRunIds.includes(record.runId);
+                      const supported = MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) && record.compareSupported === true;
+                      return (
+                        <tr key={record.runId} className={mockHistoryFocusedRunId === record.runId ? "focused" : ""}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              disabled={!selected && mockHistorySelectedRunIds.length >= 3}
+                              onChange={() => toggleMockHistorySelection(record.runId)}
+                              aria-label={`${record.runLabel} mock compare candidate`}
+                            />
+                          </td>
+                          <td>
+                            <button type="button" onClick={() => setMockHistoryFocusedRunId(record.runId)}>
+                              {record.runLabel}
+                            </button>
+                            <small>{supported ? "compare candidate" : "detail only"}</small>
+                          </td>
+                          <td>{record.strategyName} / {record.strategyVersion}</td>
+                          <td>{formatStatus(record.runStatus)}</td>
+                          <td>{record.completedAt ? record.completedAt.slice(0, 10) : record.createdAt?.slice(0, 10)}</td>
+                          <td>{record.orderCount}/{record.fillCount}</td>
+                          <td>{formatLabNumber(record.finalMockEquity)}</td>
+                          <td>{formatLabNumber(record.cumulativeReturn, { percent: true })}</td>
+                          <td>{formatLabNumber(record.mdd, { percent: true })}</td>
+                          <td>{record.riskScore}</td>
+                          <td>{record.warningCount}/{record.blockerCount}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="tradingLabHistoryBrowserPagination" aria-label="mock trading history browser pagination">
+              <span>page {labMockHistoryPagination.page} / {labMockHistoryPagination.pageCount} · total {labMockHistoryPagination.totalRecords}</span>
+              <label>
+                <span>page size</span>
+                <select value={mockHistoryPageSize} onChange={(event) => { setMockHistoryPageSize(Number(event.target.value)); setMockHistoryPage(1); }}>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                </select>
+              </label>
+              <button type="button" onClick={() => setMockHistoryPage((page) => Math.max(1, page - 1))} disabled={labMockHistoryPagination.page <= 1}>이전</button>
+              <button type="button" onClick={() => setMockHistoryPage((page) => Math.min(labMockHistoryPagination.pageCount, page + 1))} disabled={labMockHistoryPagination.page >= labMockHistoryPagination.pageCount}>다음</button>
+            </div>
+            <div className="tradingLabHistoryBrowserDetailGrid">
+              <section aria-label="mock trading history detail summary">
+                <span>history detail summary</span>
+                {labMockHistoryFocusedRecord ? (
+                  <dl>
+                    <dt>strategy</dt>
+                    <dd>{labMockHistoryFocusedRecord.strategyName} / {labMockHistoryFocusedRecord.strategyVersion}</dd>
+                    <dt>run status</dt>
+                    <dd>{formatStatus(labMockHistoryFocusedRecord.runStatus)}</dd>
+                    <dt>input / output</dt>
+                    <dd>{labMockHistoryFocusedRecord.inputSummary} / {labMockHistoryFocusedRecord.outputSummary}</dd>
+                    <dt>allocation</dt>
+                    <dd>{labMockHistoryFocusedRecord.allocationSummary}</dd>
+                    <dt>return / MDD / volatility / Sharpe</dt>
+                    <dd>{formatLabNumber(labMockHistoryFocusedRecord.cumulativeReturn, { percent: true })} / {formatLabNumber(labMockHistoryFocusedRecord.mdd, { percent: true })} / {formatLabNumber(labMockHistoryFocusedRecord.volatility, { percent: true })} / {formatLabNumber(labMockHistoryFocusedRecord.sharpe)}</dd>
+                    <dt>restored from</dt>
+                    <dd>{labMockHistoryFocusedRecord.restoredFromRunId || "none"}</dd>
+                    <dt>calculation version</dt>
+                    <dd>{labMockHistoryFocusedRecord.calculationVersion}</dd>
+                  </dl>
+                ) : (
+                  <p>조건에 맞는 모의 거래 이력이 없습니다.</p>
+                )}
+              </section>
+              <section aria-label="mock trading history compare candidate summary">
+                <span>Mock run 비교 준비</span>
+                <ul>
+                  <li>선택: {labMockHistorySelectedRecords.length}/3</li>
+                  <li>상태: {labMockHistoryCompareReady ? "2개 이상 선택되어 비교 준비 가능" : "2개 이상의 supported mock run을 선택하세요"}</li>
+                  <li>지원되지 않는 선택: {labMockHistoryUnsupportedSelectionCount}</li>
+                  <li>calculationVersion: {formatStatus(labMockHistoryCompareWarning)}</li>
+                  <li>DB read/write: blocked / blocked</li>
                 </ul>
               </section>
             </div>
