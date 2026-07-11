@@ -466,7 +466,8 @@
     "check:trading-step177-legacy-trading-check-runner-cleanup": "node scripts/check-trading-step177-legacy-trading-check-runner-cleanup.cjs && node --test scripts/check-trading-step177-legacy-trading-check-runner-cleanup.test.cjs",
     "check:trading-step178-remaining-legacy-trading-check-runner-cleanup": "node scripts/check-trading-step178-remaining-legacy-trading-check-runner-cleanup.cjs && node --test scripts/check-trading-step178-remaining-legacy-trading-check-runner-cleanup.test.cjs",
     "check:trading-step179-legacy-trading-check-runner-heavy-service-audit": "node scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.cjs && node --test scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.test.cjs",
-    "check:trading-step180-render-api-health-and-deployment-metadata": "node scripts/check-trading-step180-render-api-health-and-deployment-metadata.cjs && node --test server/src/services/deploymentInfo.test.js scripts/check-trading-step180-render-api-health-and-deployment-metadata.test.cjs"
+    "check:trading-step180-render-api-health-and-deployment-metadata": "node scripts/check-trading-step180-render-api-health-and-deployment-metadata.cjs && node --test server/src/services/deploymentInfo.test.js scripts/check-trading-step180-render-api-health-and-deployment-metadata.test.cjs",
+    "check:trading-step181-render-api-direct-connectivity-reliability": "node scripts/check-trading-step181-render-api-direct-connectivity-reliability.cjs && node --test scripts/render-api-direct-connectivity-diagnostic.test.cjs scripts/check-trading-step181-render-api-direct-connectivity-reliability.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
