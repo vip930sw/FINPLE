@@ -504,6 +504,10 @@ export async function fetchAdminTradingLabDbBackedMockTradingHistoryReviewResult
   return requestJson("/admin/trading-readiness/trading-lab-db-backed-mock-trading-history-review-result", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-db-backed-mock-trading-history-migration-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

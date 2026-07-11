@@ -60,6 +60,7 @@ test("exposes only admin-guarded read-only trading readiness, shadow status, rev
   assert.match(routeText, /router\.get\("\/trading-lab-dashboard-ux-polish-core"/);
   assert.match(routeText, /router\.get\("\/trading-lab-db-backed-mock-trading-history-preflight"/);
   assert.match(routeText, /router\.get\("\/trading-lab-db-backed-mock-trading-history-review-result"/);
+  assert.match(routeText, /router\.get\("\/trading-lab-db-backed-mock-trading-history-migration-preflight"/);
   assert.doesNotMatch(routeText, /router\.(post|put|patch|delete)\(/);
   assert.doesNotMatch(routeText, /submitOrder|placeOrder|providerRequest/);
 });

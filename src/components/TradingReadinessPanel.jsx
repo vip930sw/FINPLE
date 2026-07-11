@@ -18,6 +18,7 @@ import {
   fetchAdminTradingLabDashboardUxPolishReviewResultStatus,
   fetchAdminTradingLabDashboardUxPolishCoreStatus,
   fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus,
+  fetchAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus,
   fetchAdminTradingLabDbBackedMockTradingHistoryReviewResultStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
@@ -512,6 +513,7 @@ export function TradingReadinessPanel() {
   const [tradingLabDashboardUxPolishCoreStatus, setTradingLabDashboardUxPolishCoreStatus] = useState(null);
   const [tradingLabDbBackedMockTradingHistoryPreflightStatus, setTradingLabDbBackedMockTradingHistoryPreflightStatus] = useState(null);
   const [tradingLabDbBackedMockTradingHistoryReviewResultStatus, setTradingLabDbBackedMockTradingHistoryReviewResultStatus] = useState(null);
+  const [tradingLabDbBackedMockTradingHistoryMigrationPreflightStatus, setTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -572,6 +574,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabDashboardUxPolishCoreStatus().catch(() => null),
       fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus().catch(() => null),
       fetchAdminTradingLabDbBackedMockTradingHistoryReviewResultStatus().catch(() => null),
+      fetchAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -627,6 +630,7 @@ export function TradingReadinessPanel() {
         setTradingLabDashboardUxPolishCoreStatus(payload?.[49] || null);
         setTradingLabDbBackedMockTradingHistoryPreflightStatus(payload?.[50] || null);
         setTradingLabDbBackedMockTradingHistoryReviewResultStatus(payload?.[51] || null);
+        setTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus(payload?.[52] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -1101,6 +1105,24 @@ export function TradingReadinessPanel() {
     : [];
   const labDbBackedMockTradingHistoryReviewBlockers = Array.isArray(labDbBackedMockTradingHistoryReviewResult.blockers)
     ? labDbBackedMockTradingHistoryReviewResult.blockers
+    : [];
+  const labDbBackedMockTradingHistoryMigrationPreflightStatus = tradingLabDbBackedMockTradingHistoryMigrationPreflightStatus || tradingLabDashboardStatus?.dbBackedMockTradingHistoryMigrationPreflightStatus || {};
+  const labDbBackedMockTradingHistoryMigrationPreflight = labDbBackedMockTradingHistoryMigrationPreflightStatus?.migrationPreflight || {};
+  const labDbBackedMockTradingHistoryMigrationValidation = labDbBackedMockTradingHistoryMigrationPreflightStatus?.validation || {};
+  const labDbBackedMockTradingHistoryMigrationTableSummary = labDbBackedMockTradingHistoryMigrationPreflightStatus?.candidateTableDraftSummary || {};
+  const labDbBackedMockTradingHistoryMigrationPolicySummary = labDbBackedMockTradingHistoryMigrationPreflightStatus?.candidateIndexConstraintRlsPolicyDraftSummary || {};
+  const labDbBackedMockTradingHistoryMigrationChecklist = labDbBackedMockTradingHistoryMigrationPreflightStatus?.migrationReadinessChecklist || {};
+  const labDbBackedMockTradingHistoryMigrationChecklistItems = Array.isArray(labDbBackedMockTradingHistoryMigrationChecklist.items)
+    ? labDbBackedMockTradingHistoryMigrationChecklist.items
+    : [];
+  const labDbBackedMockTradingHistoryMigrationTables = Array.isArray(labDbBackedMockTradingHistoryMigrationPreflight.candidateTables)
+    ? labDbBackedMockTradingHistoryMigrationPreflight.candidateTables
+    : [];
+  const labDbBackedMockTradingHistoryMigrationBlockers = Array.isArray(labDbBackedMockTradingHistoryMigrationPreflight.blockers)
+    ? labDbBackedMockTradingHistoryMigrationPreflight.blockers
+    : [];
+  const labDbBackedMockTradingHistoryMigrationWarnings = Array.isArray(labDbBackedMockTradingHistoryMigrationPreflight.warnings)
+    ? labDbBackedMockTradingHistoryMigrationPreflight.warnings
     : [];
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
@@ -1785,6 +1807,123 @@ export function TradingReadinessPanel() {
               <span>DB write blocked confirmation</span>
               <strong>{labDbBackedMockTradingHistoryReviewValidation.dbWriteStatus || "blocked"}</strong>
               <p>DB schema 변경 없음 · DB migration 없음 · persistent DB write 없음 · Supabase mutation 없음 · provider/order/live readiness 영향 없음</p>
+            </article>
+          </div>
+        </div>
+
+        <div className="tradingLabDbHistoryMigrationPreflightSummary" data-admin-panel-key="trading-lab-db-backed-mock-trading-history-migration-preflight">
+          <div>
+            <span>DB-backed mock trading history migration preflight</span>
+            <strong>DB 저장형 mock trading history migration 사전검토</strong>
+            <p>
+              이 단계는 migration 후보 검토이며 실제 DB schema를 변경하지 않습니다. SQL migration 파일은 아직 생성하지 않았고, Supabase insert/update/delete는 계속 차단되어 있습니다.
+            </p>
+          </div>
+          <div className="tradingLabDbHistoryMigrationStatusGrid" aria-label="DB-backed mock trading history migration preflight status">
+            <article>
+              <span>migration status</span>
+              <strong>{formatStatus(labDbBackedMockTradingHistoryMigrationPreflight.migrationStatus || "blocked")}</strong>
+            </article>
+            <article>
+              <span>candidate tables</span>
+              <strong>{labDbBackedMockTradingHistoryMigrationTableSummary.tableCount ?? labDbBackedMockTradingHistoryMigrationTables.length}</strong>
+            </article>
+            <article>
+              <span>index / constraint / RLS</span>
+              <strong>{labDbBackedMockTradingHistoryMigrationPolicySummary.indexCount ?? 0}/{labDbBackedMockTradingHistoryMigrationPolicySummary.constraintCount ?? 0}/{labDbBackedMockTradingHistoryMigrationPolicySummary.rlsPolicyCount ?? 0}</strong>
+            </article>
+            <article>
+              <span>next allowed step</span>
+              <strong>{formatStatus(labDbBackedMockTradingHistoryMigrationPreflight.nextAllowedStep || "db_backed_mock_trading_history_migration_review_result")}</strong>
+            </article>
+          </div>
+          <div className="tradingLabDbHistoryMigrationLists">
+            <section aria-label="DB-backed mock trading history migration candidate table draft">
+              <span>Migration 후보 table 검토</span>
+              <ul>
+                {labDbBackedMockTradingHistoryMigrationTables.map((table) => (
+                  <li key={table.tableName}>
+                    <span>{table.tableName}</span>
+                    <strong>{formatStatus(table.purpose || "draft_only")}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="DB-backed mock trading history migration checklist">
+              <span>migration readiness checklist</span>
+              <ul>
+                {labDbBackedMockTradingHistoryMigrationChecklistItems.slice(0, 7).map((item) => (
+                  <li key={item.key}>
+                    <span>{item.key}</span>
+                    <strong>{formatStatus(item.status || "blocked")}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="DB-backed mock trading history migration policy draft">
+              <span>DDL draft 검토</span>
+              <ul>
+                <li>
+                  <span>DB schema 변경 허용</span>
+                  <strong>{formatStatus(labDbBackedMockTradingHistoryMigrationPreflight.schemaChangeStatus || "blocked")}</strong>
+                </li>
+                <li>
+                  <span>admin-only access policy 후보</span>
+                  <strong>{labDbBackedMockTradingHistoryMigrationPolicySummary.adminOnlyAccessPolicyDrafted === true ? "draft_only" : "blocked"}</strong>
+                </li>
+                <li>
+                  <span>public/user-facing access</span>
+                  <strong>{labDbBackedMockTradingHistoryMigrationPolicySummary.publicAccessBlocked === true ? "blocked" : "blocked"}</strong>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div className="tradingLabDbHistoryMigrationLists">
+            <section aria-label="DB-backed mock trading history migration blocker summary">
+              <span>blocker summary</span>
+              <ul>
+                {(labDbBackedMockTradingHistoryMigrationBlockers.length > 0 ? labDbBackedMockTradingHistoryMigrationBlockers : ["no_migration_preflight_blocker_detected"]).map((item) => (
+                  <li key={item}>
+                    <span>{item}</span>
+                    <strong>{labDbBackedMockTradingHistoryMigrationBlockers.length > 0 ? "blocked" : "clear"}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="DB-backed mock trading history migration warning summary">
+              <span>warning summary</span>
+              <ul>
+                {labDbBackedMockTradingHistoryMigrationWarnings.map((item) => (
+                  <li key={item}>
+                    <span>{item}</span>
+                    <strong>warning</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="DB-backed mock trading history migration blocked confirmation">
+              <span>DB schema 변경 여부</span>
+              <ul>
+                <li>
+                  <span>migrationFileCreated</span>
+                  <strong>{labDbBackedMockTradingHistoryMigrationPreflight.migrationFileCreated === false ? "false" : "blocked"}</strong>
+                </li>
+                <li>
+                  <span>sqlFileCreated</span>
+                  <strong>{labDbBackedMockTradingHistoryMigrationPreflight.sqlFileCreated === false ? "false" : "blocked"}</strong>
+                </li>
+                <li>
+                  <span>persistentDbWriteAttempted</span>
+                  <strong>{labDbBackedMockTradingHistoryMigrationPreflight.persistentDbWriteAttempted === false ? "false" : "blocked"}</strong>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div className="tradingLabDbHistoryMigrationNotice" aria-label="DB-backed mock trading history migration preflight blocked confirmation">
+            <article>
+              <span>DB migration blocked confirmation</span>
+              <strong>{labDbBackedMockTradingHistoryMigrationValidation.schemaChangeStatus || "blocked"}</strong>
+              <p>SQL 파일 생성 없음 · Supabase migration 생성 없음 · DB migration 실행 없음 · DB schema 변경 없음 · 실제 거래 이력 저장 없음 · 다음 허용 단계: migration review result</p>
             </article>
           </div>
         </div>
