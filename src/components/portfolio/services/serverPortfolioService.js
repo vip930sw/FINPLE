@@ -496,6 +496,10 @@ export async function fetchAdminTradingLabDashboardUxPolishCoreStatus() {
   return requestJson("/admin/trading-readiness/trading-lab-dashboard-ux-polish-core", {}, { includeAdminToken: true });
 }
 
+export async function fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus() {
+  return requestJson("/admin/trading-readiness/trading-lab-db-backed-mock-trading-history-preflight", {}, { includeAdminToken: true });
+}
+
 export async function bulkCreateAdminEducationAccounts(input = {}) {
   return requestJson(
     "/admin/education-accounts/bulk",

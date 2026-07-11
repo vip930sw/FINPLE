@@ -456,6 +456,19 @@ export const STEP169_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_CORE_FLAGS = Object.f
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP182_DB_BACKED_MOCK_TRADING_HISTORY_PREFLIGHT_FLAGS = Object.freeze({
+  ...STEP169_ADMIN_TRADING_LAB_DASHBOARD_UX_POLISH_CORE_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  dbWriteAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -19097,6 +19110,268 @@ export function buildAdminTradingLabDashboardUxPolishCoreStatus(input = {}, opti
   return buildTradingLabDashboardUxPolishCoreResult(input, options);
 }
 
+export const TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_PREFLIGHT_MODEL = Object.freeze({
+  dbBackedMockTradingHistoryPreflightId: "string",
+  sourceStep: "step182",
+  scope: "mock_only",
+  status: "blocked | validation_required | preflight_ready_db_write_blocked",
+  storageMode: "schema_draft_only_no_persistence",
+  candidateCount: "number",
+  migrationReadinessStatus: "draft_ready_no_migration",
+  dbWriteStatus: "blocked",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_CANDIDATE_TABLE_SCHEMA_DRAFT = Object.freeze({
+  schemaDraftId: "step182_db_backed_mock_trading_history_schema_draft",
+  status: "draft_only_no_migration",
+  scope: "mock_only",
+  tables: [
+    {
+      tableName: "mock_strategy_presets",
+      candidate: "strategy_preset",
+      proposedColumns: ["mock_strategy_preset_id", "strategy_name", "mode", "target_allocation_json", "risk_limit_json", "redacted", "created_at_placeholder"],
+      prohibitedColumns: ["account_number", "credential", "kis_token", "provider_raw_response", "order_payload", "private_path", "hash", "digest"],
+    },
+    {
+      tableName: "mock_trading_run_summaries",
+      candidate: "mock_trading_run_summary",
+      proposedColumns: ["mock_trading_run_summary_id", "mock_run_candidate_id", "summary_status", "result_json", "redacted", "created_at_placeholder"],
+      prohibitedColumns: ["actual_order_id", "actual_fill_id", "actual_execution_id", "actual_account_balance", "provider_raw_response"],
+    },
+    {
+      tableName: "mock_order_summaries",
+      candidate: "mock_order_summary",
+      proposedColumns: ["mock_order_summary_id", "mock_order_generation_preflight_id", "intent_count", "blocked_intent_count", "warning_intent_count", "redacted"],
+      prohibitedColumns: ["order_payload", "actual_order_id", "account_number", "credential", "provider_raw_response"],
+    },
+    {
+      tableName: "mock_fill_summaries",
+      candidate: "mock_fill_summary",
+      proposedColumns: ["mock_fill_summary_id", "mock_fill_simulation_id", "fill_candidate_count", "blocked_fill_count", "warning_fill_count", "redacted"],
+      prohibitedColumns: ["actual_fill_id", "actual_execution_id", "kis_fill_payload", "provider_raw_response"],
+    },
+    {
+      tableName: "mock_portfolio_ledger_snapshots",
+      candidate: "mock_portfolio_ledger_snapshot",
+      proposedColumns: ["mock_ledger_snapshot_id", "mock_trading_run_summary_id", "cash_placeholder", "position_snapshot_json", "redacted"],
+      prohibitedColumns: ["actual_account_balance", "account_number", "account_identifier", "private_path"],
+    },
+    {
+      tableName: "mock_performance_snapshots",
+      candidate: "mock_performance_snapshot",
+      proposedColumns: ["mock_performance_snapshot_id", "mock_trading_run_summary_id", "equity_series_json", "return_series_json", "mdd_placeholder", "redacted"],
+      prohibitedColumns: ["provider_raw_response", "hash", "digest", "private_path"],
+    },
+    {
+      tableName: "mock_allocation_snapshots",
+      candidate: "allocation_snapshot",
+      proposedColumns: ["mock_allocation_snapshot_id", "mock_trading_run_summary_id", "allocation_json", "target_gap_json", "redacted"],
+      prohibitedColumns: ["actual_account_balance", "account_identifier", "provider_payload"],
+    },
+    {
+      tableName: "mock_risk_metric_snapshots",
+      candidate: "risk_metric_snapshot",
+      proposedColumns: ["mock_risk_metric_snapshot_id", "mock_trading_run_summary_id", "risk_metric_json", "kill_switch_status", "risk_gate_status", "redacted"],
+      prohibitedColumns: ["credential", "kis_token", "order_payload", "raw_provider_response"],
+    },
+  ],
+  migrationRequiredNow: false,
+  dbSchemaChanged: false,
+  persistentDbWriteRequired: false,
+  redacted: true,
+});
+
+export const TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_STORAGE_BOUNDARY_SUMMARY = Object.freeze({
+  boundaryId: "step182_db_backed_mock_trading_history_storage_boundary",
+  scope: "mock_only",
+  allowedCandidates: [
+    "strategy_preset",
+    "mock_trading_run_summary",
+    "mock_order_summary",
+    "mock_fill_summary",
+    "mock_portfolio_ledger_snapshot",
+    "mock_performance_snapshot",
+    "allocation_snapshot",
+    "risk_metric_snapshot",
+  ],
+  storageMode: "read_only_preflight_schema_draft",
+  dbMigrationAllowed: false,
+  persistentDbWriteAllowed: false,
+  supabaseMutationAllowed: false,
+  actualTradingRunCreationAllowed: false,
+  providerCallAllowed: false,
+  orderSubmissionAllowed: false,
+  redacted: true,
+});
+
+export const TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_REDACTION_POLICY_SUMMARY = Object.freeze({
+  redactionPolicyId: "step182_db_backed_mock_trading_history_redaction_policy",
+  requiredRedaction: true,
+  allowedValueTypes: ["mock_identifier", "placeholder_metric", "status", "redacted_summary", "mock_only_json"],
+  prohibitedValueTypes: [
+    "actual_account_number",
+    "kis_token",
+    "credential",
+    "provider_raw_response",
+    "order_payload",
+    "actual_order_id",
+    "actual_fill_id",
+    "actual_execution_id",
+    "actual_account_balance",
+    "private_path",
+    "hash",
+    "digest",
+  ],
+  rawProviderResponseStored: false,
+  providerPayloadStored: false,
+  orderPayloadStored: false,
+  hashDigestStored: false,
+  privatePathStored: false,
+  redacted: true,
+});
+
+export const TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_READINESS_CHECKLIST = Object.freeze({
+  checklistId: "step182_db_backed_mock_trading_history_migration_readiness",
+  status: "not_ready_for_migration",
+  items: [
+    { key: "candidate_schema_draft", status: "draft_ready", requiredBeforeMigration: true },
+    { key: "redaction_policy", status: "draft_ready", requiredBeforeMigration: true },
+    { key: "owner_approval", status: "missing", requiredBeforeMigration: true },
+    { key: "migration_file", status: "not_created", requiredBeforeMigration: true },
+    { key: "db_write_gate", status: "blocked", requiredBeforeMigration: true },
+    { key: "provider_order_live_gate", status: "blocked", requiredBeforeMigration: false },
+  ],
+  dbMigrationAllowed: false,
+  persistentDbWriteAllowed: false,
+  redacted: true,
+});
+
+export function buildDbBackedMockTradingHistoryPreflight(input = {}, options = {}) {
+  const dashboardUxPolishCoreStatus = input.dashboardUxPolishCoreStatus || buildAdminTradingLabDashboardUxPolishCoreStatus({}, options);
+  const schemaDraft = input.schemaDraft || TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_CANDIDATE_TABLE_SCHEMA_DRAFT;
+  const storageBoundarySummary = input.storageBoundarySummary || TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_STORAGE_BOUNDARY_SUMMARY;
+  const redactionPolicySummary = input.redactionPolicySummary || TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_REDACTION_POLICY_SUMMARY;
+  const migrationReadinessChecklist = input.migrationReadinessChecklist || TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_READINESS_CHECKLIST;
+  const dependencyRedacted = dashboardUxPolishCoreStatus?.coreResult?.redacted === true || dashboardUxPolishCoreStatus?.redaction?.redacted === true;
+  const dependencySafe = (
+    dependencyRedacted
+    && dashboardUxPolishCoreStatus?.providerCallsAllowed === false
+    && dashboardUxPolishCoreStatus?.orderSubmissionAllowed === false
+    && dashboardUxPolishCoreStatus?.dbWriteUsed === false
+  );
+  const blockers = dependencySafe
+    ? ["owner_approval_missing_for_db_migration", "db_write_gate_blocked", "migration_file_not_created"]
+    : ["step169_dashboard_ux_polish_core_dependency_not_redacted_or_safe"];
+  const warnings = [
+    "schema_draft_is_candidate_only",
+    "future_migration_requires_separate_review",
+    "persistent_db_write_remains_blocked",
+  ];
+  const status = dependencySafe ? "preflight_ready_db_write_blocked" : "blocked";
+
+  return {
+    dbBackedMockTradingHistoryPreflightId: "step182_db_backed_mock_trading_history_preflight",
+    sourceStep: "step182",
+    dependencyStep: "step169_dashboard_ux_polish_core",
+    dependencyStatus: dependencySafe ? "safe_redacted_mock_dashboard_ready" : "blocked",
+    scope: "mock_only",
+    status,
+    storageMode: "schema_draft_only_no_persistence",
+    candidateCount: schemaDraft.tables.length,
+    migrationReadinessStatus: migrationReadinessChecklist.status,
+    dbWriteStatus: "blocked",
+    dbWriteBlockedConfirmation: {
+      dbMigrationAllowed: false,
+      dbSchemaChanged: false,
+      persistentDbWriteAllowed: false,
+      supabaseInsertAllowed: false,
+      supabaseUpdateAllowed: false,
+      supabaseDeleteAllowed: false,
+      dbWriteAttempted: false,
+      redacted: true,
+    },
+    blockerCount: blockers.length,
+    warningCount: warnings.length,
+    blockers,
+    warnings,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    nextAllowedStep: "db_backed_mock_trading_history_review",
+    schemaDraft,
+    storageBoundarySummary,
+    redactionPolicySummary,
+    migrationReadinessChecklist,
+  };
+}
+
+export function buildAdminTradingLabDbBackedMockTradingHistoryPreflightStatus(input = {}, options = {}) {
+  const preflight = input.preflight || buildDbBackedMockTradingHistoryPreflight(input, options);
+  return {
+    ok: true,
+    step: "Step 182: DB-backed mock trading history preflight",
+    status: "admin_only_db_backed_mock_trading_history_preflight_fail_closed",
+    sourceStep: "step182",
+    model: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_PREFLIGHT_MODEL,
+    preflight,
+    candidateTableSchemaDraft: preflight.schemaDraft,
+    storageBoundarySummary: preflight.storageBoundarySummary,
+    redactionPolicySummary: preflight.redactionPolicySummary,
+    migrationReadinessChecklist: preflight.migrationReadinessChecklist,
+    dbWriteBlockedConfirmation: preflight.dbWriteBlockedConfirmation,
+    flags: { ...STEP182_DB_BACKED_MOCK_TRADING_HISTORY_PREFLIGHT_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    actualTradingRunCreated: false,
+    accountBalanceQueried: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    dbMigrationCreated: false,
+    dbSchemaChanged: false,
+    supabaseInsertAttempted: false,
+    supabaseUpdateAttempted: false,
+    supabaseDeleteAttempted: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: false,
+      dbMigrationAllowed: false,
+      persistentDbWriteRequired: false,
+      persistentDbWriteAllowed: false,
+      actualTradingRunCreationAllowed: false,
+      accountBalanceQueryAllowed: false,
+    },
+    redaction: makeLabRedaction({ schema: "step182_db_backed_mock_trading_history_preflight_v1" }),
+  };
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -19725,6 +20000,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const dbBackedMockTradingHistoryPreflightStatus = input.dbBackedMockTradingHistoryPreflightStatus || buildAdminTradingLabDbBackedMockTradingHistoryPreflightStatus(
+    {
+      ...input,
+      dashboardUxPolishCoreStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -19773,6 +20055,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     dashboardUxPolishPreflightStatus,
     dashboardUxPolishReviewResultStatus,
     dashboardUxPolishCoreStatus,
+    dbBackedMockTradingHistoryPreflightStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -19942,6 +20225,11 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     safetyNoticePolishResultModel: TRADING_LAB_DASHBOARD_UX_POLISH_SAFETY_NOTICE_RESULT_MODEL,
     readabilityPolishResultModel: TRADING_LAB_DASHBOARD_UX_POLISH_READABILITY_RESULT_MODEL,
     duplicateVerboseCleanupResultModel: TRADING_LAB_DASHBOARD_UX_POLISH_DUPLICATE_VERBOSE_CLEANUP_RESULT_MODEL,
+    dbBackedMockTradingHistoryPreflightModel: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_PREFLIGHT_MODEL,
+    dbBackedMockTradingHistoryCandidateTableSchemaDraft: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_CANDIDATE_TABLE_SCHEMA_DRAFT,
+    dbBackedMockTradingHistoryStorageBoundarySummary: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_STORAGE_BOUNDARY_SUMMARY,
+    dbBackedMockTradingHistoryRedactionPolicySummary: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_REDACTION_POLICY_SUMMARY,
+    dbBackedMockTradingHistoryMigrationReadinessChecklist: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_READINESS_CHECKLIST,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,

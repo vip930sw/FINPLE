@@ -1967,6 +1967,106 @@ nav {
   padding-top: 0.4rem;
 }
 
+.tradingLabDbHistoryPreflightSummary {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-left: 4px solid #4338ca;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+}
+
+.tradingLabDbHistoryPreflightSummary > div:first-child,
+.tradingLabDbHistoryNotice article {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.tradingLabDbHistoryPreflightSummary span,
+.tradingLabDbHistoryPreflightSummary strong,
+.tradingLabDbHistoryPreflightSummary p {
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDbHistoryPreflightSummary > div:first-child span,
+.tradingLabDbHistoryLists section > span,
+.tradingLabDbHistoryNotice span {
+  color: #4338ca;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tradingLabDbHistoryPreflightSummary > div:first-child strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.tradingLabDbHistoryPreflightSummary p {
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tradingLabDbHistoryStatusGrid,
+.tradingLabDbHistoryLists {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.tradingLabDbHistoryStatusGrid article,
+.tradingLabDbHistoryLists section,
+.tradingLabDbHistoryNotice article {
+  background: #ffffff;
+  border: 1px solid rgba(67, 56, 202, 0.16);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.72rem;
+}
+
+.tradingLabDbHistoryStatusGrid span,
+.tradingLabDbHistoryLists li span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.tradingLabDbHistoryStatusGrid strong,
+.tradingLabDbHistoryLists li strong,
+.tradingLabDbHistoryNotice strong {
+  color: #4338ca;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.tradingLabDbHistoryLists ul {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tradingLabDbHistoryLists li {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.4rem;
+}
+
+.tradingLabDbHistoryNotice article {
+  background: #eef2ff;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;

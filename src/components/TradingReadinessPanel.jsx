@@ -17,6 +17,7 @@ import {
   fetchAdminTradingLabDashboardUxPolishPreflightStatus,
   fetchAdminTradingLabDashboardUxPolishReviewResultStatus,
   fetchAdminTradingLabDashboardUxPolishCoreStatus,
+  fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryPreflightStatus,
   fetchAdminTradingLabMockTradingRunSummaryCoreStatus,
   fetchAdminTradingLabMockTradingRunSummaryReviewResultStatus,
@@ -508,6 +509,7 @@ export function TradingReadinessPanel() {
   const [tradingLabDashboardUxPolishPreflightStatus, setTradingLabDashboardUxPolishPreflightStatus] = useState(null);
   const [tradingLabDashboardUxPolishReviewResultStatus, setTradingLabDashboardUxPolishReviewResultStatus] = useState(null);
   const [tradingLabDashboardUxPolishCoreStatus, setTradingLabDashboardUxPolishCoreStatus] = useState(null);
+  const [tradingLabDbBackedMockTradingHistoryPreflightStatus, setTradingLabDbBackedMockTradingHistoryPreflightStatus] = useState(null);
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -566,6 +568,7 @@ export function TradingReadinessPanel() {
       fetchAdminTradingLabDashboardUxPolishPreflightStatus().catch(() => null),
       fetchAdminTradingLabDashboardUxPolishReviewResultStatus().catch(() => null),
       fetchAdminTradingLabDashboardUxPolishCoreStatus().catch(() => null),
+      fetchAdminTradingLabDbBackedMockTradingHistoryPreflightStatus().catch(() => null),
     ])
       .then((payload) => {
         if (cancelled) return;
@@ -619,6 +622,7 @@ export function TradingReadinessPanel() {
         setTradingLabDashboardUxPolishPreflightStatus(payload?.[47] || null);
         setTradingLabDashboardUxPolishReviewResultStatus(payload?.[48] || null);
         setTradingLabDashboardUxPolishCoreStatus(payload?.[49] || null);
+        setTradingLabDbBackedMockTradingHistoryPreflightStatus(payload?.[50] || null);
         setLoadState("ready");
       })
       .catch(() => {
@@ -1060,6 +1064,21 @@ export function TradingReadinessPanel() {
     : Array.isArray(labDashboardUxPolishCoreValidation.warnings)
       ? labDashboardUxPolishCoreValidation.warnings
       : [];
+  const labDbBackedMockTradingHistoryPreflightStatus = tradingLabDbBackedMockTradingHistoryPreflightStatus || tradingLabDashboardStatus?.dbBackedMockTradingHistoryPreflightStatus || {};
+  const labDbBackedMockTradingHistoryPreflight = labDbBackedMockTradingHistoryPreflightStatus?.preflight || {};
+  const labDbBackedMockTradingHistorySchemaDraft = labDbBackedMockTradingHistoryPreflightStatus?.candidateTableSchemaDraft || labDbBackedMockTradingHistoryPreflight?.schemaDraft || {};
+  const labDbBackedMockTradingHistoryTables = Array.isArray(labDbBackedMockTradingHistorySchemaDraft.tables)
+    ? labDbBackedMockTradingHistorySchemaDraft.tables
+    : [];
+  const labDbBackedMockTradingHistoryChecklist = labDbBackedMockTradingHistoryPreflightStatus?.migrationReadinessChecklist || labDbBackedMockTradingHistoryPreflight?.migrationReadinessChecklist || {};
+  const labDbBackedMockTradingHistoryChecklistItems = Array.isArray(labDbBackedMockTradingHistoryChecklist.items)
+    ? labDbBackedMockTradingHistoryChecklist.items
+    : [];
+  const labDbBackedMockTradingHistoryRedaction = labDbBackedMockTradingHistoryPreflightStatus?.redactionPolicySummary || labDbBackedMockTradingHistoryPreflight?.redactionPolicySummary || {};
+  const labDbBackedMockTradingHistoryForbidden = Array.isArray(labDbBackedMockTradingHistoryRedaction.prohibitedValueTypes)
+    ? labDbBackedMockTradingHistoryRedaction.prohibitedValueTypes
+    : [];
+  const labDbBackedMockTradingHistoryDbWrite = labDbBackedMockTradingHistoryPreflightStatus?.dbWriteBlockedConfirmation || labDbBackedMockTradingHistoryPreflight?.dbWriteBlockedConfirmation || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -1557,6 +1576,76 @@ export function TradingReadinessPanel() {
                 ))}
               </ul>
             </section>
+          </div>
+        </div>
+
+        <div className="tradingLabDbHistoryPreflightSummary" data-admin-panel-key="trading-lab-db-backed-mock-trading-history-preflight">
+          <div>
+            <span>DB-backed mock trading history preflight</span>
+            <strong>DB-backed mock trading history 사전검토</strong>
+            <p>
+              /admin/trading 내부 mock trading lab 결과를 향후 DB에 저장하기 위한 후보 schema draft만 확인합니다. 이번 단계는 DB migration, DB schema 변경, Supabase insert/update/delete, persistent DB write를 수행하지 않습니다.
+            </p>
+          </div>
+          <div className="tradingLabDbHistoryStatusGrid" aria-label="DB-backed mock trading history preflight status">
+            <article>
+              <span>preflight status</span>
+              <strong>{formatStatus(labDbBackedMockTradingHistoryPreflight.status || "blocked")}</strong>
+            </article>
+            <article>
+              <span>candidate tables</span>
+              <strong>{labDbBackedMockTradingHistoryPreflight.candidateCount ?? labDbBackedMockTradingHistoryTables.length}</strong>
+            </article>
+            <article>
+              <span>DB write</span>
+              <strong>{formatStatus(labDbBackedMockTradingHistoryPreflight.dbWriteStatus || "blocked")}</strong>
+            </article>
+            <article>
+              <span>next allowed step</span>
+              <strong>{formatStatus(labDbBackedMockTradingHistoryPreflight.nextAllowedStep || "db_backed_mock_trading_history_review")}</strong>
+            </article>
+          </div>
+          <div className="tradingLabDbHistoryLists">
+            <section aria-label="mock trading history candidate schema draft">
+              <span>저장 후보 schema draft</span>
+              <ul>
+                {labDbBackedMockTradingHistoryTables.map((table) => (
+                  <li key={table.tableName}>
+                    <span>{table.candidate}</span>
+                    <strong>{table.tableName}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="mock trading history forbidden values">
+              <span>저장 금지 항목</span>
+              <ul>
+                {labDbBackedMockTradingHistoryForbidden.map((item) => (
+                  <li key={item}>
+                    <span>{item}</span>
+                    <strong>blocked</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section aria-label="mock trading history migration readiness checklist">
+              <span>migration readiness checklist</span>
+              <ul>
+                {labDbBackedMockTradingHistoryChecklistItems.map((item) => (
+                  <li key={item.key}>
+                    <span>{item.key}</span>
+                    <strong>{formatStatus(item.status || "blocked")}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+          <div className="tradingLabDbHistoryNotice" aria-label="DB write blocked confirmation">
+            <article>
+              <span>DB write blocked confirmation</span>
+              <strong>{labDbBackedMockTradingHistoryDbWrite.dbWriteAttempted === false ? "db_write_attempted_false" : "blocked"}</strong>
+              <p>provider/order/live readiness 영향 없음 · DB migration 없음 · persistent DB write 없음 · 실제 계좌/체결/주문 식별자 저장 없음</p>
+            </article>
           </div>
         </div>
 
