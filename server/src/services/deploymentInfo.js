@@ -3,10 +3,13 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const serverPackage = require("../../package.json");
 
-const COMMIT_ENV_KEYS = [
-  "FINPLE_DEPLOY_COMMIT_SHA",
+const RENDER_COMMIT_ENV_KEYS = [
   "RENDER_GIT_COMMIT",
   "SOURCE_VERSION",
+];
+
+const MANUAL_COMMIT_ENV_KEYS = [
+  "FINPLE_DEPLOY_COMMIT_SHA",
   "GIT_COMMIT_SHA",
   "COMMIT_SHA",
   "VERCEL_GIT_COMMIT_SHA",
@@ -31,8 +34,29 @@ function firstEnvValue(keys) {
   return { key: null, value: null };
 }
 
+function getCommitEnvKeys() {
+  if (process.env.RENDER) return [...RENDER_COMMIT_ENV_KEYS, ...MANUAL_COMMIT_ENV_KEYS];
+  return [...MANUAL_COMMIT_ENV_KEYS, ...RENDER_COMMIT_ENV_KEYS];
+}
+
+function buildMetadataWarnings(commit) {
+  const warnings = [];
+  const manualCommit = firstEnvValue(MANUAL_COMMIT_ENV_KEYS);
+  const renderCommit = firstEnvValue(RENDER_COMMIT_ENV_KEYS);
+
+  if (process.env.RENDER && !renderCommit.value) {
+    warnings.push("render_platform_commit_metadata_missing");
+  }
+  if (process.env.RENDER && renderCommit.value && manualCommit.value && commit.key === renderCommit.key) {
+    warnings.push("manual_commit_metadata_ignored_in_favor_of_render_platform");
+  }
+  if (!commit.value) warnings.push("commit_metadata_unavailable");
+
+  return warnings;
+}
+
 export function getDeploymentInfo() {
-  const commit = firstEnvValue(COMMIT_ENV_KEYS);
+  const commit = firstEnvValue(getCommitEnvKeys());
   const branch = firstEnvValue(BRANCH_ENV_KEYS);
   const serviceName = clean(process.env.RENDER_SERVICE_NAME || process.env.FINPLE_SERVICE_NAME);
   const serviceId = clean(process.env.RENDER_SERVICE_ID || process.env.FINPLE_SERVICE_ID);
@@ -52,5 +76,7 @@ export function getDeploymentInfo() {
     commitSha: commit.value,
     commitShortSha: commit.value ? commit.value.slice(0, 7) : null,
     commitSource: commit.key,
+    commitSourceKind: RENDER_COMMIT_ENV_KEYS.includes(commit.key) ? "render_platform" : commit.key ? "manual_or_fallback" : null,
+    metadataWarnings: buildMetadataWarnings(commit),
   };
 }

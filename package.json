@@ -465,7 +465,8 @@
     "check:trading-step176-admin-trading-safety-assessment-layout-polish": "node scripts/check-trading-step176-admin-trading-safety-assessment-layout-polish.cjs && node --test --test-force-exit scripts/check-trading-step176-admin-trading-safety-assessment-layout-polish.test.cjs scripts/check-trading-step175-admin-trading-lab-mvp-final-review.test.cjs scripts/check-trading-step174-admin-trading-lab-mvp-completion-handoff-summary.test.cjs scripts/check-step166-account-plan-mbti.test.mjs server/src/routes/adminTradingReadinessRoutes.test.js",
     "check:trading-step177-legacy-trading-check-runner-cleanup": "node scripts/check-trading-step177-legacy-trading-check-runner-cleanup.cjs && node --test scripts/check-trading-step177-legacy-trading-check-runner-cleanup.test.cjs",
     "check:trading-step178-remaining-legacy-trading-check-runner-cleanup": "node scripts/check-trading-step178-remaining-legacy-trading-check-runner-cleanup.cjs && node --test scripts/check-trading-step178-remaining-legacy-trading-check-runner-cleanup.test.cjs",
-    "check:trading-step179-legacy-trading-check-runner-heavy-service-audit": "node scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.cjs && node --test scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.test.cjs"
+    "check:trading-step179-legacy-trading-check-runner-heavy-service-audit": "node scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.cjs && node --test scripts/check-trading-step179-legacy-trading-check-runner-heavy-service-audit.test.cjs",
+    "check:trading-step180-render-api-health-and-deployment-metadata": "node scripts/check-trading-step180-render-api-health-and-deployment-metadata.cjs && node --test server/src/services/deploymentInfo.test.js scripts/check-trading-step180-render-api-health-and-deployment-metadata.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
