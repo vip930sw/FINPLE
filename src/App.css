@@ -2067,6 +2067,106 @@ nav {
   background: #eef2ff;
 }
 
+.tradingLabDbHistoryReviewSummary {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-left: 4px solid #0f766e;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+}
+
+.tradingLabDbHistoryReviewSummary > div:first-child,
+.tradingLabDbHistoryReviewNotice article {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.tradingLabDbHistoryReviewSummary span,
+.tradingLabDbHistoryReviewSummary strong,
+.tradingLabDbHistoryReviewSummary p {
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDbHistoryReviewSummary > div:first-child span,
+.tradingLabDbHistoryReviewLists section > span,
+.tradingLabDbHistoryReviewNotice span {
+  color: #0f766e;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tradingLabDbHistoryReviewSummary > div:first-child strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.tradingLabDbHistoryReviewSummary p {
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tradingLabDbHistoryReviewStatusGrid,
+.tradingLabDbHistoryReviewLists {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.tradingLabDbHistoryReviewStatusGrid article,
+.tradingLabDbHistoryReviewLists section,
+.tradingLabDbHistoryReviewNotice article {
+  background: #ffffff;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.72rem;
+}
+
+.tradingLabDbHistoryReviewStatusGrid span,
+.tradingLabDbHistoryReviewLists li span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.tradingLabDbHistoryReviewStatusGrid strong,
+.tradingLabDbHistoryReviewLists li strong,
+.tradingLabDbHistoryReviewNotice strong {
+  color: #0f766e;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.tradingLabDbHistoryReviewLists ul {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tradingLabDbHistoryReviewLists li {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.4rem;
+}
+
+.tradingLabDbHistoryReviewNotice article {
+  background: #ecfdf5;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
