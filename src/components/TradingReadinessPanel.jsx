@@ -1545,6 +1545,15 @@ export function TradingReadinessPanel() {
     () => buildMockStrategyRestoreCandidateUiModel(labMockStrategyRestoreSourceRecord, labMockStrategyRestoreCandidateStatus?.restoreCandidate || {}),
     [labMockStrategyRestoreSourceRecord, labMockStrategyRestoreCandidateStatus],
   );
+  const labAiMlStrategyManagementStatus = tradingLabDashboardStatus?.aiMlStrategyManagementStatus || {};
+  const labAiMlStrategyRegistry = labAiMlStrategyManagementStatus?.registry || {};
+  const labAiMlModels = Array.isArray(labAiMlStrategyRegistry.models) ? labAiMlStrategyRegistry.models : [];
+  const labAiMlDatasets = Array.isArray(labAiMlStrategyRegistry.datasets) ? labAiMlStrategyRegistry.datasets : [];
+  const labAiMlFeatureSets = Array.isArray(labAiMlStrategyRegistry.featureSets) ? labAiMlStrategyRegistry.featureSets : [];
+  const labAiMlEvaluationProfiles = Array.isArray(labAiMlStrategyRegistry.evaluationProfiles) ? labAiMlStrategyRegistry.evaluationProfiles : [];
+  const labAiMlLifecycleSummary = Array.isArray(labAiMlStrategyRegistry.lifecycleSummary) ? labAiMlStrategyRegistry.lifecycleSummary : [];
+  const labAiMlImplementationContracts = Array.isArray(labAiMlStrategyRegistry.implementationContracts) ? labAiMlStrategyRegistry.implementationContracts : [];
+  const labAiMlBlockedOperations = Array.isArray(labAiMlStrategyRegistry.blockedOperations) ? labAiMlStrategyRegistry.blockedOperations : [];
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3200,6 +3209,132 @@ export function TradingReadinessPanel() {
                     </div>
                   </>
                 )}
+              </div>
+            </details>
+            <details className="tradingLabAiMlStrategyConsole" data-admin-panel-key="ai-ml-strategy-management-console">
+              <summary>
+                <span>AI/ML strategy management console</span>
+                <strong>{formatStatus(labAiMlStrategyRegistry.status || "design_only")}</strong>
+                <em>training/deploy/write blocked</em>
+              </summary>
+              <div className="tradingLabAiMlStrategyConsoleBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  This admin-only console is a deterministic architecture prototype for model registry governance. It does not run training jobs, create model files, write a registry, call providers, submit orders, or expose model output to public screens.
+                </p>
+                <div className="tradingLabAiMlStatusGrid" aria-label="AI ML strategy management status">
+                  <article>
+                    <span>registry scope</span>
+                    <strong>{labAiMlStrategyRegistry.scope || "admin_ai_ml_strategy_lab"}</strong>
+                  </article>
+                  <article>
+                    <span>models</span>
+                    <strong>{labAiMlStrategyRegistry.modelCount || labAiMlModels.length}</strong>
+                  </article>
+                  <article>
+                    <span>dataset / feature / eval</span>
+                    <strong>{labAiMlDatasets.length} / {labAiMlFeatureSets.length} / {labAiMlEvaluationProfiles.length}</strong>
+                  </article>
+                  <article>
+                    <span>next contract</span>
+                    <strong>{formatStatus(labAiMlStrategyRegistry.nextImplementationStep || "ai_ml_training_pipeline_preflight_contract")}</strong>
+                  </article>
+                  <article>
+                    <span>training / deployment</span>
+                    <strong>{labAiMlStrategyManagementStatus.modelTrainingAllowed ? "open" : "blocked"} / {labAiMlStrategyManagementStatus.modelDeploymentAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                  <article>
+                    <span>auto approval / DB write</span>
+                    <strong>{labAiMlStrategyManagementStatus.modelAutoApprovalAllowed ? "open" : "blocked"} / {labAiMlStrategyManagementStatus.dbWriteAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlModelGrid" aria-label="AI ML model registry cards">
+                  {labAiMlModels.map((model) => (
+                    <article key={model.modelId}>
+                      <span>{model.modelType}</span>
+                      <strong>{model.modelName}</strong>
+                      <dl>
+                        <dt>version</dt>
+                        <dd>{model.modelVersion}</dd>
+                        <dt>algorithm family</dt>
+                        <dd>{model.algorithmFamily}</dd>
+                        <dt>lifecycle</dt>
+                        <dd>{formatStatus(model.lifecycleStatus)}</dd>
+                        <dt>deployment</dt>
+                        <dd>{model.deploymentStatus}</dd>
+                      </dl>
+                      <p>{(model.outputContract || []).join(" / ")}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlContractGrid">
+                  <section aria-label="AI ML dataset contracts">
+                    <span>dataset contracts</span>
+                    <ul>
+                      {labAiMlDatasets.map((dataset) => (
+                        <li key={dataset.datasetId}>
+                          {dataset.datasetName}: {dataset.coverage} / storage {dataset.storageStatus}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML feature contracts">
+                    <span>feature contracts</span>
+                    <ul>
+                      {labAiMlFeatureSets.map((featureSet) => (
+                        <li key={featureSet.featureSetId}>
+                          {featureSet.featureSetId}: {(featureSet.featureFamilies || []).join(", ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML evaluation contracts">
+                    <span>evaluation contracts</span>
+                    <ul>
+                      {labAiMlEvaluationProfiles.map((profile) => (
+                        <li key={profile.evaluationProfileId}>
+                          {profile.evaluationProfileId}: {(profile.metricContract || []).join(", ")} / {profile.approvalThresholdStatus}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlContractGrid">
+                  <section aria-label="AI ML lifecycle summary">
+                    <span>model lifecycle</span>
+                    <ul>
+                      {labAiMlLifecycleSummary.map((entry) => (
+                        <li key={entry.lifecycleStatus}>{formatStatus(entry.lifecycleStatus)}: {entry.count}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML approval workflow">
+                    <span>approval and retirement workflow</span>
+                    <ul>
+                      {(labAiMlStrategyRegistry.approvalWorkflow?.approvalStages || []).map((stage) => (
+                        <li key={stage}>{formatStatus(stage)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML future implementation contracts">
+                    <span>future implementation contracts</span>
+                    <ul>
+                      {labAiMlImplementationContracts.map((contract) => (
+                        <li key={contract.step}>{contract.step}: {contract.name} - {contract.allowedScope}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlBlockedNotice" aria-label="AI ML blocked operations">
+                  <article>
+                    <span>blocked operations</span>
+                    <strong>training, deployment, DB write, provider, order, live gates remain blocked</strong>
+                    <ul>
+                      {labAiMlBlockedOperations.map((operation) => (
+                        <li key={operation}>{formatStatus(operation)}</li>
+                      ))}
+                    </ul>
+                  </article>
+                </div>
               </div>
             </details>
           </div>

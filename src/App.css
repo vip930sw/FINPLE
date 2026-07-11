@@ -2901,6 +2901,103 @@ nav {
   width: fit-content;
 }
 
+.tradingLabAiMlStrategyConsole {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tradingLabAiMlStrategyConsole summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.tradingLabAiMlStrategyConsole summary span,
+.tradingLabAiMlStatusGrid span,
+.tradingLabAiMlModelGrid article > span,
+.tradingLabAiMlContractGrid section > span,
+.tradingLabAiMlBlockedNotice span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tradingLabAiMlStrategyConsole summary strong,
+.tradingLabAiMlStrategyConsole summary em,
+.tradingLabAiMlStatusGrid strong,
+.tradingLabAiMlModelGrid strong,
+.tradingLabAiMlBlockedNotice strong {
+  color: #0f172a;
+}
+
+.tradingLabAiMlStrategyConsoleBody {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tradingLabAiMlStatusGrid,
+.tradingLabAiMlModelGrid,
+.tradingLabAiMlContractGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.tradingLabAiMlStatusGrid article,
+.tradingLabAiMlModelGrid article,
+.tradingLabAiMlContractGrid section,
+.tradingLabAiMlBlockedNotice article {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tradingLabAiMlModelGrid article {
+  display: grid;
+  gap: 8px;
+}
+
+.tradingLabAiMlModelGrid dl {
+  display: grid;
+  gap: 0.4rem 0.7rem;
+  grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr);
+  margin: 0;
+}
+
+.tradingLabAiMlModelGrid dt {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.tradingLabAiMlModelGrid dd,
+.tradingLabAiMlModelGrid p {
+  color: #0f172a;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabAiMlContractGrid ul,
+.tradingLabAiMlBlockedNotice ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.tradingLabAiMlContractGrid li,
+.tradingLabAiMlBlockedNotice li {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
