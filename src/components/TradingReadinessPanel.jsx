@@ -649,6 +649,129 @@ function buildMockHistoryCompareUiModel(records, serverCompare = {}) {
   };
 }
 
+function deriveMockRestoreAllocation(record) {
+  const allocation = deriveMockHistoryAllocation(record);
+  return [
+    ["equity", allocation.equity],
+    ["income", allocation.income],
+    ["cash", allocation.cash],
+    ["other", allocation.other],
+  ].map(([symbol, targetWeight]) => ({
+    symbol,
+    targetWeight,
+    status: "draft_candidate",
+  }));
+}
+
+function buildMockStrategyRestoreCandidateUiModel(sourceRecord, serverCandidate = {}) {
+  if (!sourceRecord) {
+    return {
+      restoreCandidateId: "step190_restore_candidate_unselected",
+      sourceRunId: null,
+      restoreEligibility: "blocked",
+      restorationStatus: "blocked",
+      targetDraftLabel: "복원 후보로 사용할 완료된 모의 실행을 선택해주세요.",
+      copiedFields: [],
+      excludedFields: [],
+      transformedFields: [],
+      validationWarnings: [],
+      validationBlockers: ["source_run_not_selected"],
+      targetDraftPreview: null,
+      dbReadStatus: "blocked",
+      dbWriteStatus: "blocked",
+      nextStep: "strategy_draft_editor_candidate",
+    };
+  }
+
+  const eligibleStatus = MOCK_HISTORY_COMPARE_STATUSES.has(sourceRecord.runStatus) && sourceRecord.compareSupported === true;
+  const warnings = [];
+  const blockers = [];
+  if (!eligibleStatus) blockers.push("완료된 모의 실행만 전략 복원 후보로 사용할 수 있습니다.");
+  if (!sourceRecord.strategyVersion) blockers.push("전략 버전 정보가 없습니다.");
+  if (!sourceRecord.inputSummary) blockers.push("입력 snapshot이 누락되었습니다.");
+  if (sourceRecord.redacted !== true) blockers.push("민감정보 제거 조건을 충족하지 못했습니다.");
+  if (sourceRecord.calculationVersion !== "mock_calc_v3") warnings.push("calculationVersion outdated");
+  if (sourceRecord.archived) warnings.push("archived source");
+  if (sourceRecord.warningCount > 0) warnings.push("warning history excluded");
+
+  const targetAllocations = deriveMockRestoreAllocation(sourceRecord);
+  const restoreEligibility = blockers.length > 0 ? "blocked" : warnings.length > 0 ? "eligible_with_warning" : "eligible";
+  return {
+    restoreCandidateId: serverCandidate.restoreCandidateId || `step190_restore_candidate_${sourceRecord.runId}`,
+    sourceRunId: sourceRecord.runId,
+    sourceStrategyPresetId: sourceRecord.strategyPresetId,
+    sourceStrategyVersionId: `${sourceRecord.strategyPresetId}:${sourceRecord.strategyVersion}`,
+    sourceStrategyName: sourceRecord.strategyName,
+    sourceStrategyVersion: sourceRecord.strategyVersion,
+    restoreEligibility,
+    restorationStatus: blockers.length > 0 ? "blocked" : warnings.length > 0 ? "validation_required" : "candidate_only",
+    targetDraftId: `restore-draft-${sourceRecord.runId}`,
+    targetDraftLabel: `${sourceRecord.strategyName} restore draft`,
+    copiedFields: [
+      "strategy name",
+      "description",
+      "strategy type",
+      "asset universe",
+      "target allocations",
+      "rebalance rule",
+      "risk limits",
+      "calculation version reference",
+      "tags",
+      "mock-only scope",
+    ],
+    excludedFields: [
+      "order/fill summaries",
+      "ledger/performance/risk result snapshots",
+      "original timestamps",
+      "live account data",
+      "provider/KIS fields",
+      "credential/token values",
+    ],
+    transformedFields: [
+      `strategy name -> ${sourceRecord.strategyName} restore draft`,
+      "status -> draft_candidate",
+      "version -> next_version_candidate",
+      "archived -> false",
+      "source -> restored_from_mock_run",
+    ],
+    validationWarnings: warnings,
+    validationBlockers: blockers,
+    sourceCalculationVersion: sourceRecord.calculationVersion,
+    targetDraftPreview: {
+      draftLabel: `${sourceRecord.strategyName} restore draft`,
+      strategyName: `${sourceRecord.strategyName} restore draft`,
+      strategyType: "admin_mock_lab_strategy",
+      assetUniverse: targetAllocations.map((allocation) => allocation.symbol),
+      targetAllocations,
+      rebalanceRule: "manual_review / 5% placeholder",
+      riskLimits: "conservative mock risk placeholders",
+      sourceRun: sourceRecord.runId,
+      sourceStrategyVersion: `${sourceRecord.strategyPresetId}:${sourceRecord.strategyVersion}`,
+      copiedFieldCount: 10,
+      excludedFieldCount: 6,
+      warningCount: warnings.length,
+      blockerCount: blockers.length,
+      status: blockers.length > 0 ? "blocked" : "draft_candidate",
+      persistence: "blocked",
+    },
+    lineage: {
+      restoredFromRunId: sourceRecord.runId,
+      restoredFromStrategyVersionId: `${sourceRecord.strategyPresetId}:${sourceRecord.strategyVersion}`,
+      restorationReason: "admin_mock_lab_restore_preview",
+      transformationVersion: "step190_restore_transform_v1",
+      createdByAdminPlaceholder: "admin_placeholder",
+      redacted: true,
+    },
+    immutableSourceConfirmed: true,
+    dbReadStatus: "blocked",
+    dbWriteStatus: "blocked",
+    supabaseMutationStatus: "blocked",
+    providerCallStatus: "blocked",
+    orderSubmissionStatus: "blocked",
+    nextStep: "strategy_draft_editor_candidate",
+  };
+}
+
 function getInitialTradingPanelTab() {
   if (typeof window === "undefined") return "lab";
   const params = new URLSearchParams(window.location.search);
@@ -728,6 +851,7 @@ export function TradingReadinessPanel() {
   const [mockHistoryPageSize, setMockHistoryPageSize] = useState(5);
   const [mockHistorySelectedRunIds, setMockHistorySelectedRunIds] = useState([]);
   const [mockHistoryFocusedRunId, setMockHistoryFocusedRunId] = useState(null);
+  const [mockStrategyRestoreSourceRunId, setMockStrategyRestoreSourceRunId] = useState("");
   const [strategyDraftForm, setStrategyDraftForm] = useState(DEFAULT_STRATEGY_DRAFT_FORM);
   const [strategyDraftPreview, setStrategyDraftPreview] = useState(null);
   const [loadState, setLoadState] = useState("loading");
@@ -1408,7 +1532,28 @@ export function TradingReadinessPanel() {
     () => buildMockHistoryCompareUiModel(labMockHistorySelectedRecords, labMockTradingHistoryCompareStatus?.compare || {}),
     [labMockHistorySelectedRecords, labMockTradingHistoryCompareStatus],
   );
+  const labMockStrategyRestoreCandidateStatus = tradingLabDashboardStatus?.mockStrategyRestoreCandidateStatus || {};
+  const labMockStrategyRestoreSourceOptions = labMockHistorySelectedRecords.length > 0
+    ? labMockHistorySelectedRecords
+    : labMockHistoryFocusedRecord
+      ? [labMockHistoryFocusedRecord]
+      : [];
+  const labMockStrategyRestoreSourceRecord = labMockStrategyRestoreSourceOptions.find((record) => record.runId === mockStrategyRestoreSourceRunId)
+    || labMockStrategyRestoreSourceOptions.find((record) => MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) && record.compareSupported === true)
+    || null;
+  const labMockStrategyRestoreCandidate = useMemo(
+    () => buildMockStrategyRestoreCandidateUiModel(labMockStrategyRestoreSourceRecord, labMockStrategyRestoreCandidateStatus?.restoreCandidate || {}),
+    [labMockStrategyRestoreSourceRecord, labMockStrategyRestoreCandidateStatus],
+  );
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
+  useEffect(() => {
+    const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
+    if (mockStrategyRestoreSourceRunId && optionIds.includes(mockStrategyRestoreSourceRunId)) return;
+    const nextSource = labMockStrategyRestoreSourceOptions.find((record) => MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) && record.compareSupported === true)
+      || labMockStrategyRestoreSourceOptions[0]
+      || null;
+    setMockStrategyRestoreSourceRunId(nextSource?.runId || "");
+  }, [labMockStrategyRestoreSourceOptions, mockStrategyRestoreSourceRunId]);
   const updateMockHistoryFilter = (key, value) => {
     setMockHistoryFilters((current) => ({ ...current, [key]: value }));
     setMockHistoryPage(1);
@@ -2906,6 +3051,152 @@ export function TradingReadinessPanel() {
                         </ul>
                         <button type="button" disabled>전략 복원 후보 확인 - Step190에서 제공 예정</button>
                       </section>
+                    </div>
+                  </>
+                )}
+              </div>
+            </details>
+            <details className="tradingLabStrategyRestoreDetails" data-admin-panel-key="mock-strategy-restore-candidate">
+              <summary>
+                <span>Mock strategy restore candidate</span>
+                <strong>{formatStatus(labMockStrategyRestoreCandidate.restorationStatus || "blocked")}</strong>
+                <em>{labMockStrategyRestoreCandidate.sourceRunId || "source not selected"} - DB blocked</em>
+              </summary>
+              <div className="tradingLabStrategyRestoreBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  복원은 과거 실행 기록을 수정하지 않습니다. 전략 입력값만 새 초안 후보로 복사하고, 주문·체결·성과 결과는 복원하지 않습니다. DB 저장과 Supabase mutation은 아직 차단되어 있습니다.
+                </p>
+                <div className="tradingLabStrategyRestoreStatusGrid" aria-label="mock strategy restore candidate status">
+                  <article>
+                    <span>restore eligibility</span>
+                    <strong>{formatStatus(labMockStrategyRestoreCandidate.restoreEligibility)}</strong>
+                  </article>
+                  <article>
+                    <span>source immutable</span>
+                    <strong>{labMockStrategyRestoreCandidate.immutableSourceConfirmed ? "confirmed" : "select source"}</strong>
+                  </article>
+                  <article>
+                    <span>DB read/write</span>
+                    <strong>{labMockStrategyRestoreCandidate.dbReadStatus} / {labMockStrategyRestoreCandidate.dbWriteStatus}</strong>
+                  </article>
+                  <article>
+                    <span>next step</span>
+                    <strong>{formatStatus(labMockStrategyRestoreCandidate.nextStep)}</strong>
+                  </article>
+                </div>
+                <label className="tradingLabStrategyRestoreSourcePicker">
+                  <span>복원 원본 선택</span>
+                  <select
+                    value={labMockStrategyRestoreCandidate.sourceRunId || ""}
+                    onChange={(event) => setMockStrategyRestoreSourceRunId(event.target.value)}
+                  >
+                    {labMockStrategyRestoreSourceOptions.length === 0 ? (
+                      <option value="">완료된 모의 실행을 먼저 선택해주세요</option>
+                    ) : (
+                      labMockStrategyRestoreSourceOptions.map((record) => {
+                        const supported = MOCK_HISTORY_COMPARE_STATUSES.has(record.runStatus) && record.compareSupported === true;
+                        return (
+                          <option key={record.runId} value={record.runId} disabled={!supported}>
+                            {record.runLabel} - {supported ? "복원 후보 가능" : "복원 불가"}
+                          </option>
+                        );
+                      })
+                    )}
+                  </select>
+                </label>
+                {!labMockStrategyRestoreCandidate.targetDraftPreview ? (
+                  <p className="tradingLabHistoryBrowserEmpty">
+                    복원 후보로 사용할 완료된 모의 실행을 선택해주세요. 이 기능은 mock-only read-only preview이며 DB write는 차단되어 있습니다.
+                  </p>
+                ) : (
+                  <>
+                    <div className="tradingLabStrategyRestorePreviewGrid" aria-label="mock strategy restore target draft preview">
+                      <section>
+                        <span>source run 요약</span>
+                        <dl>
+                          <dt>source run</dt>
+                          <dd>{labMockStrategyRestoreCandidate.sourceRunId}</dd>
+                          <dt>source strategy</dt>
+                          <dd>{labMockStrategyRestoreCandidate.sourceStrategyName} / {labMockStrategyRestoreCandidate.sourceStrategyVersion}</dd>
+                          <dt>calculation version</dt>
+                          <dd>{labMockStrategyRestoreCandidate.sourceCalculationVersion}</dd>
+                          <dt>lineage</dt>
+                          <dd>{labMockStrategyRestoreCandidate.lineage?.restoredFromStrategyVersionId}</dd>
+                        </dl>
+                      </section>
+                      <section>
+                        <span>target draft preview</span>
+                        <dl>
+                          <dt>draft label</dt>
+                          <dd>{labMockStrategyRestoreCandidate.targetDraftPreview.draftLabel}</dd>
+                          <dt>status</dt>
+                          <dd>{formatStatus(labMockStrategyRestoreCandidate.targetDraftPreview.status)}</dd>
+                          <dt>strategy type</dt>
+                          <dd>{labMockStrategyRestoreCandidate.targetDraftPreview.strategyType}</dd>
+                          <dt>persistence</dt>
+                          <dd>{labMockStrategyRestoreCandidate.targetDraftPreview.persistence}</dd>
+                        </dl>
+                      </section>
+                    </div>
+                    <div className="tradingLabStrategyRestoreLists">
+                      <section aria-label="mock strategy restore copied fields">
+                        <span>copied fields</span>
+                        <ul>
+                          {labMockStrategyRestoreCandidate.copiedFields.map((field) => (
+                            <li key={typeof field === "string" ? field : field.fieldName}>{typeof field === "string" ? field : field.fieldName}</li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock strategy restore excluded fields">
+                        <span>excluded fields</span>
+                        <ul>
+                          {labMockStrategyRestoreCandidate.excludedFields.map((field) => (
+                            <li key={typeof field === "string" ? field : field.fieldName}>{typeof field === "string" ? field : field.fieldName}</li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock strategy restore transformed fields">
+                        <span>transformed fields</span>
+                        <ul>
+                          {labMockStrategyRestoreCandidate.transformedFields.map((field) => (
+                            <li key={typeof field === "string" ? field : field.fieldName}>{typeof field === "string" ? field : `${field.fieldName}: ${field.targetValuePreview}`}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    </div>
+                    <div className="tradingLabStrategyRestoreLists">
+                      <section aria-label="mock strategy restore target allocation preview">
+                        <span>target allocation</span>
+                        <ul>
+                          {labMockStrategyRestoreCandidate.targetDraftPreview.targetAllocations.map((allocation) => (
+                            <li key={allocation.symbol}>{allocation.symbol}: {allocation.targetWeight}%</li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock strategy restore validation warnings">
+                        <span>validation warnings</span>
+                        <ul>
+                          {(labMockStrategyRestoreCandidate.validationWarnings.length > 0 ? labMockStrategyRestoreCandidate.validationWarnings : ["none"]).map((warning) => (
+                            <li key={warning}>{formatStatus(warning)}</li>
+                          ))}
+                        </ul>
+                      </section>
+                      <section aria-label="mock strategy restore validation blockers">
+                        <span>validation blockers</span>
+                        <ul>
+                          {(labMockStrategyRestoreCandidate.validationBlockers.length > 0 ? labMockStrategyRestoreCandidate.validationBlockers : ["none"]).map((blocker) => (
+                            <li key={blocker}>{formatStatus(blocker)}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    </div>
+                    <div className="tradingLabStrategyRestoreNotice" aria-label="mock strategy restore write blocked notice">
+                      <article>
+                        <span>write blocked</span>
+                        <strong>restore action 없음</strong>
+                        <p>새 전략 초안 후보는 read-only preview입니다. DB 저장, Supabase mutation, provider/order/live gate는 계속 차단되어 있습니다.</p>
+                        <button type="button" disabled>복원 초안 미리보기 - DB 저장은 다음 단계에서 검토</button>
+                      </article>
                     </div>
                   </>
                 )}

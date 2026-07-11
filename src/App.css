@@ -2777,6 +2777,130 @@ nav {
   padding: 8px 10px;
 }
 
+.tradingLabStrategyRestoreDetails {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tradingLabStrategyRestoreDetails summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.tradingLabStrategyRestoreDetails summary span,
+.tradingLabStrategyRestoreStatusGrid span,
+.tradingLabStrategyRestorePreviewGrid section > span,
+.tradingLabStrategyRestoreLists section > span,
+.tradingLabStrategyRestoreSourcePicker span,
+.tradingLabStrategyRestoreNotice span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tradingLabStrategyRestoreDetails summary strong,
+.tradingLabStrategyRestoreDetails summary em,
+.tradingLabStrategyRestoreStatusGrid strong,
+.tradingLabStrategyRestoreNotice strong {
+  color: #0f172a;
+}
+
+.tradingLabStrategyRestoreBody {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tradingLabStrategyRestoreStatusGrid,
+.tradingLabStrategyRestorePreviewGrid,
+.tradingLabStrategyRestoreLists {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.tradingLabStrategyRestoreStatusGrid article,
+.tradingLabStrategyRestorePreviewGrid section,
+.tradingLabStrategyRestoreLists section,
+.tradingLabStrategyRestoreNotice article,
+.tradingLabStrategyRestoreSourcePicker {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tradingLabStrategyRestoreSourcePicker {
+  display: grid;
+  gap: 8px;
+}
+
+.tradingLabStrategyRestoreSourcePicker select {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  color: #0f172a;
+  padding: 9px 10px;
+}
+
+.tradingLabStrategyRestorePreviewGrid dl {
+  display: grid;
+  gap: 0.45rem 0.7rem;
+  grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr);
+  margin: 10px 0 0;
+}
+
+.tradingLabStrategyRestorePreviewGrid dt {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.tradingLabStrategyRestorePreviewGrid dd {
+  color: #0f172a;
+  font-weight: 800;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabStrategyRestoreLists ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.tradingLabStrategyRestoreLists li {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabStrategyRestoreNotice article {
+  display: grid;
+  gap: 8px;
+}
+
+.tradingLabStrategyRestoreNotice p {
+  color: #475569;
+  margin: 0;
+}
+
+.tradingLabStrategyRestoreNotice button {
+  background: #e2e8f0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  color: #475569;
+  cursor: not-allowed;
+  padding: 8px 10px;
+  width: fit-content;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
