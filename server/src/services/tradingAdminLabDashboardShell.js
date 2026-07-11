@@ -19,6 +19,10 @@ import {
   TRADING_AI_ML_STRATEGY_MANAGEMENT_REGISTRY_MODEL,
   buildAdminTradingAiMlStrategyManagementStatus,
 } from "./tradingAiMlStrategyManagement.js";
+import {
+  TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
+  buildAdminTradingAiMlDatasetArchitectureStatus,
+} from "./tradingAiMlDatasetArchitecture.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21842,6 +21846,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     options,
   );
   const aiMlStrategyManagementStatus = input.aiMlStrategyManagementStatus || buildAdminTradingAiMlStrategyManagementStatus(input, options);
+  const aiMlDatasetArchitectureStatus = input.aiMlDatasetArchitectureStatus || buildAdminTradingAiMlDatasetArchitectureStatus(
+    {
+      ...input,
+      strategyRegistry: aiMlStrategyManagementStatus.registry,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21900,6 +21911,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockTradingHistoryCompareStatus,
     mockStrategyRestoreCandidateStatus,
     aiMlStrategyManagementStatus,
+    aiMlDatasetArchitectureStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22086,6 +22098,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockTradingHistoryCompareModel: TRADING_LAB_MOCK_HISTORY_COMPARE_MODEL,
     mockStrategyRestoreCandidateModel: TRADING_LAB_MOCK_STRATEGY_RESTORE_CANDIDATE_MODEL,
     aiMlStrategyManagementRegistryModel: TRADING_AI_ML_STRATEGY_MANAGEMENT_REGISTRY_MODEL,
+    aiMlDatasetArchitectureModel: TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,

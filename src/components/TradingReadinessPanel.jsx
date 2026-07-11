@@ -1554,6 +1554,15 @@ export function TradingReadinessPanel() {
   const labAiMlLifecycleSummary = Array.isArray(labAiMlStrategyRegistry.lifecycleSummary) ? labAiMlStrategyRegistry.lifecycleSummary : [];
   const labAiMlImplementationContracts = Array.isArray(labAiMlStrategyRegistry.implementationContracts) ? labAiMlStrategyRegistry.implementationContracts : [];
   const labAiMlBlockedOperations = Array.isArray(labAiMlStrategyRegistry.blockedOperations) ? labAiMlStrategyRegistry.blockedOperations : [];
+  const labAiMlDatasetArchitectureStatus = tradingLabDashboardStatus?.aiMlDatasetArchitectureStatus || {};
+  const labAiMlDatasetArchitecture = labAiMlDatasetArchitectureStatus?.datasetArchitecture || {};
+  const labAiMlDatasetFamilies = Array.isArray(labAiMlDatasetArchitecture.datasetFamilies) ? labAiMlDatasetArchitecture.datasetFamilies : [];
+  const labAiMlLabelDefinitions = Array.isArray(labAiMlDatasetArchitecture.labelDefinitions) ? labAiMlDatasetArchitecture.labelDefinitions : [];
+  const labAiMlFeatureTimestampRules = Array.isArray(labAiMlDatasetArchitecture.featureTimestampRules) ? labAiMlDatasetArchitecture.featureTimestampRules : [];
+  const labAiMlSplitPolicies = Array.isArray(labAiMlDatasetArchitecture.splitPolicies) ? labAiMlDatasetArchitecture.splitPolicies : [];
+  const labAiMlWalkForwardPolicies = Array.isArray(labAiMlDatasetArchitecture.walkForwardPolicies) ? labAiMlDatasetArchitecture.walkForwardPolicies : [];
+  const labAiMlLeakageControls = Array.isArray(labAiMlDatasetArchitecture.leakageControls) ? labAiMlDatasetArchitecture.leakageControls : [];
+  const labAiMlDatasetContracts = Array.isArray(labAiMlDatasetArchitecture.implementationContracts) ? labAiMlDatasetArchitecture.implementationContracts : [];
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3334,6 +3343,135 @@ export function TradingReadinessPanel() {
                       ))}
                     </ul>
                   </article>
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlDatasetArchitecture" data-admin-panel-key="ai-ml-dataset-labeling-architecture">
+              <summary>
+                <span>AI/ML dataset and labeling architecture</span>
+                <strong>{formatStatus(labAiMlDatasetArchitecture.status || "design_only")}</strong>
+                <em>dataset build / feature generation blocked</em>
+              </summary>
+              <div className="tradingLabAiMlDatasetArchitectureBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  This admin-only dataset section defines point-in-time, label, split, leakage, versioning, and retention contracts. It does not download data, generate files, run Python training, write Supabase/Postgres state, call providers, or expose model output to public screens.
+                </p>
+                <div className="tradingLabAiMlDatasetStatusGrid" aria-label="AI ML dataset architecture status">
+                  <article>
+                    <span>dataset families</span>
+                    <strong>{labAiMlDatasetArchitecture.datasetFamilyCount || labAiMlDatasetFamilies.length}</strong>
+                  </article>
+                  <article>
+                    <span>labels / features</span>
+                    <strong>{labAiMlLabelDefinitions.length} / {labAiMlFeatureTimestampRules.length}</strong>
+                  </article>
+                  <article>
+                    <span>split / walk-forward</span>
+                    <strong>{labAiMlSplitPolicies.length} / {labAiMlWalkForwardPolicies.length}</strong>
+                  </article>
+                  <article>
+                    <span>validation</span>
+                    <strong>{formatStatus(labAiMlDatasetArchitecture.validation?.validationStatus || "design_only")}</strong>
+                  </article>
+                  <article>
+                    <span>dataset / feature build</span>
+                    <strong>{labAiMlDatasetArchitectureStatus.datasetBuildAllowed ? "open" : "blocked"} / {labAiMlDatasetArchitectureStatus.featureGenerationAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                  <article>
+                    <span>DB / training</span>
+                    <strong>{labAiMlDatasetArchitectureStatus.dbWriteAllowed ? "open" : "blocked"} / {labAiMlDatasetArchitectureStatus.modelTrainingAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlDatasetFamilyGrid" aria-label="AI ML dataset family definitions">
+                  {labAiMlDatasetFamilies.map((family) => (
+                    <article key={family.datasetFamilyId}>
+                      <span>{family.modelType}</span>
+                      <strong>{family.purpose}</strong>
+                      <p>inputs: {(family.inputFamilies || []).join(" / ")}</p>
+                      <p>labels: {(family.labelFamilies || []).join(" / ")}</p>
+                      <p>leakage: {family.leakageReviewStatus}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlDatasetContractGrid">
+                  <section aria-label="AI ML label definitions">
+                    <span>label definitions</span>
+                    <ul>
+                      {labAiMlLabelDefinitions.map((label) => (
+                        <li key={label.labelId}>{label.labelId}: {label.horizon} / {label.formula} / embargo {label.embargoPeriod}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML feature timestamp rules">
+                    <span>feature timestamp rules</span>
+                    <ul>
+                      {labAiMlFeatureTimestampRules.map((feature) => (
+                        <li key={feature.featureId}>{feature.featureId}: {feature.lookbackWindow} / availableAt {feature.availableAtRule}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML point in time correctness">
+                    <span>point-in-time correctness</span>
+                    <ul>
+                      {(labAiMlDatasetArchitecture.pointInTimeRules?.requiredFields || []).map((fieldName) => (
+                        <li key={fieldName}>{fieldName}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlDatasetContractGrid">
+                  <section aria-label="AI ML split policy">
+                    <span>train validation test split</span>
+                    <ul>
+                      {labAiMlSplitPolicies.map((policy) => (
+                        <li key={policy.splitPolicyId}>
+                          {policy.trainWindow} / {policy.validationWindow} / {policy.testWindow} - random split {policy.randomSplitAllowed ? "open" : "blocked"}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML walk forward policy">
+                    <span>walk-forward dataset contract</span>
+                    <ul>
+                      {labAiMlWalkForwardPolicies.map((policy) => (
+                        <li key={policy.walkForwardPolicyId}>{policy.windowType}: train {policy.trainWindowMinimum}, validation {policy.validationWindow}, test {policy.testWindow}, step {policy.stepSize}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML leakage prevention controls">
+                    <span>leakage prevention</span>
+                    <ul>
+                      {labAiMlLeakageControls.map((control) => (
+                        <li key={control}>{control}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlDatasetContractGrid">
+                  <section aria-label="AI ML dataset versioning policy">
+                    <span>versioning and lineage</span>
+                    <ul>
+                      <li>{labAiMlDatasetArchitecture.versioningPolicy?.datasetVersionFormat}</li>
+                      <li>label change creates new version: {String(Boolean(labAiMlDatasetArchitecture.versioningPolicy?.labelChangeCreatesNewDatasetVersion))}</li>
+                      <li>raw value storage: {labAiMlDatasetArchitecture.lineagePolicy?.rawValueStorageAllowed ? "open" : "blocked"}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML retention and redaction policy">
+                    <span>retention and redaction</span>
+                    <ul>
+                      <li>{labAiMlDatasetArchitecture.retentionPolicy?.retentionScope}</li>
+                      <li>{labAiMlDatasetArchitecture.retentionPolicy?.datasetFileRetention}</li>
+                      <li>public exposure: {labAiMlDatasetArchitecture.retentionPolicy?.publicExposureAllowed ? "open" : "blocked"}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML dataset future implementation contracts">
+                    <span>future pipeline contracts</span>
+                    <ul>
+                      {labAiMlDatasetContracts.map((contract) => (
+                        <li key={contract.step}>{contract.step}: {contract.name} - {contract.allowedScope}</li>
+                      ))}
+                    </ul>
+                  </section>
                 </div>
               </div>
             </details>

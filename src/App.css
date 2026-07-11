@@ -2998,6 +2998,84 @@ nav {
   overflow-wrap: anywhere;
 }
 
+.tradingLabAiMlDatasetArchitecture {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.tradingLabAiMlDatasetArchitecture summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.tradingLabAiMlDatasetArchitecture summary span,
+.tradingLabAiMlDatasetStatusGrid span,
+.tradingLabAiMlDatasetFamilyGrid article > span,
+.tradingLabAiMlDatasetContractGrid section > span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tradingLabAiMlDatasetArchitecture summary strong,
+.tradingLabAiMlDatasetArchitecture summary em,
+.tradingLabAiMlDatasetStatusGrid strong,
+.tradingLabAiMlDatasetFamilyGrid strong {
+  color: #0f172a;
+}
+
+.tradingLabAiMlDatasetArchitectureBody {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tradingLabAiMlDatasetStatusGrid,
+.tradingLabAiMlDatasetFamilyGrid,
+.tradingLabAiMlDatasetContractGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.tradingLabAiMlDatasetStatusGrid article,
+.tradingLabAiMlDatasetFamilyGrid article,
+.tradingLabAiMlDatasetContractGrid section {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tradingLabAiMlDatasetFamilyGrid article {
+  display: grid;
+  gap: 8px;
+}
+
+.tradingLabAiMlDatasetFamilyGrid p {
+  color: #0f172a;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabAiMlDatasetContractGrid ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.tradingLabAiMlDatasetContractGrid li {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
