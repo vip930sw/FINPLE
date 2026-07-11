@@ -1141,6 +1141,19 @@ export function TradingReadinessPanel() {
   const labDbBackedMockTradingHistoryMigrationReviewWarnings = Array.isArray(labDbBackedMockTradingHistoryMigrationReviewResult.warnings)
     ? labDbBackedMockTradingHistoryMigrationReviewResult.warnings
     : [];
+  const labMockTradingHistoryPersistenceArchitectureStatus = tradingLabDashboardStatus?.mockTradingHistoryPersistenceArchitectureStatus || {};
+  const labMockTradingHistoryPersistenceArchitecture = labMockTradingHistoryPersistenceArchitectureStatus?.architecture || {};
+  const labMockTradingHistoryPersistenceDomains = Array.isArray(labMockTradingHistoryPersistenceArchitecture.storageDomains)
+    ? labMockTradingHistoryPersistenceArchitecture.storageDomains
+    : [];
+  const labMockTradingHistoryPersistenceRelationshipTree = Array.isArray(labMockTradingHistoryPersistenceArchitecture.entityRelationshipGraph?.tree)
+    ? labMockTradingHistoryPersistenceArchitecture.entityRelationshipGraph.tree
+    : [];
+  const labMockTradingHistoryPersistenceContracts = Array.isArray(labMockTradingHistoryPersistenceArchitecture.implementationContracts)
+    ? labMockTradingHistoryPersistenceArchitecture.implementationContracts
+    : [];
+  const labMockTradingHistoryPersistenceValidation = labMockTradingHistoryPersistenceArchitectureStatus?.validation || {};
+  const labMockTradingHistoryPersistenceBlocked = labMockTradingHistoryPersistenceArchitectureStatus?.blockedConfirmation || {};
   const labPerformance = tradingLabDashboardStatus?.performance || {};
   const labDailyRows = Array.isArray(tradingLabDashboardStatus?.dailyReturns?.rows)
     ? tradingLabDashboardStatus.dailyReturns.rows
@@ -2032,6 +2045,133 @@ export function TradingReadinessPanel() {
                   <li>
                     <span>provider/order/live impact</span>
                     <strong>{formatStatus(`${labDbBackedMockTradingHistoryMigrationReviewReceipt.providerCallImpact || "blocked"}_${labDbBackedMockTradingHistoryMigrationReviewReceipt.orderSubmissionImpact || "blocked"}_${labDbBackedMockTradingHistoryMigrationReviewReceipt.liveTradingImpact || "blocked"}`)}</strong>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </details>
+
+        <details className="tradingLabPersistenceArchitectureDetails" data-admin-panel-key="mock-trading-history-persistence-architecture">
+          <summary>
+            <span>Mock trading history persistence architecture</span>
+            <strong>{formatStatus(labMockTradingHistoryPersistenceArchitecture.status || "blocked")}</strong>
+            <em>{labMockTradingHistoryPersistenceDomains.length} domains · architecture only</em>
+          </summary>
+          <div className="tradingLabPersistenceArchitectureBody">
+            <div className="tradingLabPersistenceArchitectureStatusGrid" aria-label="mock trading history persistence architecture status">
+              <article>
+                <span>architecture mode</span>
+                <strong>{formatStatus(labMockTradingHistoryPersistenceArchitecture.architectureMode || "architecture_only")}</strong>
+              </article>
+              <article>
+                <span>storage intent</span>
+                <strong>{formatStatus(labMockTradingHistoryPersistenceArchitecture.persistenceIntent || "future_supabase_postgres_storage")}</strong>
+              </article>
+              <article>
+                <span>DB migration</span>
+                <strong>{formatStatus(labMockTradingHistoryPersistenceArchitecture.dbMigrationDecision?.status || "not_ready_for_migration")}</strong>
+              </article>
+              <article>
+                <span>DB write</span>
+                <strong>{labMockTradingHistoryPersistenceBlocked.persistentDbWriteAttempted === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>public UI</span>
+                <strong>{labMockTradingHistoryPersistenceBlocked.publicUiExposed === false ? "blocked" : "blocked"}</strong>
+              </article>
+              <article>
+                <span>next contract</span>
+                <strong>{formatStatus(labMockTradingHistoryPersistenceArchitecture.dbMigrationDecision?.nextAllowedStep || "db_backed_mock_trading_history_sql_draft_preflight")}</strong>
+              </article>
+            </div>
+            <p className="tradingLabPersistenceArchitectureNotice">
+              이 섹션은 FINPLE 내부 mock trading lab history를 향후 저장, 조회, 비교, 복원하기 위한 architecture decision입니다. SQL 파일, migration 파일, DB schema 변경, Supabase mutation, persistent DB write는 수행하지 않습니다.
+            </p>
+            <div className="tradingLabPersistenceArchitectureLists">
+              <section aria-label="mock trading history persistence storage domains">
+                <span>저장 도메인 구조</span>
+                <ul>
+                  {labMockTradingHistoryPersistenceDomains.map((domain) => (
+                    <li key={domain.domainId}>
+                      <span>{domain.domainId}</span>
+                      <strong>{domain.entityNames?.join(" / ")}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section aria-label="mock trading history persistence entity relationship">
+                <span>entity relationship</span>
+                <ul>
+                  {labMockTradingHistoryPersistenceRelationshipTree.map((item) => (
+                    <li key={item}>
+                      <span>{item}</span>
+                      <strong>mock_only</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section aria-label="mock trading history persistence step contracts">
+                <span>Step187-190 구현 계약</span>
+                <ul>
+                  {labMockTradingHistoryPersistenceContracts.map((contract) => (
+                    <li key={contract.contractId}>
+                      <span>{contract.step}</span>
+                      <strong>{formatStatus(contract.contractId)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+            <div className="tradingLabPersistenceArchitectureLists">
+              <section aria-label="mock trading history snapshot and lifecycle architecture">
+                <span>snapshot / lifecycle</span>
+                <ul>
+                  <li>
+                    <span>strategy draft vs immutable version</span>
+                    <strong>{labMockTradingHistoryPersistenceArchitecture.snapshotVersioningStrategy?.strategyVersioning?.mutableDraftEntity || "StrategyPreset"} / {labMockTradingHistoryPersistenceArchitecture.snapshotVersioningStrategy?.strategyVersioning?.immutableExecutionEntity || "StrategyVersion"}</strong>
+                  </li>
+                  <li>
+                    <span>history writes enabled now</span>
+                    <strong>{labMockTradingHistoryPersistenceArchitecture.historyLifecycle?.writesEnabledNow === false ? "false" : "blocked"}</strong>
+                  </li>
+                  <li>
+                    <span>checksum / fingerprint</span>
+                    <strong>placeholder only</strong>
+                  </li>
+                </ul>
+              </section>
+              <section aria-label="mock trading history browser compare restore contract">
+                <span>browser / compare / restore</span>
+                <ul>
+                  <li>
+                    <span>history browser primary row</span>
+                    <strong>{labMockTradingHistoryPersistenceArchitecture.browserCompareRestoreContract?.browser?.primaryRowEntity || "MockTradingRun"}</strong>
+                  </li>
+                  <li>
+                    <span>restore behavior</span>
+                    <strong>{labMockTradingHistoryPersistenceArchitecture.browserCompareRestoreContract?.restore?.restoreCreatesNewMockDraftOnly === true ? "new_mock_draft_only" : "blocked"}</strong>
+                  </li>
+                  <li>
+                    <span>actual trading restore</span>
+                    <strong>{labMockTradingHistoryPersistenceArchitecture.browserCompareRestoreContract?.restore?.actualTradingRunRestoreBlocked === true ? "blocked" : "blocked"}</strong>
+                  </li>
+                </ul>
+              </section>
+              <section aria-label="mock trading history retention redaction architecture">
+                <span>retention / redaction</span>
+                <ul>
+                  <li>
+                    <span>credential / token / account identifier</span>
+                    <strong>excluded</strong>
+                  </li>
+                  <li>
+                    <span>provider raw response / order payload</span>
+                    <strong>excluded</strong>
+                  </li>
+                  <li>
+                    <span>blockers / warnings</span>
+                    <strong>{labMockTradingHistoryPersistenceValidation.blockerCount ?? 0} / {labMockTradingHistoryPersistenceValidation.warningCount ?? 0}</strong>
                   </li>
                 </ul>
               </section>

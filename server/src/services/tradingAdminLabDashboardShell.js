@@ -515,6 +515,22 @@ export const STEP185_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_REVIEW_RESULT_FLAG
   readyForLiveGuardedTrading: false,
 });
 
+export const STEP186_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_FLAGS = Object.freeze({
+  ...STEP185_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_REVIEW_RESULT_FLAGS,
+  providerCallsAllowed: false,
+  orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
+  dbMigrationAllowed: false,
+  dbWriteAllowed: false,
+  supabaseMutationAllowed: false,
+  sqlFileCreationAllowed: false,
+  migrationFileCreationAllowed: false,
+  readyForReadOnlyProviderCalls: false,
+  readyForOrderSubmission: false,
+  readyForLiveGuardedTrading: false,
+});
+
 export const TRADING_LAB_STRATEGY_CONFIG_SCHEMA = Object.freeze({
   strategyId: "string",
   strategyType: "admin_trading_lab_strategy_config",
@@ -20588,6 +20604,528 @@ export function buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewRes
   };
 }
 
+export const TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_MODEL = Object.freeze({
+  architectureId: "string",
+  sourceStep: "step186",
+  scope: "admin_mock_trading_lab",
+  architectureMode: "architecture_only",
+  status: "architecture_decision_recorded | blocked",
+  persistenceIntent: "future_supabase_postgres_storage",
+  storageDomains: "storage_domain[]",
+  entityRelationshipGraph: "entity_relationship_graph",
+  snapshotVersioningStrategy: "snapshot_versioning_strategy",
+  historyLifecycle: "history_lifecycle",
+  browserCompareRestoreContract: "browser_compare_restore_contract",
+  retentionRedactionPolicy: "retention_redaction_policy",
+  dbMigrationDecision: "migration_decision",
+  implementationContracts: "step_contract[]",
+  redacted: true,
+  readinessImpact: "none",
+  providerCallImpact: "blocked",
+  orderSubmissionImpact: "blocked",
+  liveTradingImpact: "blocked",
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_STORAGE_DOMAINS = Object.freeze([
+  {
+    domainId: "strategy_preset",
+    entityNames: ["StrategyPreset", "StrategyVersion"],
+    role: "mock_trading_run_strategy_definition",
+    keyConcepts: [
+      "strategyPreset",
+      "strategyVersion",
+      "strategyStatus",
+      "draft_reviewed_archived",
+      "strategyFingerprint_placeholder",
+      "source_admin_mock_lab",
+    ],
+    mutableDraftSeparatedFromImmutableVersion: true,
+    actualAccountConfigurationSeparated: true,
+    kisOrderConfigurationSeparated: true,
+    userDiscretionaryStrategySeparated: true,
+    redacted: true,
+  },
+  {
+    domainId: "mock_trading_run",
+    entityNames: ["MockTradingRun"],
+    role: "history_browser_primary_row",
+    keyConcepts: [
+      "mockRun",
+      "mockRunId",
+      "runLabel",
+      "strategyVersionId",
+      "runStatus",
+      "inputSnapshot",
+      "outputSummary",
+      "safetySnapshot",
+      "parentRunId_nullable",
+      "restoredFromRunId_nullable",
+    ],
+    deterministic: true,
+    actualTradingRunSeparated: true,
+    uiNamingRequiresMockPrefix: true,
+    redacted: true,
+  },
+  {
+    domainId: "mock_order_fill_summaries",
+    entityNames: ["MockOrderSummary", "MockFillSummary"],
+    role: "mock_run_order_and_fill_simulation_summary",
+    keyConcepts: [
+      "runId_relation",
+      "symbol_market",
+      "mock_side_quantity_price_notional",
+      "reason_validation_status",
+      "fee_slippage",
+      "sequence_number",
+    ],
+    liveOrderIdentifierStored: false,
+    providerPayloadStored: false,
+    kisRequestResponseStored: false,
+    redacted: true,
+  },
+  {
+    domainId: "ledger_snapshots",
+    entityNames: ["LedgerSnapshot"],
+    role: "mock_cash_position_equity_state",
+    keyConcepts: [
+      "mockLedgerSnapshot",
+      "snapshotSequence",
+      "snapshotAt",
+      "mockCash",
+      "mockEquity",
+      "positionSummary",
+      "cashDelta",
+      "positionDelta",
+      "checksum_placeholder_only",
+    ],
+    liveAccountBalanceSeparated: true,
+    checksumValueGenerated: false,
+    hashDigestStored: false,
+    redacted: true,
+  },
+  {
+    domainId: "performance_snapshots",
+    entityNames: ["PerformanceSnapshot"],
+    role: "mock_performance_metric_history",
+    keyConcepts: [
+      "mockPerformanceSnapshot",
+      "cumulativeReturn",
+      "periodReturn",
+      "mdd",
+      "volatility",
+      "sharpe",
+      "drawdownSeries_reference",
+      "equityCurve_reference",
+      "calculationVersion",
+    ],
+    scenarioRuntimeSeparated: true,
+    redacted: true,
+  },
+  {
+    domainId: "allocation_and_risk_snapshots",
+    entityNames: ["AllocationSnapshot", "RiskSnapshot"],
+    role: "mock_allocation_and_risk_state_history",
+    keyConcepts: [
+      "allocation",
+      "drift",
+      "rebalanceNeeded",
+      "riskScore",
+      "concentrationRisk",
+      "liquidityRisk",
+      "volatilityRisk",
+      "riskFlags",
+    ],
+    actualAccountPositionSeparated: true,
+    redacted: true,
+  },
+]);
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_ENTITY_RELATIONSHIP_ARCHITECTURE = Object.freeze({
+  root: "StrategyPreset",
+  edges: [
+    { from: "StrategyPreset", to: "StrategyVersion", cardinality: "one_to_many", relation: "versioned_strategy_definition" },
+    { from: "StrategyVersion", to: "MockTradingRun", cardinality: "one_to_many", relation: "mock_run_uses_immutable_strategy_version" },
+    { from: "MockTradingRun", to: "MockOrderSummary", cardinality: "one_to_many", relation: "run_generates_mock_order_summaries" },
+    { from: "MockTradingRun", to: "MockFillSummary", cardinality: "one_to_many", relation: "run_generates_mock_fill_summaries" },
+    { from: "MockTradingRun", to: "LedgerSnapshot", cardinality: "one_to_many", relation: "run_records_mock_ledger_snapshots" },
+    { from: "MockTradingRun", to: "PerformanceSnapshot", cardinality: "one_to_many", relation: "run_records_mock_performance_snapshots" },
+    { from: "MockTradingRun", to: "AllocationSnapshot", cardinality: "one_to_many", relation: "run_records_mock_allocation_snapshots" },
+    { from: "MockTradingRun", to: "RiskSnapshot", cardinality: "one_to_many", relation: "run_records_mock_risk_snapshots" },
+  ],
+  tree: [
+    "StrategyPreset",
+    "  StrategyVersion",
+    "    MockTradingRun",
+    "      MockOrderSummary",
+    "      MockFillSummary",
+    "      LedgerSnapshot",
+    "      PerformanceSnapshot",
+    "      AllocationSnapshot",
+    "      RiskSnapshot",
+  ],
+  publicExposureBlocked: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_SNAPSHOT_VERSIONING_STRATEGY = Object.freeze({
+  strategyVersioning: {
+    mutableDraftEntity: "StrategyPreset",
+    immutableExecutionEntity: "StrategyVersion",
+    allowedStatuses: ["draft", "reviewed", "archived"],
+    fingerprintMode: "placeholder_only",
+    fingerprintValueGenerated: false,
+    redacted: true,
+  },
+  runSnapshotVersioning: {
+    inputSnapshotImmutableAtRunStart: true,
+    outputSummaryImmutableAtRunCompletion: true,
+    safetySnapshotImmutableAtRunStart: true,
+    parentRunIdNullable: true,
+    restoredFromRunIdNullable: true,
+    deterministicReplayInputsRequired: true,
+    redacted: true,
+  },
+  metricSnapshotVersioning: {
+    ledgerSnapshotSequenceRequired: true,
+    performanceCalculationVersionRequired: true,
+    allocationRiskSnapshotSequenceRequired: true,
+    checksumPlaceholderOnly: true,
+    checksumValueGenerated: false,
+    redacted: true,
+  },
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_LIFECYCLE_ARCHITECTURE = Object.freeze({
+  statuses: ["draft", "reviewed", "run_created", "run_completed", "archived", "restored_copy_created"],
+  transitions: [
+    { from: "draft", to: "reviewed", gate: "admin_mock_review_only" },
+    { from: "reviewed", to: "run_created", gate: "mock_run_creation_future_step" },
+    { from: "run_created", to: "run_completed", gate: "mock_calculation_completion_future_step" },
+    { from: "run_completed", to: "archived", gate: "admin_archive_future_step" },
+    { from: "run_completed", to: "restored_copy_created", gate: "restore_preview_future_step" },
+  ],
+  writesEnabledNow: false,
+  dbMigrationRequiredBeforePersistence: true,
+  redacted: true,
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_BROWSER_COMPARE_RESTORE_CONTRACT = Object.freeze({
+  browser: {
+    primaryRowEntity: "MockTradingRun",
+    sortableFields: ["completedAt", "runStatus", "runLabel", "strategyVersionId"],
+    searchableFields: ["runLabel", "strategyStatus", "mock_symbol_summary"],
+    adminOnlyReadScope: true,
+    publicUiAllowed: false,
+    redacted: true,
+  },
+  compare: {
+    comparableEntities: ["MockTradingRun", "PerformanceSnapshot", "AllocationSnapshot", "RiskSnapshot"],
+    comparisonBasis: ["strategyVersionId", "calculationVersion", "completedAt"],
+    rawProviderComparisonBlocked: true,
+    redacted: true,
+  },
+  restore: {
+    restoreCreatesNewMockDraftOnly: true,
+    sourceRelation: "restoredFromRunId_nullable",
+    actualTradingRunRestoreBlocked: true,
+    orderSubmissionBlocked: true,
+    dbWriteRequiresFutureMigrationAndApproval: true,
+    redacted: true,
+  },
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_RETENTION_REDACTION_POLICY = Object.freeze({
+  retention: {
+    defaultRetentionStatus: "policy_required_before_migration",
+    archiveInsteadOfDeleteFirst: true,
+    deletionPolicyRequiresExplicitApproval: true,
+    adminAuditMetadataRequired: true,
+    redacted: true,
+  },
+  redaction: {
+    credentialStored: false,
+    accountIdentifierStored: false,
+    tokenStored: false,
+    providerPayloadStored: false,
+    orderPayloadStored: false,
+    rawProviderResponseStored: false,
+    actualOrderFillExecutionIdsStored: false,
+    liveAccountBalanceStored: false,
+    privatePathStored: false,
+    hashDigestStored: false,
+    redacted: true,
+  },
+  privacyBoundary: {
+    adminOnly: true,
+    mypageExposureBlocked: true,
+    homepageExposureBlocked: true,
+    publicRouteExposureBlocked: true,
+    redacted: true,
+  },
+});
+
+export const TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_IMPLEMENTATION_CONTRACTS = Object.freeze([
+  {
+    step: "Step 187",
+    contractId: "db_backed_mock_trading_history_sql_draft_preflight",
+    objective: "review SQL draft shape before creating any SQL or migration file",
+    allowedOutput: "redacted_sql_draft_preflight_model_only",
+    forbiddenOutput: ["sql_file", "migration_file", "db_schema_change", "persistent_db_write"],
+    redacted: true,
+  },
+  {
+    step: "Step 188",
+    contractId: "db_backed_mock_trading_history_migration_artifact_review_gate",
+    objective: "review whether migration artifacts may be prepared after explicit approval",
+    allowedOutput: "redacted_artifact_review_receipt_only",
+    forbiddenOutput: ["db_migration_execution", "supabase_mutation", "persistent_db_write"],
+    redacted: true,
+  },
+  {
+    step: "Step 189",
+    contractId: "admin_mock_trading_history_browser_preflight",
+    objective: "prepare admin-only read model for browsing stored mock runs after storage exists",
+    allowedOutput: "admin_only_read_model_preflight",
+    forbiddenOutput: ["persistent_db_write", "mypage_trading_ui", "homepage_trading_ui", "public_trading_route"],
+    redacted: true,
+  },
+  {
+    step: "Step 190",
+    contractId: "admin_mock_trading_history_compare_restore_preflight",
+    objective: "prepare compare and restore preview contracts without live trading authority",
+    allowedOutput: "mock_compare_restore_preflight_model",
+    forbiddenOutput: ["actual_trading_run", "order_submission", "provider_call", "live_readiness_promotion"],
+    redacted: true,
+  },
+]);
+
+export function validateMockTradingHistoryPersistenceArchitecture(input = {}, options = {}) {
+  const migrationReviewResultStatus = input.migrationReviewResultStatus || buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus({}, options);
+  const reviewResult = input.reviewResult || migrationReviewResultStatus.reviewResult;
+  const receipt = input.receipt || migrationReviewResultStatus.receipt;
+  const storageDomains = input.storageDomains || TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_STORAGE_DOMAINS;
+  const relationship = input.entityRelationshipGraph || TRADING_LAB_MOCK_TRADING_HISTORY_ENTITY_RELATIONSHIP_ARCHITECTURE;
+  const versioning = input.snapshotVersioningStrategy || TRADING_LAB_MOCK_TRADING_HISTORY_SNAPSHOT_VERSIONING_STRATEGY;
+  const lifecycle = input.historyLifecycle || TRADING_LAB_MOCK_TRADING_HISTORY_LIFECYCLE_ARCHITECTURE;
+  const browserCompareRestore = input.browserCompareRestoreContract || TRADING_LAB_MOCK_TRADING_HISTORY_BROWSER_COMPARE_RESTORE_CONTRACT;
+  const retentionRedaction = input.retentionRedactionPolicy || TRADING_LAB_MOCK_TRADING_HISTORY_RETENTION_REDACTION_POLICY;
+  const implementationContracts = input.implementationContracts || TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_IMPLEMENTATION_CONTRACTS;
+  const requiredDomains = [
+    "strategy_preset",
+    "mock_trading_run",
+    "mock_order_fill_summaries",
+    "ledger_snapshots",
+    "performance_snapshots",
+    "allocation_and_risk_snapshots",
+  ];
+  const domainIds = storageDomains.map((domain) => domain.domainId);
+  const missingDomains = requiredDomains.filter((domainId) => !domainIds.includes(domainId));
+  const serialized = JSON.stringify({ storageDomains, relationship, versioning, lifecycle, browserCompareRestore, retentionRedaction, implementationContracts });
+  const forbiddenSensitiveMarkers = [
+    "credential_raw",
+    "account_number_raw",
+    "kis_access_token",
+    "provider_response_body",
+    "order_payload_raw",
+    "private_packet_path",
+    "digest_value",
+    "hash_value",
+  ].filter((marker) => serialized.includes(marker));
+  const blockers = [];
+  const warnings = [
+    "architecture_only_no_persistence_enabled",
+    "db_migration_required_before_storage",
+    "step187_to_step190_contracts_are_pre_implementation",
+  ];
+
+  if (!reviewResult) blockers.push("step185_migration_review_result_missing");
+  if (reviewResult?.redacted !== true) blockers.push("step185_migration_review_result_not_redacted");
+  if (reviewResult?.reviewStatus !== "recorded") blockers.push("step185_migration_review_result_not_recorded");
+  if (receipt?.nextAllowedStep !== "db_backed_mock_trading_history_sql_draft_preflight") blockers.push("step185_next_allowed_step_not_sql_draft_preflight");
+  if (missingDomains.length > 0) blockers.push("persistence_storage_domains_missing");
+  if (!relationship?.edges?.length || !relationship?.tree?.length) blockers.push("entity_relationship_graph_missing");
+  if (versioning?.strategyVersioning?.fingerprintValueGenerated !== false) blockers.push("strategy_fingerprint_value_generated");
+  if (versioning?.metricSnapshotVersioning?.checksumValueGenerated !== false) blockers.push("snapshot_checksum_value_generated");
+  if (lifecycle?.writesEnabledNow !== false) blockers.push("history_lifecycle_writes_enabled");
+  if (browserCompareRestore?.browser?.publicUiAllowed !== false) blockers.push("history_browser_public_ui_allowed");
+  if (browserCompareRestore?.restore?.orderSubmissionBlocked !== true) blockers.push("restore_order_submission_not_blocked");
+  if (retentionRedaction?.redaction?.credentialStored !== false) blockers.push("credential_storage_not_blocked");
+  if (retentionRedaction?.redaction?.providerPayloadStored !== false) blockers.push("provider_payload_storage_not_blocked");
+  if (retentionRedaction?.redaction?.orderPayloadStored !== false) blockers.push("order_payload_storage_not_blocked");
+  if (retentionRedaction?.redaction?.hashDigestStored !== false) blockers.push("hash_digest_storage_not_blocked");
+  if (forbiddenSensitiveMarkers.length > 0) blockers.push("architecture_contains_forbidden_sensitive_marker");
+
+  return {
+    validationId: "step186_mock_trading_history_persistence_architecture_validation",
+    sourceStep: "step186",
+    migrationReviewResultPresent: Boolean(reviewResult),
+    migrationReviewResultRedacted: reviewResult?.redacted === true,
+    storageDomainCount: storageDomains.length,
+    missingDomains,
+    relationshipEdgeCount: relationship?.edges?.length || 0,
+    implementationContractCount: implementationContracts.length,
+    forbiddenSensitiveMarkers,
+    architectureMode: "architecture_only",
+    dbMigrationStatus: "blocked",
+    schemaChangeStatus: "blocked",
+    dbWriteStatus: "blocked",
+    supabaseMutationStatus: "blocked",
+    blockers,
+    warnings,
+    blockerCount: blockers.length,
+    warningCount: warnings.length,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+    redacted: true,
+  };
+}
+
+export function buildMockTradingHistoryPersistenceArchitecture(input = {}, options = {}) {
+  const migrationReviewResultStatus = input.migrationReviewResultStatus || buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus({}, options);
+  const validation = input.validation || validateMockTradingHistoryPersistenceArchitecture({ ...input, migrationReviewResultStatus }, options);
+  const architectureRecorded = validation.blockerCount === 0;
+
+  return {
+    architectureId: "step186_mock_trading_history_persistence_architecture",
+    sourceStep: "step186",
+    scope: "admin_mock_trading_lab",
+    architectureMode: "architecture_only",
+    status: architectureRecorded ? "architecture_decision_recorded" : "blocked",
+    persistenceIntent: "future_supabase_postgres_storage",
+    storageDomains: input.storageDomains || TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_STORAGE_DOMAINS,
+    entityRelationshipGraph: input.entityRelationshipGraph || TRADING_LAB_MOCK_TRADING_HISTORY_ENTITY_RELATIONSHIP_ARCHITECTURE,
+    snapshotVersioningStrategy: input.snapshotVersioningStrategy || TRADING_LAB_MOCK_TRADING_HISTORY_SNAPSHOT_VERSIONING_STRATEGY,
+    historyLifecycle: input.historyLifecycle || TRADING_LAB_MOCK_TRADING_HISTORY_LIFECYCLE_ARCHITECTURE,
+    browserCompareRestoreContract: input.browserCompareRestoreContract || TRADING_LAB_MOCK_TRADING_HISTORY_BROWSER_COMPARE_RESTORE_CONTRACT,
+    retentionRedactionPolicy: input.retentionRedactionPolicy || TRADING_LAB_MOCK_TRADING_HISTORY_RETENTION_REDACTION_POLICY,
+    dbMigrationDecision: {
+      status: "not_ready_for_migration",
+      migrationFileCreated: false,
+      sqlFileCreated: false,
+      supabaseMigrationCreated: false,
+      dbMigrationExecuted: false,
+      dbSchemaChanged: false,
+      persistentDbWriteAttempted: false,
+      supabaseMutationAttempted: false,
+      nextAllowedStep: "db_backed_mock_trading_history_sql_draft_preflight",
+      redacted: true,
+    },
+    implementationContracts: input.implementationContracts || TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_IMPLEMENTATION_CONTRACTS,
+    blockers: validation.blockers,
+    warnings: validation.warnings,
+    redacted: true,
+    readinessImpact: "none",
+    providerCallImpact: "blocked",
+    orderSubmissionImpact: "blocked",
+    liveTradingImpact: "blocked",
+  };
+}
+
+export function buildAdminTradingLabMockTradingHistoryPersistenceArchitectureStatus(input = {}, options = {}) {
+  const migrationReviewResultStatus = input.migrationReviewResultStatus || buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus({}, options);
+  const validation = input.validation || validateMockTradingHistoryPersistenceArchitecture({ ...input, migrationReviewResultStatus }, options);
+  const architecture = input.architecture || buildMockTradingHistoryPersistenceArchitecture({ ...input, migrationReviewResultStatus, validation }, options);
+
+  return {
+    ok: true,
+    step: "Step 186: Design mock trading history persistence architecture",
+    status: "admin_only_mock_trading_history_persistence_architecture_read_only",
+    sourceStep: "step186",
+    architectureModel: TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_MODEL,
+    architecture,
+    validation,
+    domainSummary: {
+      status: architecture.status,
+      domainCount: architecture.storageDomains.length,
+      domainIds: architecture.storageDomains.map((domain) => domain.domainId),
+      entityCount: architecture.storageDomains.reduce((count, domain) => count + (domain.entityNames?.length || 0), 0),
+      redacted: true,
+    },
+    relationshipSummary: {
+      root: architecture.entityRelationshipGraph.root,
+      edgeCount: architecture.entityRelationshipGraph.edges.length,
+      tree: architecture.entityRelationshipGraph.tree,
+      redacted: true,
+    },
+    lifecycleSummary: {
+      statusCount: architecture.historyLifecycle.statuses.length,
+      transitionCount: architecture.historyLifecycle.transitions.length,
+      writesEnabledNow: false,
+      dbMigrationRequiredBeforePersistence: true,
+      redacted: true,
+    },
+    contractSummary: {
+      stepCount: architecture.implementationContracts.length,
+      contractIds: architecture.implementationContracts.map((contract) => contract.contractId),
+      nextAllowedStep: architecture.dbMigrationDecision.nextAllowedStep,
+      redacted: true,
+    },
+    blockedConfirmation: {
+      migrationFileCreated: false,
+      sqlFileCreated: false,
+      supabaseMigrationCreated: false,
+      dbMigrationExecuted: false,
+      dbSchemaChanged: false,
+      persistentDbWriteAttempted: false,
+      supabaseInsertAttempted: false,
+      supabaseUpdateAttempted: false,
+      supabaseDeleteAttempted: false,
+      providerCallAttempted: false,
+      orderSubmissionAttempted: false,
+      actualTradingRunCreated: false,
+      publicUiExposed: false,
+      redacted: true,
+    },
+    flags: { ...STEP186_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_FLAGS },
+    providerCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+    tokenIssuanceAttempted: false,
+    quoteRequestAttempted: false,
+    networkCallAttempted: false,
+    orderSubmissionAttempted: false,
+    actualTradingRunCreated: false,
+    accountBalanceQueried: false,
+    persistentStorageUsed: false,
+    dbWriteUsed: false,
+    dbMigrationCreated: false,
+    dbSchemaChanged: false,
+    sqlFileCreated: false,
+    supabaseInsertAttempted: false,
+    supabaseUpdateAttempted: false,
+    supabaseDeleteAttempted: false,
+    boundaries: {
+      adminOnly: true,
+      publicDashboardExposed: false,
+      myPageDashboardExposed: false,
+      homepageDashboardExposed: false,
+      credentialExposed: false,
+      accountIdentifierExposed: false,
+      providerOrderPayloadExposed: false,
+      privatePathExposed: false,
+      hashValueExposed: false,
+      digestValueExposed: false,
+      rawProviderResponseExposed: false,
+      tokenIssuanceAllowed: false,
+      quoteRequestAllowed: false,
+      orderSubmissionAllowed: false,
+      providerCallAllowed: false,
+      dbMigrationRequired: true,
+      dbMigrationAllowed: false,
+      persistentDbWriteRequired: true,
+      persistentDbWriteAllowed: false,
+      supabaseMutationAllowed: false,
+      actualTradingRunCreationAllowed: false,
+      accountBalanceQueryAllowed: false,
+    },
+    redaction: makeLabRedaction({ schema: "step186_mock_trading_history_persistence_architecture_v1" }),
+  };
+}
+
 export function buildTradingLabStrategyConfig(options = {}) {
   const strategyDraft = options.strategyDraft || buildTradingLabStrategyConfigDraft({}, options);
   return {
@@ -21244,6 +21782,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const mockTradingHistoryPersistenceArchitectureStatus = input.mockTradingHistoryPersistenceArchitectureStatus || buildAdminTradingLabMockTradingHistoryPersistenceArchitectureStatus(
+    {
+      ...input,
+      migrationReviewResultStatus: dbBackedMockTradingHistoryMigrationReviewResultStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21296,6 +21841,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     dbBackedMockTradingHistoryReviewResultStatus,
     dbBackedMockTradingHistoryMigrationPreflightStatus,
     dbBackedMockTradingHistoryMigrationReviewResultStatus,
+    mockTradingHistoryPersistenceArchitectureStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -21476,6 +22022,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     dbBackedMockTradingHistoryMigrationPreflightReadinessChecklist: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_PREFLIGHT_READINESS_CHECKLIST,
     dbBackedMockTradingHistoryMigrationReviewResultModel: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_REVIEW_RESULT_MODEL,
     dbBackedMockTradingHistoryMigrationReviewReceiptSchema: TRADING_LAB_DB_BACKED_MOCK_TRADING_HISTORY_MIGRATION_REVIEW_RECEIPT_SCHEMA,
+    mockTradingHistoryPersistenceArchitectureModel: TRADING_LAB_MOCK_TRADING_HISTORY_PERSISTENCE_ARCHITECTURE_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
