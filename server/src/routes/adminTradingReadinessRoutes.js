@@ -5,6 +5,7 @@ import {
   buildAdminTradingLabDashboardUxPolishCoreStatus,
   buildAdminTradingLabDbBackedMockTradingHistoryPreflightStatus,
   buildAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus,
+  buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus,
   buildAdminTradingLabDbBackedMockTradingHistoryReviewResultStatus,
   buildAdminTradingLabDashboardUxPolishReviewResultStatus,
   buildAdminTradingLabDashboardUxPolishPreflightStatus,
@@ -378,6 +379,12 @@ router.get("/trading-lab-db-backed-mock-trading-history-review-result", (request
 router.get("/trading-lab-db-backed-mock-trading-history-migration-preflight", (request, response) => {
   requireAdminAccess(request, response, () => {
     response.json(buildAdminTradingLabDbBackedMockTradingHistoryMigrationPreflightStatus());
+  });
+});
+
+router.get("/trading-lab-db-backed-mock-trading-history-migration-review-result", (request, response) => {
+  requireAdminAccess(request, response, () => {
+    response.json(buildAdminTradingLabDbBackedMockTradingHistoryMigrationReviewResultStatus());
   });
 });
 

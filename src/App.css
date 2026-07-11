@@ -2267,6 +2267,111 @@ nav {
   background: #f5f3ff;
 }
 
+.tradingLabDbHistoryMigrationReviewDetails {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-left: 4px solid #0f766e;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.82rem;
+}
+
+.tradingLabDbHistoryMigrationReviewDetails summary {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  list-style-position: inside;
+}
+
+.tradingLabDbHistoryMigrationReviewDetails summary span,
+.tradingLabDbHistoryMigrationReviewLists section > span {
+  color: #0f766e;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tradingLabDbHistoryMigrationReviewDetails summary strong,
+.tradingLabDbHistoryMigrationReviewDetails summary em {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDbHistoryMigrationReviewBody {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.65rem;
+}
+
+.tradingLabDbHistoryMigrationReviewStatusGrid,
+.tradingLabDbHistoryMigrationReviewLists {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.tradingLabDbHistoryMigrationReviewStatusGrid article,
+.tradingLabDbHistoryMigrationReviewLists section {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.72rem;
+}
+
+.tradingLabDbHistoryMigrationReviewStatusGrid span,
+.tradingLabDbHistoryMigrationReviewLists li span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDbHistoryMigrationReviewStatusGrid strong,
+.tradingLabDbHistoryMigrationReviewLists li strong {
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tradingLabDbHistoryMigrationReviewNotice {
+  background: #ecfdf5;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 0.72rem;
+}
+
+.tradingLabDbHistoryMigrationReviewLists ul {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tradingLabDbHistoryMigrationReviewLists li {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-top: 0.4rem;
+}
+
 .tradingLabEmptyChartPlaceholder {
   align-items: center;
   background: #ffffff;
