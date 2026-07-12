@@ -2901,6 +2901,7 @@ nav {
   width: fit-content;
 }
 
+.tradingLabAiMlArchitectureMilestoneReview,
 .tradingLabAiMlReadinessGateSummary,
 .tradingLabAiMlBatchContractReview,
 .tradingLabAiMlDatasetBuildDryRunManifest,
@@ -2913,6 +2914,7 @@ nav {
   padding: 14px;
 }
 
+.tradingLabAiMlArchitectureMilestoneReview summary,
 .tradingLabAiMlReadinessGateSummary summary,
 .tradingLabAiMlBatchContractReview summary,
 .tradingLabAiMlDatasetBuildDryRunManifest summary,
@@ -2926,6 +2928,9 @@ nav {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.tradingLabAiMlArchitectureMilestoneReview summary span,
+.tradingLabAiMlArchitectureMilestoneStatusGrid span,
+.tradingLabAiMlArchitectureMilestoneContractGrid section > span,
 .tradingLabAiMlReadinessGateSummary summary span,
 .tradingLabAiMlBatchContractReview summary span,
 .tradingLabAiMlDatasetBuildDryRunManifest summary span,
@@ -2963,6 +2968,9 @@ nav {
   text-transform: uppercase;
 }
 
+.tradingLabAiMlArchitectureMilestoneReview summary strong,
+.tradingLabAiMlArchitectureMilestoneReview summary em,
+.tradingLabAiMlArchitectureMilestoneStatusGrid strong,
 .tradingLabAiMlReadinessGateSummary summary strong,
 .tradingLabAiMlReadinessGateSummary summary em,
 .tradingLabAiMlBatchContractReview summary strong,
@@ -2997,6 +3005,7 @@ nav {
   color: #0f172a;
 }
 
+.tradingLabAiMlArchitectureMilestoneBody,
 .tradingLabAiMlReadinessGateSummaryBody,
 .tradingLabAiMlBatchContractReviewBody,
 .tradingLabAiMlDatasetBuildDryRunManifestBody,
@@ -3008,6 +3017,8 @@ nav {
   margin-top: 14px;
 }
 
+.tradingLabAiMlArchitectureMilestoneStatusGrid,
+.tradingLabAiMlArchitectureMilestoneContractGrid,
 .tradingLabAiMlReadinessStatusGrid,
 .tradingLabAiMlReadinessSourceGrid,
 .tradingLabAiMlReadinessGateGrid,
@@ -3037,6 +3048,8 @@ nav {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
+.tradingLabAiMlArchitectureMilestoneStatusGrid article,
+.tradingLabAiMlArchitectureMilestoneContractGrid section,
 .tradingLabAiMlReadinessStatusGrid article,
 .tradingLabAiMlReadinessSourceGrid article,
 .tradingLabAiMlReadinessGateGrid article,
@@ -3116,6 +3129,7 @@ nav {
   overflow-wrap: anywhere;
 }
 
+.tradingLabAiMlArchitectureMilestoneContractGrid ul,
 .tradingLabAiMlReadinessContractGrid ul,
 .tradingLabAiMlBatchReviewContractGrid ul,
 .tradingLabAiMlDatasetBuildManifestContractGrid ul,
@@ -3129,6 +3143,7 @@ nav {
   padding-left: 18px;
 }
 
+.tradingLabAiMlArchitectureMilestoneContractGrid li,
 .tradingLabAiMlReadinessContractGrid li,
 .tradingLabAiMlBatchReviewContractGrid li,
 .tradingLabAiMlDatasetBuildManifestContractGrid li,

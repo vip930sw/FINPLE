@@ -1610,6 +1610,17 @@ export function TradingReadinessPanel() {
   const labAiMlManifestHandoffApprovals = Array.isArray(labAiMlManifestHandoffEligibility.approvalRequirements) ? labAiMlManifestHandoffEligibility.approvalRequirements : [];
   const labAiMlManifestHandoffScenarios = Array.isArray(labAiMlManifestHandoffEligibility.scenarioCatalog) ? labAiMlManifestHandoffEligibility.scenarioCatalog : [];
   const labAiMlManifestHandoffSafety = labAiMlManifestHandoffEligibilityStatus?.blockedConfirmation || {};
+  const labAiMlArchitectureMilestoneStatus = tradingLabDashboardStatus?.aiMlArchitectureMilestoneStatus || {};
+  const labAiMlArchitectureMilestone = labAiMlArchitectureMilestoneStatus?.milestoneReview || {};
+  const labAiMlArchitectureMilestoneStages = Array.isArray(labAiMlArchitectureMilestone.stageInventory) ? labAiMlArchitectureMilestone.stageInventory : [];
+  const labAiMlArchitectureDependencyReviews = Array.isArray(labAiMlArchitectureMilestone.dependencyReview) ? labAiMlArchitectureMilestone.dependencyReview : [];
+  const labAiMlArchitectureSafetyReviews = Array.isArray(labAiMlArchitectureMilestone.safetyReview) ? labAiMlArchitectureMilestone.safetyReview : [];
+  const labAiMlArchitectureFindings = Array.isArray(labAiMlArchitectureMilestone.maintenanceFindings) ? labAiMlArchitectureMilestone.maintenanceFindings : [];
+  const labAiMlArchitectureHighRiskFindings = labAiMlArchitectureFindings.filter((finding) => finding.severity === "high" || finding.severity === "critical");
+  const labAiMlArchitecturePlan = Array.isArray(labAiMlArchitectureMilestone.consolidationPlan) ? labAiMlArchitectureMilestone.consolidationPlan : [];
+  const labAiMlArchitecturePrerequisites = Array.isArray(labAiMlArchitectureMilestone.runtimePrerequisites) ? labAiMlArchitectureMilestone.runtimePrerequisites : [];
+  const labAiMlArchitectureBlockingPrerequisites = labAiMlArchitecturePrerequisites.filter((item) => item.blocking);
+  const labAiMlArchitectureWarnings = Array.isArray(labAiMlArchitectureMilestone.warnings) ? labAiMlArchitectureMilestone.warnings : [];
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3265,6 +3276,104 @@ export function TradingReadinessPanel() {
                     </div>
                   </>
                 )}
+              </div>
+            </details>
+            <details className="tradingLabAiMlArchitectureMilestoneReview" data-admin-panel-key="ai-ml-architecture-milestone-review" open>
+              <summary>
+                <span>AI/ML architecture milestone review</span>
+                <strong>{formatStatus(labAiMlArchitectureMilestone.overallStatus || "architecture_milestone_complete_execution_blocked")}</strong>
+                <em>architecture contract milestone only</em>
+              </summary>
+              <div className="tradingLabAiMlArchitectureMilestoneBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  architecture contract milestone only: runtime is not implemented, actual data access remains blocked, feature and dataset execution remain blocked, training and deployment remain blocked, provider/KIS/order remain blocked, consolidation required before runtime, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlArchitectureMilestoneStatusGrid" aria-label="AI ML architecture milestone status">
+                  {[
+                    ["milestone scope", labAiMlArchitectureMilestone.milestoneScope || "step191_to_step199"],
+                    ["architecture chain status", labAiMlArchitectureMilestone.architectureChainStatus || "contract_chain_complete"],
+                    ["safety boundary status", labAiMlArchitectureMilestone.safetyBoundaryStatus || "fail_closed_consistent"],
+                    ["runtime capability status", labAiMlArchitectureMilestone.runtimeCapabilityStatus || "not_implemented"],
+                    ["actual data capability status", labAiMlArchitectureMilestone.actualDataCapabilityStatus || "blocked"],
+                    ["execution readiness status", labAiMlArchitectureMilestone.executionReadinessStatus || "blocked"],
+                    ["maintenance review status", labAiMlArchitectureMilestone.maintenanceReviewStatus || "consolidation_required"],
+                    ["stage coverage", labAiMlArchitectureMilestone.stageCoverage || `${labAiMlArchitectureMilestoneStages.length} / 9`],
+                    ["dependency review status", labAiMlArchitectureMilestone.dependencyReviewStatus || "pass"],
+                    ["safety review status", labAiMlArchitectureMilestone.safetyReviewStatus || "pass"],
+                    ["high-risk finding count", labAiMlArchitectureMilestone.highRiskFindingCount || labAiMlArchitectureHighRiskFindings.length],
+                    ["consolidation plan count", labAiMlArchitectureMilestone.consolidationPlanCount || labAiMlArchitecturePlan.length],
+                    ["runtime prerequisite count", labAiMlArchitectureMilestone.runtimePrerequisiteCount || labAiMlArchitecturePrerequisites.length],
+                    ["external blocker count", labAiMlArchitectureMilestone.externalBlockerCount || 0],
+                    ["next-phase decision", labAiMlArchitectureMilestone.nextPhaseDecision || "consolidate_before_runtime"],
+                    ["next recommended implementation", labAiMlArchitectureMilestone.nextRecommendedImplementation || "shared_contract_primitives_design"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlArchitectureMilestoneContractGrid">
+                  <section aria-label="AI ML architecture milestone high-risk findings">
+                    <span>high and critical findings</span>
+                    <ul>
+                      {labAiMlArchitectureHighRiskFindings.map((finding) => (
+                        <li key={finding.findingId}>
+                          {formatStatus(finding.category)}: {formatStatus(finding.severity)} / {finding.recommendation}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML architecture milestone consolidation plan">
+                    <span>top consolidation plan</span>
+                    <ul>
+                      {labAiMlArchitecturePlan.slice(0, 5).map((item) => (
+                        <li key={item.planItemId}>
+                          {item.priority}. {formatStatus(item.scope)}: {formatStatus(item.executionStatus)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML architecture milestone blocking prerequisites">
+                    <span>blocking prerequisites</span>
+                    <ul>
+                      {labAiMlArchitectureBlockingPrerequisites.slice(0, 6).map((item) => (
+                        <li key={item.prerequisiteId}>
+                          {formatStatus(item.prerequisiteId)}: {formatStatus(item.status)} / {formatStatus(item.requiredBeforePhase)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlArchitectureMilestoneContractGrid">
+                  <section aria-label="AI ML architecture milestone stage coverage">
+                    <span>stage inventory</span>
+                    <ul>
+                      {labAiMlArchitectureMilestoneStages.map((stage) => (
+                        <li key={stage.stageId}>
+                          {formatStatus(stage.stageId)}: {formatStatus(stage.executionCapability)} / {formatStatus(stage.publicExposure)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML architecture milestone review coverage">
+                    <span>review coverage</span>
+                    <ul>
+                      <li>dependency reviews: {labAiMlArchitectureDependencyReviews.length}</li>
+                      <li>safety reviews: {labAiMlArchitectureSafetyReviews.length}</li>
+                      <li>maintenance findings: {labAiMlArchitectureFindings.length}</li>
+                      <li>runtime prerequisites: {labAiMlArchitecturePrerequisites.length}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML architecture milestone boundary warnings">
+                    <span>boundary warnings</span>
+                    <ul>
+                      {labAiMlArchitectureWarnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
               </div>
             </details>
             <details className="tradingLabAiMlReadinessGateSummary" data-admin-panel-key="ai-ml-readiness-gate-summary" open>
