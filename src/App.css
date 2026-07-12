@@ -2999,7 +2999,8 @@ nav {
 }
 
 .tradingLabAiMlDatasetArchitecture,
-.tradingLabAiMlFeaturePipelineArchitecture {
+.tradingLabAiMlFeaturePipelineArchitecture,
+.tradingLabAiMlFeaturePipelinePreflight {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
@@ -3007,7 +3008,8 @@ nav {
 }
 
 .tradingLabAiMlDatasetArchitecture summary,
-.tradingLabAiMlFeaturePipelineArchitecture summary {
+.tradingLabAiMlFeaturePipelineArchitecture summary,
+.tradingLabAiMlFeaturePipelinePreflight summary {
   align-items: center;
   cursor: pointer;
   display: grid;
@@ -3017,13 +3019,18 @@ nav {
 
 .tradingLabAiMlDatasetArchitecture summary span,
 .tradingLabAiMlFeaturePipelineArchitecture summary span,
+.tradingLabAiMlFeaturePipelinePreflight summary span,
 .tradingLabAiMlDatasetStatusGrid span,
 .tradingLabAiMlDatasetFamilyGrid article > span,
 .tradingLabAiMlDatasetContractGrid section > span,
 .tradingLabAiMlFeatureStatusGrid span,
 .tradingLabAiMlFeatureSourceGrid article > span,
 .tradingLabAiMlFeatureContractGrid section > span,
-.tradingLabAiMlFeatureSafetyGrid span {
+.tradingLabAiMlFeatureSafetyGrid span,
+.tradingLabAiMlFeaturePreflightStatusGrid span,
+.tradingLabAiMlFeaturePreflightContractGrid section > span,
+.tradingLabAiMlFeaturePreflightCheckGrid article > span,
+.tradingLabAiMlFeaturePreflightSafetyGrid span {
   color: #64748b;
   font-size: 0.78rem;
   font-weight: 800;
@@ -3034,16 +3041,22 @@ nav {
 .tradingLabAiMlDatasetArchitecture summary em,
 .tradingLabAiMlFeaturePipelineArchitecture summary strong,
 .tradingLabAiMlFeaturePipelineArchitecture summary em,
+.tradingLabAiMlFeaturePipelinePreflight summary strong,
+.tradingLabAiMlFeaturePipelinePreflight summary em,
 .tradingLabAiMlDatasetStatusGrid strong,
 .tradingLabAiMlDatasetFamilyGrid strong,
 .tradingLabAiMlFeatureStatusGrid strong,
 .tradingLabAiMlFeatureSourceGrid strong,
-.tradingLabAiMlFeatureSafetyGrid strong {
+.tradingLabAiMlFeatureSafetyGrid strong,
+.tradingLabAiMlFeaturePreflightStatusGrid strong,
+.tradingLabAiMlFeaturePreflightCheckGrid strong,
+.tradingLabAiMlFeaturePreflightSafetyGrid strong {
   color: #0f172a;
 }
 
 .tradingLabAiMlDatasetArchitectureBody,
-.tradingLabAiMlFeaturePipelineArchitectureBody {
+.tradingLabAiMlFeaturePipelineArchitectureBody,
+.tradingLabAiMlFeaturePipelinePreflightBody {
   display: grid;
   gap: 14px;
   margin-top: 14px;
@@ -3055,7 +3068,11 @@ nav {
 .tradingLabAiMlFeatureStatusGrid,
 .tradingLabAiMlFeatureSourceGrid,
 .tradingLabAiMlFeatureContractGrid,
-.tradingLabAiMlFeatureSafetyGrid {
+.tradingLabAiMlFeatureSafetyGrid,
+.tradingLabAiMlFeaturePreflightStatusGrid,
+.tradingLabAiMlFeaturePreflightContractGrid,
+.tradingLabAiMlFeaturePreflightCheckGrid,
+.tradingLabAiMlFeaturePreflightSafetyGrid {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -3067,7 +3084,11 @@ nav {
 .tradingLabAiMlFeatureStatusGrid article,
 .tradingLabAiMlFeatureSourceGrid article,
 .tradingLabAiMlFeatureContractGrid section,
-.tradingLabAiMlFeatureSafetyGrid article {
+.tradingLabAiMlFeatureSafetyGrid article,
+.tradingLabAiMlFeaturePreflightStatusGrid article,
+.tradingLabAiMlFeaturePreflightContractGrid section,
+.tradingLabAiMlFeaturePreflightCheckGrid article,
+.tradingLabAiMlFeaturePreflightSafetyGrid article {
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
@@ -3075,20 +3096,23 @@ nav {
 }
 
 .tradingLabAiMlDatasetFamilyGrid article,
-.tradingLabAiMlFeatureSourceGrid article {
+.tradingLabAiMlFeatureSourceGrid article,
+.tradingLabAiMlFeaturePreflightCheckGrid article {
   display: grid;
   gap: 8px;
 }
 
 .tradingLabAiMlDatasetFamilyGrid p,
-.tradingLabAiMlFeatureSourceGrid p {
+.tradingLabAiMlFeatureSourceGrid p,
+.tradingLabAiMlFeaturePreflightCheckGrid p {
   color: #0f172a;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
 .tradingLabAiMlDatasetContractGrid ul,
-.tradingLabAiMlFeatureContractGrid ul {
+.tradingLabAiMlFeatureContractGrid ul,
+.tradingLabAiMlFeaturePreflightContractGrid ul {
   display: grid;
   gap: 6px;
   margin: 8px 0 0;
@@ -3096,7 +3120,8 @@ nav {
 }
 
 .tradingLabAiMlDatasetContractGrid li,
-.tradingLabAiMlFeatureContractGrid li {
+.tradingLabAiMlFeatureContractGrid li,
+.tradingLabAiMlFeaturePreflightContractGrid li {
   color: #0f172a;
   overflow-wrap: anywhere;
 }

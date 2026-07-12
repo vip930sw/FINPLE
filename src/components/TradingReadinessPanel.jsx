@@ -1571,6 +1571,11 @@ export function TradingReadinessPanel() {
   const labAiMlFeatureQualityRules = Array.isArray(labAiMlFeaturePipeline.featureQualityValidation?.rules) ? labAiMlFeaturePipeline.featureQualityValidation.rules : [];
   const labAiMlFeatureStoreConcepts = Array.isArray(labAiMlFeaturePipeline.futureFeatureStoreContract?.concepts) ? labAiMlFeaturePipeline.futureFeatureStoreContract.concepts : [];
   const labAiMlFeatureSafety = labAiMlFeaturePipelineStatus?.blockedConfirmation || {};
+  const labAiMlFeaturePreflightStatus = tradingLabDashboardStatus?.aiMlFeaturePipelinePreflightStatus || {};
+  const labAiMlFeaturePreflight = labAiMlFeaturePreflightStatus?.preflight || {};
+  const labAiMlFeaturePreflightChecks = Array.isArray(labAiMlFeaturePreflight.checkResults) ? labAiMlFeaturePreflight.checkResults : [];
+  const labAiMlFeaturePreflightScenarios = Array.isArray(labAiMlFeaturePreflight.scenarioCatalog) ? labAiMlFeaturePreflight.scenarioCatalog : [];
+  const labAiMlFeaturePreflightSafety = labAiMlFeaturePreflightStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3639,6 +3644,115 @@ export function TradingReadinessPanel() {
                     <article key={label}>
                       <span>{label}</span>
                       <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlFeaturePipelinePreflight" data-admin-panel-key="ai-ml-feature-pipeline-preflight">
+              <summary>
+                <span>AI/ML feature pipeline preflight</span>
+                <strong>{formatStatus(labAiMlFeaturePreflight.overallStatus || "metadata_only_preflight")}</strong>
+                <em>metadata validation only</em>
+              </summary>
+              <div className="tradingLabAiMlFeaturePipelinePreflightBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  This admin-only preflight validates metadata contracts, version pins, temporal boundaries, rolling-history requirements, missing-value policy, train-only normalization, leakage guards, quality gate configuration, and lineage references. It never runs feature generation, dataset build, training, file creation, DB read/write, provider/KIS/order calls, or public/My Page exposure.
+                </p>
+                <div className="tradingLabAiMlFeaturePreflightStatusGrid" aria-label="AI ML feature pipeline preflight status">
+                  <article>
+                    <span>contract status</span>
+                    <strong>{formatStatus(labAiMlFeaturePreflight.contractStatus || "invalid")}</strong>
+                  </article>
+                  <article>
+                    <span>execution status</span>
+                    <strong>{formatStatus(labAiMlFeaturePreflight.executionStatus || "blocked")}</strong>
+                  </article>
+                  <article>
+                    <span>overall status</span>
+                    <strong>{formatStatus(labAiMlFeaturePreflight.overallStatus || "blocked_by_safety_policy")}</strong>
+                  </article>
+                  <article>
+                    <span>metadata-only preflight</span>
+                    <strong>{labAiMlFeaturePreflight.metadataOnlyPreflight === false ? "review required" : "true"}</strong>
+                  </article>
+                  <article>
+                    <span>pass / fail / blocked</span>
+                    <strong>{Number(labAiMlFeaturePreflight.passCount || 0)} / {Number(labAiMlFeaturePreflight.failCount || 0)} / {Number(labAiMlFeaturePreflight.blockedCount || 0)}</strong>
+                  </article>
+                  <article>
+                    <span>version pinning</span>
+                    <strong>{formatStatus(labAiMlFeaturePreflight.versionPinningStatus || "fail")}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlFeaturePreflightStatusGrid" aria-label="AI ML feature preflight validation category status">
+                  {[
+                    ["PIT validation", labAiMlFeaturePreflight.pointInTimeValidationStatus],
+                    ["rolling history contract", labAiMlFeaturePreflight.rollingHistoryContractStatus],
+                    ["missing-value policy", labAiMlFeaturePreflight.missingValuePolicyStatus],
+                    ["train-only normalization", labAiMlFeaturePreflight.trainOnlyNormalizationStatus],
+                    ["leakage guard", labAiMlFeaturePreflight.leakageGuardStatus],
+                    ["quality gate configuration", labAiMlFeaturePreflight.qualityGateConfigurationStatus],
+                    ["lineage/reproducibility", labAiMlFeaturePreflight.lineageReproducibilityStatus],
+                  ].map(([label, status]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(status || "not_applicable")}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlFeaturePreflightContractGrid">
+                  <section aria-label="AI ML feature preflight request contract summary">
+                    <span>preflight request contract</span>
+                    <ul>
+                      <li>request: {labAiMlFeaturePreflight.requestContractSummary?.preflightRequestId || "missing"}</li>
+                      <li>dataset: {labAiMlFeaturePreflight.requestContractSummary?.datasetSpecId || "missing"} / {labAiMlFeaturePreflight.requestContractSummary?.datasetSpecVersion || "missing"}</li>
+                      <li>feature set: {labAiMlFeaturePreflight.requestContractSummary?.featureSetId || "missing"} / {labAiMlFeaturePreflight.requestContractSummary?.featureSetVersion || "missing"}</li>
+                      <li>label: {labAiMlFeaturePreflight.requestContractSummary?.labelSpecId || "missing"} / {labAiMlFeaturePreflight.requestContractSummary?.labelSpecVersion || "missing"}</li>
+                      <li>features: {Number(labAiMlFeaturePreflight.requestContractSummary?.requestedFeatureCount || 0)}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML feature preflight validation categories">
+                    <span>validation categories</span>
+                    <ul>
+                      {(labAiMlFeaturePreflight.validationCategories || []).map((category) => (
+                        <li key={category}>{formatStatus(category)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML feature preflight deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {labAiMlFeaturePreflightScenarios.map((scenario) => (
+                        <li key={scenario.scenarioId}>{formatStatus(scenario.scenarioId)}: {formatStatus(scenario.expectedOverallStatus)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlFeaturePreflightCheckGrid" aria-label="AI ML feature preflight checks">
+                  {labAiMlFeaturePreflightChecks.map((check) => (
+                    <article key={check.checkId}>
+                      <span>{formatStatus(check.category)}</span>
+                      <strong>{formatStatus(check.status)} / {formatStatus(check.severity)}</strong>
+                      <p>{check.message}</p>
+                      <p>{check.remediation}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlFeaturePreflightSafetyGrid" aria-label="AI ML feature preflight safety restrictions">
+                  {[
+                    ["metadata validation only", labAiMlFeaturePreflightStatus.metadataOnlyPreflightEvaluationAllowed],
+                    ["feature generation blocked", labAiMlFeaturePreflightSafety.featureGenerationAttempted],
+                    ["dataset build blocked", labAiMlFeaturePreflightSafety.datasetBuildAttempted],
+                    ["training blocked", labAiMlFeaturePreflightSafety.modelTrainingAttempted],
+                    ["file creation blocked", labAiMlFeaturePreflightSafety.featureFileCreated || labAiMlFeaturePreflightSafety.datasetFileCreated || labAiMlFeaturePreflightSafety.csvCreated || labAiMlFeaturePreflightSafety.parquetCreated],
+                    ["DB read/write blocked", labAiMlFeaturePreflightSafety.dbReadAttempted || labAiMlFeaturePreflightSafety.dbWriteAttempted],
+                    ["provider/KIS/order blocked", labAiMlFeaturePreflightSafety.providerCallAttempted || labAiMlFeaturePreflightSafety.kisCallAttempted || labAiMlFeaturePreflightSafety.orderSubmissionAttempted],
+                    ["public UI exposure blocked", labAiMlFeaturePreflightSafety.publicUiExposed || labAiMlFeaturePreflightSafety.myPageUiExposed],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{label === "metadata validation only" ? (value ? "true" : "review required") : (value ? "review required" : "blocked")}</strong>
                     </article>
                   ))}
                 </div>
