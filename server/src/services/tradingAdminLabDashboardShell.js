@@ -43,6 +43,10 @@ import {
   TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL,
   buildAdminTradingAiMlDatasetBuildDryRunManifestStatus,
 } from "./tradingAiMlDatasetBuildDryRunManifest.js";
+import {
+  TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL,
+  buildAdminTradingAiMlManifestValidationReportStatus,
+} from "./tradingAiMlManifestValidationReport.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21913,6 +21917,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const aiMlManifestValidationReportStatus = input.aiMlManifestValidationReportStatus || buildAdminTradingAiMlManifestValidationReportStatus(
+    {
+      ...input,
+      aiMlDatasetBuildDryRunManifestStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21977,6 +21988,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     aiMlReadinessGateSummaryStatus,
     aiMlBatchContractReviewStatus,
     aiMlDatasetBuildDryRunManifestStatus,
+    aiMlManifestValidationReportStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22169,6 +22181,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     aiMlReadinessGateModel: TRADING_AI_ML_READINESS_GATE_MODEL,
     aiMlBatchContractReviewModel: TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL,
     aiMlDatasetBuildDryRunManifestModel: TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL,
+    aiMlManifestValidationReportModel: TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,

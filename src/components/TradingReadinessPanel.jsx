@@ -1595,6 +1595,14 @@ export function TradingReadinessPanel() {
   const labAiMlDatasetBuildManifestSections = Array.isArray(labAiMlDatasetBuildDryRunManifest.manifestSections) ? labAiMlDatasetBuildDryRunManifest.manifestSections : [];
   const labAiMlDatasetBuildManifestScenarios = Array.isArray(labAiMlDatasetBuildDryRunManifest.scenarioCatalog) ? labAiMlDatasetBuildDryRunManifest.scenarioCatalog : [];
   const labAiMlDatasetBuildManifestSafety = labAiMlDatasetBuildDryRunManifestStatus?.blockedConfirmation || {};
+  const labAiMlManifestValidationReportStatus = tradingLabDashboardStatus?.aiMlManifestValidationReportStatus || {};
+  const labAiMlManifestValidationReport = labAiMlManifestValidationReportStatus?.report || {};
+  const labAiMlManifestValidationSummary = labAiMlManifestValidationReport.validationSummary || {};
+  const labAiMlManifestExceptionRegistry = Array.isArray(labAiMlManifestValidationReport.exceptionRegistry) ? labAiMlManifestValidationReport.exceptionRegistry : [];
+  const labAiMlManifestNonWaivableRegistry = Array.isArray(labAiMlManifestValidationReport.nonWaivableRegistry) ? labAiMlManifestValidationReport.nonWaivableRegistry : [];
+  const labAiMlManifestRemediationQueue = Array.isArray(labAiMlManifestValidationReport.remediationQueue) ? labAiMlManifestValidationReport.remediationQueue : [];
+  const labAiMlManifestValidationScenarios = Array.isArray(labAiMlManifestValidationReport.scenarioCatalog) ? labAiMlManifestValidationReport.scenarioCatalog : [];
+  const labAiMlManifestValidationSafety = labAiMlManifestValidationReportStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3601,6 +3609,114 @@ export function TradingReadinessPanel() {
                     ["review receipt persistence blocked", labAiMlDatasetBuildManifestSafety.reviewReceiptPersisted || labAiMlDatasetBuildManifestSafety.approvalPersistenceAttempted],
                     ["order and live trading blocked", labAiMlDatasetBuildManifestSafety.orderSubmissionAttempted || labAiMlDatasetBuildManifestSafety.liveTradingAttempted],
                     ["public/My Page exposure blocked", labAiMlDatasetBuildManifestSafety.publicUiExposed || labAiMlDatasetBuildManifestSafety.myPageUiExposed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlManifestValidationReport" data-admin-panel-key="ai-ml-manifest-validation-report" open>
+              <summary>
+                <span>AI/ML manifest validation report</span>
+                <strong>{formatStatus(labAiMlManifestValidationReport.overallStatus || "manifest_exceptions_require_revision")}</strong>
+                <em>metadata-only validation report</em>
+              </summary>
+              <div className="tradingLabAiMlManifestValidationReportBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  metadata-only validation report: source manifest was not executed, exceptions are not waivers, no exception grants approval or execution, report and exception registry are not persisted, dry-run and materialization remain blocked, DB/provider/KIS access blocked, training and deployment blocked, order and live trading blocked, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlManifestValidationStatusGrid" aria-label="AI ML manifest validation report status">
+                  {[
+                    ["source manifest status", labAiMlManifestValidationReport.sourceManifestStatus || "missing"],
+                    ["report mode", labAiMlManifestValidationReport.reportMode || "metadata_only_non_executable"],
+                    ["report generation status", labAiMlManifestValidationReport.reportGenerationStatus || "generated_in_memory"],
+                    ["overall status", labAiMlManifestValidationReport.overallStatus || "manifest_exceptions_require_revision"],
+                    ["approval status", labAiMlManifestValidationReport.approvalStatus || "not_granted"],
+                    ["waiver status", labAiMlManifestValidationReport.waiverStatus || "not_granted"],
+                    ["execution authorization", labAiMlManifestValidationReport.executionAuthorizationStatus || "denied"],
+                    ["handoff authorization", labAiMlManifestValidationReport.handoffAuthorizationStatus || "denied"],
+                    ["materialization status", labAiMlManifestValidationReport.boundaryConfirmation?.materializationStatus || "blocked"],
+                    ["report persistence status", labAiMlManifestValidationReport.reportPersistenceStatus || "blocked"],
+                    ["exception persistence status", labAiMlManifestValidationReport.exceptionPersistenceStatus || "blocked"],
+                    ["next safe implementation step", labAiMlManifestValidationReport.nextSafeImplementationStep || "manifest_validation_report_manual_review_context"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlManifestValidationStatusGrid" aria-label="AI ML manifest validation report counts">
+                  {[
+                    ["total/pass/fail", `${labAiMlManifestValidationSummary.totalCheckCount || 0} / ${labAiMlManifestValidationSummary.passCount || 0} / ${labAiMlManifestValidationSummary.failCount || 0}`],
+                    ["blocked/manual-review", `${labAiMlManifestValidationSummary.blockedCount || 0} / ${labAiMlManifestValidationSummary.manualReviewRequiredCount || 0}`],
+                    ["critical exception count", labAiMlManifestValidationReport.criticalExceptionCount || 0],
+                    ["exception registry count", labAiMlManifestValidationReport.exceptionCount || labAiMlManifestExceptionRegistry.length],
+                    ["non-waivable count", labAiMlManifestValidationReport.nonWaivableCount || labAiMlManifestNonWaivableRegistry.length],
+                    ["remediation queue count", labAiMlManifestValidationReport.remediationQueueCount || labAiMlManifestRemediationQueue.length],
+                    ["external authority context", labAiMlManifestValidationReport.externalAuthorityContext?.externalAuthorityStatus || "external_blocker"],
+                    ["live trading status", labAiMlManifestValidationReport.externalAuthorityContext?.liveTradingStatus || "blocked"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlManifestValidationContractGrid">
+                  <section aria-label="AI ML manifest validation exception registry">
+                    <span>exception registry</span>
+                    <ul>
+                      {labAiMlManifestExceptionRegistry.map((item) => (
+                        <li key={item.exceptionId}>
+                          {formatStatus(item.category)}: {formatStatus(item.exceptionClass)} / {formatStatus(item.waiverStatus)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML manifest validation non-waivable registry">
+                    <span>non-waivable registry</span>
+                    <ul>
+                      {labAiMlManifestNonWaivableRegistry.map((item) => (
+                        <li key={item.exceptionId}>
+                          {formatStatus(item.sourceCheckId)}: {formatStatus(item.waiverEligibility)} / approval none / execution none
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML manifest validation deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {labAiMlManifestValidationScenarios.map((scenario) => (
+                        <li key={scenario}>{formatStatus(scenario)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlManifestValidationCheckGrid" aria-label="AI ML manifest validation remediation queue">
+                  {labAiMlManifestRemediationQueue.map((item) => (
+                    <article key={item.remediationItemId}>
+                      <span>{formatStatus(item.ownerRole)}</span>
+                      <strong>{formatStatus(item.priority)} / {formatStatus(item.completionStatus)}</strong>
+                      <p>{item.remediation}</p>
+                      <p>{formatStatus(item.persistenceStatus)} / {formatStatus(item.executionStatus)}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlManifestValidationSafetyGrid" aria-label="AI ML manifest validation report safety restrictions">
+                  {[
+                    ["source manifest was not executed", labAiMlManifestValidationSafety.manifestExecutionAttempted],
+                    ["validation execution blocked", labAiMlManifestValidationSafety.validationExecutionAttempted],
+                    ["report and exception persistence blocked", labAiMlManifestValidationSafety.reportPersisted || labAiMlManifestValidationSafety.exceptionPersisted || labAiMlManifestValidationSafety.remediationPersisted],
+                    ["waiver and approval blocked", labAiMlManifestValidationSafety.waiverGrantAttempted || labAiMlManifestValidationSafety.approvalPersistenceAttempted],
+                    ["dry-run and materialization remain blocked", labAiMlManifestValidationSafety.dryRunExecutionAttempted || labAiMlManifestValidationSafety.schemaMaterializationAttempted || labAiMlManifestValidationSafety.partitionMaterializationAttempted],
+                    ["DB/provider/KIS access blocked", labAiMlManifestValidationSafety.dbReadAttempted || labAiMlManifestValidationSafety.dbWriteAttempted || labAiMlManifestValidationSafety.providerCallAttempted || labAiMlManifestValidationSafety.kisCallAttempted],
+                    ["training and deployment blocked", labAiMlManifestValidationSafety.modelTrainingAttempted || labAiMlManifestValidationSafety.modelDeploymentAttempted],
+                    ["order and live trading blocked", labAiMlManifestValidationSafety.orderSubmissionAttempted || labAiMlManifestValidationSafety.liveTradingAttempted],
+                    ["public/My Page exposure blocked", labAiMlManifestValidationSafety.publicUiExposed || labAiMlManifestValidationSafety.myPageUiExposed],
                   ].map(([label, attempted]) => (
                     <article key={label}>
                       <span>{label}</span>
