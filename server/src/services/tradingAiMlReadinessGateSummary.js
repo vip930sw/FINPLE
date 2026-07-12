@@ -129,7 +129,6 @@ const FORBIDDEN_PERMISSION_KEYS = Object.freeze([
   "publicUiExposureAllowed",
   "myPageExposureAllowed",
   "publicUiAllowed",
-  "dbWriteAllowed",
 ]);
 
 const READY_FLAG_KEYS = Object.freeze([
