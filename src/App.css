@@ -2998,14 +2998,16 @@ nav {
   overflow-wrap: anywhere;
 }
 
-.tradingLabAiMlDatasetArchitecture {
+.tradingLabAiMlDatasetArchitecture,
+.tradingLabAiMlFeaturePipelineArchitecture {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
   padding: 14px;
 }
 
-.tradingLabAiMlDatasetArchitecture summary {
+.tradingLabAiMlDatasetArchitecture summary,
+.tradingLabAiMlFeaturePipelineArchitecture summary {
   align-items: center;
   cursor: pointer;
   display: grid;
@@ -3014,9 +3016,14 @@ nav {
 }
 
 .tradingLabAiMlDatasetArchitecture summary span,
+.tradingLabAiMlFeaturePipelineArchitecture summary span,
 .tradingLabAiMlDatasetStatusGrid span,
 .tradingLabAiMlDatasetFamilyGrid article > span,
-.tradingLabAiMlDatasetContractGrid section > span {
+.tradingLabAiMlDatasetContractGrid section > span,
+.tradingLabAiMlFeatureStatusGrid span,
+.tradingLabAiMlFeatureSourceGrid article > span,
+.tradingLabAiMlFeatureContractGrid section > span,
+.tradingLabAiMlFeatureSafetyGrid span {
   color: #64748b;
   font-size: 0.78rem;
   font-weight: 800;
@@ -3025,12 +3032,18 @@ nav {
 
 .tradingLabAiMlDatasetArchitecture summary strong,
 .tradingLabAiMlDatasetArchitecture summary em,
+.tradingLabAiMlFeaturePipelineArchitecture summary strong,
+.tradingLabAiMlFeaturePipelineArchitecture summary em,
 .tradingLabAiMlDatasetStatusGrid strong,
-.tradingLabAiMlDatasetFamilyGrid strong {
+.tradingLabAiMlDatasetFamilyGrid strong,
+.tradingLabAiMlFeatureStatusGrid strong,
+.tradingLabAiMlFeatureSourceGrid strong,
+.tradingLabAiMlFeatureSafetyGrid strong {
   color: #0f172a;
 }
 
-.tradingLabAiMlDatasetArchitectureBody {
+.tradingLabAiMlDatasetArchitectureBody,
+.tradingLabAiMlFeaturePipelineArchitectureBody {
   display: grid;
   gap: 14px;
   margin-top: 14px;
@@ -3038,7 +3051,11 @@ nav {
 
 .tradingLabAiMlDatasetStatusGrid,
 .tradingLabAiMlDatasetFamilyGrid,
-.tradingLabAiMlDatasetContractGrid {
+.tradingLabAiMlDatasetContractGrid,
+.tradingLabAiMlFeatureStatusGrid,
+.tradingLabAiMlFeatureSourceGrid,
+.tradingLabAiMlFeatureContractGrid,
+.tradingLabAiMlFeatureSafetyGrid {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -3046,32 +3063,40 @@ nav {
 
 .tradingLabAiMlDatasetStatusGrid article,
 .tradingLabAiMlDatasetFamilyGrid article,
-.tradingLabAiMlDatasetContractGrid section {
+.tradingLabAiMlDatasetContractGrid section,
+.tradingLabAiMlFeatureStatusGrid article,
+.tradingLabAiMlFeatureSourceGrid article,
+.tradingLabAiMlFeatureContractGrid section,
+.tradingLabAiMlFeatureSafetyGrid article {
   background: #f8fafc;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
   padding: 12px;
 }
 
-.tradingLabAiMlDatasetFamilyGrid article {
+.tradingLabAiMlDatasetFamilyGrid article,
+.tradingLabAiMlFeatureSourceGrid article {
   display: grid;
   gap: 8px;
 }
 
-.tradingLabAiMlDatasetFamilyGrid p {
+.tradingLabAiMlDatasetFamilyGrid p,
+.tradingLabAiMlFeatureSourceGrid p {
   color: #0f172a;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.tradingLabAiMlDatasetContractGrid ul {
+.tradingLabAiMlDatasetContractGrid ul,
+.tradingLabAiMlFeatureContractGrid ul {
   display: grid;
   gap: 6px;
   margin: 8px 0 0;
   padding-left: 18px;
 }
 
-.tradingLabAiMlDatasetContractGrid li {
+.tradingLabAiMlDatasetContractGrid li,
+.tradingLabAiMlFeatureContractGrid li {
   color: #0f172a;
   overflow-wrap: anywhere;
 }

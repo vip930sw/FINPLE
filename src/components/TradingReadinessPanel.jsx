@@ -1563,6 +1563,14 @@ export function TradingReadinessPanel() {
   const labAiMlWalkForwardPolicies = Array.isArray(labAiMlDatasetArchitecture.walkForwardPolicies) ? labAiMlDatasetArchitecture.walkForwardPolicies : [];
   const labAiMlLeakageControls = Array.isArray(labAiMlDatasetArchitecture.leakageControls) ? labAiMlDatasetArchitecture.leakageControls : [];
   const labAiMlDatasetContracts = Array.isArray(labAiMlDatasetArchitecture.implementationContracts) ? labAiMlDatasetArchitecture.implementationContracts : [];
+  const labAiMlFeaturePipelineStatus = tradingLabDashboardStatus?.aiMlFeaturePipelineStatus || {};
+  const labAiMlFeaturePipeline = labAiMlFeaturePipelineStatus?.featurePipelineArchitecture || {};
+  const labAiMlFeatureSources = Array.isArray(labAiMlFeaturePipeline.featureSourceMappings) ? labAiMlFeaturePipeline.featureSourceMappings : [];
+  const labAiMlRollingFeatureContracts = Array.isArray(labAiMlFeaturePipeline.rollingFeatureContracts) ? labAiMlFeaturePipeline.rollingFeatureContracts : [];
+  const labAiMlFeatureLeakageGuards = Array.isArray(labAiMlFeaturePipeline.leakageGuards) ? labAiMlFeaturePipeline.leakageGuards : [];
+  const labAiMlFeatureQualityRules = Array.isArray(labAiMlFeaturePipeline.featureQualityValidation?.rules) ? labAiMlFeaturePipeline.featureQualityValidation.rules : [];
+  const labAiMlFeatureStoreConcepts = Array.isArray(labAiMlFeaturePipeline.futureFeatureStoreContract?.concepts) ? labAiMlFeaturePipeline.futureFeatureStoreContract.concepts : [];
+  const labAiMlFeatureSafety = labAiMlFeaturePipelineStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3472,6 +3480,167 @@ export function TradingReadinessPanel() {
                       ))}
                     </ul>
                   </section>
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlFeaturePipelineArchitecture" data-admin-panel-key="ai-ml-feature-pipeline-architecture">
+              <summary>
+                <span>AI/ML feature pipeline architecture</span>
+                <strong>{formatStatus(labAiMlFeaturePipeline.status || "design_only")}</strong>
+                <em>feature generation / training blocked</em>
+              </summary>
+              <div className="tradingLabAiMlFeaturePipelineArchitectureBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  This admin-only feature pipeline section defines deterministic architecture contracts only. It does not generate features, create CSV or Parquet files, run Python jobs, build datasets, train models, read or write DB state, call KIS/providers, submit orders, or expose public/My Page trading UI.
+                </p>
+                <div className="tradingLabAiMlFeatureStatusGrid" aria-label="AI ML feature pipeline safety status">
+                  <article>
+                    <span>source mappings</span>
+                    <strong>{labAiMlFeaturePipeline.featureSourceMappingCount || labAiMlFeatureSources.length}</strong>
+                  </article>
+                  <article>
+                    <span>rolling contracts</span>
+                    <strong>{labAiMlFeaturePipeline.rollingFeatureContractCount || labAiMlRollingFeatureContracts.length}</strong>
+                  </article>
+                  <article>
+                    <span>leakage / quality</span>
+                    <strong>{labAiMlFeatureLeakageGuards.length} / {labAiMlFeatureQualityRules.length}</strong>
+                  </article>
+                  <article>
+                    <span>validation</span>
+                    <strong>{formatStatus(labAiMlFeaturePipeline.validation?.validationStatus || "design_only")}</strong>
+                  </article>
+                  <article>
+                    <span>feature / dataset build</span>
+                    <strong>{labAiMlFeaturePipelineStatus.featureGenerationAllowed ? "open" : "blocked"} / {labAiMlFeaturePipelineStatus.datasetBuildAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                  <article>
+                    <span>DB / provider / order</span>
+                    <strong>{labAiMlFeaturePipelineStatus.dbWriteAllowed ? "open" : "blocked"} / {labAiMlFeaturePipelineStatus.providerCallsAllowed ? "open" : "blocked"} / {labAiMlFeaturePipelineStatus.orderSubmissionAllowed ? "open" : "blocked"}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlFeatureSourceGrid" aria-label="AI ML feature source mapping">
+                  <article>
+                    <span>Feature source mapping</span>
+                    <strong>{labAiMlFeatureSources.length} contracts</strong>
+                    <p>asset master, daily price, monthly return, dividend, benchmark, foreign exchange, market regime, portfolio snapshot, and dataset label registry are represented as mock architecture contracts.</p>
+                  </article>
+                  {labAiMlFeatureSources.map((source) => (
+                    <article key={source.featureKey}>
+                      <span>{source.sourceType}</span>
+                      <strong>{source.featureKey}</strong>
+                      <p>{source.featureGroup} / {source.sourceField}</p>
+                      <p>time: {source.eventTimeField} / available: {source.availableAtField}</p>
+                      <p>uses: {(source.allowedUses || []).join(" / ")}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlFeatureContractGrid">
+                  <section aria-label="AI ML point in time joins">
+                    <span>Point-in-time joins</span>
+                    <ul>
+                      {(labAiMlFeaturePipeline.pointInTimeJoinPolicy?.requiredRules || []).map((rule) => (
+                        <li key={rule}>{rule}</li>
+                      ))}
+                      <li>latest-known record selection: {labAiMlFeaturePipeline.pointInTimeJoinPolicy?.latestKnownRecordSelection}</li>
+                      <li>future record rejection: {String(Boolean(labAiMlFeaturePipeline.pointInTimeJoinPolicy?.futureRecordRejection))}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML rolling feature contracts">
+                    <span>Rolling feature contracts</span>
+                    <ul>
+                      {labAiMlRollingFeatureContracts.map((contract) => (
+                        <li key={contract.featureKey}>{contract.featureKey}: {contract.windowSize} / min {contract.minimumPeriods} / {contract.insufficientHistoryPolicy}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML missing value policy">
+                    <span>Missing-value policy</span>
+                    <ul>
+                      {(labAiMlFeaturePipeline.missingValuePolicy?.statuses || []).map((status) => (
+                        <li key={status}>{status}</li>
+                      ))}
+                      <li>zero fill: {labAiMlFeaturePipeline.missingValuePolicy?.noUnconditionalZeroFill ? "forbidden" : "review required"}</li>
+                      <li>imputation fit: {labAiMlFeaturePipeline.missingValuePolicy?.imputationFitScope}</li>
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlFeatureContractGrid">
+                  <section aria-label="AI ML train only normalization">
+                    <span>Train-only normalization</span>
+                    <ul>
+                      <li>fit scope: {labAiMlFeaturePipeline.trainOnlyNormalizationPolicy?.rules?.normalizerFitScope}</li>
+                      <li>validation/test/inference: {labAiMlFeaturePipeline.trainOnlyNormalizationPolicy?.rules?.validationTestInferenceScope}</li>
+                      <li>full dataset normalization: {labAiMlFeaturePipeline.trainOnlyNormalizationPolicy?.rules?.fullDatasetNormalization}</li>
+                      <li>normalizers: {(labAiMlFeaturePipeline.trainOnlyNormalizationPolicy?.normalizerContracts || []).join(" / ")}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML feature versioning and lineage">
+                    <span>Feature versioning and lineage</span>
+                    <ul>
+                      {(labAiMlFeaturePipeline.featureVersioningLineage?.lineageFields || []).map((fieldName) => (
+                        <li key={fieldName}>{fieldName}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML leakage guards">
+                    <span>Leakage guards</span>
+                    <ul>
+                      {labAiMlFeatureLeakageGuards.map((guard) => (
+                        <li key={guard.guardKey}>{guard.guardKey}: {guard.severity} / {guard.failureCode}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlFeatureContractGrid">
+                  <section aria-label="AI ML feature quality validation">
+                    <span>Feature quality validation</span>
+                    <ul>
+                      {labAiMlFeatureQualityRules.map((rule) => (
+                        <li key={rule}>{rule}</li>
+                      ))}
+                      <li>execution now: {labAiMlFeaturePipeline.featureQualityValidation?.validationExecutedNow ? "open" : "blocked"}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML dataset and training interfaces">
+                    <span>Dataset/training interfaces</span>
+                    <ul>
+                      {Object.keys(labAiMlFeaturePipeline.datasetTrainingInterfaces?.requestContracts || {}).map((contractName) => (
+                        <li key={contractName}>{contractName}</li>
+                      ))}
+                      <li>dataset builder: {labAiMlFeaturePipeline.datasetTrainingInterfaces?.datasetBuilderImplementedNow ? "implemented" : "blocked"}</li>
+                      <li>training: {labAiMlFeaturePipeline.datasetTrainingInterfaces?.trainingProcessImplementedNow ? "implemented" : "blocked"}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML future feature store contract">
+                    <span>Future feature store contract</span>
+                    <ul>
+                      {labAiMlFeatureStoreConcepts.map((concept) => (
+                        <li key={concept}>{concept}</li>
+                      ))}
+                      <li>Supabase connection: {labAiMlFeaturePipeline.futureFeatureStoreContract?.supabaseConnectedNow ? "open" : "blocked"}</li>
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlFeatureSafetyGrid" aria-label="AI ML feature execution and persistence safety status">
+                  <article>
+                    <span>Execution and persistence safety status</span>
+                    <strong>fail-closed</strong>
+                  </article>
+                  {[
+                    ["feature generation blocked", labAiMlFeatureSafety.featureGenerationAttempted],
+                    ["dataset build blocked", labAiMlFeatureSafety.datasetBuildAttempted],
+                    ["training blocked", labAiMlFeatureSafety.modelTrainingAttempted],
+                    ["file creation blocked", labAiMlFeatureSafety.featureFileCreated || labAiMlFeatureSafety.csvCreated || labAiMlFeatureSafety.parquetCreated],
+                    ["DB read/write blocked", labAiMlFeatureSafety.supabaseSelectAttempted || labAiMlFeatureSafety.persistentDbWriteAttempted],
+                    ["provider/KIS/order blocked", labAiMlFeatureSafety.providerCallAttempted || labAiMlFeatureSafety.kisCallAttempted || labAiMlFeatureSafety.orderSubmissionAttempted],
+                    ["public UI exposure blocked", labAiMlFeaturePipelineStatus.publicUiExposureAllowed || labAiMlFeaturePipelineStatus.myPageExposureAllowed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
                 </div>
               </div>
             </details>

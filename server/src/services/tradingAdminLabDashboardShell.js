@@ -23,6 +23,10 @@ import {
   TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
   buildAdminTradingAiMlDatasetArchitectureStatus,
 } from "./tradingAiMlDatasetArchitecture.js";
+import {
+  TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
+  buildAdminTradingAiMlFeaturePipelineStatus,
+} from "./tradingAiMlFeaturePipelineArchitecture.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21853,6 +21857,13 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const aiMlFeaturePipelineStatus = input.aiMlFeaturePipelineStatus || buildAdminTradingAiMlFeaturePipelineStatus(
+    {
+      ...input,
+      datasetArchitecture: aiMlDatasetArchitectureStatus.datasetArchitecture,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21912,6 +21923,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockStrategyRestoreCandidateStatus,
     aiMlStrategyManagementStatus,
     aiMlDatasetArchitectureStatus,
+    aiMlFeaturePipelineStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22099,6 +22111,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     mockStrategyRestoreCandidateModel: TRADING_LAB_MOCK_STRATEGY_RESTORE_CANDIDATE_MODEL,
     aiMlStrategyManagementRegistryModel: TRADING_AI_ML_STRATEGY_MANAGEMENT_REGISTRY_MODEL,
     aiMlDatasetArchitectureModel: TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
+    aiMlFeaturePipelineModel: TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
