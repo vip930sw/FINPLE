@@ -14,41 +14,34 @@ import {
   STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS,
   buildAdminTradingAiMlFeaturePipelinePreflightStatus,
 } from "./tradingAiMlFeaturePipelinePreflight.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP195_AI_ML_READINESS_GATE_FLAGS = Object.freeze({
-  ...STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS,
+export const STEP195_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
+  metadataOnlyPreflightEvaluationAllowed: true,
   adminReadOnlyReadinessAggregationAllowed: true,
   deterministicStatusCompositionAllowed: true,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
+});
+
+export const STEP195_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
   datasetFileCreationAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
   modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
   modelAutoApprovalAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
+});
+
+export const STEP195_AI_ML_READINESS_GATE_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS,
+  allowedMetadataFlags: STEP195_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP195_ADDITIONAL_FALSE_FLAGS,
 });
 
 export const TRADING_AI_ML_READINESS_GATE_MODEL = Object.freeze({
@@ -67,6 +60,19 @@ export const TRADING_AI_ML_READINESS_GATE_MODEL = Object.freeze({
   liveTradingStatus: "blocked",
   overallStatus: "invalid_internal_contract | blocked_by_safety_policy | internal_contracts_incomplete | internal_contracts_valid_execution_blocked",
   nextImplementationStep: "admin_only_ai_ml_batch_contract_review",
+  sourceStageReferences: Object.freeze({
+    step191: AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT,
+    step192: AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE,
+    step193: AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
+    step194: AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT,
+    step195: AI_ML_STAGE_IDS.STEP_195_READINESS_GATE_SUMMARY,
+  }),
+  defaultStatus: Object.freeze({
+    executionPermissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    orderAuthorityStatus: AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    liveTradingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    redacted: true,
+  }),
 });
 
 const REQUIRED_SOURCE_STEPS = Object.freeze([
@@ -242,12 +248,8 @@ const SOURCE_DEFINITIONS = Object.freeze([
   },
 ]);
 
-function sortById(items, key = "gateId") {
-  return [...items].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
-}
-
 function countByStatus(items) {
-  return ["pass", "fail", "blocked", "external_blocker", "not_applicable", "not_evaluated"].reduce((counts, status) => ({
+  return ["pass", "fail", AI_ML_CONTRACT_STATUS.BLOCKED, AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER, "not_applicable", "not_evaluated"].reduce((counts, status) => ({
     ...counts,
     [status]: items.filter((item) => item.status === status).length,
   }), {});
@@ -275,22 +277,31 @@ function makeGate({ gateId, category, status, severity = "info", sourceStepIds =
     category,
     status,
     severity,
-    sourceStepIds: [...sourceStepIds].sort(),
-    message,
-    evidence: [...evidence].sort(),
-    remediation,
+    sourceStepIds: sanitizeAiMlMetadataArray(sourceStepIds),
+    message: sanitizeAiMlMetadataValue(message, "readiness gate"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "none"),
     blocking,
     redacted: true,
   });
 }
 
 function applySourceOverrides(source, overrides = {}) {
-  const sourceOverride = overrides[source.sourceStepId] || {};
-  return { ...source, ...sourceOverride };
+  const cleanSource = cloneAiMlMetadata(source) || {};
+  const cleanOverrides = cloneAiMlMetadata(overrides) || {};
+  const sourceOverride = cleanOverrides[cleanSource.sourceStepId] || {};
+  const merged = { ...cleanSource, ...sourceOverride };
+  return {
+    ...merged,
+    evidence: sanitizeAiMlMetadataArray(merged.evidence),
+  };
 }
 
 export function collectAiMlReadinessSourceStatuses(input = {}, options = {}) {
-  const omitSourceStepIds = new Set(input.omitSourceStepIds || []);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
+  const omitSourceStepIds = new Set(normalizeAiMlMetadataArray(sourceInput.omitSourceStepIds));
+  const sourceStatusOverrides = cloneAiMlMetadata(sourceInput.sourceStatusOverrides) || {};
   const rawStatuses = {};
   const sources = [];
 
@@ -309,11 +320,11 @@ export function collectAiMlReadinessSourceStatuses(input = {}, options = {}) {
         contractValid: false,
         evidence: ["source_contract_missing"],
         redacted: true,
-      }, input.sourceStatusOverrides));
+      }, sourceStatusOverrides));
       continue;
     }
 
-    const status = definition.buildStatus(input, options, rawStatuses);
+    const status = cloneAiMlMetadata(definition.buildStatus(sourceInput, sourceOptions, rawStatuses));
     rawStatuses[definition.sourceStepId] = status;
     const contract = definition.getContract(status);
     const validationStatus = definition.getValidationStatus(status);
@@ -333,13 +344,13 @@ export function collectAiMlReadinessSourceStatuses(input = {}, options = {}) {
       critical: true,
       contractPresent,
       contractValid,
-      evidence: definition.evidence(status),
+      evidence: sanitizeAiMlMetadataArray(definition.evidence(status)),
       publicExposureConflict: hasPublicExposure(status),
       redacted: true,
-    }, input.sourceStatusOverrides));
+    }, sourceStatusOverrides));
   }
 
-  const sourceStatuses = sortById(sources, "sourceStepId");
+  const sourceStatuses = sortAiMlMetadataByKey(sources, "sourceStepId");
   const missingSourceStepIds = REQUIRED_SOURCE_STEPS.filter((sourceStepId) => {
     const source = sourceStatuses.find((item) => item.sourceStepId === sourceStepId);
     return !source || source.sourceStatus === "missing" || source.contractPresent === false;
@@ -350,7 +361,7 @@ export function collectAiMlReadinessSourceStatuses(input = {}, options = {}) {
     requiredSourceStepIds: [...REQUIRED_SOURCE_STEPS],
     sourceCount: sourceStatuses.length,
     requiredSourceCount: REQUIRED_SOURCE_STEPS.length,
-    missingSourceStepIds,
+    missingSourceStepIds: sanitizeAiMlMetadataArray(missingSourceStepIds),
     rawStatuses,
     redacted: true,
   };
@@ -386,7 +397,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "05_data_access_permission",
       category: "data_access_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       severity: permissionConflictSources.length > 0 ? "critical" : "info",
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "actual data download, DB read, and provider data access remain blocked",
@@ -397,7 +408,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "06_feature_generation_permission",
       category: "feature_generation_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       sourceStepIds: ["step193_ai_ml_feature_pipeline_architecture", "step194_ai_ml_feature_pipeline_preflight"],
       message: "feature generation and feature file creation are blocked",
       evidence: ["featureGenerationAllowed=false", "featureFileCreationAllowed=false"],
@@ -406,7 +417,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "07_dataset_build_permission",
       category: "dataset_build_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       sourceStepIds: ["step192_ai_ml_dataset_architecture", "step194_ai_ml_feature_pipeline_preflight"],
       message: "dataset build and dataset file creation are blocked",
       evidence: ["datasetBuildAllowed=false", "datasetFileCreationAllowed=false"],
@@ -415,7 +426,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "08_model_training_permission",
       category: "model_training_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "model training and training jobs are blocked",
       evidence: ["modelTrainingAllowed=false", "pythonFeatureJobAllowed=false"],
@@ -424,7 +435,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "09_model_deployment_permission",
       category: "model_deployment_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       sourceStepIds: ["step191_ai_ml_strategy_management"],
       message: "model deployment and artifact creation are blocked",
       evidence: ["modelDeploymentAllowed=false", "modelArtifactCreationAllowed=false"],
@@ -433,7 +444,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "10_provider_connectivity_permission",
       category: "provider_connectivity_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       severity: permissionConflictSources.length > 0 ? "critical" : "info",
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "provider, quote, KIS, and token issuance paths are blocked",
@@ -444,7 +455,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "11_order_authority",
       category: "order_authority",
-      status: "external_blocker",
+      status: AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
       severity: "critical",
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "order authority is an external blocker and is not implied by internal contract validity",
@@ -455,7 +466,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "12_live_trading_permission",
       category: "live_trading_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       severity: "critical",
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "live trading remains blocked regardless of internal AI/ML contract validity",
@@ -465,7 +476,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     makeGate({
       gateId: "13_public_exposure_permission",
       category: "public_exposure_permission",
-      status: "blocked",
+      status: AI_ML_CONTRACT_STATUS.BLOCKED,
       severity: publicExposureConflictSources.length > 0 ? "critical" : "info",
       sourceStepIds: REQUIRED_SOURCE_STEPS,
       message: "public and My Page AI/ML trading exposure are blocked",
@@ -475,7 +486,7 @@ export function buildAiMlReadinessGateResults(sourceRegistry) {
     }),
   ];
 
-  return sortById(gateResults);
+  return sortAiMlMetadataByKey(gateResults, "gateId");
 }
 
 export function deriveAiMlReadinessOverallStatus({ sourceRegistry, gateResults }) {
@@ -492,7 +503,9 @@ export function deriveAiMlReadinessOverallStatus({ sourceRegistry, gateResults }
 }
 
 export function evaluateAiMlReadinessGates(input = {}, options = {}) {
-  const sourceRegistry = collectAiMlReadinessSourceStatuses(input, options);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
+  const sourceRegistry = collectAiMlReadinessSourceStatuses(sourceInput, sourceOptions);
   const gateResults = buildAiMlReadinessGateResults(sourceRegistry);
   const overallStatus = deriveAiMlReadinessOverallStatus({ sourceRegistry, gateResults });
   const statusCounts = countByStatus(gateResults);
@@ -517,16 +530,16 @@ export function evaluateAiMlReadinessGates(input = {}, options = {}) {
     capabilityStage: "contract_preflight_only",
     internalContractStatus,
     metadataPreflightStatus,
-    executionPermissionStatus: "blocked",
-    dataAccessStatus: "blocked",
-    featureGenerationStatus: "blocked",
-    datasetBuildStatus: "blocked",
-    modelTrainingStatus: "blocked",
-    modelDeploymentStatus: "blocked",
-    providerConnectivityStatus: "blocked",
-    externalAuthorityStatus: "blocked",
-    orderAuthorityStatus: "external_blocker",
-    liveTradingStatus: "blocked",
+    executionPermissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    dataAccessStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    featureGenerationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    datasetBuildStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    modelTrainingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    modelDeploymentStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    providerConnectivityStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    externalAuthorityStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    orderAuthorityStatus: AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    liveTradingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     overallStatus,
     failClosedPrecedence: [...FAIL_CLOSED_PRECEDENCE],
     sourceRegistry: {
@@ -558,6 +571,12 @@ export function evaluateAiMlReadinessGates(input = {}, options = {}) {
       "scenario_f_external_order_authority_blocker",
       "scenario_g_deterministic_ordering",
       "scenario_h_mutation_resistance",
+      "scenario_i_shared_flag_compatibility",
+      "scenario_j_inherited_execution_conflict",
+      "scenario_k_explicit_metadata_allowlist",
+      "scenario_l_shared_helper_compatibility",
+      "scenario_m_full_default_output_compatibility",
+      "scenario_n_mutation_resistance",
     ],
     readyForActualDataDownload: false,
     readyForFeatureGeneration: false,
@@ -576,7 +595,9 @@ export function buildAiMlReadinessGateSummary(input = {}, options = {}) {
 }
 
 export function buildAdminTradingAiMlReadinessGateStatus(input = {}, options = {}) {
-  const summary = input.summary || buildAiMlReadinessGateSummary(input, options);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
+  const summary = sourceInput.summary ? cloneAiMlMetadata(sourceInput.summary) : buildAiMlReadinessGateSummary(sourceInput, sourceOptions);
   return {
     ok: true,
     step: "Step 195: Add AI/ML readiness gate summary",
@@ -615,6 +636,7 @@ export function buildAdminTradingAiMlReadinessGateStatus(input = {}, options = {
       step194: { ...STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS },
       redacted: true,
     },
+    metadataOnlyPreflightEvaluationAllowed: true,
     adminReadOnlyReadinessAggregationAllowed: true,
     deterministicStatusCompositionAllowed: true,
     actualDataDownloadAllowed: false,

@@ -20,7 +20,6 @@ const UNTOUCHED_FILES = [
   "server/src/services/tradingAiMlDatasetArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
-  "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
   "server/src/services/tradingAiMlManifestValidationReport.js",
   "server/src/services/tradingAiMlManifestHandoffEligibility.js",

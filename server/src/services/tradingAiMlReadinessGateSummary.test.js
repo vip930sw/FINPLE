@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  STEP195_ADDITIONAL_FALSE_FLAGS,
   STEP195_AI_ML_READINESS_GATE_FLAGS,
+  STEP195_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_READINESS_GATE_MODEL,
   buildAdminTradingAiMlReadinessGateStatus,
   buildAiMlReadinessGateResults,
@@ -12,6 +14,11 @@ import {
   evaluateAiMlReadinessGates,
 } from "./tradingAiMlReadinessGateSummary.js";
 import { buildAdminTradingAiMlFeaturePipelinePreflightStatus } from "./tradingAiMlFeaturePipelinePreflight.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+} from "./tradingAiMlContractPrimitives.js";
 
 const REQUIRED_SOURCE_IDS = [
   "step191_ai_ml_strategy_management",
@@ -114,6 +121,12 @@ test("Step195 gate output is deterministic and stable ordered", () => {
     "scenario_f_external_order_authority_blocker",
     "scenario_g_deterministic_ordering",
     "scenario_h_mutation_resistance",
+    "scenario_i_shared_flag_compatibility",
+    "scenario_j_inherited_execution_conflict",
+    "scenario_k_explicit_metadata_allowlist",
+    "scenario_l_shared_helper_compatibility",
+    "scenario_m_full_default_output_compatibility",
+    "scenario_n_mutation_resistance",
   ]);
 });
 
@@ -222,4 +235,130 @@ test("Step195 status excludes sensitive raw values and readiness labels", () => 
   for (const forbiddenReadiness of ["production_ready", "live_ready", "trading_ready", "operational_ready"]) {
     assert.equal(serialized.includes(forbiddenReadiness), false, `${forbiddenReadiness} must not appear`);
   }
+});
+
+test("Step195 scenario I shared flag compatibility preserves metadata true and protected false flags", () => {
+  const status = buildAdminTradingAiMlReadinessGateStatus();
+  for (const key of Object.keys(STEP195_METADATA_ONLY_ALLOWED_FLAGS)) {
+    assert.equal(STEP195_AI_ML_READINESS_GATE_FLAGS[key], true, key);
+    assert.equal(status.flags[key], true, key);
+  }
+  for (const key of FORBIDDEN_TRUE_KEYS) {
+    assert.equal(STEP195_AI_ML_READINESS_GATE_FLAGS[key], false, key);
+    assert.equal(status.flags[key], false, key);
+  }
+});
+
+test("Step195 scenario J inherited execution conflict is forced false", () => {
+  const inheritedConflict = {
+    metadataOnlyPreflightEvaluationAllowed: true,
+    adminReadOnlyReadinessAggregationAllowed: true,
+    actualDataDownloadAllowed: true,
+    featureGenerationAllowed: true,
+    datasetBuildAllowed: true,
+    dbReadAllowed: true,
+    providerCallsAllowed: true,
+    kisCallsAllowed: true,
+    modelTrainingAllowed: true,
+    orderSubmissionAllowed: true,
+    liveTradingAllowed: true,
+    readyForOrderSubmission: true,
+    readyForLiveGuardedTrading: true,
+    unknownRuntimePermissionAllowed: true,
+  };
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: inheritedConflict,
+    allowedMetadataFlags: STEP195_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP195_ADDITIONAL_FALSE_FLAGS,
+  });
+  assert.equal(flags.metadataOnlyPreflightEvaluationAllowed, true);
+  assert.equal(flags.adminReadOnlyReadinessAggregationAllowed, true);
+  for (const key of [
+    "actualDataDownloadAllowed",
+    "featureGenerationAllowed",
+    "datasetBuildAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "modelTrainingAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+  ]) {
+    assert.equal(flags[key], false, key);
+  }
+  assert.equal(Object.hasOwn(flags, "unknownRuntimePermissionAllowed"), false);
+});
+
+test("Step195 scenario K explicit metadata allowlist exactly matches true flags", () => {
+  const actualTrueFlags = Object.entries(STEP195_AI_ML_READINESS_GATE_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  assert.deepEqual(actualTrueFlags, Object.keys(STEP195_METADATA_ONLY_ALLOWED_FLAGS).sort());
+});
+
+test("Step195 scenario L shared helper compatibility keeps ordering and redaction deterministic", () => {
+  const sourceRegistry = collectAiMlReadinessSourceStatuses({
+    sourceStatusOverrides: {
+      step192_ai_ml_dataset_architecture: {
+        evidence: ["private path", "normal_source_id", "api key value"],
+      },
+    },
+  });
+  const summary = buildAiMlReadinessGateSummary({
+    sourceStatusOverrides: {
+      step192_ai_ml_dataset_architecture: {
+        evidence: ["private path", "normal_source_id", "api key value"],
+      },
+    },
+  });
+  assert.deepEqual(sourceRegistry.sourceStatuses.map((source) => source.sourceStepId), REQUIRED_SOURCE_IDS);
+  assert.deepEqual(summary.gateResults.map((gate) => gate.gateId), [...summary.gateResults.map((gate) => gate.gateId)].sort());
+  assert.equal(JSON.stringify(summary).includes("normal_source_id"), true);
+  assert.equal(JSON.stringify(summary).includes("private path"), false);
+  assert.equal(JSON.stringify(summary).includes("api key value"), false);
+  assert.match(JSON.stringify(summary), /redacted_metadata/);
+});
+
+test("Step195 scenario M full default output remains compatible", () => {
+  const summary = buildAiMlReadinessGateSummary();
+  assert.equal(summary.summaryId, "step195_ai_ml_readiness_gate_summary");
+  assert.equal(summary.capabilityStage, "contract_preflight_only");
+  assert.equal(summary.internalContractStatus, "documented_and_validated");
+  assert.equal(summary.metadataPreflightStatus, "valid");
+  assert.equal(summary.executionPermissionStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(summary.orderAuthorityStatus, AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER);
+  assert.equal(summary.liveTradingStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(summary.overallStatus, "internal_contracts_valid_execution_blocked");
+  assert.equal(summary.sourceRegistry.sourceCount, 4);
+  assert.equal(summary.sourceRegistry.requiredSourceCount, 4);
+  assert.equal(summary.gateResults.length, REQUIRED_GATE_CATEGORIES.length);
+  assert.equal(summary.passCount, 4);
+  assert.equal(summary.blockedCount, 8);
+  assert.equal(summary.externalBlockerCount, 1);
+  assert.equal(summary.scenarioCatalog.length, 14);
+});
+
+test("Step195 scenario N shared clone use prevents source, overrides, and options mutation", () => {
+  const upstreamStatus = buildAdminTradingAiMlFeaturePipelinePreflightStatus();
+  const input = {
+    omitSourceStepIds: ["step193_ai_ml_feature_pipeline_architecture"],
+    sourceStatusOverrides: {
+      step194_ai_ml_feature_pipeline_preflight: {
+        evidence: ["stable_input"],
+      },
+    },
+    aiMlFeaturePipelinePreflightStatus: upstreamStatus,
+  };
+  const options = {
+    sourceStatusOverrides: {
+      unused: true,
+    },
+  };
+  const before = cloneAiMlMetadata({ input, options });
+  const summary = buildAiMlReadinessGateSummary(input, options);
+  assert.equal(summary.overallStatus, "internal_contracts_incomplete");
+  assert.deepEqual({ input, options }, before);
 });
