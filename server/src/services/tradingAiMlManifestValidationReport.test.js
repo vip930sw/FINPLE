@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  STEP198_ADDITIONAL_FALSE_FLAGS,
   STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS,
+  STEP198_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL,
   buildAdminTradingAiMlManifestValidationReportStatus,
   buildAiMlManifestValidationReport,
@@ -17,6 +19,10 @@ import {
 import {
   buildAiMlDatasetBuildDryRunManifest,
 } from "./tradingAiMlDatasetBuildDryRunManifest.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  buildAiMlFailClosedFlags,
+} from "./tradingAiMlContractPrimitives.js";
 
 const FALSE_PERMISSION_KEYS = [
   "validationExecutionAllowed",
@@ -87,6 +93,12 @@ const SCENARIOS = [
   "scenario_i_deterministic_ordering",
   "scenario_j_mutation_resistance",
   "scenario_k_sensitive_data_redaction",
+  "scenario_l_shared_flag_output_compatibility",
+  "scenario_m_inherited_true_execution_conflict",
+  "scenario_n_metadata_true_allowlist",
+  "scenario_o_shared_helper_deterministic_compatibility",
+  "scenario_p_full_default_output_compatibility",
+  "scenario_q_shared_clone_mutation_resistance",
 ];
 
 function clone(value) {
@@ -293,6 +305,121 @@ test("Step198 scenario K redacts sensitive evidence from exception and remediati
     assert.equal(text.includes(forbidden), false, forbidden);
   }
   assert.match(text, /redacted_evidence/);
+});
+
+test("Step198 scenario L shared flag output compatibility", () => {
+  const status = buildAdminTradingAiMlManifestValidationReportStatus();
+  for (const key of Object.keys(STEP198_METADATA_ONLY_ALLOWED_FLAGS)) {
+    assert.equal(STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS[key], true, key);
+    assert.equal(status.flags[key], true, key);
+  }
+  for (const key of FALSE_PERMISSION_KEYS) {
+    assert.equal(STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS[key], false, key);
+    assert.equal(status.flags[key], false, key);
+  }
+});
+
+test("Step198 scenario M inherited true execution conflict is forced fail-closed", () => {
+  const inheritedConflict = {
+    adminReadOnlyManifestValidationReportAllowed: true,
+    deterministicInMemoryReportAllowed: true,
+    validationExecutionAllowed: true,
+    dryRunExecutionAllowed: true,
+    dbReadAllowed: true,
+    providerCallsAllowed: true,
+    orderSubmissionAllowed: true,
+    readyForOrderSubmission: true,
+    publicUiExposureAllowed: true,
+    unapprovedMetadataOnlyAllowed: true,
+  };
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: inheritedConflict,
+    allowedMetadataFlags: STEP198_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP198_ADDITIONAL_FALSE_FLAGS,
+  });
+  assert.equal(flags.adminReadOnlyManifestValidationReportAllowed, true);
+  assert.equal(flags.deterministicInMemoryReportAllowed, true);
+  assert.equal(flags.validationExecutionAllowed, false);
+  assert.equal(flags.dryRunExecutionAllowed, false);
+  assert.equal(flags.dbReadAllowed, false);
+  assert.equal(flags.providerCallsAllowed, false);
+  assert.equal(flags.orderSubmissionAllowed, false);
+  assert.equal(flags.readyForOrderSubmission, false);
+  assert.equal(flags.publicUiExposureAllowed, false);
+  assert.equal(Object.hasOwn(flags, "unapprovedMetadataOnlyAllowed"), false);
+});
+
+test("Step198 scenario N metadata true allowlist matches actual true flags", () => {
+  const actualTrueFlags = Object.entries(STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  const allowedTrueFlags = Object.keys(STEP198_METADATA_ONLY_ALLOWED_FLAGS).sort();
+  assert.deepEqual(actualTrueFlags, allowedTrueFlags);
+});
+
+test("Step198 scenario O shared helper compatibility keeps deterministic registry ordering", () => {
+  const source = sourceWith({
+    validationChecks: [
+      {
+        checkId: "z_late",
+        category: "logical_schema_plan",
+        status: "fail",
+        severity: "warning",
+        evidence: ["safe z", "safe a"],
+      },
+      {
+        checkId: "a_early",
+        category: "execution_boundary",
+        status: "blocked",
+        severity: "critical",
+        evidence: ["hash value", "safe evidence"],
+      },
+    ],
+    passCount: 0,
+    failCount: 1,
+    blockedCount: 1,
+    manualReviewRequiredCount: 0,
+  });
+  const report = buildAiMlManifestValidationReport({ sourceManifest: source });
+  assert.deepEqual(report.exceptionRegistry.map((item) => item.exceptionId), [
+    "step198_exception_a_early",
+    "step198_exception_z_late",
+  ]);
+  assert.deepEqual(report.exceptionRegistry[0].evidence, ["redacted_evidence", "safe evidence"]);
+  assert.deepEqual(report.exceptionRegistry[1].evidence, ["safe a", "safe z"]);
+});
+
+test("Step198 scenario P full default output remains compatible", () => {
+  const report = buildAiMlManifestValidationReport();
+  assert.equal(report.reportMode, AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE);
+  assert.equal(report.reportGenerationStatus, AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY);
+  assert.equal(report.exceptionRegistryStatus, AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED);
+  assert.equal(report.remediationQueueStatus, AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED);
+  assert.equal(report.reportPersistenceStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(report.approvalStatus, AI_ML_CONTRACT_STATUS.NOT_GRANTED);
+  assert.equal(report.executionAuthorizationStatus, AI_ML_CONTRACT_STATUS.DENIED);
+  assert.equal(report.reportStatus.reportMode, "metadata_only_non_executable");
+  assert.equal(report.reportStatus.reportGenerationStatus, "generated_in_memory");
+  assert.equal(report.reportStatus.reportPersistenceStatus, "blocked");
+  assert.equal(report.sourceManifestReference.sourceStep, "step197");
+  assert.equal(report.scenarioCatalog.length, SCENARIOS.length);
+});
+
+test("Step198 scenario Q shared clone use prevents report control and override mutation", () => {
+  const source = buildAiMlDatasetBuildDryRunManifest();
+  const registryOverrides = {
+    exceptionOverrides: {
+      "15_external_authority_context": { dispositionStatus: "manual_review_only" },
+    },
+  };
+  const reportControls = {
+    requestedIntents: ["persist_report"],
+  };
+  const before = clone({ registryOverrides, reportControls });
+  const report = buildAiMlManifestValidationReport({ sourceManifest: source, registryOverrides, reportControls });
+  assert.equal(report.overallStatus, "blocked_by_safety_policy");
+  assert.deepEqual({ registryOverrides, reportControls }, before);
 });
 
 test("Step198 summary, registry, non-waivable registry, and remediation helpers are deterministic", () => {

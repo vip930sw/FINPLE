@@ -17,7 +17,6 @@ const UNTOUCHED_SERVICE_FILES = [
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
-  "server/src/services/tradingAiMlManifestValidationReport.js",
   "server/src/services/tradingAiMlArchitectureMilestoneReview.js",
   "server/src/services/tradingAiMlContractPrimitives.js",
   "server/src/services/tradingAiMlContractPrimitives.test.js",

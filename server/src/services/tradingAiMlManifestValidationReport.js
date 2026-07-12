@@ -3,68 +3,110 @@ import {
   buildAdminTradingAiMlDatasetBuildDryRunManifestStatus,
   buildAiMlDatasetBuildDryRunManifest,
 } from "./tradingAiMlDatasetBuildDryRunManifest.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS = Object.freeze({
-  ...STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS,
+export const STEP198_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
+  adminReadOnlyManifestDesignAllowed: true,
+  deterministicInMemoryManifestAllowed: true,
+  metadataOnlyReviewReceiptAllowed: true,
   adminReadOnlyManifestValidationReportAllowed: true,
   deterministicInMemoryReportAllowed: true,
   deterministicExceptionClassificationAllowed: true,
   metadataOnlyRemediationQueueAllowed: true,
-  validationExecutionAllowed: false,
-  manifestExecutionAllowed: false,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
+});
+
+export const STEP198_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
   datasetFileCreationAllowed: false,
-  batchExecutionAllowed: false,
-  dryRunExecutionAllowed: false,
   manifestFileCreationAllowed: false,
   reportFileCreationAllowed: false,
-  schemaMaterializationAllowed: false,
-  partitionMaterializationAllowed: false,
-  outputPathAssignmentAllowed: false,
-  reportPersistenceAllowed: false,
-  exceptionPersistenceAllowed: false,
-  remediationPersistenceAllowed: false,
   reviewReceiptPersistenceAllowed: false,
   manualApprovalPersistenceAllowed: false,
-  waiverGrantAllowed: false,
   waiverPersistenceAllowed: false,
-  executionAuthorizationAllowed: false,
-  handoffExecutionAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
   modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
   modelAutoApprovalAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForValidationExecution: false,
-  readyForManifestExecution: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForBatchExecution: false,
-  readyForDryRunExecution: false,
-  readyForSchemaMaterialization: false,
-  readyForPartitionMaterialization: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
 });
+
+export const STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS,
+  allowedMetadataFlags: STEP198_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP198_ADDITIONAL_FALSE_FLAGS,
+});
+
+const STEP198_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  'reportMode: "metadata_only_non_executable"',
+  'reportGenerationStatus: "generated_in_memory"',
+  'exceptionRegistryStatus: "generated_not_persisted"',
+  'remediationQueueStatus: "generated_not_persisted"',
+  'reportPersistenceStatus: "blocked"',
+  'approvalStatus: "not_granted"',
+  'waiverStatus: "not_granted"',
+  'executionAuthorizationStatus: "denied"',
+  'handoffAuthorizationStatus: "denied"',
+  "validationExecutionAllowed: false",
+  "manifestExecutionAllowed: false",
+  "actualDataDownloadAllowed: false",
+  "featureGenerationAllowed: false",
+  "featureFileCreationAllowed: false",
+  "datasetBuildAllowed: false",
+  "datasetFileCreationAllowed: false",
+  "batchExecutionAllowed: false",
+  "dryRunExecutionAllowed: false",
+  "manifestFileCreationAllowed: false",
+  "reportFileCreationAllowed: false",
+  "schemaMaterializationAllowed: false",
+  "partitionMaterializationAllowed: false",
+  "outputPathAssignmentAllowed: false",
+  "reportPersistenceAllowed: false",
+  "exceptionPersistenceAllowed: false",
+  "remediationPersistenceAllowed: false",
+  "reviewReceiptPersistenceAllowed: false",
+  "manualApprovalPersistenceAllowed: false",
+  "waiverGrantAllowed: false",
+  "waiverPersistenceAllowed: false",
+  "executionAuthorizationAllowed: false",
+  "handoffExecutionAllowed: false",
+  "dbMigrationAllowed: false",
+  "dbReadAllowed: false",
+  "dbWriteAllowed: false",
+  "persistentStorageAllowed: false",
+  "providerCallsAllowed: false",
+  "quoteCallsAllowed: false",
+  "kisCallsAllowed: false",
+  "kisTokenIssuanceAllowed: false",
+  "pythonFeatureJobAllowed: false",
+  "modelTrainingAllowed: false",
+  "modelArtifactCreationAllowed: false",
+  "modelDeploymentAllowed: false",
+  "modelAutoApprovalAllowed: false",
+  "orderSubmissionAllowed: false",
+  "liveTradingAllowed: false",
+  "publicUiExposureAllowed: false",
+  "myPageExposureAllowed: false",
+  "readyForValidationExecution: false",
+  "readyForManifestExecution: false",
+  "readyForActualDataDownload: false",
+  "readyForFeatureGeneration: false",
+  "readyForDatasetBuild: false",
+  "readyForBatchExecution: false",
+  "readyForDryRunExecution: false",
+  "readyForSchemaMaterialization: false",
+  "readyForPartitionMaterialization: false",
+  "readyForModelTraining: false",
+  "readyForModelDeployment: false",
+  "readyForReadOnlyProviderCalls: false",
+  "readyForOrderSubmission: false",
+  "readyForLiveGuardedTrading: false",
+]);
 
 export const TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL = Object.freeze({
   reportIdentity: "manifest_validation_metadata_report_identity",
@@ -76,16 +118,18 @@ export const TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL = Object.freeze({
   boundaryConfirmation: "fail_closed_report_boundary_confirmation",
   externalAuthorityContext: "external_order_authority_context",
   reportStatus: "metadata_only_report_status",
+  sourceStageId: AI_ML_STAGE_IDS.STEP_197_DATASET_BUILD_MANIFEST,
+  reportStageId: AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT,
   defaultStatus: {
-    reportMode: "metadata_only_non_executable",
-    reportGenerationStatus: "generated_in_memory",
+    reportMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+    reportGenerationStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
     sourceManifestStatus: "manifest_design_ready_execution_blocked",
-    exceptionRegistryStatus: "generated_not_persisted",
-    remediationQueueStatus: "generated_not_persisted",
-    approvalStatus: "not_granted",
-    waiverStatus: "not_granted",
-    executionAuthorizationStatus: "denied",
-    handoffAuthorizationStatus: "denied",
+    exceptionRegistryStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+    remediationQueueStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    waiverStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
     overallStatus: "validation_report_ready_execution_blocked",
     redacted: true,
   },
@@ -164,6 +208,12 @@ const SCENARIO_CATALOG = Object.freeze([
   "scenario_i_deterministic_ordering",
   "scenario_j_mutation_resistance",
   "scenario_k_sensitive_data_redaction",
+  "scenario_l_shared_flag_output_compatibility",
+  "scenario_m_inherited_true_execution_conflict",
+  "scenario_n_metadata_true_allowlist",
+  "scenario_o_shared_helper_deterministic_compatibility",
+  "scenario_p_full_default_output_compatibility",
+  "scenario_q_shared_clone_mutation_resistance",
 ]);
 
 const FAIL_CLOSED_PRECEDENCE = Object.freeze([
@@ -173,24 +223,27 @@ const FAIL_CLOSED_PRECEDENCE = Object.freeze([
   "validation_report_ready_execution_blocked",
 ]);
 
-function sortByKey(items, key) {
-  return [...items].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
-}
+const STEP198_SENSITIVE_EVIDENCE_PATTERNS = Object.freeze([
+  /private filesystem path/i,
+  /bucket path/i,
+  /raw request payload/i,
+  /raw manifest payload/i,
+  /actual price data/i,
+]);
 
-function safeArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function sanitizeEvidenceValue(value) {
+function sanitizeManifestEvidenceValue(value) {
   const text = String(value ?? "missing");
-  if (/api\s*key|secret|credential|token|account\s*id|provider raw response|environment value|private filesystem path|bucket path|artifact path|dataset path|raw request payload|raw manifest payload|hash|digest|checksum|actual price data|account data|[A-Za-z]:\\|\\\\/i.test(text)) {
+  if (STEP198_SENSITIVE_EVIDENCE_PATTERNS.some((pattern) => pattern.test(text))) {
     return "redacted_evidence";
   }
-  return text;
+  const sanitized = sanitizeAiMlMetadataValue(value, "missing");
+  return sanitized === "redacted_metadata" ? "redacted_evidence" : sanitized;
 }
 
-function sanitizeEvidence(evidence) {
-  return safeArray(evidence).map(sanitizeEvidenceValue).sort();
+function sanitizeManifestEvidence(evidence) {
+  const items = normalizeAiMlMetadataArray(evidence);
+  if (items.length === 0) return sanitizeAiMlMetadataArray(evidence);
+  return Object.freeze(items.map(sanitizeManifestEvidenceValue).sort());
 }
 
 function classifyException(check) {
@@ -242,7 +295,7 @@ export function collectManifestValidationSource(input = {}, options = {}) {
 }
 
 export function buildManifestValidationSummary(sourceManifest) {
-  const checks = safeArray(sourceManifest.validationChecks);
+  const checks = normalizeAiMlMetadataArray(sourceManifest.validationChecks);
   const countBy = (predicate) => checks.filter(predicate).length;
   const summary = {
     totalCheckCount: checks.length,
@@ -298,13 +351,13 @@ export function buildManifestValidationSummary(sourceManifest) {
 
 export function buildManifestExceptionRegistry(sourceManifest, overrides = {}) {
   const exceptionOverrides = overrides.exceptionOverrides || {};
-  const checks = safeArray(sourceManifest.validationChecks).filter((check) => (
+  const checks = normalizeAiMlMetadataArray(sourceManifest.validationChecks).filter((check) => (
     check.status === "fail"
     || check.status === "blocked"
     || check.status === "manual_review_required"
     || check.manualReviewRequired === true
   ));
-  return sortByKey(checks.map((check) => {
+  return sortAiMlMetadataByKey(checks.map((check) => {
     const exceptionClass = classifyException(check);
     const base = {
       exceptionId: `step198_exception_${check.checkId}`,
@@ -318,9 +371,9 @@ export function buildManifestExceptionRegistry(sourceManifest, overrides = {}) {
       waiverEligibility: "review_only",
       waiverStatus: "not_granted",
       dispositionStatus: "open_metadata_only",
-      message: sanitizeEvidenceValue(check.message || "metadata review item"),
-      evidence: sanitizeEvidence(check.evidence),
-      remediation: sanitizeEvidenceValue(check.remediation || "review metadata boundary"),
+      message: sanitizeManifestEvidenceValue(check.message || "metadata review item"),
+      evidence: sanitizeManifestEvidence(check.evidence),
+      remediation: sanitizeManifestEvidenceValue(check.remediation || "review metadata boundary"),
       ownerRole: getOwnerRole(check.category),
       redacted: true,
     };
@@ -340,7 +393,7 @@ export function buildManifestExceptionRegistry(sourceManifest, overrides = {}) {
 }
 
 export function buildManifestNonWaivableRegistry(exceptionRegistry) {
-  return sortByKey(exceptionRegistry.filter(isNonWaivableException).map((exception) => ({
+  return sortAiMlMetadataByKey(exceptionRegistry.filter(isNonWaivableException).map((exception) => ({
     exceptionId: exception.exceptionId,
     sourceCheckId: exception.sourceCheckId,
     nonWaivableReason: NON_WAIVABLE_CATEGORIES.includes(exception.category)
@@ -355,7 +408,7 @@ export function buildManifestNonWaivableRegistry(exceptionRegistry) {
 }
 
 export function buildManifestRemediationQueue(exceptionRegistry) {
-  return sortByKey(exceptionRegistry.map((exception) => ({
+  return sortAiMlMetadataByKey(exceptionRegistry.map((exception) => ({
     remediationItemId: `step198_remediation_${exception.sourceCheckId}`,
     sourceExceptionId: exception.exceptionId,
     priority: exception.exceptionClass === "safety_boundary_exception" ? "critical" : exception.severity,
@@ -387,7 +440,7 @@ function buildBoundaryConfirmation(sourceManifest) {
 }
 
 function detectReportSafetyConflict({ sourceManifest, validationSummary, exceptionRegistry, reportControls = {} }) {
-  const intents = safeArray(reportControls.requestedIntents || reportControls.prohibitedIntents);
+  const intents = normalizeAiMlMetadataArray(reportControls.requestedIntents || reportControls.prohibitedIntents);
   const prohibitedIntents = intents.filter((intent) => PROHIBITED_REPORT_INTENTS.includes(intent));
   return {
     sourceSafetyBlocked: sourceManifest.overallStatus === "blocked_by_safety_policy",
@@ -448,11 +501,12 @@ export function evaluateAiMlManifestValidationReport(input = {}, options = {}) {
   const sourceManifest = source.manifest;
   const reportIdentity = buildReportIdentity(sourceManifest);
   const validationSummary = buildManifestValidationSummary(sourceManifest);
-  const exceptionRegistry = buildManifestExceptionRegistry(sourceManifest, input.registryOverrides || {});
+  const registryOverrides = cloneAiMlMetadata(input.registryOverrides) || {};
+  const exceptionRegistry = buildManifestExceptionRegistry(sourceManifest, registryOverrides);
   const nonWaivableRegistry = buildManifestNonWaivableRegistry(exceptionRegistry);
   const remediationQueue = buildManifestRemediationQueue(exceptionRegistry);
   const boundaryConfirmation = buildBoundaryConfirmation(sourceManifest);
-  const reportControls = input.reportControls || {};
+  const reportControls = cloneAiMlMetadata(input.reportControls) || {};
   const safetyConflict = detectReportSafetyConflict({
     sourceManifest,
     validationSummary,
@@ -481,7 +535,7 @@ export function evaluateAiMlManifestValidationReport(input = {}, options = {}) {
       materializationStatus: sourceManifest.materializationStatus || "blocked",
       outputPathStatus: sourceManifest.outputPathStatus || "not_assigned",
       overallStatus: sourceManifest.overallStatus || "missing",
-      validationCategoryCount: safeArray(sourceManifest.validationCategories).length,
+      validationCategoryCount: normalizeAiMlMetadataArray(sourceManifest.validationCategories).length,
       nextSafeImplementationStep: sourceManifest.nextSafeImplementationStep || "manifest_validation_report_review",
       redacted: true,
     },
@@ -499,32 +553,32 @@ export function evaluateAiMlManifestValidationReport(input = {}, options = {}) {
       redacted: true,
     },
     reportStatus: {
-      reportMode: "metadata_only_non_executable",
-      reportGenerationStatus: "generated_in_memory",
+      reportMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+      reportGenerationStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
       sourceManifestStatus: sourceManifest.overallStatus || "missing",
-      exceptionRegistryStatus: "generated_not_persisted",
-      remediationQueueStatus: "generated_not_persisted",
-      reportPersistenceStatus: "blocked",
-      approvalStatus: "not_granted",
-      waiverStatus: "not_granted",
-      executionAuthorizationStatus: "denied",
-      handoffAuthorizationStatus: "denied",
+      exceptionRegistryStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+      remediationQueueStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+      reportPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+      approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+      waiverStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+      executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+      handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
       overallStatus,
       redacted: true,
     },
     safetyConflict,
-    reportMode: "metadata_only_non_executable",
-    reportGenerationStatus: "generated_in_memory",
+    reportMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+    reportGenerationStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
     sourceManifestStatus: sourceManifest.overallStatus || "missing",
-    exceptionRegistryStatus: "generated_not_persisted",
-    remediationQueueStatus: "generated_not_persisted",
-    reportPersistenceStatus: "blocked",
-    exceptionPersistenceStatus: "blocked",
-    remediationPersistenceStatus: "blocked",
-    approvalStatus: "not_granted",
-    waiverStatus: "not_granted",
-    executionAuthorizationStatus: "denied",
-    handoffAuthorizationStatus: "denied",
+    exceptionRegistryStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+    remediationQueueStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
+    reportPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    exceptionPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    remediationPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    waiverStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
     overallStatus,
     exceptionCount: exceptionRegistry.length,
     nonWaivableCount: nonWaivableRegistry.length,

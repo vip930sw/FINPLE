@@ -19,7 +19,6 @@ const UNTOUCHED_STEP_191_TO_198_SERVICE_FILES = [
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
-  "server/src/services/tradingAiMlManifestValidationReport.js",
 ];
 
 const REQUIRED_EXPORTS = [
