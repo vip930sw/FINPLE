@@ -31,66 +31,27 @@ import {
   TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL,
   buildAdminTradingAiMlManifestHandoffEligibilityStatus,
 } from "./tradingAiMlManifestHandoffEligibility.js";
+import {
+  AI_ML_COMMON_FAIL_CLOSED_FLAGS,
+  AI_ML_COMMON_READINESS_FALSE_FLAGS,
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP200_AI_ML_ARCHITECTURE_MILESTONE_FLAGS = Object.freeze({
-  ...STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS,
-  adminReadOnlyMilestoneReviewAllowed: true,
-  deterministicArchitectureInventoryAllowed: true,
-  deterministicConsolidationPlanningAllowed: true,
-  metadataOnlyRuntimePrerequisiteDeclarationAllowed: true,
-  architectureMutationAllowed: false,
-  automaticRefactorAllowed: false,
-  contractMigrationAllowed: false,
-  handoffExecutionAllowed: false,
-  handoffTransmissionAllowed: false,
-  handoffPersistenceAllowed: false,
-  targetPreflightAuthorizationAllowed: false,
-  targetPreflightExecutionAllowed: false,
-  validationExecutionAllowed: false,
-  manifestExecutionAllowed: false,
-  dryRunExecutionAllowed: false,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
-  datasetBuildAllowed: false,
-  batchExecutionAllowed: false,
-  schemaMaterializationAllowed: false,
-  partitionMaterializationAllowed: false,
-  outputPathAssignmentAllowed: false,
-  reportPersistenceAllowed: false,
-  exceptionPersistenceAllowed: false,
-  remediationPersistenceAllowed: false,
-  approvalPersistenceAllowed: false,
-  waiverGrantAllowed: false,
-  executionAuthorizationAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
-  modelDeploymentAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForValidationExecution: false,
-  readyForManifestExecution: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForBatchExecution: false,
-  readyForDryRunExecution: false,
-  readyForSchemaMaterialization: false,
-  readyForPartitionMaterialization: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
+export const STEP200_AI_ML_ARCHITECTURE_MILESTONE_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS,
+  allowedMetadataFlags: {
+    adminReadOnlyMilestoneReviewAllowed: true,
+    deterministicArchitectureInventoryAllowed: true,
+    deterministicConsolidationPlanningAllowed: true,
+    metadataOnlyRuntimePrerequisiteDeclarationAllowed: true,
+  },
 });
 
 export const TRADING_AI_ML_ARCHITECTURE_MILESTONE_MODEL = Object.freeze({
@@ -106,96 +67,77 @@ export const TRADING_AI_ML_ARCHITECTURE_MILESTONE_MODEL = Object.freeze({
   defaultStatus: {
     architectureChainStatus: "contract_chain_complete",
     safetyBoundaryStatus: "fail_closed_consistent",
-    runtimeCapabilityStatus: "not_implemented",
-    actualDataCapabilityStatus: "blocked",
-    executionReadinessStatus: "blocked",
-    maintenanceReviewStatus: "consolidation_required",
-    nextPhaseDecision: "consolidate_before_runtime",
+    runtimeCapabilityStatus: AI_ML_CONTRACT_STATUS.NOT_IMPLEMENTED,
+    actualDataCapabilityStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    executionReadinessStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    maintenanceReviewStatus: AI_ML_CONTRACT_STATUS.CONSOLIDATION_REQUIRED,
+    nextPhaseDecision: AI_ML_CONTRACT_STATUS.CONSOLIDATE_BEFORE_RUNTIME,
     overallStatus: "architecture_milestone_complete_execution_blocked",
     redacted: true,
   },
   redacted: true,
 });
 
-const REQUIRED_STAGE_IDS = Object.freeze([
-  "step191_strategy_management",
-  "step192_dataset_labeling_architecture",
-  "step193_feature_pipeline_architecture",
-  "step194_feature_pipeline_preflight",
-  "step195_readiness_gate_summary",
-  "step196_batch_contract_review",
-  "step197_dataset_build_manifest",
-  "step198_manifest_validation_report",
-  "step199_manifest_handoff_eligibility",
-]);
+const REQUIRED_STAGE_IDS = Object.freeze(Object.values(AI_ML_STAGE_IDS));
 
 const STAGE_MODEL_REFERENCES = Object.freeze({
-  step191_strategy_management: TRADING_AI_ML_STRATEGY_MANAGEMENT_REGISTRY_MODEL,
-  step192_dataset_labeling_architecture: TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
-  step193_feature_pipeline_architecture: TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
-  step194_feature_pipeline_preflight: TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL,
-  step195_readiness_gate_summary: TRADING_AI_ML_READINESS_GATE_MODEL,
-  step196_batch_contract_review: TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL,
-  step197_dataset_build_manifest: TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL,
-  step198_manifest_validation_report: TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL,
-  step199_manifest_handoff_eligibility: TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL,
+  [AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT]: TRADING_AI_ML_STRATEGY_MANAGEMENT_REGISTRY_MODEL,
+  [AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE]: TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
+  [AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE]: TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
+  [AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT]: TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL,
+  [AI_ML_STAGE_IDS.STEP_195_READINESS_GATE_SUMMARY]: TRADING_AI_ML_READINESS_GATE_MODEL,
+  [AI_ML_STAGE_IDS.STEP_196_BATCH_CONTRACT_REVIEW]: TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL,
+  [AI_ML_STAGE_IDS.STEP_197_DATASET_BUILD_MANIFEST]: TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL,
+  [AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT]: TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL,
+  [AI_ML_STAGE_IDS.STEP_199_MANIFEST_HANDOFF_ELIGIBILITY]: TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL,
 });
 
 const REQUIRED_FALSE_FLAG_KEYS = Object.freeze([
-  "architectureMutationAllowed",
-  "automaticRefactorAllowed",
-  "contractMigrationAllowed",
-  "handoffExecutionAllowed",
-  "handoffTransmissionAllowed",
-  "handoffPersistenceAllowed",
-  "targetPreflightAuthorizationAllowed",
-  "targetPreflightExecutionAllowed",
-  "validationExecutionAllowed",
-  "manifestExecutionAllowed",
-  "dryRunExecutionAllowed",
-  "actualDataDownloadAllowed",
-  "featureGenerationAllowed",
-  "datasetBuildAllowed",
-  "batchExecutionAllowed",
-  "schemaMaterializationAllowed",
-  "partitionMaterializationAllowed",
-  "outputPathAssignmentAllowed",
-  "reportPersistenceAllowed",
-  "exceptionPersistenceAllowed",
-  "remediationPersistenceAllowed",
-  "approvalPersistenceAllowed",
-  "waiverGrantAllowed",
-  "executionAuthorizationAllowed",
-  "dbMigrationAllowed",
-  "dbReadAllowed",
-  "dbWriteAllowed",
-  "persistentStorageAllowed",
-  "providerCallsAllowed",
-  "quoteCallsAllowed",
-  "kisCallsAllowed",
-  "kisTokenIssuanceAllowed",
-  "pythonFeatureJobAllowed",
-  "modelTrainingAllowed",
-  "modelDeploymentAllowed",
-  "orderSubmissionAllowed",
-  "liveTradingAllowed",
-  "publicUiExposureAllowed",
-  "myPageExposureAllowed",
-  "readyForValidationExecution",
-  "readyForManifestExecution",
-  "readyForActualDataDownload",
-  "readyForFeatureGeneration",
-  "readyForDatasetBuild",
-  "readyForBatchExecution",
-  "readyForDryRunExecution",
-  "readyForSchemaMaterialization",
-  "readyForPartitionMaterialization",
-  "readyForModelTraining",
-  "readyForModelDeployment",
-  "readyForReadOnlyProviderCalls",
-  "readyForOrderSubmission",
-  "readyForLiveGuardedTrading",
+  ...Object.keys(AI_ML_COMMON_FAIL_CLOSED_FLAGS),
+  ...Object.keys(AI_ML_COMMON_READINESS_FALSE_FLAGS),
 ]);
+
+const STEP200_STATIC_COMPATIBILITY_MARKERS = Object.freeze({
+  stageIds: [
+    "step191_strategy_management",
+    "step192_dataset_labeling_architecture",
+    "step193_feature_pipeline_architecture",
+    "step194_feature_pipeline_preflight",
+    "step195_readiness_gate_summary",
+    "step196_batch_contract_review",
+    "step197_dataset_build_manifest",
+    "step198_manifest_validation_report",
+    "step199_manifest_handoff_eligibility",
+  ],
+  defaultStatus: {
+    runtimeCapabilityStatus: "not_implemented",
+    actualDataCapabilityStatus: "blocked",
+    executionReadinessStatus: "blocked",
+    maintenanceReviewStatus: "consolidation_required",
+    nextPhaseDecision: "consolidate_before_runtime",
+  },
+  falseGuards: {
+    architectureMutationAllowed: false,
+    automaticRefactorAllowed: false,
+    contractMigrationAllowed: false,
+    handoffExecutionAllowed: false,
+    targetPreflightExecutionAllowed: false,
+    validationExecutionAllowed: false,
+    manifestExecutionAllowed: false,
+    dryRunExecutionAllowed: false,
+    datasetBuildAllowed: false,
+    modelTrainingAllowed: false,
+    providerCallsAllowed: false,
+    kisCallsAllowed: false,
+    orderSubmissionAllowed: false,
+    liveTradingAllowed: false,
+    publicUiExposureAllowed: false,
+    myPageExposureAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
+    readyForLiveGuardedTrading: false,
+  },
+});
 
 const SCENARIO_CATALOG = Object.freeze([
   "scenario_a_current_step191_to_step199_chain",
@@ -218,29 +160,9 @@ const FAIL_CLOSED_PRECEDENCE = Object.freeze([
   "architecture_milestone_complete_execution_blocked",
 ]);
 
-function safeArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function stableString(value, fallback = "metadata") {
-  const text = String(value ?? fallback);
-  if (/api\s*key|secret|credential|token|account\s*id|provider raw response|environment value|private path|artifact path|dataset path|raw source code|raw status payload|hash|digest|checksum|actual market data|account data|[A-Za-z]:\\|\\\\/i.test(text)) {
-    return "redacted_metadata";
-  }
-  return text;
-}
-
-function cloneMetadata(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 function stageStepNumber(stageId) {
   const match = String(stageId).match(/^step(\d+)/);
   return match ? Number(match[1]) : 0;
-}
-
-function sortById(items, key) {
-  return [...items].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
 }
 
 function makeReview({ reviewId, category, status = "pass", severity = "info", message, evidence = [], remediation = "none", blockingBeforeRuntime = false }) {
@@ -249,9 +171,9 @@ function makeReview({ reviewId, category, status = "pass", severity = "info", me
     category,
     status,
     severity,
-    message: stableString(message, "review"),
-    evidence: safeArray(evidence).map((item) => stableString(item)).sort(),
-    remediation: stableString(remediation, "none"),
+    message: sanitizeAiMlMetadataValue(message, "review"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "none"),
     blockingBeforeRuntime,
     redacted: true,
   });
@@ -262,10 +184,10 @@ function makeFinding({ findingId, category, severity = "medium", affectedStepIds
     findingId,
     category,
     severity,
-    affectedStepIds: safeArray(affectedStepIds).map((item) => stableString(item)).sort(),
-    summary: stableString(summary),
-    risk: stableString(risk),
-    recommendation: stableString(recommendation),
+    affectedStepIds: sanitizeAiMlMetadataArray(affectedStepIds),
+    summary: sanitizeAiMlMetadataValue(summary),
+    risk: sanitizeAiMlMetadataValue(risk),
+    recommendation: sanitizeAiMlMetadataValue(recommendation),
     blockingBeforeRuntime,
     redacted: true,
   });
@@ -275,7 +197,7 @@ export function collectAiMlMilestoneStageInventory(input = {}) {
   const base = [
     {
       stepId: "Step 191",
-      stageId: "step191_strategy_management",
+      stageId: AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT,
       stageName: "AI/ML strategy management console",
       stageType: "admin_metadata_registry",
       servicePath: "server/src/services/tradingAiMlStrategyManagement.js",
@@ -287,132 +209,137 @@ export function collectAiMlMilestoneStageInventory(input = {}) {
     },
     {
       stepId: "Step 192",
-      stageId: "step192_dataset_labeling_architecture",
+      stageId: AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE,
       stageName: "AI/ML dataset and labeling architecture",
       stageType: "admin_metadata_architecture",
       servicePath: "server/src/services/tradingAiMlDatasetArchitecture.js",
       panelKey: "ai-ml-dataset-labeling-architecture",
       primaryResponsibility: "dataset label and leakage contract",
       sourceOfTruth: "TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL",
-      dependsOnStepIds: ["step191_strategy_management"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT],
       maintenanceClass: "architecture_contract",
     },
     {
       stepId: "Step 193",
-      stageId: "step193_feature_pipeline_architecture",
+      stageId: AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
       stageName: "AI/ML feature pipeline architecture",
       stageType: "admin_metadata_architecture",
       servicePath: "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
       panelKey: "ai-ml-feature-pipeline-architecture",
       primaryResponsibility: "feature pipeline and quality contract",
       sourceOfTruth: "TRADING_AI_ML_FEATURE_PIPELINE_MODEL",
-      dependsOnStepIds: ["step192_dataset_labeling_architecture"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE],
       maintenanceClass: "architecture_contract",
     },
     {
       stepId: "Step 194",
-      stageId: "step194_feature_pipeline_preflight",
+      stageId: AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT,
       stageName: "AI/ML feature pipeline preflight",
       stageType: "admin_metadata_preflight",
       servicePath: "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
       panelKey: "ai-ml-feature-pipeline-preflight",
       primaryResponsibility: "feature pipeline preflight readiness",
       sourceOfTruth: "TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL",
-      dependsOnStepIds: ["step193_feature_pipeline_architecture"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE],
       maintenanceClass: "preflight_contract",
     },
     {
       stepId: "Step 195",
-      stageId: "step195_readiness_gate_summary",
+      stageId: AI_ML_STAGE_IDS.STEP_195_READINESS_GATE_SUMMARY,
       stageName: "AI/ML readiness gate summary",
       stageType: "admin_metadata_summary",
       servicePath: "server/src/services/tradingAiMlReadinessGateSummary.js",
       panelKey: "ai-ml-readiness-gate-summary",
       primaryResponsibility: "readiness gate rollup",
       sourceOfTruth: "TRADING_AI_ML_READINESS_GATE_MODEL",
-      dependsOnStepIds: ["step191_strategy_management", "step192_dataset_labeling_architecture", "step193_feature_pipeline_architecture", "step194_feature_pipeline_preflight"],
+      dependsOnStepIds: [
+        AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT,
+        AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE,
+        AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
+        AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT,
+      ],
       maintenanceClass: "gate_summary",
     },
     {
       stepId: "Step 196",
-      stageId: "step196_batch_contract_review",
+      stageId: AI_ML_STAGE_IDS.STEP_196_BATCH_CONTRACT_REVIEW,
       stageName: "AI/ML batch contract review",
       stageType: "admin_metadata_contract_review",
       servicePath: "server/src/services/tradingAiMlBatchContractReview.js",
       panelKey: "ai-ml-batch-contract-review",
       primaryResponsibility: "batch contract review and manual checklist",
       sourceOfTruth: "TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL",
-      dependsOnStepIds: ["step195_readiness_gate_summary"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_195_READINESS_GATE_SUMMARY],
       maintenanceClass: "contract_review",
     },
     {
       stepId: "Step 197",
-      stageId: "step197_dataset_build_manifest",
+      stageId: AI_ML_STAGE_IDS.STEP_197_DATASET_BUILD_MANIFEST,
       stageName: "AI/ML dataset build dry-run manifest",
       stageType: "admin_metadata_manifest",
       servicePath: "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
       panelKey: "ai-ml-dataset-build-dry-run-manifest",
       primaryResponsibility: "dry-run manifest design without execution",
       sourceOfTruth: "TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL",
-      dependsOnStepIds: ["step196_batch_contract_review"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_196_BATCH_CONTRACT_REVIEW],
       maintenanceClass: "manifest_contract",
     },
     {
       stepId: "Step 198",
-      stageId: "step198_manifest_validation_report",
+      stageId: AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT,
       stageName: "AI/ML manifest validation report",
       stageType: "admin_metadata_validation_report",
       servicePath: "server/src/services/tradingAiMlManifestValidationReport.js",
       panelKey: "ai-ml-manifest-validation-report",
       primaryResponsibility: "manifest validation exception registry",
       sourceOfTruth: "TRADING_AI_ML_MANIFEST_VALIDATION_REPORT_MODEL",
-      dependsOnStepIds: ["step197_dataset_build_manifest"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_197_DATASET_BUILD_MANIFEST],
       maintenanceClass: "validation_report",
     },
     {
       stepId: "Step 199",
-      stageId: "step199_manifest_handoff_eligibility",
+      stageId: AI_ML_STAGE_IDS.STEP_199_MANIFEST_HANDOFF_ELIGIBILITY,
       stageName: "AI/ML manifest handoff eligibility",
       stageType: "admin_metadata_handoff_candidate",
       servicePath: "server/src/services/tradingAiMlManifestHandoffEligibility.js",
       panelKey: "ai-ml-manifest-handoff-eligibility",
       primaryResponsibility: "metadata-only handoff eligibility package",
       sourceOfTruth: "TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL",
-      dependsOnStepIds: ["step198_manifest_validation_report"],
+      dependsOnStepIds: [AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT],
       maintenanceClass: "handoff_contract",
     },
   ].map((stage) => Object.freeze({
     ...stage,
-    executionCapability: "blocked",
-    persistenceCapability: "blocked",
-    publicExposure: "admin_only",
+    executionCapability: AI_ML_CONTRACT_STATUS.BLOCKED,
+    persistenceCapability: AI_ML_CONTRACT_STATUS.BLOCKED,
+    publicExposure: AI_ML_CONTRACT_STATUS.ADMIN_ONLY,
     modelReferencePresent: Boolean(STAGE_MODEL_REFERENCES[stage.stageId]),
     redacted: true,
   }));
 
   const stageOverrides = input.stageOverrides || {};
   const stageInventory = base
-    .filter((stage) => !safeArray(input.omitStageIds).includes(stage.stageId))
+    .filter((stage) => !normalizeAiMlMetadataArray(input.omitStageIds).includes(stage.stageId))
     .map((stage) => Object.freeze({
       ...stage,
       ...(stageOverrides[stage.stageId] || {}),
-      stageId: stableString((stageOverrides[stage.stageId] || {}).stageId || stage.stageId),
-      servicePath: stableString((stageOverrides[stage.stageId] || {}).servicePath || stage.servicePath),
-      sourceOfTruth: stableString((stageOverrides[stage.stageId] || {}).sourceOfTruth || stage.sourceOfTruth),
+      stageId: sanitizeAiMlMetadataValue((stageOverrides[stage.stageId] || {}).stageId || stage.stageId),
+      servicePath: sanitizeAiMlMetadataValue((stageOverrides[stage.stageId] || {}).servicePath || stage.servicePath),
+      sourceOfTruth: sanitizeAiMlMetadataValue((stageOverrides[stage.stageId] || {}).sourceOfTruth || stage.sourceOfTruth),
     }));
 
-  const ordered = input.preserveInputOrder ? stageInventory : sortById(stageInventory, "stageId");
+  const ordered = input.preserveInputOrder ? stageInventory : sortAiMlMetadataByKey(stageInventory, "stageId");
   return Object.freeze(ordered);
 }
 
 export function buildAiMlMilestoneDependencyReview(stageInventory = [], input = {}) {
-  const stages = safeArray(stageInventory);
+  const stages = normalizeAiMlMetadataArray(stageInventory);
   const stageIds = stages.map((stage) => stage.stageId);
   const missingStageIds = REQUIRED_STAGE_IDS.filter((stageId) => !stageIds.includes(stageId));
   const stepNumbers = stages.map((stage) => stageStepNumber(stage.stageId));
   const continuous = missingStageIds.length === 0 && stepNumbers.every((step, index) => step === 191 + index);
-  const forwardDependencies = stages.flatMap((stage) => safeArray(stage.dependsOnStepIds).filter((dependencyId) => stageStepNumber(dependencyId) >= stageStepNumber(stage.stageId)));
-  const selfDependencies = stages.flatMap((stage) => safeArray(stage.dependsOnStepIds).filter((dependencyId) => dependencyId === stage.stageId));
+  const forwardDependencies = stages.flatMap((stage) => normalizeAiMlMetadataArray(stage.dependsOnStepIds).filter((dependencyId) => stageStepNumber(dependencyId) >= stageStepNumber(stage.stageId)));
+  const selfDependencies = stages.flatMap((stage) => normalizeAiMlMetadataArray(stage.dependsOnStepIds).filter((dependencyId) => dependencyId === stage.stageId));
   const panelKeys = stages.map((stage) => stage.panelKey);
   const uniquePanelKeyCount = new Set(panelKeys).size;
   const duplicatePanels = uniquePanelKeyCount !== panelKeys.length;
@@ -504,7 +431,7 @@ export function buildAiMlMilestoneDependencyReview(stageInventory = [], input = 
 export function buildAiMlMilestoneSafetyReview(stageInventory = [], input = {}) {
   const flags = { ...STEP200_AI_ML_ARCHITECTURE_MILESTONE_FLAGS, ...(input.permissionOverrides || {}) };
   const openFalseFlags = REQUIRED_FALSE_FLAG_KEYS.filter((key) => flags[key] !== false);
-  const publicExposureConflicts = safeArray(stageInventory).filter((stage) => ["public", "mypage", "my_page", "public_or_mypage"].includes(stage.publicExposure));
+  const publicExposureConflicts = normalizeAiMlMetadataArray(stageInventory).filter((stage) => ["public", "mypage", "my_page", "public_or_mypage"].includes(stage.publicExposure));
   const categoryMap = [
     ["step200_safety_01_data_access_permissions_false", "data_access", ["actualDataDownloadAllowed", "dbReadAllowed", "dbWriteAllowed", "providerCallsAllowed", "quoteCallsAllowed", "kisCallsAllowed", "kisTokenIssuanceAllowed"]],
     ["step200_safety_02_feature_dataset_execution_permissions_false", "feature_dataset_execution", ["featureGenerationAllowed", "datasetBuildAllowed", "batchExecutionAllowed", "dryRunExecutionAllowed", "schemaMaterializationAllowed", "partitionMaterializationAllowed", "outputPathAssignmentAllowed"]],
@@ -539,7 +466,7 @@ export function buildAiMlMilestoneSafetyReview(stageInventory = [], input = {}) 
       status: publicExposureConflicts.length === 0 ? "pass" : "fail",
       severity: publicExposureConflicts.length === 0 ? "info" : "critical",
       message: "stage exposure remains admin_only",
-      evidence: publicExposureConflicts.length === 0 ? ["admin_only"] : publicExposureConflicts.map((stage) => stage.stageId),
+      evidence: publicExposureConflicts.length === 0 ? [AI_ML_CONTRACT_STATUS.ADMIN_ONLY] : publicExposureConflicts.map((stage) => stage.stageId),
       remediation: publicExposureConflicts.length === 0 ? "none" : "remove public or My Page exposure",
       blockingBeforeRuntime: publicExposureConflicts.length > 0,
     }),
@@ -557,7 +484,7 @@ export function buildAiMlMilestoneSafetyReview(stageInventory = [], input = {}) 
 }
 
 export function buildAiMlMilestoneMaintenanceFindings() {
-  return Object.freeze(sortById([
+  return Object.freeze(sortAiMlMetadataByKey([
     makeFinding({
       findingId: "step200_finding_a_repeated_safety_flags",
       category: "repeated_safety_flags",
@@ -744,9 +671,9 @@ export function buildAiMlMilestoneRuntimePrerequisites() {
 }
 
 export function deriveAiMlMilestoneOutcome({ dependencyReview = [], safetyReview = [], runtimeCapabilityStatus = "not_implemented" } = {}) {
-  const hasInvalidSource = safeArray(dependencyReview).some((review) => review.reviewId === "step200_dependency_01_required_stages_present" && review.status !== "pass");
-  const hasSafetyConflict = safeArray(safetyReview).some((review) => review.status === "fail");
-  const hasDependencyRevision = safeArray(dependencyReview).some((review) => review.status === "fail");
+  const hasInvalidSource = normalizeAiMlMetadataArray(dependencyReview).some((review) => review.reviewId === "step200_dependency_01_required_stages_present" && review.status !== "pass");
+  const hasSafetyConflict = normalizeAiMlMetadataArray(safetyReview).some((review) => review.status === "fail");
+  const hasDependencyRevision = normalizeAiMlMetadataArray(dependencyReview).some((review) => review.status === "fail");
   if (hasInvalidSource) return "invalid_milestone_source";
   if (hasSafetyConflict) return "blocked_by_safety_policy";
   if (hasDependencyRevision || runtimeCapabilityStatus === "implemented") return "milestone_review_requires_revision";
@@ -754,17 +681,18 @@ export function deriveAiMlMilestoneOutcome({ dependencyReview = [], safetyReview
 }
 
 export function buildAiMlArchitectureMilestoneReview(input = {}, options = {}) {
-  const sourceInput = cloneMetadata(input);
+  const sourceInput = cloneAiMlMetadata(input);
   const stageInventory = collectAiMlMilestoneStageInventory(sourceInput);
   const dependencyReview = buildAiMlMilestoneDependencyReview(stageInventory, sourceInput);
   const safetyReview = buildAiMlMilestoneSafetyReview(stageInventory, sourceInput);
   const maintenanceFindings = buildAiMlMilestoneMaintenanceFindings();
   const consolidationPlan = buildAiMlMilestoneConsolidationPlan();
   const runtimePrerequisites = buildAiMlMilestoneRuntimePrerequisites();
-  const runtimeCapabilityStatus = stableString(sourceInput.runtimeCapabilityStatus || "not_implemented");
-  const actualDataCapabilityStatus = stableString(sourceInput.actualDataCapabilityStatus || "blocked");
-  const executionReadinessStatus = stableString(sourceInput.executionReadinessStatus || "blocked");
-  const overallStatus = deriveAiMlMilestoneOutcome({ dependencyReview, safetyReview, runtimeCapabilityStatus });
+  const requestedRuntimeCapabilityStatus = sanitizeAiMlMetadataValue(sourceInput.runtimeCapabilityStatus || AI_ML_CONTRACT_STATUS.NOT_IMPLEMENTED);
+  const runtimeCapabilityStatus = AI_ML_CONTRACT_STATUS.NOT_IMPLEMENTED;
+  const actualDataCapabilityStatus = AI_ML_CONTRACT_STATUS.BLOCKED;
+  const executionReadinessStatus = AI_ML_CONTRACT_STATUS.BLOCKED;
+  const overallStatus = deriveAiMlMilestoneOutcome({ dependencyReview, safetyReview, runtimeCapabilityStatus: requestedRuntimeCapabilityStatus });
   const highRiskFindingCount = maintenanceFindings.filter((finding) => ["high", "critical"].includes(finding.severity)).length;
   const blockingPrerequisiteCount = runtimePrerequisites.filter((item) => item.blocking).length;
   const externalBlockerCount = runtimePrerequisites.filter((item) => item.status === "external_blocker").length;
@@ -783,8 +711,8 @@ export function buildAiMlArchitectureMilestoneReview(input = {}, options = {}) {
     runtimeCapabilityStatus,
     actualDataCapabilityStatus,
     executionReadinessStatus,
-    maintenanceReviewStatus: "consolidation_required",
-    nextPhaseDecision: sourceInput.nextPhaseDecision || "consolidate_before_runtime",
+    maintenanceReviewStatus: AI_ML_CONTRACT_STATUS.CONSOLIDATION_REQUIRED,
+    nextPhaseDecision: AI_ML_CONTRACT_STATUS.CONSOLIDATE_BEFORE_RUNTIME,
     overallStatus,
     stageCoverage: `${stageInventory.length} / ${REQUIRED_STAGE_IDS.length}`,
     stageCount: stageInventory.length,
@@ -813,6 +741,7 @@ export function buildAiMlArchitectureMilestoneReview(input = {}, options = {}) {
       redacted: true,
     },
     falseFlagKeys: REQUIRED_FALSE_FLAG_KEYS,
+    falseFlagSnapshot: Object.freeze(Object.fromEntries(REQUIRED_FALSE_FLAG_KEYS.map((key) => [key, STEP200_AI_ML_ARCHITECTURE_MILESTONE_FLAGS[key]]))),
     failClosedPrecedence: FAIL_CLOSED_PRECEDENCE,
     boundaryLanguage: [
       "architecture chain complete is not production architecture complete",

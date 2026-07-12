@@ -15,6 +15,9 @@ import {
   deriveAiMlMilestoneOutcome,
   evaluateAiMlArchitectureMilestoneReview,
 } from "./tradingAiMlArchitectureMilestoneReview.js";
+import {
+  AI_ML_STAGE_IDS,
+} from "./tradingAiMlContractPrimitives.js";
 
 const REQUIRED_STAGE_IDS = [
   "step191_strategy_management",
@@ -68,6 +71,7 @@ test("Step200 scenario A current Step 191 to Step 199 chain completes milestone 
 test("Step200 inventory exposes deterministic admin-only stage metadata", () => {
   const inventory = collectAiMlMilestoneStageInventory();
   assert.equal(inventory.length, 9);
+  assert.deepEqual(inventory.map((stage) => stage.stageId), Object.values(AI_ML_STAGE_IDS));
   for (const stage of inventory) {
     assert.equal(stage.executionCapability, "blocked");
     assert.equal(stage.persistenceCapability, "blocked");
@@ -164,6 +168,7 @@ test("Step200 scenario E public exposure conflict is blocked", () => {
 test("Step200 scenario F runtime falsely marked implemented requires revision", () => {
   const review = buildAiMlArchitectureMilestoneReview({ runtimeCapabilityStatus: "implemented" });
   assert.equal(review.overallStatus, "milestone_review_requires_revision");
+  assert.equal(review.runtimeCapabilityStatus, "not_implemented");
 });
 
 test("Step200 scenarios G through I keep coverage and ordering deterministic", () => {
@@ -224,4 +229,6 @@ test("Step200 admin status projects milestone summary and model", () => {
   assert.equal(status.model.defaultStatus.nextPhaseDecision, TRADING_AI_ML_ARCHITECTURE_MILESTONE_MODEL.defaultStatus.nextPhaseDecision);
   assert.equal(status.blockedConfirmation.providerKisOrderEnabled, false);
   assert.equal(status.flags.readyForOrderSubmission, false);
+  assert.equal(status.milestoneReview.falseFlagSnapshot.providerCallsAllowed, false);
+  assert.equal(status.milestoneReview.falseFlagSnapshot.readyForLiveGuardedTrading, false);
 });
