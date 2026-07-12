@@ -2905,6 +2905,7 @@ nav {
 .tradingLabAiMlBatchContractReview,
 .tradingLabAiMlDatasetBuildDryRunManifest,
 .tradingLabAiMlManifestValidationReport,
+.tradingLabAiMlManifestHandoffEligibility,
 .tradingLabAiMlStrategyConsole {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -2916,6 +2917,7 @@ nav {
 .tradingLabAiMlBatchContractReview summary,
 .tradingLabAiMlDatasetBuildDryRunManifest summary,
 .tradingLabAiMlManifestValidationReport summary,
+.tradingLabAiMlManifestHandoffEligibility summary,
 .tradingLabAiMlStrategyConsole summary {
   align-items: center;
   cursor: pointer;
@@ -2928,6 +2930,7 @@ nav {
 .tradingLabAiMlBatchContractReview summary span,
 .tradingLabAiMlDatasetBuildDryRunManifest summary span,
 .tradingLabAiMlManifestValidationReport summary span,
+.tradingLabAiMlManifestHandoffEligibility summary span,
 .tradingLabAiMlReadinessStatusGrid span,
 .tradingLabAiMlReadinessSourceGrid article > span,
 .tradingLabAiMlReadinessGateGrid article > span,
@@ -2946,6 +2949,9 @@ nav {
 .tradingLabAiMlManifestValidationContractGrid section > span,
 .tradingLabAiMlManifestValidationCheckGrid article > span,
 .tradingLabAiMlManifestValidationSafetyGrid span,
+.tradingLabAiMlManifestHandoffStatusGrid span,
+.tradingLabAiMlManifestHandoffContractGrid section > span,
+.tradingLabAiMlManifestHandoffSafetyGrid span,
 .tradingLabAiMlStrategyConsole summary span,
 .tradingLabAiMlStatusGrid span,
 .tradingLabAiMlModelGrid article > span,
@@ -2965,6 +2971,8 @@ nav {
 .tradingLabAiMlDatasetBuildDryRunManifest summary em,
 .tradingLabAiMlManifestValidationReport summary strong,
 .tradingLabAiMlManifestValidationReport summary em,
+.tradingLabAiMlManifestHandoffEligibility summary strong,
+.tradingLabAiMlManifestHandoffEligibility summary em,
 .tradingLabAiMlReadinessStatusGrid strong,
 .tradingLabAiMlReadinessSourceGrid strong,
 .tradingLabAiMlReadinessGateGrid strong,
@@ -2979,6 +2987,8 @@ nav {
 .tradingLabAiMlManifestValidationStatusGrid strong,
 .tradingLabAiMlManifestValidationCheckGrid strong,
 .tradingLabAiMlManifestValidationSafetyGrid strong,
+.tradingLabAiMlManifestHandoffStatusGrid strong,
+.tradingLabAiMlManifestHandoffSafetyGrid strong,
 .tradingLabAiMlStrategyConsole summary strong,
 .tradingLabAiMlStrategyConsole summary em,
 .tradingLabAiMlStatusGrid strong,
@@ -2991,6 +3001,7 @@ nav {
 .tradingLabAiMlBatchContractReviewBody,
 .tradingLabAiMlDatasetBuildDryRunManifestBody,
 .tradingLabAiMlManifestValidationReportBody,
+.tradingLabAiMlManifestHandoffEligibilityBody,
 .tradingLabAiMlStrategyConsoleBody {
   display: grid;
   gap: 14px;
@@ -3015,6 +3026,9 @@ nav {
 .tradingLabAiMlManifestValidationContractGrid,
 .tradingLabAiMlManifestValidationCheckGrid,
 .tradingLabAiMlManifestValidationSafetyGrid,
+.tradingLabAiMlManifestHandoffStatusGrid,
+.tradingLabAiMlManifestHandoffContractGrid,
+.tradingLabAiMlManifestHandoffSafetyGrid,
 .tradingLabAiMlStatusGrid,
 .tradingLabAiMlModelGrid,
 .tradingLabAiMlContractGrid {
@@ -3041,6 +3055,9 @@ nav {
 .tradingLabAiMlManifestValidationContractGrid section,
 .tradingLabAiMlManifestValidationCheckGrid article,
 .tradingLabAiMlManifestValidationSafetyGrid article,
+.tradingLabAiMlManifestHandoffStatusGrid article,
+.tradingLabAiMlManifestHandoffContractGrid section,
+.tradingLabAiMlManifestHandoffSafetyGrid article,
 .tradingLabAiMlStatusGrid article,
 .tradingLabAiMlModelGrid article,
 .tradingLabAiMlContractGrid section,
@@ -3103,6 +3120,7 @@ nav {
 .tradingLabAiMlBatchReviewContractGrid ul,
 .tradingLabAiMlDatasetBuildManifestContractGrid ul,
 .tradingLabAiMlManifestValidationContractGrid ul,
+.tradingLabAiMlManifestHandoffContractGrid ul,
 .tradingLabAiMlContractGrid ul,
 .tradingLabAiMlBlockedNotice ul {
   display: grid;
@@ -3115,6 +3133,7 @@ nav {
 .tradingLabAiMlBatchReviewContractGrid li,
 .tradingLabAiMlDatasetBuildManifestContractGrid li,
 .tradingLabAiMlManifestValidationContractGrid li,
+.tradingLabAiMlManifestHandoffContractGrid li,
 .tradingLabAiMlContractGrid li,
 .tradingLabAiMlBlockedNotice li {
   color: #0f172a;

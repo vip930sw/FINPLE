@@ -1603,6 +1603,13 @@ export function TradingReadinessPanel() {
   const labAiMlManifestRemediationQueue = Array.isArray(labAiMlManifestValidationReport.remediationQueue) ? labAiMlManifestValidationReport.remediationQueue : [];
   const labAiMlManifestValidationScenarios = Array.isArray(labAiMlManifestValidationReport.scenarioCatalog) ? labAiMlManifestValidationReport.scenarioCatalog : [];
   const labAiMlManifestValidationSafety = labAiMlManifestValidationReportStatus?.blockedConfirmation || {};
+  const labAiMlManifestHandoffEligibilityStatus = tradingLabDashboardStatus?.aiMlManifestHandoffEligibilityStatus || {};
+  const labAiMlManifestHandoffEligibility = labAiMlManifestHandoffEligibilityStatus?.handoff || {};
+  const labAiMlManifestHandoffPackage = labAiMlManifestHandoffEligibility.handoffPackage || {};
+  const labAiMlManifestHandoffChecks = Array.isArray(labAiMlManifestHandoffEligibility.eligibilityChecks) ? labAiMlManifestHandoffEligibility.eligibilityChecks : [];
+  const labAiMlManifestHandoffApprovals = Array.isArray(labAiMlManifestHandoffEligibility.approvalRequirements) ? labAiMlManifestHandoffEligibility.approvalRequirements : [];
+  const labAiMlManifestHandoffScenarios = Array.isArray(labAiMlManifestHandoffEligibility.scenarioCatalog) ? labAiMlManifestHandoffEligibility.scenarioCatalog : [];
+  const labAiMlManifestHandoffSafety = labAiMlManifestHandoffEligibilityStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3717,6 +3724,109 @@ export function TradingReadinessPanel() {
                     ["training and deployment blocked", labAiMlManifestValidationSafety.modelTrainingAttempted || labAiMlManifestValidationSafety.modelDeploymentAttempted],
                     ["order and live trading blocked", labAiMlManifestValidationSafety.orderSubmissionAttempted || labAiMlManifestValidationSafety.liveTradingAttempted],
                     ["public/My Page exposure blocked", labAiMlManifestValidationSafety.publicUiExposed || labAiMlManifestValidationSafety.myPageUiExposed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlManifestHandoffEligibility" data-admin-panel-key="ai-ml-manifest-handoff-eligibility" open>
+              <summary>
+                <span>AI/ML manifest handoff eligibility</span>
+                <strong>{formatStatus(labAiMlManifestHandoffEligibility.overallStatus || "handoff_requirements_incomplete")}</strong>
+                <em>metadata-only handoff eligibility</em>
+              </summary>
+              <div className="tradingLabAiMlManifestHandoffEligibilityBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  metadata-only handoff eligibility: handoff package is not persisted or transmitted, manual approval is not granted, handoff authorization denied, handoff execution blocked, target preflight authorization denied, target preflight execution blocked, dry-run and materialization remain blocked, DB/provider/KIS access blocked, training and deployment blocked, order and live trading blocked, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlManifestHandoffStatusGrid" aria-label="AI ML manifest handoff eligibility status">
+                  {[
+                    ["source report status", labAiMlManifestHandoffEligibility.sourceReportStatus || "missing"],
+                    ["handoff mode", labAiMlManifestHandoffEligibility.handoffMode || "metadata_only_non_executable"],
+                    ["eligibility status", labAiMlManifestHandoffEligibility.handoffEligibilityStatus || "not_eligible"],
+                    ["package status", labAiMlManifestHandoffEligibility.handoffPackageStatus || "generated_in_memory"],
+                    ["approval status", labAiMlManifestHandoffEligibility.handoffApprovalStatus || "not_granted"],
+                    ["approval scope", labAiMlManifestHandoffEligibility.approvalScope || "handoff_candidate_review_only"],
+                    ["authorization status", labAiMlManifestHandoffEligibility.handoffAuthorizationStatus || "denied"],
+                    ["execution status", labAiMlManifestHandoffEligibility.handoffExecutionStatus || "blocked"],
+                    ["persistence status", labAiMlManifestHandoffEligibility.handoffPersistenceStatus || "blocked"],
+                    ["transmission status", labAiMlManifestHandoffEligibility.handoffTransmissionStatus || "blocked"],
+                    ["target stage", labAiMlManifestHandoffEligibility.targetStageDeclaration?.targetStageId || "ai_ml_dataset_build_preflight_design"],
+                    ["target preflight authorization", labAiMlManifestHandoffEligibility.targetPreflightAuthorizationStatus || "denied"],
+                    ["target preflight execution", labAiMlManifestHandoffEligibility.targetPreflightExecutionStatus || "blocked"],
+                    ["overall status", labAiMlManifestHandoffEligibility.overallStatus || "handoff_requirements_incomplete"],
+                    ["next safe implementation step", labAiMlManifestHandoffEligibility.nextSafeImplementationStep || "manifest_handoff_manual_review_receipt_contract"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlManifestHandoffStatusGrid" aria-label="AI ML manifest handoff eligibility counts">
+                  {[
+                    ["reference coverage", `${labAiMlManifestHandoffEligibility.referenceCoverage || 0} / ${labAiMlManifestHandoffEligibility.eligibilitySummary?.requiredReferenceCount || 19}`],
+                    ["blocking exception count", labAiMlManifestHandoffEligibility.blockingExceptionCount || 0],
+                    ["non-waivable count", labAiMlManifestHandoffEligibility.nonWaivableCount || 0],
+                    ["manual approval requirement count", labAiMlManifestHandoffEligibility.manualApprovalRequirementCount || labAiMlManifestHandoffApprovals.length],
+                    ["external authority context", labAiMlManifestHandoffEligibility.externalAuthorityContext?.externalAuthorityStatus || "external_blocker"],
+                    ["live trading status", labAiMlManifestHandoffEligibility.externalAuthorityContext?.liveTradingStatus || "blocked"],
+                    ["package type", labAiMlManifestHandoffPackage.handoffPackageIdentity?.handoffPackageType || "manifest_to_preflight_contract_package"],
+                    ["target mode", labAiMlManifestHandoffEligibility.targetStageDeclaration?.targetExecutionMode || "non_executable"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlManifestHandoffContractGrid">
+                  <section aria-label="AI ML manifest handoff eligibility checks">
+                    <span>eligibility checks</span>
+                    <ul>
+                      {labAiMlManifestHandoffChecks.map((check) => (
+                        <li key={check.checkId}>
+                          {formatStatus(check.category)}: {formatStatus(check.status)} / {formatStatus(check.severity)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML manifest handoff approval requirements">
+                    <span>manual approval requirements</span>
+                    <ul>
+                      {labAiMlManifestHandoffApprovals.map((item) => (
+                        <li key={item.requirementId}>
+                          {formatStatus(item.role)}: {formatStatus(item.status)} / {formatStatus(item.scope)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML manifest handoff deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {labAiMlManifestHandoffScenarios.map((scenario) => (
+                        <li key={scenario}>{formatStatus(scenario)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlManifestHandoffSafetyGrid" aria-label="AI ML manifest handoff safety restrictions">
+                  {[
+                    ["handoff package is not persisted or transmitted", labAiMlManifestHandoffSafety.handoffPersistenceAttempted || labAiMlManifestHandoffSafety.handoffTransmissionAttempted || labAiMlManifestHandoffSafety.handoffPackageFileCreated],
+                    ["manual approval is not granted", labAiMlManifestHandoffSafety.approvalPersistenceAttempted],
+                    ["handoff authorization denied", labAiMlManifestHandoffSafety.executionAuthorizationGranted],
+                    ["handoff execution blocked", labAiMlManifestHandoffSafety.handoffExecutionAttempted],
+                    ["target preflight authorization denied", labAiMlManifestHandoffSafety.targetPreflightAuthorizationAttempted],
+                    ["target preflight execution blocked", labAiMlManifestHandoffSafety.targetPreflightExecutionAttempted],
+                    ["dry-run and materialization remain blocked", labAiMlManifestHandoffSafety.dryRunExecutionAttempted || labAiMlManifestHandoffSafety.schemaMaterializationAttempted || labAiMlManifestHandoffSafety.partitionMaterializationAttempted],
+                    ["DB/provider/KIS access blocked", labAiMlManifestHandoffSafety.dbReadAttempted || labAiMlManifestHandoffSafety.dbWriteAttempted || labAiMlManifestHandoffSafety.providerCallAttempted || labAiMlManifestHandoffSafety.kisCallAttempted],
+                    ["training and deployment blocked", labAiMlManifestHandoffSafety.modelTrainingAttempted || labAiMlManifestHandoffSafety.modelDeploymentAttempted],
+                    ["order and live trading blocked", labAiMlManifestHandoffSafety.orderSubmissionAttempted || labAiMlManifestHandoffSafety.liveTradingAttempted],
+                    ["public/My Page exposure blocked", labAiMlManifestHandoffSafety.publicUiExposed || labAiMlManifestHandoffSafety.myPageUiExposed],
                   ].map(([label, attempted]) => (
                     <article key={label}>
                       <span>{label}</span>
