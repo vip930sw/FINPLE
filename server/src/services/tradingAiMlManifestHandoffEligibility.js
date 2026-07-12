@@ -3,71 +3,45 @@ import {
   buildAdminTradingAiMlManifestValidationReportStatus,
   buildAiMlManifestValidationReport,
 } from "./tradingAiMlManifestValidationReport.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS = Object.freeze({
-  ...STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS,
+export const STEP199_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
+  adminReadOnlyManifestValidationReportAllowed: true,
+  deterministicInMemoryReportAllowed: true,
+  deterministicExceptionClassificationAllowed: true,
+  metadataOnlyRemediationQueueAllowed: true,
   adminReadOnlyHandoffEligibilityAllowed: true,
   deterministicInMemoryHandoffPackageAllowed: true,
   metadataOnlyApprovalRequirementDeclarationAllowed: true,
-  handoffExecutionAllowed: false,
-  handoffTransmissionAllowed: false,
-  handoffPersistenceAllowed: false,
+});
+
+export const STEP199_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   handoffPackageFileCreationAllowed: false,
-  targetPreflightAuthorizationAllowed: false,
-  targetPreflightExecutionAllowed: false,
-  validationExecutionAllowed: false,
-  manifestExecutionAllowed: false,
-  dryRunExecutionAllowed: false,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
   featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
   datasetFileCreationAllowed: false,
-  batchExecutionAllowed: false,
-  schemaMaterializationAllowed: false,
-  partitionMaterializationAllowed: false,
-  outputPathAssignmentAllowed: false,
-  reportPersistenceAllowed: false,
-  exceptionPersistenceAllowed: false,
-  remediationPersistenceAllowed: false,
+  approvalPersistenceAllowed: false,
   reviewReceiptPersistenceAllowed: false,
   manualApprovalPersistenceAllowed: false,
-  waiverGrantAllowed: false,
   waiverPersistenceAllowed: false,
-  executionAuthorizationAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
   modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
   modelAutoApprovalAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
   readyForHandoffExecution: false,
   readyForTargetPreflightExecution: false,
-  readyForValidationExecution: false,
-  readyForManifestExecution: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForBatchExecution: false,
-  readyForDryRunExecution: false,
-  readyForSchemaMaterialization: false,
-  readyForPartitionMaterialization: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
+});
+
+export const STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS,
+  allowedMetadataFlags: STEP199_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP199_ADDITIONAL_FALSE_FLAGS,
 });
 
 export const TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL = Object.freeze({
@@ -79,23 +53,65 @@ export const TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL = Object.freeze({
   handoffPackage: "metadata_only_handoff_package",
   boundaryConfirmation: "fail_closed_handoff_boundary_confirmation",
   externalAuthorityContext: "external_order_authority_context",
+  sourceStageId: AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT,
+  handoffStageId: AI_ML_STAGE_IDS.STEP_199_MANIFEST_HANDOFF_ELIGIBILITY,
   defaultStatus: {
-    handoffMode: "metadata_only_non_executable",
+    handoffMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
     sourceReportStatus: "validation_report_ready_execution_blocked",
     handoffEligibilityStatus: "eligible_for_manual_review",
-    handoffPackageStatus: "generated_in_memory",
-    handoffApprovalStatus: "not_granted",
-    handoffAuthorizationStatus: "denied",
-    handoffExecutionStatus: "blocked",
-    handoffPersistenceStatus: "blocked",
-    handoffTransmissionStatus: "blocked",
-    targetPreflightAuthorizationStatus: "denied",
-    targetPreflightExecutionStatus: "blocked",
+    handoffPackageStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
+    handoffApprovalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    handoffExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffTransmissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    targetPreflightAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    targetPreflightExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     overallStatus: "handoff_candidate_ready_execution_blocked",
     redacted: true,
   },
   redacted: true,
 });
+
+const STEP199_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  'handoffMode: "metadata_only_non_executable"',
+  'sourceReportStatus: "validation_report_ready_execution_blocked"',
+  'handoffEligibilityStatus: "eligible_for_manual_review"',
+  'handoffPackageStatus: "generated_in_memory"',
+  'handoffApprovalStatus: "not_granted"',
+  'approvalScope: "handoff_candidate_review_only"',
+  'handoffAuthorizationStatus: "denied"',
+  'handoffExecutionStatus: "blocked"',
+  'handoffPersistenceStatus: "blocked"',
+  'handoffTransmissionStatus: "blocked"',
+  'targetPreflightAuthorizationStatus: "denied"',
+  'targetPreflightExecutionStatus: "blocked"',
+  'targetAuthorizationStatus: "denied"',
+  'targetExecutionStatus: "blocked"',
+  "handoffExecutionAllowed: false",
+  "handoffTransmissionAllowed: false",
+  "handoffPersistenceAllowed: false",
+  "handoffPackageFileCreationAllowed: false",
+  "targetPreflightAuthorizationAllowed: false",
+  "targetPreflightExecutionAllowed: false",
+  "validationExecutionAllowed: false",
+  "manifestExecutionAllowed: false",
+  "dryRunExecutionAllowed: false",
+  "datasetBuildAllowed: false",
+  "dbReadAllowed: false",
+  "dbWriteAllowed: false",
+  "providerCallsAllowed: false",
+  "kisCallsAllowed: false",
+  "orderSubmissionAllowed: false",
+  "liveTradingAllowed: false",
+  "publicUiExposureAllowed: false",
+  "myPageExposureAllowed: false",
+  "readyForHandoffExecution: false",
+  "readyForTargetPreflightExecution: false",
+  "readyForReadOnlyProviderCalls: false",
+  "readyForOrderSubmission: false",
+  "readyForLiveGuardedTrading: false",
+]);
 
 const REQUIRED_REFERENCE_FIELDS = Object.freeze([
   "sourceReportId",
@@ -194,6 +210,12 @@ const SCENARIO_CATALOG = Object.freeze([
   "scenario_l_deterministic_ordering",
   "scenario_m_mutation_resistance",
   "scenario_n_sensitive_data_redaction",
+  "scenario_o_shared_flag_output_compatibility",
+  "scenario_p_inherited_true_execution_conflict",
+  "scenario_q_metadata_true_allowlist",
+  "scenario_r_shared_helper_deterministic_compatibility",
+  "scenario_s_full_default_output_compatibility",
+  "scenario_t_input_mutation_resistance",
 ]);
 
 const FAIL_CLOSED_PRECEDENCE = Object.freeze([
@@ -202,22 +224,6 @@ const FAIL_CLOSED_PRECEDENCE = Object.freeze([
   "handoff_requirements_incomplete",
   "handoff_candidate_ready_execution_blocked",
 ]);
-
-function sortByKey(items, key) {
-  return [...items].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
-}
-
-function safeArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function sanitizeMetadataValue(value, fallback = "missing") {
-  const text = String(value ?? fallback);
-  if (/api\s*key|secret|credential|token|account\s*id|provider raw response|environment value|private path|bucket path|artifact path|dataset path|raw report payload|raw manifest payload|hash|digest|checksum|signature|content hash|integrity artifact|actual market data|account data|[A-Za-z]:\\|\\\\/i.test(text)) {
-    return "redacted_metadata";
-  }
-  return text;
-}
 
 function isPinnedVersion(value) {
   return typeof value === "string" && /^v\d+(\.\d+){0,2}$/.test(value);
@@ -229,9 +235,9 @@ function makeCheck({ checkId, category, status = "pass", severity = "info", mess
     category,
     status,
     severity,
-    message: sanitizeMetadataValue(message, "metadata check"),
-    evidence: safeArray(evidence).map((item) => sanitizeMetadataValue(item)).sort(),
-    remediation: sanitizeMetadataValue(remediation, "review metadata"),
+    message: sanitizeAiMlMetadataValue(message, "metadata check"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "review metadata"),
     blocking,
     manualReviewRequired,
     redacted: true,
@@ -239,16 +245,18 @@ function makeCheck({ checkId, category, status = "pass", severity = "info", mess
 }
 
 export function collectManifestHandoffSource(input = {}, options = {}) {
+  const clonedInput = cloneAiMlMetadata(input) || {};
   const sourceReport = input.sourceReport
     || input.report
     || input.aiMlManifestHandoffSource?.report
     || input.aiMlManifestValidationReportStatus?.report
-    || buildAiMlManifestValidationReport(input.sourceInput || input, options);
+    || buildAiMlManifestValidationReport(clonedInput.sourceInput || clonedInput, options);
   return {
     report: sourceReport,
     adminStatus: input.aiMlManifestValidationReportStatus
-      || buildAdminTradingAiMlManifestValidationReportStatus({ ...input, report: sourceReport }, options),
+      || buildAdminTradingAiMlManifestValidationReportStatus({ ...clonedInput, report: sourceReport }, options),
     sourceStep: "step198",
+    sourceStageId: AI_ML_STAGE_IDS.STEP_198_MANIFEST_VALIDATION_REPORT,
     redacted: true,
   };
 }
@@ -281,16 +289,17 @@ export function buildManifestHandoffReferenceSet(sourceReport, overrides = {}) {
     cryptographicVerificationStatus: "not_performed",
     redacted: true,
   };
-  return Object.fromEntries(Object.entries({ ...referenceSet, ...overrides }).map(([key, value]) => [key, typeof value === "string" ? sanitizeMetadataValue(value) : value]));
+  return Object.fromEntries(Object.entries({ ...referenceSet, ...overrides }).map(([key, value]) => [key, typeof value === "string" ? sanitizeAiMlMetadataValue(value) : value]));
 }
 
 function buildTargetStageDeclaration(overrides = {}) {
   return {
+    sourceStageId: AI_ML_STAGE_IDS.STEP_199_MANIFEST_HANDOFF_ELIGIBILITY,
     targetStageId: "ai_ml_dataset_build_preflight_design",
     targetStageType: "metadata_contract_review",
     targetExecutionMode: "non_executable",
-    targetAuthorizationStatus: "denied",
-    targetExecutionStatus: "blocked",
+    targetAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    targetExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     redacted: true,
     ...overrides,
   };
@@ -298,7 +307,7 @@ function buildTargetStageDeclaration(overrides = {}) {
 
 export function buildManifestHandoffApprovalRequirements(overrides = {}) {
   const roleOverrides = overrides.roleOverrides || {};
-  return REQUIRED_APPROVAL_ROLES.map((role) => ({
+  const requirements = REQUIRED_APPROVAL_ROLES.map((role) => ({
     requirementId: `step199_approval_requirement_${role}`,
     role,
     required: true,
@@ -307,16 +316,17 @@ export function buildManifestHandoffApprovalRequirements(overrides = {}) {
     message: `${role} manual review declaration required before any future handoff approval`,
     ...(roleOverrides[role] || {}),
     redacted: true,
-  })).sort((a, b) => a.requirementId.localeCompare(b.requirementId));
+  }));
+  return sortAiMlMetadataByKey(requirements, "requirementId");
 }
 
 function summarizeExceptions(sourceReport) {
-  const exceptions = safeArray(sourceReport.exceptionRegistry);
+  const exceptions = normalizeAiMlMetadataArray(sourceReport.exceptionRegistry);
   return {
     blockingExceptionCount: exceptions.filter((item) => item.blocking === true).length,
     criticalExceptionCount: exceptions.filter((item) => item.severity === "critical").length,
-    nonWaivableCount: safeArray(sourceReport.nonWaivableRegistry).length,
-    remediationQueueCount: safeArray(sourceReport.remediationQueue).length,
+    nonWaivableCount: normalizeAiMlMetadataArray(sourceReport.nonWaivableRegistry).length,
+    remediationQueueCount: normalizeAiMlMetadataArray(sourceReport.remediationQueue).length,
     openContractRevisionExceptionCount: exceptions.filter((item) => item.exceptionClass === "contract_revision_exception" && item.dispositionStatus !== "closed").length,
     manualReviewItemCount: exceptions.filter((item) => item.exceptionClass === "manual_review_item" || item.manualReviewRequired === true).length,
     externalAuthorityContextCount: exceptions.filter((item) => item.exceptionClass === "external_authority_context" || item.category === "external_authority_context").length,
@@ -327,25 +337,25 @@ function summarizeExceptions(sourceReport) {
 
 function buildBoundaryConfirmation(sourceReport) {
   return {
-    sourceReportExecutionStatus: "blocked",
-    sourceManifestExecutionStatus: sourceReport.sourceManifestReference?.dryRunExecutionStatus || "blocked",
-    approvalStatus: sourceReport.approvalStatus || "not_granted",
-    waiverStatus: sourceReport.waiverStatus || "not_granted",
-    handoffAuthorizationStatus: "denied",
-    handoffExecutionStatus: "blocked",
-    handoffPersistenceStatus: "blocked",
-    handoffTransmissionStatus: "blocked",
-    targetPreflightAuthorizationStatus: "denied",
-    targetPreflightExecutionStatus: "blocked",
-    dryRunExecutionStatus: sourceReport.sourceManifestReference?.dryRunExecutionStatus || "blocked",
-    materializationStatus: sourceReport.sourceManifestReference?.materializationStatus || "blocked",
+    sourceReportExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    sourceManifestExecutionStatus: sourceReport.sourceManifestReference?.dryRunExecutionStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
+    approvalStatus: sourceReport.approvalStatus || AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    waiverStatus: sourceReport.waiverStatus || AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    handoffExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffTransmissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    targetPreflightAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    targetPreflightExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    dryRunExecutionStatus: sourceReport.sourceManifestReference?.dryRunExecutionStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
+    materializationStatus: sourceReport.sourceManifestReference?.materializationStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
     outputPathStatus: sourceReport.sourceManifestReference?.outputPathStatus || "not_assigned",
     redacted: true,
   };
 }
 
 function detectHandoffSafetyConflict({ sourceReport, exceptionSummary, boundaryConfirmation, targetStageDeclaration, controls = {} }) {
-  const intents = safeArray(controls.requestedIntents || controls.prohibitedIntents);
+  const intents = normalizeAiMlMetadataArray(controls.requestedIntents || controls.prohibitedIntents);
   const prohibitedIntents = intents.filter((intent) => PROHIBITED_HANDOFF_INTENTS.includes(intent));
   return {
     sourceSafetyBlocked: sourceReport.overallStatus === "blocked_by_safety_policy",
@@ -394,13 +404,13 @@ export function buildManifestHandoffEligibilityChecks({ sourceReport, referenceS
     blocking: !sourceReady,
   }));
 
-  const sourceBoundaryOk = sourceReport.reportMode === "metadata_only_non_executable"
-    && sourceReport.reportGenerationStatus === "generated_in_memory"
-    && (sourceReport.reportPersistenceStatus || sourceReport.reportStatus?.reportPersistenceStatus) === "blocked"
-    && (sourceReport.approvalStatus || sourceReport.reportStatus?.approvalStatus) === "not_granted"
-    && (sourceReport.waiverStatus || sourceReport.reportStatus?.waiverStatus) === "not_granted"
-    && (sourceReport.executionAuthorizationStatus || sourceReport.reportStatus?.executionAuthorizationStatus) === "denied"
-    && (sourceReport.handoffAuthorizationStatus || sourceReport.reportStatus?.handoffAuthorizationStatus) === "denied";
+  const sourceBoundaryOk = sourceReport.reportMode === AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE
+    && sourceReport.reportGenerationStatus === AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY
+    && (sourceReport.reportPersistenceStatus || sourceReport.reportStatus?.reportPersistenceStatus) === AI_ML_CONTRACT_STATUS.BLOCKED
+    && (sourceReport.approvalStatus || sourceReport.reportStatus?.approvalStatus) === AI_ML_CONTRACT_STATUS.NOT_GRANTED
+    && (sourceReport.waiverStatus || sourceReport.reportStatus?.waiverStatus) === AI_ML_CONTRACT_STATUS.NOT_GRANTED
+    && (sourceReport.executionAuthorizationStatus || sourceReport.reportStatus?.executionAuthorizationStatus) === AI_ML_CONTRACT_STATUS.DENIED
+    && (sourceReport.handoffAuthorizationStatus || sourceReport.reportStatus?.handoffAuthorizationStatus) === AI_ML_CONTRACT_STATUS.DENIED;
   checks.push(makeCheck({
     checkId: "02_source_report_boundary",
     category: "source_report_boundary",
@@ -479,8 +489,8 @@ export function buildManifestHandoffEligibilityChecks({ sourceReport, referenceS
   const targetOk = targetStageDeclaration.targetStageId === "ai_ml_dataset_build_preflight_design"
     && targetStageDeclaration.targetStageType === "metadata_contract_review"
     && targetStageDeclaration.targetExecutionMode === "non_executable"
-    && targetStageDeclaration.targetAuthorizationStatus === "denied"
-    && targetStageDeclaration.targetExecutionStatus === "blocked";
+    && targetStageDeclaration.targetAuthorizationStatus === AI_ML_CONTRACT_STATUS.DENIED
+    && targetStageDeclaration.targetExecutionStatus === AI_ML_CONTRACT_STATUS.BLOCKED;
   checks.push(makeCheck({
     checkId: "08_target_stage_declaration",
     category: "target_stage_declaration",
@@ -514,12 +524,12 @@ export function buildManifestHandoffEligibilityChecks({ sourceReport, referenceS
     blocking: !persistenceOk,
   }));
 
-  const executionOk = boundaryConfirmation.handoffAuthorizationStatus === "denied"
-    && boundaryConfirmation.handoffExecutionStatus === "blocked"
-    && boundaryConfirmation.targetPreflightAuthorizationStatus === "denied"
-    && boundaryConfirmation.targetPreflightExecutionStatus === "blocked"
-    && boundaryConfirmation.dryRunExecutionStatus === "blocked"
-    && boundaryConfirmation.materializationStatus === "blocked"
+  const executionOk = boundaryConfirmation.handoffAuthorizationStatus === AI_ML_CONTRACT_STATUS.DENIED
+    && boundaryConfirmation.handoffExecutionStatus === AI_ML_CONTRACT_STATUS.BLOCKED
+    && boundaryConfirmation.targetPreflightAuthorizationStatus === AI_ML_CONTRACT_STATUS.DENIED
+    && boundaryConfirmation.targetPreflightExecutionStatus === AI_ML_CONTRACT_STATUS.BLOCKED
+    && boundaryConfirmation.dryRunExecutionStatus === AI_ML_CONTRACT_STATUS.BLOCKED
+    && boundaryConfirmation.materializationStatus === AI_ML_CONTRACT_STATUS.BLOCKED
     && boundaryConfirmation.outputPathStatus === "not_assigned";
   checks.push(makeCheck({
     checkId: "11_execution_boundary",
@@ -543,7 +553,7 @@ export function buildManifestHandoffEligibilityChecks({ sourceReport, referenceS
     manualReviewRequired: true,
   }));
 
-  const intents = safeArray(controls.requestedIntents || controls.prohibitedIntents);
+  const intents = normalizeAiMlMetadataArray(controls.requestedIntents || controls.prohibitedIntents);
   const prohibitedIntents = intents.filter((intent) => PROHIBITED_HANDOFF_INTENTS.includes(intent));
   checks.push(makeCheck({
     checkId: "13_prohibited_handoff_intent",
@@ -556,7 +566,7 @@ export function buildManifestHandoffEligibilityChecks({ sourceReport, referenceS
     blocking: prohibitedIntents.length > 0,
   }));
 
-  return sortByKey(checks, "checkId");
+  return sortAiMlMetadataByKey(checks, "checkId");
 }
 
 export function deriveManifestHandoffOutcome({ sourceReport, exceptionSummary, eligibilityChecks, safetyConflict }) {
@@ -592,14 +602,14 @@ export function buildManifestHandoffPackage({ packageIdentity, referenceSet, tar
     boundaryConfirmation,
     externalAuthorityContext,
     packageStatus: {
-      handoffPackageStatus: "generated_in_memory",
-      handoffPersistenceStatus: "blocked",
-      handoffTransmissionStatus: "blocked",
-      handoffApprovalStatus: "not_granted",
-      handoffAuthorizationStatus: "denied",
-      handoffExecutionStatus: "blocked",
-      targetPreflightAuthorizationStatus: "denied",
-      targetPreflightExecutionStatus: "blocked",
+      handoffPackageStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
+      handoffPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+      handoffTransmissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+      handoffApprovalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+      handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+      handoffExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+      targetPreflightAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+      targetPreflightExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
       redacted: true,
     },
     redacted: true,
@@ -644,12 +654,12 @@ export function evaluateAiMlManifestHandoffEligibility(input = {}, options = {})
     handoffPackageId: `step199_handoff_package_${referenceSet.sourceReportId}_${referenceSet.sourceReportVersion}`,
     handoffPackageVersion: "v1",
     handoffPackageType: "manifest_to_preflight_contract_package",
-    handoffMode: "metadata_only_non_executable",
+    handoffMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
     redacted: true,
   };
   const externalAuthorityContext = {
-    externalAuthorityStatus: sourceReport.externalAuthorityContext?.externalAuthorityStatus || "external_blocker",
-    liveTradingStatus: sourceReport.externalAuthorityContext?.liveTradingStatus || "blocked",
+    externalAuthorityStatus: sourceReport.externalAuthorityContext?.externalAuthorityStatus || AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    liveTradingStatus: sourceReport.externalAuthorityContext?.liveTradingStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
     orderAuthorityNotGranted: true,
     liveTradingNotGranted: true,
     redacted: true,
@@ -677,20 +687,20 @@ export function evaluateAiMlManifestHandoffEligibility(input = {}, options = {})
   });
 
   return {
-    handoffMode: "metadata_only_non_executable",
+    handoffMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
     sourceReportStatus: sourceReport.overallStatus || "missing",
     handoffEligibilityStatus,
-    handoffPackageStatus: "generated_in_memory",
-    handoffApprovalStatus: "not_granted",
-    approvalPersistenceStatus: "blocked",
+    handoffPackageStatus: AI_ML_CONTRACT_STATUS.GENERATED_IN_MEMORY,
+    handoffApprovalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    approvalPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     approvalScope: "handoff_candidate_review_only",
-    waiverStatus: "not_granted",
-    handoffAuthorizationStatus: "denied",
-    handoffExecutionStatus: "blocked",
-    handoffPersistenceStatus: "blocked",
-    handoffTransmissionStatus: "blocked",
-    targetPreflightAuthorizationStatus: "denied",
-    targetPreflightExecutionStatus: "blocked",
+    waiverStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    handoffAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    handoffExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffPersistenceStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    handoffTransmissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    targetPreflightAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    targetPreflightExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     overallStatus,
     handoffPackageIdentity: packageIdentity,
     sourceReferenceSet: referenceSet,

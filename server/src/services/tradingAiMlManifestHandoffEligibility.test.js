@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  STEP199_ADDITIONAL_FALSE_FLAGS,
   STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS,
+  STEP199_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_MODEL,
   buildAdminTradingAiMlManifestHandoffEligibilityStatus,
   buildAiMlManifestHandoffEligibility,
@@ -17,6 +19,9 @@ import {
 import {
   buildAiMlManifestValidationReport,
 } from "./tradingAiMlManifestValidationReport.js";
+import {
+  buildAiMlFailClosedFlags,
+} from "./tradingAiMlContractPrimitives.js";
 
 const SCENARIOS = [
   "scenario_a_valid_handoff_candidate",
@@ -33,6 +38,12 @@ const SCENARIOS = [
   "scenario_l_deterministic_ordering",
   "scenario_m_mutation_resistance",
   "scenario_n_sensitive_data_redaction",
+  "scenario_o_shared_flag_output_compatibility",
+  "scenario_p_inherited_true_execution_conflict",
+  "scenario_q_metadata_true_allowlist",
+  "scenario_r_shared_helper_deterministic_compatibility",
+  "scenario_s_full_default_output_compatibility",
+  "scenario_t_input_mutation_resistance",
 ];
 
 const FALSE_PERMISSION_KEYS = [
@@ -95,6 +106,16 @@ const FALSE_PERMISSION_KEYS = [
   "readyForReadOnlyProviderCalls",
   "readyForOrderSubmission",
   "readyForLiveGuardedTrading",
+];
+
+const STEP199_METADATA_TRUE_FLAGS = [
+  "adminReadOnlyManifestValidationReportAllowed",
+  "deterministicInMemoryReportAllowed",
+  "deterministicExceptionClassificationAllowed",
+  "metadataOnlyRemediationQueueAllowed",
+  "adminReadOnlyHandoffEligibilityAllowed",
+  "deterministicInMemoryHandoffPackageAllowed",
+  "metadataOnlyApprovalRequirementDeclarationAllowed",
 ];
 
 function sourceWith(overrides = {}) {
@@ -302,6 +323,137 @@ test("Step199 scenario N sensitive values are redacted from references and check
     assert.equal(text.includes(forbidden), false, forbidden);
   }
   assert.match(text, /redacted_metadata/);
+});
+
+test("Step202 scenario O shared flag output compatibility preserves true and protected false flags", () => {
+  const status = buildAdminTradingAiMlManifestHandoffEligibilityStatus();
+  assert.deepEqual(Object.keys(STEP199_METADATA_ONLY_ALLOWED_FLAGS).sort(), STEP199_METADATA_TRUE_FLAGS.sort());
+  for (const key of STEP199_METADATA_TRUE_FLAGS) {
+    assert.equal(STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS[key], true, key);
+    assert.equal(status.flags[key], true, key);
+  }
+  for (const key of [
+    ...FALSE_PERMISSION_KEYS,
+    ...Object.keys(STEP199_ADDITIONAL_FALSE_FLAGS),
+  ]) {
+    assert.equal(STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS[key], false, key);
+    assert.equal(status.flags[key], false, key);
+  }
+  assert.equal(Object.keys(status.flags).length, Object.keys(STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS).length);
+});
+
+test("Step202 scenario P inherited true execution conflict is forced false", () => {
+  const conflictedFlags = buildAiMlFailClosedFlags({
+    inheritedFlags: {
+      ...STEP199_METADATA_ONLY_ALLOWED_FLAGS,
+      providerCallsAllowed: true,
+      handoffExecutionAllowed: true,
+      targetPreflightExecutionAllowed: true,
+      readyForOrderSubmission: true,
+      unknownRuntimePermissionAllowed: true,
+    },
+    allowedMetadataFlags: STEP199_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP199_ADDITIONAL_FALSE_FLAGS,
+  });
+  for (const key of ["providerCallsAllowed", "handoffExecutionAllowed", "targetPreflightExecutionAllowed", "readyForOrderSubmission"]) {
+    assert.equal(conflictedFlags[key], false, key);
+  }
+  assert.equal(conflictedFlags.unknownRuntimePermissionAllowed, undefined);
+});
+
+test("Step202 scenario Q metadata true allowlist is explicit and limited", () => {
+  const actualTrueFlags = Object.entries(STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  assert.deepEqual(actualTrueFlags, [...STEP199_METADATA_TRUE_FLAGS].sort());
+});
+
+test("Step202 scenario R shared helper compatibility keeps deterministic ordering and redaction", () => {
+  const handoff = buildAiMlManifestHandoffEligibility({
+    sourceReport: sourceWith({
+      exceptionRegistry: [
+        {
+          exceptionId: "z_sensitive",
+          category: "external_authority_context",
+          exceptionClass: "external_authority_context",
+          severity: "warning",
+          blocking: false,
+          evidence: ["api key should redact"],
+          redacted: true,
+        },
+        {
+          exceptionId: "a_manual",
+          category: "manual_review",
+          exceptionClass: "manual_review_item",
+          severity: "warning",
+          blocking: false,
+          evidence: ["benign metadata"],
+          redacted: true,
+        },
+      ],
+    }),
+    referenceOverrides: {
+      datasetSpecId: "secret provider raw response",
+      featureSetId: "feature-set-step193-core-v0",
+    },
+  });
+  assert.deepEqual(handoff.eligibilityChecks.map((check) => check.checkId), [...handoff.eligibilityChecks.map((check) => check.checkId)].sort());
+  assert.deepEqual(handoff.approvalRequirements.map((item) => item.requirementId), [...handoff.approvalRequirements.map((item) => item.requirementId)].sort());
+  assert.equal(handoff.sourceReferenceSet.datasetSpecId, "redacted_metadata");
+});
+
+test("Step202 scenario S full default output remains compatible", () => {
+  const handoff = buildAiMlManifestHandoffEligibility();
+  assert.deepEqual({
+    handoffMode: handoff.handoffMode,
+    sourceReportStatus: handoff.sourceReportStatus,
+    handoffEligibilityStatus: handoff.handoffEligibilityStatus,
+    handoffPackageStatus: handoff.handoffPackageStatus,
+    handoffApprovalStatus: handoff.handoffApprovalStatus,
+    handoffAuthorizationStatus: handoff.handoffAuthorizationStatus,
+    handoffExecutionStatus: handoff.handoffExecutionStatus,
+    handoffPersistenceStatus: handoff.handoffPersistenceStatus,
+    handoffTransmissionStatus: handoff.handoffTransmissionStatus,
+    targetPreflightAuthorizationStatus: handoff.targetPreflightAuthorizationStatus,
+    targetPreflightExecutionStatus: handoff.targetPreflightExecutionStatus,
+    overallStatus: handoff.overallStatus,
+  }, {
+    handoffMode: "metadata_only_non_executable",
+    sourceReportStatus: "validation_report_ready_execution_blocked",
+    handoffEligibilityStatus: "eligible_for_manual_review",
+    handoffPackageStatus: "generated_in_memory",
+    handoffApprovalStatus: "not_granted",
+    handoffAuthorizationStatus: "denied",
+    handoffExecutionStatus: "blocked",
+    handoffPersistenceStatus: "blocked",
+    handoffTransmissionStatus: "blocked",
+    targetPreflightAuthorizationStatus: "denied",
+    targetPreflightExecutionStatus: "blocked",
+    overallStatus: "handoff_candidate_ready_execution_blocked",
+  });
+  assert.equal(handoff.referenceCoverage, 19);
+  assert.equal(handoff.requiredReferenceCount, undefined);
+  assert.equal(handoff.eligibilitySummary.requiredReferenceCount, 19);
+  assert.equal(handoff.approvalRequirements.length, 8);
+  assert.equal(handoff.eligibilityChecks.length, 13);
+});
+
+test("Step202 scenario T shared clone use prevents input mutation", () => {
+  const source = buildAiMlManifestValidationReport();
+  const input = {
+    sourceReport: source,
+    referenceOverrides: { sourceReportVersion: "v1" },
+    approvalRequirementOverrides: {
+      roleOverrides: {
+        operationsReviewer: { message: "manual review remains required" },
+      },
+    },
+    handoffControls: { requestedIntents: ["declare_handoff_candidate_metadata"] },
+  };
+  const before = JSON.stringify(input);
+  buildAiMlManifestHandoffEligibility(input);
+  assert.equal(JSON.stringify(input), before);
 });
 
 test("Step199 helper functions construct deterministic package pieces", () => {
