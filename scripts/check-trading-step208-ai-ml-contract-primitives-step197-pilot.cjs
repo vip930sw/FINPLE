@@ -180,6 +180,17 @@ const FORBIDDEN_RUNTIME_CODE = [
   ".digest(",
 ];
 
+const OBJECT_FREEZE_OBJECT_PATTERN = /Object\.freeze\(\{[\s\S]*?\n\}\);/g;
+const LEGACY_FULL_FALSE_OBJECT_KEYS = [
+  "actualDataDownloadAllowed: false",
+  "featureGenerationAllowed: false",
+  "datasetBuildAllowed: false",
+  "dryRunExecutionAllowed: false",
+  "providerCallsAllowed: false",
+  "orderSubmissionAllowed: false",
+  "readyForLiveGuardedTrading: false",
+];
+
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
 }
@@ -229,6 +240,20 @@ for (const snippet of FORBIDDEN_TRUE_SNIPPETS) {
 for (const snippet of FORBIDDEN_RUNTIME_CODE) {
   assert(!service.includes(snippet), `forbidden runtime implementation code in Step197 service: ${snippet}`);
 }
+const objectFreezeObjects = service.match(OBJECT_FREEZE_OBJECT_PATTERN) || [];
+assert(
+  !objectFreezeObjects.some((block) => LEGACY_FULL_FALSE_OBJECT_KEYS.every((key) => block.includes(key))),
+  "legacy anonymous full false-flag Object.freeze block remains in Step197 service",
+);
+assert(!service.includes("...STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS"), "legacy spread flag object remains in Step197 service");
+assert(
+  (service.match(/export const STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS/g) || []).length === 1,
+  "Step197 flag export must be defined exactly once",
+);
+assert(
+  (service.match(/buildAiMlFailClosedFlags\(/g) || []).length === 1,
+  "Step197 service must call buildAiMlFailClosedFlags exactly once",
+);
 
 for (const file of UNTOUCHED_FILES) {
   const source = read(file);
