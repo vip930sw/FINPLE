@@ -493,7 +493,8 @@
     "check:trading-ai-ml-regression:contracts": "node scripts/run-trading-ai-ml-regression-group.cjs --group contract-chain",
     "check:trading-ai-ml-regression:consolidation": "node scripts/run-trading-ai-ml-regression-group.cjs --group consolidation-primitives",
     "check:trading-ai-ml-regression": "node scripts/run-trading-ai-ml-regression-group.cjs --all",
-    "check:trading-step203-ai-ml-grouped-regression": "node scripts/check-trading-step203-ai-ml-grouped-regression.cjs && node --test scripts/trading-ai-ml-regression-groups.test.cjs scripts/run-trading-ai-ml-regression-group.test.cjs scripts/check-trading-step203-ai-ml-grouped-regression.test.cjs scripts/check-trading-step202-ai-ml-contract-primitives-step199-pilot.test.cjs"
+    "check:trading-step203-ai-ml-grouped-regression": "node scripts/check-trading-step203-ai-ml-grouped-regression.cjs && node --test scripts/trading-ai-ml-regression-groups.test.cjs scripts/run-trading-ai-ml-regression-group.test.cjs scripts/check-trading-step203-ai-ml-grouped-regression.test.cjs scripts/check-trading-step202-ai-ml-contract-primitives-step199-pilot.test.cjs",
+    "check:trading-step204-ai-ml-admin-panel-consolidation": "node scripts/check-trading-step204-ai-ml-admin-panel-consolidation.cjs && node --test scripts/check-trading-step204-ai-ml-admin-panel-consolidation.test.cjs scripts/check-trading-step203-ai-ml-grouped-regression.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

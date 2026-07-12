@@ -56,6 +56,7 @@ import {
   fetchAdminTradingShadowStatus,
   fetchTradingReadinessStatus,
 } from "./portfolio/services/serverPortfolioService";
+import TradingAiMlPanelGroup from "./TradingAiMlPanelGroup";
 
 const FALLBACK_READINESS = Object.freeze({
   ok: true,
@@ -1621,6 +1622,46 @@ export function TradingReadinessPanel() {
   const labAiMlArchitecturePrerequisites = Array.isArray(labAiMlArchitectureMilestone.runtimePrerequisites) ? labAiMlArchitectureMilestone.runtimePrerequisites : [];
   const labAiMlArchitectureBlockingPrerequisites = labAiMlArchitecturePrerequisites.filter((item) => item.blocking);
   const labAiMlArchitectureWarnings = Array.isArray(labAiMlArchitectureMilestone.warnings) ? labAiMlArchitectureMilestone.warnings : [];
+  const labAiMlMilestoneGroupStatusItems = [
+    { label: "milestone", value: formatStatus(labAiMlArchitectureMilestone.overallStatus || "architecture_milestone_complete_execution_blocked") },
+    { label: "contract chain", value: formatStatus(labAiMlArchitectureMilestone.architectureChainStatus || "contract_chain_complete") },
+    { label: "runtime", value: formatStatus(labAiMlArchitectureMilestone.runtimeCapabilityStatus || "not_implemented") },
+    { label: "external authority", value: formatStatus(labAiMlArchitectureMilestone.externalAuthorityStatus || "external_blocker") },
+    { label: "next safe step", value: formatStatus(labAiMlArchitectureMilestone.nextPhaseDecision || "consolidate_before_runtime") },
+  ];
+  const labAiMlConsolidatedOverviewItems = [
+    { label: "current capability", value: "contract and metadata only" },
+    { label: "contract chain", value: formatStatus(labAiMlArchitectureMilestone.architectureChainStatus || "contract_chain_complete") },
+    { label: "execution", value: "blocked" },
+    { label: "external authority", value: "external blocker" },
+    { label: "visibility", value: "admin-only" },
+  ];
+  const labAiMlCurrentBlockers = [
+    "execution blocked",
+    "approval not granted",
+    "materialization blocked",
+    "handoff execution blocked",
+    "target preflight blocked",
+  ];
+  const labAiMlOperatingBoundaryItems = [
+    { label: "Current capability", value: "contract and metadata only" },
+    { label: "Current execution", value: "blocked" },
+    { label: "Current external authority", value: "external blocker" },
+    { label: "Current next safe step", value: "consolidation before runtime" },
+  ];
+  const labAiMlCurrentGatesStatusItems = [
+    { label: "execution", value: "blocked" },
+    { label: "approval", value: "not granted" },
+    { label: "materialization", value: "blocked" },
+    { label: "handoff execution", value: "blocked" },
+    { label: "target preflight", value: "blocked" },
+  ];
+  const labAiMlArchitectureFoundationStatusItems = [
+    { label: "strategy governance", value: formatStatus(labAiMlStrategyRegistry.status || "design_only") },
+    { label: "dataset and labeling contract", value: formatStatus(labAiMlDatasetArchitecture.status || "design_only") },
+    { label: "feature pipeline contract", value: formatStatus(labAiMlFeaturePipeline.status || "design_only") },
+    { label: "metadata preflight", value: formatStatus(labAiMlFeaturePreflight.overallStatus || "metadata_only_preflight") },
+  ];
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3278,7 +3319,47 @@ export function TradingReadinessPanel() {
                 )}
               </div>
             </details>
-            <details className="tradingLabAiMlArchitectureMilestoneReview" data-admin-panel-key="ai-ml-architecture-milestone-review" open>
+            <TradingAiMlPanelGroup
+              groupKey="ai-ml-milestone-overview"
+              title="AI/ML milestone overview"
+              description="Step 200 milestone summary"
+              statusItems={labAiMlMilestoneGroupStatusItems}
+              defaultOpen
+            >
+              <div className="tradingAiMlConsolidatedOverview" aria-label="AI ML consolidated overview">
+                <section aria-label="AI ML consolidated overview statuses">
+                  <span>consolidated overview</span>
+                  <div className="tradingAiMlPanelGroupStatus">
+                    {labAiMlConsolidatedOverviewItems.map((item) => (
+                      <article key={item.label}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+                <section aria-label="AI ML current blockers">
+                  <span>current blockers</span>
+                  <ul>
+                    {labAiMlCurrentBlockers.map((blocker) => (
+                      <li key={blocker}>{blocker}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section aria-label="AI ML next safe step">
+                  <span>next safe step</span>
+                  <strong>consolidation before runtime</strong>
+                </section>
+              </div>
+              <div className="tradingAiMlOperatingBoundary" aria-label="AI ML operating boundary summary">
+                {labAiMlOperatingBoundaryItems.map((item) => (
+                  <article key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </article>
+                ))}
+              </div>
+              <details className="tradingLabAiMlArchitectureMilestoneReview" data-admin-panel-key="ai-ml-architecture-milestone-review" open>
               <summary>
                 <span>AI/ML architecture milestone review</span>
                 <strong>{formatStatus(labAiMlArchitectureMilestone.overallStatus || "architecture_milestone_complete_execution_blocked")}</strong>
@@ -3375,8 +3456,15 @@ export function TradingReadinessPanel() {
                   </section>
                 </div>
               </div>
-            </details>
-            <details className="tradingLabAiMlReadinessGateSummary" data-admin-panel-key="ai-ml-readiness-gate-summary" open>
+              </details>
+            </TradingAiMlPanelGroup>
+            <TradingAiMlPanelGroup
+              groupKey="ai-ml-current-gates-and-handoff"
+              title="AI/ML current gates and handoff"
+              description="Step 195 through Step 199"
+              statusItems={labAiMlCurrentGatesStatusItems}
+            >
+              <details className="tradingLabAiMlReadinessGateSummary" data-admin-panel-key="ai-ml-readiness-gate-summary" open>
               <summary>
                 <span>AI/ML readiness gate summary</span>
                 <strong>{formatStatus(labAiMlReadinessGateSummary.overallStatus || "internal_contracts_incomplete")}</strong>
@@ -3944,8 +4032,15 @@ export function TradingReadinessPanel() {
                   ))}
                 </div>
               </div>
-            </details>
-            <details className="tradingLabAiMlStrategyConsole" data-admin-panel-key="ai-ml-strategy-management-console">
+              </details>
+            </TradingAiMlPanelGroup>
+            <TradingAiMlPanelGroup
+              groupKey="ai-ml-architecture-foundation"
+              title="AI/ML architecture foundation"
+              description="Step 191 through Step 194"
+              statusItems={labAiMlArchitectureFoundationStatusItems}
+            >
+              <details className="tradingLabAiMlStrategyConsole" data-admin-panel-key="ai-ml-strategy-management-console">
               <summary>
                 <span>AI/ML strategy management console</span>
                 <strong>{formatStatus(labAiMlStrategyRegistry.status || "design_only")}</strong>
@@ -4469,7 +4564,8 @@ export function TradingReadinessPanel() {
                   ))}
                 </div>
               </div>
-            </details>
+              </details>
+            </TradingAiMlPanelGroup>
           </div>
         </details>
 

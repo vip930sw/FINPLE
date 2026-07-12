@@ -2901,6 +2901,92 @@ nav {
   width: fit-content;
 }
 
+.tradingAiMlPanelGroup {
+  background: #eef6ff;
+  border: 1px solid rgba(14, 116, 144, 0.18);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.tradingAiMlPanelGroupSummary {
+  align-items: center;
+  color: #0f172a;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.tradingAiMlPanelGroupSummary span,
+.tradingAiMlPanelGroupStatus span,
+.tradingAiMlConsolidatedOverview span,
+.tradingAiMlOperatingBoundary span {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tradingAiMlPanelGroupSummary strong,
+.tradingAiMlPanelGroupStatus strong,
+.tradingAiMlConsolidatedOverview strong,
+.tradingAiMlOperatingBoundary strong {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.tradingAiMlPanelGroupBody {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tradingAiMlPanelGroupStatus,
+.tradingAiMlOperatingBoundary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.tradingAiMlPanelGroupStatus article,
+.tradingAiMlOperatingBoundary article,
+.tradingAiMlConsolidatedOverview section {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.tradingAiMlConsolidatedOverview {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr) minmax(180px, 0.75fr);
+}
+
+.tradingAiMlConsolidatedOverview ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tradingAiMlConsolidatedOverview li {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 820px) {
+  .tradingAiMlPanelGroupSummary,
+  .tradingAiMlConsolidatedOverview {
+    grid-template-columns: 1fr;
+  }
+}
+
 .tradingLabAiMlArchitectureMilestoneReview,
 .tradingLabAiMlReadinessGateSummary,
 .tradingLabAiMlBatchContractReview,
