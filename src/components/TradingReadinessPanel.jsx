@@ -1629,6 +1629,12 @@ export function TradingReadinessPanel() {
     { label: "external authority", value: formatStatus(labAiMlArchitectureMilestone.externalAuthorityStatus || "external_blocker") },
     { label: "next safe step", value: formatStatus(labAiMlArchitectureMilestone.nextPhaseDecision || "consolidate_before_runtime") },
   ];
+  const labAiMlMilestoneSummaryItems = [
+    { label: "Architecture", value: labAiMlArchitectureMilestone.architectureChainStatus || "contract_chain_complete", tone: "neutral" },
+    { label: "Runtime", value: labAiMlArchitectureMilestone.runtimeCapabilityStatus || "not_implemented", tone: "blocked" },
+    { label: "Execution", value: labAiMlArchitectureMilestone.executionReadinessStatus || "blocked", tone: "blocked" },
+    { label: "Next phase", value: labAiMlArchitectureMilestone.nextPhaseDecision || "consolidate_before_runtime", tone: "review" },
+  ];
   const labAiMlConsolidatedOverviewItems = [
     { label: "current capability", value: "contract and metadata only" },
     { label: "contract chain", value: formatStatus(labAiMlArchitectureMilestone.architectureChainStatus || "contract_chain_complete") },
@@ -1656,11 +1662,24 @@ export function TradingReadinessPanel() {
     { label: "handoff execution", value: "blocked" },
     { label: "target preflight", value: "blocked" },
   ];
+  const labAiMlCurrentGatesSummaryItems = [
+    { label: "Execution", value: labAiMlReadinessGateSummary.executionPermissionStatus || "blocked", tone: "blocked" },
+    { label: "Approval", value: labAiMlBatchContractReview.approvalStatus || labAiMlManifestHandoffEligibility.handoffApprovalStatus || "not_granted", tone: "review" },
+    { label: "Materialization", value: labAiMlDatasetBuildDryRunManifest.materializationStatus || labAiMlManifestValidationReport.boundaryConfirmation?.materializationStatus || "blocked", tone: "blocked" },
+    { label: "Target preflight", value: labAiMlManifestHandoffEligibility.targetPreflightExecutionStatus || "blocked", tone: "blocked" },
+    { label: "External authority", value: labAiMlManifestHandoffEligibility.externalAuthorityContext?.externalAuthorityStatus || labAiMlManifestValidationReport.externalAuthorityContext?.externalAuthorityStatus || labAiMlReadinessGateSummary.orderAuthorityStatus || "external_blocker", tone: "external" },
+  ];
   const labAiMlArchitectureFoundationStatusItems = [
     { label: "strategy governance", value: formatStatus(labAiMlStrategyRegistry.status || "design_only") },
     { label: "dataset and labeling contract", value: formatStatus(labAiMlDatasetArchitecture.status || "design_only") },
     { label: "feature pipeline contract", value: formatStatus(labAiMlFeaturePipeline.status || "design_only") },
     { label: "metadata preflight", value: formatStatus(labAiMlFeaturePreflight.overallStatus || "metadata_only_preflight") },
+  ];
+  const labAiMlArchitectureFoundationSummaryItems = [
+    { label: "Stages", value: "4", tone: "neutral" },
+    { label: "Scope", value: "metadata architecture", tone: "neutral" },
+    { label: "Preflight", value: "contract only", tone: "review" },
+    { label: "Execution", value: "blocked", tone: "blocked" },
   ];
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
@@ -3323,6 +3342,7 @@ export function TradingReadinessPanel() {
               groupKey="ai-ml-milestone-overview"
               title="AI/ML milestone overview"
               description="Step 200 milestone summary"
+              summaryItems={labAiMlMilestoneSummaryItems}
               statusItems={labAiMlMilestoneGroupStatusItems}
               defaultOpen
             >
@@ -3462,6 +3482,7 @@ export function TradingReadinessPanel() {
               groupKey="ai-ml-current-gates-and-handoff"
               title="AI/ML current gates and handoff"
               description="Step 195 through Step 199"
+              summaryItems={labAiMlCurrentGatesSummaryItems}
               statusItems={labAiMlCurrentGatesStatusItems}
             >
               <details className="tradingLabAiMlReadinessGateSummary" data-admin-panel-key="ai-ml-readiness-gate-summary" open>
@@ -4038,6 +4059,7 @@ export function TradingReadinessPanel() {
               groupKey="ai-ml-architecture-foundation"
               title="AI/ML architecture foundation"
               description="Step 191 through Step 194"
+              summaryItems={labAiMlArchitectureFoundationSummaryItems}
               statusItems={labAiMlArchitectureFoundationStatusItems}
             >
               <details className="tradingLabAiMlStrategyConsole" data-admin-panel-key="ai-ml-strategy-management-console">
