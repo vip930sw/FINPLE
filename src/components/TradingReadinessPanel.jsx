@@ -1589,6 +1589,12 @@ export function TradingReadinessPanel() {
   const labAiMlBatchApprovalChecklist = Array.isArray(labAiMlBatchContractReview.approvalChecklist) ? labAiMlBatchContractReview.approvalChecklist : [];
   const labAiMlBatchReviewScenarios = Array.isArray(labAiMlBatchContractReview.scenarioCatalog) ? labAiMlBatchContractReview.scenarioCatalog : [];
   const labAiMlBatchReviewSafety = labAiMlBatchContractReviewStatus?.blockedConfirmation || {};
+  const labAiMlDatasetBuildDryRunManifestStatus = tradingLabDashboardStatus?.aiMlDatasetBuildDryRunManifestStatus || {};
+  const labAiMlDatasetBuildDryRunManifest = labAiMlDatasetBuildDryRunManifestStatus?.manifest || {};
+  const labAiMlDatasetBuildManifestChecks = Array.isArray(labAiMlDatasetBuildDryRunManifest.validationChecks) ? labAiMlDatasetBuildDryRunManifest.validationChecks : [];
+  const labAiMlDatasetBuildManifestSections = Array.isArray(labAiMlDatasetBuildDryRunManifest.manifestSections) ? labAiMlDatasetBuildDryRunManifest.manifestSections : [];
+  const labAiMlDatasetBuildManifestScenarios = Array.isArray(labAiMlDatasetBuildDryRunManifest.scenarioCatalog) ? labAiMlDatasetBuildDryRunManifest.scenarioCatalog : [];
+  const labAiMlDatasetBuildManifestSafety = labAiMlDatasetBuildDryRunManifestStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3478,6 +3484,123 @@ export function TradingReadinessPanel() {
                     ["order and live trading blocked", labAiMlBatchReviewSafety.orderSubmissionAttempted || labAiMlBatchReviewSafety.liveTradingAttempted],
                     ["approval persistence blocked", labAiMlBatchReviewSafety.approvalPersistenceAttempted || labAiMlBatchReviewSafety.executionAuthorizationGranted],
                     ["public/My Page exposure blocked", labAiMlBatchReviewSafety.publicUiExposed || labAiMlBatchReviewSafety.myPageUiExposed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlDatasetBuildDryRunManifest" data-admin-panel-key="ai-ml-dataset-build-dry-run-manifest" open>
+              <summary>
+                <span>AI/ML dataset build dry-run manifest</span>
+                <strong>{formatStatus(labAiMlDatasetBuildDryRunManifest.overallStatus || "manifest_needs_revision")}</strong>
+                <em>metadata-only non-executable manifest</em>
+              </summary>
+              <div className="tradingLabAiMlDatasetBuildDryRunManifestBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  metadata-only non-executable manifest: review receipt is not an approval, manifest is not persisted or downloadable, dry-run execution blocked, schema and partition materialization blocked, output path not assigned, dataset and file creation blocked, DB/provider/KIS access blocked, training and deployment blocked, order and live trading blocked, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlDatasetBuildManifestStatusGrid" aria-label="AI ML dataset build dry-run manifest status">
+                  {[
+                    ["manifest mode", labAiMlDatasetBuildDryRunManifest.manifestMode || "metadata_only_non_executable"],
+                    ["manifest design status", labAiMlDatasetBuildDryRunManifest.manifestDesignStatus || "needs_revision"],
+                    ["review receipt status", labAiMlDatasetBuildDryRunManifest.reviewReceiptStatus || "generated_not_persisted"],
+                    ["review decision", labAiMlDatasetBuildDryRunManifest.reviewDecision || "design_contract_record_only"],
+                    ["approval status", labAiMlDatasetBuildDryRunManifest.approvalStatus || "not_granted"],
+                    ["approval scope", labAiMlDatasetBuildDryRunManifest.approvalScope || "dry_run_manifest_design_only"],
+                    ["execution authorization", labAiMlDatasetBuildDryRunManifest.executionAuthorizationStatus || "denied"],
+                    ["dry-run execution", labAiMlDatasetBuildDryRunManifest.dryRunExecutionStatus || "blocked"],
+                    ["materialization", labAiMlDatasetBuildDryRunManifest.materializationStatus || "blocked"],
+                    ["output creation", labAiMlDatasetBuildDryRunManifest.outputCreationStatus || "blocked"],
+                    ["output path", labAiMlDatasetBuildDryRunManifest.outputPathStatus || "not_assigned"],
+                    ["overall status", labAiMlDatasetBuildDryRunManifest.overallStatus || "manifest_needs_revision"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlDatasetBuildManifestStatusGrid" aria-label="AI ML dataset build dry-run manifest contract coverage">
+                  <article>
+                    <span>manifest identity</span>
+                    <strong>{labAiMlDatasetBuildDryRunManifest.manifestId || "missing"} / {labAiMlDatasetBuildDryRunManifest.manifestVersion || "missing"}</strong>
+                  </article>
+                  <article>
+                    <span>contract versions</span>
+                    <strong>{labAiMlDatasetBuildDryRunManifest.contractVersionCoverage?.datasetSpecVersion || "missing"} / {labAiMlDatasetBuildDryRunManifest.contractVersionCoverage?.featureSetVersion || "missing"} / {labAiMlDatasetBuildDryRunManifest.contractVersionCoverage?.labelSpecVersion || "missing"}</strong>
+                  </article>
+                  <article>
+                    <span>logical inputs</span>
+                    <strong>{labAiMlDatasetBuildDryRunManifest.logicalInputSummary?.logicalInputCount || 0} / {formatStatus(labAiMlDatasetBuildDryRunManifest.logicalInputSummary?.accessStatus || "blocked")}</strong>
+                  </article>
+                  <article>
+                    <span>logical schema</span>
+                    <strong>{labAiMlDatasetBuildDryRunManifest.logicalSchemaSummary?.fieldCount || 0} fields / {labAiMlDatasetBuildDryRunManifest.logicalSchemaSummary?.logicalSchemaVersion || "missing"}</strong>
+                  </article>
+                  <article>
+                    <span>logical partition plan</span>
+                    <strong>{(labAiMlDatasetBuildDryRunManifest.logicalPartitionSummary?.logicalPartitionKeys || []).join(" / ") || "missing"} / {formatStatus(labAiMlDatasetBuildDryRunManifest.logicalPartitionSummary?.partitionMaterializationStatus || "blocked")}</strong>
+                  </article>
+                  <article>
+                    <span>logical output plan</span>
+                    <strong>{formatStatus(labAiMlDatasetBuildDryRunManifest.logicalOutputSummary?.outputCreationStatus || "blocked")} / {formatStatus(labAiMlDatasetBuildDryRunManifest.logicalOutputSummary?.outputPathStatus || "not_assigned")}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlDatasetBuildManifestContractGrid">
+                  <section aria-label="AI ML dataset build manifest sections">
+                    <span>manifest request contract sections</span>
+                    <ul>
+                      {labAiMlDatasetBuildManifestSections.map((section) => (
+                        <li key={section.sectionId}>
+                          {formatStatus(section.sectionId)}: {section.present ? "present" : "missing"} / {formatStatus(section.mode)}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML dataset build manifest governance">
+                    <span>governance and receipt boundary</span>
+                    <ul>
+                      <li>PII: {formatStatus(labAiMlDatasetBuildDryRunManifest.governanceSummary?.piiPresenceDeclaration || "none_declared")}</li>
+                      <li>credentials: {formatStatus(labAiMlDatasetBuildDryRunManifest.governanceSummary?.credentialExclusionDeclaration || "excluded")}</li>
+                      <li>raw account data: {formatStatus(labAiMlDatasetBuildDryRunManifest.governanceSummary?.rawAccountDataDeclaration || "excluded")}</li>
+                      <li>persistence: {formatStatus(labAiMlDatasetBuildDryRunManifest.governanceSummary?.persistenceStatus || "blocked")}</li>
+                      <li>receipt: {formatStatus(labAiMlDatasetBuildDryRunManifest.reviewReceipt?.reviewDecision || "design_contract_record_only")}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML dataset build manifest deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {labAiMlDatasetBuildManifestScenarios.map((scenario) => (
+                        <li key={scenario}>{formatStatus(scenario)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlDatasetBuildManifestCheckGrid" aria-label="AI ML dataset build manifest validation checks">
+                  {labAiMlDatasetBuildManifestChecks.map((check) => (
+                    <article key={check.checkId}>
+                      <span>{formatStatus(check.category)}</span>
+                      <strong>{formatStatus(check.status)} / {formatStatus(check.severity)}</strong>
+                      <p>{check.message}</p>
+                      <p>{check.remediation}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlDatasetBuildManifestSafetyGrid" aria-label="AI ML dataset build manifest safety restrictions">
+                  {[
+                    ["dry-run execution blocked", labAiMlDatasetBuildManifestSafety.dryRunExecutionAttempted],
+                    ["schema and partition materialization blocked", labAiMlDatasetBuildManifestSafety.schemaMaterializationAttempted || labAiMlDatasetBuildManifestSafety.partitionMaterializationAttempted],
+                    ["output path not assigned", labAiMlDatasetBuildManifestSafety.outputPathAssigned],
+                    ["dataset and file creation blocked", labAiMlDatasetBuildManifestSafety.datasetBuildAttempted || labAiMlDatasetBuildManifestSafety.datasetFileCreated || labAiMlDatasetBuildManifestSafety.manifestFileCreated],
+                    ["DB/provider/KIS access blocked", labAiMlDatasetBuildManifestSafety.dbReadAttempted || labAiMlDatasetBuildManifestSafety.dbWriteAttempted || labAiMlDatasetBuildManifestSafety.providerCallAttempted || labAiMlDatasetBuildManifestSafety.kisCallAttempted],
+                    ["training and deployment blocked", labAiMlDatasetBuildManifestSafety.modelTrainingAttempted || labAiMlDatasetBuildManifestSafety.modelDeploymentAttempted],
+                    ["review receipt persistence blocked", labAiMlDatasetBuildManifestSafety.reviewReceiptPersisted || labAiMlDatasetBuildManifestSafety.approvalPersistenceAttempted],
+                    ["order and live trading blocked", labAiMlDatasetBuildManifestSafety.orderSubmissionAttempted || labAiMlDatasetBuildManifestSafety.liveTradingAttempted],
+                    ["public/My Page exposure blocked", labAiMlDatasetBuildManifestSafety.publicUiExposed || labAiMlDatasetBuildManifestSafety.myPageUiExposed],
                   ].map(([label, attempted]) => (
                     <article key={label}>
                       <span>{label}</span>
