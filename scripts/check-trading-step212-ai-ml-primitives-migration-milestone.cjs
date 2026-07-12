@@ -4,6 +4,7 @@ const {
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   buildAiMlPrimitivesMigrationAudit,
+  validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
 
@@ -121,10 +122,17 @@ function extractArrayBlock(source, name) {
     "AI_ML_PRIMITIVE_MIGRATION_STAGES",
     "AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS",
     "AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS",
+    "classifyProtectedFlags",
     "buildAiMlPrimitivesMigrationAudit",
+    "validateAiMlProtectedFlagStageRegistry",
     "validateAiMlPrimitivesMigrationAudit",
   ]) {
     assertIncludes(auditScript, exportName, "audit export");
+  }
+  for (const stage of AI_ML_PRIMITIVE_MIGRATION_STAGES) {
+    assert(Array.isArray(stage.requiredProtectedFlags), `${stage.stepId} required protected flags missing`);
+    assert(Array.isArray(stage.notApplicableProtectedFlags), `${stage.stepId} not-applicable protected flags missing`);
+    assert(stage.requiredProtectedFlags.length + stage.notApplicableProtectedFlags.length === 39, `${stage.stepId} protected flag registry partition incomplete`);
   }
   for (const stepId of AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS) assertIncludes(auditScript, stepId, "audit stage");
   for (const scenario of [
@@ -140,6 +148,11 @@ function extractArrayBlock(source, name) {
     "Scenario J: mutation resistance",
     "Scenario K: Step195 duplicate key cleanup",
     "Scenario L: no runtime authority change",
+    "Scenario O: synthetic required missing is missing unexpectedly",
+    "Scenario Q: synthetic not applicable present is unexpected applicable",
+    "Scenario R: registry partition overlap fails validation",
+    "Scenario S: registry coverage missing fails validation",
+    "Scenario T: unknown registry key fails validation",
   ]) {
     assertIncludes(auditTest, scenario, "audit scenario");
   }
@@ -149,6 +162,8 @@ function extractArrayBlock(source, name) {
   assert((forbiddenBlock.match(/"dbWriteAllowed"/g) || []).length === 1, "Step195 FORBIDDEN_PERMISSION_KEYS must contain dbWriteAllowed exactly once");
 
   const audit = await buildAiMlPrimitivesMigrationAudit();
+  const registryValidation = validateAiMlProtectedFlagStageRegistry();
+  assert(registryValidation.ok, `protected flag registry failed: ${registryValidation.errors.join(", ")}`);
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `migration audit failed: ${validation.errors.join(", ")}`);
   assert(audit.expectedStageCount === 6, "audit expected stage count mismatch");
@@ -159,6 +174,9 @@ function extractArrayBlock(source, name) {
   assert(audit.anonymousDuplicateFlagObjectCount === 0, "anonymous duplicate flag object count must be zero");
   assert(audit.unexpectedTruePermissionCount === 0, "unexpected true permission count must be zero");
   assert(audit.missingProtectedFlagCount === 0, "missing protected flag count must be zero");
+  assert(audit.unexpectedApplicableFlagCount === 0, "unexpected applicable flag count must be zero");
+  assert(audit.unclassifiedProtectedFlagCount === 0, "unclassified protected flag count must be zero");
+  assert(audit.protectedFlagRegistryStatus === "complete", "protected flag registry must be complete");
   assert(audit.outputCompatibilityCoverageStatus === "complete", "output compatibility coverage must be complete");
   assert(audit.groupedRegressionStatus === "externally_validated", "grouped regression status mismatch");
   assert(audit.runtimeCapabilityStatus === "not_implemented", "runtime capability must remain not implemented");

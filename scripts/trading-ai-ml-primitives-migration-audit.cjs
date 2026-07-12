@@ -92,6 +92,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "STEP195_METADATA_ONLY_ALLOWED_FLAGS",
     additionalFalseFlagsExport: "STEP195_ADDITIONAL_FALSE_FLAGS",
     runtimeFlagExport: "STEP195_AI_ML_READINESS_GATE_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "metadataOnlyPreflightEvaluationAllowed",
       "adminReadOnlyReadinessAggregationAllowed",
@@ -131,6 +173,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "STEP196_METADATA_ONLY_ALLOWED_FLAGS",
     additionalFalseFlagsExport: "STEP196_ADDITIONAL_FALSE_FLAGS",
     runtimeFlagExport: "STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "adminReadOnlyReadinessAggregationAllowed",
       "deterministicStatusCompositionAllowed",
@@ -175,6 +259,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "STEP197_METADATA_ONLY_ALLOWED_FLAGS",
     additionalFalseFlagsExport: "STEP197_ADDITIONAL_FALSE_FLAGS",
     runtimeFlagExport: "STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "adminReadOnlyReadinessAggregationAllowed",
       "deterministicStatusCompositionAllowed",
@@ -223,6 +349,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "STEP198_METADATA_ONLY_ALLOWED_FLAGS",
     additionalFalseFlagsExport: "STEP198_ADDITIONAL_FALSE_FLAGS",
     runtimeFlagExport: "STEP198_AI_ML_MANIFEST_VALIDATION_REPORT_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "adminReadOnlyManifestDesignAllowed",
       "deterministicInMemoryManifestAllowed",
@@ -269,6 +437,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "STEP199_METADATA_ONLY_ALLOWED_FLAGS",
     additionalFalseFlagsExport: "STEP199_ADDITIONAL_FALSE_FLAGS",
     runtimeFlagExport: "STEP199_AI_ML_MANIFEST_HANDOFF_ELIGIBILITY_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "adminReadOnlyManifestValidationReportAllowed",
       "deterministicInMemoryReportAllowed",
@@ -319,6 +529,48 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
     metadataAllowlistExport: "inline_allowedMetadataFlags",
     additionalFalseFlagsExport: "not_required_common_fail_closed_only",
     runtimeFlagExport: "STEP200_AI_ML_ARCHITECTURE_MILESTONE_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
     expectedAllowlistKeys: Object.freeze([
       "adminReadOnlyMilestoneReviewAllowed",
       "deterministicArchitectureInventoryAllowed",
@@ -380,15 +632,82 @@ function uniqueSorted(values) {
   return Object.freeze([...new Set(values)].sort());
 }
 
-function classifyProtectedFlags(flags) {
+function findDuplicates(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const value of values || []) {
+    if (seen.has(value)) duplicates.add(value);
+    seen.add(value);
+  }
+  return Object.freeze([...duplicates].sort());
+}
+
+function validateAiMlProtectedFlagStageRegistry(stages = AI_ML_PRIMITIVE_MIGRATION_STAGES) {
+  const errors = [];
+  const protectedFlags = [...AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS].sort();
+  const stageOrder = (stages || []).map((stage) => stage.stepId);
+
+  if (JSON.stringify(stageOrder) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) {
+    errors.push("stage order mismatch");
+  }
+
+  for (const stage of stages || []) {
+    const required = stage.requiredProtectedFlags;
+    const notApplicable = stage.notApplicableProtectedFlags;
+    if (!Array.isArray(required)) errors.push(`${stage.stepId} requiredProtectedFlags missing`);
+    if (!Array.isArray(notApplicable)) errors.push(`${stage.stepId} notApplicableProtectedFlags missing`);
+    if (!Array.isArray(required) || !Array.isArray(notApplicable)) continue;
+
+    for (const duplicate of findDuplicates(required)) {
+      errors.push(`${stage.stepId} duplicate required protected flag: ${duplicate}`);
+    }
+    for (const duplicate of findDuplicates(notApplicable)) {
+      errors.push(`${stage.stepId} duplicate not applicable protected flag: ${duplicate}`);
+    }
+
+    const requiredSet = new Set(required);
+    const notApplicableSet = new Set(notApplicable);
+    for (const flag of requiredSet) {
+      if (notApplicableSet.has(flag)) errors.push(`${stage.stepId} protected flag partition overlap: ${flag}`);
+      if (!AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS.includes(flag)) {
+        errors.push(`${stage.stepId} unknown required protected flag: ${flag}`);
+      }
+    }
+    for (const flag of notApplicableSet) {
+      if (!AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS.includes(flag)) {
+        errors.push(`${stage.stepId} unknown not applicable protected flag: ${flag}`);
+      }
+    }
+
+    const union = uniqueSorted([...required, ...notApplicable]);
+    if (JSON.stringify([...union]) !== JSON.stringify(protectedFlags)) {
+      errors.push(`${stage.stepId} protected flag registry partition incomplete`);
+    }
+  }
+
+  return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
+}
+
+function classifyProtectedFlags(flags, stage) {
+  const safeFlags = flags || {};
+  const required = new Set(stage?.requiredProtectedFlags || []);
+  const notApplicable = new Set(stage?.notApplicableProtectedFlags || []);
   return AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS.map((flag) => {
-    if (Object.hasOwn(flags, flag)) {
+    const present = Object.hasOwn(safeFlags, flag);
+    if (required.has(flag)) {
+      if (!present) return Object.freeze({ flag, status: "missing_unexpectedly" });
       return Object.freeze({
         flag,
-        status: flags[flag] === false ? "protected_false" : "unexpected_true",
+        status: safeFlags[flag] === false ? "protected_false" : "unexpected_true",
       });
     }
-    return Object.freeze({ flag, status: "not_applicable_to_stage" });
+    if (notApplicable.has(flag)) {
+      return Object.freeze({
+        flag,
+        status: present ? "unexpected_applicable_flag" : "not_applicable_to_stage",
+      });
+    }
+    return Object.freeze({ flag, status: "unclassified_protected_flag" });
   });
 }
 
@@ -432,9 +751,12 @@ function auditSourceStage(repoRoot, stage, runtimeFlags) {
   const allowedKeys = [...stage.expectedAllowlistKeys].sort();
   const unexpectedTrueKeys = actualTrueKeys.filter((key) => !allowedKeys.includes(key));
   const missingAllowedKeys = allowedKeys.filter((key) => !actualTrueKeys.includes(key));
-  const protectedFlagAudit = classifyProtectedFlags(runtimeFlags);
+  const protectedFlagAudit = classifyProtectedFlags(runtimeFlags, stage);
   const protectedUnexpectedTrue = protectedFlagAudit.filter((item) => item.status === "unexpected_true").map((item) => item.flag);
   const missingProtectedFlags = protectedFlagAudit.filter((item) => item.status === "missing_unexpectedly").map((item) => item.flag);
+  const unexpectedApplicableFlags = protectedFlagAudit.filter((item) => item.status === "unexpected_applicable_flag").map((item) => item.flag);
+  const unclassifiedProtectedFlags = protectedFlagAudit.filter((item) => item.status === "unclassified_protected_flag").map((item) => item.flag);
+  const protectedFalseFlags = protectedFlagAudit.filter((item) => item.status === "protected_false").map((item) => item.flag);
   const outputMarkersCovered = stage.expectedOutputMarkers.filter((marker) => testSource.includes(marker) || checkerTestSource.includes(marker));
   const scenarioMarkersCovered = stage.expectedScenarioMarkers.filter((marker) => testSource.includes(marker));
   const helperAdoption = classifyHelperAdoption(serviceSource);
@@ -475,10 +797,18 @@ function auditSourceStage(repoRoot, stage, runtimeFlags) {
     unexpectedTrueKeys: Object.freeze(unexpectedTrueKeys),
     missingAllowedKeys: Object.freeze(missingAllowedKeys),
     unexpectedTruePermissionCount: unexpectedTrueKeys.length + protectedUnexpectedTrue.length,
+    requiredProtectedFlagCount: stage.requiredProtectedFlags.length,
+    notApplicableProtectedFlagCount: stage.notApplicableProtectedFlags.length,
     protectedFlagAudit: Object.freeze(protectedFlagAudit),
+    protectedFalseCount: protectedFalseFlags.length,
     missingProtectedFlags: Object.freeze(missingProtectedFlags),
+    missingUnexpectedProtectedFlags: Object.freeze(missingProtectedFlags),
     missingProtectedFlagCount: missingProtectedFlags.length,
     protectedUnexpectedTrue: Object.freeze(protectedUnexpectedTrue),
+    unexpectedApplicableFlags: Object.freeze(unexpectedApplicableFlags),
+    unexpectedApplicableFlagCount: unexpectedApplicableFlags.length,
+    unclassifiedProtectedFlags: Object.freeze(unclassifiedProtectedFlags),
+    unclassifiedProtectedFlagCount: unclassifiedProtectedFlags.length,
     outputMarkersCovered: Object.freeze(outputMarkersCovered),
     outputCompatibilityStatus: outputMarkersCovered.length === stage.expectedOutputMarkers.length ? "complete" : "incomplete",
     scenarioMarkersCovered: Object.freeze(scenarioMarkersCovered),
@@ -540,6 +870,9 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
   const anonymousDuplicateFlagObjectCount = stageAudits.reduce((sum, stage) => sum + stage.anonymousDuplicateFlagObjectCount, 0);
   const unexpectedTruePermissionCount = stageAudits.reduce((sum, stage) => sum + stage.unexpectedTruePermissionCount, 0);
   const missingProtectedFlagCount = stageAudits.reduce((sum, stage) => sum + stage.missingProtectedFlagCount, 0);
+  const unexpectedApplicableFlagCount = stageAudits.reduce((sum, stage) => sum + stage.unexpectedApplicableFlagCount, 0);
+  const unclassifiedProtectedFlagCount = stageAudits.reduce((sum, stage) => sum + stage.unclassifiedProtectedFlagCount, 0);
+  const protectedFlagRegistryValidation = validateAiMlProtectedFlagStageRegistry(AI_ML_PRIMITIVE_MIGRATION_STAGES);
   const outputCompatibilityCoverageStatus = stageAudits.every((stage) => stage.outputCompatibilityStatus === "complete") ? "complete" : "incomplete";
   const helperLegacyRemainingCount = stageAudits.reduce(
     (sum, stage) => sum + stage.helperAdoption.legacyHelpers.filter((helper) => helper.status === "legacy_helper_remaining").length,
@@ -558,6 +891,10 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
     anonymousDuplicateFlagObjectCount,
     unexpectedTruePermissionCount,
     missingProtectedFlagCount,
+    unexpectedApplicableFlagCount,
+    unclassifiedProtectedFlagCount,
+    protectedFlagRegistryStatus: protectedFlagRegistryValidation.ok ? "complete" : "invalid",
+    protectedFlagRegistryErrors: protectedFlagRegistryValidation.errors,
     outputCompatibilityCoverageStatus,
     groupedRegressionStatus: "externally_validated",
     runtimeCapabilityStatus: "not_implemented",
@@ -581,6 +918,8 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
 
 function validateAiMlPrimitivesMigrationAudit(audit) {
   const errors = [];
+  const protectedFlagRegistryValidation = validateAiMlProtectedFlagStageRegistry(AI_ML_PRIMITIVE_MIGRATION_STAGES);
+  for (const error of protectedFlagRegistryValidation.errors) errors.push(`protected flag registry: ${error}`);
   if (!audit || typeof audit !== "object") errors.push("audit missing");
   if (audit?.auditId !== "step212_shared_ai_ml_primitives_migration_milestone") errors.push("audit id mismatch");
   if (JSON.stringify(audit?.stageOrder || []) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) errors.push("stage order mismatch");
@@ -592,6 +931,9 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
   if (audit?.anonymousDuplicateFlagObjectCount !== 0) errors.push("anonymous duplicate false object remains");
   if (audit?.unexpectedTruePermissionCount !== 0) errors.push("unexpected true permission remains");
   if (audit?.missingProtectedFlagCount !== 0) errors.push("missing protected flag remains");
+  if (audit?.unexpectedApplicableFlagCount !== 0) errors.push("unexpected applicable protected flag remains");
+  if (audit?.unclassifiedProtectedFlagCount !== 0) errors.push("unclassified protected flag remains");
+  if (audit?.protectedFlagRegistryStatus !== "complete") errors.push("protected flag registry incomplete");
   if (audit?.outputCompatibilityCoverageStatus !== "complete") errors.push("output compatibility coverage incomplete");
   if (audit?.runtimeCapabilityStatus !== "not_implemented") errors.push("runtime capability changed");
   if (audit?.executionReadinessStatus !== "blocked") errors.push("execution readiness changed");
@@ -602,6 +944,9 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
     if (!stage.additionalFalseFlags) errors.push(`${stage.stepId} additional false flag status missing`);
     if (stage.missingAllowedKeys.length > 0) errors.push(`${stage.stepId} allowlist missing keys`);
     if (stage.unexpectedTrueKeys.length > 0) errors.push(`${stage.stepId} unexpected true keys`);
+    if (stage.missingProtectedFlagCount > 0) errors.push(`${stage.stepId} missing protected flags`);
+    if (stage.unexpectedApplicableFlagCount > 0) errors.push(`${stage.stepId} unexpected applicable protected flags`);
+    if (stage.unclassifiedProtectedFlagCount > 0) errors.push(`${stage.stepId} unclassified protected flags`);
   }
   if ((audit?.checkerChain?.missingRegressionLinks || []).length > 0) errors.push("checker regression link missing");
   return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
@@ -623,6 +968,10 @@ if (require.main === module) {
         migratedStageCount: audit.migratedStageCount,
         legacySpreadCount: audit.legacySpreadCount,
         unexpectedTruePermissionCount: audit.unexpectedTruePermissionCount,
+        missingProtectedFlagCount: audit.missingProtectedFlagCount,
+        unexpectedApplicableFlagCount: audit.unexpectedApplicableFlagCount,
+        unclassifiedProtectedFlagCount: audit.unclassifiedProtectedFlagCount,
+        protectedFlagRegistryStatus: audit.protectedFlagRegistryStatus,
         overallStatus: audit.overallStatus,
       }, null, 2));
     })
@@ -636,6 +985,8 @@ module.exports = {
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS,
+  classifyProtectedFlags,
   buildAiMlPrimitivesMigrationAudit,
+  validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 };

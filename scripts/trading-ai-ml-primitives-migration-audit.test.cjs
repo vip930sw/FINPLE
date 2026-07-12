@@ -4,6 +4,8 @@ const {
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   buildAiMlPrimitivesMigrationAudit,
+  classifyProtectedFlags,
+  validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
 
@@ -66,8 +68,15 @@ test("Scenario F: protected false coverage", async () => {
   const audit = await getAudit();
   assert.equal(audit.unexpectedTruePermissionCount, 0);
   assert.equal(audit.missingProtectedFlagCount, 0);
+  assert.equal(audit.unexpectedApplicableFlagCount, 0);
+  assert.equal(audit.unclassifiedProtectedFlagCount, 0);
+  assert.equal(audit.protectedFlagRegistryStatus, "complete");
   for (const stage of audit.stageAudits) {
     assert.deepEqual(stage.protectedUnexpectedTrue, [], stage.stepId);
+    assert.deepEqual(stage.missingUnexpectedProtectedFlags, [], stage.stepId);
+    assert.deepEqual(stage.unexpectedApplicableFlags, [], stage.stepId);
+    assert.deepEqual(stage.unclassifiedProtectedFlags, [], stage.stepId);
+    assert.equal(stage.requiredProtectedFlagCount + stage.notApplicableProtectedFlagCount, 39, stage.stepId);
   }
 });
 
@@ -114,4 +123,122 @@ test("Scenario L: no runtime authority change", async () => {
   assert.equal(audit.executionReadinessStatus, "blocked");
   assert.equal(audit.orderAuthorityStatus, "external_blocker");
   assert.equal(audit.overallStatus, "shared_primitives_migration_milestone_complete_execution_blocked");
+});
+
+test("Scenario M: synthetic required false is protected false", () => {
+  const stage = {
+    requiredProtectedFlags: ["providerCallsAllowed", "orderSubmissionAllowed"],
+    notApplicableProtectedFlags: [
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ],
+  };
+  const classified = classifyProtectedFlags({ providerCallsAllowed: false, orderSubmissionAllowed: false }, stage);
+  assert.equal(classified.find((item) => item.flag === "providerCallsAllowed").status, "protected_false");
+  assert.equal(classified.find((item) => item.flag === "orderSubmissionAllowed").status, "protected_false");
+});
+
+test("Scenario N: synthetic required true is unexpected true", () => {
+  const stage = {
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags.filter((flag) => flag !== "providerCallsAllowed"),
+  };
+  const classified = classifyProtectedFlags({ providerCallsAllowed: true }, stage);
+  assert.equal(classified.find((item) => item.flag === "providerCallsAllowed").status, "unexpected_true");
+});
+
+test("Scenario O: synthetic required missing is missing unexpectedly", () => {
+  const stage = {
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags.filter((flag) => flag !== "providerCallsAllowed"),
+  };
+  const classified = classifyProtectedFlags({}, stage);
+  assert.equal(classified.find((item) => item.flag === "providerCallsAllowed").status, "missing_unexpectedly");
+  assert.equal(classified.filter((item) => item.status === "missing_unexpectedly").length, 1);
+});
+
+test("Scenario P: synthetic not applicable missing remains not applicable", () => {
+  const stage = {
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags.filter((flag) => flag !== "providerCallsAllowed"),
+  };
+  const classified = classifyProtectedFlags({ providerCallsAllowed: false }, stage);
+  assert.equal(classified.find((item) => item.flag === "orderSubmissionAllowed").status, "not_applicable_to_stage");
+});
+
+test("Scenario Q: synthetic not applicable present is unexpected applicable", () => {
+  const stage = {
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags.filter((flag) => flag !== "providerCallsAllowed"),
+  };
+  const classified = classifyProtectedFlags({ providerCallsAllowed: false, orderSubmissionAllowed: false }, stage);
+  assert.equal(classified.find((item) => item.flag === "orderSubmissionAllowed").status, "unexpected_applicable_flag");
+});
+
+test("Scenario R: registry partition overlap fails validation", () => {
+  const stage = {
+    stepId: "step195",
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags,
+  };
+  const validation = validateAiMlProtectedFlagStageRegistry([stage]);
+  assert.equal(validation.ok, false);
+  assert.match(validation.errors.join("\n"), /partition overlap/);
+});
+
+test("Scenario S: registry coverage missing fails validation", () => {
+  const stage = {
+    stepId: "step195",
+    requiredProtectedFlags: ["providerCallsAllowed"],
+    notApplicableProtectedFlags: [],
+  };
+  const validation = validateAiMlProtectedFlagStageRegistry([stage]);
+  assert.equal(validation.ok, false);
+  assert.match(validation.errors.join("\n"), /partition incomplete/);
+});
+
+test("Scenario T: unknown registry key fails validation", () => {
+  const stage = {
+    stepId: "step195",
+    requiredProtectedFlags: [...AI_ML_PRIMITIVE_MIGRATION_STAGES[0].requiredProtectedFlags, "unknownAllowed"],
+    notApplicableProtectedFlags: [],
+  };
+  const validation = validateAiMlProtectedFlagStageRegistry([stage]);
+  assert.equal(validation.ok, false);
+  assert.match(validation.errors.join("\n"), /unknown required protected flag/);
 });
