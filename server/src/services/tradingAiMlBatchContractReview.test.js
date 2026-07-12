@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  STEP196_ADDITIONAL_FALSE_FLAGS,
   STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS,
+  STEP196_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL,
   buildAdminTradingAiMlBatchContractReviewStatus,
   buildAiMlBatchContractReview,
@@ -13,6 +15,11 @@ import {
   deriveBatchContractReviewOutcome,
   evaluateAiMlBatchContractReview,
 } from "./tradingAiMlBatchContractReview.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+} from "./tradingAiMlContractPrimitives.js";
 
 const REVIEW_CATEGORIES = [
   "upstream_readiness",
@@ -46,6 +53,12 @@ const SCENARIOS = [
   "scenario_h_external_order_authority_blocker",
   "scenario_i_deterministic_ordering",
   "scenario_j_mutation_resistance",
+  "scenario_k_shared_flag_compatibility",
+  "scenario_l_inherited_true_execution_conflict",
+  "scenario_m_explicit_metadata_allowlist",
+  "scenario_n_shared_helper_compatibility",
+  "scenario_o_full_default_output_compatibility",
+  "scenario_p_mutation_resistance",
 ];
 
 const FALSE_PERMISSION_KEYS = [
@@ -253,4 +266,116 @@ test("Step196 admin status excludes sensitive values and artifact paths", () => 
   for (const forbidden of ["api key", "secret", "token value", "credential value", "account id", "raw provider response", "environment variable value", "private filesystem path", "output artifact path", "dataset file path", "hash value", "digest value"]) {
     assert.equal(serialized.includes(forbidden), false, `${forbidden} must not be exposed`);
   }
+});
+
+test("Step196 scenario K shared flag compatibility preserves metadata true and protected false flags", () => {
+  const status = buildAdminTradingAiMlBatchContractReviewStatus();
+  for (const key of Object.keys(STEP196_METADATA_ONLY_ALLOWED_FLAGS)) {
+    assert.equal(STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS[key], true, key);
+    assert.equal(status.flags[key], true, key);
+  }
+  for (const key of FALSE_PERMISSION_KEYS) {
+    assert.equal(STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS[key], false, key);
+    assert.equal(status.flags[key], false, key);
+  }
+});
+
+test("Step196 scenario L inherited true execution conflict is forced false", () => {
+  const inheritedConflict = {
+    adminReadOnlyBatchContractReviewAllowed: true,
+    deterministicMetadataChecklistAllowed: true,
+    batchExecutionAllowed: true,
+    datasetBuildAllowed: true,
+    dbReadAllowed: true,
+    providerCallsAllowed: true,
+    kisCallsAllowed: true,
+    modelTrainingAllowed: true,
+    orderSubmissionAllowed: true,
+    liveTradingAllowed: true,
+    readyForBatchExecution: true,
+    readyForOrderSubmission: true,
+    unknownRuntimePermissionAllowed: true,
+  };
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: inheritedConflict,
+    allowedMetadataFlags: STEP196_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP196_ADDITIONAL_FALSE_FLAGS,
+  });
+  assert.equal(flags.adminReadOnlyBatchContractReviewAllowed, true);
+  assert.equal(flags.deterministicMetadataChecklistAllowed, true);
+  for (const key of [
+    "batchExecutionAllowed",
+    "datasetBuildAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "modelTrainingAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForBatchExecution",
+    "readyForOrderSubmission",
+  ]) {
+    assert.equal(flags[key], false, key);
+  }
+  assert.equal(Object.hasOwn(flags, "unknownRuntimePermissionAllowed"), false);
+});
+
+test("Step196 scenario M explicit metadata allowlist exactly matches true flags", () => {
+  const actualTrueFlags = Object.entries(STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  assert.deepEqual(actualTrueFlags, Object.keys(STEP196_METADATA_ONLY_ALLOWED_FLAGS).sort());
+});
+
+test("Step196 scenario N shared helper compatibility keeps ordering and redaction deterministic", () => {
+  const request = createDeterministicMockBatchContractRequest();
+  const mutated = cloneAiMlMetadata(request);
+  mutated.inputSourceDeclarations = [...mutated.inputSourceDeclarations].reverse();
+  mutated.inputSourceDeclarations.push({
+    sourceId: "secret token source",
+    sourceType: "private path",
+    sourceContractVersion: "latest",
+    eventTimeField: "",
+    availableAtField: "",
+    accessStatus: "open",
+  });
+  const checks = buildBatchContractReviewChecks(mutated);
+  assert.deepEqual(checks.map((check) => check.checkId), [...checks.map((check) => check.checkId)].sort());
+  assert.equal(JSON.stringify(checks).includes("secret token source"), false);
+  assert.match(JSON.stringify(checks), /redacted_metadata/);
+});
+
+test("Step196 scenario O full default output remains compatible", () => {
+  const review = buildAiMlBatchContractReview();
+  assert.equal(review.reviewStatus, "metadata_only_batch_contract_review");
+  assert.equal(review.reviewEligibilityStatus, "eligible_for_manual_review");
+  assert.equal(review.approvalStatus, AI_ML_CONTRACT_STATUS.NOT_GRANTED);
+  assert.equal(review.approvalScope, "dry_run_manifest_design_only");
+  assert.equal(review.executionAuthorizationStatus, AI_ML_CONTRACT_STATUS.DENIED);
+  assert.equal(review.batchExecutionStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(review.outputCreationStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(review.overallStatus, "review_ready_execution_blocked");
+  assert.equal(review.reviewChecks.length, REVIEW_CATEGORIES.length);
+  assert.equal(review.approvalChecklist.length, 8);
+  assert.equal(review.scenarioCatalog.length, SCENARIOS.length);
+  assert.equal(review.reviewId, "step196_ai_ml_batch_contract_review");
+});
+
+test("Step196 scenario P shared clone use prevents source, overrides, and controls mutation", () => {
+  const request = createDeterministicMockBatchContractRequest();
+  const requestOverrides = {
+    resourceBudgetDeclaration: { declaredMaxRows: 1000 },
+    executionIntent: { requestedActions: ["create_csv"] },
+  };
+  const readinessSummaryOverrides = {
+    overallStatus: "invalid_internal_contract",
+  };
+  const controls = {
+    dryRunExecutionAllowed: true,
+  };
+  const before = cloneAiMlMetadata({ request, requestOverrides, readinessSummaryOverrides, controls });
+  const review = buildAiMlBatchContractReview({ request, requestOverrides, readinessSummaryOverrides, controls });
+  assert.equal(review.overallStatus, "invalid_upstream_contract");
+  assert.deepEqual({ request, requestOverrides, readinessSummaryOverrides, controls }, before);
 });

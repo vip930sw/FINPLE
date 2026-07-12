@@ -5,46 +5,37 @@ import {
 import {
   buildAiMlFeaturePipelinePreflight,
 } from "./tradingAiMlFeaturePipelinePreflight.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS = Object.freeze({
-  ...STEP195_AI_ML_READINESS_GATE_FLAGS,
+export const STEP196_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
+  adminReadOnlyReadinessAggregationAllowed: true,
+  deterministicStatusCompositionAllowed: true,
+  metadataOnlyPreflightEvaluationAllowed: true,
   adminReadOnlyBatchContractReviewAllowed: true,
   deterministicMetadataChecklistAllowed: true,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
+});
+
+export const STEP196_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
   datasetFileCreationAllowed: false,
-  batchExecutionAllowed: false,
-  dryRunExecutionAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
-  modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
-  modelAutoApprovalAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
   manualApprovalPersistenceAllowed: false,
-  executionAuthorizationAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForBatchExecution: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
+  modelArtifactCreationAllowed: false,
+  modelAutoApprovalAllowed: false,
+});
+
+export const STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP195_AI_ML_READINESS_GATE_FLAGS,
+  allowedMetadataFlags: STEP196_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP196_ADDITIONAL_FALSE_FLAGS,
 });
 
 export const TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL = Object.freeze({
@@ -64,6 +55,17 @@ export const TRADING_AI_ML_BATCH_CONTRACT_REVIEW_MODEL = Object.freeze({
   outputCreationStatus: "blocked",
   overallStatus: "invalid_upstream_contract | blocked_by_safety_policy | contract_needs_revision | review_ready_execution_blocked",
   nextSafeImplementationStep: "dry_run_manifest_contract_design",
+  sourceStageId: AI_ML_STAGE_IDS.STEP_195_READINESS_GATE_SUMMARY,
+  reviewStageId: AI_ML_STAGE_IDS.STEP_196_BATCH_CONTRACT_REVIEW,
+  defaultStatus: {
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    batchExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputCreationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    externalAuthorityStatus: AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    reviewMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+    redacted: true,
+  },
 });
 
 const REQUIRED_REQUEST_SECTIONS = Object.freeze([
@@ -188,6 +190,12 @@ const SCENARIO_CATALOG = Object.freeze([
   "scenario_h_external_order_authority_blocker",
   "scenario_i_deterministic_ordering",
   "scenario_j_mutation_resistance",
+  "scenario_k_shared_flag_compatibility",
+  "scenario_l_inherited_true_execution_conflict",
+  "scenario_m_explicit_metadata_allowlist",
+  "scenario_n_shared_helper_compatibility",
+  "scenario_o_full_default_output_compatibility",
+  "scenario_p_mutation_resistance",
 ]);
 
 function isPinnedVersion(value) {
@@ -202,19 +210,15 @@ function compareTime(left, operator, right) {
   return false;
 }
 
-function sortByCheckId(checks) {
-  return [...checks].sort((a, b) => a.checkId.localeCompare(b.checkId));
-}
-
 function makeCheck({ checkId, category, status = "pass", severity = "info", message, evidence = [], remediation = "none", blocking = false, manualReviewRequired = false }) {
   return Object.freeze({
     checkId,
     category,
     status,
     severity,
-    message,
-    evidence: [...evidence].sort(),
-    remediation,
+    message: sanitizeAiMlMetadataValue(message, "metadata check"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "none"),
     blocking,
     manualReviewRequired,
     redacted: true,
@@ -226,13 +230,15 @@ function getNested(input, path) {
 }
 
 function mergeObject(base, override) {
-  if (!override || typeof override !== "object" || Array.isArray(override)) return base;
-  return Object.entries(override).reduce((next, [key, value]) => {
+  const baseClone = cloneAiMlMetadata(base) || {};
+  const overrideClone = cloneAiMlMetadata(override);
+  if (!overrideClone || typeof overrideClone !== "object" || Array.isArray(overrideClone)) return baseClone;
+  return Object.entries(overrideClone).reduce((next, [key, value]) => {
     if (value && typeof value === "object" && !Array.isArray(value) && next[key] && typeof next[key] === "object" && !Array.isArray(next[key])) {
       return { ...next, [key]: mergeObject(next[key], value) };
     }
     return { ...next, [key]: value };
-  }, { ...base });
+  }, baseClone);
 }
 
 export function createDeterministicMockBatchContractRequest(overrides = {}) {
@@ -410,18 +416,20 @@ export function createDeterministicMockBatchContractRequest(overrides = {}) {
 }
 
 export function collectBatchContractUpstreamStatuses(input = {}, options = {}) {
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
   const upstreamInput = {
-    aiMlStrategyManagementStatus: input.aiMlStrategyManagementStatus,
-    aiMlDatasetArchitectureStatus: input.aiMlDatasetArchitectureStatus,
-    aiMlFeaturePipelineStatus: input.aiMlFeaturePipelineStatus,
-    aiMlFeaturePipelinePreflightStatus: input.aiMlFeaturePipelinePreflightStatus,
-    aiMlReadinessGateSummaryStatus: input.aiMlReadinessGateSummaryStatus,
+    aiMlStrategyManagementStatus: sourceInput.aiMlStrategyManagementStatus,
+    aiMlDatasetArchitectureStatus: sourceInput.aiMlDatasetArchitectureStatus,
+    aiMlFeaturePipelineStatus: sourceInput.aiMlFeaturePipelineStatus,
+    aiMlFeaturePipelinePreflightStatus: sourceInput.aiMlFeaturePipelinePreflightStatus,
+    aiMlReadinessGateSummaryStatus: sourceInput.aiMlReadinessGateSummaryStatus,
   };
   const readinessSummary = mergeObject(
-    input.readinessSummary || input.aiMlReadinessGateSummaryStatus?.summary || buildAiMlReadinessGateSummary(upstreamInput, options),
-    input.readinessSummaryOverrides,
+    sourceInput.readinessSummary || sourceInput.aiMlReadinessGateSummaryStatus?.summary || buildAiMlReadinessGateSummary(upstreamInput, sourceOptions),
+    sourceInput.readinessSummaryOverrides,
   );
-  const preflight = input.preflight || input.aiMlFeaturePipelinePreflightStatus?.preflight || buildAiMlFeaturePipelinePreflight(upstreamInput);
+  const preflight = cloneAiMlMetadata(sourceInput.preflight || sourceInput.aiMlFeaturePipelinePreflightStatus?.preflight || buildAiMlFeaturePipelinePreflight(upstreamInput));
   return {
     readinessSummary,
     preflight,
@@ -429,17 +437,17 @@ export function collectBatchContractUpstreamStatuses(input = {}, options = {}) {
       capabilityStage: "contract_preflight_only",
       internalContractStatus: "documented_and_validated",
       metadataPreflightStatus: "valid",
-      executionPermissionStatus: "blocked",
+      executionPermissionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
       overallStatus: "internal_contracts_valid_execution_blocked",
-      orderAuthorityStatus: "external_blocker",
-      liveTradingStatus: "blocked",
+      orderAuthorityStatus: AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+      liveTradingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     },
     redacted: true,
   };
 }
 
 export function buildBatchContractApprovalChecklist(request) {
-  return REQUIRED_REVIEW_ROLES.map((role) => {
+  return sortAiMlMetadataByKey(REQUIRED_REVIEW_ROLES.map((role) => {
     const declared = Boolean(request?.ownershipAndReview?.[role]);
     return Object.freeze({
       checklistItemId: `approval_${role}`,
@@ -447,10 +455,10 @@ export function buildBatchContractApprovalChecklist(request) {
       required: true,
       status: declared ? "declared" : "missing",
       scope: "dry_run_manifest_design_only",
-      message: declared ? "review role declared; manual approval is not granted" : "required review role is missing",
+      message: sanitizeAiMlMetadataValue(declared ? "review role declared; manual approval is not granted" : "required review role is missing"),
       redacted: true,
     });
-  }).sort((a, b) => a.checklistItemId.localeCompare(b.checklistItemId));
+  }), "checklistItemId");
 }
 
 export function buildBatchContractReviewChecks(request, upstreamStatuses = collectBatchContractUpstreamStatuses()) {
@@ -511,7 +519,7 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
   checks.push(makeCheck({
     checkId: "04_batch_purpose",
     category: "batch_purpose",
-    status: purposeOk ? "pass" : "blocked",
+    status: purposeOk ? "pass" : AI_ML_CONTRACT_STATUS.BLOCKED,
     severity: purposeOk ? "info" : "critical",
     message: purposeOk ? "batch purpose is metadata review only" : "batch purpose implies prohibited execution",
     evidence: [purpose || "missing_purpose"],
@@ -564,7 +572,7 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
     blocking: !temporalOk,
   }));
 
-  const declaredRules = temporal.temporalRules || [];
+  const declaredRules = normalizeAiMlMetadataArray(temporal.temporalRules);
   const missingTemporalRules = REQUIRED_TEMPORAL_RULES.filter((rule) => !declaredRules.includes(rule));
   checks.push(makeCheck({
     checkId: "08_point_in_time_and_leakage",
@@ -589,7 +597,7 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
     blocking: !compatibilityOk,
   }));
 
-  const sourceDeclarations = Array.isArray(request?.inputSourceDeclarations) ? request.inputSourceDeclarations : [];
+  const sourceDeclarations = normalizeAiMlMetadataArray(request?.inputSourceDeclarations);
   const badSources = sourceDeclarations.filter((source) => !source.sourceId || !source.sourceType || !isPinnedVersion(source.sourceContractVersion) || !source.eventTimeField || !source.availableAtField || source.accessStatus !== "blocked");
   checks.push(makeCheck({
     checkId: "10_input_source_declarations",
@@ -621,7 +629,7 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
   }));
 
   const output = request?.outputPlanDeclaration || {};
-  const requestedOutputIntents = output.requestedOutputIntents || [];
+  const requestedOutputIntents = normalizeAiMlMetadataArray(output.requestedOutputIntents);
   const prohibitedOutputIntents = requestedOutputIntents.filter((intent) => PROHIBITED_OUTPUT_INTENTS.includes(intent));
   const outputOk = output.outputCreationStatus === "blocked"
     && output.outputPathStatus === "not_assigned"
@@ -630,7 +638,7 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
   checks.push(makeCheck({
     checkId: "12_output_plan_restrictions",
     category: "output_plan_restrictions",
-    status: outputOk ? "pass" : "blocked",
+    status: outputOk ? "pass" : AI_ML_CONTRACT_STATUS.BLOCKED,
     severity: outputOk ? "info" : "critical",
     message: outputOk ? "output plan is manifest metadata only and file creation is denied" : "output plan includes prohibited creation or persistence intent",
     evidence: outputOk ? [output.outputCreationStatus, output.outputPathStatus, output.fileCreationAuthorization] : prohibitedOutputIntents,
@@ -700,12 +708,12 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
     blocking: missingRollback.length > 0,
   }));
 
-  const requestedActions = request?.executionIntent?.requestedActions || [];
+  const requestedActions = normalizeAiMlMetadataArray(request?.executionIntent?.requestedActions);
   const prohibitedActions = requestedActions.filter((action) => PROHIBITED_EXECUTION_INTENTS.includes(action));
   checks.push(makeCheck({
     checkId: "17_prohibited_execution_intent",
     category: "prohibited_execution_intent",
-    status: prohibitedActions.length === 0 ? "pass" : "blocked",
+    status: prohibitedActions.length === 0 ? "pass" : AI_ML_CONTRACT_STATUS.BLOCKED,
     severity: prohibitedActions.length === 0 ? "info" : "critical",
     message: prohibitedActions.length === 0 ? "execution intent is metadata-only review" : "prohibited execution intent is blocked",
     evidence: prohibitedActions.length === 0 ? ["review_batch_contract_metadata"] : prohibitedActions,
@@ -716,8 +724,8 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
   checks.push(makeCheck({
     checkId: "18_external_authority_context",
     category: "external_authority_context",
-    status: readiness.orderAuthorityStatus === "external_blocker" && readiness.liveTradingStatus === "blocked" ? "manual_review_required" : "fail",
-    severity: readiness.orderAuthorityStatus === "external_blocker" && readiness.liveTradingStatus === "blocked" ? "warning" : "critical",
+    status: readiness.orderAuthorityStatus === AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER && readiness.liveTradingStatus === AI_ML_CONTRACT_STATUS.BLOCKED ? "manual_review_required" : "fail",
+    severity: readiness.orderAuthorityStatus === AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER && readiness.liveTradingStatus === AI_ML_CONTRACT_STATUS.BLOCKED ? "warning" : "critical",
     message: "external order authority remains separate from batch metadata review",
     evidence: [`orderAuthorityStatus:${readiness.orderAuthorityStatus || "missing"}`, `liveTradingStatus:${readiness.liveTradingStatus || "missing"}`],
     remediation: "do not infer order or live authority from batch review eligibility",
@@ -725,13 +733,13 @@ export function buildBatchContractReviewChecks(request, upstreamStatuses = colle
     manualReviewRequired: true,
   }));
 
-  return sortByCheckId(checks);
+  return sortAiMlMetadataByKey(checks, "checkId");
 }
 
 export function deriveBatchContractReviewOutcome(checks) {
   const upstreamInvalid = checks.some((check) => check.category === "upstream_readiness" && check.status === "fail");
   if (upstreamInvalid) return "invalid_upstream_contract";
-  const safetyBlocked = checks.some((check) => check.status === "blocked");
+  const safetyBlocked = checks.some((check) => check.status === AI_ML_CONTRACT_STATUS.BLOCKED);
   if (safetyBlocked) return "blocked_by_safety_policy";
   const needsRevision = checks.some((check) => check.status === "fail");
   if (needsRevision) return "contract_needs_revision";
@@ -739,13 +747,15 @@ export function deriveBatchContractReviewOutcome(checks) {
 }
 
 export function evaluateAiMlBatchContractReview(input = {}, options = {}) {
-  const request = input.request || createDeterministicMockBatchContractRequest(input.requestOverrides || {});
-  const upstreamStatuses = collectBatchContractUpstreamStatuses(input, options);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
+  const request = sourceInput.request ? cloneAiMlMetadata(sourceInput.request) : createDeterministicMockBatchContractRequest(sourceInput.requestOverrides || {});
+  const upstreamStatuses = collectBatchContractUpstreamStatuses(sourceInput, sourceOptions);
   const reviewChecks = buildBatchContractReviewChecks(request, upstreamStatuses);
   const approvalChecklist = buildBatchContractApprovalChecklist(request);
   const overallStatus = deriveBatchContractReviewOutcome(reviewChecks);
   const failedCount = reviewChecks.filter((check) => check.status === "fail").length;
-  const blockedCount = reviewChecks.filter((check) => check.status === "blocked").length;
+  const blockedCount = reviewChecks.filter((check) => check.status === AI_ML_CONTRACT_STATUS.BLOCKED).length;
   const passCount = reviewChecks.filter((check) => check.status === "pass").length;
   const manualReviewRequiredCount = reviewChecks.filter((check) => check.status === "manual_review_required" || check.manualReviewRequired).length;
   const reviewEligibilityStatus = overallStatus === "review_ready_execution_blocked" ? "eligible_for_manual_review" : "not_eligible";
@@ -756,20 +766,20 @@ export function evaluateAiMlBatchContractReview(input = {}, options = {}) {
     reviewStatus: "metadata_only_batch_contract_review",
     source: "deterministic_step195_readiness_and_step194_preflight_composition",
     reviewEligibilityStatus,
-    approvalStatus: "not_granted",
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
     approvalScope: "dry_run_manifest_design_only",
     manualReviewRequired: true,
-    executionAuthorizationStatus: "denied",
-    batchExecutionStatus: "blocked",
-    outputCreationStatus: "blocked",
-    outputPathStatus: "not_assigned",
-    fileCreationAuthorization: "denied",
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    batchExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputCreationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputPathStatus: AI_ML_CONTRACT_STATUS.NOT_ASSIGNED,
+    fileCreationAuthorization: AI_ML_CONTRACT_STATUS.DENIED,
     overallStatus,
     upstreamReadinessStatus: upstreamStatuses.readinessSummary?.overallStatus || "missing",
     upstreamCapabilityStage: upstreamStatuses.readinessSummary?.capabilityStage || "missing",
     upstreamMetadataPreflightStatus: upstreamStatuses.readinessSummary?.metadataPreflightStatus || "missing",
-    externalAuthorityStatus: upstreamStatuses.readinessSummary?.orderAuthorityStatus || "external_blocker",
-    liveTradingStatus: upstreamStatuses.readinessSummary?.liveTradingStatus || "blocked",
+    externalAuthorityStatus: upstreamStatuses.readinessSummary?.orderAuthorityStatus || AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    liveTradingStatus: upstreamStatuses.readinessSummary?.liveTradingStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
     requestContractSummary: {
       batchContractId: request.requestIdentity?.batchContractId || "missing",
       batchContractVersion: request.requestIdentity?.batchContractVersion || "missing",
@@ -786,23 +796,23 @@ export function evaluateAiMlBatchContractReview(input = {}, options = {}) {
       redacted: true,
     },
     targetUniverseSummary: {
-      markets: [...(request.targetUniverseDeclaration?.markets || [])].sort(),
-      assetClasses: [...(request.targetUniverseDeclaration?.assetClasses || [])].sort(),
-      currencies: [...(request.targetUniverseDeclaration?.currencies || [])].sort(),
+      markets: sanitizeAiMlMetadataArray(request.targetUniverseDeclaration?.markets),
+      assetClasses: sanitizeAiMlMetadataArray(request.targetUniverseDeclaration?.assetClasses),
+      currencies: sanitizeAiMlMetadataArray(request.targetUniverseDeclaration?.currencies),
       universeMode: request.targetUniverseDeclaration?.universeMode || "missing",
       redacted: true,
     },
     partitionPlanSummary: {
-      partitionKeys: [...(request.partitionPlanDeclaration?.partitionKeys || [])].sort(),
+      partitionKeys: sanitizeAiMlMetadataArray(request.partitionPlanDeclaration?.partitionKeys),
       declaredPartitionCount: request.partitionPlanDeclaration?.declaredPartitionCount || 0,
       declaredEstimatedRows: request.partitionPlanDeclaration?.declaredEstimatedRows || 0,
       uniqueKeyCount: request.partitionPlanDeclaration?.declaredUniqueKeys?.length || 0,
       redacted: true,
     },
     outputRestrictionSummary: {
-      outputCreationStatus: "blocked",
-      outputPathStatus: "not_assigned",
-      fileCreationAuthorization: "denied",
+      outputCreationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+      outputPathStatus: AI_ML_CONTRACT_STATUS.NOT_ASSIGNED,
+      fileCreationAuthorization: AI_ML_CONTRACT_STATUS.DENIED,
       proposedOutputFormat: request.outputPlanDeclaration?.proposedOutputFormat || "missing",
       redacted: true,
     },
@@ -811,7 +821,7 @@ export function evaluateAiMlBatchContractReview(input = {}, options = {}) {
       credentials: request.retentionPolicyDeclaration?.credentialExclusionDeclaration || "missing",
       rawAccountData: request.retentionPolicyDeclaration?.rawAccountDataDeclaration || "missing",
       retentionStatus: request.retentionPolicyDeclaration?.retentionStatus || "missing",
-      persistenceStatus: request.retentionPolicyDeclaration?.persistenceStatus || "blocked",
+      persistenceStatus: request.retentionPolicyDeclaration?.persistenceStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
       redacted: true,
     },
     reviewCategories: [...REVIEW_CATEGORIES],
@@ -842,7 +852,9 @@ export function buildAiMlBatchContractReview(input = {}, options = {}) {
 }
 
 export function buildAdminTradingAiMlBatchContractReviewStatus(input = {}, options = {}) {
-  const review = input.review || buildAiMlBatchContractReview(input, options);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const sourceOptions = cloneAiMlMetadata(options) || {};
+  const review = sourceInput.review ? cloneAiMlMetadata(sourceInput.review) : buildAiMlBatchContractReview(sourceInput, sourceOptions);
   return {
     ok: true,
     step: "Step 196: Add AI/ML batch contract review",

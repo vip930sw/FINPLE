@@ -17,7 +17,6 @@ const UNTOUCHED_STEP_191_TO_198_SERVICE_FILES = [
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
   "server/src/services/tradingAiMlReadinessGateSummary.js",
-  "server/src/services/tradingAiMlBatchContractReview.js",
 ];
 
 const REQUIRED_EXPORTS = [
