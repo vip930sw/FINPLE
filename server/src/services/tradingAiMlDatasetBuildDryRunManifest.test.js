@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  STEP197_ADDITIONAL_FALSE_FLAGS,
   STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS,
+  STEP197_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL,
   buildAdminTradingAiMlDatasetBuildDryRunManifestStatus,
   buildAiMlDatasetBuildDryRunManifest,
@@ -13,6 +15,11 @@ import {
   deriveDatasetBuildManifestOutcome,
   evaluateAiMlDatasetBuildDryRunManifest,
 } from "./tradingAiMlDatasetBuildDryRunManifest.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+} from "./tradingAiMlContractPrimitives.js";
 
 const MANIFEST_SECTIONS = [
   "manifestIdentity",
@@ -69,6 +76,12 @@ const SCENARIOS = [
   "scenario_j_external_order_authority_blocker",
   "scenario_k_deterministic_ordering",
   "scenario_l_mutation_resistance",
+  "scenario_m_shared_flag_output_compatibility",
+  "scenario_n_inherited_true_execution_conflict",
+  "scenario_o_metadata_true_allowlist",
+  "scenario_p_shared_helper_deterministic_compatibility",
+  "scenario_q_full_default_output_compatibility",
+  "scenario_r_shared_clone_mutation_resistance",
 ];
 
 const FALSE_PERMISSION_KEYS = [
@@ -118,7 +131,7 @@ const FALSE_PERMISSION_KEYS = [
 ];
 
 function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+  return cloneAiMlMetadata(value);
 }
 
 function categoryStatus(manifest, category) {
@@ -308,6 +321,113 @@ test("Step197 scenario L does not mutate source request or override objects", ()
   buildAiMlDatasetBuildDryRunManifest({ request, requestOverrides: overrides });
   assert.equal(JSON.stringify(request), beforeRequest);
   assert.equal(JSON.stringify(overrides), beforeOverrides);
+});
+
+test("Step197 scenario M shared flag output compatibility preserves true and protected false flags", () => {
+  const status = buildAdminTradingAiMlDatasetBuildDryRunManifestStatus();
+  for (const key of Object.keys(STEP197_METADATA_ONLY_ALLOWED_FLAGS)) {
+    assert.equal(STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS[key], true, key);
+    assert.equal(status.flags[key], true, key);
+  }
+  for (const key of FALSE_PERMISSION_KEYS) {
+    assert.equal(STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS[key], false, key);
+    assert.equal(status.flags[key], false, key);
+  }
+});
+
+test("Step197 scenario N inherited true execution conflict is forced false", () => {
+  const inheritedConflict = {
+    adminReadOnlyManifestDesignAllowed: true,
+    deterministicInMemoryManifestAllowed: true,
+    dryRunExecutionAllowed: true,
+    datasetBuildAllowed: true,
+    schemaMaterializationAllowed: true,
+    dbReadAllowed: true,
+    providerCallsAllowed: true,
+    kisCallsAllowed: true,
+    orderSubmissionAllowed: true,
+    liveTradingAllowed: true,
+    readyForDryRunExecution: true,
+    unknownRuntimePermissionAllowed: true,
+  };
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: inheritedConflict,
+    allowedMetadataFlags: STEP197_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP197_ADDITIONAL_FALSE_FLAGS,
+  });
+  assert.equal(flags.adminReadOnlyManifestDesignAllowed, true);
+  assert.equal(flags.deterministicInMemoryManifestAllowed, true);
+  for (const key of [
+    "dryRunExecutionAllowed",
+    "datasetBuildAllowed",
+    "schemaMaterializationAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForDryRunExecution",
+  ]) {
+    assert.equal(flags[key], false, key);
+  }
+  assert.equal(Object.hasOwn(flags, "unknownRuntimePermissionAllowed"), false);
+});
+
+test("Step197 scenario O metadata true allowlist exactly matches actual true flags", () => {
+  const actualTrueFlags = Object.entries(STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  assert.deepEqual(actualTrueFlags, Object.keys(STEP197_METADATA_ONLY_ALLOWED_FLAGS).sort());
+});
+
+test("Step197 scenario P shared helper compatibility keeps ordering and redaction deterministic", () => {
+  const request = createDeterministicMockDatasetBuildManifestRequest();
+  const mutated = clone(request);
+  mutated.logicalInputInventory = [...mutated.logicalInputInventory].reverse();
+  mutated.qualityValidationPlan = [...mutated.qualityValidationPlan].reverse();
+  mutated.logicalSchemaPlan.fieldDefinitions.push({
+    fieldName: "secret_token",
+    semanticRole: "metadata",
+    sourceReference: "private path",
+  });
+  const checks = buildDatasetBuildManifestValidationChecks(mutated);
+  assert.deepEqual(checks.map((check) => check.checkId), [...checks.map((check) => check.checkId)].sort());
+  assert.equal(categoryStatus({ validationChecks: checks }, "logical_schema_plan"), "fail");
+  assert.equal(JSON.stringify(checks).includes("secret_token"), false);
+  assert.match(JSON.stringify(checks), /redacted_metadata|schema_invalid/);
+});
+
+test("Step197 scenario Q full default output remains compatible", () => {
+  const manifest = buildAiMlDatasetBuildDryRunManifest();
+  assert.equal(manifest.manifestMode, AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE);
+  assert.equal(manifest.reviewReceiptStatus, AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED);
+  assert.equal(manifest.approvalStatus, AI_ML_CONTRACT_STATUS.NOT_GRANTED);
+  assert.equal(manifest.executionAuthorizationStatus, AI_ML_CONTRACT_STATUS.DENIED);
+  assert.equal(manifest.dryRunExecutionStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(manifest.materializationStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(manifest.outputPathStatus, AI_ML_CONTRACT_STATUS.NOT_ASSIGNED);
+  assert.equal(manifest.reviewDecision, "design_contract_record_only");
+  assert.equal(manifest.approvalScope, "dry_run_manifest_design_only");
+  assert.equal(manifest.scenarioCatalog.length, SCENARIOS.length);
+  assert.equal(manifest.manifestSections.length, MANIFEST_SECTIONS.length);
+  assert.equal(manifest.validationCategories.length, VALIDATION_CATEGORIES.length);
+});
+
+test("Step197 scenario R shared clone use prevents source, overrides, and controls mutation", () => {
+  const request = createDeterministicMockDatasetBuildManifestRequest();
+  const requestOverrides = {
+    resourceEnvelope: { declaredMaxRows: 2500 },
+    reviewReceiptRequest: { persisted: true },
+    executionIntent: { requestedActions: ["create_manifest_file"] },
+  };
+  const batchContractReviewOverrides = {
+    overallStatus: "contract_needs_revision",
+  };
+  const before = clone({ request, requestOverrides, batchContractReviewOverrides });
+  const manifest = buildAiMlDatasetBuildDryRunManifest({ request, requestOverrides, batchContractReviewOverrides });
+  assert.equal(manifest.overallStatus, "invalid_upstream_review");
+  assert.deepEqual({ request, requestOverrides, batchContractReviewOverrides }, before);
 });
 
 test("Step197 admin status exposes only read-only allowed flags and false execution readiness", () => {

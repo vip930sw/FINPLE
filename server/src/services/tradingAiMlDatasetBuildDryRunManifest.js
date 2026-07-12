@@ -5,12 +5,108 @@ import {
 import {
   buildAiMlReadinessGateSummary,
 } from "./tradingAiMlReadinessGateSummary.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS = Object.freeze({
-  ...STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS,
+export const STEP197_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
+  adminReadOnlyReadinessAggregationAllowed: true,
+  deterministicStatusCompositionAllowed: true,
+  metadataOnlyPreflightEvaluationAllowed: true,
+  adminReadOnlyBatchContractReviewAllowed: true,
+  deterministicMetadataChecklistAllowed: true,
   adminReadOnlyManifestDesignAllowed: true,
   deterministicInMemoryManifestAllowed: true,
   metadataOnlyReviewReceiptAllowed: true,
+});
+
+export const STEP197_ADDITIONAL_FALSE_FLAGS = Object.freeze({
+  featureFileCreationAllowed: false,
+  datasetFileCreationAllowed: false,
+  manifestFileCreationAllowed: false,
+  reviewReceiptPersistenceAllowed: false,
+  manualApprovalPersistenceAllowed: false,
+  schemaMaterializationAllowed: false,
+  partitionMaterializationAllowed: false,
+  outputPathAssignmentAllowed: false,
+  modelArtifactCreationAllowed: false,
+  modelAutoApprovalAllowed: false,
+});
+
+export const STEP197_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS,
+  allowedMetadataFlags: STEP197_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP197_ADDITIONAL_FALSE_FLAGS,
+});
+
+const STEP197_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  'manifestMode: "metadata_only_non_executable"',
+  'manifestDesignStatus: "complete"',
+  'reviewReceiptStatus: "generated_not_persisted"',
+  'reviewDecision: "design_contract_record_only"',
+  'approvalStatus: "not_granted"',
+  'approvalScope: "dry_run_manifest_design_only"',
+  'executionAuthorizationStatus: "denied"',
+  'dryRunExecutionStatus: "blocked"',
+  'materializationStatus: "blocked"',
+  'outputCreationStatus: "blocked"',
+  'outputPathStatus: "not_assigned"',
+  "adminReadOnlyManifestDesignAllowed: true",
+  "deterministicInMemoryManifestAllowed: true",
+  "metadataOnlyReviewReceiptAllowed: true",
+  "actualDataDownloadAllowed: false",
+  "featureGenerationAllowed: false",
+  "featureFileCreationAllowed: false",
+  "datasetBuildAllowed: false",
+  "datasetFileCreationAllowed: false",
+  "batchExecutionAllowed: false",
+  "dryRunExecutionAllowed: false",
+  "manifestFileCreationAllowed: false",
+  "schemaMaterializationAllowed: false",
+  "partitionMaterializationAllowed: false",
+  "outputPathAssignmentAllowed: false",
+  "pythonFeatureJobAllowed: false",
+  "modelTrainingAllowed: false",
+  "modelArtifactCreationAllowed: false",
+  "modelDeploymentAllowed: false",
+  "modelAutoApprovalAllowed: false",
+  "dbMigrationAllowed: false",
+  "dbReadAllowed: false",
+  "dbWriteAllowed: false",
+  "persistentStorageAllowed: false",
+  "providerCallsAllowed: false",
+  "quoteCallsAllowed: false",
+  "kisCallsAllowed: false",
+  "kisTokenIssuanceAllowed: false",
+  "manualApprovalPersistenceAllowed: false",
+  "reviewReceiptPersistenceAllowed: false",
+  "executionAuthorizationAllowed: false",
+  "orderSubmissionAllowed: false",
+  "liveTradingAllowed: false",
+  "publicUiExposureAllowed: false",
+  "myPageExposureAllowed: false",
+  "readyForActualDataDownload: false",
+  "readyForFeatureGeneration: false",
+  "readyForDatasetBuild: false",
+  "readyForBatchExecution: false",
+  "readyForDryRunExecution: false",
+  "readyForSchemaMaterialization: false",
+  "readyForPartitionMaterialization: false",
+  "readyForModelTraining: false",
+  "readyForModelDeployment: false",
+  "readyForReadOnlyProviderCalls: false",
+  "readyForOrderSubmission: false",
+  "readyForLiveGuardedTrading: false",
+]);
+
+Object.freeze({
   actualDataDownloadAllowed: false,
   featureGenerationAllowed: false,
   featureFileCreationAllowed: false,
@@ -72,18 +168,20 @@ export const TRADING_AI_ML_DATASET_BUILD_DRY_RUN_MANIFEST_MODEL = Object.freeze(
   manifestSections: "dataset_build_dry_run_manifest_section[]",
   validationChecks: "dataset_build_dry_run_manifest_validation_check[]",
   reviewReceipt: "metadata_only_design_review_receipt",
+  sourceStageId: AI_ML_STAGE_IDS.STEP_196_BATCH_CONTRACT_REVIEW,
+  manifestStageId: AI_ML_STAGE_IDS.STEP_197_DATASET_BUILD_MANIFEST,
   defaultStatus: {
-    manifestMode: "metadata_only_non_executable",
+    manifestMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
     manifestDesignStatus: "complete",
-    reviewReceiptStatus: "generated_not_persisted",
+    reviewReceiptStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
     reviewDecision: "design_contract_record_only",
-    approvalStatus: "not_granted",
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
     approvalScope: "dry_run_manifest_design_only",
-    executionAuthorizationStatus: "denied",
-    dryRunExecutionStatus: "blocked",
-    materializationStatus: "blocked",
-    outputCreationStatus: "blocked",
-    outputPathStatus: "not_assigned",
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    dryRunExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    materializationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputCreationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputPathStatus: AI_ML_CONTRACT_STATUS.NOT_ASSIGNED,
     overallStatus: "manifest_design_ready_execution_blocked",
     redacted: true,
   },
@@ -218,6 +316,12 @@ const SCENARIO_CATALOG = Object.freeze([
   "scenario_j_external_order_authority_blocker",
   "scenario_k_deterministic_ordering",
   "scenario_l_mutation_resistance",
+  "scenario_m_shared_flag_output_compatibility",
+  "scenario_n_inherited_true_execution_conflict",
+  "scenario_o_metadata_true_allowlist",
+  "scenario_p_shared_helper_deterministic_compatibility",
+  "scenario_q_full_default_output_compatibility",
+  "scenario_r_shared_clone_mutation_resistance",
 ]);
 
 function isPinnedVersion(value) {
@@ -230,10 +334,6 @@ function compareTime(left, operator, right) {
   if (operator === ">") return left > right;
   if (operator === ">=") return left >= right;
   return false;
-}
-
-function sortByKey(items, key) {
-  return [...items].sort((a, b) => String(a[key]).localeCompare(String(b[key])));
 }
 
 function mergeObject(base, override) {
@@ -256,9 +356,9 @@ function makeCheck({ checkId, category, status = "pass", severity = "info", mess
     category,
     status,
     severity,
-    message,
-    evidence: [...evidence].sort(),
-    remediation,
+    message: sanitizeAiMlMetadataValue(message, "metadata check"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "none"),
     blocking,
     manualReviewRequired,
     redacted: true,
@@ -313,7 +413,7 @@ export function createDeterministicMockDatasetBuildManifestRequest(overrides = {
       sourceMappingId: "step193_feature_source_mapping_contract",
       sourceMappingVersion: "v1",
     },
-    logicalInputInventory: LOGICAL_INPUT_TYPES.map((sourceType) => ({
+    logicalInputInventory: sortAiMlMetadataByKey(LOGICAL_INPUT_TYPES.map((sourceType) => ({
       logicalInputId: `logical_input_${sourceType}`,
       sourceType,
       sourceContractId: `${sourceType}_contract_v0`,
@@ -327,7 +427,7 @@ export function createDeterministicMockDatasetBuildManifestRequest(overrides = {
       accessStatus: "blocked",
       materializationStatus: "not_materialized",
       redacted: true,
-    })).sort((a, b) => a.logicalInputId.localeCompare(b.logicalInputId)),
+    })), "logicalInputId"),
     temporalBoundaryPlan: {
       predictionTime: "2026-01-05T09:00:00Z",
       featureCutoffTime: "2026-01-05T09:00:00Z",
@@ -408,7 +508,7 @@ export function createDeterministicMockDatasetBuildManifestRequest(overrides = {
       fileCreationAuthorization: "denied",
       databaseWriteAuthorization: "denied",
     },
-    qualityValidationPlan: QUALITY_CHECK_IDS.map((qualityCheckId) => ({
+    qualityValidationPlan: sortAiMlMetadataByKey(QUALITY_CHECK_IDS.map((qualityCheckId) => ({
       qualityCheckId,
       status: "declared_not_executed",
       executionMode: "declared_not_executed",
@@ -416,7 +516,7 @@ export function createDeterministicMockDatasetBuildManifestRequest(overrides = {
       blocking: true,
       sourcePolicyReference: "feature_quality_gate_policy_v0",
       redacted: true,
-    })).sort((a, b) => a.qualityCheckId.localeCompare(b.qualityCheckId)),
+    })), "qualityCheckId"),
     lineagePlan: {
       parentBatchContractReviewId: "step196_ai_ml_batch_contract_review",
       datasetSpecId: "dataset-family-downside-probability-v0",
@@ -485,7 +585,7 @@ export function createDeterministicMockDatasetBuildManifestRequest(overrides = {
     },
   };
 
-  return mergeObject(request, overrides);
+  return mergeObject(request, cloneAiMlMetadata(overrides) || {});
 }
 
 export function collectDatasetBuildManifestUpstreamStatuses(input = {}, options = {}) {
@@ -497,11 +597,12 @@ export function collectDatasetBuildManifestUpstreamStatuses(input = {}, options 
     aiMlReadinessGateSummaryStatus: input.aiMlReadinessGateSummaryStatus,
     aiMlBatchContractReviewStatus: input.aiMlBatchContractReviewStatus,
   };
+  const batchContractReviewOverrides = cloneAiMlMetadata(input.batchContractReviewOverrides);
   const batchContractReview = mergeObject(
-    input.batchContractReview || input.aiMlBatchContractReviewStatus?.review || buildAiMlBatchContractReview(upstreamInput, options),
-    input.batchContractReviewOverrides,
+    cloneAiMlMetadata(input.batchContractReview || input.aiMlBatchContractReviewStatus?.review || buildAiMlBatchContractReview(upstreamInput, options)),
+    batchContractReviewOverrides,
   );
-  const readinessSummary = input.readinessSummary || input.aiMlReadinessGateSummaryStatus?.summary || buildAiMlReadinessGateSummary(upstreamInput, options);
+  const readinessSummary = cloneAiMlMetadata(input.readinessSummary || input.aiMlReadinessGateSummaryStatus?.summary || buildAiMlReadinessGateSummary(upstreamInput, options));
 
   return {
     batchContractReview,
@@ -537,7 +638,9 @@ export function buildDatasetBuildManifestReviewReceipt(request) {
     approvalStatus: "not_granted",
     approvalScope: "dry_run_manifest_design_only",
     executionAuthorizationStatus: "denied",
-    reviewerRoleDeclarations: [...(receipt.reviewerRoleDeclarations || [])].sort(),
+    reviewerRoleDeclarations: normalizeAiMlMetadataArray(receipt.reviewerRoleDeclarations)
+      .map((role) => sanitizeAiMlMetadataValue(role, "reviewer"))
+      .sort(),
     persisted: false,
     downloadable: false,
     doesNotGrantApproval: true,
@@ -635,7 +738,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
     blocking: unpinnedVersions.length > 0,
   }));
 
-  const inputs = Array.isArray(request?.logicalInputInventory) ? request.logicalInputInventory : [];
+  const inputs = normalizeAiMlMetadataArray(request?.logicalInputInventory);
   const badInputs = inputs.filter((item) => !item.logicalInputId || !item.sourceType || !isPinnedVersion(item.sourceContractVersion) || !item.eventTimeField || !item.availableAtField || item.accessStatus !== "blocked" || item.materializationStatus !== "not_materialized");
   checks.push(makeCheck({
     checkId: "04_logical_input_inventory",
@@ -653,7 +756,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
     && compareTime(temporal.featureCutoffTime, "<=", temporal.predictionTime)
     && compareTime(temporal.labelStartTime, ">", temporal.predictionTime)
     && compareTime(temporal.labelEndTime, ">=", temporal.labelStartTime)
-    && REQUIRED_TEMPORAL_RULES.every((rule) => (temporal.temporalRules || []).includes(rule));
+    && REQUIRED_TEMPORAL_RULES.every((rule) => normalizeAiMlMetadataArray(temporal.temporalRules).includes(rule));
   checks.push(makeCheck({
     checkId: "05_temporal_boundary_plan",
     category: "temporal_boundary_plan",
@@ -666,9 +769,9 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
   }));
 
   const partition = request?.logicalPartitionPlan || {};
-  const partitionOk = Array.isArray(partition.logicalPartitionKeys) && partition.logicalPartitionKeys.length > 0
-    && Array.isArray(partition.declaredSortKeys) && partition.declaredSortKeys.length > 0
-    && Array.isArray(partition.declaredUniqueKeys) && partition.declaredUniqueKeys.length > 0
+  const partitionOk = normalizeAiMlMetadataArray(partition.logicalPartitionKeys).length > 0
+    && normalizeAiMlMetadataArray(partition.declaredSortKeys).length > 0
+    && normalizeAiMlMetadataArray(partition.declaredUniqueKeys).length > 0
     && Boolean(partition.partitionOverlapPolicy)
     && Boolean(partition.emptyPartitionPolicy)
     && Boolean(partition.lateDataHandlingPolicy)
@@ -688,10 +791,11 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
   }));
 
   const schema = request?.logicalSchemaPlan || {};
-  const fields = Array.isArray(schema.fieldDefinitions) ? schema.fieldDefinitions : [];
+  const fields = normalizeAiMlMetadataArray(schema.fieldDefinitions);
   const fieldNames = fields.map((field) => field.fieldName);
   const duplicates = fieldNames.filter((fieldName, index) => fieldNames.indexOf(fieldName) !== index);
-  const hasPrimaryKeys = Array.isArray(schema.primaryKeyFields) && schema.primaryKeyFields.length > 0 && schema.primaryKeyFields.every((fieldName) => fieldNames.includes(fieldName));
+  const primaryKeyFields = normalizeAiMlMetadataArray(schema.primaryKeyFields);
+  const hasPrimaryKeys = primaryKeyFields.length > 0 && primaryKeyFields.every((fieldName) => fieldNames.includes(fieldName));
   const hasTemporalSplit = ["event_time", "available_at"].every((fieldName) => fieldNames.includes(fieldName));
   const hasFeatureAndLabelRoles = fields.some((field) => field.semanticRole === "feature") && fields.some((field) => field.semanticRole === "label");
   const labelDerivedFeature = fields.some((field) => field.semanticRole === "feature" && String(field.sourceReference || "").includes("label"));
@@ -726,7 +830,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
     blocking: !outputOk,
   }));
 
-  const qualityChecks = Array.isArray(request?.qualityValidationPlan) ? request.qualityValidationPlan : [];
+  const qualityChecks = normalizeAiMlMetadataArray(request?.qualityValidationPlan);
   const qualityIds = qualityChecks.map((item) => item.qualityCheckId);
   const missingQuality = QUALITY_CHECK_IDS.filter((qualityCheckId) => !qualityIds.includes(qualityCheckId));
   const qualityOk = missingQuality.length === 0 && qualityChecks.every((item) => item.executionMode === "declared_not_executed" && item.status === "declared_not_executed");
@@ -746,8 +850,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
   const lineageOk = lineageVersionFields.every((field) => isPinnedVersion(lineage[field]))
     && Boolean(lineage.parentBatchContractReviewId)
     && lineage.lineageMode === "pinned_contract_ids_and_versions_only"
-    && Array.isArray(lineage.architectureStepReferences)
-    && lineage.architectureStepReferences.length >= 5;
+    && normalizeAiMlMetadataArray(lineage.architectureStepReferences).length >= 5;
   checks.push(makeCheck({
     checkId: "10_lineage_plan",
     category: "lineage_plan",
@@ -863,7 +966,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
     manualReviewRequired: true,
   }));
 
-  const actions = request?.executionIntent?.requestedActions || [];
+  const actions = normalizeAiMlMetadataArray(request?.executionIntent?.requestedActions);
   const prohibitedActions = actions.filter((action) => PROHIBITED_EXECUTION_INTENTS.includes(action));
   checks.push(makeCheck({
     checkId: "16_prohibited_execution_intent",
@@ -876,7 +979,7 @@ export function buildDatasetBuildManifestValidationChecks(request, upstreamStatu
     blocking: prohibitedActions.length > 0,
   }));
 
-  return sortByKey(checks, "checkId");
+  return sortAiMlMetadataByKey(checks, "checkId");
 }
 
 export function deriveDatasetBuildManifestOutcome(checks) {
@@ -889,7 +992,8 @@ export function deriveDatasetBuildManifestOutcome(checks) {
 }
 
 export function evaluateAiMlDatasetBuildDryRunManifest(input = {}, options = {}) {
-  const request = input.request || createDeterministicMockDatasetBuildManifestRequest(input.requestOverrides || {});
+  const request = cloneAiMlMetadata(input.request)
+    || createDeterministicMockDatasetBuildManifestRequest(input.requestOverrides || {});
   const upstreamStatuses = collectDatasetBuildManifestUpstreamStatuses(input, options);
   const manifestSections = buildDatasetBuildManifestSections(request);
   const validationChecks = buildDatasetBuildManifestValidationChecks(request, upstreamStatuses);
@@ -905,22 +1009,22 @@ export function evaluateAiMlDatasetBuildDryRunManifest(input = {}, options = {})
     manifestId: request.manifestIdentity?.manifestId || "missing_manifest",
     manifestVersion: request.manifestIdentity?.manifestVersion || "missing_version",
     scope: "admin_ai_ml_strategy_lab",
-    manifestMode: "metadata_only_non_executable",
+    manifestMode: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
     manifestDesignStatus,
-    reviewReceiptStatus: "generated_not_persisted",
+    reviewReceiptStatus: AI_ML_CONTRACT_STATUS.GENERATED_NOT_PERSISTED,
     reviewDecision: "design_contract_record_only",
-    approvalStatus: "not_granted",
+    approvalStatus: AI_ML_CONTRACT_STATUS.NOT_GRANTED,
     approvalScope: "dry_run_manifest_design_only",
-    executionAuthorizationStatus: "denied",
-    dryRunExecutionStatus: "blocked",
-    materializationStatus: "blocked",
-    outputCreationStatus: "blocked",
-    outputPathStatus: "not_assigned",
+    executionAuthorizationStatus: AI_ML_CONTRACT_STATUS.DENIED,
+    dryRunExecutionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    materializationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputCreationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    outputPathStatus: AI_ML_CONTRACT_STATUS.NOT_ASSIGNED,
     overallStatus,
     upstreamReviewStatus: upstreamStatuses.batchContractReview?.overallStatus || "missing",
     upstreamReviewEligibilityStatus: upstreamStatuses.batchContractReview?.reviewEligibilityStatus || "missing",
-    externalAuthorityStatus: upstreamStatuses.readinessSummary?.orderAuthorityStatus || "external_blocker",
-    liveTradingStatus: upstreamStatuses.readinessSummary?.liveTradingStatus || "blocked",
+    externalAuthorityStatus: upstreamStatuses.readinessSummary?.orderAuthorityStatus || AI_ML_CONTRACT_STATUS.EXTERNAL_BLOCKER,
+    liveTradingStatus: upstreamStatuses.readinessSummary?.liveTradingStatus || AI_ML_CONTRACT_STATUS.BLOCKED,
     manifestSummary: {
       manifestPurpose: request.manifestIdentity?.manifestPurpose || "missing",
       manifestScope: request.manifestIdentity?.manifestScope || "missing",
