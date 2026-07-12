@@ -1576,6 +1576,13 @@ export function TradingReadinessPanel() {
   const labAiMlFeaturePreflightChecks = Array.isArray(labAiMlFeaturePreflight.checkResults) ? labAiMlFeaturePreflight.checkResults : [];
   const labAiMlFeaturePreflightScenarios = Array.isArray(labAiMlFeaturePreflight.scenarioCatalog) ? labAiMlFeaturePreflight.scenarioCatalog : [];
   const labAiMlFeaturePreflightSafety = labAiMlFeaturePreflightStatus?.blockedConfirmation || {};
+  const labAiMlReadinessGateSummaryStatus = tradingLabDashboardStatus?.aiMlReadinessGateSummaryStatus || {};
+  const labAiMlReadinessGateSummary = labAiMlReadinessGateSummaryStatus?.summary || {};
+  const labAiMlReadinessSourceRegistry = labAiMlReadinessGateSummary.sourceRegistry || {};
+  const labAiMlReadinessSources = Array.isArray(labAiMlReadinessSourceRegistry.sources) ? labAiMlReadinessSourceRegistry.sources : [];
+  const labAiMlReadinessGateResults = Array.isArray(labAiMlReadinessGateSummary.gateResults) ? labAiMlReadinessGateSummary.gateResults : [];
+  const labAiMlReadinessCriticalBlockers = Array.isArray(labAiMlReadinessGateSummary.criticalBlockers) ? labAiMlReadinessGateSummary.criticalBlockers : [];
+  const labAiMlReadinessSafety = labAiMlReadinessGateSummaryStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3231,6 +3238,123 @@ export function TradingReadinessPanel() {
                     </div>
                   </>
                 )}
+              </div>
+            </details>
+            <details className="tradingLabAiMlReadinessGateSummary" data-admin-panel-key="ai-ml-readiness-gate-summary" open>
+              <summary>
+                <span>AI/ML readiness gate summary</span>
+                <strong>{formatStatus(labAiMlReadinessGateSummary.overallStatus || "internal_contracts_incomplete")}</strong>
+                <em>contract and metadata preflight only</em>
+              </summary>
+              <div className="tradingLabAiMlReadinessGateSummaryBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  This admin-only summary composes Step 191 through Step 194 contracts into a deterministic gate view. It is not operational readiness: feature generation blocked, dataset build blocked, training and deployment blocked, provider/KIS access blocked, order authority externally blocked, live trading blocked, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlReadinessStatusGrid" aria-label="AI ML readiness gate status">
+                  {[
+                    ["capability stage", labAiMlReadinessGateSummary.capabilityStage || "contract_preflight_only"],
+                    ["overall status", labAiMlReadinessGateSummary.overallStatus || "internal_contracts_incomplete"],
+                    ["internal contract status", labAiMlReadinessGateSummary.internalContractStatus || "incomplete"],
+                    ["metadata preflight status", labAiMlReadinessGateSummary.metadataPreflightStatus || "invalid"],
+                    ["execution permission status", labAiMlReadinessGateSummary.executionPermissionStatus || "blocked"],
+                    ["data access status", labAiMlReadinessGateSummary.dataAccessStatus || "blocked"],
+                    ["feature generation status", labAiMlReadinessGateSummary.featureGenerationStatus || "blocked"],
+                    ["dataset build status", labAiMlReadinessGateSummary.datasetBuildStatus || "blocked"],
+                    ["model training status", labAiMlReadinessGateSummary.modelTrainingStatus || "blocked"],
+                    ["model deployment status", labAiMlReadinessGateSummary.modelDeploymentStatus || "blocked"],
+                    ["provider/KIS status", labAiMlReadinessGateSummary.providerConnectivityStatus || "blocked"],
+                    ["order authority status", labAiMlReadinessGateSummary.orderAuthorityStatus || "external_blocker"],
+                    ["live trading status", labAiMlReadinessGateSummary.liveTradingStatus || "blocked"],
+                    ["next safe implementation step", labAiMlReadinessGateSummary.nextSafeImplementationStep || "admin_only_ai_ml_batch_contract_review"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlReadinessStatusGrid" aria-label="AI ML readiness gate counts">
+                  <article>
+                    <span>source Step coverage</span>
+                    <strong>{Number(labAiMlReadinessSourceRegistry.sourceCount || 0)} / {Number(labAiMlReadinessSourceRegistry.requiredSourceCount || 4)}</strong>
+                  </article>
+                  <article>
+                    <span>pass / fail / blocked</span>
+                    <strong>{Number(labAiMlReadinessGateSummary.passCount || 0)} / {Number(labAiMlReadinessGateSummary.failCount || 0)} / {Number(labAiMlReadinessGateSummary.blockedCount || 0)}</strong>
+                  </article>
+                  <article>
+                    <span>external blocker count</span>
+                    <strong>{Number(labAiMlReadinessGateSummary.externalBlockerCount || 0)}</strong>
+                  </article>
+                  <article>
+                    <span>critical blockers</span>
+                    <strong>{Number(labAiMlReadinessGateSummary.criticalBlockerCount || 0)}</strong>
+                  </article>
+                  <article>
+                    <span>admin-only aggregation</span>
+                    <strong>{labAiMlReadinessGateSummaryStatus.adminReadOnlyReadinessAggregationAllowed ? "true" : "blocked"}</strong>
+                  </article>
+                  <article>
+                    <span>deterministic composition</span>
+                    <strong>{labAiMlReadinessGateSummaryStatus.deterministicStatusCompositionAllowed ? "true" : "blocked"}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlReadinessSourceGrid" aria-label="AI ML readiness source registry">
+                  {labAiMlReadinessSources.map((source) => (
+                    <article key={source.sourceStepId}>
+                      <span>{formatStatus(source.sourceStepId)}</span>
+                      <strong>{formatStatus(source.sourceStatus)}</strong>
+                      <p>{source.sourceName}</p>
+                      <p>{formatStatus(source.sourceContractType)} / {source.sourceVersion}</p>
+                      <p>admin-only {source.adminOnly ? "true" : "review"} / execution {source.executionAllowed ? "conflict" : "blocked"}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlReadinessGateGrid" aria-label="AI ML readiness gate results">
+                  {labAiMlReadinessGateResults.map((gate) => (
+                    <article key={gate.gateId}>
+                      <span>{formatStatus(gate.category)}</span>
+                      <strong>{formatStatus(gate.status)} / {formatStatus(gate.severity)}</strong>
+                      <p>{gate.message}</p>
+                      <p>{gate.remediation}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlReadinessSafetyGrid" aria-label="AI ML readiness gate safety restrictions">
+                  {[
+                    ["feature generation blocked", labAiMlReadinessSafety.featureGenerationAttempted],
+                    ["dataset build blocked", labAiMlReadinessSafety.datasetBuildAttempted],
+                    ["training and deployment blocked", labAiMlReadinessSafety.modelTrainingAttempted || labAiMlReadinessSafety.modelDeploymentAttempted],
+                    ["file and artifact creation blocked", labAiMlReadinessSafety.featureFileCreated || labAiMlReadinessSafety.datasetFileCreated || labAiMlReadinessSafety.modelArtifactCreated],
+                    ["DB read/write blocked", labAiMlReadinessSafety.dbReadAttempted || labAiMlReadinessSafety.dbWriteAttempted || labAiMlReadinessSafety.dbMigrationAttempted],
+                    ["provider/KIS access blocked", labAiMlReadinessSafety.providerCallAttempted || labAiMlReadinessSafety.kisCallAttempted],
+                    ["order/live blocked", labAiMlReadinessSafety.orderSubmissionAttempted || labAiMlReadinessSafety.liveTradingAttempted],
+                    ["public/My Page exposure blocked", labAiMlReadinessSafety.publicUiExposed || labAiMlReadinessSafety.myPageUiExposed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlReadinessContractGrid">
+                  <section aria-label="AI ML readiness critical blockers">
+                    <span>critical blockers</span>
+                    <ul>
+                      {(labAiMlReadinessCriticalBlockers.length > 0 ? labAiMlReadinessCriticalBlockers : ["none"]).map((blocker) => (
+                        <li key={blocker}>{formatStatus(blocker)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML readiness deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {(labAiMlReadinessGateSummary.scenarioCatalog || []).map((scenario) => (
+                        <li key={scenario}>{formatStatus(scenario)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
               </div>
             </details>
             <details className="tradingLabAiMlStrategyConsole" data-admin-panel-key="ai-ml-strategy-management-console">

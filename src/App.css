@@ -2901,6 +2901,7 @@ nav {
   width: fit-content;
 }
 
+.tradingLabAiMlReadinessGateSummary,
 .tradingLabAiMlStrategyConsole {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -2908,6 +2909,7 @@ nav {
   padding: 14px;
 }
 
+.tradingLabAiMlReadinessGateSummary summary,
 .tradingLabAiMlStrategyConsole summary {
   align-items: center;
   cursor: pointer;
@@ -2916,6 +2918,12 @@ nav {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.tradingLabAiMlReadinessGateSummary summary span,
+.tradingLabAiMlReadinessStatusGrid span,
+.tradingLabAiMlReadinessSourceGrid article > span,
+.tradingLabAiMlReadinessGateGrid article > span,
+.tradingLabAiMlReadinessSafetyGrid span,
+.tradingLabAiMlReadinessContractGrid section > span,
 .tradingLabAiMlStrategyConsole summary span,
 .tradingLabAiMlStatusGrid span,
 .tradingLabAiMlModelGrid article > span,
@@ -2927,6 +2935,12 @@ nav {
   text-transform: uppercase;
 }
 
+.tradingLabAiMlReadinessGateSummary summary strong,
+.tradingLabAiMlReadinessGateSummary summary em,
+.tradingLabAiMlReadinessStatusGrid strong,
+.tradingLabAiMlReadinessSourceGrid strong,
+.tradingLabAiMlReadinessGateGrid strong,
+.tradingLabAiMlReadinessSafetyGrid strong,
 .tradingLabAiMlStrategyConsole summary strong,
 .tradingLabAiMlStrategyConsole summary em,
 .tradingLabAiMlStatusGrid strong,
@@ -2935,12 +2949,18 @@ nav {
   color: #0f172a;
 }
 
+.tradingLabAiMlReadinessGateSummaryBody,
 .tradingLabAiMlStrategyConsoleBody {
   display: grid;
   gap: 14px;
   margin-top: 14px;
 }
 
+.tradingLabAiMlReadinessStatusGrid,
+.tradingLabAiMlReadinessSourceGrid,
+.tradingLabAiMlReadinessGateGrid,
+.tradingLabAiMlReadinessSafetyGrid,
+.tradingLabAiMlReadinessContractGrid,
 .tradingLabAiMlStatusGrid,
 .tradingLabAiMlModelGrid,
 .tradingLabAiMlContractGrid {
@@ -2949,6 +2969,11 @@ nav {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
+.tradingLabAiMlReadinessStatusGrid article,
+.tradingLabAiMlReadinessSourceGrid article,
+.tradingLabAiMlReadinessGateGrid article,
+.tradingLabAiMlReadinessSafetyGrid article,
+.tradingLabAiMlReadinessContractGrid section,
 .tradingLabAiMlStatusGrid article,
 .tradingLabAiMlModelGrid article,
 .tradingLabAiMlContractGrid section,
@@ -2959,16 +2984,27 @@ nav {
   padding: 12px;
 }
 
+.tradingLabAiMlReadinessSourceGrid article,
+.tradingLabAiMlReadinessGateGrid article,
 .tradingLabAiMlModelGrid article {
   display: grid;
   gap: 8px;
 }
 
+.tradingLabAiMlReadinessSourceGrid p,
+.tradingLabAiMlReadinessGateGrid p,
 .tradingLabAiMlModelGrid dl {
   display: grid;
   gap: 0.4rem 0.7rem;
   grid-template-columns: minmax(110px, 0.4fr) minmax(0, 1fr);
   margin: 0;
+}
+
+.tradingLabAiMlReadinessSourceGrid p,
+.tradingLabAiMlReadinessGateGrid p {
+  color: #0f172a;
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 .tradingLabAiMlModelGrid dt {
@@ -2984,6 +3020,7 @@ nav {
   overflow-wrap: anywhere;
 }
 
+.tradingLabAiMlReadinessContractGrid ul,
 .tradingLabAiMlContractGrid ul,
 .tradingLabAiMlBlockedNotice ul {
   display: grid;
@@ -2992,6 +3029,7 @@ nav {
   padding-left: 18px;
 }
 
+.tradingLabAiMlReadinessContractGrid li,
 .tradingLabAiMlContractGrid li,
 .tradingLabAiMlBlockedNotice li {
   color: #0f172a;

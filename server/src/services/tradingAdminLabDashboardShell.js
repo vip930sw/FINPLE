@@ -31,6 +31,10 @@ import {
   TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL,
   buildAdminTradingAiMlFeaturePipelinePreflightStatus,
 } from "./tradingAiMlFeaturePipelinePreflight.js";
+import {
+  TRADING_AI_ML_READINESS_GATE_MODEL,
+  buildAdminTradingAiMlReadinessGateStatus,
+} from "./tradingAiMlReadinessGateSummary.js";
 
 export const STEP131_ADMIN_TRADING_LAB_DASHBOARD_FLAGS = Object.freeze({
   ...STEP130_KIS_READ_ONLY_QUOTE_ADAPTER_OPT_IN_FLAGS,
@@ -21875,6 +21879,16 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     },
     options,
   );
+  const aiMlReadinessGateSummaryStatus = input.aiMlReadinessGateSummaryStatus || buildAdminTradingAiMlReadinessGateStatus(
+    {
+      ...input,
+      aiMlStrategyManagementStatus,
+      aiMlDatasetArchitectureStatus,
+      aiMlFeaturePipelineStatus,
+      aiMlFeaturePipelinePreflightStatus,
+    },
+    options,
+  );
 
   return {
     ok: true,
@@ -21936,6 +21950,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     aiMlDatasetArchitectureStatus,
     aiMlFeaturePipelineStatus,
     aiMlFeaturePipelinePreflightStatus,
+    aiMlReadinessGateSummaryStatus,
     strategyDraftSchema: TRADING_LAB_STRATEGY_CONFIG_DRAFT_SCHEMA,
     strategyDraftComparisonSchema: TRADING_LAB_STRATEGY_DRAFT_COMPARISON_SCHEMA,
     strategyDraftChangeHistoryModel: TRADING_LAB_STRATEGY_DRAFT_CHANGE_HISTORY_MODEL,
@@ -22125,6 +22140,7 @@ export function buildAdminTradingLabDashboardStatus(input = {}, options = {}) {
     aiMlDatasetArchitectureModel: TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
     aiMlFeaturePipelineModel: TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
     aiMlFeaturePipelinePreflightModel: TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL,
+    aiMlReadinessGateModel: TRADING_AI_ML_READINESS_GATE_MODEL,
     targetWeightDraftModel: TRADING_LAB_TARGET_WEIGHT_DRAFT_MODEL,
     rebalanceRuleDraftModel: TRADING_LAB_REBALANCE_RULE_DRAFT_MODEL,
     riskLimitDraftModel: TRADING_LAB_RISK_LIMIT_DRAFT_MODEL,
