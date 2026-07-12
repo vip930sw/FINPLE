@@ -2902,6 +2902,7 @@ nav {
 }
 
 .tradingLabAiMlReadinessGateSummary,
+.tradingLabAiMlBatchContractReview,
 .tradingLabAiMlStrategyConsole {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -2910,6 +2911,7 @@ nav {
 }
 
 .tradingLabAiMlReadinessGateSummary summary,
+.tradingLabAiMlBatchContractReview summary,
 .tradingLabAiMlStrategyConsole summary {
   align-items: center;
   cursor: pointer;
@@ -2919,11 +2921,17 @@ nav {
 }
 
 .tradingLabAiMlReadinessGateSummary summary span,
+.tradingLabAiMlBatchContractReview summary span,
 .tradingLabAiMlReadinessStatusGrid span,
 .tradingLabAiMlReadinessSourceGrid article > span,
 .tradingLabAiMlReadinessGateGrid article > span,
 .tradingLabAiMlReadinessSafetyGrid span,
 .tradingLabAiMlReadinessContractGrid section > span,
+.tradingLabAiMlBatchReviewStatusGrid span,
+.tradingLabAiMlBatchReviewContractGrid section > span,
+.tradingLabAiMlBatchReviewCheckGrid article > span,
+.tradingLabAiMlBatchReviewChecklistGrid article > span,
+.tradingLabAiMlBatchReviewSafetyGrid span,
 .tradingLabAiMlStrategyConsole summary span,
 .tradingLabAiMlStatusGrid span,
 .tradingLabAiMlModelGrid article > span,
@@ -2937,10 +2945,16 @@ nav {
 
 .tradingLabAiMlReadinessGateSummary summary strong,
 .tradingLabAiMlReadinessGateSummary summary em,
+.tradingLabAiMlBatchContractReview summary strong,
+.tradingLabAiMlBatchContractReview summary em,
 .tradingLabAiMlReadinessStatusGrid strong,
 .tradingLabAiMlReadinessSourceGrid strong,
 .tradingLabAiMlReadinessGateGrid strong,
 .tradingLabAiMlReadinessSafetyGrid strong,
+.tradingLabAiMlBatchReviewStatusGrid strong,
+.tradingLabAiMlBatchReviewCheckGrid strong,
+.tradingLabAiMlBatchReviewChecklistGrid strong,
+.tradingLabAiMlBatchReviewSafetyGrid strong,
 .tradingLabAiMlStrategyConsole summary strong,
 .tradingLabAiMlStrategyConsole summary em,
 .tradingLabAiMlStatusGrid strong,
@@ -2950,6 +2964,7 @@ nav {
 }
 
 .tradingLabAiMlReadinessGateSummaryBody,
+.tradingLabAiMlBatchContractReviewBody,
 .tradingLabAiMlStrategyConsoleBody {
   display: grid;
   gap: 14px;
@@ -2961,6 +2976,11 @@ nav {
 .tradingLabAiMlReadinessGateGrid,
 .tradingLabAiMlReadinessSafetyGrid,
 .tradingLabAiMlReadinessContractGrid,
+.tradingLabAiMlBatchReviewStatusGrid,
+.tradingLabAiMlBatchReviewContractGrid,
+.tradingLabAiMlBatchReviewCheckGrid,
+.tradingLabAiMlBatchReviewChecklistGrid,
+.tradingLabAiMlBatchReviewSafetyGrid,
 .tradingLabAiMlStatusGrid,
 .tradingLabAiMlModelGrid,
 .tradingLabAiMlContractGrid {
@@ -2974,6 +2994,11 @@ nav {
 .tradingLabAiMlReadinessGateGrid article,
 .tradingLabAiMlReadinessSafetyGrid article,
 .tradingLabAiMlReadinessContractGrid section,
+.tradingLabAiMlBatchReviewStatusGrid article,
+.tradingLabAiMlBatchReviewContractGrid section,
+.tradingLabAiMlBatchReviewCheckGrid article,
+.tradingLabAiMlBatchReviewChecklistGrid article,
+.tradingLabAiMlBatchReviewSafetyGrid article,
 .tradingLabAiMlStatusGrid article,
 .tradingLabAiMlModelGrid article,
 .tradingLabAiMlContractGrid section,
@@ -2986,6 +3011,8 @@ nav {
 
 .tradingLabAiMlReadinessSourceGrid article,
 .tradingLabAiMlReadinessGateGrid article,
+.tradingLabAiMlBatchReviewCheckGrid article,
+.tradingLabAiMlBatchReviewChecklistGrid article,
 .tradingLabAiMlModelGrid article {
   display: grid;
   gap: 8px;
@@ -2993,6 +3020,8 @@ nav {
 
 .tradingLabAiMlReadinessSourceGrid p,
 .tradingLabAiMlReadinessGateGrid p,
+.tradingLabAiMlBatchReviewCheckGrid p,
+.tradingLabAiMlBatchReviewChecklistGrid p,
 .tradingLabAiMlModelGrid dl {
   display: grid;
   gap: 0.4rem 0.7rem;
@@ -3001,7 +3030,9 @@ nav {
 }
 
 .tradingLabAiMlReadinessSourceGrid p,
-.tradingLabAiMlReadinessGateGrid p {
+.tradingLabAiMlReadinessGateGrid p,
+.tradingLabAiMlBatchReviewCheckGrid p,
+.tradingLabAiMlBatchReviewChecklistGrid p {
   color: #0f172a;
   display: block;
   overflow-wrap: anywhere;
@@ -3021,6 +3052,7 @@ nav {
 }
 
 .tradingLabAiMlReadinessContractGrid ul,
+.tradingLabAiMlBatchReviewContractGrid ul,
 .tradingLabAiMlContractGrid ul,
 .tradingLabAiMlBlockedNotice ul {
   display: grid;
@@ -3030,6 +3062,7 @@ nav {
 }
 
 .tradingLabAiMlReadinessContractGrid li,
+.tradingLabAiMlBatchReviewContractGrid li,
 .tradingLabAiMlContractGrid li,
 .tradingLabAiMlBlockedNotice li {
   color: #0f172a;

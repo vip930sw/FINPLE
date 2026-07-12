@@ -1583,6 +1583,12 @@ export function TradingReadinessPanel() {
   const labAiMlReadinessGateResults = Array.isArray(labAiMlReadinessGateSummary.gateResults) ? labAiMlReadinessGateSummary.gateResults : [];
   const labAiMlReadinessCriticalBlockers = Array.isArray(labAiMlReadinessGateSummary.criticalBlockers) ? labAiMlReadinessGateSummary.criticalBlockers : [];
   const labAiMlReadinessSafety = labAiMlReadinessGateSummaryStatus?.blockedConfirmation || {};
+  const labAiMlBatchContractReviewStatus = tradingLabDashboardStatus?.aiMlBatchContractReviewStatus || {};
+  const labAiMlBatchContractReview = labAiMlBatchContractReviewStatus?.review || {};
+  const labAiMlBatchReviewChecks = Array.isArray(labAiMlBatchContractReview.reviewChecks) ? labAiMlBatchContractReview.reviewChecks : [];
+  const labAiMlBatchApprovalChecklist = Array.isArray(labAiMlBatchContractReview.approvalChecklist) ? labAiMlBatchContractReview.approvalChecklist : [];
+  const labAiMlBatchReviewScenarios = Array.isArray(labAiMlBatchContractReview.scenarioCatalog) ? labAiMlBatchContractReview.scenarioCatalog : [];
+  const labAiMlBatchReviewSafety = labAiMlBatchContractReviewStatus?.blockedConfirmation || {};
   const labMockHistoryBlocked = labMockTradingHistoryBrowserStatus?.blockedConfirmation || {};
   useEffect(() => {
     const optionIds = labMockStrategyRestoreSourceOptions.map((record) => record.runId);
@@ -3354,6 +3360,130 @@ export function TradingReadinessPanel() {
                       ))}
                     </ul>
                   </section>
+                </div>
+              </div>
+            </details>
+            <details className="tradingLabAiMlBatchContractReview" data-admin-panel-key="ai-ml-batch-contract-review" open>
+              <summary>
+                <span>AI/ML batch contract review</span>
+                <strong>{formatStatus(labAiMlBatchContractReview.overallStatus || "contract_needs_revision")}</strong>
+                <em>metadata-only contract review</em>
+              </summary>
+              <div className="tradingLabAiMlBatchContractReviewBody">
+                <p className="tradingLabHistoryBrowserNotice">
+                  metadata-only contract review: manual approval not granted, approval scope is manifest design only, batch execution blocked, output creation blocked, DB/provider/KIS access blocked, training and deployment blocked, order and live trading blocked, admin-only visibility.
+                </p>
+                <div className="tradingLabAiMlBatchReviewStatusGrid" aria-label="AI ML batch contract review status">
+                  {[
+                    ["upstream readiness status", labAiMlBatchContractReview.upstreamReadinessStatus || "missing"],
+                    ["review eligibility status", labAiMlBatchContractReview.reviewEligibilityStatus || "not_eligible"],
+                    ["approval status", labAiMlBatchContractReview.approvalStatus || "not_granted"],
+                    ["approval scope", labAiMlBatchContractReview.approvalScope || "dry_run_manifest_design_only"],
+                    ["manual review required", labAiMlBatchContractReview.manualReviewRequired ? "true" : "review required"],
+                    ["execution authorization status", labAiMlBatchContractReview.executionAuthorizationStatus || "denied"],
+                    ["batch execution status", labAiMlBatchContractReview.batchExecutionStatus || "blocked"],
+                    ["output creation status", labAiMlBatchContractReview.outputCreationStatus || "blocked"],
+                    ["external order authority", labAiMlBatchContractReview.externalAuthorityStatus || "external_blocker"],
+                    ["live trading status", labAiMlBatchContractReview.liveTradingStatus || "blocked"],
+                    ["overall status", labAiMlBatchContractReview.overallStatus || "contract_needs_revision"],
+                    ["next safe implementation step", labAiMlBatchContractReview.nextSafeImplementationStep || "dry_run_manifest_contract_design"],
+                  ].map(([label, value]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{formatStatus(value)}</strong>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlBatchReviewStatusGrid" aria-label="AI ML batch contract coverage">
+                  <article>
+                    <span>contract/version coverage</span>
+                    <strong>{labAiMlBatchContractReview.requestContractSummary?.batchContractVersion || "missing"} / {labAiMlBatchContractReview.requestContractSummary?.featureSetVersion || "missing"} / {labAiMlBatchContractReview.requestContractSummary?.labelSpecVersion || "missing"}</strong>
+                  </article>
+                  <article>
+                    <span>batch purpose</span>
+                    <strong>{formatStatus(labAiMlBatchContractReview.requestContractSummary?.batchPurpose || "missing")}</strong>
+                  </article>
+                  <article>
+                    <span>target universe declaration</span>
+                    <strong>{(labAiMlBatchContractReview.targetUniverseSummary?.markets || []).join(" / ") || "missing"} · {(labAiMlBatchContractReview.targetUniverseSummary?.assetClasses || []).join(" / ") || "missing"}</strong>
+                  </article>
+                  <article>
+                    <span>temporal/PIT review</span>
+                    <strong>{formatStatus(labAiMlBatchReviewChecks.find((check) => check.category === "point_in_time_and_leakage")?.status || "not_evaluated")}</strong>
+                  </article>
+                  <article>
+                    <span>partition plan review</span>
+                    <strong>{formatStatus(labAiMlBatchReviewChecks.find((check) => check.category === "partition_plan")?.status || "not_evaluated")}</strong>
+                  </article>
+                  <article>
+                    <span>prohibited intent status</span>
+                    <strong>{formatStatus(labAiMlBatchReviewChecks.find((check) => check.category === "prohibited_execution_intent")?.status || "not_evaluated")}</strong>
+                  </article>
+                </div>
+                <div className="tradingLabAiMlBatchReviewContractGrid">
+                  <section aria-label="AI ML batch output restrictions">
+                    <span>output restriction</span>
+                    <ul>
+                      <li>format: {formatStatus(labAiMlBatchContractReview.outputRestrictionSummary?.proposedOutputFormat || "missing")}</li>
+                      <li>output creation: {formatStatus(labAiMlBatchContractReview.outputRestrictionSummary?.outputCreationStatus || "blocked")}</li>
+                      <li>output path: {formatStatus(labAiMlBatchContractReview.outputRestrictionSummary?.outputPathStatus || "not_assigned")}</li>
+                      <li>file authorization: {formatStatus(labAiMlBatchContractReview.outputRestrictionSummary?.fileCreationAuthorization || "denied")}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML batch governance declaration">
+                    <span>governance/retention declaration</span>
+                    <ul>
+                      <li>PII: {formatStatus(labAiMlBatchContractReview.governanceSummary?.pii || "none_declared")}</li>
+                      <li>credentials: {formatStatus(labAiMlBatchContractReview.governanceSummary?.credentials || "excluded")}</li>
+                      <li>raw account data: {formatStatus(labAiMlBatchContractReview.governanceSummary?.rawAccountData || "excluded")}</li>
+                      <li>persistence: {formatStatus(labAiMlBatchContractReview.governanceSummary?.persistenceStatus || "blocked")}</li>
+                    </ul>
+                  </section>
+                  <section aria-label="AI ML batch deterministic scenarios">
+                    <span>deterministic scenarios</span>
+                    <ul>
+                      {labAiMlBatchReviewScenarios.map((scenario) => (
+                        <li key={scenario}>{formatStatus(scenario)}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+                <div className="tradingLabAiMlBatchReviewCheckGrid" aria-label="AI ML batch contract review checks">
+                  {labAiMlBatchReviewChecks.map((check) => (
+                    <article key={check.checkId}>
+                      <span>{formatStatus(check.category)}</span>
+                      <strong>{formatStatus(check.status)} / {formatStatus(check.severity)}</strong>
+                      <p>{check.message}</p>
+                      <p>{check.remediation}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlBatchReviewChecklistGrid" aria-label="AI ML batch ownership reviewer checklist">
+                  {labAiMlBatchApprovalChecklist.map((item) => (
+                    <article key={item.checklistItemId}>
+                      <span>{formatStatus(item.role)}</span>
+                      <strong>{formatStatus(item.status)}</strong>
+                      <p>{item.message}</p>
+                      <p>{formatStatus(item.scope)}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="tradingLabAiMlBatchReviewSafetyGrid" aria-label="AI ML batch contract review safety restrictions">
+                  {[
+                    ["batch execution blocked", labAiMlBatchReviewSafety.batchExecutionAttempted || labAiMlBatchReviewSafety.dryRunExecutionAttempted],
+                    ["output creation blocked", labAiMlBatchReviewSafety.featureFileCreated || labAiMlBatchReviewSafety.datasetFileCreated || labAiMlBatchReviewSafety.modelArtifactCreated],
+                    ["DB access blocked", labAiMlBatchReviewSafety.dbReadAttempted || labAiMlBatchReviewSafety.dbWriteAttempted || labAiMlBatchReviewSafety.dbMigrationAttempted],
+                    ["provider/KIS access blocked", labAiMlBatchReviewSafety.providerCallAttempted || labAiMlBatchReviewSafety.kisCallAttempted],
+                    ["training and deployment blocked", labAiMlBatchReviewSafety.modelTrainingAttempted || labAiMlBatchReviewSafety.modelDeploymentAttempted],
+                    ["order and live trading blocked", labAiMlBatchReviewSafety.orderSubmissionAttempted || labAiMlBatchReviewSafety.liveTradingAttempted],
+                    ["approval persistence blocked", labAiMlBatchReviewSafety.approvalPersistenceAttempted || labAiMlBatchReviewSafety.executionAuthorizationGranted],
+                    ["public/My Page exposure blocked", labAiMlBatchReviewSafety.publicUiExposed || labAiMlBatchReviewSafety.myPageUiExposed],
+                  ].map(([label, attempted]) => (
+                    <article key={label}>
+                      <span>{label}</span>
+                      <strong>{attempted ? "review required" : "blocked"}</strong>
+                    </article>
+                  ))}
                 </div>
               </div>
             </details>
