@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "baselineName": "step192_contract_hardening",
+  "baselineCommit": "c306dc775a1d5dcba32271934ed112d7ef97a768",
+  "coveredSteps": [
+    223,
+    224,
+    225,
+    226,
+    227
+  ],
+  "coreAudit": {
+    "scope": "step192_to_step200",
+    "expectedStageCount": 9,
+    "counts": {
+      "sourceCheckerCount": 13,
+      "uniqueServiceTestCount": 10,
+      "uniqueMigrationCheckerTestCount": 14,
+      "uniqueSupportingTestCount": 11,
+      "uniqueCheckerTestCount": 25,
+      "uniqueTestFileCount": 35
+    }
+  },
+  "supplementalGuards": {
+    "count": 1,
+    "checks": [
+      "step225_step192_dataset_contract_manifest"
+    ]
+  },
+  "totals": {
+    "totalSourceCheckerCount": 14,
+    "totalUniqueCheckerTestCount": 26,
+    "totalUniqueTestFileCount": 37
+  },
+  "duplicates": {
+    "duplicateFileCount": 0,
+    "duplicateSourceCheckers": []
+  },
+  "readiness": {
+    "actualLiveTradingReady": false,
+    "state": "blocked"
+  }
+}
