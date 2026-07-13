@@ -13,6 +13,8 @@ const {
 
 const REQUIRED_FILES = [
   "package.json",
+  "server/src/services/tradingAiMlDatasetArchitecture.js",
+  "server/src/services/tradingAiMlDatasetArchitecture.test.js",
   "scripts/trading-ai-ml-primitives-migration-audit.cjs",
   "scripts/trading-ai-ml-primitives-migration-audit.test.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.cjs",
@@ -23,11 +25,18 @@ const REQUIRED_FILES = [
   "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
+  "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs",
+  "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.test.cjs",
 ];
 
 const FORBIDDEN_TOUCHED_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
-  "server/src/services/tradingAiMlDatasetArchitecture.js",
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
@@ -197,8 +206,8 @@ function getTouchedFiles() {
   assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "taxonomy must be separated");
   assert(audit.contractScenarioCoverageStatus === "complete", "contract scenario coverage must be complete");
   assert(audit.migrationRegressionCoverageStatus === "complete", "migration regression coverage must be complete");
-  assert(audit.scope === "step193_to_step200", "Step213 audit scope must include Step193 after Step217");
-  assert(audit.expectedStageCount === 8, "Step213 audit stage count must include Step193 after Step217");
+  assert(audit.scope === "step192_to_step200", "Step213 audit scope must include Step192 after Step223");
+  assert(audit.expectedStageCount === 9, "Step213 audit stage count must include Step192 after Step223");
 
   const touchedFiles = getTouchedFiles();
   for (const file of FORBIDDEN_TOUCHED_FILES) {

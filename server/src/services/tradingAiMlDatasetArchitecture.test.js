@@ -2,11 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  STEP192_ADDITIONAL_FALSE_FLAGS,
   STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS,
+  STEP192_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL,
   buildAdminTradingAiMlDatasetArchitectureStatus,
   buildAiMlDatasetArchitecture,
+  normalizeStep192DatasetArchitectureSnapshotForAdmin,
 } from "./tradingAiMlDatasetArchitecture.js";
+import { STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS } from "./tradingAiMlStrategyManagement.js";
+import { buildAiMlFailClosedFlags } from "./tradingAiMlContractPrimitives.js";
 
 test("Step192 dataset architecture is deterministic design-only and redacted", () => {
   const first = buildAiMlDatasetArchitecture();
@@ -134,6 +139,7 @@ test("Step192 validation blocks unsafe dataset architecture changes", () => {
 test("Step192 status keeps dataset feature training provider order live and DB gates blocked", () => {
   const status = buildAdminTradingAiMlDatasetArchitectureStatus();
 
+  assert.equal(status.status, "admin_only_ai_ml_dataset_architecture_design_only");
   assert.equal(status.blockedConfirmation.endpointAdded, false);
   assert.equal(status.blockedConfirmation.actualDataDownloadAttempted, false);
   assert.equal(status.blockedConfirmation.externalFinancialApiCallAttempted, false);
@@ -185,4 +191,168 @@ test("Step192 flags keep build generation training deployment and public gates f
   assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.modelAutoApprovalAllowed, false);
   assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.publicUiAllowed, false);
   assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.dbWriteAllowed, false);
+});
+
+test("Step192 shared flag compatibility", () => {
+  const rebuilt = buildAiMlFailClosedFlags({
+    inheritedFlags: STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS,
+    allowedMetadataFlags: STEP192_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP192_ADDITIONAL_FALSE_FLAGS,
+  });
+
+  assert.deepEqual(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS, rebuilt);
+  assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.datasetBuildAllowed, false);
+  assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.providerCallsAllowed, false);
+  assert.equal(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS.readyForOrderSubmission, false);
+});
+
+test("Step192 inherited execution conflict", () => {
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: {
+      ...STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS,
+      datasetBuildAllowed: true,
+      orderSubmissionAllowed: true,
+      readyForLiveGuardedTrading: true,
+    },
+    allowedMetadataFlags: STEP192_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP192_ADDITIONAL_FALSE_FLAGS,
+  });
+
+  assert.equal(flags.datasetBuildAllowed, false);
+  assert.equal(flags.orderSubmissionAllowed, false);
+  assert.equal(flags.readyForLiveGuardedTrading, false);
+});
+
+test("Step192 explicit metadata allowlist", () => {
+  const trueKeys = Object.entries(STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key);
+
+  assert.deepEqual(STEP192_METADATA_ONLY_ALLOWED_FLAGS, {});
+  assert.deepEqual(trueKeys, []);
+});
+
+test("Step192 shared helper compatibility", () => {
+  const architecture = buildAiMlDatasetArchitecture({
+    datasetFamilies: [{
+      datasetFamilyId: "dataset-family-sensitive-v0",
+      modelType: "api key value",
+      purpose: "private path C:\\secret\\packet.json",
+      inputFamilies: ["token value", "market_return"],
+      labelFamilies: ["provider raw response"],
+      pointInTimeRequired: true,
+      leakageReviewStatus: "required_before_build",
+      leakageRisks: ["account id value"],
+      leakageControls: ["future return feature blocked"],
+      blockedReasons: ["dataset_build_blocked"],
+    }],
+  });
+  const serialized = JSON.stringify(architecture);
+
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("C:\\secret\\packet.json"), false);
+  assert.equal(serialized.includes("token value"), false);
+  assert.equal(serialized.includes("provider raw response"), false);
+  assert.equal(serialized.includes("account id value"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
+});
+
+test("Step192 full default output compatibility", () => {
+  const architecture = buildAiMlDatasetArchitecture();
+
+  assert.equal(architecture.datasetArchitectureId, "step192_admin_ai_ml_dataset_architecture");
+  assert.equal(architecture.scope, "admin_ai_ml_strategy_lab");
+  assert.equal(architecture.status, "design_only");
+  assert.equal(architecture.source, "deterministic_mock_dataset_registry");
+  assert.equal(architecture.nextImplementationStep, "ai_ml_feature_pipeline_design_gate");
+  assert.equal(architecture.datasetFamilyCount, 5);
+  assert.equal(architecture.labelDefinitionCount, 5);
+  assert.equal(architecture.featureTimestampRuleCount, 10);
+  assert.equal(architecture.leakageControlCount, 11);
+  assert.equal(architecture.splitPolicyCount, 1);
+  assert.equal(architecture.walkForwardPolicyCount, 1);
+  assert.equal(architecture.validation.validationStatus, "design_ready");
+  assert.equal(architecture.validation.blockers.length, 0);
+  assert.equal(architecture.datasetBuildStatus, "blocked");
+  assert.equal(architecture.featureGenerationStatus, "blocked");
+  assert.equal(architecture.trainingStatus, "blocked");
+  assert.equal(architecture.dbWriteStatus, "blocked");
+  assert.equal(architecture.providerOrderLiveStatus, "blocked");
+});
+
+test("Step192 mutation resistance", () => {
+  const input = {
+    labelDefinitions: [{
+      labelId: "custom_label",
+      modelType: "downside_probability_model",
+      labelName: "custom label",
+      predictionHorizon: "1m",
+      labelWindowStart: "prediction_time_plus_1d",
+      labelWindowEnd: "prediction_time_plus_20d",
+      targetDefinition: "forward_return_negative",
+      embargoPeriod: "20d",
+      leakageControls: ["label_after_feature_window"],
+      status: "design_only",
+    }],
+  };
+  const architecture = buildAiMlDatasetArchitecture(input);
+  input.labelDefinitions[0].labelId = "mutated_label";
+  input.labelDefinitions[0].leakageControls.push("credential");
+
+  assert.equal(architecture.labelDefinitions[0].labelId, "custom_label");
+  assert.equal(architecture.labelDefinitions[0].leakageControls.includes("credential"), false);
+});
+
+test("Step192 admin snapshot redaction", () => {
+  const normalized = normalizeStep192DatasetArchitectureSnapshotForAdmin({
+    strategyRegistryId: "private path C:\\owner\\registry.json",
+    datasetFamilies: [{
+      datasetFamilyId: "dataset-family-sensitive-v0",
+      modelType: "secret value",
+      purpose: "api key value",
+      inputFamilies: ["market_return"],
+      labelFamilies: ["token value"],
+      pointInTimeRequired: true,
+      leakageReviewStatus: "required_before_build",
+      leakageRisks: ["hash value"],
+      leakageControls: ["future return feature blocked"],
+      blockedReasons: ["dataset_build_blocked"],
+    }],
+    validationStatus: "ready",
+    readyForOrderSubmission: true,
+    orderSubmissionAllowed: true,
+    credential: "raw credential",
+  });
+  const serialized = JSON.stringify(normalized);
+
+  assert.equal(serialized.includes("private path"), false);
+  assert.equal(serialized.includes("secret value"), false);
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("token value"), false);
+  assert.equal(serialized.includes("hash value"), false);
+  assert.equal(serialized.includes("credential"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
+  assert.equal(normalized.readyForOrderSubmission, undefined);
+  assert.equal(normalized.orderSubmissionAllowed, undefined);
+});
+
+test("Step192 supplied readiness ignored", () => {
+  const status = buildAdminTradingAiMlDatasetArchitectureStatus({
+    datasetArchitecture: {
+      readyForOrderSubmission: true,
+      readyForLiveGuardedTrading: true,
+      orderSubmissionAllowed: true,
+      providerCallsAllowed: true,
+      datasetBuildStatus: "ready",
+      validation: { validationStatus: "ready", blockers: [] },
+    },
+    readyForOrderSubmission: true,
+  });
+
+  assert.equal(status.orderSubmissionAllowed, false);
+  assert.equal(status.providerCallsAllowed, false);
+  assert.equal(status.readyForOrderSubmission, false);
+  assert.equal(status.readyForLiveGuardedTrading, false);
+  assert.equal(status.datasetArchitecture.datasetBuildStatus, "blocked");
+  assert.notEqual(status.datasetArchitecture.validation.validationStatus, "ready");
 });

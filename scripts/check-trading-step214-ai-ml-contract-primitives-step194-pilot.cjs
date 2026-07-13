@@ -13,6 +13,8 @@ const STEP194_MODULE = "server/src/services/tradingAiMlFeaturePipelinePreflight.
 
 const REQUIRED_FILES = [
   "package.json",
+  "server/src/services/tradingAiMlDatasetArchitecture.js",
+  "server/src/services/tradingAiMlDatasetArchitecture.test.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   STEP194_MODULE,
@@ -36,13 +38,14 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
   "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
   "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
 
 const FORBIDDEN_TOUCHED_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
-  "server/src/services/tradingAiMlDatasetArchitecture.js",
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
@@ -252,13 +255,13 @@ function getTouchedFiles() {
   const audit = await buildAiMlPrimitivesMigrationAudit();
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `migration audit failed: ${validation.errors.join(", ")}`);
-  assert(audit.scope === "step193_to_step200", "audit scope must be Step193 to Step200");
-  assert(audit.expectedStageCount === 8, "audit expected stage count must be 8");
-  assert(audit.migratedStageCount === 8, "audit migrated stage count must be 8");
-  assert(audit.singleFlagSourceStageCount === 8, "audit single source count must be 8");
-  assert(audit.explicitAllowlistStageCount === 8, "audit allowlist count must be 8");
+  assert(audit.scope === "step192_to_step200", "audit scope must be Step192 to Step200");
+  assert(audit.expectedStageCount === 9, "audit expected stage count must be 9");
+  assert(audit.migratedStageCount === 9, "audit migrated stage count must be 9");
+  assert(audit.singleFlagSourceStageCount === 9, "audit single source count must be 9");
+  assert(audit.explicitAllowlistStageCount === 9, "audit allowlist count must be 9");
   assert(
-    JSON.stringify(audit.stageOrder) === JSON.stringify(["step193", "step194", "step195", "step196", "step197", "step198", "step199", "step200"]),
+    JSON.stringify(audit.stageOrder) === JSON.stringify(["step192", "step193", "step194", "step195", "step196", "step197", "step198", "step199", "step200"]),
     "audit stage order mismatch",
   );
   assert(audit.protectedFlagRegistryStatus === "complete", "audit protected registry must be complete");
@@ -269,7 +272,7 @@ function getTouchedFiles() {
   assert(audit.nextRecommendedImplementation === "post_step193_checker_and_marker_consolidation_review", "next recommendation mismatch");
 
   assertIncludes(auditScript, "step194_feature_pipeline_preflight", "audit Step194 registry entry");
-  assertIncludes(auditTest, "scope, \"step193_to_step200\"", "audit test Step193 scope");
+  assertIncludes(auditTest, "scope, \"step192_to_step200\"", "audit test Step192 scope");
   assertIncludes(step212CheckerTest, "Step212 checker passes against repository source", "Step212 checker test linkage");
   assertIncludes(step213CheckerTest, "Step213 checker passes against repository source", "Step213 checker test linkage");
 

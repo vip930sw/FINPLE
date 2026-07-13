@@ -45,6 +45,7 @@ const AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS = Object.freeze([
 ]);
 
 const AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS = Object.freeze([
+  "step192",
   "step193",
   "step194",
   "step195",
@@ -82,6 +83,80 @@ const LEGACY_HELPER_PATTERNS = Object.freeze([
 ]);
 
 const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
+  Object.freeze({
+    stepId: "step192",
+    label: "Step 192",
+    stageId: "step192_dataset_labeling_architecture",
+    serviceFile: "server/src/services/tradingAiMlDatasetArchitecture.js",
+    testFile: "server/src/services/tradingAiMlDatasetArchitecture.test.js",
+    checkerFile: "scripts/check-trading-step192-ai-ml-dataset-and-labeling-architecture.cjs",
+    checkerTestFile: "scripts/check-trading-step192-ai-ml-dataset-and-labeling-architecture.test.cjs",
+    inheritedFlagExport: "STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS",
+    metadataAllowlistExport: "STEP192_METADATA_ONLY_ALLOWED_FLAGS",
+    additionalFalseFlagsExport: "STEP192_ADDITIONAL_FALSE_FLAGS",
+    runtimeFlagExport: "STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
+    expectedAllowlistKeys: Object.freeze([]),
+    expectedOutputMarkers: Object.freeze([
+      "design_only",
+      "design_ready",
+      "blocked",
+      "ai_ml_feature_pipeline_design_gate",
+      "admin_only_ai_ml_dataset_architecture_design_only",
+    ]),
+    expectedContractScenarioMarkers: Object.freeze([]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step192 shared flag compatibility",
+      "Step192 inherited execution conflict",
+      "Step192 explicit metadata allowlist",
+      "Step192 shared helper compatibility",
+      "Step192 full default output compatibility",
+      "Step192 mutation resistance",
+      "Step192 admin snapshot redaction",
+      "Step192 supplied readiness ignored",
+    ]),
+  }),
   Object.freeze({
     stepId: "step193",
     label: "Step 193",
@@ -1172,7 +1247,7 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
 
   return Object.freeze({
     auditId: "step212_shared_ai_ml_primitives_migration_milestone",
-    scope: "step193_to_step200",
+    scope: "step192_to_step200",
     expectedStageCount,
     migratedStageCount,
     singleFlagSourceStageCount,
@@ -1218,12 +1293,12 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
   for (const error of migrationScenarioTaxonomyValidation.errors) errors.push(`migration scenario taxonomy: ${error}`);
   if (!audit || typeof audit !== "object") errors.push("audit missing");
   if (audit?.auditId !== "step212_shared_ai_ml_primitives_migration_milestone") errors.push("audit id mismatch");
-  if (audit?.scope !== "step193_to_step200") errors.push("audit scope mismatch");
+  if (audit?.scope !== "step192_to_step200") errors.push("audit scope mismatch");
   if (JSON.stringify(audit?.stageOrder || []) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) errors.push("stage order mismatch");
-  if (audit?.expectedStageCount !== 8) errors.push("expected stage count mismatch");
-  if (audit?.migratedStageCount !== 8) errors.push("migrated stage count mismatch");
-  if (audit?.singleFlagSourceStageCount !== 8) errors.push("single flag source stage count mismatch");
-  if (audit?.explicitAllowlistStageCount !== 8) errors.push("explicit allowlist stage count mismatch");
+  if (audit?.expectedStageCount !== 9) errors.push("expected stage count mismatch");
+  if (audit?.migratedStageCount !== 9) errors.push("migrated stage count mismatch");
+  if (audit?.singleFlagSourceStageCount !== 9) errors.push("single flag source stage count mismatch");
+  if (audit?.explicitAllowlistStageCount !== 9) errors.push("explicit allowlist stage count mismatch");
   if (audit?.legacySpreadCount !== 0) errors.push("legacy spread remains");
   if (audit?.anonymousDuplicateFlagObjectCount !== 0) errors.push("anonymous duplicate false object remains");
   if (audit?.unexpectedTruePermissionCount !== 0) errors.push("unexpected true permission remains");

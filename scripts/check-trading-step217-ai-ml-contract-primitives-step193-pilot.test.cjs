@@ -27,7 +27,6 @@ test("Step217 stays scoped to Step193 primitive migration without runtime or UI 
     .map((line) => line.slice(3).trim());
   for (const forbidden of [
     "server/src/services/tradingAiMlStrategyManagement.js",
-    "server/src/services/tradingAiMlDatasetArchitecture.js",
     "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
     "server/src/services/tradingAiMlReadinessGateSummary.js",
     "server/src/services/tradingAiMlBatchContractReview.js",

@@ -18,6 +18,8 @@ const STEP215_SCRIPT = "check:trading-step215-ai-ml-migration-regression-consoli
 
 const REQUIRED_FILES = [
   "package.json",
+  "server/src/services/tradingAiMlDatasetArchitecture.js",
+  "server/src/services/tradingAiMlDatasetArchitecture.test.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   "server/src/services/tradingAiMlFeaturePipelinePreflight.test.js",
@@ -40,6 +42,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
   "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
   "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs",
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -195,12 +199,12 @@ function getTouchedFiles() {
   assert(regressionPlanValidation.ok, `regression plan invalid: ${regressionPlanValidation.errors.join(", ")}`);
   assert(regressionPlan.duplicateFileCount === 0, "regression plan must not duplicate test files");
   assert(regressionPlan.sourceCheckerCount >= 10, "regression plan source checker count too small");
-  assert(regressionPlan.sourceCheckerCount === 12, "regression plan source checker count mismatch");
-  assert(regressionPlan.uniqueServiceTestCount === 9, "regression plan service test count mismatch");
-  assert(regressionPlan.uniqueMigrationCheckerTestCount === 13, "regression plan migration checker count mismatch");
-  assert(regressionPlan.uniqueSupportingTestCount === 10, "regression plan supporting test count mismatch");
-  assert(regressionPlan.uniqueCheckerTestCount === 23, "regression plan checker test count mismatch");
-  assert(regressionPlan.uniqueTestFileCount >= 32, "regression plan test file coverage too small");
+  assert(regressionPlan.sourceCheckerCount === 13, "regression plan source checker count mismatch");
+  assert(regressionPlan.uniqueServiceTestCount === 10, "regression plan service test count mismatch");
+  assert(regressionPlan.uniqueMigrationCheckerTestCount === 14, "regression plan migration checker count mismatch");
+  assert(regressionPlan.uniqueSupportingTestCount === 11, "regression plan supporting test count mismatch");
+  assert(regressionPlan.uniqueCheckerTestCount === 25, "regression plan checker test count mismatch");
+  assert(regressionPlan.uniqueTestFileCount >= 35, "regression plan test file coverage too small");
   const successResult = buildAiMlPrimitivesMigrationRegressionResult(regressionPlan);
   const dryRunResult = runAiMlPrimitivesMigrationRegression({ dryRun: true });
   const publicSummary = buildAiMlPrimitivesMigrationRegressionPublicSummary(successResult);
@@ -208,7 +212,7 @@ function getTouchedFiles() {
   assert(successResult.executed === true, "runner success result must execute");
   assert(dryRunResult.passed === false, "runner dry-run result must not pass");
   assert(dryRunResult.executed === false, "runner dry-run result must not execute");
-  assert(publicSummary.uniqueCheckerTestCount === 23, "public summary checker count mismatch");
+  assert(publicSummary.uniqueCheckerTestCount === 25, "public summary checker count mismatch");
   assert(!JSON.stringify(publicSummary).includes("repoRoot"), "public summary must not include repoRoot");
 
   const touchedFiles = getTouchedFiles();

@@ -18,9 +18,9 @@ function getAudit() {
 
 test("Scenario A: complete stage coverage", async () => {
   const audit = await getAudit();
-  assert.equal(audit.scope, "step193_to_step200");
-  assert.equal(audit.expectedStageCount, 8);
-  assert.equal(audit.migratedStageCount, 8);
+  assert.equal(audit.scope, "step192_to_step200");
+  assert.equal(audit.expectedStageCount, 9);
+  assert.equal(audit.migratedStageCount, 9);
   assert.deepEqual(audit.stageOrder, AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS);
   assert.deepEqual(audit.stageAudits.map((stage) => stage.stepId), AI_ML_PRIMITIVE_MIGRATION_STAGES.map((stage) => stage.stepId));
 });
@@ -29,6 +29,7 @@ test("Scenario B: correct inheritance chain", async () => {
   const audit = await getAudit();
   assert.ok(audit.stageAudits.every((stage) => stage.inheritanceOk));
   assert.deepEqual(audit.stageAudits.map((stage) => stage.inheritedFlagExport), [
+    "STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS",
     "STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS",
     "STEP193_AI_ML_FEATURE_PIPELINE_FLAGS",
     "STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS",
@@ -42,7 +43,7 @@ test("Scenario B: correct inheritance chain", async () => {
 
 test("Scenario C: single flag source", async () => {
   const audit = await getAudit();
-  assert.equal(audit.singleFlagSourceStageCount, 8);
+  assert.equal(audit.singleFlagSourceStageCount, 9);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.flagExportCount, 1, stage.stepId);
     assert.equal(stage.builderCallCount, 1, stage.stepId);
@@ -60,7 +61,7 @@ test("Scenario D: no legacy duplicate", async () => {
 
 test("Scenario E: explicit allowlist", async () => {
   const audit = await getAudit();
-  assert.equal(audit.explicitAllowlistStageCount, 8);
+  assert.equal(audit.explicitAllowlistStageCount, 9);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.actualTrueKeyCount, stage.allowlistKeyCount, stage.stepId);
     assert.deepEqual(stage.unexpectedTrueKeys, [], stage.stepId);
@@ -94,8 +95,13 @@ test("Scenario G: output compatibility coverage", async () => {
   assert.ok(audit.stageAudits.every((stage) => stage.scenarioCoverageStatus === "complete"));
   assert.ok(audit.stageAudits.every((stage) => stage.contractScenarioCoverageStatus === "complete"));
   assert.ok(audit.stageAudits.every((stage) => stage.migrationRegressionCoverageStatus === "complete"));
+  const step192 = audit.stageAudits.find((stage) => stage.stepId === "step192");
   const step194 = audit.stageAudits.find((stage) => stage.stepId === "step194");
   const step193 = audit.stageAudits.find((stage) => stage.stepId === "step193");
+  assert.equal(step192.contractScenarioExpectedCount, 0);
+  assert.equal(step192.migrationRegressionTestExpectedCount, 8);
+  assert.equal(step192.contractScenarioCoveredCount, 0);
+  assert.equal(step192.migrationRegressionTestCoveredCount, 8);
   assert.equal(step193.contractScenarioExpectedCount, 0);
   assert.equal(step193.migrationRegressionTestExpectedCount, 6);
   assert.equal(step193.contractScenarioCoveredCount, 0);

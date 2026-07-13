@@ -1,19 +1,45 @@
 import { STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS, buildAiMlStrategyManagementRegistry } from "./tradingAiMlStrategyManagement.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS = Object.freeze({
-  ...STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS,
+export const STEP192_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({});
+
+export const STEP192_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   datasetBuildAllowed: false,
   featureGenerationAllowed: false,
   modelTrainingAllowed: false,
   modelDeploymentAllowed: false,
   modelAutoApprovalAllowed: false,
+  modelArtifactCreationAllowed: false,
   providerCallsAllowed: false,
   orderSubmissionAllowed: false,
+  runtimeRouteAllowed: false,
   dbMigrationAllowed: false,
   dbWriteAllowed: false,
   publicUiAllowed: false,
+  publicUiExposureAllowed: false,
   readyForLiveGuardedTrading: false,
 });
+
+export const STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS,
+  allowedMetadataFlags: STEP192_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP192_ADDITIONAL_FALSE_FLAGS,
+});
+
+const STEP192_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  AI_ML_STAGE_IDS.STEP_191_STRATEGY_MANAGEMENT,
+  AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE,
+  AI_ML_CONTRACT_STATUS.BLOCKED,
+]);
 
 export const TRADING_AI_ML_DATASET_ARCHITECTURE_MODEL = Object.freeze({
   datasetArchitectureId: "string",
@@ -450,8 +476,151 @@ function validateDatasetArchitecture(architecture) {
   };
 }
 
+function maybeSortByKey(items, key, shouldSort) {
+  return shouldSort ? sortAiMlMetadataByKey(items, key) : Object.freeze([...items]);
+}
+
+function sanitizeDatasetFamilies(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((family) => Object.freeze({
+    datasetFamilyId: sanitizeAiMlMetadataValue(family?.datasetFamilyId, "dataset_family"),
+    modelType: sanitizeAiMlMetadataValue(family?.modelType, "model_type"),
+    purpose: sanitizeAiMlMetadataValue(family?.purpose, "purpose"),
+    inputFamilies: sanitizeAiMlMetadataArray(family?.inputFamilies),
+    labelFamilies: sanitizeAiMlMetadataArray(family?.labelFamilies),
+    horizons: sanitizeAiMlMetadataArray(family?.horizons),
+    pointInTimeRequired: family?.pointInTimeRequired === true,
+    leakageReviewStatus: sanitizeAiMlMetadataValue(family?.leakageReviewStatus, "required_before_build"),
+    leakageRisks: sanitizeAiMlMetadataArray(family?.leakageRisks),
+    leakageControls: sanitizeAiMlMetadataArray(family?.leakageControls),
+    blockedReasons: sanitizeAiMlMetadataArray(family?.blockedReasons),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "datasetFamilyId", shouldSort);
+}
+
+function sanitizeLabelDefinitions(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((label) => Object.freeze({
+    labelId: sanitizeAiMlMetadataValue(label?.labelId, "label"),
+    modelType: sanitizeAiMlMetadataValue(label?.modelType, "model_type"),
+    labelName: sanitizeAiMlMetadataValue(label?.labelName, "label_name"),
+    predictionHorizon: sanitizeAiMlMetadataValue(label?.predictionHorizon, "prediction_horizon"),
+    labelWindowStart: sanitizeAiMlMetadataValue(label?.labelWindowStart, "label_window_start"),
+    labelWindowEnd: sanitizeAiMlMetadataValue(label?.labelWindowEnd, "label_window_end"),
+    targetDefinition: sanitizeAiMlMetadataValue(label?.targetDefinition, "target_definition"),
+    positiveClassDefinition: sanitizeAiMlMetadataValue(label?.positiveClassDefinition, "positive_class_definition"),
+    binningPolicy: sanitizeAiMlMetadataValue(label?.binningPolicy, "binning_policy"),
+    embargoPeriod: sanitizeAiMlMetadataValue(label?.embargoPeriod, "embargo_period"),
+    leakageControls: sanitizeAiMlMetadataArray(label?.leakageControls),
+    status: sanitizeAiMlMetadataValue(label?.status, "design_only"),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "labelId", shouldSort);
+}
+
+function sanitizeFeatureTimestampRules(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((feature) => Object.freeze({
+    featureId: sanitizeAiMlMetadataValue(feature?.featureId, "feature"),
+    featureName: sanitizeAiMlMetadataValue(feature?.featureName, "feature_name"),
+    sourceFamily: sanitizeAiMlMetadataValue(feature?.sourceFamily, "source_family"),
+    lookbackWindow: sanitizeAiMlMetadataValue(feature?.lookbackWindow, "lookback_window"),
+    calculationFrequency: sanitizeAiMlMetadataValue(feature?.calculationFrequency, "calculation_frequency"),
+    availableAtRule: sanitizeAiMlMetadataValue(feature?.availableAtRule, "available_at_rule"),
+    normalization: sanitizeAiMlMetadataValue(feature?.normalization, "normalization"),
+    missingValuePolicy: sanitizeAiMlMetadataValue(feature?.missingValuePolicy, "missing_value_policy"),
+    leakageRisk: sanitizeAiMlMetadataValue(feature?.leakageRisk, "leakage_risk"),
+    version: sanitizeAiMlMetadataValue(feature?.version, "feature_timestamp_v0"),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "featureId", shouldSort);
+}
+
+function sanitizePointInTimeRules(value) {
+  const rules = cloneAiMlMetadata(value) || {};
+  return Object.freeze({
+    requiredFields: sanitizeAiMlMetadataArray(rules.requiredFields),
+    rules: sanitizeAiMlMetadataArray(rules.rules),
+    status: sanitizeAiMlMetadataValue(rules.status, "design_only"),
+    redacted: true,
+  });
+}
+
+function sanitizeSplitPolicies(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((policy) => Object.freeze({
+    splitPolicyId: sanitizeAiMlMetadataValue(policy?.splitPolicyId, "split_policy"),
+    policyType: sanitizeAiMlMetadataValue(policy?.policyType, "chronological"),
+    randomSplitAllowed: false,
+    trainWindow: sanitizeAiMlMetadataValue(policy?.trainWindow, "train_window"),
+    validationWindow: sanitizeAiMlMetadataValue(policy?.validationWindow, "validation_window"),
+    testWindow: sanitizeAiMlMetadataValue(policy?.testWindow, "test_window"),
+    embargoRule: sanitizeAiMlMetadataValue(policy?.embargoRule, "embargo_rule"),
+    purgeOverlapRequired: policy?.purgeOverlapRequired === false ? false : true,
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "splitPolicyId", shouldSort);
+}
+
+function sanitizeWalkForwardPolicies(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((policy) => Object.freeze({
+    walkForwardPolicyId: sanitizeAiMlMetadataValue(policy?.walkForwardPolicyId, "walk_forward_policy"),
+    windowType: sanitizeAiMlMetadataValue(policy?.windowType, "window_type"),
+    trainWindowMinimum: sanitizeAiMlMetadataValue(policy?.trainWindowMinimum, "train_window_minimum"),
+    validationWindow: sanitizeAiMlMetadataValue(policy?.validationWindow, "validation_window"),
+    testWindow: sanitizeAiMlMetadataValue(policy?.testWindow, "test_window"),
+    stepSize: sanitizeAiMlMetadataValue(policy?.stepSize, "step_size"),
+    embargoRule: sanitizeAiMlMetadataValue(policy?.embargoRule, "embargo_rule"),
+    leakageReviewRequired: policy?.leakageReviewRequired === false ? false : true,
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "walkForwardPolicyId", shouldSort);
+}
+
+function sanitizePolicyMetadata(value, fallback = {}) {
+  const policy = cloneAiMlMetadata(value) || fallback;
+  const sanitizedEntries = Object.entries(policy).map(([key, item]) => {
+    if (Array.isArray(item)) return [key, sanitizeAiMlMetadataArray(item)];
+    if (typeof item === "boolean") return [key, item];
+    return [key, sanitizeAiMlMetadataValue(item, key)];
+  });
+  return Object.freeze(Object.fromEntries(sanitizedEntries));
+}
+
+export function normalizeStep192DatasetArchitectureSnapshotForAdmin(snapshot) {
+  const clonedSnapshot = cloneAiMlMetadata(snapshot) || {};
+  const builderInput = {};
+
+  if (Object.hasOwn(clonedSnapshot, "strategyRegistryId")) {
+    builderInput.strategyRegistry = {
+      registryId: sanitizeAiMlMetadataValue(clonedSnapshot.strategyRegistryId, "strategy_registry"),
+    };
+  }
+
+  for (const field of [
+    "datasetFamilies",
+    "labelDefinitions",
+    "featureTimestampRules",
+    "pointInTimeRules",
+    "splitPolicies",
+    "walkForwardPolicies",
+    "leakageControls",
+    "versioningPolicy",
+    "lineagePolicy",
+    "retentionPolicy",
+    "blockedOperations",
+    "implementationContracts",
+  ]) {
+    if (Object.hasOwn(clonedSnapshot, field)) {
+      builderInput[field] = clonedSnapshot[field];
+    }
+  }
+
+  return buildAiMlDatasetArchitecture(builderInput);
+}
+
 export function buildAiMlDatasetArchitecture(input = {}) {
-  const strategyRegistry = input.strategyRegistry || buildAiMlStrategyManagementRegistry(input);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const strategyRegistry = sourceInput.strategyRegistry
+    ? cloneAiMlMetadata(sourceInput.strategyRegistry)
+    : buildAiMlStrategyManagementRegistry(sourceInput);
   const architecture = {
     datasetArchitectureId: "step192_admin_ai_ml_dataset_architecture",
     scope: "admin_ai_ml_strategy_lab",
@@ -459,18 +628,31 @@ export function buildAiMlDatasetArchitecture(input = {}) {
     source: "deterministic_mock_dataset_registry",
     strategyRegistryId: strategyRegistry.registryId,
     redacted: true,
-    datasetFamilies: input.datasetFamilies || DATASET_FAMILIES,
-    labelDefinitions: input.labelDefinitions || LABEL_DEFINITIONS,
-    featureTimestampRules: input.featureTimestampRules || FEATURE_TIMESTAMP_RULES,
-    pointInTimeRules: POINT_IN_TIME_RULES,
-    splitPolicies: input.splitPolicies || SPLIT_POLICIES,
-    walkForwardPolicies: input.walkForwardPolicies || WALK_FORWARD_POLICIES,
-    leakageControls: [...LEAKAGE_CONTROLS],
-    versioningPolicy: VERSIONING_POLICY,
-    lineagePolicy: LINEAGE_POLICY,
-    retentionPolicy: RETENTION_POLICY,
-    blockedOperations: [...BLOCKED_OPERATIONS],
-    implementationContracts: IMPLEMENTATION_CONTRACTS,
+    datasetFamilies: sanitizeDatasetFamilies(sourceInput.datasetFamilies || DATASET_FAMILIES, Boolean(sourceInput.datasetFamilies)),
+    labelDefinitions: sanitizeLabelDefinitions(sourceInput.labelDefinitions || LABEL_DEFINITIONS, Boolean(sourceInput.labelDefinitions)),
+    featureTimestampRules: sanitizeFeatureTimestampRules(sourceInput.featureTimestampRules || FEATURE_TIMESTAMP_RULES, Boolean(sourceInput.featureTimestampRules)),
+    pointInTimeRules: sanitizePointInTimeRules(sourceInput.pointInTimeRules || POINT_IN_TIME_RULES),
+    splitPolicies: sanitizeSplitPolicies(sourceInput.splitPolicies || SPLIT_POLICIES, Boolean(sourceInput.splitPolicies)),
+    walkForwardPolicies: sanitizeWalkForwardPolicies(sourceInput.walkForwardPolicies || WALK_FORWARD_POLICIES, Boolean(sourceInput.walkForwardPolicies)),
+    leakageControls: sanitizeAiMlMetadataArray(sourceInput.leakageControls || LEAKAGE_CONTROLS),
+    versioningPolicy: sanitizePolicyMetadata(sourceInput.versioningPolicy || VERSIONING_POLICY),
+    lineagePolicy: Object.freeze({
+      ...sanitizePolicyMetadata(sourceInput.lineagePolicy || LINEAGE_POLICY),
+      rawValueStorageAllowed: false,
+      privatePathStorageAllowed: false,
+      digestStorageAllowed: false,
+    }),
+    retentionPolicy: Object.freeze({
+      ...sanitizePolicyMetadata(sourceInput.retentionPolicy || RETENTION_POLICY),
+      publicExposureAllowed: false,
+      redactionRequired: true,
+    }),
+    blockedOperations: sanitizeAiMlMetadataArray(sourceInput.blockedOperations || BLOCKED_OPERATIONS),
+    implementationContracts: Object.freeze(normalizeAiMlMetadataArray(sourceInput.implementationContracts || IMPLEMENTATION_CONTRACTS).map((contract) => Object.freeze({
+      step: sanitizeAiMlMetadataValue(contract?.step, "Step 193"),
+      name: sanitizeAiMlMetadataValue(contract?.name, "implementation_contract"),
+      allowedScope: sanitizeAiMlMetadataValue(contract?.allowedScope, "metadata_only"),
+    }))),
     nextImplementationStep: "ai_ml_feature_pipeline_design_gate",
   };
 
@@ -483,16 +665,19 @@ export function buildAiMlDatasetArchitecture(input = {}) {
     splitPolicyCount: architecture.splitPolicies.length,
     walkForwardPolicyCount: architecture.walkForwardPolicies.length,
     validation: validateDatasetArchitecture(architecture),
-    datasetBuildStatus: "blocked",
-    featureGenerationStatus: "blocked",
-    trainingStatus: "blocked",
-    dbWriteStatus: "blocked",
-    providerOrderLiveStatus: "blocked",
+    datasetBuildStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    featureGenerationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    trainingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    dbWriteStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    providerOrderLiveStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
   };
 }
 
 export function buildAdminTradingAiMlDatasetArchitectureStatus(input = {}) {
-  const datasetArchitecture = input.datasetArchitecture || buildAiMlDatasetArchitecture(input);
+  const options = cloneAiMlMetadata(input) || {};
+  const datasetArchitecture = options.datasetArchitecture
+    ? normalizeStep192DatasetArchitectureSnapshotForAdmin(options.datasetArchitecture)
+    : buildAiMlDatasetArchitecture(options);
   return {
     ok: true,
     step: "Step 192: Design AI/ML dataset and labeling architecture",
@@ -538,6 +723,8 @@ export function buildAdminTradingAiMlDatasetArchitectureStatus(input = {}) {
     dbMigrationAllowed: false,
     dbWriteAllowed: false,
     publicUiAllowed: false,
+    readyForReadOnlyProviderCalls: false,
+    readyForOrderSubmission: false,
     readyForLiveGuardedTrading: false,
     persistentStorageUsed: false,
     dbWriteUsed: false,

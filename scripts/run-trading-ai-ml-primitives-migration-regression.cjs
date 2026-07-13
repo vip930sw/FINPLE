@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const SOURCE_CHECKERS = Object.freeze([
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs",
   "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.cjs",
   "scripts/check-trading-step202-ai-ml-contract-primitives-step199-pilot.cjs",
   "scripts/check-trading-step207-ai-ml-contract-primitives-step198-pilot.cjs",
@@ -19,6 +20,7 @@ const SOURCE_CHECKERS = Object.freeze([
 
 const SERVICE_TEST_FILES = Object.freeze([
   "server/src/services/tradingAiMlContractPrimitives.test.js",
+  "server/src/services/tradingAiMlDatasetArchitecture.test.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   "server/src/services/tradingAiMlArchitectureMilestoneReview.test.js",
   "server/src/services/tradingAiMlManifestHandoffEligibility.test.js",
@@ -30,6 +32,7 @@ const SERVICE_TEST_FILES = Object.freeze([
 ]);
 
 const MIGRATION_CHECKER_TEST_FILES = Object.freeze([
+  "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.test.cjs",
   "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.test.cjs",
   "scripts/check-trading-step202-ai-ml-contract-primitives-step199-pilot.test.cjs",
   "scripts/check-trading-step207-ai-ml-contract-primitives-step198-pilot.test.cjs",
@@ -46,6 +49,7 @@ const MIGRATION_CHECKER_TEST_FILES = Object.freeze([
 ]);
 
 const SUPPORTING_TEST_FILES = Object.freeze([
+  "scripts/check-trading-step192-ai-ml-dataset-and-labeling-architecture.test.cjs",
   "scripts/check-trading-step193-ai-ml-feature-pipeline-architecture.test.cjs",
   "scripts/check-trading-step194-ai-ml-feature-pipeline-preflight.test.cjs",
   "scripts/check-trading-step195-ai-ml-readiness-gate-summary.test.cjs",

@@ -29,7 +29,6 @@ test("Step218 stays scoped to Step193 admin snapshot redaction", () => {
 
   for (const forbidden of [
     "server/src/services/tradingAiMlStrategyManagement.js",
-    "server/src/services/tradingAiMlDatasetArchitecture.js",
     "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
     "server/src/services/tradingAiMlReadinessGateSummary.js",
     "server/src/services/tradingAiMlBatchContractReview.js",
@@ -38,8 +37,6 @@ test("Step218 stays scoped to Step193 admin snapshot redaction", () => {
     "server/src/services/tradingAiMlManifestHandoffEligibility.js",
     "server/src/services/tradingAiMlArchitectureMilestoneReview.js",
     "server/src/services/tradingAiMlContractPrimitives.js",
-    "scripts/trading-ai-ml-primitives-migration-audit.cjs",
-    "scripts/trading-ai-ml-primitives-migration-audit.test.cjs",
     "server/src/services/tradingAdminLabDashboardShell.js",
     "src/components/TradingReadinessPanel.jsx",
     "src/App.css",

@@ -180,11 +180,11 @@ function extractArrayBlock(source, name) {
   assert(registryValidation.ok, `protected flag registry failed: ${registryValidation.errors.join(", ")}`);
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `migration audit failed: ${validation.errors.join(", ")}`);
-  assert(audit.scope === "step193_to_step200", "audit scope mismatch");
-  assert(audit.expectedStageCount === 8, "audit expected stage count mismatch");
-  assert(audit.migratedStageCount === 8, "audit migrated stage count mismatch");
-  assert(audit.singleFlagSourceStageCount === 8, "audit single flag source stage count mismatch");
-  assert(audit.explicitAllowlistStageCount === 8, "audit allowlist stage count mismatch");
+  assert(audit.scope === "step192_to_step200", "audit scope mismatch");
+  assert(audit.expectedStageCount === 9, "audit expected stage count mismatch");
+  assert(audit.migratedStageCount === 9, "audit migrated stage count mismatch");
+  assert(audit.singleFlagSourceStageCount === 9, "audit single flag source stage count mismatch");
+  assert(audit.explicitAllowlistStageCount === 9, "audit allowlist stage count mismatch");
   assert(audit.legacySpreadCount === 0, "legacy spread count must be zero");
   assert(audit.anonymousDuplicateFlagObjectCount === 0, "anonymous duplicate flag object count must be zero");
   assert(audit.unexpectedTruePermissionCount === 0, "unexpected true permission count must be zero");
