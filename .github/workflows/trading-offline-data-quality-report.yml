@@ -1,0 +1,77 @@
+name: FINPLE Offline Data-Quality Report
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-data-quality-report:
+    name: Non-blocking offline data-quality report
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run offline data-quality checks
+        id: quality_checks
+        continue-on-error: true
+        run: |
+          npm run check:trading-step232-offline-data-quality-gate-readiness
+          npm run check:trading-step231-offline-data-quality-gate
+          npm run check:trading-step230-offline-dataset-quality-batch-summary
+          npm run check:trading-step229-offline-dataset-quality-profile
+
+      - name: Generate offline data-quality report
+        id: offline_report
+        if: always()
+        env:
+          QUALITY_CHECK_OUTCOME: ${{ steps.quality_checks.outcome }}
+        run: |
+          mkdir -p artifacts/finple-offline-data-quality-report
+          if [ "$QUALITY_CHECK_OUTCOME" = "success" ]; then
+            npm run report:trading-offline-data-quality-ci -- --output-dir artifacts/finple-offline-data-quality-report
+          else
+            npm run report:trading-offline-data-quality-ci -- --output-dir artifacts/finple-offline-data-quality-report --execution-error-code QUALITY_CHECK_EXECUTION_FAILED
+          fi
+
+      - name: Add report summary
+        if: always()
+        run: |
+          if [ -f artifacts/finple-offline-data-quality-report/offline-data-quality-report.txt ]; then
+            cat artifacts/finple-offline-data-quality-report/offline-data-quality-report.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "FINPLE Offline Data-Quality Report"
+              echo
+              echo "Execution: execution_error (REPORT_GENERATION_FAILED)"
+              echo "Merge blocking: No"
+              echo "Deployment blocking: No"
+              echo "Model training enabled: No"
+              echo "Live trading readiness: Blocked"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload offline data-quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finple-offline-data-quality-report
+          path: |
+            artifacts/finple-offline-data-quality-report/offline-data-quality-report.json
+            artifacts/finple-offline-data-quality-report/offline-data-quality-report.txt
+          if-no-files-found: warn
+          retention-days: 14
