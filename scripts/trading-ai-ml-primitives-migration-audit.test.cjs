@@ -18,9 +18,9 @@ function getAudit() {
 
 test("Scenario A: complete stage coverage", async () => {
   const audit = await getAudit();
-  assert.equal(audit.scope, "step194_to_step200");
-  assert.equal(audit.expectedStageCount, 7);
-  assert.equal(audit.migratedStageCount, 7);
+  assert.equal(audit.scope, "step193_to_step200");
+  assert.equal(audit.expectedStageCount, 8);
+  assert.equal(audit.migratedStageCount, 8);
   assert.deepEqual(audit.stageOrder, AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS);
   assert.deepEqual(audit.stageAudits.map((stage) => stage.stepId), AI_ML_PRIMITIVE_MIGRATION_STAGES.map((stage) => stage.stepId));
 });
@@ -29,6 +29,7 @@ test("Scenario B: correct inheritance chain", async () => {
   const audit = await getAudit();
   assert.ok(audit.stageAudits.every((stage) => stage.inheritanceOk));
   assert.deepEqual(audit.stageAudits.map((stage) => stage.inheritedFlagExport), [
+    "STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS",
     "STEP193_AI_ML_FEATURE_PIPELINE_FLAGS",
     "STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS",
     "STEP195_AI_ML_READINESS_GATE_FLAGS",
@@ -41,7 +42,7 @@ test("Scenario B: correct inheritance chain", async () => {
 
 test("Scenario C: single flag source", async () => {
   const audit = await getAudit();
-  assert.equal(audit.singleFlagSourceStageCount, 7);
+  assert.equal(audit.singleFlagSourceStageCount, 8);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.flagExportCount, 1, stage.stepId);
     assert.equal(stage.builderCallCount, 1, stage.stepId);
@@ -59,7 +60,7 @@ test("Scenario D: no legacy duplicate", async () => {
 
 test("Scenario E: explicit allowlist", async () => {
   const audit = await getAudit();
-  assert.equal(audit.explicitAllowlistStageCount, 7);
+  assert.equal(audit.explicitAllowlistStageCount, 8);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.actualTrueKeyCount, stage.allowlistKeyCount, stage.stepId);
     assert.deepEqual(stage.unexpectedTrueKeys, [], stage.stepId);
@@ -94,6 +95,11 @@ test("Scenario G: output compatibility coverage", async () => {
   assert.ok(audit.stageAudits.every((stage) => stage.contractScenarioCoverageStatus === "complete"));
   assert.ok(audit.stageAudits.every((stage) => stage.migrationRegressionCoverageStatus === "complete"));
   const step194 = audit.stageAudits.find((stage) => stage.stepId === "step194");
+  const step193 = audit.stageAudits.find((stage) => stage.stepId === "step193");
+  assert.equal(step193.contractScenarioExpectedCount, 0);
+  assert.equal(step193.migrationRegressionTestExpectedCount, 6);
+  assert.equal(step193.contractScenarioCoveredCount, 0);
+  assert.equal(step193.migrationRegressionTestCoveredCount, 6);
   assert.equal(step194.contractScenarioExpectedCount, 9);
   assert.equal(step194.migrationRegressionTestExpectedCount, 6);
   assert.equal(step194.contractScenarioCoveredCount, 9);
@@ -135,8 +141,8 @@ test("Scenario L: no runtime authority change", async () => {
   assert.equal(audit.runtimeCapabilityStatus, "not_implemented");
   assert.equal(audit.executionReadinessStatus, "blocked");
   assert.equal(audit.orderAuthorityStatus, "external_blocker");
-  assert.equal(audit.checkerConsolidationStatus, "eligible_for_post_step194_review");
-  assert.equal(audit.nextRecommendedImplementation, "post_step194_checker_and_marker_consolidation_review");
+  assert.equal(audit.checkerConsolidationStatus, "eligible_for_post_step193_review");
+  assert.equal(audit.nextRecommendedImplementation, "post_step193_checker_and_marker_consolidation_review");
   assert.equal(audit.overallStatus, "shared_primitives_migration_milestone_complete_execution_blocked");
 });
 
@@ -298,4 +304,19 @@ test("Scenario W: Step194 contract and migration marker lists stay separated", (
     "scenario_i_prohibited_execution_intent",
   ]);
   assert.ok(stage.expectedMigrationRegressionTestMarkers.every((marker) => !marker.startsWith("scenario_")));
+});
+
+test("Scenario X: Step193 migration taxonomy is regression-only", () => {
+  const stage = AI_ML_PRIMITIVE_MIGRATION_STAGES.find((candidate) => candidate.stepId === "step193");
+  assert.equal(validateAiMlMigrationScenarioTaxonomy().ok, true);
+  assert.deepEqual(stage.expectedContractScenarioMarkers, []);
+  assert.deepEqual(stage.expectedMigrationRegressionTestMarkers, [
+    "Step193 shared flag compatibility",
+    "Step193 inherited execution conflict",
+    "Step193 explicit metadata allowlist",
+    "Step193 shared helper compatibility",
+    "Step193 full default output compatibility",
+    "Step193 mutation resistance",
+  ]);
+  assert.deepEqual(stage.expectedAllowlistKeys, []);
 });

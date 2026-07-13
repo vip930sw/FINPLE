@@ -1,31 +1,40 @@
 import { STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS, buildAiMlDatasetArchitecture } from "./tradingAiMlDatasetArchitecture.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP193_AI_ML_FEATURE_PIPELINE_FLAGS = Object.freeze({
-  ...STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
+export const STEP193_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({});
+
+export const STEP193_ADDITIONAL_FALSE_FLAGS = Object.freeze({
   featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
   modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
   modelAutoApprovalAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
+  runtimeRouteAllowed: false,
+  publicUiAllowed: false,
 });
+
+export const STEP193_AI_ML_FEATURE_PIPELINE_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS,
+  allowedMetadataFlags: STEP193_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP193_ADDITIONAL_FALSE_FLAGS,
+});
+
+const STEP193_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  "actualDataDownloadAllowed: false",
+  "featureGenerationAllowed: false",
+  "featureFileCreationAllowed: false",
+  "datasetBuildAllowed: false",
+  "providerCallsAllowed: false",
+  "orderSubmissionAllowed: false",
+  "readyForLiveGuardedTrading: false",
+]);
 
 export const TRADING_AI_ML_FEATURE_PIPELINE_MODEL = Object.freeze({
   featurePipelineArchitectureId: "string",
@@ -45,6 +54,15 @@ export const TRADING_AI_ML_FEATURE_PIPELINE_MODEL = Object.freeze({
   futureFeatureStoreContract: "provider_neutral_feature_store_contract",
   executionSafety: "blocked_execution_and_persistence_status",
   nextImplementationStep: "ai_ml_feature_pipeline_preflight_gate",
+  stageReferences: Object.freeze({
+    sourceDatasetArchitecture: AI_ML_STAGE_IDS.STEP_192_DATASET_LABELING_ARCHITECTURE,
+    featurePipelineArchitecture: AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
+  }),
+  sharedStatusVocabulary: Object.freeze({
+    featureGenerationStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    datasetBuildStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    trainingStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+  }),
 });
 
 const FEATURE_SOURCE_MAPPINGS = Object.freeze([
@@ -496,15 +514,84 @@ function validateFeaturePipelineArchitecture(architecture) {
   if (architecture.futureFeatureStoreContract.supabaseConnectedNow !== false) blockers.push("future_feature_store_connected");
 
   return {
-    validationStatus: blockers.length > 0 ? "blocked" : "design_ready",
+    validationStatus: blockers.length > 0 ? AI_ML_CONTRACT_STATUS.BLOCKED : "design_ready",
     blockers,
     warnings: ["feature_generation_not_started", "dataset_builder_not_started", "training_pipeline_not_started", "feature_store_not_connected"],
     redacted: true,
   };
 }
 
+function maybeSortByKey(items, key, shouldSort) {
+  return shouldSort ? sortAiMlMetadataByKey(items, key) : Object.freeze([...items]);
+}
+
+function sanitizeFeatureSourceMappings(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((mapping) => Object.freeze({
+    ...cloneAiMlMetadata(mapping),
+    featureKey: sanitizeAiMlMetadataValue(mapping?.featureKey, "feature_key"),
+    sourceId: sanitizeAiMlMetadataValue(mapping?.sourceId, "source_id"),
+    sourceField: sanitizeAiMlMetadataValue(mapping?.sourceField, "source_field"),
+    allowedUses: sanitizeAiMlMetadataArray(mapping?.allowedUses),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "featureKey", shouldSort);
+}
+
+function sanitizeRollingFeatureContracts(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((contract) => Object.freeze({
+    ...cloneAiMlMetadata(contract),
+    featureKey: sanitizeAiMlMetadataValue(contract?.featureKey, "feature_key"),
+    inputField: sanitizeAiMlMetadataValue(contract?.inputField, "input_field"),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "featureKey", shouldSort);
+}
+
+function sanitizeLeakageGuards(value, shouldSort = false) {
+  const mapped = normalizeAiMlMetadataArray(value).map((guard) => Object.freeze({
+    ...cloneAiMlMetadata(guard),
+    guardKey: sanitizeAiMlMetadataValue(guard?.guardKey, "guard_key"),
+    description: sanitizeAiMlMetadataValue(guard?.description, "guard"),
+    failureCode: sanitizeAiMlMetadataValue(guard?.failureCode, "failure_code"),
+    redacted: true,
+  }));
+  return maybeSortByKey(mapped, "guardKey", shouldSort);
+}
+
+function sanitizePointInTimeJoinPolicy(value) {
+  const policy = cloneAiMlMetadata(value) || {};
+  return Object.freeze({
+    ...policy,
+    requiredRules: Object.freeze(normalizeAiMlMetadataArray(policy.requiredRules).map((rule) => sanitizeAiMlMetadataValue(rule))),
+    redacted: true,
+  });
+}
+
+function sanitizeFeatureVersioningLineage(value) {
+  const lineage = cloneAiMlMetadata(value) || {};
+  return Object.freeze({
+    ...lineage,
+    lineageFields: Object.freeze(normalizeAiMlMetadataArray(lineage.lineageFields).map((field) => sanitizeAiMlMetadataValue(field))),
+    policies: Object.freeze(normalizeAiMlMetadataArray(lineage.policies).map((policy) => sanitizeAiMlMetadataValue(policy))),
+    redacted: true,
+  });
+}
+
+function sanitizeFutureFeatureStoreContract(value) {
+  const contract = cloneAiMlMetadata(value) || {};
+  return Object.freeze({
+    ...contract,
+    contractId: sanitizeAiMlMetadataValue(contract.contractId, "feature_store_contract"),
+    concepts: sanitizeAiMlMetadataArray(contract.concepts),
+    redacted: true,
+  });
+}
+
 export function buildAiMlFeaturePipelineArchitecture(input = {}) {
-  const datasetArchitecture = input.datasetArchitecture || buildAiMlDatasetArchitecture(input);
+  const sourceInput = cloneAiMlMetadata(input) || {};
+  const datasetArchitecture = sourceInput.datasetArchitecture
+    ? cloneAiMlMetadata(sourceInput.datasetArchitecture)
+    : buildAiMlDatasetArchitecture(sourceInput);
   const architecture = {
     featurePipelineArchitectureId: "step193_admin_ai_ml_feature_pipeline_architecture",
     scope: "admin_ai_ml_strategy_lab",
@@ -512,16 +599,16 @@ export function buildAiMlFeaturePipelineArchitecture(input = {}) {
     source: "deterministic_mock_feature_pipeline_registry",
     datasetArchitectureId: datasetArchitecture.datasetArchitectureId,
     redacted: true,
-    featureSourceMappings: input.featureSourceMappings || FEATURE_SOURCE_MAPPINGS,
-    pointInTimeJoinPolicy: input.pointInTimeJoinPolicy || POINT_IN_TIME_JOIN_POLICY,
-    rollingFeatureContracts: input.rollingFeatureContracts || ROLLING_FEATURE_CONTRACTS,
-    missingValuePolicy: input.missingValuePolicy || MISSING_VALUE_POLICY,
-    trainOnlyNormalizationPolicy: input.trainOnlyNormalizationPolicy || TRAIN_ONLY_NORMALIZATION_POLICY,
-    featureVersioningLineage: input.featureVersioningLineage || FEATURE_VERSIONING_LINEAGE,
-    leakageGuards: input.leakageGuards || LEAKAGE_GUARDS,
-    featureQualityValidation: input.featureQualityValidation || FEATURE_QUALITY_VALIDATION,
-    datasetTrainingInterfaces: input.datasetTrainingInterfaces || DATASET_TRAINING_INTERFACES,
-    futureFeatureStoreContract: input.futureFeatureStoreContract || FUTURE_FEATURE_STORE_CONTRACT,
+    featureSourceMappings: sanitizeFeatureSourceMappings(sourceInput.featureSourceMappings || FEATURE_SOURCE_MAPPINGS, Boolean(sourceInput.featureSourceMappings)),
+    pointInTimeJoinPolicy: sanitizePointInTimeJoinPolicy(sourceInput.pointInTimeJoinPolicy || POINT_IN_TIME_JOIN_POLICY),
+    rollingFeatureContracts: sanitizeRollingFeatureContracts(sourceInput.rollingFeatureContracts || ROLLING_FEATURE_CONTRACTS, Boolean(sourceInput.rollingFeatureContracts)),
+    missingValuePolicy: Object.freeze(cloneAiMlMetadata(sourceInput.missingValuePolicy || MISSING_VALUE_POLICY)),
+    trainOnlyNormalizationPolicy: Object.freeze(cloneAiMlMetadata(sourceInput.trainOnlyNormalizationPolicy || TRAIN_ONLY_NORMALIZATION_POLICY)),
+    featureVersioningLineage: sanitizeFeatureVersioningLineage(sourceInput.featureVersioningLineage || FEATURE_VERSIONING_LINEAGE),
+    leakageGuards: sanitizeLeakageGuards(sourceInput.leakageGuards || LEAKAGE_GUARDS, Boolean(sourceInput.leakageGuards)),
+    featureQualityValidation: Object.freeze(cloneAiMlMetadata(sourceInput.featureQualityValidation || FEATURE_QUALITY_VALIDATION)),
+    datasetTrainingInterfaces: Object.freeze(cloneAiMlMetadata(sourceInput.datasetTrainingInterfaces || DATASET_TRAINING_INTERFACES)),
+    futureFeatureStoreContract: sanitizeFutureFeatureStoreContract(sourceInput.futureFeatureStoreContract || FUTURE_FEATURE_STORE_CONTRACT),
     executionSafetyStatus: EXECUTION_SAFETY_STATUS,
     blockedOperations: [...BLOCKED_OPERATIONS],
     nextImplementationStep: "ai_ml_feature_pipeline_preflight_gate",

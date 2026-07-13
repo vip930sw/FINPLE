@@ -17,10 +17,10 @@ const {
 
 function createLightweightRegistryFixture(options = {}) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "finple-step216-runner-"));
-  const sourceCheckers = Array.from({ length: 10 }, (_, index) => `checker-${index}.cjs`);
-  const serviceTestFiles = Array.from({ length: 8 }, (_, index) => `service-${index}.test.cjs`);
-  const migrationCheckerTestFiles = Array.from({ length: 11 }, (_, index) => `migration-${index}.test.cjs`);
-  const supportingTestFiles = Array.from({ length: 9 }, (_, index) => `support-${index}.test.cjs`);
+  const sourceCheckers = Array.from({ length: 11 }, (_, index) => `checker-${index}.cjs`);
+  const serviceTestFiles = Array.from({ length: 9 }, (_, index) => `service-${index}.test.cjs`);
+  const migrationCheckerTestFiles = Array.from({ length: 12 }, (_, index) => `migration-${index}.test.cjs`);
+  const supportingTestFiles = Array.from({ length: 10 }, (_, index) => `support-${index}.test.cjs`);
 
   sourceCheckers.forEach((file, index) => {
     const exitCode = options.failFirstChecker && index === 0 ? 7 : 0;
@@ -50,10 +50,12 @@ test("Step215 runner builds a complete explicit regression plan", () => {
   assert.equal(plan.uniqueServiceTestCount, SERVICE_TEST_FILES.length);
   assert.equal(plan.uniqueMigrationCheckerTestCount, MIGRATION_CHECKER_TEST_FILES.length);
   assert.equal(plan.uniqueSupportingTestCount, SUPPORTING_TEST_FILES.length);
-  assert.equal(plan.uniqueCheckerTestCount, 20);
+  assert.equal(plan.uniqueCheckerTestCount, 22);
   assert.equal(plan.duplicateFileCount, 0);
   assert.deepEqual(plan.missingFiles, []);
   assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs"), true);
+  assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs"), true);
+  assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js"), true);
   assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlFeaturePipelinePreflight.test.js"), true);
   assert.equal(plan.testFiles.includes("scripts/trading-ai-ml-primitives-migration-audit.test.cjs"), true);
 });
@@ -132,12 +134,12 @@ test("Scenario F: successful result contract", () => {
     assert.equal(result.executed, true);
     assert.equal(result.passed, true);
     assert.equal(result.status, "ai_ml_primitives_migration_regression_complete");
-    assert.equal(result.sourceCheckerCount, 10);
-    assert.equal(result.uniqueServiceTestCount, 8);
-    assert.equal(result.uniqueMigrationCheckerTestCount, 11);
-    assert.equal(result.uniqueSupportingTestCount, 9);
-    assert.equal(result.uniqueCheckerTestCount, 20);
-    assert.equal(result.uniqueTestFileCount, 28);
+    assert.equal(result.sourceCheckerCount, 11);
+    assert.equal(result.uniqueServiceTestCount, 9);
+    assert.equal(result.uniqueMigrationCheckerTestCount, 12);
+    assert.equal(result.uniqueSupportingTestCount, 10);
+    assert.equal(result.uniqueCheckerTestCount, 22);
+    assert.equal(result.uniqueTestFileCount, 31);
     assert.equal(result.duplicateFileCount, 0);
     assert.equal(result.plan.repoRoot, tempDir);
   } finally {
@@ -153,15 +155,15 @@ test("Scenario G: dry-run is not pass", () => {
   assert.equal(result.executed, false);
   assert.equal(result.passed, false);
   assert.equal(result.status, "ai_ml_primitives_migration_regression_planned_not_executed");
-  assert.equal(result.uniqueCheckerTestCount, 20);
+  assert.equal(result.uniqueCheckerTestCount, 22);
 });
 
 test("Scenario H: checker test count", () => {
   const plan = buildAiMlPrimitivesMigrationRegressionPlan();
 
-  assert.equal(plan.uniqueMigrationCheckerTestCount, 11);
-  assert.equal(plan.uniqueSupportingTestCount, 9);
-  assert.equal(plan.uniqueCheckerTestCount, 20);
+  assert.equal(plan.uniqueMigrationCheckerTestCount, 12);
+  assert.equal(plan.uniqueSupportingTestCount, 10);
+  assert.equal(plan.uniqueCheckerTestCount, 22);
   assert.equal(plan.duplicateFileCount, 0);
 });
 
@@ -179,7 +181,7 @@ test("Scenario I: child failure result", () => {
       assert.equal(error.result.executed, true);
       assert.equal(error.result.passed, false);
       assert.equal(error.result.status, "ai_ml_primitives_migration_regression_failed");
-      assert.equal(error.result.uniqueCheckerTestCount, 20);
+      assert.equal(error.result.uniqueCheckerTestCount, 22);
       assert.equal(JSON.stringify(error.result).includes(tempDir), false);
       return true;
     });
@@ -198,7 +200,7 @@ test("Scenario J: CLI public summary", () => {
   const serialized = JSON.stringify(summary);
 
   assert.equal(summary.passed, true);
-  assert.equal(summary.uniqueCheckerTestCount, 20);
+  assert.equal(summary.uniqueCheckerTestCount, 22);
   assert.equal(serialized.includes("repoRoot"), false);
   assert.equal(serialized.includes(process.cwd()), false);
 });

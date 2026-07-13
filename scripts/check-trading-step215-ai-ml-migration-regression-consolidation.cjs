@@ -18,11 +18,14 @@ const STEP215_SCRIPT = "check:trading-step215-ai-ml-migration-regression-consoli
 
 const REQUIRED_FILES = [
   "package.json",
+  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
+  "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   "server/src/services/tradingAiMlFeaturePipelinePreflight.test.js",
   "scripts/trading-ai-ml-primitives-migration-audit.cjs",
   "scripts/trading-ai-ml-primitives-migration-audit.test.cjs",
   "scripts/run-trading-ai-ml-primitives-migration-regression.cjs",
   "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
+  "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.cjs",
@@ -33,6 +36,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs",
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -100,6 +105,7 @@ function getTouchedFiles() {
   assertIncludes(packageJson, "\"check:trading-ai-ml-primitives-migration-regression\"", "package consolidated runner script");
   assertIncludes(packageJson, "scripts/run-trading-ai-ml-primitives-migration-regression.cjs", "package runner link");
   assertIncludes(packageJson, "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs", "package runner test link");
+  assertIncludes(packageJson, "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs", "package Step217 checker test link");
 
   assertIncludes(auditScript, "expectedContractScenarioMarkers", "contract scenario taxonomy");
   assertIncludes(auditScript, "expectedMigrationRegressionTestMarkers", "migration regression taxonomy");
@@ -186,8 +192,12 @@ function getTouchedFiles() {
   assert(regressionPlanValidation.ok, `regression plan invalid: ${regressionPlanValidation.errors.join(", ")}`);
   assert(regressionPlan.duplicateFileCount === 0, "regression plan must not duplicate test files");
   assert(regressionPlan.sourceCheckerCount >= 10, "regression plan source checker count too small");
-  assert(regressionPlan.uniqueCheckerTestCount === 20, "regression plan checker test count mismatch");
-  assert(regressionPlan.uniqueTestFileCount >= 28, "regression plan test file coverage too small");
+  assert(regressionPlan.sourceCheckerCount === 11, "regression plan source checker count mismatch");
+  assert(regressionPlan.uniqueServiceTestCount === 9, "regression plan service test count mismatch");
+  assert(regressionPlan.uniqueMigrationCheckerTestCount === 12, "regression plan migration checker count mismatch");
+  assert(regressionPlan.uniqueSupportingTestCount === 10, "regression plan supporting test count mismatch");
+  assert(regressionPlan.uniqueCheckerTestCount === 22, "regression plan checker test count mismatch");
+  assert(regressionPlan.uniqueTestFileCount >= 31, "regression plan test file coverage too small");
   const successResult = buildAiMlPrimitivesMigrationRegressionResult(regressionPlan);
   const dryRunResult = runAiMlPrimitivesMigrationRegression({ dryRun: true });
   const publicSummary = buildAiMlPrimitivesMigrationRegressionPublicSummary(successResult);
@@ -195,7 +205,7 @@ function getTouchedFiles() {
   assert(successResult.executed === true, "runner success result must execute");
   assert(dryRunResult.passed === false, "runner dry-run result must not pass");
   assert(dryRunResult.executed === false, "runner dry-run result must not execute");
-  assert(publicSummary.uniqueCheckerTestCount === 20, "public summary checker count mismatch");
+  assert(publicSummary.uniqueCheckerTestCount === 22, "public summary checker count mismatch");
   assert(!JSON.stringify(publicSummary).includes("repoRoot"), "public summary must not include repoRoot");
 
   const touchedFiles = getTouchedFiles();

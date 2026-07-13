@@ -13,6 +13,8 @@ const STEP194_MODULE = "server/src/services/tradingAiMlFeaturePipelinePreflight.
 
 const REQUIRED_FILES = [
   "package.json",
+  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
+  "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   STEP194_MODULE,
   "server/src/services/tradingAiMlFeaturePipelinePreflight.test.js",
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs",
@@ -28,6 +30,10 @@ const REQUIRED_FILES = [
   "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
+  "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs",
+  "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -35,7 +41,6 @@ const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
 const FORBIDDEN_TOUCHED_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
   "server/src/services/tradingAiMlDatasetArchitecture.js",
-  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
@@ -245,24 +250,24 @@ function getTouchedFiles() {
   const audit = await buildAiMlPrimitivesMigrationAudit();
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `migration audit failed: ${validation.errors.join(", ")}`);
-  assert(audit.scope === "step194_to_step200", "audit scope must be Step194 to Step200");
-  assert(audit.expectedStageCount === 7, "audit expected stage count must be 7");
-  assert(audit.migratedStageCount === 7, "audit migrated stage count must be 7");
-  assert(audit.singleFlagSourceStageCount === 7, "audit single source count must be 7");
-  assert(audit.explicitAllowlistStageCount === 7, "audit allowlist count must be 7");
+  assert(audit.scope === "step193_to_step200", "audit scope must be Step193 to Step200");
+  assert(audit.expectedStageCount === 8, "audit expected stage count must be 8");
+  assert(audit.migratedStageCount === 8, "audit migrated stage count must be 8");
+  assert(audit.singleFlagSourceStageCount === 8, "audit single source count must be 8");
+  assert(audit.explicitAllowlistStageCount === 8, "audit allowlist count must be 8");
   assert(
-    JSON.stringify(audit.stageOrder) === JSON.stringify(["step194", "step195", "step196", "step197", "step198", "step199", "step200"]),
+    JSON.stringify(audit.stageOrder) === JSON.stringify(["step193", "step194", "step195", "step196", "step197", "step198", "step199", "step200"]),
     "audit stage order mismatch",
   );
   assert(audit.protectedFlagRegistryStatus === "complete", "audit protected registry must be complete");
   assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "audit scenario taxonomy must be separated");
   assert(audit.contractScenarioCoverageStatus === "complete", "audit contract scenario coverage must be complete");
   assert(audit.migrationRegressionCoverageStatus === "complete", "audit migration regression coverage must be complete");
-  assert(audit.checkerConsolidationStatus === "eligible_for_post_step194_review", "checker consolidation status mismatch");
-  assert(audit.nextRecommendedImplementation === "post_step194_checker_and_marker_consolidation_review", "next recommendation mismatch");
+  assert(audit.checkerConsolidationStatus === "eligible_for_post_step193_review", "checker consolidation status mismatch");
+  assert(audit.nextRecommendedImplementation === "post_step193_checker_and_marker_consolidation_review", "next recommendation mismatch");
 
   assertIncludes(auditScript, "step194_feature_pipeline_preflight", "audit Step194 registry entry");
-  assertIncludes(auditTest, "scope, \"step194_to_step200\"", "audit test Step194 scope");
+  assertIncludes(auditTest, "scope, \"step193_to_step200\"", "audit test Step193 scope");
   assertIncludes(step212CheckerTest, "Step212 checker passes against repository source", "Step212 checker test linkage");
   assertIncludes(step213CheckerTest, "Step213 checker passes against repository source", "Step213 checker test linkage");
 

@@ -28,7 +28,6 @@ const REQUIRED_FILES = [
 const FORBIDDEN_TOUCHED_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
   "server/src/services/tradingAiMlDatasetArchitecture.js",
-  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlReadinessGateSummary.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
@@ -198,8 +197,8 @@ function getTouchedFiles() {
   assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "taxonomy must be separated");
   assert(audit.contractScenarioCoverageStatus === "complete", "contract scenario coverage must be complete");
   assert(audit.migrationRegressionCoverageStatus === "complete", "migration regression coverage must be complete");
-  assert(audit.scope === "step194_to_step200", "Step213 audit scope must include Step194 after Step214");
-  assert(audit.expectedStageCount === 7, "Step213 audit stage count must include Step194 after Step214");
+  assert(audit.scope === "step193_to_step200", "Step213 audit scope must include Step193 after Step217");
+  assert(audit.expectedStageCount === 8, "Step213 audit stage count must include Step193 after Step217");
 
   const touchedFiles = getTouchedFiles();
   for (const file of FORBIDDEN_TOUCHED_FILES) {

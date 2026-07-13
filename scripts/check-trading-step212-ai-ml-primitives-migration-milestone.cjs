@@ -33,7 +33,6 @@ const REQUIRED_FILES = [
 const UNTOUCHED_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
   "server/src/services/tradingAiMlDatasetArchitecture.js",
-  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
   "server/src/services/tradingAiMlBatchContractReview.js",
   "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
@@ -181,11 +180,11 @@ function extractArrayBlock(source, name) {
   assert(registryValidation.ok, `protected flag registry failed: ${registryValidation.errors.join(", ")}`);
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `migration audit failed: ${validation.errors.join(", ")}`);
-  assert(audit.scope === "step194_to_step200", "audit scope mismatch");
-  assert(audit.expectedStageCount === 7, "audit expected stage count mismatch");
-  assert(audit.migratedStageCount === 7, "audit migrated stage count mismatch");
-  assert(audit.singleFlagSourceStageCount === 7, "audit single flag source stage count mismatch");
-  assert(audit.explicitAllowlistStageCount === 7, "audit allowlist stage count mismatch");
+  assert(audit.scope === "step193_to_step200", "audit scope mismatch");
+  assert(audit.expectedStageCount === 8, "audit expected stage count mismatch");
+  assert(audit.migratedStageCount === 8, "audit migrated stage count mismatch");
+  assert(audit.singleFlagSourceStageCount === 8, "audit single flag source stage count mismatch");
+  assert(audit.explicitAllowlistStageCount === 8, "audit allowlist stage count mismatch");
   assert(audit.legacySpreadCount === 0, "legacy spread count must be zero");
   assert(audit.anonymousDuplicateFlagObjectCount === 0, "anonymous duplicate flag object count must be zero");
   assert(audit.unexpectedTruePermissionCount === 0, "unexpected true permission count must be zero");
@@ -201,7 +200,7 @@ function extractArrayBlock(source, name) {
   assert(audit.runtimeCapabilityStatus === "not_implemented", "runtime capability must remain not implemented");
   assert(audit.executionReadinessStatus === "blocked", "execution readiness must remain blocked");
   assert(audit.orderAuthorityStatus === "external_blocker", "order authority must remain external blocker");
-  assert(audit.checkerConsolidationStatus === "eligible_for_post_step194_review", "checker consolidation must be post Step194 eligible");
+  assert(audit.checkerConsolidationStatus === "eligible_for_post_step193_review", "checker consolidation must be post Step193 eligible");
 
   const combinedScriptSource = [auditScript, read("scripts/check-trading-step212-ai-ml-primitives-migration-milestone.cjs")]
     .join("\n")

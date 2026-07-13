@@ -2,11 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  STEP193_ADDITIONAL_FALSE_FLAGS,
   STEP193_AI_ML_FEATURE_PIPELINE_FLAGS,
+  STEP193_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
   buildAdminTradingAiMlFeaturePipelineStatus,
   buildAiMlFeaturePipelineArchitecture,
 } from "./tradingAiMlFeaturePipelineArchitecture.js";
+import { STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS } from "./tradingAiMlDatasetArchitecture.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  buildAiMlFailClosedFlags,
+} from "./tradingAiMlContractPrimitives.js";
 
 test("Step193 feature pipeline architecture is deterministic design-only and redacted", () => {
   const first = buildAiMlFeaturePipelineArchitecture();
@@ -191,6 +198,7 @@ test("Step193 future feature store contract stays provider-neutral and disconnec
 test("Step193 status keeps every execution and persistence attempt false", () => {
   const status = buildAdminTradingAiMlFeaturePipelineStatus();
 
+  assert.equal(status.status, "admin_only_ai_ml_feature_pipeline_architecture_design_only");
   for (const [key, value] of Object.entries(status.blockedConfirmation)) {
     if (key === "redacted") {
       assert.equal(value, true);
@@ -249,4 +257,178 @@ test("Step193 feature pipeline excludes sensitive raw identifiers and payloads",
   ]) {
     assert.equal(serialized.includes(forbidden), false);
   }
+});
+
+test("Step193 shared flag compatibility preserves empty metadata allowlist and protected false flags", () => {
+  const trueFlags = Object.entries(STEP193_AI_ML_FEATURE_PIPELINE_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key);
+
+  assert.deepEqual(STEP193_METADATA_ONLY_ALLOWED_FLAGS, {});
+  assert.deepEqual(trueFlags, []);
+  assert.equal(Object.isFrozen(STEP193_AI_ML_FEATURE_PIPELINE_FLAGS), true);
+  for (const key of [
+    "actualDataDownloadAllowed",
+    "featureGenerationAllowed",
+    "featureFileCreationAllowed",
+    "datasetBuildAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "modelTrainingAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+  ]) {
+    assert.equal(STEP193_AI_ML_FEATURE_PIPELINE_FLAGS[key], false, key);
+  }
+});
+
+test("Step193 inherited execution conflict is forced closed", () => {
+  const flags = buildAiMlFailClosedFlags({
+    inheritedFlags: {
+      ...STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS,
+      actualDataDownloadAllowed: true,
+      featureGenerationAllowed: true,
+      datasetBuildAllowed: true,
+      dbReadAllowed: true,
+      providerCallsAllowed: true,
+      kisCallsAllowed: true,
+      modelTrainingAllowed: true,
+      orderSubmissionAllowed: true,
+      liveTradingAllowed: true,
+      readyForOrderSubmission: true,
+      readyForLiveGuardedTrading: true,
+      unknownExecutionPermissionAllowed: true,
+    },
+    allowedMetadataFlags: STEP193_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP193_ADDITIONAL_FALSE_FLAGS,
+  });
+
+  for (const key of [
+    "actualDataDownloadAllowed",
+    "featureGenerationAllowed",
+    "datasetBuildAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "modelTrainingAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+  ]) {
+    assert.equal(flags[key], false, key);
+  }
+  assert.equal(Object.hasOwn(flags, "unknownExecutionPermissionAllowed"), false);
+});
+
+test("Step193 explicit metadata allowlist remains empty until a real true flag exists", () => {
+  assert.deepEqual(Object.keys(STEP193_METADATA_ONLY_ALLOWED_FLAGS), []);
+  assert.deepEqual(
+    Object.entries(STEP193_AI_ML_FEATURE_PIPELINE_FLAGS)
+      .filter(([, value]) => value === true)
+      .map(([key]) => key),
+    [],
+  );
+});
+
+test("Step193 shared helper compatibility sorts custom metadata and redacts sensitive fields", () => {
+  const input = {
+    featureSourceMappings: [
+      {
+        featureKey: "z_feature",
+        sourceId: "api key value",
+        sourceType: "daily price",
+        sourceField: "private path",
+        entityKey: "asset_id",
+        eventTimeField: "event_time",
+        availableAtField: "available_at",
+        allowedUses: ["z_use", "a_use"],
+      },
+      {
+        featureKey: "a_feature",
+        sourceId: "safe_source",
+        sourceType: "asset master",
+        sourceField: "safe_field",
+        entityKey: "asset_id",
+        eventTimeField: "event_time",
+        availableAtField: "available_at",
+        allowedUses: ["b_use", "a_use"],
+      },
+    ],
+    rollingFeatureContracts: [
+      { featureKey: "z_roll", inputField: "daily_price_adjusted_close", calculationExecutedNow: false },
+      { featureKey: "a_roll", inputField: "daily_price_adjusted_close", calculationExecutedNow: false },
+    ],
+    leakageGuards: [
+      { guardKey: "z_guard", description: "api key value", severity: "blocking", blocking: true, failureCode: "private path" },
+      { guardKey: "a_guard", description: "safe", severity: "blocking", blocking: true, failureCode: "SAFE" },
+    ],
+  };
+
+  const architecture = buildAiMlFeaturePipelineArchitecture(input);
+  const serialized = JSON.stringify(architecture);
+
+  assert.deepEqual(architecture.featureSourceMappings.map((mapping) => mapping.featureKey), ["a_feature", "z_feature"]);
+  assert.deepEqual(architecture.rollingFeatureContracts.map((contract) => contract.featureKey), ["a_roll", "z_roll"]);
+  assert.deepEqual(architecture.leakageGuards.map((guard) => guard.guardKey), ["a_guard", "z_guard"]);
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("private path"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
+  assert.deepEqual(input.featureSourceMappings.map((mapping) => mapping.featureKey), ["z_feature", "a_feature"]);
+});
+
+test("Step193 full default output compatibility", () => {
+  const architecture = buildAiMlFeaturePipelineArchitecture();
+
+  assert.equal(architecture.featurePipelineArchitectureId, "step193_admin_ai_ml_feature_pipeline_architecture");
+  assert.equal(architecture.scope, "admin_ai_ml_strategy_lab");
+  assert.equal(architecture.status, "design_only");
+  assert.equal(architecture.source, "deterministic_mock_feature_pipeline_registry");
+  assert.equal(architecture.nextImplementationStep, "ai_ml_feature_pipeline_preflight_gate");
+  assert.equal(architecture.featureSourceMappingCount, 9);
+  assert.equal(architecture.rollingFeatureContractCount, 12);
+  assert.equal(architecture.leakageGuardCount, 12);
+  assert.equal(architecture.qualityRuleCount, 14);
+  assert.equal(architecture.interfaceContractCount, 6);
+  assert.equal(architecture.validation.validationStatus, "design_ready");
+  assert.equal(architecture.validation.blockers.length, 0);
+  assert.equal(architecture.featureGenerationStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.datasetBuildStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.trainingStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.featureFileCreationStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.dbReadWriteStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.providerOrderLiveStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.publicExposureStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+});
+
+test("Step193 mutation resistance keeps source and nested overrides unchanged", () => {
+  const input = {
+    datasetArchitecture: { datasetArchitectureId: "dataset_override" },
+    featureSourceMappings: [{
+      featureKey: "custom_feature",
+      sourceId: "safe_source",
+      sourceType: "daily price",
+      sourceField: "safe_field",
+      entityKey: "asset_id",
+      eventTimeField: "event_time",
+      availableAtField: "available_at",
+      allowedUses: ["safe_use"],
+    }],
+    futureFeatureStoreContract: {
+      contractId: "safe_contract",
+      concepts: ["online_feature_retrieval"],
+      adapterInterfaces: { getOnlineFeaturesContract: "blocked" },
+      supabaseConnectedNow: false,
+    },
+  };
+  const before = JSON.stringify(input);
+  const architecture = buildAiMlFeaturePipelineArchitecture(input);
+
+  assert.equal(architecture.datasetArchitectureId, "dataset_override");
+  assert.equal(JSON.stringify(input), before);
+  assert.notEqual(architecture.featureSourceMappings, input.featureSourceMappings);
+  assert.notEqual(architecture.futureFeatureStoreContract, input.futureFeatureStoreContract);
 });

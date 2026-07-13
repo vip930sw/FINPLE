@@ -13,10 +13,12 @@ const SOURCE_CHECKERS = Object.freeze([
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.cjs",
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
 ]);
 
 const SERVICE_TEST_FILES = Object.freeze([
   "server/src/services/tradingAiMlContractPrimitives.test.js",
+  "server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js",
   "server/src/services/tradingAiMlArchitectureMilestoneReview.test.js",
   "server/src/services/tradingAiMlManifestHandoffEligibility.test.js",
   "server/src/services/tradingAiMlManifestValidationReport.test.js",
@@ -38,9 +40,11 @@ const MIGRATION_CHECKER_TEST_FILES = Object.freeze([
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.test.cjs",
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.test.cjs",
+  "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
 ]);
 
 const SUPPORTING_TEST_FILES = Object.freeze([
+  "scripts/check-trading-step193-ai-ml-feature-pipeline-architecture.test.cjs",
   "scripts/check-trading-step194-ai-ml-feature-pipeline-preflight.test.cjs",
   "scripts/check-trading-step195-ai-ml-readiness-gate-summary.test.cjs",
   "scripts/check-trading-step196-ai-ml-batch-contract-review.test.cjs",
@@ -164,9 +168,9 @@ function validateAiMlPrimitivesMigrationRegressionPlan(plan) {
   if ((plan?.missingFiles || []).length > 0) {
     errors.push(`missing file: ${plan.missingFiles.join(", ")}`);
   }
-  if ((plan?.sourceCheckers || []).length < 10) errors.push("source checker coverage too small");
-  if ((plan?.serviceTestFiles || []).length < 8) errors.push("service test coverage too small");
-  if ((plan?.migrationCheckerTestFiles || []).length < 11) errors.push("migration checker test coverage too small");
+  if ((plan?.sourceCheckers || []).length < 11) errors.push("source checker coverage too small");
+  if ((plan?.serviceTestFiles || []).length < 9) errors.push("service test coverage too small");
+  if ((plan?.migrationCheckerTestFiles || []).length < 12) errors.push("migration checker test coverage too small");
   return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
 

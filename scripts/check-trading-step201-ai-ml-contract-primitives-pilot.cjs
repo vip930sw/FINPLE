@@ -14,7 +14,6 @@ const REQUIRED_FILES = [
 const UNTOUCHED_STEP_191_TO_193_SERVICE_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
   "server/src/services/tradingAiMlDatasetArchitecture.js",
-  "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
 ];
 
 const REQUIRED_EXPORTS = [
