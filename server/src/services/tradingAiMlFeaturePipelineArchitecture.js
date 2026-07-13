@@ -527,11 +527,20 @@ function maybeSortByKey(items, key, shouldSort) {
 
 function sanitizeFeatureSourceMappings(value, shouldSort = false) {
   const mapped = normalizeAiMlMetadataArray(value).map((mapping) => Object.freeze({
-    ...cloneAiMlMetadata(mapping),
     featureKey: sanitizeAiMlMetadataValue(mapping?.featureKey, "feature_key"),
+    featureGroup: sanitizeAiMlMetadataValue(mapping?.featureGroup, "feature_group"),
     sourceId: sanitizeAiMlMetadataValue(mapping?.sourceId, "source_id"),
+    sourceType: sanitizeAiMlMetadataValue(mapping?.sourceType, "source_type"),
     sourceField: sanitizeAiMlMetadataValue(mapping?.sourceField, "source_field"),
+    entityKey: sanitizeAiMlMetadataValue(mapping?.entityKey, "entity_key"),
+    eventTimeField: sanitizeAiMlMetadataValue(mapping?.eventTimeField, "event_time_field"),
+    availableAtField: sanitizeAiMlMetadataValue(mapping?.availableAtField, "available_at_field"),
+    timezone: sanitizeAiMlMetadataValue(mapping?.timezone, "timezone"),
+    availabilityLag: sanitizeAiMlMetadataValue(mapping?.availabilityLag, "availability_lag"),
+    revisionPolicy: sanitizeAiMlMetadataValue(mapping?.revisionPolicy, "revision_policy"),
+    stalenessPolicy: sanitizeAiMlMetadataValue(mapping?.stalenessPolicy, "staleness_policy"),
     allowedUses: sanitizeAiMlMetadataArray(mapping?.allowedUses),
+    owner: sanitizeAiMlMetadataValue(mapping?.owner, "owner"),
     redacted: true,
   }));
   return maybeSortByKey(mapped, "featureKey", shouldSort);
@@ -539,9 +548,20 @@ function sanitizeFeatureSourceMappings(value, shouldSort = false) {
 
 function sanitizeRollingFeatureContracts(value, shouldSort = false) {
   const mapped = normalizeAiMlMetadataArray(value).map((contract) => Object.freeze({
-    ...cloneAiMlMetadata(contract),
     featureKey: sanitizeAiMlMetadataValue(contract?.featureKey, "feature_key"),
+    windowType: sanitizeAiMlMetadataValue(contract?.windowType, "window_type"),
+    windowSize: sanitizeAiMlMetadataValue(contract?.windowSize, "window_size"),
+    minimumPeriods: Number.isFinite(contract?.minimumPeriods) ? contract.minimumPeriods : 0,
+    anchorTime: sanitizeAiMlMetadataValue(contract?.anchorTime, "anchor_time"),
+    includeCurrentObservation: contract?.includeCurrentObservation === true,
+    closedBoundary: sanitizeAiMlMetadataValue(contract?.closedBoundary, "closed_boundary"),
+    sortOrder: sanitizeAiMlMetadataValue(contract?.sortOrder, "sort_order"),
+    groupingKey: sanitizeAiMlMetadataValue(contract?.groupingKey, "grouping_key"),
     inputField: sanitizeAiMlMetadataValue(contract?.inputField, "input_field"),
+    outputType: sanitizeAiMlMetadataValue(contract?.outputType, "output_type"),
+    warmupPolicy: sanitizeAiMlMetadataValue(contract?.warmupPolicy, "warmup_policy"),
+    insufficientHistoryPolicy: sanitizeAiMlMetadataValue(contract?.insufficientHistoryPolicy, "insufficient_history_policy"),
+    calculationExecutedNow: contract?.calculationExecutedNow === true ? false : false,
     redacted: true,
   }));
   return maybeSortByKey(mapped, "featureKey", shouldSort);
@@ -549,10 +569,13 @@ function sanitizeRollingFeatureContracts(value, shouldSort = false) {
 
 function sanitizeLeakageGuards(value, shouldSort = false) {
   const mapped = normalizeAiMlMetadataArray(value).map((guard) => Object.freeze({
-    ...cloneAiMlMetadata(guard),
     guardKey: sanitizeAiMlMetadataValue(guard?.guardKey, "guard_key"),
     description: sanitizeAiMlMetadataValue(guard?.description, "guard"),
+    severity: sanitizeAiMlMetadataValue(guard?.severity, "severity"),
+    blocking: guard?.blocking === true,
+    checkStage: sanitizeAiMlMetadataValue(guard?.checkStage, "check_stage"),
     failureCode: sanitizeAiMlMetadataValue(guard?.failureCode, "failure_code"),
+    remediation: sanitizeAiMlMetadataValue(guard?.remediation, "remediation"),
     redacted: true,
   }));
   return maybeSortByKey(mapped, "guardKey", shouldSort);
@@ -579,12 +602,52 @@ function sanitizeFeatureVersioningLineage(value) {
 
 function sanitizeFutureFeatureStoreContract(value) {
   const contract = cloneAiMlMetadata(value) || {};
+  const adapterInterfaces = cloneAiMlMetadata(contract.adapterInterfaces) || {};
   return Object.freeze({
-    ...contract,
     contractId: sanitizeAiMlMetadataValue(contract.contractId, "feature_store_contract"),
     concepts: sanitizeAiMlMetadataArray(contract.concepts),
+    adapterInterfaces: Object.freeze({
+      getOfflineFeaturesContract: sanitizeAiMlMetadataValue(adapterInterfaces.getOfflineFeaturesContract, "offline_features_contract"),
+      getOnlineFeaturesContract: sanitizeAiMlMetadataValue(adapterInterfaces.getOnlineFeaturesContract, "online_features_contract"),
+      getPointInTimeFeaturesContract: sanitizeAiMlMetadataValue(adapterInterfaces.getPointInTimeFeaturesContract, "point_in_time_features_contract"),
+      validateFeatureFreshnessContract: sanitizeAiMlMetadataValue(adapterInterfaces.validateFeatureFreshnessContract, "feature_freshness_contract"),
+    }),
+    dbConnectedNow: false,
+    redisConnectedNow: false,
+    supabaseConnectedNow: false,
+    featureStoreProductConnectedNow: false,
     redacted: true,
   });
+}
+
+export function normalizeStep193ArchitectureSnapshotForAdmin(snapshot) {
+  const clonedSnapshot = cloneAiMlMetadata(snapshot) || {};
+  const builderInput = {};
+
+  if (Object.hasOwn(clonedSnapshot, "datasetArchitectureId")) {
+    builderInput.datasetArchitecture = {
+      datasetArchitectureId: sanitizeAiMlMetadataValue(clonedSnapshot.datasetArchitectureId, "dataset_architecture"),
+    };
+  }
+
+  for (const field of [
+    "featureSourceMappings",
+    "pointInTimeJoinPolicy",
+    "rollingFeatureContracts",
+    "missingValuePolicy",
+    "trainOnlyNormalizationPolicy",
+    "featureVersioningLineage",
+    "leakageGuards",
+    "featureQualityValidation",
+    "datasetTrainingInterfaces",
+    "futureFeatureStoreContract",
+  ]) {
+    if (Object.hasOwn(clonedSnapshot, field)) {
+      builderInput[field] = clonedSnapshot[field];
+    }
+  }
+
+  return buildAiMlFeaturePipelineArchitecture(builderInput);
 }
 
 export function buildAiMlFeaturePipelineArchitecture(input = {}) {
@@ -633,7 +696,10 @@ export function buildAiMlFeaturePipelineArchitecture(input = {}) {
 }
 
 export function buildAdminTradingAiMlFeaturePipelineStatus(input = {}) {
-  const featurePipelineArchitecture = input.featurePipelineArchitecture || buildAiMlFeaturePipelineArchitecture(input);
+  const options = cloneAiMlMetadata(input) || {};
+  const featurePipelineArchitecture = options.featurePipelineArchitecture
+    ? normalizeStep193ArchitectureSnapshotForAdmin(options.featurePipelineArchitecture)
+    : buildAiMlFeaturePipelineArchitecture(options);
   return {
     ok: true,
     step: "Step 193: Design AI/ML feature pipeline architecture",

@@ -30,6 +30,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -84,9 +86,9 @@ function getTouchedFiles() {
 
 function createFixture(options = {}) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "finple-step216-runner-"));
-  const sourceCheckers = Array.from({ length: 11 }, (_, index) => `checker-${index}.cjs`);
+  const sourceCheckers = Array.from({ length: 12 }, (_, index) => `checker-${index}.cjs`);
   const serviceTestFiles = Array.from({ length: 9 }, (_, index) => `service-${index}.test.cjs`);
-  const migrationCheckerTestFiles = Array.from({ length: 12 }, (_, index) => `migration-${index}.test.cjs`);
+  const migrationCheckerTestFiles = Array.from({ length: 13 }, (_, index) => `migration-${index}.test.cjs`);
   const supportingTestFiles = Array.from({ length: 10 }, (_, index) => `support-${index}.test.cjs`);
 
   sourceCheckers.forEach((file, index) => {
@@ -123,6 +125,7 @@ try {
   assertIncludes(packageJson, "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs", "package Step216 checker link");
   assertIncludes(packageJson, "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs", "package Step216 checker test link");
   assertIncludes(packageJson, "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs", "package Step217 checker test link");
+  assertIncludes(packageJson, "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs", "package Step218 checker test link");
   assertIncludes(packageJson, "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs", "package Step215 checker test link");
   assertIncludes(packageJson, "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.test.cjs", "package Step214 checker test link");
   assertIncludes(packageJson, "scripts/check-trading-step213-ai-ml-protected-flag-audit.test.cjs", "package Step213 checker test link");
@@ -162,7 +165,7 @@ try {
   for (const snippet of [
     "successResult.passed === true",
     "dryRunResult.passed === false",
-    "uniqueCheckerTestCount === 22",
+    "uniqueCheckerTestCount === 23",
     "public summary must not include repoRoot",
   ]) {
     assertIncludes(step215Checker, snippet, "Step215 checker hardening");
@@ -172,19 +175,19 @@ try {
   const plan = buildAiMlPrimitivesMigrationRegressionPlan();
   const planValidation = validateAiMlPrimitivesMigrationRegressionPlan(plan);
   assert(planValidation.ok, `plan validation failed: ${planValidation.errors.join(", ")}`);
-  assert(plan.sourceCheckerCount === 11, "source checker count mismatch");
+  assert(plan.sourceCheckerCount === 12, "source checker count mismatch");
   assert(plan.uniqueServiceTestCount === 9, "service test count mismatch");
-  assert(plan.uniqueMigrationCheckerTestCount === 12, "migration checker test count mismatch");
+  assert(plan.uniqueMigrationCheckerTestCount === 13, "migration checker test count mismatch");
   assert(plan.uniqueSupportingTestCount === 10, "supporting checker test count mismatch");
-  assert(plan.uniqueCheckerTestCount === 22, "unique checker test count mismatch");
-  assert(plan.uniqueTestFileCount === 31, "unique test file count mismatch");
+  assert(plan.uniqueCheckerTestCount === 23, "unique checker test count mismatch");
+  assert(plan.uniqueTestFileCount === 32, "unique test file count mismatch");
   assert(plan.duplicateFileCount === 0, "duplicate file count must be zero");
 
   const successResult = buildAiMlPrimitivesMigrationRegressionResult(plan);
   assert(successResult.executed === true, "success result must be executed");
   assert(successResult.passed === true, "success result must pass");
   assert(successResult.status === "ai_ml_primitives_migration_regression_complete", "success status mismatch");
-  assert(successResult.uniqueCheckerTestCount === 22, "success checker count mismatch");
+  assert(successResult.uniqueCheckerTestCount === 23, "success checker count mismatch");
 
   const dryRunResult = runAiMlPrimitivesMigrationRegression({ dryRun: true });
   assert(dryRunResult.executed === false, "dry-run must not execute");
@@ -193,7 +196,7 @@ try {
 
   const publicSummary = buildAiMlPrimitivesMigrationRegressionPublicSummary(successResult);
   assert(publicSummary.passed === true, "public summary passed marker missing");
-  assert(publicSummary.uniqueCheckerTestCount === 22, "public summary checker count mismatch");
+  assert(publicSummary.uniqueCheckerTestCount === 23, "public summary checker count mismatch");
   assertNotIncludes(JSON.stringify(publicSummary), "repoRoot", "public summary");
   assertNotIncludes(JSON.stringify(publicSummary), process.cwd(), "public summary absolute path");
 
@@ -212,7 +215,7 @@ try {
     assert(failure, "child failure did not throw");
     assert(failure.result.passed === false, "failure result must not pass");
     assert(failure.result.status === "ai_ml_primitives_migration_regression_failed", "failure status mismatch");
-    assert(failure.result.uniqueCheckerTestCount === 22, "failure checker count mismatch");
+    assert(failure.result.uniqueCheckerTestCount === 23, "failure checker count mismatch");
     assertNotIncludes(JSON.stringify(failure.result), failingFixture.tempDir, "failure public result");
   } finally {
     fs.rmSync(failingFixture.tempDir, { recursive: true, force: true });

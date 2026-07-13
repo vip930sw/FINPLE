@@ -34,6 +34,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);

@@ -14,6 +14,7 @@ const SOURCE_CHECKERS = Object.freeze([
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.cjs",
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
 ]);
 
 const SERVICE_TEST_FILES = Object.freeze([
@@ -41,6 +42,7 @@ const MIGRATION_CHECKER_TEST_FILES = Object.freeze([
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.test.cjs",
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.test.cjs",
   "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
 ]);
 
 const SUPPORTING_TEST_FILES = Object.freeze([

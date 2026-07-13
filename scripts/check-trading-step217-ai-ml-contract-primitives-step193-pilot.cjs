@@ -36,6 +36,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs",
   "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs",
+  "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -148,6 +150,7 @@ function getTouchedFiles() {
   assertIncludes(packageJson, `"${STEP217_SCRIPT}"`, "package Step217 script");
   assertIncludes(packageJson, "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs", "package Step217 checker link");
   assertIncludes(packageJson, "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.test.cjs", "package Step217 checker test link");
+  assertIncludes(packageJson, "scripts/check-trading-step218-step193-admin-snapshot-redaction.test.cjs", "package Step218 checker test link");
 
   for (const importName of [
     "AI_ML_CONTRACT_STATUS",
@@ -198,6 +201,7 @@ function getTouchedFiles() {
 
   for (const snippet of [
     "cloneAiMlMetadata(input)",
+    "normalizeStep193ArchitectureSnapshotForAdmin",
     "normalizeAiMlMetadataArray(",
     "sanitizeAiMlMetadataArray(",
     "sanitizeAiMlMetadataValue(",
@@ -205,6 +209,10 @@ function getTouchedFiles() {
   ]) {
     assertIncludes(service, snippet, "Step193 helper migration");
   }
+  assertIncludes(service, "const options = cloneAiMlMetadata(input) || {};", "Step193 admin input clone");
+  assertIncludes(service, "options.featurePipelineArchitecture", "Step193 supplied architecture branch");
+  assertIncludes(service, "normalizeStep193ArchitectureSnapshotForAdmin(", "Step193 supplied architecture normalizer");
+  assertNotIncludes(service, "input.featurePipelineArchitecture ||", "Step193 raw supplied architecture return");
   assertIncludes(serviceTest, "redacted_metadata", "Step193 redaction fixture");
 
   for (const scenario of [
@@ -281,23 +289,25 @@ function getTouchedFiles() {
   const regressionPlan = buildAiMlPrimitivesMigrationRegressionPlan();
   const regressionPlanValidation = validateAiMlPrimitivesMigrationRegressionPlan(regressionPlan);
   assert(regressionPlanValidation.ok, `regression plan invalid: ${regressionPlanValidation.errors.join(", ")}`);
-  assert(regressionPlan.sourceCheckerCount === 11, "source checker count mismatch");
+  assert(regressionPlan.sourceCheckerCount === 12, "source checker count mismatch");
   assert(regressionPlan.uniqueServiceTestCount === 9, "service test count mismatch");
-  assert(regressionPlan.uniqueMigrationCheckerTestCount === 12, "migration checker test count mismatch");
+  assert(regressionPlan.uniqueMigrationCheckerTestCount === 13, "migration checker test count mismatch");
   assert(regressionPlan.uniqueSupportingTestCount === 10, "supporting test count mismatch");
-  assert(regressionPlan.uniqueCheckerTestCount === 22, "checker test count mismatch");
-  assert(regressionPlan.uniqueTestFileCount === 31, "test file count mismatch");
+  assert(regressionPlan.uniqueCheckerTestCount === 23, "checker test count mismatch");
+  assert(regressionPlan.uniqueTestFileCount === 32, "test file count mismatch");
   assert(regressionPlan.duplicateFileCount === 0, "duplicate file count must be zero");
   assert(regressionPlan.sourceCheckers.includes("scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs"), "Step217 checker missing from runner");
+  assert(regressionPlan.sourceCheckers.includes("scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs"), "Step218 checker missing from runner");
   assert(regressionPlan.testFiles.includes(STEP193_TEST), "Step193 service test missing from runner");
   assert(regressionPlan.testFiles.includes("scripts/check-trading-step193-ai-ml-feature-pipeline-architecture.test.cjs"), "Step193 original checker test missing from runner");
   const successResult = buildAiMlPrimitivesMigrationRegressionResult(regressionPlan);
   const publicSummary = buildAiMlPrimitivesMigrationRegressionPublicSummary(successResult);
   assert(successResult.passed === true, "success result must pass");
-  assert(publicSummary.uniqueCheckerTestCount === 22, "public summary checker count mismatch");
+  assert(publicSummary.uniqueCheckerTestCount === 23, "public summary checker count mismatch");
   assertNotIncludes(JSON.stringify(publicSummary), "repoRoot", "public summary");
   assertIncludes(runner, "scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs", "runner Step217 source checker");
-  assertIncludes(runnerTest, "uniqueTestFileCount, 31", "runner test count");
+  assertIncludes(runner, "scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs", "runner Step218 source checker");
+  assertIncludes(runnerTest, "uniqueTestFileCount, 32", "runner test count");
 
   for (const snippet of [
     "step193_to_step200",
@@ -320,20 +330,20 @@ function getTouchedFiles() {
     assertIncludes(step214Checker, snippet, "Step214 checker Step193 scope");
   }
   for (const snippet of [
-    "sourceCheckerCount === 11",
+    "sourceCheckerCount === 12",
     "uniqueServiceTestCount === 9",
-    "uniqueMigrationCheckerTestCount === 12",
+    "uniqueMigrationCheckerTestCount === 13",
     "uniqueSupportingTestCount === 10",
-    "uniqueCheckerTestCount === 22",
+    "uniqueCheckerTestCount === 23",
   ]) {
     assertIncludes(step215Checker, snippet, "Step215 checker count");
   }
   for (const snippet of [
-    "sourceCheckerCount === 11",
+    "sourceCheckerCount === 12",
     "uniqueServiceTestCount === 9",
-    "uniqueMigrationCheckerTestCount === 12",
+    "uniqueMigrationCheckerTestCount === 13",
     "uniqueSupportingTestCount === 10",
-    "uniqueCheckerTestCount === 22",
+    "uniqueCheckerTestCount === 23",
   ]) {
     assertIncludes(step216Checker, snippet, "Step216 checker count");
   }

@@ -8,6 +8,7 @@ import {
   TRADING_AI_ML_FEATURE_PIPELINE_MODEL,
   buildAdminTradingAiMlFeaturePipelineStatus,
   buildAiMlFeaturePipelineArchitecture,
+  normalizeStep193ArchitectureSnapshotForAdmin,
 } from "./tradingAiMlFeaturePipelineArchitecture.js";
 import { STEP192_AI_ML_DATASET_ARCHITECTURE_FLAGS } from "./tradingAiMlDatasetArchitecture.js";
 import {
@@ -402,6 +403,138 @@ test("Step193 full default output compatibility", () => {
   assert.equal(architecture.dbReadWriteStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
   assert.equal(architecture.providerOrderLiveStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
   assert.equal(architecture.publicExposureStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+});
+
+test("Step193 direct admin snapshot redaction rebuilds supplied architecture", () => {
+  const supplied = JSON.parse(JSON.stringify(buildAiMlFeaturePipelineArchitecture()));
+  supplied.featureSourceMappings[0] = {
+    ...supplied.featureSourceMappings[0],
+    featureKey: "safe_snapshot_feature",
+    sourceId: "api key value",
+    sourceField: "private path",
+    credential: "secret value",
+    rawProviderResponse: "provider raw response",
+  };
+
+  const status = buildAdminTradingAiMlFeaturePipelineStatus({
+    featurePipelineArchitecture: supplied,
+  });
+  const architecture = status.featurePipelineArchitecture;
+  const serialized = JSON.stringify(status);
+
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("private path"), false);
+  assert.equal(serialized.includes("secret value"), false);
+  assert.equal(serialized.includes("provider raw response"), false);
+  assert.equal(serialized.includes("credential"), false);
+  assert.equal(serialized.includes("rawProviderResponse"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
+  assert.equal(architecture.featureSourceMappings[8].featureKey, "safe_snapshot_feature");
+  assert.equal(architecture.featureSourceMappingCount, 9);
+  assert.equal(architecture.rollingFeatureContractCount, 12);
+  assert.equal(architecture.leakageGuardCount, 12);
+  assert.equal(architecture.qualityRuleCount, 14);
+  assert.equal(architecture.interfaceContractCount, 6);
+  assert.equal(architecture.validation.validationStatus, "design_ready");
+  assert.equal(architecture.providerOrderLiveStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(status.orderSubmissionAllowed, false);
+  assert.equal(status.readyForOrderSubmission, false);
+});
+
+test("Step193 admin snapshot ignores untrusted computed and permission fields", () => {
+  const supplied = {
+    ...JSON.parse(JSON.stringify(buildAiMlFeaturePipelineArchitecture())),
+    validationStatus: "ready",
+    featureGenerationStatus: "ready",
+    providerOrderLiveStatus: "ready",
+    readyForOrderSubmission: true,
+    orderSubmissionAllowed: true,
+    validation: { validationStatus: "ready", blockers: [] },
+  };
+
+  const status = buildAdminTradingAiMlFeaturePipelineStatus({
+    featurePipelineArchitecture: supplied,
+  });
+  const architecture = status.featurePipelineArchitecture;
+
+  assert.equal(architecture.validationStatus, undefined);
+  assert.equal(architecture.validation.validationStatus, "design_ready");
+  assert.equal(architecture.featureGenerationStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.datasetBuildStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.trainingStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(architecture.providerOrderLiveStatus, AI_ML_CONTRACT_STATUS.BLOCKED);
+  assert.equal(status.readyForOrderSubmission, false);
+  assert.equal(status.orderSubmissionAllowed, false);
+});
+
+test("Step193 admin snapshot removes unknown top-level fields", () => {
+  const status = buildAdminTradingAiMlFeaturePipelineStatus({
+    featurePipelineArchitecture: {
+      ...JSON.parse(JSON.stringify(buildAiMlFeaturePipelineArchitecture())),
+      credential: "secret value",
+      privatePath: "private path",
+      rawPayload: "provider raw response",
+      accountId: "account id value",
+    },
+  });
+  const serialized = JSON.stringify(status.featurePipelineArchitecture);
+
+  assert.equal(serialized.includes("credential"), false);
+  assert.equal(serialized.includes("privatePath"), false);
+  assert.equal(serialized.includes("rawPayload"), false);
+  assert.equal(serialized.includes("accountId"), false);
+  assert.equal(serialized.includes("secret value"), false);
+  assert.equal(serialized.includes("private path"), false);
+  assert.equal(serialized.includes("provider raw response"), false);
+  assert.equal(serialized.includes("account id value"), false);
+});
+
+test("Step193 admin snapshot normalization resists mutation", () => {
+  const supplied = JSON.parse(JSON.stringify(buildAiMlFeaturePipelineArchitecture()));
+  supplied.featureSourceMappings[0] = {
+    ...supplied.featureSourceMappings[0],
+    credential: "secret value",
+  };
+  supplied.futureFeatureStoreContract = {
+    ...supplied.futureFeatureStoreContract,
+    rawProviderResponse: "provider raw response",
+  };
+  const before = JSON.stringify(supplied);
+
+  const architecture = normalizeStep193ArchitectureSnapshotForAdmin(supplied);
+
+  assert.equal(JSON.stringify(supplied), before);
+  assert.notEqual(architecture.featureSourceMappings, supplied.featureSourceMappings);
+  assert.notEqual(architecture.futureFeatureStoreContract, supplied.futureFeatureStoreContract);
+  assert.equal(JSON.stringify(architecture).includes("secret value"), false);
+  assert.equal(JSON.stringify(architecture).includes("provider raw response"), false);
+});
+
+test("Step193 admin status default compatibility", () => {
+  const status = buildAdminTradingAiMlFeaturePipelineStatus();
+  const architecture = status.featurePipelineArchitecture;
+
+  assert.equal(status.status, "admin_only_ai_ml_feature_pipeline_architecture_design_only");
+  assert.equal(architecture.featureSourceMappingCount, 9);
+  assert.equal(architecture.rollingFeatureContractCount, 12);
+  assert.equal(architecture.leakageGuardCount, 12);
+  assert.equal(architecture.qualityRuleCount, 14);
+  assert.equal(architecture.interfaceContractCount, 6);
+  assert.equal(architecture.validation.validationStatus, "design_ready");
+  for (const key of [
+    "actualDataDownloadAllowed",
+    "featureGenerationAllowed",
+    "featureFileCreationAllowed",
+    "datasetBuildAllowed",
+    "providerCallsAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForReadOnlyProviderCalls",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+  ]) {
+    assert.equal(status[key], false, key);
+  }
 });
 
 test("Step193 mutation resistance keeps source and nested overrides unchanged", () => {
