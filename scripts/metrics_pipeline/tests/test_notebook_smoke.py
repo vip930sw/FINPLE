@@ -30,11 +30,17 @@ class NotebookSmokeTests(unittest.TestCase):
             "5. Download output ZIP",
         ]:
             self.assertIn(heading, markdown)
+        self.assertIn("execution package ZIP", markdown)
+        self.assertIn("not production app approval", markdown)
 
     def test_notebook_calls_single_pipeline_entrypoint(self):
         payload = NOTEBOOK_PATH.read_text(encoding="utf-8")
         self.assertIn("run_finple_monthly_metrics_pipeline(CONFIG)", payload)
         self.assertEqual(payload.count("run_finple_monthly_metrics_pipeline(CONFIG)"), 1)
+        self.assertIn("find_repo_root", payload)
+        self.assertIn("files.upload()", payload)
+        self.assertIn("productionPublishReady", payload)
+        self.assertIn("appExportApproved", payload)
         forbidden_tokens = [
             "y" + "finance",
             "Alpha " + "Vantage",

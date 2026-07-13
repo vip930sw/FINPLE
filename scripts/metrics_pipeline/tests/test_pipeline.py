@@ -38,7 +38,9 @@ class MetricsPipelineTests(unittest.TestCase):
             result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
 
             self.assertTrue(result["ok"])
-            self.assertTrue(result["publishReady"])
+            self.assertTrue(result["fixturePackageReady"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
             outputs = {name: Path(path) for name, path in result["outputs"].items()}
             for path in outputs.values():
                 self.assertTrue(path.exists(), path)
@@ -48,6 +50,9 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2a")
             self.assertEqual(manifest["schemaVersion"], "metrics-csv-schema-v3")
             self.assertFalse(manifest["externalProviderCalls"])
+            self.assertTrue(manifest["fixturePackageReady"])
+            self.assertFalse(manifest["productionPublishReady"])
+            self.assertFalse(manifest["appExportApproved"])
             self.assertEqual({item["name"] for item in manifest["sourceFiles"]}, {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv"})
 
             with ZipFile(outputs["zipPackage"]) as package:
@@ -89,11 +94,43 @@ class MetricsPipelineTests(unittest.TestCase):
                 "selectedCagr",
                 "selectedMdd",
                 "selectedBeta",
+                "rollingCagr10yWindowCount",
+                "rollingCagr5yWindowCount",
+                "dividendStatus",
                 "dataStatus",
                 "reviewFlag",
                 "sourceHash",
             }
             self.assertTrue(required_columns.issubset(full_rows[0].keys()))
+
+    def test_continuous_monthly_fixture_and_exact_rolling_window_counts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+
+            with outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+                full_by_ticker = {row["ticker"]: row for row in csv.DictReader(handle)}
+            self.assertEqual(full_by_ticker["SPY"]["rollingCagr10yWindowCount"], "1")
+            self.assertEqual(full_by_ticker["SPY"]["rollingCagr5yWindowCount"], "61")
+            self.assertEqual(full_by_ticker["069500"]["rollingCagr10yWindowCount"], "1")
+            self.assertEqual(full_by_ticker["123456"]["rollingCagr10yWindowCount"], "0")
+            self.assertEqual(full_by_ticker["123456"]["rollingCagr5yWindowCount"], "0")
+
+            with (FIXTURE_DIR / "monthly_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+                price_rows = list(csv.DictReader(handle))
+            spy_months = [row["month"] for row in price_rows if row["ticker"] == "SPY"]
+            short_months = [row["month"] for row in price_rows if row["ticker"] == "123456"]
+            self.assertEqual(len(spy_months), 121)
+            self.assertEqual(spy_months[0], "2016-06-30")
+            self.assertEqual(spy_months[-1], "2026-06-30")
+            self.assertEqual(len(short_months), 36)
+
+            spy_prices = [float(row["close"]) for row in price_rows if row["ticker"] == "SPY"]
+            pre_drop_peak = max(spy_prices[:42])
+            trough = min(spy_prices[42:45])
+            post_recovery = max(spy_prices[45:80])
+            self.assertLess(trough, pre_drop_peak * 0.8)
+            self.assertGreater(post_recovery, trough * 1.2)
 
     def test_same_fixture_and_config_are_reproducible(self):
         with tempfile.TemporaryDirectory() as first_dir, tempfile.TemporaryDirectory() as second_dir:
@@ -114,6 +151,20 @@ class MetricsPipelineTests(unittest.TestCase):
 
             self.assertFalse((Path(temp_dir) / "finple_monthly_metrics_2026_06_package.zip").exists())
             self.assertFalse((Path(temp_dir) / "finple_metrics_selected_2026_06.csv").exists())
+
+    def test_ttm_dividend_status_keeps_missing_zero_and_value_distinct(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+
+            with outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+                full_by_ticker = {row["ticker"]: row for row in csv.DictReader(handle)}
+            self.assertEqual(full_by_ticker["SPY"]["dividendStatus"], "confirmed_value")
+            self.assertNotEqual(full_by_ticker["SPY"]["dividendYield"], "")
+            self.assertEqual(full_by_ticker["QQQ"]["dividendStatus"], "confirmed_zero")
+            self.assertEqual(full_by_ticker["QQQ"]["dividendYield"], "0.00")
+            self.assertEqual(full_by_ticker["MSFT"]["dividendStatus"], "missing")
+            self.assertEqual(full_by_ticker["MSFT"]["dividendYield"], "")
 
     def test_policy_config_is_fail_closed(self):
         with tempfile.TemporaryDirectory() as temp_dir:

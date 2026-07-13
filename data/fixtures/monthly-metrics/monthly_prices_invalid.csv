@@ -1,4 +1,4 @@
-ticker,market,month,currency,close,cashDividend,splitFactor,sourceId,priceAdjustmentBasis,publicationEligibility
-SPY,US,2026-05-31,USD,600.00,0.00,1.0,fixture_manual,split_adjusted_close,approved
-SPY,US,2026-05-31,USD,601.00,0.00,1.0,fixture_manual,split_adjusted_close,approved
-069500,KR,2026-05-31,KRW,-100.00,0.00,1.0,fixture_manual,split_adjusted_close,approved
+ticker,market,month,currency,close,cashDividend,dividendStatus,splitFactor,sourceId,priceAdjustmentBasis,publicationEligibility
+SPY,US,2026-05-31,USD,600.00,0.00,confirmed_zero,1.0,fixture_manual,split_adjusted_close,approved
+SPY,US,2026-05-31,USD,601.00,0.00,confirmed_zero,1.0,fixture_manual,split_adjusted_close,approved
+069500,KR,2026-05-31,KRW,-100.00,0.00,confirmed_zero,1.0,fixture_manual,split_adjusted_close,approved

@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import statistics
+from calendar import monthrange
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -119,7 +120,9 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
 
     return {
         "ok": True,
-        "publishReady": True,
+        "fixturePackageReady": True,
+        "productionPublishReady": False,
+        "appExportApproved": False,
         "metricBaseDate": pipeline_config.metric_base_date,
         "pipelineVersion": PIPELINE_VERSION,
         "schemaVersion": SCHEMA_VERSION,
@@ -193,8 +196,33 @@ def _validate_price_rows(rows: list[dict[str, str]]) -> list[str]:
             close = 0
         if close <= 0:
             errors.append(f"non-positive close value: {key[0]} {key[1]}")
+        dividend_status = row.get("dividendStatus", "")
+        if dividend_status not in {"missing", "confirmed_zero", "confirmed_value"}:
+            errors.append(f"unsupported dividendStatus: {key[0]} {key[1]} {dividend_status}")
+        cash_dividend = row.get("cashDividend", "")
+        if dividend_status == "missing" and cash_dividend != "":
+            errors.append(f"missing dividendStatus must keep cashDividend blank: {key[0]} {key[1]}")
+        if dividend_status == "confirmed_zero" and _safe_float(cash_dividend) != 0:
+            errors.append(f"confirmed_zero dividendStatus requires zero cashDividend: {key[0]} {key[1]}")
+        if dividend_status == "confirmed_value" and _safe_float(cash_dividend) <= 0:
+            errors.append(f"confirmed_value dividendStatus requires positive cashDividend: {key[0]} {key[1]}")
         if row.get("publicationEligibility") != "approved":
             errors.append(f"publicationEligibility must be approved in fixture publish path: {key[0]}")
+    errors.extend(_validate_continuous_month_end_rows(rows))
+    return errors
+
+
+def _validate_continuous_month_end_rows(rows: list[dict[str, str]]) -> list[str]:
+    errors: list[str] = []
+    for ticker, ticker_rows in _group_prices(rows).items():
+        for row in ticker_rows:
+            parsed = _parse_date(row["month"])
+            if row["month"] != _month_end(parsed.year, parsed.month):
+                errors.append(f"month is not a month-end date: {ticker} {row['month']}")
+        for previous, current in zip(ticker_rows, ticker_rows[1:]):
+            expected_next = _next_month_end(previous["month"])
+            if current["month"] != expected_next:
+                errors.append(f"non-continuous monthly series: {ticker} expected {expected_next} got {current['month']}")
     return errors
 
 
@@ -238,8 +266,8 @@ def _build_candidate_outputs(
     monthly_return_rows = _monthly_return_rows(candidate, prices, returns)
 
     price_cagr = _cagr(closes[0], closes[-1], data_years) if data_years > 0 else None
-    rolling_10y = _rolling_cagrs(prices, config.min_years_for_10y)
-    rolling_5y = _rolling_cagrs(prices, config.min_years_for_5y)
+    rolling_10y = _rolling_cagrs(prices, 120)
+    rolling_5y = _rolling_cagrs(prices, 60)
     selected_cagr, cagr_policy, data_status, review_flag, review_reason = _select_cagr(
         config,
         data_years,
@@ -250,7 +278,7 @@ def _build_candidate_outputs(
     mdd = _mdd(closes)
     volatility = _volatility(returns)
     beta = _beta(prices, benchmark_prices)
-    dividend_yield = _dividend_yield(prices)
+    dividend_yield, dividend_status, dividend_policy = _dividend_yield(prices)
 
     policy_review_reasons = _policy_review_reasons(selected_cagr, mdd, beta, dividend_yield)
     if policy_review_reasons and review_flag == "none":
@@ -278,7 +306,9 @@ def _build_candidate_outputs(
         "rollingCagr10yMedian": _format_percent(_median(rolling_10y)),
         "rollingCagr10yP25": _format_percent(_percentile(rolling_10y, 25)),
         "rollingCagr10yP75": _format_percent(_percentile(rolling_10y, 75)),
+        "rollingCagr10yWindowCount": str(len(rolling_10y)),
         "rollingCagr5yMedian": _format_percent(_median(rolling_5y)),
+        "rollingCagr5yWindowCount": str(len(rolling_5y)),
         "sinceInceptionCagr": _format_percent(price_cagr),
         "selectedCagr": _format_percent(selected_cagr),
         "cagrPolicy": cagr_policy,
@@ -293,7 +323,8 @@ def _build_candidate_outputs(
         "betaPolicy": "fixture_aligned_monthly_returns" if beta is not None else "blank_review_required",
         "volatility10y": _format_percent(volatility),
         "dividendYield": _format_percent(dividend_yield),
-        "dividendPolicy": "fixture_cash_dividend_reference",
+        "dividendStatus": dividend_status,
+        "dividendPolicy": dividend_policy,
         "dataStatus": data_status,
         "reviewFlag": review_flag if beta is not None else "review_required",
         "reviewReason": review_reason if beta is not None else "Benchmark fixture rows were insufficient.",
@@ -343,6 +374,9 @@ def _select_cagr(
 def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, str]], returns: list[float]) -> list[dict[str, str]]:
     output: list[dict[str, str]] = []
     for row, price_return in zip(prices[1:], returns):
+        dividend_component = 0.0
+        if row.get("dividendStatus") == "confirmed_value":
+            dividend_component = _safe_float(row.get("cashDividend")) / _safe_float(row.get("close"))
         output.append(
             {
                 "market": candidate["market"],
@@ -350,12 +384,12 @@ def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, st
                 "month": row["month"],
                 "currency": row["currency"],
                 "priceReturn": _format_decimal(price_return),
-                "totalReturn": _format_decimal(price_return + _safe_float(row.get("cashDividend")) / _safe_float(row.get("close"))),
+                "totalReturn": _format_decimal(price_return + dividend_component),
                 "fxReturn": "0.000000",
                 "benchmarkId": candidate["benchmarkKey"],
                 "isProxy": "false" if not candidate.get("proxyTicker") else "true",
                 "proxyTicker": candidate.get("proxyTicker", ""),
-                "dataStatus": "fixture",
+                "dataStatus": "fixture" if row.get("dividendStatus") != "missing" else "fixture_dividend_missing",
             }
         )
     return output
@@ -436,7 +470,9 @@ def _build_manifest(
             "currentPriceDisplay": "disabled",
         },
         "auditSummary": dict(audit_summary),
-        "publishReady": True,
+        "fixturePackageReady": True,
+        "productionPublishReady": False,
+        "appExportApproved": False,
         "externalProviderCalls": False,
     }
 
@@ -450,9 +486,24 @@ def _sha256(path: Path) -> str:
 
 
 def _years_between(start: str, end: str) -> float:
-    start_date = datetime.strptime(start, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end, "%Y-%m-%d").date()
+    start_date = _parse_date(start)
+    end_date = _parse_date(end)
     return max((end_date - start_date).days / 365.25, 0)
+
+
+def _parse_date(value: str):
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def _month_end(year: int, month: int) -> str:
+    return f"{year:04d}-{month:02d}-{monthrange(year, month)[1]:02d}"
+
+
+def _next_month_end(value: str) -> str:
+    parsed = _parse_date(value)
+    year = parsed.year + (1 if parsed.month == 12 else 0)
+    month = 1 if parsed.month == 12 else parsed.month + 1
+    return _month_end(year, month)
 
 
 def _period_returns(prices: list[dict[str, str]]) -> list[float]:
@@ -470,15 +521,14 @@ def _cagr(start_value: float, end_value: float, years: float) -> float | None:
     return ((end_value / start_value) ** (1 / years) - 1) * 100
 
 
-def _rolling_cagrs(prices: list[dict[str, str]], min_years: float) -> list[float]:
+def _rolling_cagrs(prices: list[dict[str, str]], window_months: int) -> list[float]:
     results: list[float] = []
-    for start_index, start_row in enumerate(prices):
-        for end_row in prices[start_index + 1 :]:
-            years = _years_between(start_row["month"], end_row["month"])
-            if years >= min_years:
-                cagr = _cagr(float(start_row["close"]), float(end_row["close"]), years)
-                if cagr is not None:
-                    results.append(cagr)
+    for start_index in range(0, len(prices) - window_months):
+        start_row = prices[start_index]
+        end_row = prices[start_index + window_months]
+        cagr = _cagr(float(start_row["close"]), float(end_row["close"]), window_months / 12)
+        if cagr is not None:
+            results.append(cagr)
     return results
 
 
@@ -521,14 +571,18 @@ def _returns_by_month(prices: list[dict[str, str]]) -> dict[str, float]:
     return {row["month"]: value for row, value in zip(prices[1:], _period_returns(prices))}
 
 
-def _dividend_yield(prices: list[dict[str, str]]) -> float | None:
-    if not prices:
-        return None
+def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, str]:
+    if not prices or len(prices) < 12:
+        return None, "missing", "unconfirmed_blank"
     last_close = float(prices[-1]["close"])
-    trailing_dividends = sum(_safe_float(row.get("cashDividend")) for row in prices[-4:])
+    trailing_rows = prices[-12:]
+    statuses = {row.get("dividendStatus", "") for row in trailing_rows}
+    if "missing" in statuses:
+        return None, "missing", "unconfirmed_blank"
+    trailing_dividends = sum(_safe_float(row.get("cashDividend")) for row in trailing_rows)
     if trailing_dividends == 0:
-        return 0.0
-    return (trailing_dividends / last_close) * 100
+        return 0.0, "confirmed_zero", "confirmed_no_dividend"
+    return (trailing_dividends / last_close) * 100, "confirmed_value", "confirmed_ttm_cash_dividend"
 
 
 def _safe_float(value: str | None) -> float:
