@@ -85,10 +85,13 @@ function normalizeRegistry(registry = DEFAULT_REGISTRY) {
 function buildAiMlPrimitivesMigrationRegressionPlan(options = {}) {
   const repoRoot = path.resolve(options.repoRoot || process.cwd());
   const registry = normalizeRegistry(options.registry);
-  const testFiles = unique([
-    ...registry.serviceTestFiles,
+  const checkerTestFiles = unique([
     ...registry.migrationCheckerTestFiles,
     ...registry.supportingTestFiles,
+  ]);
+  const testFiles = unique([
+    ...registry.serviceTestFiles,
+    ...checkerTestFiles,
   ]);
   const duplicateTestFiles = findDuplicates([
     ...registry.serviceTestFiles,
@@ -111,8 +114,41 @@ function buildAiMlPrimitivesMigrationRegressionPlan(options = {}) {
     uniqueServiceTestCount: unique(registry.serviceTestFiles).length,
     uniqueMigrationCheckerTestCount: unique(registry.migrationCheckerTestFiles).length,
     uniqueSupportingTestCount: unique(registry.supportingTestFiles).length,
+    uniqueCheckerTestCount: checkerTestFiles.length,
     uniqueTestFileCount: testFiles.length,
     duplicateFileCount: duplicateTestFiles.length,
+  });
+}
+
+function buildAiMlPrimitivesMigrationRegressionResult(plan, overrides = {}) {
+  return Object.freeze({
+    ok: overrides.ok === undefined ? true : overrides.ok,
+    dryRun: overrides.dryRun === undefined ? false : overrides.dryRun,
+    executed: overrides.executed === undefined ? true : overrides.executed,
+    passed: overrides.passed === undefined ? true : overrides.passed,
+    status: overrides.status || "ai_ml_primitives_migration_regression_complete",
+    sourceCheckerCount: plan.sourceCheckerCount,
+    uniqueServiceTestCount: plan.uniqueServiceTestCount,
+    uniqueCheckerTestCount: plan.uniqueCheckerTestCount,
+    uniqueMigrationCheckerTestCount: plan.uniqueMigrationCheckerTestCount,
+    uniqueSupportingTestCount: plan.uniqueSupportingTestCount,
+    uniqueTestFileCount: plan.uniqueTestFileCount,
+    duplicateFileCount: plan.duplicateFileCount,
+    plan,
+  });
+}
+
+function buildAiMlPrimitivesMigrationRegressionPublicSummary(result) {
+  return Object.freeze({
+    passed: result.passed === true,
+    status: result.status,
+    sourceCheckerCount: result.sourceCheckerCount,
+    uniqueServiceTestCount: result.uniqueServiceTestCount,
+    uniqueCheckerTestCount: result.uniqueCheckerTestCount,
+    uniqueMigrationCheckerTestCount: result.uniqueMigrationCheckerTestCount,
+    uniqueSupportingTestCount: result.uniqueSupportingTestCount,
+    uniqueTestFileCount: result.uniqueTestFileCount,
+    duplicateFileCount: result.duplicateFileCount,
   });
 }
 
@@ -163,38 +199,56 @@ function runAiMlPrimitivesMigrationRegression(options = {}) {
     throw error;
   }
   if (options.dryRun) {
-    return Object.freeze({ ok: true, dryRun: true, plan });
+    return buildAiMlPrimitivesMigrationRegressionResult(plan, {
+      dryRun: true,
+      executed: false,
+      passed: false,
+      status: "ai_ml_primitives_migration_regression_planned_not_executed",
+    });
   }
 
   const stdio = options.stdio || "inherit";
-  for (const checker of plan.sourceCheckers) {
-    runNodeFile(plan.repoRoot, checker, stdio);
+  try {
+    for (const checker of plan.sourceCheckers) {
+      runNodeFile(plan.repoRoot, checker, stdio);
+    }
+    runNodeTests(plan.repoRoot, plan.testFiles, stdio);
+  } catch (childError) {
+    const error = new Error("AI/ML primitives migration regression failed");
+    error.result = Object.freeze({
+      executed: true,
+      passed: false,
+      status: "ai_ml_primitives_migration_regression_failed",
+      sourceCheckerCount: plan.sourceCheckerCount,
+      uniqueServiceTestCount: plan.uniqueServiceTestCount,
+      uniqueCheckerTestCount: plan.uniqueCheckerTestCount,
+      uniqueMigrationCheckerTestCount: plan.uniqueMigrationCheckerTestCount,
+      uniqueSupportingTestCount: plan.uniqueSupportingTestCount,
+      uniqueTestFileCount: plan.uniqueTestFileCount,
+      duplicateFileCount: plan.duplicateFileCount,
+    });
+    error.exitCode = typeof childError.status === "number" ? childError.status : 1;
+    throw error;
   }
-  runNodeTests(plan.repoRoot, plan.testFiles, stdio);
 
-  return Object.freeze({
-    ok: true,
-    dryRun: false,
-    plan,
-    status: "ai_ml_primitives_migration_regression_complete",
-  });
+  return buildAiMlPrimitivesMigrationRegressionResult(plan);
 }
 
 if (require.main === module) {
   try {
     const result = runAiMlPrimitivesMigrationRegression();
     console.log("[run-trading-ai-ml-primitives-migration-regression] ok");
-    console.log(JSON.stringify({
-      status: result.status,
-      sourceCheckerCount: result.plan.sourceCheckerCount,
-      uniqueServiceTestCount: result.plan.uniqueServiceTestCount,
-      uniqueMigrationCheckerTestCount: result.plan.uniqueMigrationCheckerTestCount,
-      uniqueSupportingTestCount: result.plan.uniqueSupportingTestCount,
-      uniqueTestFileCount: result.plan.uniqueTestFileCount,
-      duplicateFileCount: result.plan.duplicateFileCount,
-    }, null, 2));
+    console.log(JSON.stringify(buildAiMlPrimitivesMigrationRegressionPublicSummary(result), null, 2));
   } catch (error) {
-    console.error(error);
+    if (error.result) {
+      console.error(JSON.stringify(error.result, null, 2));
+    } else {
+      console.error(JSON.stringify({
+        passed: false,
+        status: "ai_ml_primitives_migration_regression_plan_invalid",
+        errors: error.validation?.errors || ["unexpected runner failure"],
+      }, null, 2));
+    }
     process.exitCode = 1;
   }
 }
@@ -206,6 +260,8 @@ module.exports = {
   MIGRATION_CHECKER_TEST_FILES,
   SUPPORTING_TEST_FILES,
   buildAiMlPrimitivesMigrationRegressionPlan,
+  buildAiMlPrimitivesMigrationRegressionPublicSummary,
+  buildAiMlPrimitivesMigrationRegressionResult,
   validateAiMlPrimitivesMigrationRegressionPlan,
   runAiMlPrimitivesMigrationRegression,
 };

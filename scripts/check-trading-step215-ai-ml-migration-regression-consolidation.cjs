@@ -7,7 +7,10 @@ const {
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
 const {
+  buildAiMlPrimitivesMigrationRegressionPublicSummary,
+  buildAiMlPrimitivesMigrationRegressionResult,
   buildAiMlPrimitivesMigrationRegressionPlan,
+  runAiMlPrimitivesMigrationRegression,
   validateAiMlPrimitivesMigrationRegressionPlan,
 } = require("./run-trading-ai-ml-primitives-migration-regression.cjs");
 
@@ -28,6 +31,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.test.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
   "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
+  "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.cjs",
+  "scripts/check-trading-step216-ai-ml-migration-runner-result-contract.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -141,6 +146,12 @@ function getTouchedFiles() {
     "shell: false",
     "duplicateFileCount",
     "missingFiles",
+    "passed",
+    "executed",
+    "uniqueCheckerTestCount",
+    "buildAiMlPrimitivesMigrationRegressionPublicSummary",
+    "ai_ml_primitives_migration_regression_failed",
+    "ai_ml_primitives_migration_regression_planned_not_executed",
   ]) {
     assertIncludes(runner, snippet, "Step215 runner");
   }
@@ -154,6 +165,11 @@ function getTouchedFiles() {
     "Step215 runner rejects duplicate test files before execution",
     "Step215 runner rejects missing files before execution",
     "Step215 runner propagates child checker failures",
+    "Scenario F: successful result contract",
+    "Scenario G: dry-run is not pass",
+    "Scenario H: checker test count",
+    "Scenario I: child failure result",
+    "Scenario J: CLI public summary",
   ]) {
     assertIncludes(runnerTest, scenario, "Step215 runner test");
   }
@@ -170,7 +186,17 @@ function getTouchedFiles() {
   assert(regressionPlanValidation.ok, `regression plan invalid: ${regressionPlanValidation.errors.join(", ")}`);
   assert(regressionPlan.duplicateFileCount === 0, "regression plan must not duplicate test files");
   assert(regressionPlan.sourceCheckerCount >= 10, "regression plan source checker count too small");
+  assert(regressionPlan.uniqueCheckerTestCount === 20, "regression plan checker test count mismatch");
   assert(regressionPlan.uniqueTestFileCount >= 28, "regression plan test file coverage too small");
+  const successResult = buildAiMlPrimitivesMigrationRegressionResult(regressionPlan);
+  const dryRunResult = runAiMlPrimitivesMigrationRegression({ dryRun: true });
+  const publicSummary = buildAiMlPrimitivesMigrationRegressionPublicSummary(successResult);
+  assert(successResult.passed === true, "runner success result must pass");
+  assert(successResult.executed === true, "runner success result must execute");
+  assert(dryRunResult.passed === false, "runner dry-run result must not pass");
+  assert(dryRunResult.executed === false, "runner dry-run result must not execute");
+  assert(publicSummary.uniqueCheckerTestCount === 20, "public summary checker count mismatch");
+  assert(!JSON.stringify(publicSummary).includes("repoRoot"), "public summary must not include repoRoot");
 
   const touchedFiles = getTouchedFiles();
   for (const file of touchedFiles) {
