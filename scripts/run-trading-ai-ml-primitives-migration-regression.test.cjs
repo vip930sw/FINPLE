@@ -9,6 +9,7 @@ const {
   SERVICE_TEST_FILES,
   MIGRATION_CHECKER_TEST_FILES,
   SUPPORTING_TEST_FILES,
+  SUPPLEMENTAL_CONTRACT_GUARDS,
   buildAiMlPrimitivesMigrationRegressionPlan,
   buildAiMlPrimitivesMigrationRegressionPublicSummary,
   validateAiMlPrimitivesMigrationRegressionPlan,
@@ -21,14 +22,28 @@ function createLightweightRegistryFixture(options = {}) {
   const serviceTestFiles = Array.from({ length: 10 }, (_, index) => `service-${index}.test.cjs`);
   const migrationCheckerTestFiles = Array.from({ length: 14 }, (_, index) => `migration-${index}.test.cjs`);
   const supportingTestFiles = Array.from({ length: 11 }, (_, index) => `support-${index}.test.cjs`);
+  const supplementalGuard = {
+    guardId: "fixture_step225_manifest_guard",
+    sourceChecker: "supplemental-checker.cjs",
+    checkerTestFile: "supplemental-checker.test.cjs",
+    serviceTestFile: "supplemental-service.test.cjs",
+    category: "supplemental_contract_guard",
+  };
 
   sourceCheckers.forEach((file, index) => {
     const exitCode = options.failFirstChecker && index === 0 ? 7 : 0;
     fs.writeFileSync(path.join(tempDir, file), `process.exitCode = ${exitCode};\n`, "utf8");
   });
+  fs.writeFileSync(
+    path.join(tempDir, supplementalGuard.sourceChecker),
+    `process.exitCode = ${options.failSupplementalChecker ? 9 : 0};\n`,
+    "utf8",
+  );
   for (const file of [...serviceTestFiles, ...migrationCheckerTestFiles, ...supportingTestFiles]) {
     fs.writeFileSync(path.join(tempDir, file), "require('node:test')('noop', () => {});\n", "utf8");
   }
+  fs.writeFileSync(path.join(tempDir, supplementalGuard.checkerTestFile), "require('node:test')('noop', () => {});\n", "utf8");
+  fs.writeFileSync(path.join(tempDir, supplementalGuard.serviceTestFile), "require('node:test')('noop', () => {});\n", "utf8");
 
   return {
     tempDir,
@@ -37,6 +52,7 @@ function createLightweightRegistryFixture(options = {}) {
       serviceTestFiles,
       migrationCheckerTestFiles,
       supportingTestFiles,
+      supplementalContractGuards: [supplementalGuard],
     },
   };
 }
@@ -50,16 +66,30 @@ test("Step215 runner builds a complete explicit regression plan", () => {
   assert.equal(plan.uniqueServiceTestCount, SERVICE_TEST_FILES.length);
   assert.equal(plan.uniqueMigrationCheckerTestCount, MIGRATION_CHECKER_TEST_FILES.length);
   assert.equal(plan.uniqueSupportingTestCount, SUPPORTING_TEST_FILES.length);
+  assert.equal(plan.sourceCheckerCount, 13);
+  assert.equal(plan.supplementalGuardCount, SUPPLEMENTAL_CONTRACT_GUARDS.length);
+  assert.equal(plan.supplementalSourceCheckerCount, 1);
+  assert.equal(plan.supplementalCheckerTestCount, 1);
+  assert.equal(plan.supplementalServiceTestCount, 1);
+  assert.equal(plan.totalSourceCheckerCount, 14);
   assert.equal(plan.uniqueCheckerTestCount, 25);
+  assert.equal(plan.uniqueTestFileCount, 35);
+  assert.equal(plan.totalUniqueCheckerTestCount, 26);
+  assert.equal(plan.totalUniqueTestFileCount, 37);
+  assert.equal(plan.uniqueCheckerTestCountDelta, 1);
+  assert.equal(plan.uniqueTestFileCountDelta, 2);
   assert.equal(plan.duplicateFileCount, 0);
   assert.deepEqual(plan.missingFiles, []);
   assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step214-ai-ml-contract-primitives-step194-pilot.cjs"), true);
   assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step217-ai-ml-contract-primitives-step193-pilot.cjs"), true);
   assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step218-step193-admin-snapshot-redaction.cjs"), true);
   assert.equal(plan.sourceCheckers.includes("scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs"), true);
+  assert.equal(plan.supplementalSourceCheckers.includes("scripts/check-trading-step225-step192-dataset-contract-manifest.cjs"), true);
   assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlDatasetArchitecture.test.js"), true);
   assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlFeaturePipelineArchitecture.test.js"), true);
   assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlFeaturePipelinePreflight.test.js"), true);
+  assert.equal(plan.testFiles.includes("server/src/services/tradingAiMlDatasetContractManifest.test.js"), true);
+  assert.equal(plan.testFiles.includes("scripts/check-trading-step225-step192-dataset-contract-manifest.test.cjs"), true);
   assert.equal(plan.testFiles.includes("scripts/trading-ai-ml-primitives-migration-audit.test.cjs"), true);
 });
 
@@ -123,6 +153,22 @@ test("Step215 runner propagates child checker failures", () => {
   }
 });
 
+test("Step226 runner propagates supplemental checker failures", () => {
+  const { tempDir, registry } = createLightweightRegistryFixture({ failSupplementalChecker: true });
+
+  try {
+    assert.throws(() => {
+      runAiMlPrimitivesMigrationRegression({
+        repoRoot: tempDir,
+        registry,
+        stdio: "pipe",
+      });
+    }, /AI\/ML primitives migration regression failed/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("Scenario F: successful result contract", () => {
   const { tempDir, registry } = createLightweightRegistryFixture();
 
@@ -141,8 +187,17 @@ test("Scenario F: successful result contract", () => {
     assert.equal(result.uniqueServiceTestCount, 10);
     assert.equal(result.uniqueMigrationCheckerTestCount, 14);
     assert.equal(result.uniqueSupportingTestCount, 11);
+    assert.equal(result.supplementalGuardCount, 1);
+    assert.equal(result.supplementalSourceCheckerCount, 1);
+    assert.equal(result.supplementalServiceTestCount, 1);
+    assert.equal(result.supplementalCheckerTestCount, 1);
+    assert.equal(result.totalSourceCheckerCount, 14);
     assert.equal(result.uniqueCheckerTestCount, 25);
     assert.equal(result.uniqueTestFileCount, 35);
+    assert.equal(result.totalUniqueCheckerTestCount, 26);
+    assert.equal(result.totalUniqueTestFileCount, 37);
+    assert.equal(result.uniqueCheckerTestCountDelta, 1);
+    assert.equal(result.uniqueTestFileCountDelta, 2);
     assert.equal(result.duplicateFileCount, 0);
     assert.equal(result.plan.repoRoot, tempDir);
   } finally {
@@ -159,6 +214,8 @@ test("Scenario G: dry-run is not pass", () => {
   assert.equal(result.passed, false);
   assert.equal(result.status, "ai_ml_primitives_migration_regression_planned_not_executed");
   assert.equal(result.uniqueCheckerTestCount, 25);
+  assert.equal(result.totalUniqueCheckerTestCount, 26);
+  assert.equal(result.supplementalGuardCount, 1);
 });
 
 test("Scenario H: checker test count", () => {
@@ -167,6 +224,9 @@ test("Scenario H: checker test count", () => {
   assert.equal(plan.uniqueMigrationCheckerTestCount, 14);
   assert.equal(plan.uniqueSupportingTestCount, 11);
   assert.equal(plan.uniqueCheckerTestCount, 25);
+  assert.equal(plan.totalUniqueCheckerTestCount, 26);
+  assert.equal(plan.supplementalGuardCount, 1);
+  assert.equal(plan.supplementalCheckerTestCount, 1);
   assert.equal(plan.duplicateFileCount, 0);
 });
 
@@ -185,6 +245,8 @@ test("Scenario I: child failure result", () => {
       assert.equal(error.result.passed, false);
       assert.equal(error.result.status, "ai_ml_primitives_migration_regression_failed");
       assert.equal(error.result.uniqueCheckerTestCount, 25);
+      assert.equal(error.result.totalUniqueCheckerTestCount, 26);
+      assert.equal(error.result.supplementalGuardCount, 1);
       assert.equal(JSON.stringify(error.result).includes(tempDir), false);
       return true;
     });
@@ -204,6 +266,9 @@ test("Scenario J: CLI public summary", () => {
 
   assert.equal(summary.passed, true);
   assert.equal(summary.uniqueCheckerTestCount, 25);
+  assert.equal(summary.totalUniqueCheckerTestCount, 26);
+  assert.equal(summary.supplementalGuardCount, 1);
+  assert.equal(summary.totalSourceCheckerCount, 14);
   assert.equal(serialized.includes("repoRoot"), false);
   assert.equal(serialized.includes(process.cwd()), false);
 });

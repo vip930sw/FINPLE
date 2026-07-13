@@ -3,6 +3,7 @@ const test = require("node:test");
 const {
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
+  AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS,
   buildAiMlPrimitivesMigrationAudit,
   classifyProtectedFlags,
   validateAiMlMigrationScenarioTaxonomy,
@@ -23,6 +24,23 @@ test("Scenario A: complete stage coverage", async () => {
   assert.equal(audit.migratedStageCount, 9);
   assert.deepEqual(audit.stageOrder, AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS);
   assert.deepEqual(audit.stageAudits.map((stage) => stage.stepId), AI_ML_PRIMITIVE_MIGRATION_STAGES.map((stage) => stage.stepId));
+});
+
+test("Scenario A2: Step225 manifest is registered as supplemental guard only", async () => {
+  const audit = await getAudit();
+
+  assert.deepEqual(audit.coreAudit, {
+    scope: "step192_to_step200",
+    expectedStageCount: 9,
+  });
+  assert.equal(audit.scope, "step192_to_step200");
+  assert.equal(audit.expectedStageCount, 9);
+  assert.equal(audit.supplementalGuards.category, "supplemental_contract_guard");
+  assert.equal(audit.supplementalGuards.count, AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS.length);
+  assert.deepEqual(audit.supplementalGuards.checks, ["step225_step192_dataset_contract_manifest"]);
+  assert.deepEqual(audit.supplementalGuards.missingFiles, []);
+  assert.equal(audit.supplementalGuards.status, "registered");
+  assert.equal(audit.stageOrder.includes("step225"), false);
 });
 
 test("Scenario B: correct inheritance chain", async () => {

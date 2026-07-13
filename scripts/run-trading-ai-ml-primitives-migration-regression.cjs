@@ -62,11 +62,22 @@ const SUPPORTING_TEST_FILES = Object.freeze([
   "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
 ]);
 
+const SUPPLEMENTAL_CONTRACT_GUARDS = Object.freeze([
+  Object.freeze({
+    guardId: "step225_step192_dataset_contract_manifest",
+    sourceChecker: "scripts/check-trading-step225-step192-dataset-contract-manifest.cjs",
+    checkerTestFile: "scripts/check-trading-step225-step192-dataset-contract-manifest.test.cjs",
+    serviceTestFile: "server/src/services/tradingAiMlDatasetContractManifest.test.js",
+    category: "supplemental_contract_guard",
+  }),
+]);
+
 const DEFAULT_REGISTRY = Object.freeze({
   sourceCheckers: SOURCE_CHECKERS,
   serviceTestFiles: SERVICE_TEST_FILES,
   migrationCheckerTestFiles: MIGRATION_CHECKER_TEST_FILES,
   supportingTestFiles: SUPPORTING_TEST_FILES,
+  supplementalContractGuards: SUPPLEMENTAL_CONTRACT_GUARDS,
 });
 
 function unique(values) {
@@ -89,43 +100,84 @@ function normalizeRegistry(registry = DEFAULT_REGISTRY) {
     serviceTestFiles: [...(registry.serviceTestFiles || [])],
     migrationCheckerTestFiles: [...(registry.migrationCheckerTestFiles || [])],
     supportingTestFiles: [...(registry.supportingTestFiles || [])],
+    supplementalContractGuards: [...(registry.supplementalContractGuards || [])],
   };
 }
 
 function buildAiMlPrimitivesMigrationRegressionPlan(options = {}) {
   const repoRoot = path.resolve(options.repoRoot || process.cwd());
   const registry = normalizeRegistry(options.registry);
-  const checkerTestFiles = unique([
+  const supplementalSourceCheckers = registry.supplementalContractGuards.map((guard) => guard.sourceChecker).filter(Boolean);
+  const supplementalCheckerTestFiles = registry.supplementalContractGuards.map((guard) => guard.checkerTestFile).filter(Boolean);
+  const supplementalServiceTestFiles = registry.supplementalContractGuards.map((guard) => guard.serviceTestFile).filter(Boolean);
+  const coreCheckerTestFiles = unique([
     ...registry.migrationCheckerTestFiles,
     ...registry.supportingTestFiles,
   ]);
-  const testFiles = unique([
+  const checkerTestFiles = unique([
+    ...coreCheckerTestFiles,
+    ...supplementalCheckerTestFiles,
+  ]);
+  const coreTestFiles = unique([
     ...registry.serviceTestFiles,
-    ...checkerTestFiles,
+    ...coreCheckerTestFiles,
+  ]);
+  const testFiles = unique([
+    ...coreTestFiles,
+    ...supplementalServiceTestFiles,
+    ...supplementalCheckerTestFiles,
   ]);
   const duplicateTestFiles = findDuplicates([
     ...registry.serviceTestFiles,
     ...registry.migrationCheckerTestFiles,
     ...registry.supportingTestFiles,
+    ...supplementalCheckerTestFiles,
+    ...supplementalServiceTestFiles,
   ]);
-  const allFiles = [...registry.sourceCheckers, ...testFiles];
+  const allSourceCheckers = [
+    ...registry.sourceCheckers,
+    ...supplementalSourceCheckers,
+  ];
+  const duplicateSourceCheckers = findDuplicates(allSourceCheckers);
+  const allFiles = [...allSourceCheckers, ...testFiles];
   const missingFiles = allFiles.filter((file) => !fs.existsSync(path.join(repoRoot, file)));
 
   return Object.freeze({
     repoRoot,
     sourceCheckers: Object.freeze(registry.sourceCheckers),
+    supplementalContractGuards: Object.freeze(registry.supplementalContractGuards.map((guard) => Object.freeze({ ...guard }))),
+    supplementalSourceCheckers: Object.freeze(supplementalSourceCheckers),
+    supplementalCheckerTestFiles: Object.freeze(supplementalCheckerTestFiles),
+    supplementalServiceTestFiles: Object.freeze(supplementalServiceTestFiles),
+    allSourceCheckers: Object.freeze(allSourceCheckers),
+    coreCheckerTestFiles: Object.freeze(coreCheckerTestFiles),
+    coreTestFiles: Object.freeze(coreTestFiles),
     serviceTestFiles: Object.freeze(registry.serviceTestFiles),
     migrationCheckerTestFiles: Object.freeze(registry.migrationCheckerTestFiles),
     supportingTestFiles: Object.freeze(registry.supportingTestFiles),
     testFiles: Object.freeze(testFiles),
     duplicateTestFiles: Object.freeze(duplicateTestFiles),
+    duplicateSourceCheckers: Object.freeze(duplicateSourceCheckers),
     missingFiles: Object.freeze(missingFiles),
     sourceCheckerCount: registry.sourceCheckers.length,
+    supplementalGuardCount: registry.supplementalContractGuards.length,
+    supplementalSourceCheckerCount: unique(supplementalSourceCheckers).length,
+    supplementalServiceTestCount: unique(supplementalServiceTestFiles).length,
+    supplementalCheckerTestCount: unique(supplementalCheckerTestFiles).length,
+    totalSourceCheckerCount: unique(allSourceCheckers).length,
+    sourceCheckerCountDelta: 0,
+    uniqueServiceTestCountDelta: 0,
+    uniqueMigrationCheckerTestCountDelta: 0,
+    uniqueSupportingTestCountDelta: 0,
     uniqueServiceTestCount: unique(registry.serviceTestFiles).length,
     uniqueMigrationCheckerTestCount: unique(registry.migrationCheckerTestFiles).length,
     uniqueSupportingTestCount: unique(registry.supportingTestFiles).length,
-    uniqueCheckerTestCount: checkerTestFiles.length,
-    uniqueTestFileCount: testFiles.length,
+    uniqueCheckerTestCount: coreCheckerTestFiles.length,
+    uniqueTestFileCount: coreTestFiles.length,
+    totalUniqueCheckerTestCount: checkerTestFiles.length,
+    totalUniqueTestFileCount: testFiles.length,
+    uniqueCheckerTestCountDelta: checkerTestFiles.length - coreCheckerTestFiles.length,
+    uniqueTestFileCountDelta: testFiles.length - coreTestFiles.length,
     duplicateFileCount: duplicateTestFiles.length,
   });
 }
@@ -143,6 +195,19 @@ function buildAiMlPrimitivesMigrationRegressionResult(plan, overrides = {}) {
     uniqueMigrationCheckerTestCount: plan.uniqueMigrationCheckerTestCount,
     uniqueSupportingTestCount: plan.uniqueSupportingTestCount,
     uniqueTestFileCount: plan.uniqueTestFileCount,
+    supplementalGuardCount: plan.supplementalGuardCount,
+    supplementalSourceCheckerCount: plan.supplementalSourceCheckerCount,
+    supplementalServiceTestCount: plan.supplementalServiceTestCount,
+    supplementalCheckerTestCount: plan.supplementalCheckerTestCount,
+    totalSourceCheckerCount: plan.totalSourceCheckerCount,
+    sourceCheckerCountDelta: plan.sourceCheckerCountDelta,
+    uniqueServiceTestCountDelta: plan.uniqueServiceTestCountDelta,
+    uniqueMigrationCheckerTestCountDelta: plan.uniqueMigrationCheckerTestCountDelta,
+    uniqueSupportingTestCountDelta: plan.uniqueSupportingTestCountDelta,
+    totalUniqueCheckerTestCount: plan.totalUniqueCheckerTestCount,
+    totalUniqueTestFileCount: plan.totalUniqueTestFileCount,
+    uniqueCheckerTestCountDelta: plan.uniqueCheckerTestCountDelta,
+    uniqueTestFileCountDelta: plan.uniqueTestFileCountDelta,
     duplicateFileCount: plan.duplicateFileCount,
     plan,
   });
@@ -158,6 +223,19 @@ function buildAiMlPrimitivesMigrationRegressionPublicSummary(result) {
     uniqueMigrationCheckerTestCount: result.uniqueMigrationCheckerTestCount,
     uniqueSupportingTestCount: result.uniqueSupportingTestCount,
     uniqueTestFileCount: result.uniqueTestFileCount,
+    supplementalGuardCount: result.supplementalGuardCount,
+    supplementalSourceCheckerCount: result.supplementalSourceCheckerCount,
+    supplementalServiceTestCount: result.supplementalServiceTestCount,
+    supplementalCheckerTestCount: result.supplementalCheckerTestCount,
+    totalSourceCheckerCount: result.totalSourceCheckerCount,
+    sourceCheckerCountDelta: result.sourceCheckerCountDelta,
+    uniqueServiceTestCountDelta: result.uniqueServiceTestCountDelta,
+    uniqueMigrationCheckerTestCountDelta: result.uniqueMigrationCheckerTestCountDelta,
+    uniqueSupportingTestCountDelta: result.uniqueSupportingTestCountDelta,
+    totalUniqueCheckerTestCount: result.totalUniqueCheckerTestCount,
+    totalUniqueTestFileCount: result.totalUniqueTestFileCount,
+    uniqueCheckerTestCountDelta: result.uniqueCheckerTestCountDelta,
+    uniqueTestFileCountDelta: result.uniqueTestFileCountDelta,
     duplicateFileCount: result.duplicateFileCount,
   });
 }
@@ -168,6 +246,9 @@ function validateAiMlPrimitivesMigrationRegressionPlan(plan) {
   if ((plan?.sourceCheckers || []).length !== new Set(plan?.sourceCheckers || []).size) {
     errors.push("duplicate source checker");
   }
+  if ((plan?.duplicateSourceCheckers || []).length > 0) {
+    errors.push(`duplicate supplemental source checker: ${plan.duplicateSourceCheckers.join(", ")}`);
+  }
   if ((plan?.duplicateTestFiles || []).length > 0) {
     errors.push(`duplicate test file: ${plan.duplicateTestFiles.join(", ")}`);
   }
@@ -177,6 +258,12 @@ function validateAiMlPrimitivesMigrationRegressionPlan(plan) {
   if ((plan?.sourceCheckers || []).length < 11) errors.push("source checker coverage too small");
   if ((plan?.serviceTestFiles || []).length < 9) errors.push("service test coverage too small");
   if ((plan?.migrationCheckerTestFiles || []).length < 12) errors.push("migration checker test coverage too small");
+  for (const guard of plan?.supplementalContractGuards || []) {
+    if (!guard.guardId) errors.push("supplemental guard id missing");
+    if (!guard.sourceChecker) errors.push(`supplemental guard source checker missing: ${guard.guardId || "unknown"}`);
+    if (!guard.checkerTestFile) errors.push(`supplemental guard checker test missing: ${guard.guardId || "unknown"}`);
+    if (!guard.serviceTestFile) errors.push(`supplemental guard service test missing: ${guard.guardId || "unknown"}`);
+  }
   return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
 
@@ -222,6 +309,9 @@ function runAiMlPrimitivesMigrationRegression(options = {}) {
     for (const checker of plan.sourceCheckers) {
       runNodeFile(plan.repoRoot, checker, stdio);
     }
+    for (const checker of plan.supplementalSourceCheckers) {
+      runNodeFile(plan.repoRoot, checker, stdio);
+    }
     runNodeTests(plan.repoRoot, plan.testFiles, stdio);
   } catch (childError) {
     const error = new Error("AI/ML primitives migration regression failed");
@@ -235,6 +325,19 @@ function runAiMlPrimitivesMigrationRegression(options = {}) {
       uniqueMigrationCheckerTestCount: plan.uniqueMigrationCheckerTestCount,
       uniqueSupportingTestCount: plan.uniqueSupportingTestCount,
       uniqueTestFileCount: plan.uniqueTestFileCount,
+      supplementalGuardCount: plan.supplementalGuardCount,
+      supplementalSourceCheckerCount: plan.supplementalSourceCheckerCount,
+      supplementalServiceTestCount: plan.supplementalServiceTestCount,
+      supplementalCheckerTestCount: plan.supplementalCheckerTestCount,
+      totalSourceCheckerCount: plan.totalSourceCheckerCount,
+      sourceCheckerCountDelta: plan.sourceCheckerCountDelta,
+      uniqueServiceTestCountDelta: plan.uniqueServiceTestCountDelta,
+      uniqueMigrationCheckerTestCountDelta: plan.uniqueMigrationCheckerTestCountDelta,
+      uniqueSupportingTestCountDelta: plan.uniqueSupportingTestCountDelta,
+      totalUniqueCheckerTestCount: plan.totalUniqueCheckerTestCount,
+      totalUniqueTestFileCount: plan.totalUniqueTestFileCount,
+      uniqueCheckerTestCountDelta: plan.uniqueCheckerTestCountDelta,
+      uniqueTestFileCountDelta: plan.uniqueTestFileCountDelta,
       duplicateFileCount: plan.duplicateFileCount,
     });
     error.exitCode = typeof childError.status === "number" ? childError.status : 1;
@@ -269,6 +372,7 @@ module.exports = {
   SERVICE_TEST_FILES,
   MIGRATION_CHECKER_TEST_FILES,
   SUPPORTING_TEST_FILES,
+  SUPPLEMENTAL_CONTRACT_GUARDS,
   buildAiMlPrimitivesMigrationRegressionPlan,
   buildAiMlPrimitivesMigrationRegressionPublicSummary,
   buildAiMlPrimitivesMigrationRegressionResult,

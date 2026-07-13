@@ -56,6 +56,17 @@ const AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS = Object.freeze([
   "step200",
 ]);
 
+const AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS = Object.freeze([
+  Object.freeze({
+    guardId: "step225_step192_dataset_contract_manifest",
+    label: "Step 225",
+    category: "supplemental_contract_guard",
+    sourceChecker: "scripts/check-trading-step225-step192-dataset-contract-manifest.cjs",
+    checkerTestFile: "scripts/check-trading-step225-step192-dataset-contract-manifest.test.cjs",
+    serviceTestFile: "server/src/services/tradingAiMlDatasetContractManifest.test.js",
+  }),
+]);
+
 const AI_ML_PRIMITIVE_MIGRATION_HELPERS = Object.freeze([
   "cloneAiMlMetadata",
   "normalizeAiMlMetadataArray",
@@ -1244,11 +1255,29 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
     0,
   );
   const stageOrder = stageAudits.map((stage) => stage.stepId);
+  const supplementalGuardFiles = AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS.flatMap((guard) => [
+    guard.sourceChecker,
+    guard.checkerTestFile,
+    guard.serviceTestFile,
+  ]);
+  const supplementalMissingFiles = supplementalGuardFiles.filter((file) => !fileExists(repoRoot, file));
 
   return Object.freeze({
     auditId: "step212_shared_ai_ml_primitives_migration_milestone",
     scope: "step192_to_step200",
     expectedStageCount,
+    coreAudit: Object.freeze({
+      scope: "step192_to_step200",
+      expectedStageCount,
+    }),
+    supplementalGuards: Object.freeze({
+      category: "supplemental_contract_guard",
+      count: AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS.length,
+      checks: Object.freeze(AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS.map((guard) => guard.guardId)),
+      files: Object.freeze(supplementalGuardFiles),
+      missingFiles: Object.freeze(supplementalMissingFiles),
+      status: supplementalMissingFiles.length === 0 ? "registered" : "missing_files",
+    }),
     migratedStageCount,
     singleFlagSourceStageCount,
     explicitAllowlistStageCount,
@@ -1296,6 +1325,13 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
   if (audit?.scope !== "step192_to_step200") errors.push("audit scope mismatch");
   if (JSON.stringify(audit?.stageOrder || []) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) errors.push("stage order mismatch");
   if (audit?.expectedStageCount !== 9) errors.push("expected stage count mismatch");
+  if (audit?.coreAudit?.scope !== "step192_to_step200") errors.push("core audit scope mismatch");
+  if (audit?.coreAudit?.expectedStageCount !== 9) errors.push("core audit expected stage count mismatch");
+  if (audit?.supplementalGuards?.category !== "supplemental_contract_guard") errors.push("supplemental guard category mismatch");
+  if (audit?.supplementalGuards?.count !== AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS.length) errors.push("supplemental guard count mismatch");
+  if (!Array.isArray(audit?.supplementalGuards?.checks) || !audit.supplementalGuards.checks.includes("step225_step192_dataset_contract_manifest")) errors.push("Step225 supplemental guard missing");
+  if ((audit?.supplementalGuards?.missingFiles || []).length !== 0) errors.push("supplemental guard file missing");
+  if (audit?.supplementalGuards?.status !== "registered") errors.push("supplemental guard not registered");
   if (audit?.migratedStageCount !== 9) errors.push("migrated stage count mismatch");
   if (audit?.singleFlagSourceStageCount !== 9) errors.push("single flag source stage count mismatch");
   if (audit?.explicitAllowlistStageCount !== 9) errors.push("explicit allowlist stage count mismatch");
@@ -1343,6 +1379,8 @@ if (require.main === module) {
         auditId: audit.auditId,
         scope: audit.scope,
         expectedStageCount: audit.expectedStageCount,
+        coreAudit: audit.coreAudit,
+        supplementalGuards: audit.supplementalGuards,
         migratedStageCount: audit.migratedStageCount,
         legacySpreadCount: audit.legacySpreadCount,
         unexpectedTruePermissionCount: audit.unexpectedTruePermissionCount,
@@ -1366,6 +1404,7 @@ module.exports = {
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS,
+  AI_ML_SUPPLEMENTAL_CONTRACT_GUARDS,
   classifyProtectedFlags,
   buildAiMlPrimitivesMigrationAudit,
   validateAiMlMigrationScenarioTaxonomy,
