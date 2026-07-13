@@ -5,7 +5,10 @@ const path = require("node:path");
 
 const OWNED_TEMP_PREFIX = "finple-test-guard-";
 const TEMP_ROOT_LABEL = "finple-test-guard-owned";
+const OWNED_TEMP_MARKER = ".finple-test-guard-owned";
 const FULL_REPOSITORY_TIMEOUT_MS = 260000;
+const DEFAULT_CLEANUP_MAX_RETRIES = 4;
+const DEFAULT_CLEANUP_RETRY_DELAY_MS = 75;
 
 const MODE_DEFINITIONS = Object.freeze({
   "ai-ml-architecture": Object.freeze({
@@ -56,9 +59,11 @@ function printJson(value, stream = process.stdout) {
   stream.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-function createOwnedTempRoot({ tmpDir = os.tmpdir(), mkdtempSync = fs.mkdtempSync } = {}) {
+function createOwnedTempRoot({ tmpDir = os.tmpdir(), mkdtempSync = fs.mkdtempSync, writeFileSync = fs.writeFileSync } = {}) {
   const base = path.join(tmpDir, OWNED_TEMP_PREFIX);
-  return mkdtempSync(base);
+  const ownedRoot = mkdtempSync(base);
+  writeFileSync(path.join(ownedRoot, OWNED_TEMP_MARKER), "owned\n", "utf8");
+  return ownedRoot;
 }
 
 function isSamePath(a, b) {
@@ -85,10 +90,75 @@ function validateCleanupTarget(targetRoot, ownedRoot, { tmpDir = os.tmpdir() } =
   return resolvedTarget;
 }
 
-function cleanupOwnedTempRoot(ownedRoot, { tmpDir = os.tmpdir(), rmSync = fs.rmSync } = {}) {
-  const safeRoot = validateCleanupTarget(ownedRoot, ownedRoot, { tmpDir });
-  rmSync(safeRoot, { recursive: true, force: true });
-  return true;
+function waitForCleanupRetry(delayMs) {
+  if (delayMs <= 0) return;
+  const shared = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(shared, 0, 0, delayMs);
+}
+
+function toCleanupPath(safeRoot) {
+  return process.platform === "win32" ? path.toNamespacedPath(safeRoot) : safeRoot;
+}
+
+function cleanupOwnedFinpleTempRoot(ownedRoot, {
+  tmpDir = os.tmpdir(),
+  expectedOwnedRoot = ownedRoot,
+  existsSync = fs.existsSync,
+  rmSync = fs.rmSync,
+  maxRetries = DEFAULT_CLEANUP_MAX_RETRIES,
+  retryDelayMs = DEFAULT_CLEANUP_RETRY_DELAY_MS,
+  wait = waitForCleanupRetry,
+} = {}) {
+  const result = {
+    attempted: true,
+    cleanupPathMode: process.platform === "win32" ? "windows_namespaced" : "standard",
+    cleanupSucceeded: false,
+    ownedRootExistsAfter: true,
+    retryCount: 0,
+    markerValidated: false,
+    exactOwnedRootValidated: false,
+    redacted: true,
+  };
+
+  let safeRoot;
+  try {
+    safeRoot = validateCleanupTarget(ownedRoot, expectedOwnedRoot, { tmpDir });
+    result.exactOwnedRootValidated = true;
+    const markerPath = path.join(safeRoot, OWNED_TEMP_MARKER);
+    if (!existsSync(markerPath)) throw new Error("owned root marker missing");
+    result.markerValidated = true;
+  } catch (_error) {
+    result.cleanupSucceeded = false;
+    result.ownedRootExistsAfter = ownedRoot ? existsSync(ownedRoot) : false;
+    return Object.freeze(result);
+  }
+
+  const cleanupPath = toCleanupPath(safeRoot);
+  const boundedRetries = Math.max(0, Math.min(Number(maxRetries) || 0, 5));
+
+  for (let attempt = 0; attempt <= boundedRetries; attempt += 1) {
+    try {
+      rmSync(cleanupPath, { recursive: true, force: true });
+      result.ownedRootExistsAfter = existsSync(safeRoot);
+      if (result.ownedRootExistsAfter === false) {
+        result.cleanupSucceeded = true;
+        result.retryCount = attempt;
+        return Object.freeze(result);
+      }
+    } catch (_error) {
+      result.ownedRootExistsAfter = existsSync(safeRoot);
+    }
+    if (attempt < boundedRetries) wait(retryDelayMs);
+  }
+
+  result.retryCount = boundedRetries;
+  result.cleanupSucceeded = false;
+  result.ownedRootExistsAfter = existsSync(safeRoot);
+  return Object.freeze(result);
+}
+
+function cleanupOwnedTempRoot(ownedRoot, options = {}) {
+  return cleanupOwnedFinpleTempRoot(ownedRoot, options).cleanupSucceeded;
 }
 
 function countGlobalFinpleTempEntries({ tmpDir = os.tmpdir(), readdirSync = fs.readdirSync } = {}) {
@@ -179,6 +249,8 @@ function runGuard(mode, {
   mkdtempSync = fs.mkdtempSync,
   rmSync = fs.rmSync,
   existsSync = fs.existsSync,
+  writeFileSync = fs.writeFileSync,
+  cleanup = cleanupOwnedFinpleTempRoot,
 } = {}) {
   const definition = resolveMode(mode);
   if (!definition) {
@@ -198,6 +270,16 @@ function runGuard(mode, {
   let ownedRoot = null;
   let cleanupAttempted = false;
   let cleanupSucceeded = false;
+  let cleanupResult = Object.freeze({
+    attempted: false,
+    cleanupPathMode: process.platform === "win32" ? "windows_namespaced" : "standard",
+    cleanupSucceeded: false,
+    ownedRootExistsAfter: false,
+    retryCount: 0,
+    markerValidated: false,
+    exactOwnedRootValidated: false,
+    redacted: true,
+  });
   let childSummary = {
     ok: false,
     childStatus: "not_started",
@@ -217,7 +299,7 @@ function runGuard(mode, {
   };
 
   try {
-    ownedRoot = createOwnedTempRoot({ tmpDir, mkdtempSync });
+    ownedRoot = createOwnedTempRoot({ tmpDir, mkdtempSync, writeFileSync });
     validateCleanupTarget(ownedRoot, ownedRoot, { tmpDir });
     inventory.ownedRootCreated = true;
     inventory.entryCountBefore = collectOwnedRootInventory(ownedRoot).entryCount;
@@ -230,6 +312,10 @@ function runGuard(mode, {
     if (definition.timeoutMs > 0) spawnOptions.timeout = definition.timeoutMs;
     const childResult = executor(process.execPath, [...definition.args], spawnOptions);
     childSummary = classifyChildResult(childResult, definition);
+    childSummary = Object.freeze({
+      ...childSummary,
+      childTerminatedBeforeCleanup: true,
+    });
     const afterChild = collectOwnedRootInventory(ownedRoot);
     inventory.entryCountAfterChild = afterChild.entryCount;
     inventory.fileCountAfterChild = afterChild.fileCount;
@@ -237,16 +323,17 @@ function runGuard(mode, {
   } finally {
     if (ownedRoot) {
       cleanupAttempted = true;
-      cleanupSucceeded = cleanupOwnedTempRoot(ownedRoot, { tmpDir, rmSync });
+      cleanupResult = cleanup(ownedRoot, { tmpDir, expectedOwnedRoot: ownedRoot, rmSync, existsSync });
+      cleanupSucceeded = cleanupResult.cleanupSucceeded;
     }
   }
 
-  const rootExistsAfterCleanup = ownedRoot ? existsSync(ownedRoot) : false;
+  const rootExistsAfterCleanup = ownedRoot ? cleanupResult.ownedRootExistsAfter : false;
   const globalAfter = countGlobalFinpleTempEntries({ tmpDir });
   const globalDelta = globalBefore.ok && globalAfter.ok ? globalAfter.count - globalBefore.count : null;
 
   return Object.freeze({
-    ok: childSummary.ok && cleanupSucceeded && rootExistsAfterCleanup === false,
+    ok: childSummary.ok && cleanupSucceeded && rootExistsAfterCleanup === false && globalDelta === 0,
     status: childSummary.childStatus,
     mode,
     tempRootLabel: TEMP_ROOT_LABEL,
@@ -257,11 +344,18 @@ function runGuard(mode, {
     directoryCountAfterChild: inventory.directoryCountAfterChild,
     cleanupAttempted,
     cleanupSucceeded,
+    cleanupPathMode: cleanupResult.cleanupPathMode,
+    cleanupRetryCount: cleanupResult.retryCount,
+    cleanupMarkerValidated: cleanupResult.markerValidated,
+    cleanupExactOwnedRootValidated: cleanupResult.exactOwnedRootValidated,
     rootExistsAfterCleanup,
+    ownedRootExistsAfter: rootExistsAfterCleanup,
     childStatus: childSummary.childStatus,
+    childPassed: childSummary.passed,
     childExitCode: childSummary.childExitCode,
     childSignal: childSummary.childSignal,
     timedOut: childSummary.timedOut,
+    configuredTimeoutMs: childSummary.timeoutMs,
     passed: childSummary.passed,
     exitCode: childSummary.exitCode,
     globalFinpleCountBefore: globalBefore.count,
@@ -311,12 +405,16 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DEFAULT_CLEANUP_MAX_RETRIES,
+  DEFAULT_CLEANUP_RETRY_DELAY_MS,
   FULL_REPOSITORY_TIMEOUT_MS,
   MODE_DEFINITIONS,
+  OWNED_TEMP_MARKER,
   OWNED_TEMP_PREFIX,
   TEMP_ROOT_LABEL,
   buildChildEnv,
   buildPlan,
+  cleanupOwnedFinpleTempRoot,
   cleanupOwnedTempRoot,
   collectOwnedRootInventory,
   countGlobalFinpleTempEntries,
@@ -325,5 +423,6 @@ module.exports = {
   main,
   parseArgs,
   runGuard,
+  toCleanupPath,
   validateCleanupTarget,
 };

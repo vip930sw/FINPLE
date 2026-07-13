@@ -4,15 +4,19 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 const {
+  DEFAULT_CLEANUP_MAX_RETRIES,
   FULL_REPOSITORY_TIMEOUT_MS,
   MODE_DEFINITIONS,
+  OWNED_TEMP_MARKER,
   OWNED_TEMP_PREFIX,
   buildChildEnv,
   buildPlan,
+  cleanupOwnedFinpleTempRoot,
   countGlobalFinpleTempEntries,
   createOwnedTempRoot,
   main,
   runGuard,
+  toCleanupPath,
   validateCleanupTarget,
 } = require("./finple-test-temp-guard.cjs");
 
@@ -25,6 +29,17 @@ function withFixture(fn) {
   }
 }
 
+function makeDeepDirectory(root) {
+  let current = root;
+  for (let index = 0; index < 18; index += 1) {
+    current = path.join(current, `deep-segment-${index}-abcdefghijklmnopqrstuvwxyz`);
+    fs.mkdirSync(process.platform === "win32" ? path.toNamespacedPath(current) : current);
+  }
+  const filePath = path.join(current, "deep-file.txt");
+  fs.writeFileSync(process.platform === "win32" ? path.toNamespacedPath(filePath) : filePath, "deep");
+  return filePath;
+}
+
 test("Scenario A: owned TEMP root is under tmpdir with allowlisted prefix", () => {
   withFixture((tmpDir) => {
     const rootA = createOwnedTempRoot({ tmpDir });
@@ -32,6 +47,7 @@ test("Scenario A: owned TEMP root is under tmpdir with allowlisted prefix", () =
     assert.notEqual(rootA, rootB);
     assert.equal(path.dirname(rootA), tmpDir);
     assert.ok(path.basename(rootA).startsWith(OWNED_TEMP_PREFIX));
+    assert.equal(fs.existsSync(path.join(rootA, OWNED_TEMP_MARKER)), true);
     assert.doesNotThrow(() => validateCleanupTarget(rootA, rootA, { tmpDir }));
   });
 });
@@ -60,6 +76,10 @@ test("Scenario C: successful child cleanup removes owned root", () => {
     assert.equal(result.childStatus, "passed");
     assert.equal(result.cleanupAttempted, true);
     assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.cleanupMarkerValidated, true);
+    assert.equal(result.cleanupExactOwnedRootValidated, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(result.globalFinpleCountDelta, 0);
     assert.equal(result.rootExistsAfterCleanup, false);
     assert.equal(fs.existsSync(childTemp), false);
   });
@@ -101,6 +121,8 @@ test("Scenario E: timeout cleanup runs and timeout is failure", () => {
     assert.equal(result.passed, false);
     assert.equal(result.exitCode, 124);
     assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(result.configuredTimeoutMs, FULL_REPOSITORY_TIMEOUT_MS);
     assert.equal(result.rootExistsAfterCleanup, false);
   });
 });
@@ -115,6 +137,162 @@ test("Scenario F: cleanup path rejection blocks unsafe targets", () => {
     assert.throws(() => validateCleanupTarget(wrongPrefix, wrongPrefix, { tmpDir }), /prefix/);
     assert.throws(() => validateCleanupTarget(sibling, owned, { tmpDir }), /owned root/);
     assert.throws(() => validateCleanupTarget(process.cwd(), process.cwd(), { tmpDir }), /direct child|prefix/);
+  });
+});
+
+test("Scenario M: shallow owned root cleanup helper removes marked root", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    fs.writeFileSync(path.join(owned, "owned-file.txt"), "owned");
+
+    const result = cleanupOwnedFinpleTempRoot(owned, { tmpDir, retryDelayMs: 0 });
+
+    assert.equal(result.attempted, true);
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(result.markerValidated, true);
+    assert.equal(result.exactOwnedRootValidated, true);
+    assert.equal(result.retryCount, 0);
+    assert.equal(result.cleanupPathMode, process.platform === "win32" ? "windows_namespaced" : "standard");
+  });
+});
+
+test("Scenario N: deep nested owned root cleanup uses long-path safe removal", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    const deepFile = makeDeepDirectory(owned);
+    assert.equal(fs.existsSync(process.platform === "win32" ? path.toNamespacedPath(deepFile) : deepFile), true);
+
+    const result = cleanupOwnedFinpleTempRoot(owned, { tmpDir, retryDelayMs: 0 });
+
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(fs.existsSync(owned), false);
+    assert.equal(toCleanupPath(owned), process.platform === "win32" ? path.toNamespacedPath(owned) : owned);
+  });
+});
+
+test("Scenario O: marker missing rejects cleanup without deleting root", () => {
+  withFixture((tmpDir) => {
+    const unsafe = fs.mkdtempSync(path.join(tmpDir, OWNED_TEMP_PREFIX));
+    fs.writeFileSync(path.join(unsafe, "keep.txt"), "keep");
+
+    const result = cleanupOwnedFinpleTempRoot(unsafe, { tmpDir, retryDelayMs: 0 });
+
+    assert.equal(result.cleanupSucceeded, false);
+    assert.equal(result.markerValidated, false);
+    assert.equal(result.ownedRootExistsAfter, true);
+    assert.equal(fs.existsSync(unsafe), true);
+  });
+});
+
+test("Scenario P: unsafe cleanup targets are rejected", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    const arbitrary = fs.mkdtempSync(path.join(tmpDir, OWNED_TEMP_PREFIX));
+    fs.writeFileSync(path.join(arbitrary, OWNED_TEMP_MARKER), "owned\n");
+
+    assert.throws(() => validateCleanupTarget(tmpDir, tmpDir, { tmpDir }), /os tmpdir|owned root/);
+    assert.throws(() => validateCleanupTarget(process.cwd(), process.cwd(), { tmpDir }), /direct child|prefix/);
+    assert.throws(() => validateCleanupTarget(path.parse(tmpDir).root, path.parse(tmpDir).root, { tmpDir }), /filesystem root|owned root/);
+
+    const wrongRoot = cleanupOwnedFinpleTempRoot(arbitrary, {
+      tmpDir,
+      expectedOwnedRoot: owned,
+      retryDelayMs: 0,
+    });
+    assert.equal(wrongRoot.cleanupSucceeded, false);
+    assert.equal(wrongRoot.exactOwnedRootValidated, false);
+    assert.equal(fs.existsSync(arbitrary), true);
+  });
+});
+
+test("Scenario Q: cleanup retry succeeds after controlled transient failure", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    let attempts = 0;
+    const result = cleanupOwnedFinpleTempRoot(owned, {
+      tmpDir,
+      retryDelayMs: 0,
+      rmSync: (cleanupPath, options) => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("controlled");
+        fs.rmSync(cleanupPath, options);
+      },
+      wait: () => {},
+    });
+
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.retryCount, 1);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(attempts, 2);
+  });
+});
+
+test("Scenario R: permanent cleanup failure is not converted to success", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    const result = cleanupOwnedFinpleTempRoot(owned, {
+      tmpDir,
+      maxRetries: 2,
+      retryDelayMs: 0,
+      rmSync: () => {
+        throw new Error("controlled");
+      },
+      wait: () => {},
+    });
+
+    assert.equal(result.cleanupSucceeded, false);
+    assert.equal(result.retryCount, 2);
+    assert.equal(result.ownedRootExistsAfter, true);
+    assert.equal(fs.existsSync(owned), true);
+  });
+});
+
+test("Scenario S: timeout result remains failed even when cleanup succeeds", () => {
+  withFixture((tmpDir) => {
+    const result = runGuard("full-repository-diagnostic", {
+      tmpDir,
+      stdio: "pipe",
+      executor: (_command, _args, options) => {
+        fs.writeFileSync(path.join(options.env.TEMP, "timeout-output.txt"), "timeout");
+        return { status: null, signal: "SIGTERM", error: { code: "ETIMEDOUT" } };
+      },
+    });
+
+    assert.equal(result.timedOut, true);
+    assert.equal(result.childPassed, false);
+    assert.equal(result.cleanupAttempted, true);
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+    assert.equal(result.globalFinpleCountDelta, 0);
+    assert.equal(result.ok, false);
+    assert.equal(result.passed, false);
+  });
+});
+
+test("Scenario T: cleanup failure keeps overall guard result failed", () => {
+  withFixture((tmpDir) => {
+    const result = runGuard("ai-ml-architecture", {
+      tmpDir,
+      stdio: "pipe",
+      executor: () => ({ status: 0, signal: null }),
+      cleanup: (ownedRoot) => Object.freeze({
+        attempted: true,
+        cleanupPathMode: "standard",
+        cleanupSucceeded: false,
+        ownedRootExistsAfter: true,
+        retryCount: DEFAULT_CLEANUP_MAX_RETRIES,
+        markerValidated: true,
+        exactOwnedRootValidated: true,
+        redacted: true,
+      }),
+    });
+
+    assert.equal(result.childPassed, true);
+    assert.equal(result.cleanupSucceeded, false);
+    assert.equal(result.ownedRootExistsAfter, true);
+    assert.equal(result.ok, false);
   });
 });
 

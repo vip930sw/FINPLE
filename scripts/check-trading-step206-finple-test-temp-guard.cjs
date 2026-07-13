@@ -6,12 +6,15 @@ const REQUIRED_FILES = [
   "scripts/finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step206-finple-test-temp-guard.cjs",
   "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
+  "scripts/check-trading-step219-windows-long-path-temp-cleanup.cjs",
+  "scripts/check-trading-step219-windows-long-path-temp-cleanup.test.cjs",
 ];
 
 const REQUIRED_PACKAGE_SCRIPTS = [
   "\"check:finple-temp-guard:ai-ml\"",
   "\"diagnose:finple-temp-guard:full\"",
   "\"check:trading-step206-finple-test-temp-guard\"",
+  "\"check:trading-step219-windows-long-path-temp-cleanup\"",
   "scripts/finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step205-ai-ml-collapsed-summary-polish.test.cjs",
@@ -45,8 +48,18 @@ const REQUIRED_GUARD_SNIPPETS = [
   "path.join(tmpDir, OWNED_TEMP_PREFIX)",
   "finally",
   "cleanupOwnedTempRoot",
+  "cleanupOwnedFinpleTempRoot",
   "validateCleanupTarget",
   "fs.rmSync",
+  "path.toNamespacedPath",
+  "OWNED_TEMP_MARKER",
+  ".finple-test-guard-owned",
+  "expectedOwnedRoot",
+  "markerValidated",
+  "exactOwnedRootValidated",
+  "retryCount",
+  "cleanupPathMode",
+  "ownedRootExistsAfter",
   "FULL_REPOSITORY_TIMEOUT_MS = 260000",
   "timed_out",
   "ETIMEDOUT",
@@ -62,6 +75,14 @@ const REQUIRED_TEST_SCENARIOS = [
   "Scenario D: failed child cleanup",
   "Scenario E: timeout cleanup",
   "Scenario F: cleanup path rejection",
+  "Scenario M: shallow owned root cleanup helper",
+  "Scenario N: deep nested owned root cleanup",
+  "Scenario O: marker missing",
+  "Scenario P: unsafe cleanup targets",
+  "Scenario Q: cleanup retry succeeds",
+  "Scenario R: permanent cleanup failure",
+  "Scenario S: timeout result remains failed",
+  "Scenario T: cleanup failure keeps overall guard result failed",
   "Scenario G: pre-existing finple-* artifact",
   "Scenario H: isolated guarded run has global count delta 0",
   "Scenario I: unknown mode",
@@ -142,6 +163,10 @@ assertIncludes(guardTest, "fs.existsSync(preExisting), true", "pre-existing arti
 assertIncludes(guardTest, "ETIMEDOUT", "timeout cleanup test");
 assertIncludes(guardTest, "childExitCode, 7", "failure propagation test");
 assertIncludes(guardTest, "exitCode, 42", "child exit propagation test");
+assertIncludes(guardTest, "path.toNamespacedPath", "long-path fixture");
+assertIncludes(guardTest, "markerValidated, false", "marker missing rejection test");
+assertIncludes(guardTest, "retryCount, 1", "retry success test");
+assertIncludes(guardTest, "cleanupSucceeded, false", "cleanup failure remains failed");
 assertIncludes(checkerTest, "Step206 checker passes against repository source", "checker self test");
 
 for (const snippet of FORBIDDEN_GUARD_SNIPPETS) {
