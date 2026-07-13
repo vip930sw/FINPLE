@@ -17,8 +17,9 @@ function getAudit() {
 
 test("Scenario A: complete stage coverage", async () => {
   const audit = await getAudit();
-  assert.equal(audit.expectedStageCount, 6);
-  assert.equal(audit.migratedStageCount, 6);
+  assert.equal(audit.scope, "step194_to_step200");
+  assert.equal(audit.expectedStageCount, 7);
+  assert.equal(audit.migratedStageCount, 7);
   assert.deepEqual(audit.stageOrder, AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS);
   assert.deepEqual(audit.stageAudits.map((stage) => stage.stepId), AI_ML_PRIMITIVE_MIGRATION_STAGES.map((stage) => stage.stepId));
 });
@@ -27,6 +28,7 @@ test("Scenario B: correct inheritance chain", async () => {
   const audit = await getAudit();
   assert.ok(audit.stageAudits.every((stage) => stage.inheritanceOk));
   assert.deepEqual(audit.stageAudits.map((stage) => stage.inheritedFlagExport), [
+    "STEP193_AI_ML_FEATURE_PIPELINE_FLAGS",
     "STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS",
     "STEP195_AI_ML_READINESS_GATE_FLAGS",
     "STEP196_AI_ML_BATCH_CONTRACT_REVIEW_FLAGS",
@@ -38,7 +40,7 @@ test("Scenario B: correct inheritance chain", async () => {
 
 test("Scenario C: single flag source", async () => {
   const audit = await getAudit();
-  assert.equal(audit.singleFlagSourceStageCount, 6);
+  assert.equal(audit.singleFlagSourceStageCount, 7);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.flagExportCount, 1, stage.stepId);
     assert.equal(stage.builderCallCount, 1, stage.stepId);
@@ -56,7 +58,7 @@ test("Scenario D: no legacy duplicate", async () => {
 
 test("Scenario E: explicit allowlist", async () => {
   const audit = await getAudit();
-  assert.equal(audit.explicitAllowlistStageCount, 6);
+  assert.equal(audit.explicitAllowlistStageCount, 7);
   for (const stage of audit.stageAudits) {
     assert.equal(stage.actualTrueKeyCount, stage.allowlistKeyCount, stage.stepId);
     assert.deepEqual(stage.unexpectedTrueKeys, [], stage.stepId);
@@ -122,6 +124,8 @@ test("Scenario L: no runtime authority change", async () => {
   assert.equal(audit.runtimeCapabilityStatus, "not_implemented");
   assert.equal(audit.executionReadinessStatus, "blocked");
   assert.equal(audit.orderAuthorityStatus, "external_blocker");
+  assert.equal(audit.checkerConsolidationStatus, "eligible_for_post_step194_review");
+  assert.equal(audit.nextRecommendedImplementation, "post_step194_checker_and_marker_consolidation_review");
   assert.equal(audit.overallStatus, "shared_primitives_migration_milestone_complete_execution_blocked");
 });
 

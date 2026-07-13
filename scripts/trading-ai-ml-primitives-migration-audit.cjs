@@ -45,6 +45,7 @@ const AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS = Object.freeze([
 ]);
 
 const AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS = Object.freeze([
+  "step194",
   "step195",
   "step196",
   "step197",
@@ -80,6 +81,87 @@ const LEGACY_HELPER_PATTERNS = Object.freeze([
 ]);
 
 const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
+  Object.freeze({
+    stepId: "step194",
+    label: "Step 194",
+    stageId: "step194_feature_pipeline_preflight",
+    serviceFile: "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
+    testFile: "server/src/services/tradingAiMlFeaturePipelinePreflight.test.js",
+    checkerFile: "scripts/check-trading-step194-ai-ml-feature-pipeline-preflight.cjs",
+    checkerTestFile: "scripts/check-trading-step194-ai-ml-feature-pipeline-preflight.test.cjs",
+    inheritedFlagExport: "STEP193_AI_ML_FEATURE_PIPELINE_FLAGS",
+    metadataAllowlistExport: "STEP194_METADATA_ONLY_ALLOWED_FLAGS",
+    additionalFalseFlagsExport: "STEP194_ADDITIONAL_FALSE_FLAGS",
+    runtimeFlagExport: "STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS",
+    requiredProtectedFlags: Object.freeze([
+      "actualDataDownloadAllowed",
+      "featureGenerationAllowed",
+      "datasetBuildAllowed",
+      "batchExecutionAllowed",
+      "dryRunExecutionAllowed",
+      "schemaMaterializationAllowed",
+      "partitionMaterializationAllowed",
+      "outputPathAssignmentAllowed",
+      "reportPersistenceAllowed",
+      "exceptionPersistenceAllowed",
+      "remediationPersistenceAllowed",
+      "handoffExecutionAllowed",
+      "handoffTransmissionAllowed",
+      "handoffPersistenceAllowed",
+      "dbMigrationAllowed",
+      "dbReadAllowed",
+      "dbWriteAllowed",
+      "persistentStorageAllowed",
+      "providerCallsAllowed",
+      "quoteCallsAllowed",
+      "kisCallsAllowed",
+      "kisTokenIssuanceAllowed",
+      "pythonFeatureJobAllowed",
+      "modelTrainingAllowed",
+      "modelDeploymentAllowed",
+      "orderSubmissionAllowed",
+      "liveTradingAllowed",
+      "publicUiExposureAllowed",
+      "myPageExposureAllowed",
+      "readyForActualDataDownload",
+      "readyForFeatureGeneration",
+      "readyForDatasetBuild",
+      "readyForBatchExecution",
+      "readyForDryRunExecution",
+      "readyForModelTraining",
+      "readyForModelDeployment",
+      "readyForReadOnlyProviderCalls",
+      "readyForOrderSubmission",
+      "readyForLiveGuardedTrading",
+    ]),
+    notApplicableProtectedFlags: Object.freeze([]),
+    expectedAllowlistKeys: Object.freeze([
+      "metadataOnlyPreflightEvaluationAllowed",
+    ]),
+    expectedOutputMarkers: Object.freeze([
+      "metadata_only_preflight",
+      "valid_contract_execution_blocked",
+      "blocked",
+      "ai_ml_feature_batch_preflight_review",
+    ]),
+    expectedScenarioMarkers: Object.freeze([
+      "scenario_a_valid_metadata_contract",
+      "scenario_b_unknown_feature",
+      "scenario_c_future_available_at_leakage",
+      "scenario_d_label_overlap",
+      "scenario_e_insufficient_rolling_history",
+      "scenario_f_invalid_normalization_scope",
+      "scenario_g_unconditional_zero_fill",
+      "scenario_h_unpinned_version",
+      "scenario_i_prohibited_execution_intent",
+      "scenario J shared flag compatibility",
+      "scenario K inherited true execution conflict",
+      "scenario L explicit metadata allowlist",
+      "scenario M shared helper compatibility",
+      "scenario N full default output remains compatible",
+      "scenario O shared clone use prevents input",
+    ]),
+  }),
   Object.freeze({
     stepId: "step195",
     label: "Step 195",
@@ -827,6 +909,7 @@ async function importStageFlags(repoRoot, stage) {
 function auditCheckerChain(repoRoot) {
   const packageJson = read(repoRoot, "package.json");
   const requiredScripts = [
+    "check:trading-step194-ai-ml-feature-pipeline-preflight",
     "check:trading-step195-ai-ml-readiness-gate-summary",
     "check:trading-step196-ai-ml-batch-contract-review",
     "check:trading-step197-ai-ml-dataset-build-dry-run-manifest",
@@ -882,7 +965,7 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
 
   return Object.freeze({
     auditId: "step212_shared_ai_ml_primitives_migration_milestone",
-    scope: "step195_to_step200",
+    scope: "step194_to_step200",
     expectedStageCount,
     migratedStageCount,
     singleFlagSourceStageCount,
@@ -900,8 +983,8 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
     runtimeCapabilityStatus: "not_implemented",
     executionReadinessStatus: "blocked",
     orderAuthorityStatus: "external_blocker",
-    checkerConsolidationStatus: "deferred_until_step194_migration",
-    nextRecommendedImplementation: "step194_shared_primitives_migration",
+    checkerConsolidationStatus: "eligible_for_post_step194_review",
+    nextRecommendedImplementation: "post_step194_checker_and_marker_consolidation_review",
     overallStatus: "shared_primitives_migration_milestone_complete_execution_blocked",
     stageOrder: Object.freeze(stageOrder),
     stageAudits: Object.freeze(stageAudits),
@@ -922,11 +1005,12 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
   for (const error of protectedFlagRegistryValidation.errors) errors.push(`protected flag registry: ${error}`);
   if (!audit || typeof audit !== "object") errors.push("audit missing");
   if (audit?.auditId !== "step212_shared_ai_ml_primitives_migration_milestone") errors.push("audit id mismatch");
+  if (audit?.scope !== "step194_to_step200") errors.push("audit scope mismatch");
   if (JSON.stringify(audit?.stageOrder || []) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) errors.push("stage order mismatch");
-  if (audit?.expectedStageCount !== 6) errors.push("expected stage count mismatch");
-  if (audit?.migratedStageCount !== 6) errors.push("migrated stage count mismatch");
-  if (audit?.singleFlagSourceStageCount !== 6) errors.push("single flag source stage count mismatch");
-  if (audit?.explicitAllowlistStageCount !== 6) errors.push("explicit allowlist stage count mismatch");
+  if (audit?.expectedStageCount !== 7) errors.push("expected stage count mismatch");
+  if (audit?.migratedStageCount !== 7) errors.push("migrated stage count mismatch");
+  if (audit?.singleFlagSourceStageCount !== 7) errors.push("single flag source stage count mismatch");
+  if (audit?.explicitAllowlistStageCount !== 7) errors.push("explicit allowlist stage count mismatch");
   if (audit?.legacySpreadCount !== 0) errors.push("legacy spread remains");
   if (audit?.anonymousDuplicateFlagObjectCount !== 0) errors.push("anonymous duplicate false object remains");
   if (audit?.unexpectedTruePermissionCount !== 0) errors.push("unexpected true permission remains");
@@ -964,6 +1048,7 @@ if (require.main === module) {
       console.log("[trading-ai-ml-primitives-migration-audit] ok");
       console.log(JSON.stringify({
         auditId: audit.auditId,
+        scope: audit.scope,
         expectedStageCount: audit.expectedStageCount,
         migratedStageCount: audit.migratedStageCount,
         legacySpreadCount: audit.legacySpreadCount,

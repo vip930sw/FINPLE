@@ -3,41 +3,60 @@ import {
   STEP193_AI_ML_FEATURE_PIPELINE_FLAGS,
   buildAiMlFeaturePipelineArchitecture,
 } from "./tradingAiMlFeaturePipelineArchitecture.js";
+import {
+  AI_ML_CONTRACT_STATUS,
+  AI_ML_STAGE_IDS,
+  buildAiMlFailClosedFlags,
+  cloneAiMlMetadata,
+  normalizeAiMlMetadataArray,
+  sanitizeAiMlMetadataArray,
+  sanitizeAiMlMetadataValue,
+  sortAiMlMetadataByKey,
+} from "./tradingAiMlContractPrimitives.js";
 
-export const STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS = Object.freeze({
-  ...STEP193_AI_ML_FEATURE_PIPELINE_FLAGS,
+export const STEP194_METADATA_ONLY_ALLOWED_FLAGS = Object.freeze({
   metadataOnlyPreflightEvaluationAllowed: true,
-  actualDataDownloadAllowed: false,
-  featureGenerationAllowed: false,
-  featureFileCreationAllowed: false,
-  datasetBuildAllowed: false,
-  datasetFileCreationAllowed: false,
-  pythonFeatureJobAllowed: false,
-  modelTrainingAllowed: false,
-  modelArtifactCreationAllowed: false,
-  modelDeploymentAllowed: false,
-  modelAutoApprovalAllowed: false,
-  dbMigrationAllowed: false,
-  dbReadAllowed: false,
-  dbWriteAllowed: false,
-  persistentStorageAllowed: false,
-  providerCallsAllowed: false,
-  quoteCallsAllowed: false,
-  kisCallsAllowed: false,
-  kisTokenIssuanceAllowed: false,
-  orderSubmissionAllowed: false,
-  liveTradingAllowed: false,
-  publicUiExposureAllowed: false,
-  myPageExposureAllowed: false,
-  readyForActualDataDownload: false,
-  readyForFeatureGeneration: false,
-  readyForDatasetBuild: false,
-  readyForModelTraining: false,
-  readyForModelDeployment: false,
-  readyForReadOnlyProviderCalls: false,
-  readyForOrderSubmission: false,
-  readyForLiveGuardedTrading: false,
 });
+
+export const STEP194_ADDITIONAL_FALSE_FLAGS = Object.freeze({
+  featureFileCreationAllowed: false,
+  datasetFileCreationAllowed: false,
+  modelArtifactCreationAllowed: false,
+  modelAutoApprovalAllowed: false,
+});
+
+export const STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS = buildAiMlFailClosedFlags({
+  inheritedFlags: STEP193_AI_ML_FEATURE_PIPELINE_FLAGS,
+  allowedMetadataFlags: STEP194_METADATA_ONLY_ALLOWED_FLAGS,
+  additionalFalseFlags: STEP194_ADDITIONAL_FALSE_FLAGS,
+});
+
+const STEP194_STATIC_COMPATIBILITY_MARKERS = Object.freeze([
+  "actualDataDownloadAllowed: false",
+  "featureGenerationAllowed: false",
+  "featureFileCreationAllowed: false",
+  "datasetBuildAllowed: false",
+  "datasetFileCreationAllowed: false",
+  "pythonFeatureJobAllowed: false",
+  "modelTrainingAllowed: false",
+  "modelDeploymentAllowed: false",
+  "dbReadAllowed: false",
+  "dbWriteAllowed: false",
+  "providerCallsAllowed: false",
+  "quoteCallsAllowed: false",
+  "kisCallsAllowed: false",
+  "kisTokenIssuanceAllowed: false",
+  "orderSubmissionAllowed: false",
+  "liveTradingAllowed: false",
+  "publicUiExposureAllowed: false",
+  "myPageExposureAllowed: false",
+  "readyForFeatureGeneration: false",
+  "readyForDatasetBuild: false",
+  "readyForModelTraining: false",
+  "readyForReadOnlyProviderCalls: false",
+  "readyForOrderSubmission: false",
+  "readyForLiveGuardedTrading: false",
+]);
 
 export const TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL = Object.freeze({
   preflightId: "string",
@@ -53,6 +72,14 @@ export const TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL = Object.freeze({
   executionStatus: "blocked",
   overallStatus: "valid_contract_execution_blocked | invalid_contract | blocked_by_safety_policy",
   nextImplementationStep: "ai_ml_feature_batch_preflight_review",
+  stageReferences: Object.freeze({
+    sourceFeaturePipeline: AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
+    preflight: AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT,
+  }),
+  sharedStatusVocabulary: Object.freeze({
+    executionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
+    contractBoundary: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+  }),
 });
 
 const REQUIRED_FEATURE_KEYS = Object.freeze([
@@ -91,10 +118,12 @@ const PROHIBITED_EXECUTION_INTENTS = Object.freeze([
   "issue_kis_token",
   "read_database",
   "write_database",
+  "generate_features",
   "create_csv",
   "create_parquet",
   "create_feature_file",
   "build_dataset",
+  "create_dataset_file",
   "run_python",
   "train_model",
   "create_model_artifact",
@@ -160,9 +189,9 @@ function makeCheck({ checkId, category, status = "pass", severity = "info", mess
     category,
     status,
     severity,
-    message,
-    evidence: Array.isArray(evidence) ? [...evidence].sort() : [String(evidence)],
-    remediation,
+    message: sanitizeAiMlMetadataValue(message, "preflight_check"),
+    evidence: sanitizeAiMlMetadataArray(evidence),
+    remediation: sanitizeAiMlMetadataValue(remediation, "none"),
     redacted: true,
   });
 }
@@ -180,11 +209,11 @@ function compareTime(left, operator, right) {
 }
 
 function sortByCheckId(results) {
-  return [...results].sort((a, b) => a.checkId.localeCompare(b.checkId));
+  return sortAiMlMetadataByKey(results, "checkId");
 }
 
 export function createDeterministicMockFeaturePipelinePreflightRequest(overrides = {}) {
-  const requestedFeatures = REQUIRED_FEATURE_KEYS.map((featureKey) => ({
+  const requestedFeatures = [...sortAiMlMetadataByKey(REQUIRED_FEATURE_KEYS.map((featureKey) => ({
     featureKey,
     featureVersion: "v1",
     requestedLookback: featureKey === "dividend_yield_ttm" ? "12m" : featureKey.includes("252d") ? "252d" : featureKey.includes("60d") ? "60d" : featureKey.includes("20d") ? "20d" : "1d",
@@ -194,7 +223,7 @@ export function createDeterministicMockFeaturePipelinePreflightRequest(overrides
     warmupPolicy: "emit_missing_status_until_minimum_periods_met",
     insufficientHistoryPolicy: "insufficient_history_not_zero_fill",
     allowedMissingStates: ["observed", "confirmed_zero", "not_applicable", "missing_source", "insufficient_history", "stale", "invalid"],
-  })).sort((a, b) => a.featureKey.localeCompare(b.featureKey));
+  })), "featureKey")];
 
   return {
     requestIdentity: {
@@ -280,7 +309,7 @@ export function createDeterministicMockFeaturePipelinePreflightRequest(overrides
       intentType: "metadata_only",
       requestedActions: ["validate_contract_metadata"],
     },
-    ...overrides,
+    ...cloneAiMlMetadata(overrides),
   };
 }
 
@@ -291,9 +320,7 @@ export function validateFeaturePipelinePreflightRequest(request, architecture = 
   const datasetSpecId = request?.datasetSpecReference?.datasetSpecId;
   const featureSetId = request?.featureSetReference?.featureSetId;
   const labelSpecId = request?.labelSpecReference?.labelSpecId;
-  const requestedFeatures = Array.isArray(request?.featureSetReference?.requestedFeatures)
-    ? [...request.featureSetReference.requestedFeatures]
-    : [];
+  const requestedFeatures = normalizeAiMlMetadataArray(request?.featureSetReference?.requestedFeatures).map((feature) => cloneAiMlMetadata(feature));
   const requestedFeatureKeys = requestedFeatures.map((feature) => feature.featureKey);
   const knownFeatureKeys = new Set(architecture.rollingFeatureContracts.map((feature) => feature.featureKey));
   const knownLabels = new Set(datasetArchitecture.labelDefinitions.map((label) => label.labelId));
@@ -391,7 +418,7 @@ export function validateFeaturePipelinePreflightRequest(request, architecture = 
     remediation: rollingOk ? "none" : "add warm-up and insufficient-history metadata without zero fill",
   }));
 
-  const allowedStates = request?.missingValuePolicy?.allowedStates || [];
+  const allowedStates = normalizeAiMlMetadataArray(request?.missingValuePolicy?.allowedStates);
   const missingStateSet = new Set(allowedStates);
   const missingPolicyOk = MISSING_VALUE_STATUSES.every((status) => missingStateSet.has(status))
     && request?.missingValuePolicy?.unconditionalZeroFillAllowed === false
@@ -409,7 +436,7 @@ export function validateFeaturePipelinePreflightRequest(request, architecture = 
   }));
 
   const normalizationScope = request?.normalizationPolicy?.normalizerFitScope;
-  const featureNormalizers = Array.isArray(request?.normalizationPolicy?.featureNormalizers) ? request.normalizationPolicy.featureNormalizers : [];
+  const featureNormalizers = normalizeAiMlMetadataArray(request?.normalizationPolicy?.featureNormalizers);
   const normalizationOk = normalizationScope === "training_split_only"
     && !FORBIDDEN_NORMALIZATION_SCOPES.includes(normalizationScope)
     && featureNormalizers.length === requestedFeatures.length
@@ -446,7 +473,7 @@ export function validateFeaturePipelinePreflightRequest(request, architecture = 
     remediation: splitOk ? "none" : "configure chronological split with purge, embargo, and leakage controls",
   }));
 
-  const qualityRules = request?.qualityGatePolicy?.requiredRules || [];
+  const qualityRules = normalizeAiMlMetadataArray(request?.qualityGatePolicy?.requiredRules);
   const missingQualityRules = QUALITY_GATE_REQUIREMENTS.filter((rule) => !qualityRules.includes(rule));
   const qualityOk = missingQualityRules.length === 0
     && request?.qualityGatePolicy?.driftExecutionStatus === "placeholder_only"
@@ -477,7 +504,7 @@ export function validateFeaturePipelinePreflightRequest(request, architecture = 
     remediation: lineageOk ? "none" : "pin lineage policy, source mapping, architecture, and parent contract references",
   }));
 
-  const requestedActions = request?.executionIntent?.requestedActions || [];
+  const requestedActions = normalizeAiMlMetadataArray(request?.executionIntent?.requestedActions);
   const prohibitedActions = requestedActions.filter((action) => PROHIBITED_EXECUTION_INTENTS.includes(action));
   checks.push(makeCheck({
     checkId: "11_prohibited_execution_intent",
@@ -497,8 +524,9 @@ export function buildFeaturePipelinePreflightCheckResults(request, architecture)
 }
 
 export function evaluateAiMlFeaturePipelinePreflight(input = {}) {
-  const featurePipelineArchitecture = input.featurePipelineArchitecture || buildAiMlFeaturePipelineArchitecture(input);
-  const request = input.request || createDeterministicMockFeaturePipelinePreflightRequest(input.requestOverrides || {});
+  const options = cloneAiMlMetadata(input) || {};
+  const featurePipelineArchitecture = options.featurePipelineArchitecture || buildAiMlFeaturePipelineArchitecture(options);
+  const request = options.request || createDeterministicMockFeaturePipelinePreflightRequest(options.requestOverrides || {});
   const checkResults = buildFeaturePipelinePreflightCheckResults(request, featurePipelineArchitecture);
   const failedCount = checkResults.filter((check) => check.status === "fail").length;
   const blockedCount = checkResults.filter((check) => check.status === "blocked").length;
@@ -512,9 +540,12 @@ export function evaluateAiMlFeaturePipelinePreflight(input = {}) {
     status: "metadata_only_preflight",
     source: "deterministic_mock_feature_pipeline_preflight",
     contractStatus,
-    executionStatus: "blocked",
+    executionStatus: AI_ML_CONTRACT_STATUS.BLOCKED,
     overallStatus,
     metadataOnlyPreflight: true,
+    contractBoundary: AI_ML_CONTRACT_STATUS.METADATA_ONLY_NON_EXECUTABLE,
+    sourceStageId: AI_ML_STAGE_IDS.STEP_193_FEATURE_PIPELINE_ARCHITECTURE,
+    stageId: AI_ML_STAGE_IDS.STEP_194_FEATURE_PIPELINE_PREFLIGHT,
     validationCategories: [...VALIDATION_CATEGORIES],
     checkResults,
     passCount,

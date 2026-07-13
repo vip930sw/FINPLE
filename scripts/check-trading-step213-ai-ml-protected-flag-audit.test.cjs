@@ -26,12 +26,11 @@ test("Step213 package script links audit, checkers, and regression checker tests
   assert.match(packageJson, /scripts\/check-trading-step203-ai-ml-grouped-regression\.test\.cjs/);
 });
 
-test("Step213 remains script-only without service, UI, or route edits", () => {
+test("Step213 remains compatible after Step194 service migration without UI or route edits", () => {
   const touched = execFileSync("git", ["diff", "--name-only", "HEAD"], { encoding: "utf8" })
     .split(/\r?\n/)
     .filter(Boolean);
   for (const forbidden of [
-    "server/src/services/tradingAiMlReadinessGateSummary.js",
     "server/src/services/tradingAiMlBatchContractReview.js",
     "server/src/services/tradingAiMlDatasetBuildDryRunManifest.js",
     "server/src/services/tradingAiMlManifestValidationReport.js",

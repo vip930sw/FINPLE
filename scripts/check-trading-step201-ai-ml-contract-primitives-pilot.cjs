@@ -11,11 +11,10 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.test.cjs",
 ];
 
-const UNTOUCHED_STEP_191_TO_198_SERVICE_FILES = [
+const UNTOUCHED_STEP_191_TO_193_SERVICE_FILES = [
   "server/src/services/tradingAiMlStrategyManagement.js",
   "server/src/services/tradingAiMlDatasetArchitecture.js",
   "server/src/services/tradingAiMlFeaturePipelineArchitecture.js",
-  "server/src/services/tradingAiMlFeaturePipelinePreflight.js",
 ];
 
 const REQUIRED_EXPORTS = [
@@ -184,7 +183,7 @@ function assertIncludes(source, snippet, label) {
   assert(source.includes(snippet), `${label} missing: ${snippet}`);
 }
 
-for (const file of [...REQUIRED_FILES, ...UNTOUCHED_STEP_191_TO_198_SERVICE_FILES]) {
+for (const file of [...REQUIRED_FILES, ...UNTOUCHED_STEP_191_TO_193_SERVICE_FILES]) {
   assert(fs.existsSync(file), `missing required file: ${file}`);
 }
 
@@ -235,10 +234,10 @@ for (const removedHelper of [
   assert(!step200Service.includes(removedHelper), `Step200 duplicate helper remains: ${removedHelper}`);
 }
 
-for (const file of UNTOUCHED_STEP_191_TO_198_SERVICE_FILES) {
+for (const file of UNTOUCHED_STEP_191_TO_193_SERVICE_FILES) {
   const source = read(file);
-  assert(!source.includes("tradingAiMlContractPrimitives"), `Step191-198 service must not be migrated in Step201: ${file}`);
-  assert(!source.includes("Step201"), `Step191-198 service must not know Step201: ${file}`);
+  assert(!source.includes("tradingAiMlContractPrimitives"), `Step191-193 service must not be migrated in Step201: ${file}`);
+  assert(!source.includes("Step201"), `Step191-193 service must not know Step201: ${file}`);
 }
 
 for (const snippet of [

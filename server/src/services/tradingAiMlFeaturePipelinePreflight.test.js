@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  STEP194_ADDITIONAL_FALSE_FLAGS,
   STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS,
+  STEP194_METADATA_ONLY_ALLOWED_FLAGS,
   TRADING_AI_ML_FEATURE_PIPELINE_PREFLIGHT_MODEL,
   buildAdminTradingAiMlFeaturePipelinePreflightStatus,
   buildAiMlFeaturePipelinePreflight,
@@ -11,6 +13,49 @@ import {
   evaluateAiMlFeaturePipelinePreflight,
   validateFeaturePipelinePreflightRequest,
 } from "./tradingAiMlFeaturePipelinePreflight.js";
+import { buildAiMlFailClosedFlags } from "./tradingAiMlContractPrimitives.js";
+
+const STEP194_PROTECTED_FALSE_FLAGS = Object.freeze([
+  "actualDataDownloadAllowed",
+  "featureGenerationAllowed",
+  "datasetBuildAllowed",
+  "batchExecutionAllowed",
+  "dryRunExecutionAllowed",
+  "schemaMaterializationAllowed",
+  "partitionMaterializationAllowed",
+  "outputPathAssignmentAllowed",
+  "reportPersistenceAllowed",
+  "exceptionPersistenceAllowed",
+  "remediationPersistenceAllowed",
+  "handoffExecutionAllowed",
+  "handoffTransmissionAllowed",
+  "handoffPersistenceAllowed",
+  "dbMigrationAllowed",
+  "dbReadAllowed",
+  "dbWriteAllowed",
+  "persistentStorageAllowed",
+  "providerCallsAllowed",
+  "quoteCallsAllowed",
+  "kisCallsAllowed",
+  "kisTokenIssuanceAllowed",
+  "pythonFeatureJobAllowed",
+  "modelTrainingAllowed",
+  "modelDeploymentAllowed",
+  "orderSubmissionAllowed",
+  "liveTradingAllowed",
+  "publicUiExposureAllowed",
+  "myPageExposureAllowed",
+  "readyForActualDataDownload",
+  "readyForFeatureGeneration",
+  "readyForDatasetBuild",
+  "readyForBatchExecution",
+  "readyForDryRunExecution",
+  "readyForModelTraining",
+  "readyForModelDeployment",
+  "readyForReadOnlyProviderCalls",
+  "readyForOrderSubmission",
+  "readyForLiveGuardedTrading",
+]);
 
 function withRequest(mutator) {
   const request = createDeterministicMockFeaturePipelinePreflightRequest();
@@ -245,4 +290,137 @@ test("Step194 status excludes sensitive raw values", () => {
   ]) {
     assert.equal(serialized.includes(forbidden), false);
   }
+});
+
+test("Step194 scenario J shared flag compatibility preserves metadata allowlist and protected false flags", () => {
+  const trueFlags = Object.entries(STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS)
+    .filter(([, value]) => value === true)
+    .map(([key]) => key)
+    .sort();
+  const allowlist = Object.keys(STEP194_METADATA_ONLY_ALLOWED_FLAGS).sort();
+
+  assert.deepEqual(trueFlags, allowlist);
+  assert.deepEqual(allowlist, ["metadataOnlyPreflightEvaluationAllowed"]);
+  for (const key of STEP194_PROTECTED_FALSE_FLAGS) {
+    assert.equal(STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS[key], false, key);
+  }
+  for (const key of Object.keys(STEP194_ADDITIONAL_FALSE_FLAGS)) {
+    assert.equal(STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS[key], false, key);
+  }
+  assert.equal(Object.isFrozen(STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS), true);
+});
+
+test("Step194 scenario K inherited true execution conflict and unknown true permission are removed", () => {
+  const inheritedFlags = {
+    metadataOnlyPreflightEvaluationAllowed: true,
+    actualDataDownloadAllowed: true,
+    featureGenerationAllowed: true,
+    datasetBuildAllowed: true,
+    dbReadAllowed: true,
+    providerCallsAllowed: true,
+    kisCallsAllowed: true,
+    modelTrainingAllowed: true,
+    orderSubmissionAllowed: true,
+    liveTradingAllowed: true,
+    readyForOrderSubmission: true,
+    readyForLiveGuardedTrading: true,
+    unknownProviderExecutionAllowed: true,
+  };
+  const before = JSON.stringify(inheritedFlags);
+  const migrated = buildAiMlFailClosedFlags({
+    inheritedFlags,
+    allowedMetadataFlags: STEP194_METADATA_ONLY_ALLOWED_FLAGS,
+    additionalFalseFlags: STEP194_ADDITIONAL_FALSE_FLAGS,
+  });
+
+  assert.equal(JSON.stringify(inheritedFlags), before);
+  assert.equal(migrated.metadataOnlyPreflightEvaluationAllowed, true);
+  for (const key of [
+    "actualDataDownloadAllowed",
+    "featureGenerationAllowed",
+    "datasetBuildAllowed",
+    "dbReadAllowed",
+    "providerCallsAllowed",
+    "kisCallsAllowed",
+    "modelTrainingAllowed",
+    "orderSubmissionAllowed",
+    "liveTradingAllowed",
+    "readyForOrderSubmission",
+    "readyForLiveGuardedTrading",
+  ]) {
+    assert.equal(migrated[key], false, key);
+  }
+  assert.equal(Object.hasOwn(migrated, "unknownProviderExecutionAllowed"), false);
+});
+
+test("Step194 scenario L explicit metadata allowlist exactly matches final true flags", () => {
+  assert.deepEqual(
+    Object.entries(STEP194_AI_ML_FEATURE_PIPELINE_PREFLIGHT_FLAGS)
+      .filter(([, value]) => value === true)
+      .map(([key]) => key)
+      .sort(),
+    Object.entries(STEP194_METADATA_ONLY_ALLOWED_FLAGS)
+      .filter(([, value]) => value === true)
+      .map(([key]) => key)
+      .sort(),
+  );
+});
+
+test("Step194 scenario M shared helper compatibility keeps ordering and redaction deterministic", () => {
+  const request = withRequest((draft) => {
+    draft.featureSetReference.requestedFeatures.reverse();
+    draft.executionIntent.requestedActions = ["validate_contract_metadata", "write_database"];
+  });
+  const preflight = evaluateAiMlFeaturePipelinePreflight({ request });
+  const registryCheck = checkById(preflight, "02_feature_registry");
+  const prohibitedCheck = checkById(preflight, "11_prohibited_execution_intent");
+
+  assert.deepEqual(preflight.checkResults.map((check) => check.checkId), [...preflight.checkResults.map((check) => check.checkId)].sort());
+  assert.equal(registryCheck.status, "fail");
+  assert.deepEqual(registryCheck.evidence, [...registryCheck.evidence].sort());
+  assert.equal(prohibitedCheck.status, "blocked");
+  assert.equal(JSON.stringify(preflight).includes("C:\\"), false);
+});
+
+test("Step194 scenario N full default output remains compatible", () => {
+  const preflight = evaluateAiMlFeaturePipelinePreflight();
+
+  assert.equal(preflight.preflightId, "step194_ai_ml_feature_pipeline_preflight");
+  assert.equal(preflight.sourceStageId, "step193_feature_pipeline_architecture");
+  assert.equal(preflight.stageId, "step194_feature_pipeline_preflight");
+  assert.equal(preflight.validationCategories.length, 11);
+  assert.equal(preflight.checkResults.length, 11);
+  assert.equal(preflight.scenarioCatalog.length, 9);
+  assert.equal(preflight.contractStatus, "valid");
+  assert.equal(preflight.executionStatus, "blocked");
+  assert.equal(preflight.overallStatus, "valid_contract_execution_blocked");
+  assert.equal(preflight.contractBoundary, "metadata_only_non_executable");
+});
+
+test("Step194 scenario catalog IDs stay stable after shared primitive migration", () => {
+  const preflight = evaluateAiMlFeaturePipelinePreflight();
+
+  assert.deepEqual(preflight.scenarioCatalog.map((scenario) => scenario.scenarioId), [
+    "scenario_a_valid_metadata_contract",
+    "scenario_b_unknown_feature",
+    "scenario_c_future_available_at_leakage",
+    "scenario_d_label_overlap",
+    "scenario_e_insufficient_rolling_history",
+    "scenario_f_invalid_normalization_scope",
+    "scenario_g_unconditional_zero_fill",
+    "scenario_h_unpinned_version",
+    "scenario_i_prohibited_execution_intent",
+  ]);
+});
+
+test("Step194 scenario O shared clone use prevents input, override, architecture, and options mutation", () => {
+  const request = createDeterministicMockFeaturePipelinePreflightRequest();
+  const requestOverrides = { executionIntent: { intentType: "metadata_only", requestedActions: ["validate_contract_metadata"] } };
+  const architecture = { ...buildAiMlFeaturePipelinePreflight().requestContractSummary, rollingFeatureContracts: [] };
+  const options = { request, requestOverrides, featurePipelineArchitecture: architecture, executionControls: { actualDataDownloadAllowed: true } };
+  const before = JSON.stringify(options);
+
+  evaluateAiMlFeaturePipelinePreflight(options);
+
+  assert.equal(JSON.stringify(options), before);
 });
