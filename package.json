@@ -542,7 +542,8 @@
     "check:trading-step236b-offline-research-position-policy": "node scripts/check-trading-step236b-offline-research-position-policy.cjs && node --test server/src/services/tradingAiMlResearchPositionPolicy.test.js scripts/check-trading-step236b-offline-research-position-policy.test.cjs",
     "check:trading-step236c-cost-aware-offline-backtest": "node scripts/check-trading-step236c-cost-aware-offline-backtest.cjs && node --test server/src/services/tradingAiMlBacktestCostPolicy.test.js server/src/services/tradingAiMlOfflineBacktest.test.js scripts/check-trading-step236c-cost-aware-offline-backtest.test.cjs",
     "check:trading-step237a-walk-forward-regime-validation": "node scripts/check-trading-step237a-walk-forward-regime-validation.cjs && node --test server/src/services/tradingAiMlWalkForwardRegimeValidation.test.js scripts/check-trading-step237a-walk-forward-regime-validation.test.cjs",
-    "check:trading-step237b-risk-adjusted-validation": "node scripts/check-trading-step237b-risk-adjusted-validation.cjs && node --test server/src/services/tradingAiMlRiskAdjustedValidation.test.js scripts/check-trading-step237b-risk-adjusted-validation.test.cjs"
+    "check:trading-step237b-risk-adjusted-validation": "node scripts/check-trading-step237b-risk-adjusted-validation.cjs && node --test server/src/services/tradingAiMlRiskAdjustedValidation.test.js scripts/check-trading-step237b-risk-adjusted-validation.test.cjs",
+    "check:trading-step238a-historical-replay-validation": "node scripts/check-trading-step238a-historical-replay-validation.cjs && node --test scripts/check-trading-step238a-historical-replay-validation.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
