@@ -159,6 +159,7 @@ test("CLI prints public summary JSON only", () => {
 
   assert.equal(code, 0);
   assert.equal(parsed.auditId, "finple_temp_baseline_provenance");
+  assert.equal(parsed.snapshotStatus, "complete");
   assert.equal(parsed.rawNamesExposed, false);
   assert.equal(parsed.absolutePathsExposed, false);
 });

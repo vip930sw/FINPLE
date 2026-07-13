@@ -123,6 +123,7 @@ function buildFinpleTempBaselineAudit({
     return freezePlain({
       auditId: AUDIT_ID,
       status: "unknown",
+      snapshotStatus: "unknown",
       totalFinpleEntryCount: null,
       directoryCount: null,
       fileCount: null,
@@ -167,7 +168,8 @@ function buildFinpleTempBaselineAudit({
 
   return freezePlain({
     auditId: AUDIT_ID,
-    status: "stable",
+    status: "snapshot_complete",
+    snapshotStatus: "complete",
     totalFinpleEntryCount,
     directoryCount: typeCounts.directory,
     fileCount: typeCounts.file,
@@ -227,6 +229,7 @@ function buildFinpleTempBaselinePublicSummary(audit) {
   return freezePlain({
     auditId: AUDIT_ID,
     status: audit?.status || "unknown",
+    snapshotStatus: audit?.snapshotStatus || "unknown",
     totalFinpleEntryCount: audit?.totalFinpleEntryCount ?? null,
     directoryCount: audit?.directoryCount ?? null,
     fileCount: audit?.fileCount ?? null,
@@ -269,6 +272,7 @@ module.exports = {
   buildFinpleTempBaselineAudit,
   buildFinpleTempBaselinePublicSummary,
   classifyFinpleTempEntry,
+  collectFinpleTempInventory,
   diffFinpleTempBaselineAudits,
   main,
 };
