@@ -7,6 +7,7 @@ import {
   requestContextMiddleware,
   requestTimingMiddleware,
 } from "./middleware/requestStability.js";
+import authLoginRoutes from "./routes/authLoginRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dbRoutes from "./routes/dbRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
@@ -82,6 +83,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use("/api/health", healthRoutes);
 app.use("/api/auth/login", authLoginRateLimiter);
 app.use("/api/auth/education-login", authLoginRateLimiter);
+app.use("/api/auth", authGeneralRateLimiter, authLoginRoutes);
 app.use("/api/auth", authGeneralRateLimiter, authRoutes);
 app.use("/api/db", dbRoutes);
 app.use("/api/payments", paymentGuardRoutes);
