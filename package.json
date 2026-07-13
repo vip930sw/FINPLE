@@ -528,7 +528,8 @@
     "check:trading-step228-contract-hardening-handoff": "node scripts/check-trading-step228-contract-hardening-handoff.cjs && node --test scripts/check-trading-step228-contract-hardening-handoff.test.cjs",
     "check:trading-step229-offline-dataset-quality-profile": "node scripts/check-trading-step229-offline-dataset-quality-profile.cjs && node --test server/src/services/tradingAiMlDatasetQualityProfile.test.js scripts/check-trading-step229-offline-dataset-quality-profile.test.cjs",
     "check:trading-step230-offline-dataset-quality-batch-summary": "node scripts/check-trading-step230-offline-dataset-quality-batch-summary.cjs && node --test server/src/services/tradingAiMlDatasetQualityBatchSummary.test.js scripts/check-trading-step230-offline-dataset-quality-batch-summary.test.cjs",
-    "check:trading-step231-offline-data-quality-gate": "node scripts/check-trading-step231-offline-data-quality-gate.cjs && node --test server/src/services/tradingAiMlDatasetQualityGate.test.js scripts/check-trading-step231-offline-data-quality-gate.test.cjs"
+    "check:trading-step231-offline-data-quality-gate": "node scripts/check-trading-step231-offline-data-quality-gate.cjs && node --test server/src/services/tradingAiMlDatasetQualityGate.test.js scripts/check-trading-step231-offline-data-quality-gate.test.cjs",
+    "check:trading-step232-offline-data-quality-gate-readiness": "node scripts/check-trading-step232-offline-data-quality-gate-readiness.cjs && node --test server/src/services/tradingAiMlDatasetQualityGateReadiness.test.js scripts/check-trading-step232-offline-data-quality-gate-readiness.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
