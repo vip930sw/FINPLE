@@ -538,7 +538,8 @@
     "check:trading-step235a-offline-trading-feature-contract": "node scripts/check-trading-step235a-offline-trading-feature-contract.cjs && node --test server/src/services/tradingAiMlTradingFeatureContract.test.js server/src/services/tradingAiMlOfflineFeatureBuilder.test.js scripts/check-trading-step235a-offline-trading-feature-contract.test.cjs",
     "report:trading-step235b-offline-feature-coverage": "node scripts/report-trading-step235b-offline-feature-coverage.cjs",
     "check:trading-step235b-offline-feature-coverage": "node scripts/check-trading-step235b-offline-feature-coverage.cjs && node --test server/src/services/tradingAiMlTradingFeatureCoverageReport.test.js scripts/report-trading-step235b-offline-feature-coverage.test.cjs scripts/check-trading-step235b-offline-feature-coverage.test.cjs",
-    "check:trading-step236a-rules-based-trading-eligibility": "node scripts/check-trading-step236a-rules-based-trading-eligibility.cjs && node --test server/src/services/tradingAiMlRulesBasedTradingEligibility.test.js scripts/check-trading-step236a-rules-based-trading-eligibility.test.cjs"
+    "check:trading-step236a-rules-based-trading-eligibility": "node scripts/check-trading-step236a-rules-based-trading-eligibility.cjs && node --test server/src/services/tradingAiMlRulesBasedTradingEligibility.test.js scripts/check-trading-step236a-rules-based-trading-eligibility.test.cjs",
+    "check:trading-step236b-offline-research-position-policy": "node scripts/check-trading-step236b-offline-research-position-policy.cjs && node --test server/src/services/tradingAiMlResearchPositionPolicy.test.js scripts/check-trading-step236b-offline-research-position-policy.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
