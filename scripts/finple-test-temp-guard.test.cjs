@@ -14,7 +14,9 @@ const {
   cleanupOwnedFinpleTempRoot,
   countGlobalFinpleTempEntries,
   createOwnedTempRoot,
+  isSamePath,
   main,
+  normalizePathForIdentity,
   runGuard,
   toCleanupPath,
   validateCleanupTarget,
@@ -293,6 +295,122 @@ test("Scenario T: cleanup failure keeps overall guard result failed", () => {
     assert.equal(result.cleanupSucceeded, false);
     assert.equal(result.ownedRootExistsAfter, true);
     assert.equal(result.ok, false);
+  });
+});
+
+test("Scenario U: POSIX case-sensitive sibling mismatch is rejected", () => {
+  if (process.platform === "win32") {
+    const expected = "C:\\Temp\\finple-test-guard-Abc";
+    const target = "C:\\Temp\\finple-test-guard-abc";
+    assert.equal(isSamePath(expected, target, "linux"), false);
+    assert.equal(isSamePath(expected, target, "win32"), true);
+    return;
+  }
+  withFixture((tmpDir) => {
+    const expected = path.join(tmpDir, "finple-test-guard-Abc");
+    const target = path.join(tmpDir, "finple-test-guard-abc");
+    fs.mkdirSync(expected);
+    fs.mkdirSync(target);
+    fs.writeFileSync(path.join(expected, OWNED_TEMP_MARKER), "owned\n");
+    fs.writeFileSync(path.join(target, OWNED_TEMP_MARKER), "owned\n");
+
+    assert.equal(isSamePath(expected, target, "linux"), false);
+    assert.equal(normalizePathForIdentity(expected, "linux").endsWith("finple-test-guard-Abc"), true);
+    const result = cleanupOwnedFinpleTempRoot(target, {
+      tmpDir,
+      expectedOwnedRoot: expected,
+      platform: "linux",
+      retryDelayMs: 0,
+    });
+
+    assert.equal(result.cleanupSucceeded, false);
+    assert.equal(result.exactOwnedRootValidated, false);
+    assert.equal(fs.existsSync(expected), true);
+    assert.equal(fs.existsSync(target), true);
+  });
+});
+
+test("Scenario V: Windows case-insensitive identity stays helper-only", () => {
+  const left = "C:\\Temp\\finple-test-guard-Abc";
+  const right = "c:\\temp\\finple-test-guard-abc";
+
+  assert.equal(isSamePath(left, right, "win32"), true);
+  assert.equal(normalizePathForIdentity(left, "win32"), normalizePathForIdentity(right, "win32"));
+  assert.notEqual(normalizePathForIdentity(left, "linux"), normalizePathForIdentity(right, "linux"));
+});
+
+test("Scenario W: exact same path cleanup is allowed", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    fs.writeFileSync(path.join(owned, "exact.txt"), "exact");
+
+    const result = cleanupOwnedFinpleTempRoot(owned, { tmpDir, retryDelayMs: 0 });
+
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.exactOwnedRootValidated, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+  });
+});
+
+test("Scenario X: dot-segment path normalizes to the exact owned root", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    const targetWithDotSegment = path.join(owned, "..", path.basename(owned));
+
+    assert.equal(isSamePath(targetWithDotSegment, owned), true);
+    const result = cleanupOwnedFinpleTempRoot(targetWithDotSegment, {
+      tmpDir,
+      expectedOwnedRoot: owned,
+      retryDelayMs: 0,
+    });
+
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.exactOwnedRootValidated, true);
+    assert.equal(result.markerValidated, true);
+    assert.equal(result.ownedRootExistsAfter, false);
+  });
+});
+
+test("Scenario Y: POSIX case-only unsafe sibling is preserved", () => {
+  if (process.platform === "win32") {
+    const expected = "C:\\Temp\\finple-test-guard-CaseOnly";
+    const target = "C:\\Temp\\finple-test-guard-caseonly";
+    assert.equal(isSamePath(expected, target, "linux"), false);
+    assert.equal(isSamePath(expected, target, "win32"), true);
+    return;
+  }
+  withFixture((tmpDir) => {
+    const expected = path.join(tmpDir, "finple-test-guard-CaseOnly");
+    const target = path.join(tmpDir, "finple-test-guard-caseonly");
+    fs.mkdirSync(expected);
+    fs.mkdirSync(target);
+    fs.writeFileSync(path.join(expected, OWNED_TEMP_MARKER), "owned\n");
+    fs.writeFileSync(path.join(target, OWNED_TEMP_MARKER), "owned\n");
+
+    const result = cleanupOwnedFinpleTempRoot(target, {
+      tmpDir,
+      expectedOwnedRoot: expected,
+      platform: "linux",
+      retryDelayMs: 0,
+    });
+
+    assert.equal(result.exactOwnedRootValidated, false);
+    assert.equal(result.cleanupSucceeded, false);
+    assert.equal(result.ownedRootExistsAfter, true);
+    assert.equal(fs.existsSync(target), true);
+  });
+});
+
+test("Scenario Z: namespaced cleanup path remains separate from identity comparison", () => {
+  withFixture((tmpDir) => {
+    const owned = createOwnedTempRoot({ tmpDir });
+    assert.equal(toCleanupPath(owned), process.platform === "win32" ? path.toNamespacedPath(owned) : owned);
+    assert.notEqual(normalizePathForIdentity(path.toNamespacedPath(owned), "linux"), normalizePathForIdentity(owned, "linux"));
+
+    const result = cleanupOwnedFinpleTempRoot(owned, { tmpDir, retryDelayMs: 0 });
+
+    assert.equal(result.cleanupSucceeded, true);
+    assert.equal(result.ownedRootExistsAfter, false);
   });
 });
 

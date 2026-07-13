@@ -8,6 +8,8 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step219-windows-long-path-temp-cleanup.cjs",
   "scripts/check-trading-step219-windows-long-path-temp-cleanup.test.cjs",
+  "scripts/check-trading-step220-platform-correct-temp-root-identity.cjs",
+  "scripts/check-trading-step220-platform-correct-temp-root-identity.test.cjs",
 ];
 
 const REQUIRED_PACKAGE_SCRIPTS = [
@@ -15,6 +17,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   "\"diagnose:finple-temp-guard:full\"",
   "\"check:trading-step206-finple-test-temp-guard\"",
   "\"check:trading-step219-windows-long-path-temp-cleanup\"",
+  "\"check:trading-step220-platform-correct-temp-root-identity\"",
   "scripts/finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step205-ai-ml-collapsed-summary-polish.test.cjs",
@@ -49,6 +52,9 @@ const REQUIRED_GUARD_SNIPPETS = [
   "finally",
   "cleanupOwnedTempRoot",
   "cleanupOwnedFinpleTempRoot",
+  "normalizePathForIdentity",
+  "platform === \"win32\" ? resolved.toLowerCase() : resolved",
+  "function isSamePath(a, b, platform = process.platform)",
   "validateCleanupTarget",
   "fs.rmSync",
   "path.toNamespacedPath",
@@ -83,6 +89,12 @@ const REQUIRED_TEST_SCENARIOS = [
   "Scenario R: permanent cleanup failure",
   "Scenario S: timeout result remains failed",
   "Scenario T: cleanup failure keeps overall guard result failed",
+  "Scenario U: POSIX case-sensitive sibling mismatch",
+  "Scenario V: Windows case-insensitive identity",
+  "Scenario W: exact same path cleanup",
+  "Scenario X: dot-segment path",
+  "Scenario Y: POSIX case-only unsafe sibling",
+  "Scenario Z: namespaced cleanup path",
   "Scenario G: pre-existing finple-* artifact",
   "Scenario H: isolated guarded run has global count delta 0",
   "Scenario I: unknown mode",
@@ -167,6 +179,9 @@ assertIncludes(guardTest, "path.toNamespacedPath", "long-path fixture");
 assertIncludes(guardTest, "markerValidated, false", "marker missing rejection test");
 assertIncludes(guardTest, "retryCount, 1", "retry success test");
 assertIncludes(guardTest, "cleanupSucceeded, false", "cleanup failure remains failed");
+assertIncludes(guardTest, "isSamePath(expected, target, \"linux\"), false", "POSIX case-sensitive path identity");
+assertIncludes(guardTest, "isSamePath(left, right, \"win32\"), true", "Windows case-insensitive path identity");
+assertIncludes(guardTest, "dot-segment path normalizes", "dot segment normalization test");
 assertIncludes(checkerTest, "Step206 checker passes against repository source", "checker self test");
 
 for (const snippet of FORBIDDEN_GUARD_SNIPPETS) {

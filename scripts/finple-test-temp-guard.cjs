@@ -66,8 +66,13 @@ function createOwnedTempRoot({ tmpDir = os.tmpdir(), mkdtempSync = fs.mkdtempSyn
   return ownedRoot;
 }
 
-function isSamePath(a, b) {
-  return path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+function normalizePathForIdentity(value, platform = process.platform) {
+  const resolved = path.normalize(path.resolve(value));
+  return platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+function isSamePath(a, b, platform = process.platform) {
+  return normalizePathForIdentity(a, platform) === normalizePathForIdentity(b, platform);
 }
 
 function isDirectChildOf(parent, child) {
@@ -75,16 +80,16 @@ function isDirectChildOf(parent, child) {
   return relative.length > 0 && !relative.startsWith("..") && !path.isAbsolute(relative) && !relative.includes(path.sep);
 }
 
-function validateCleanupTarget(targetRoot, ownedRoot, { tmpDir = os.tmpdir() } = {}) {
+function validateCleanupTarget(targetRoot, ownedRoot, { tmpDir = os.tmpdir(), platform = process.platform } = {}) {
   const resolvedTarget = path.resolve(targetRoot || "");
   const resolvedOwnedRoot = path.resolve(ownedRoot || "");
   const resolvedTmpDir = path.resolve(tmpDir);
   const parsed = path.parse(resolvedTarget);
 
   if (!resolvedTarget || !resolvedOwnedRoot) throw new Error("cleanup target missing");
-  if (!isSamePath(resolvedTarget, resolvedOwnedRoot)) throw new Error("cleanup target is not the owned root");
-  if (isSamePath(resolvedTarget, parsed.root)) throw new Error("cleanup target cannot be filesystem root");
-  if (isSamePath(resolvedTarget, resolvedTmpDir)) throw new Error("cleanup target cannot be os tmpdir");
+  if (!isSamePath(resolvedTarget, resolvedOwnedRoot, platform)) throw new Error("cleanup target is not the owned root");
+  if (isSamePath(resolvedTarget, parsed.root, platform)) throw new Error("cleanup target cannot be filesystem root");
+  if (isSamePath(resolvedTarget, resolvedTmpDir, platform)) throw new Error("cleanup target cannot be os tmpdir");
   if (!isDirectChildOf(resolvedTmpDir, resolvedTarget)) throw new Error("cleanup target must be a direct child of os tmpdir");
   if (!path.basename(resolvedTarget).startsWith(OWNED_TEMP_PREFIX)) throw new Error("cleanup target prefix is not allowlisted");
   return resolvedTarget;
@@ -108,6 +113,7 @@ function cleanupOwnedFinpleTempRoot(ownedRoot, {
   maxRetries = DEFAULT_CLEANUP_MAX_RETRIES,
   retryDelayMs = DEFAULT_CLEANUP_RETRY_DELAY_MS,
   wait = waitForCleanupRetry,
+  platform = process.platform,
 } = {}) {
   const result = {
     attempted: true,
@@ -122,7 +128,7 @@ function cleanupOwnedFinpleTempRoot(ownedRoot, {
 
   let safeRoot;
   try {
-    safeRoot = validateCleanupTarget(ownedRoot, expectedOwnedRoot, { tmpDir });
+    safeRoot = validateCleanupTarget(ownedRoot, expectedOwnedRoot, { tmpDir, platform });
     result.exactOwnedRootValidated = true;
     const markerPath = path.join(safeRoot, OWNED_TEMP_MARKER);
     if (!existsSync(markerPath)) throw new Error("owned root marker missing");
@@ -420,7 +426,9 @@ module.exports = {
   countGlobalFinpleTempEntries,
   createOwnedTempRoot,
   isDirectChildOf,
+  isSamePath,
   main,
+  normalizePathForIdentity,
   parseArgs,
   runGuard,
   toCleanupPath,

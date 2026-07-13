@@ -1,14 +1,13 @@
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 
-const STEP219_SCRIPT = "check:trading-step219-windows-long-path-temp-cleanup";
+const STEP220_SCRIPT = "check:trading-step220-platform-correct-temp-root-identity";
 
 const REQUIRED_FILES = [
   "package.json",
   "scripts/finple-test-temp-guard.cjs",
   "scripts/finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step206-finple-test-temp-guard.cjs",
-  "scripts/check-trading-step206-finple-test-temp-guard.test.cjs",
   "scripts/check-trading-step219-windows-long-path-temp-cleanup.cjs",
   "scripts/check-trading-step219-windows-long-path-temp-cleanup.test.cjs",
   "scripts/check-trading-step220-platform-correct-temp-root-identity.cjs",
@@ -96,117 +95,84 @@ function getTouchedFiles() {
   const guard = read("scripts/finple-test-temp-guard.cjs");
   const guardTest = read("scripts/finple-test-temp-guard.test.cjs");
   const step206Checker = read("scripts/check-trading-step206-finple-test-temp-guard.cjs");
-  const step206CheckerTest = read("scripts/check-trading-step206-finple-test-temp-guard.test.cjs");
+  const step219Checker = read("scripts/check-trading-step219-windows-long-path-temp-cleanup.cjs");
 
-  assertIncludes(packageJson, `"${STEP219_SCRIPT}"`, "package Step219 script");
-  assertIncludes(packageJson, "scripts/check-trading-step219-windows-long-path-temp-cleanup.cjs", "package Step219 checker link");
-  assertIncludes(packageJson, "scripts/check-trading-step219-windows-long-path-temp-cleanup.test.cjs", "package Step219 checker test link");
+  assertIncludes(packageJson, `"${STEP220_SCRIPT}"`, "package Step220 script");
+  assertIncludes(packageJson, "scripts/check-trading-step220-platform-correct-temp-root-identity.cjs", "package Step220 checker link");
   assertIncludes(packageJson, "scripts/check-trading-step220-platform-correct-temp-root-identity.test.cjs", "package Step220 checker test link");
-  assertIncludes(packageJson, "scripts/finple-test-temp-guard.test.cjs", "package guard test link");
-  assertIncludes(packageJson, "scripts/check-trading-step206-finple-test-temp-guard.test.cjs", "package Step206 test link");
 
   for (const snippet of [
-    "function cleanupOwnedFinpleTempRoot",
-    "cleanupOwnedTempRoot",
-    "function normalizePathForIdentity",
+    "function normalizePathForIdentity(value, platform = process.platform)",
+    "const resolved = path.normalize(path.resolve(value));",
     "platform === \"win32\" ? resolved.toLowerCase() : resolved",
     "function isSamePath(a, b, platform = process.platform)",
+    "normalizePathForIdentity(a, platform) === normalizePathForIdentity(b, platform)",
+    "validateCleanupTarget(targetRoot, ownedRoot, { tmpDir = os.tmpdir(), platform = process.platform }",
+    "validateCleanupTarget(ownedRoot, expectedOwnedRoot, { tmpDir, platform })",
     "function toCleanupPath",
     "path.toNamespacedPath",
     "OWNED_TEMP_MARKER",
-    ".finple-test-guard-owned",
-    "expectedOwnedRoot",
-    "validateCleanupTarget(ownedRoot, expectedOwnedRoot",
     "markerValidated",
-    "exactOwnedRootValidated",
-    "cleanupPathMode",
-    "windows_namespaced",
-    "standard",
     "retryCount",
-    "DEFAULT_CLEANUP_MAX_RETRIES",
-    "DEFAULT_CLEANUP_RETRY_DELAY_MS",
-    "Math.min(Number(maxRetries) || 0, 5)",
-    "ownedRootExistsAfter",
-    "globalFinpleCountDelta",
-    "childPassed",
-    "configuredTimeoutMs",
     "FULL_REPOSITORY_TIMEOUT_MS = 260000",
-    "shell: false",
   ]) {
-    assertIncludes(guard, snippet, "Step219 guard hardening");
+    assertIncludes(guard, snippet, "Step220 guard identity hardening");
   }
 
-  for (const forbidden of [
-    "rmSync(os.tmpdir()",
-    "rmSync(tmpDir",
-    "shell: true",
-    "process.argv.join",
-    "commandString",
-    "cleanupSucceeded = true; } catch",
-  ]) {
-    assertNotIncludes(guard, forbidden, "Step219 forbidden cleanup pattern");
-  }
+  assertNotIncludes(guard, "path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase()", "legacy all-platform lowercase comparison");
+  assertNotIncludes(guard, "normalizePathForIdentity(path.toNamespacedPath", "namespaced path identity comparison");
+  assertNotIncludes(guard, "FULL_REPOSITORY_TIMEOUT_MS = 300000", "timeout must not be changed");
 
   for (const scenario of [
-    "Scenario M: shallow owned root cleanup helper removes marked root",
-    "Scenario N: deep nested owned root cleanup uses long-path safe removal",
-    "Scenario O: marker missing rejects cleanup without deleting root",
-    "Scenario P: unsafe cleanup targets are rejected",
-    "Scenario Q: cleanup retry succeeds after controlled transient failure",
-    "Scenario R: permanent cleanup failure is not converted to success",
-    "Scenario S: timeout result remains failed even when cleanup succeeds",
-    "Scenario T: cleanup failure keeps overall guard result failed",
     "Scenario U: POSIX case-sensitive sibling mismatch is rejected",
     "Scenario V: Windows case-insensitive identity stays helper-only",
+    "Scenario W: exact same path cleanup is allowed",
+    "Scenario X: dot-segment path normalizes to the exact owned root",
     "Scenario Y: POSIX case-only unsafe sibling is preserved",
     "Scenario Z: namespaced cleanup path remains separate from identity comparison",
-    "Scenario G: pre-existing finple-* artifact in temp fixture is preserved",
-    "Scenario H: isolated guarded run has global count delta 0",
+    "Scenario N: deep nested owned root cleanup uses long-path safe removal",
+    "Scenario Q: cleanup retry succeeds after controlled transient failure",
+    "Scenario S: timeout result remains failed even when cleanup succeeds",
   ]) {
-    assertIncludes(guardTest, scenario, "Step219 guard scenario");
+    assertIncludes(guardTest, scenario, "Step220 guard scenario");
   }
 
   for (const snippet of [
-    "path.toNamespacedPath",
     "isSamePath(expected, target, \"linux\"), false",
+    "isSamePath(expected, target, \"win32\"), true",
     "isSamePath(left, right, \"win32\"), true",
-    "markerValidated, false",
-    "wrongRoot.cleanupSucceeded, false",
-    "retryCount, 1",
-    "retryCount, 2",
-    "result.timedOut, true",
-    "result.childPassed, false",
-    "result.globalFinpleCountDelta, 0",
-    "result.ok, false",
-    "fs.existsSync(preExisting), true",
+    "normalizePathForIdentity(left, \"win32\")",
+    "normalizePathForIdentity(left, \"linux\")",
+    "exactOwnedRootValidated, false",
+    "targetWithDotSegment",
+    "path.toNamespacedPath",
+    "cleanupSucceeded, true",
+    "cleanupSucceeded, false",
   ]) {
-    assertIncludes(guardTest, snippet, "Step219 guard assertion");
+    assertIncludes(guardTest, snippet, "Step220 guard assertion");
   }
 
   for (const snippet of [
-    "path.toNamespacedPath",
-    "OWNED_TEMP_MARKER",
-    "cleanupOwnedFinpleTempRoot",
-    "Scenario N: deep nested owned root cleanup",
-    "Scenario Q: cleanup retry succeeds",
-    "Scenario S: timeout result remains failed",
-    "Scenario T: cleanup failure keeps overall guard result failed",
+    "normalizePathForIdentity",
+    "Scenario U: POSIX case-sensitive sibling mismatch",
+    "Scenario V: Windows case-insensitive identity",
+    "Scenario Y: POSIX case-only unsafe sibling",
   ]) {
-    assertIncludes(step206Checker, snippet, "Step206 strengthened checker");
+    assertIncludes(step206Checker, snippet, "Step206 identity hardening");
+    assertIncludes(step219Checker, snippet, "Step219 identity hardening");
   }
-  assertIncludes(step206CheckerTest, "Step206 checker passes against repository source", "Step206 self test preserved");
 
   const touchedFiles = getTouchedFiles();
   for (const file of touchedFiles) {
-    assert(ALLOWED_TOUCHED_FILES.has(file), `unexpected Step219 touched file: ${file}`);
+    assert(ALLOWED_TOUCHED_FILES.has(file), `unexpected Step220 touched file: ${file}`);
   }
   for (const file of FORBIDDEN_TOUCHED_FILES) {
-    assert(!touchedFiles.includes(file), `forbidden Step219 touched file: ${file}`);
+    assert(!touchedFiles.includes(file), `forbidden Step220 touched file: ${file}`);
   }
 
   const combinedGuardSource = [guard, packageJson].join("\n");
   for (const snippet of FORBIDDEN_RUNTIME_SNIPPETS) {
-    assertNotIncludes(combinedGuardSource, snippet, "Step219 runtime/provider guard");
+    assertNotIncludes(combinedGuardSource, snippet, "Step220 runtime/provider guard");
   }
 
   for (const routeDir of ["server/src/routes", "server/routes"]) {
@@ -215,10 +181,10 @@ function getTouchedFiles() {
       const routePath = `${routeDir}/${entry}`;
       if (!fs.statSync(routePath).isFile()) continue;
       const source = read(routePath);
-      assertNotIncludes(source, "windows-long-path-temp-cleanup", "Step219 endpoint guard");
-      assertNotIncludes(source, "finple-test-temp-guard", "Step219 endpoint guard");
+      assertNotIncludes(source, "platform-correct-temp-root-identity", "Step220 endpoint guard");
+      assertNotIncludes(source, "finple-test-temp-guard", "Step220 endpoint guard");
     }
   }
 
-  console.log("[check-trading-step219-windows-long-path-temp-cleanup] ok");
+  console.log("[check-trading-step220-platform-correct-temp-root-identity] ok");
 })()
