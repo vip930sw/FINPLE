@@ -1,6 +1,11 @@
 let pool = null;
 let pgImportError = null;
 
+function positiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export function isDatabaseConfigured() {
   return Boolean(process.env.DATABASE_URL);
 }
@@ -46,8 +51,25 @@ async function getPool() {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: getSslOption(),
-    max: Number(process.env.DATABASE_POOL_MAX || 10),
-    idleTimeoutMillis: Number(process.env.DATABASE_IDLE_TIMEOUT_MS || 30000),
+    max: Math.max(1, Math.floor(positiveNumber(process.env.DATABASE_POOL_MAX, 10))),
+    idleTimeoutMillis: positiveNumber(process.env.DATABASE_IDLE_TIMEOUT_MS, 30000),
+    connectionTimeoutMillis: positiveNumber(process.env.DATABASE_CONNECTION_TIMEOUT_MS, 8000),
+    statement_timeout: positiveNumber(process.env.DATABASE_STATEMENT_TIMEOUT_MS, 12000),
+    query_timeout: positiveNumber(process.env.DATABASE_QUERY_TIMEOUT_MS, 15000),
+    idle_in_transaction_session_timeout: positiveNumber(
+      process.env.DATABASE_IDLE_TRANSACTION_TIMEOUT_MS,
+      15000
+    ),
+  });
+
+  pool.on("error", (error) => {
+    console.error(
+      JSON.stringify({
+        type: "database_pool_error",
+        message: error?.message || "Unknown PostgreSQL pool error",
+        checkedAt: new Date().toISOString(),
+      })
+    );
   });
 
   return pool;
@@ -75,12 +97,15 @@ export async function withTransaction(callback) {
   }
 }
 
-export async function checkDatabaseConnection() {
+export async function checkDatabaseConnection({ timeoutMs } = {}) {
+  const startedAt = Date.now();
+
   if (!isDatabaseConfigured()) {
     return {
       configured: false,
       mode: "disabled",
       ok: false,
+      latencyMs: Date.now() - startedAt,
       message: "DATABASE_URL 미설정. 서버 DB 저장은 아직 비활성화 상태입니다.",
     };
   }
@@ -90,23 +115,35 @@ export async function checkDatabaseConnection() {
       configured: true,
       mode: "postgres",
       ok: false,
+      latencyMs: Date.now() - startedAt,
       message: pgImportError.message,
     };
   }
 
   try {
-    const result = await query("SELECT NOW() AS now");
+    const dbPool = await getPool();
+    const safeTimeoutMs = positiveNumber(
+      timeoutMs,
+      positiveNumber(process.env.DATABASE_HEALTH_TIMEOUT_MS, 4500)
+    );
+    const result = await dbPool.query({
+      text: "SELECT 1 AS ok, NOW() AS now",
+      query_timeout: safeTimeoutMs,
+    });
+
     return {
       configured: true,
       mode: "postgres",
-      ok: true,
+      ok: result.rows?.[0]?.ok === 1,
       checkedAt: result.rows?.[0]?.now,
+      latencyMs: Date.now() - startedAt,
     };
   } catch (error) {
     return {
       configured: true,
       mode: "postgres",
       ok: false,
+      latencyMs: Date.now() - startedAt,
       message: error.message,
     };
   }
