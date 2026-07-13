@@ -6,14 +6,17 @@ import { ensureDevUser, getDefaultUserId, getUserById } from "../db/portfolioRep
 const router = express.Router();
 
 router.get("/health", async (request, response) => {
-  const dbStatus = await checkDatabaseConnection();
+  const dbStatus = await checkDatabaseConnection({
+    timeoutMs: Number(process.env.FINPLE_READINESS_DB_TIMEOUT_MS || 4500),
+  });
 
-  response.status(dbStatus.ok ? 200 : 200).json({
+  response.status(dbStatus.ok ? 200 : 503).json({
     ok: dbStatus.ok,
     app: "FINPLE DB Layer",
     database: dbStatus,
     mode: getDatabaseMode(),
     configured: isDatabaseConfigured(),
+    requestId: request.requestId || null,
     checkedAt: new Date().toISOString(),
   });
 });

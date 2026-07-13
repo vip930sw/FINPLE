@@ -2,8 +2,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 
+import {
+  createIpRateLimiter,
+  requestContextMiddleware,
+  requestTimingMiddleware,
+} from "./middleware/requestStability.js";
+import authLoginRoutes from "./routes/authLoginRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dbRoutes from "./routes/dbRoutes.js";
+import healthRoutes from "./routes/healthRoutes.js";
 import paymentGuardRoutes from "./routes/paymentGuardRoutes.js";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes.js";
 import paymentSubscriptionRoutes from "./routes/paymentSubscriptionRoutes.js";
@@ -46,8 +53,23 @@ function getCorsOrigin() {
 }
 
 const corsOrigin = getCorsOrigin();
+const authLoginRateLimiter = createIpRateLimiter({
+  windowMs: Number(process.env.FINPLE_AUTH_LOGIN_RATE_WINDOW_MS || 10 * 60 * 1000),
+  max: Number(process.env.FINPLE_AUTH_LOGIN_RATE_MAX || 15),
+  keyPrefix: "auth-login",
+  message: "로그인 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+});
+const authGeneralRateLimiter = createIpRateLimiter({
+  windowMs: Number(process.env.FINPLE_AUTH_RATE_WINDOW_MS || 10 * 60 * 1000),
+  max: Number(process.env.FINPLE_AUTH_RATE_MAX || 120),
+  keyPrefix: "auth-general",
+  message: "인증 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+});
 
+app.set("trust proxy", 1);
 app.disable("x-powered-by");
+app.use(requestContextMiddleware);
+app.use(requestTimingMiddleware);
 app.use((request, response, next) => {
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -58,6 +80,11 @@ app.use((request, response, next) => {
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "1mb" }));
 
+app.use("/api/health", healthRoutes);
+app.use("/api/auth/login", authLoginRateLimiter);
+app.use("/api/auth/education-login", authLoginRateLimiter);
+app.use("/api/auth", authGeneralRateLimiter);
+app.use("/api/auth", authLoginRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/db", dbRoutes);
 app.use("/api/payments", paymentGuardRoutes);
@@ -77,12 +104,14 @@ app.use("/api/admin/trading-readiness", adminTradingReadinessRoutes);
 app.use("/api/ai", aiPortfolioAnalysisRoutes);
 
 app.get("/api/health", (request, response) => {
+  response.setHeader("Cache-Control", "no-store, max-age=0");
   response.json({
     ok: true,
     app: "FINPLE Asset Proxy",
     deployment: getDeploymentInfo(),
     provider: getSelectedProvider(),
     supportedTickers: getSupportedTickers(),
+    requestId: request.requestId || null,
     checkedAt: new Date().toISOString(),
   });
 });
@@ -145,6 +174,7 @@ app.post("/api/assets/batch", async (request, response, next) => {
 });
 
 app.use((error, request, response, next) => {
+  void next;
   const statusCode = Number(error.statusCode || 500);
   if (error.usage?.limited) {
     response.setHeader("X-Finple-AI-Limit", String(error.usage.limit));
@@ -152,9 +182,24 @@ app.use((error, request, response, next) => {
     response.setHeader("X-Finple-AI-Reset-At", new Date(error.usage.resetAt).toISOString());
     if (error.usage.storage) response.setHeader("X-Finple-AI-Usage-Storage", error.usage.storage);
   }
+
+  if (statusCode >= 500) {
+    console.error(
+      JSON.stringify({
+        type: "http_error",
+        requestId: request.requestId || null,
+        method: request.method,
+        path: request.path,
+        statusCode,
+        message: error?.message || "Unknown server error",
+      })
+    );
+  }
+
   response.status(statusCode).json({
     ok: false,
     message: error.message || "서버 오류가 발생했습니다.",
+    requestId: request.requestId || null,
     ...(statusCode < 500 && Array.isArray(error.details) ? { details: error.details } : {}),
     ...(statusCode < 500 && error.usage?.limited
       ? {
