@@ -16,7 +16,6 @@ test("Step223 package script links Step192 primitive migration coverage", () => 
   assert.match(packageJson, /scripts\/check-trading-step223-ai-ml-contract-primitives-step192-pilot\.cjs/);
   assert.match(packageJson, /scripts\/check-trading-step223-ai-ml-contract-primitives-step192-pilot\.test\.cjs/);
   assert.match(packageJson, /server\/src\/services\/tradingAiMlDatasetArchitecture\.test\.js/);
-  assert.match(packageJson, /scripts\/check-trading-step218-step193-admin-snapshot-redaction\.test\.cjs/);
 });
 
 test("Step223 stays scoped to Step192 primitive migration without runtime or UI edits", () => {
@@ -37,4 +36,14 @@ test("Step223 stays scoped to Step192 primitive migration without runtime or UI 
   ]) {
     assert.equal(touched.includes(forbidden), false, forbidden);
   }
+});
+
+test("Step192 read-only audit preserved", () => {
+  const checker = fs.readFileSync("scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs", "utf8");
+
+  assert.match(checker, /audit\.scope === "step192_to_step200"/);
+  assert.match(checker, /audit\.expectedStageCount === 9/);
+  assert.match(checker, /audit\.unexpectedTruePermissionCount === 0/);
+  assert.match(checker, /regressionPlan\.sourceCheckerCount === 13/);
+  assert.match(checker, /regressionPlan\.uniqueTestFileCount === 35/);
 });

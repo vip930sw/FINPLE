@@ -13,6 +13,215 @@ import {
 import { STEP191_AI_ML_STRATEGY_MANAGEMENT_FLAGS } from "./tradingAiMlStrategyManagement.js";
 import { buildAiMlFailClosedFlags } from "./tradingAiMlContractPrimitives.js";
 
+const EXPECTED_LABEL_KEYS = [
+  "labelId",
+  "modelType",
+  "labelName",
+  "horizon",
+  "formula",
+  "threshold",
+  "positiveClass",
+  "neutralClass",
+  "missingLabelPolicy",
+  "embargoPeriod",
+  "redacted",
+];
+
+const EXPECTED_SPLIT_POLICY_KEYS = [
+  "splitPolicyId",
+  "policyType",
+  "randomSplitAllowed",
+  "trainWindow",
+  "validationWindow",
+  "testWindow",
+  "finalHoldoutPolicy",
+  "embargoRule",
+  "purgeRule",
+  "imputationRule",
+  "redacted",
+];
+
+const EXPECTED_WALK_FORWARD_POLICY_KEYS = [
+  "walkForwardPolicyId",
+  "windowType",
+  "trainWindowMinimum",
+  "validationWindow",
+  "testWindow",
+  "stepSize",
+  "embargoRule",
+  "foldLeakageCheck",
+  "redacted",
+];
+
+const EXPECTED_VERSIONING_POLICY_KEYS = [
+  "policyId",
+  "datasetVersionFormat",
+  "labelChangeCreatesNewDatasetVersion",
+  "featureChangeCreatesNewDatasetVersion",
+  "splitChangeCreatesNewDatasetVersion",
+  "immutableAfterReview",
+  "status",
+  "redacted",
+];
+
+const EXPECTED_LINEAGE_POLICY_KEYS = [
+  "policyId",
+  "lineageFields",
+  "rawValueStorageAllowed",
+  "privatePathStorageAllowed",
+  "digestStorageAllowed",
+  "status",
+  "redacted",
+];
+
+const EXPECTED_RETENTION_POLICY_KEYS = [
+  "policyId",
+  "retentionScope",
+  "datasetFileRetention",
+  "redactionRequired",
+  "forbiddenValueClasses",
+  "publicExposureAllowed",
+  "mypageExposureAllowed",
+  "redacted",
+];
+
+const STEP192_ACCIDENTAL_LABEL_KEYS = [
+  "predictionHorizon",
+  "labelWindowStart",
+  "labelWindowEnd",
+  "targetDefinition",
+  "positiveClassDefinition",
+  "binningPolicy",
+  "leakageControls",
+  "status",
+];
+
+const EXPECTED_LABEL_DEFINITIONS = [
+  {
+    labelId: "downside_1m_negative",
+    modelType: "downside_probability_model",
+    labelName: "one month negative forward return",
+    horizon: "1m",
+    formula: "forward_return_1m < 0",
+    threshold: 0,
+    positiveClass: "negative_forward_return",
+    neutralClass: "non_negative_forward_return",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "1m",
+    redacted: true,
+  },
+  {
+    labelId: "downside_3m_below_minus_5pct",
+    modelType: "downside_probability_model",
+    labelName: "three month downside threshold breach",
+    horizon: "3m",
+    formula: "forward_return_3m < -5pct",
+    threshold: "-5pct",
+    positiveClass: "below_threshold",
+    neutralClass: "at_or_above_threshold",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "3m",
+    redacted: true,
+  },
+  {
+    labelId: "forward_volatility_20d",
+    modelType: "volatility_forecast_model",
+    labelName: "future realized volatility twenty day",
+    horizon: "20d",
+    formula: "realized_volatility_over_label_window",
+    threshold: "continuous_target",
+    positiveClass: "not_applicable_continuous",
+    neutralClass: "not_applicable_continuous",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "20d",
+    redacted: true,
+  },
+  {
+    labelId: "future_drawdown_bucket_60d",
+    modelType: "portfolio_risk_score_model",
+    labelName: "future drawdown bucket sixty day",
+    horizon: "60d",
+    formula: "max_drawdown_over_label_window_bucket",
+    threshold: "bucketed_thresholds",
+    positiveClass: "high_drawdown_bucket",
+    neutralClass: "low_or_medium_drawdown_bucket",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "60d",
+    redacted: true,
+  },
+  {
+    labelId: "market_regime_20d",
+    modelType: "market_regime_classifier",
+    labelName: "twenty day market regime",
+    horizon: "20d",
+    formula: "future_return_and_volatility_bucket_after_prediction_time",
+    threshold: "deterministic_bucket_rules",
+    positiveClass: "regime_bucket",
+    neutralClass: "sideways_bucket",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "20d",
+    redacted: true,
+  },
+];
+
+const EXPECTED_SPLIT_POLICY = {
+  splitPolicyId: "chronological-split-v0",
+  policyType: "chronological",
+  randomSplitAllowed: false,
+  trainWindow: "2015-01-01_to_2021-12-31",
+  validationWindow: "2022-01-01_to_2023-12-31",
+  testWindow: "2024-01-01_to_2025-12-31",
+  finalHoldoutPolicy: "preserve_unseen_holdout",
+  embargoRule: "label_horizon_sized_embargo",
+  purgeRule: "purge_overlapping_samples",
+  imputationRule: "fit_with_train_split_only",
+  redacted: true,
+};
+
+const EXPECTED_WALK_FORWARD_POLICY = {
+  walkForwardPolicyId: "walk-forward-expanding-v0",
+  windowType: "expanding_train_rolling_validation",
+  trainWindowMinimum: "36m",
+  validationWindow: "6m",
+  testWindow: "6m",
+  stepSize: "3m",
+  embargoRule: "apply_label_horizon_embargo_each_fold",
+  foldLeakageCheck: "required_before_training",
+  redacted: true,
+};
+
+const EXPECTED_VERSIONING_POLICY = {
+  policyId: "dataset-versioning-policy-v0",
+  datasetVersionFormat: "dataset_family_id:label_version:feature_version:split_version",
+  labelChangeCreatesNewDatasetVersion: true,
+  featureChangeCreatesNewDatasetVersion: true,
+  splitChangeCreatesNewDatasetVersion: true,
+  immutableAfterReview: true,
+  status: "design_only",
+  redacted: true,
+};
+
+const EXPECTED_LINEAGE_POLICY = {
+  policyId: "dataset-lineage-policy-v0",
+  lineageFields: ["sourceRegistryId", "datasetFamilyId", "labelDefinitionId", "featureSetVersion", "splitPolicyId", "walkForwardPolicyId", "createdByAdminPlaceholder"],
+  rawValueStorageAllowed: false,
+  privatePathStorageAllowed: false,
+  digestStorageAllowed: false,
+  status: "placeholder_only",
+  redacted: true,
+};
+
+const EXPECTED_RETENTION_POLICY = {
+  policyId: "dataset-retention-redaction-policy-v0",
+  retentionScope: "metadata_contract_only",
+  datasetFileRetention: "not_applicable_no_file_created",
+  redactionRequired: true,
+  forbiddenValueClasses: ["redacted_metadata", "account linkage values", "provider packets", "order packets", "private filesystem references", "redacted_metadata"],
+  publicExposureAllowed: false,
+  mypageExposureAllowed: false,
+  redacted: true,
+};
+
 test("Step192 dataset architecture is deterministic design-only and redacted", () => {
   const first = buildAiMlDatasetArchitecture();
   const second = buildAiMlDatasetArchitecture();
@@ -278,6 +487,27 @@ test("Step192 full default output compatibility", () => {
   assert.equal(architecture.trainingStatus, "blocked");
   assert.equal(architecture.dbWriteStatus, "blocked");
   assert.equal(architecture.providerOrderLiveStatus, "blocked");
+  assert.deepEqual(architecture.labelDefinitions, EXPECTED_LABEL_DEFINITIONS);
+  assert.equal(typeof architecture.labelDefinitions[0].threshold, "number");
+  assert.deepEqual(Object.keys(architecture.labelDefinitions[0]), EXPECTED_LABEL_KEYS);
+  for (const label of architecture.labelDefinitions) {
+    assert.deepEqual(Object.keys(label), EXPECTED_LABEL_KEYS);
+    for (const accidentalKey of STEP192_ACCIDENTAL_LABEL_KEYS) {
+      assert.equal(Object.hasOwn(label, accidentalKey), false, accidentalKey);
+    }
+  }
+  assert.deepEqual(architecture.splitPolicies, [EXPECTED_SPLIT_POLICY]);
+  assert.deepEqual(Object.keys(architecture.splitPolicies[0]), EXPECTED_SPLIT_POLICY_KEYS);
+  assert.equal(Object.hasOwn(architecture.splitPolicies[0], "purgeOverlapRequired"), false);
+  assert.deepEqual(architecture.walkForwardPolicies, [EXPECTED_WALK_FORWARD_POLICY]);
+  assert.deepEqual(Object.keys(architecture.walkForwardPolicies[0]), EXPECTED_WALK_FORWARD_POLICY_KEYS);
+  assert.equal(Object.hasOwn(architecture.walkForwardPolicies[0], "leakageReviewRequired"), false);
+  assert.deepEqual(architecture.versioningPolicy, EXPECTED_VERSIONING_POLICY);
+  assert.deepEqual(Object.keys(architecture.versioningPolicy), EXPECTED_VERSIONING_POLICY_KEYS);
+  assert.deepEqual(architecture.lineagePolicy, EXPECTED_LINEAGE_POLICY);
+  assert.deepEqual(Object.keys(architecture.lineagePolicy), EXPECTED_LINEAGE_POLICY_KEYS);
+  assert.deepEqual(architecture.retentionPolicy, EXPECTED_RETENTION_POLICY);
+  assert.deepEqual(Object.keys(architecture.retentionPolicy), EXPECTED_RETENTION_POLICY_KEYS);
 });
 
 test("Step192 mutation resistance", () => {
@@ -286,21 +516,127 @@ test("Step192 mutation resistance", () => {
       labelId: "custom_label",
       modelType: "downside_probability_model",
       labelName: "custom label",
-      predictionHorizon: "1m",
-      labelWindowStart: "prediction_time_plus_1d",
-      labelWindowEnd: "prediction_time_plus_20d",
-      targetDefinition: "forward_return_negative",
+      horizon: "1m",
+      formula: "forward_return_1m < 0",
+      threshold: 0,
+      positiveClass: "negative_forward_return",
+      neutralClass: "non_negative_forward_return",
+      missingLabelPolicy: "exclude_until_label_end_time_available",
       embargoPeriod: "20d",
-      leakageControls: ["label_after_feature_window"],
-      status: "design_only",
+      unknownNestedKey: "remove me",
     }],
   };
   const architecture = buildAiMlDatasetArchitecture(input);
   input.labelDefinitions[0].labelId = "mutated_label";
-  input.labelDefinitions[0].leakageControls.push("credential");
+  input.labelDefinitions[0].threshold = "credential";
 
   assert.equal(architecture.labelDefinitions[0].labelId, "custom_label");
-  assert.equal(architecture.labelDefinitions[0].leakageControls.includes("credential"), false);
+  assert.equal(architecture.labelDefinitions[0].threshold, 0);
+  assert.equal(Object.hasOwn(architecture.labelDefinitions[0], "unknownNestedKey"), false);
+});
+
+test("Step192 custom overrides keep legacy dataset contract vocabulary", () => {
+  const architecture = buildAiMlDatasetArchitecture({
+    labelDefinitions: [{
+      labelId: "custom_legacy_label",
+      modelType: "downside_probability_model",
+      labelName: "custom legacy label",
+      horizon: "2m",
+      formula: "forward_return_2m < -3pct",
+      threshold: "-3pct",
+      positiveClass: "below_custom_threshold",
+      neutralClass: "at_or_above_custom_threshold",
+      missingLabelPolicy: "exclude_until_label_end_time_available",
+      embargoPeriod: "2m",
+      predictionHorizon: "should_not_survive",
+      targetDefinition: "should_not_survive",
+    }],
+    splitPolicies: [{
+      splitPolicyId: "custom-split-v0",
+      policyType: "chronological",
+      randomSplitAllowed: true,
+      trainWindow: "2018_to_2021",
+      validationWindow: "2022",
+      testWindow: "2023",
+      finalHoldoutPolicy: "custom_holdout",
+      embargoRule: "custom_embargo",
+      purgeRule: "custom_purge",
+      imputationRule: "custom_imputation",
+      purgeOverlapRequired: true,
+    }],
+    walkForwardPolicies: [{
+      walkForwardPolicyId: "custom-walk-forward-v0",
+      windowType: "rolling",
+      trainWindowMinimum: "24m",
+      validationWindow: "3m",
+      testWindow: "3m",
+      stepSize: "1m",
+      embargoRule: "custom_fold_embargo",
+      foldLeakageCheck: "custom_fold_check",
+      leakageReviewRequired: true,
+    }],
+    versioningPolicy: {
+      ...EXPECTED_VERSIONING_POLICY,
+      unknownPolicyKey: "remove me",
+    },
+    lineagePolicy: {
+      ...EXPECTED_LINEAGE_POLICY,
+      rawValueStorageAllowed: true,
+      privatePathStorageAllowed: true,
+      digestStorageAllowed: true,
+      unknownPolicyKey: "remove me",
+    },
+    retentionPolicy: {
+      ...EXPECTED_RETENTION_POLICY,
+      redactionRequired: false,
+      publicExposureAllowed: true,
+      mypageExposureAllowed: true,
+      unknownPolicyKey: "remove me",
+    },
+  });
+
+  assert.deepEqual(Object.keys(architecture.labelDefinitions[0]), EXPECTED_LABEL_KEYS);
+  assert.equal(architecture.labelDefinitions[0].threshold, "-3pct");
+  assert.equal(Object.hasOwn(architecture.labelDefinitions[0], "predictionHorizon"), false);
+  assert.deepEqual(Object.keys(architecture.splitPolicies[0]), EXPECTED_SPLIT_POLICY_KEYS);
+  assert.equal(architecture.splitPolicies[0].randomSplitAllowed, false);
+  assert.equal(Object.hasOwn(architecture.splitPolicies[0], "purgeOverlapRequired"), false);
+  assert.deepEqual(Object.keys(architecture.walkForwardPolicies[0]), EXPECTED_WALK_FORWARD_POLICY_KEYS);
+  assert.equal(Object.hasOwn(architecture.walkForwardPolicies[0], "leakageReviewRequired"), false);
+  assert.deepEqual(Object.keys(architecture.versioningPolicy), EXPECTED_VERSIONING_POLICY_KEYS);
+  assert.deepEqual(Object.keys(architecture.lineagePolicy), EXPECTED_LINEAGE_POLICY_KEYS);
+  assert.equal(architecture.lineagePolicy.rawValueStorageAllowed, false);
+  assert.equal(architecture.lineagePolicy.privatePathStorageAllowed, false);
+  assert.equal(architecture.lineagePolicy.digestStorageAllowed, false);
+  assert.deepEqual(Object.keys(architecture.retentionPolicy), EXPECTED_RETENTION_POLICY_KEYS);
+  assert.equal(architecture.retentionPolicy.redactionRequired, true);
+  assert.equal(architecture.retentionPolicy.publicExposureAllowed, false);
+  assert.equal(architecture.retentionPolicy.mypageExposureAllowed, false);
+  assert.equal(JSON.stringify(architecture).includes("unknownPolicyKey"), false);
+});
+
+test("Step192 sensitive strings are redacted while safe scalars keep type", () => {
+  const architecture = buildAiMlDatasetArchitecture({
+    labelDefinitions: [{
+      labelId: "scalar_label",
+      modelType: "downside_probability_model",
+      labelName: "custom label",
+      horizon: "1m",
+      formula: "api key value",
+      threshold: true,
+      positiveClass: "account id value",
+      neutralClass: "non_negative_forward_return",
+      missingLabelPolicy: "exclude_until_label_end_time_available",
+      embargoPeriod: "20d",
+    }],
+  });
+  const label = architecture.labelDefinitions[0];
+  const serialized = JSON.stringify(label);
+
+  assert.equal(label.threshold, true);
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("account id value"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
 });
 
 test("Step192 admin snapshot redaction", () => {
@@ -318,6 +654,43 @@ test("Step192 admin snapshot redaction", () => {
       leakageControls: ["future return feature blocked"],
       blockedReasons: ["dataset_build_blocked"],
     }],
+    labelDefinitions: [{
+      labelId: "snapshot_label",
+      modelType: "downside_probability_model",
+      labelName: "snapshot label",
+      horizon: "1m",
+      formula: "forward_return_1m < 0",
+      threshold: 0,
+      positiveClass: "negative_forward_return",
+      neutralClass: "non_negative_forward_return",
+      missingLabelPolicy: "exclude_until_label_end_time_available",
+      embargoPeriod: "1m",
+      targetDefinition: "should_not_survive",
+    }],
+    splitPolicies: [{
+      splitPolicyId: "snapshot-split",
+      policyType: "chronological",
+      randomSplitAllowed: true,
+      trainWindow: "2018_to_2021",
+      validationWindow: "2022",
+      testWindow: "2023",
+      finalHoldoutPolicy: "holdout",
+      embargoRule: "embargo",
+      purgeRule: "purge",
+      imputationRule: "impute",
+      purgeOverlapRequired: true,
+    }],
+    walkForwardPolicies: [{
+      walkForwardPolicyId: "snapshot-walk",
+      windowType: "rolling",
+      trainWindowMinimum: "24m",
+      validationWindow: "3m",
+      testWindow: "3m",
+      stepSize: "1m",
+      embargoRule: "embargo",
+      foldLeakageCheck: "required",
+      leakageReviewRequired: true,
+    }],
     validationStatus: "ready",
     readyForOrderSubmission: true,
     orderSubmissionAllowed: true,
@@ -334,6 +707,13 @@ test("Step192 admin snapshot redaction", () => {
   assert.equal(serialized.includes("redacted_metadata"), true);
   assert.equal(normalized.readyForOrderSubmission, undefined);
   assert.equal(normalized.orderSubmissionAllowed, undefined);
+  assert.deepEqual(Object.keys(normalized.labelDefinitions[0]), EXPECTED_LABEL_KEYS);
+  assert.equal(Object.hasOwn(normalized.labelDefinitions[0], "targetDefinition"), false);
+  assert.deepEqual(Object.keys(normalized.splitPolicies[0]), EXPECTED_SPLIT_POLICY_KEYS);
+  assert.equal(normalized.splitPolicies[0].randomSplitAllowed, false);
+  assert.equal(Object.hasOwn(normalized.splitPolicies[0], "purgeOverlapRequired"), false);
+  assert.deepEqual(Object.keys(normalized.walkForwardPolicies[0]), EXPECTED_WALK_FORWARD_POLICY_KEYS);
+  assert.equal(Object.hasOwn(normalized.walkForwardPolicies[0], "leakageReviewRequired"), false);
 });
 
 test("Step192 supplied readiness ignored", () => {

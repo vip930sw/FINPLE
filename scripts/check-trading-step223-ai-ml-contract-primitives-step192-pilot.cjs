@@ -1,6 +1,7 @@
 const { execFileSync } = require("node:child_process");
 const assertStrict = require("node:assert/strict");
 const fs = require("node:fs");
+const { pathToFileURL } = require("node:url");
 const {
   AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS,
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
@@ -19,6 +20,48 @@ const STEP192_MODULE = "server/src/services/tradingAiMlDatasetArchitecture.js";
 const STEP192_TEST = "server/src/services/tradingAiMlDatasetArchitecture.test.js";
 const STEP223_CHECKER = "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.cjs";
 const STEP223_TEST = "scripts/check-trading-step223-ai-ml-contract-primitives-step192-pilot.test.cjs";
+const STEP224_CHECKER = "scripts/check-trading-step224-step192-dataset-contract-compatibility.cjs";
+const STEP224_TEST = "scripts/check-trading-step224-step192-dataset-contract-compatibility.test.cjs";
+
+const STEP192_LABEL_KEYS = [
+  "labelId",
+  "modelType",
+  "labelName",
+  "horizon",
+  "formula",
+  "threshold",
+  "positiveClass",
+  "neutralClass",
+  "missingLabelPolicy",
+  "embargoPeriod",
+  "redacted",
+];
+
+const STEP192_SPLIT_POLICY_KEYS = [
+  "splitPolicyId",
+  "policyType",
+  "randomSplitAllowed",
+  "trainWindow",
+  "validationWindow",
+  "testWindow",
+  "finalHoldoutPolicy",
+  "embargoRule",
+  "purgeRule",
+  "imputationRule",
+  "redacted",
+];
+
+const STEP192_WALK_FORWARD_POLICY_KEYS = [
+  "walkForwardPolicyId",
+  "windowType",
+  "trainWindowMinimum",
+  "validationWindow",
+  "testWindow",
+  "stepSize",
+  "embargoRule",
+  "foldLeakageCheck",
+  "redacted",
+];
 
 const REQUIRED_FILES = [
   "package.json",
@@ -42,6 +85,8 @@ const REQUIRED_FILES = [
 
 const ALLOWED_TOUCHED_FILES = new Set([
   ...REQUIRED_FILES,
+  STEP224_CHECKER,
+  STEP224_TEST,
   "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
   "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.test.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
@@ -237,15 +282,36 @@ function getTouchedFiles() {
     assertNotIncludes(snapshotSegment, `"${forbidden}"`, "Step192 untrusted snapshot field");
   }
 
-  for (const functionName of [
-    "sanitizeDatasetFamilies",
-    "sanitizeLabelDefinitions",
+  const familySegment = getFunctionSegment(service, "sanitizeDatasetFamilies");
+  assert(familySegment, "missing sanitizer segment: sanitizeDatasetFamilies");
+  assertIncludes(familySegment, "sanitizeAiMlMetadataValue(", "sanitizeDatasetFamilies value sanitizer");
+  assertIncludes(familySegment, "sanitizeAiMlMetadataArray(", "sanitizeDatasetFamilies array sanitizer");
+  assertIncludes(familySegment, "redacted: true", "sanitizeDatasetFamilies redacted marker");
+
+  const labelSegment = getFunctionSegment(service, "sanitizeLabelDefinitions");
+  assert(labelSegment, "missing sanitizer segment: sanitizeLabelDefinitions");
+  for (const snippet of [
+    "horizon: sanitizeAiMlMetadataValue(label?.horizon",
+    "formula: sanitizeAiMlMetadataValue(label?.formula",
+    "threshold: sanitizeStep192Scalar(label?.threshold",
+    "positiveClass: sanitizeAiMlMetadataValue(label?.positiveClass",
+    "neutralClass: sanitizeAiMlMetadataValue(label?.neutralClass",
+    "missingLabelPolicy: sanitizeAiMlMetadataValue(label?.missingLabelPolicy",
+    "redacted: true",
   ]) {
-    const segment = getFunctionSegment(service, functionName);
-    assert(segment, `missing sanitizer segment: ${functionName}`);
-    assertIncludes(segment, "sanitizeAiMlMetadataValue(", `${functionName} value sanitizer`);
-    assertIncludes(segment, "sanitizeAiMlMetadataArray(", `${functionName} array sanitizer`);
-    assertIncludes(segment, "redacted: true", `${functionName} redacted marker`);
+    assertIncludes(labelSegment, snippet, "Step192 label contract sanitizer");
+  }
+  for (const snippet of [
+    "predictionHorizon:",
+    "labelWindowStart:",
+    "labelWindowEnd:",
+    "targetDefinition:",
+    "positiveClassDefinition:",
+    "binningPolicy:",
+    "leakageControls:",
+    "status:",
+  ]) {
+    assertNotIncludes(labelSegment, snippet, "Step192 label accidental key");
   }
   const featureRuleSegment = getFunctionSegment(service, "sanitizeFeatureTimestampRules");
   assert(featureRuleSegment, "missing sanitizer segment: sanitizeFeatureTimestampRules");
@@ -257,6 +323,23 @@ function getTouchedFiles() {
     assertIncludes(segment, "sanitizeAiMlMetadataValue(", `${functionName} value sanitizer`);
     assertIncludes(segment, "redacted: true", `${functionName} redacted marker`);
   }
+  const splitSegment = getFunctionSegment(service, "sanitizeSplitPolicies");
+  assertIncludes(splitSegment, "finalHoldoutPolicy:", "Step192 split final holdout");
+  assertIncludes(splitSegment, "purgeRule:", "Step192 split purge rule");
+  assertIncludes(splitSegment, "imputationRule:", "Step192 split imputation rule");
+  assertIncludes(splitSegment, "randomSplitAllowed: false", "Step192 split random disabled");
+  assertNotIncludes(splitSegment, "purgeOverlapRequired", "Step192 split accidental key");
+
+  const walkForwardSegment = getFunctionSegment(service, "sanitizeWalkForwardPolicies");
+  assertIncludes(walkForwardSegment, "foldLeakageCheck:", "Step192 walk-forward fold leakage");
+  assertNotIncludes(walkForwardSegment, "leakageReviewRequired", "Step192 walk-forward accidental key");
+
+  for (const functionName of ["sanitizeVersioningPolicy", "sanitizeLineagePolicy", "sanitizeRetentionPolicy"]) {
+    const segment = getFunctionSegment(service, functionName);
+    assert(segment, `missing sanitizer segment: ${functionName}`);
+    assertIncludes(segment, "Object.freeze({", `${functionName} explicit reconstruction`);
+    assertNotIncludes(segment, "Object.entries", `${functionName} must not preserve unknown keys`);
+  }
 
   for (const scenario of [
     "Step192 shared flag compatibility",
@@ -265,6 +348,8 @@ function getTouchedFiles() {
     "Step192 shared helper compatibility",
     "Step192 full default output compatibility",
     "Step192 mutation resistance",
+    "Step192 custom overrides keep legacy dataset contract vocabulary",
+    "Step192 sensitive strings are redacted while safe scalars keep type",
     "Step192 admin snapshot redaction",
     "Step192 supplied readiness ignored",
   ]) {
@@ -277,6 +362,13 @@ function getTouchedFiles() {
     "leakageControlCount, 11",
     "splitPolicyCount, 1",
     "walkForwardPolicyCount, 1",
+    "EXPECTED_LABEL_DEFINITIONS",
+    "EXPECTED_SPLIT_POLICY",
+    "EXPECTED_WALK_FORWARD_POLICY",
+    "EXPECTED_VERSIONING_POLICY",
+    "Object.hasOwn(architecture.labelDefinitions[0], \"predictionHorizon\"), false",
+    "Object.hasOwn(architecture.splitPolicies[0], \"purgeOverlapRequired\"), false",
+    "Object.hasOwn(architecture.walkForwardPolicies[0], \"leakageReviewRequired\"), false",
     "serialized.includes(\"api key value\"), false",
     "serialized.includes(\"private path\"), false",
     "status.orderSubmissionAllowed, false",
@@ -305,6 +397,39 @@ function getTouchedFiles() {
     "Step192 admin snapshot redaction",
     "Step192 supplied readiness ignored",
   ]);
+
+  const serviceModule = await import(pathToFileURL(`${process.cwd()}/${STEP192_MODULE}`).href);
+  const architecture = serviceModule.buildAiMlDatasetArchitecture();
+  assertStrict.deepEqual(Object.keys(architecture.labelDefinitions[0]), STEP192_LABEL_KEYS);
+  assertStrict.deepEqual(architecture.labelDefinitions[0], {
+    labelId: "downside_1m_negative",
+    modelType: "downside_probability_model",
+    labelName: "one month negative forward return",
+    horizon: "1m",
+    formula: "forward_return_1m < 0",
+    threshold: 0,
+    positiveClass: "negative_forward_return",
+    neutralClass: "non_negative_forward_return",
+    missingLabelPolicy: "exclude_until_label_end_time_available",
+    embargoPeriod: "1m",
+    redacted: true,
+  });
+  assert(typeof architecture.labelDefinitions[0].threshold === "number", "Step192 numeric threshold must stay numeric");
+  assertStrict.deepEqual(Object.keys(architecture.splitPolicies[0]), STEP192_SPLIT_POLICY_KEYS);
+  assertStrict.deepEqual(Object.keys(architecture.walkForwardPolicies[0]), STEP192_WALK_FORWARD_POLICY_KEYS);
+  const architectureJson = JSON.stringify({
+    labelDefinitions: architecture.labelDefinitions,
+    splitPolicies: architecture.splitPolicies,
+    walkForwardPolicies: architecture.walkForwardPolicies,
+  });
+  for (const accidentalKey of [
+    "predictionHorizon",
+    "targetDefinition",
+    "purgeOverlapRequired",
+    "leakageReviewRequired",
+  ]) {
+    assert(!architectureJson.includes(accidentalKey), `Step192 accidental key leaked: ${accidentalKey}`);
+  }
 
   const audit = await buildAiMlPrimitivesMigrationAudit();
   const auditValidation = validateAiMlPrimitivesMigrationAudit(audit);
