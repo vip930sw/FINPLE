@@ -144,7 +144,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "blocked",
       "ai_ml_feature_batch_preflight_review",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_valid_metadata_contract",
       "scenario_b_unknown_feature",
       "scenario_c_future_available_at_leakage",
@@ -154,6 +154,8 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_g_unconditional_zero_fill",
       "scenario_h_unpinned_version",
       "scenario_i_prohibited_execution_intent",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
       "scenario J shared flag compatibility",
       "scenario K inherited true execution conflict",
       "scenario L explicit metadata allowlist",
@@ -226,7 +228,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "blocked",
       "external_blocker",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_current_valid_internal_contracts",
       "scenario_b_missing_source_contract",
       "scenario_c_invalid_preflight",
@@ -241,6 +243,14 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_l_shared_helper_compatibility",
       "scenario_m_full_default_output_compatibility",
       "scenario_n_mutation_resistance",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step195 scenario I shared flag compatibility",
+      "Step195 scenario J inherited execution conflict",
+      "Step195 scenario K explicit metadata allowlist",
+      "Step195 scenario L shared helper compatibility",
+      "Step195 scenario M full default output remains compatible",
+      "Step195 scenario N shared clone use prevents source",
     ]),
   }),
   Object.freeze({
@@ -310,7 +320,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "denied",
       "blocked",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_review_ready_metadata_contract",
       "scenario_b_invalid_upstream_readiness",
       "scenario_c_missing_version_pin",
@@ -327,6 +337,14 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_n_shared_helper_compatibility",
       "scenario_o_full_default_output_compatibility",
       "scenario_p_mutation_resistance",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step196 scenario K shared flag compatibility",
+      "Step196 scenario L inherited true execution conflict",
+      "Step196 scenario M explicit metadata allowlist",
+      "Step196 scenario N shared helper compatibility",
+      "Step196 scenario O full default output remains compatible",
+      "Step196 scenario P shared clone use prevents source",
     ]),
   }),
   Object.freeze({
@@ -398,7 +416,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "generated_not_persisted",
       "not_assigned",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_valid_manifest_design",
       "scenario_b_invalid_upstream_review",
       "scenario_c_missing_contract_version",
@@ -417,6 +435,14 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_p_shared_helper_deterministic_compatibility",
       "scenario_q_full_default_output_compatibility",
       "scenario_r_shared_clone_mutation_resistance",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step197 scenario M shared flag output compatibility",
+      "Step197 scenario N inherited true execution conflict",
+      "Step197 scenario O metadata true allowlist",
+      "Step197 scenario P shared helper compatibility",
+      "Step197 scenario Q full default output remains compatible",
+      "Step197 scenario R shared clone use prevents source",
     ]),
   }),
   Object.freeze({
@@ -487,7 +513,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "generated_in_memory",
       "generated_not_persisted",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_valid_step197_source",
       "scenario_b_invalid_source_manifest",
       "scenario_c_source_safety_block",
@@ -505,6 +531,14 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_o_shared_helper_deterministic_compatibility",
       "scenario_p_full_default_output_compatibility",
       "scenario_q_shared_clone_mutation_resistance",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step198 scenario L shared flag output compatibility",
+      "Step198 scenario M inherited true execution conflict",
+      "Step198 scenario N metadata true allowlist",
+      "Step198 scenario O shared helper compatibility",
+      "Step198 scenario P full default output remains compatible",
+      "Step198 scenario Q shared clone use prevents report",
     ]),
   }),
   Object.freeze({
@@ -576,7 +610,7 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "not_granted",
       "denied",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_valid_handoff_candidate",
       "scenario_b_invalid_source_report",
       "scenario_c_source_safety_block",
@@ -597,6 +631,14 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_r_shared_helper_deterministic_compatibility",
       "scenario_s_full_default_output_compatibility",
       "scenario_t_input_mutation_resistance",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step202 scenario O shared flag output compatibility",
+      "Step202 scenario P inherited true execution conflict",
+      "Step202 scenario Q metadata true allowlist",
+      "Step202 scenario R shared helper compatibility",
+      "Step202 scenario S full default output remains compatible",
+      "Step202 scenario T shared clone use prevents input",
     ]),
   }),
   Object.freeze({
@@ -665,7 +707,13 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "consolidation_required",
       "consolidate_before_runtime",
     ]),
-    expectedScenarioMarkers: Object.freeze([
+    migrationRegressionTestFiles: Object.freeze([
+      "server/src/services/tradingAiMlArchitectureMilestoneReview.test.js",
+      "server/src/services/tradingAiMlContractPrimitives.test.js",
+      "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.cjs",
+      "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.test.cjs",
+    ]),
+    expectedContractScenarioMarkers: Object.freeze([
       "scenario_a_current_step191_to_step199_chain",
       "scenario_b_missing_stage",
       "scenario_c_dependency_order_conflict",
@@ -677,6 +725,12 @@ const AI_ML_PRIMITIVE_MIGRATION_STAGES = Object.freeze([
       "scenario_i_deterministic_ordering",
       "scenario_j_mutation_resistance",
       "scenario_k_sensitive_data_redaction",
+    ]),
+    expectedMigrationRegressionTestMarkers: Object.freeze([
+      "Step201 scenario J Step 200 default output remains compatible",
+      "Step201 scenario K Step 200 fail-closed override",
+      "Object.values(AI_ML_STAGE_IDS)",
+      "falseFlagSnapshot.providerCallsAllowed",
     ]),
   }),
 ]);
@@ -722,6 +776,58 @@ function findDuplicates(values) {
     seen.add(value);
   }
   return Object.freeze([...duplicates].sort());
+}
+
+function listStageMigrationSources(repoRoot, stage) {
+  const files = stage.migrationRegressionTestFiles || [
+    stage.testFile,
+    stage.checkerTestFile,
+  ];
+  return files.map((file) => read(repoRoot, file)).join("\n");
+}
+
+function validateAiMlMigrationScenarioTaxonomy(stages = AI_ML_PRIMITIVE_MIGRATION_STAGES) {
+  const errors = [];
+  const stageOrder = (stages || []).map((stage) => stage.stepId);
+  if (JSON.stringify(stageOrder) !== JSON.stringify([...AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS])) {
+    errors.push("stage order mismatch");
+  }
+
+  for (const stage of stages || []) {
+    const contractMarkers = stage.expectedContractScenarioMarkers;
+    const migrationMarkers = stage.expectedMigrationRegressionTestMarkers;
+    if (!Array.isArray(contractMarkers)) errors.push(`${stage.stepId} expectedContractScenarioMarkers missing`);
+    if (!Array.isArray(migrationMarkers)) errors.push(`${stage.stepId} expectedMigrationRegressionTestMarkers missing`);
+    if (!Array.isArray(contractMarkers) || !Array.isArray(migrationMarkers)) continue;
+
+    for (const [markerType, markers] of [
+      ["contract", contractMarkers],
+      ["migration", migrationMarkers],
+    ]) {
+      for (const marker of markers) {
+        if (typeof marker !== "string" || marker.trim() === "") {
+          errors.push(`${stage.stepId} empty ${markerType} marker`);
+        }
+      }
+      for (const duplicate of findDuplicates(markers)) {
+        errors.push(`${stage.stepId} duplicate ${markerType} marker: ${duplicate}`);
+      }
+    }
+
+    const migrationSet = new Set(migrationMarkers);
+    for (const marker of contractMarkers) {
+      if (migrationSet.has(marker)) {
+        errors.push(`${stage.stepId} contract/migration marker overlap: ${marker}`);
+      }
+    }
+
+    if (stage.stepId === "step194") {
+      if (contractMarkers.length !== 9) errors.push("step194 contract scenario marker count mismatch");
+      if (migrationMarkers.length !== 6) errors.push("step194 migration regression marker count mismatch");
+    }
+  }
+
+  return Object.freeze({ ok: errors.length === 0, errors: Object.freeze(errors) });
 }
 
 function validateAiMlProtectedFlagStageRegistry(stages = AI_ML_PRIMITIVE_MIGRATION_STAGES) {
@@ -826,6 +932,7 @@ function auditSourceStage(repoRoot, stage, runtimeFlags) {
   const testSource = read(repoRoot, stage.testFile);
   const checkerSource = read(repoRoot, stage.checkerFile);
   const checkerTestSource = read(repoRoot, stage.checkerTestFile);
+  const migrationRegressionTestSource = listStageMigrationSources(repoRoot, stage);
   const flagSegment = getFlagDefinitionSegment(serviceSource, stage.runtimeFlagExport);
   const objectFreezeBlocks = serviceSource.match(/Object\.freeze\(\{[\s\S]*?\n\}\);/g) || [];
   const duplicateFullFalseBlocks = objectFreezeBlocks.filter((block) => LEGACY_FULL_FALSE_OBJECT_KEYS.every((key) => block.includes(key)));
@@ -840,7 +947,18 @@ function auditSourceStage(repoRoot, stage, runtimeFlags) {
   const unclassifiedProtectedFlags = protectedFlagAudit.filter((item) => item.status === "unclassified_protected_flag").map((item) => item.flag);
   const protectedFalseFlags = protectedFlagAudit.filter((item) => item.status === "protected_false").map((item) => item.flag);
   const outputMarkersCovered = stage.expectedOutputMarkers.filter((marker) => testSource.includes(marker) || checkerTestSource.includes(marker));
-  const scenarioMarkersCovered = stage.expectedScenarioMarkers.filter((marker) => testSource.includes(marker));
+  const contractScenarioMarkersCovered = stage.expectedContractScenarioMarkers.filter(
+    (marker) => serviceSource.includes(marker) || testSource.includes(marker),
+  );
+  const migrationRegressionTestMarkersCovered = stage.expectedMigrationRegressionTestMarkers.filter((marker) => (
+    migrationRegressionTestSource.includes(marker)
+  ));
+  const contractScenarioCoverageStatus = contractScenarioMarkersCovered.length === stage.expectedContractScenarioMarkers.length
+    ? "complete"
+    : "incomplete";
+  const migrationRegressionCoverageStatus = migrationRegressionTestMarkersCovered.length === stage.expectedMigrationRegressionTestMarkers.length
+    ? "complete"
+    : "incomplete";
   const helperAdoption = classifyHelperAdoption(serviceSource);
   const builderCallCount = countMatches(flagSegment, /buildAiMlFailClosedFlags\(/g);
   const flagExportCount = countMatches(serviceSource, new RegExp(`export const ${stage.runtimeFlagExport}\\b`, "g"));
@@ -893,8 +1011,21 @@ function auditSourceStage(repoRoot, stage, runtimeFlags) {
     unclassifiedProtectedFlagCount: unclassifiedProtectedFlags.length,
     outputMarkersCovered: Object.freeze(outputMarkersCovered),
     outputCompatibilityStatus: outputMarkersCovered.length === stage.expectedOutputMarkers.length ? "complete" : "incomplete",
-    scenarioMarkersCovered: Object.freeze(scenarioMarkersCovered),
-    scenarioCoverageStatus: scenarioMarkersCovered.length === stage.expectedScenarioMarkers.length ? "complete" : "incomplete",
+    contractScenarioExpectedCount: stage.expectedContractScenarioMarkers.length,
+    contractScenarioCoveredCount: contractScenarioMarkersCovered.length,
+    contractScenarioMarkersCovered: Object.freeze(contractScenarioMarkersCovered),
+    contractScenarioCoverageStatus,
+    migrationRegressionTestExpectedCount: stage.expectedMigrationRegressionTestMarkers.length,
+    migrationRegressionTestCoveredCount: migrationRegressionTestMarkersCovered.length,
+    migrationRegressionTestMarkersCovered: Object.freeze(migrationRegressionTestMarkersCovered),
+    migrationRegressionCoverageStatus,
+    scenarioMarkersCovered: Object.freeze([
+      ...contractScenarioMarkersCovered,
+      ...migrationRegressionTestMarkersCovered,
+    ]),
+    scenarioCoverageStatus: contractScenarioCoverageStatus === "complete" && migrationRegressionCoverageStatus === "complete"
+      ? "complete"
+      : "incomplete",
     helperAdoption,
     compatibilityMarker: classifyCompatibilityMarkers(serviceSource),
   });
@@ -956,7 +1087,10 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
   const unexpectedApplicableFlagCount = stageAudits.reduce((sum, stage) => sum + stage.unexpectedApplicableFlagCount, 0);
   const unclassifiedProtectedFlagCount = stageAudits.reduce((sum, stage) => sum + stage.unclassifiedProtectedFlagCount, 0);
   const protectedFlagRegistryValidation = validateAiMlProtectedFlagStageRegistry(AI_ML_PRIMITIVE_MIGRATION_STAGES);
+  const migrationScenarioTaxonomyValidation = validateAiMlMigrationScenarioTaxonomy(AI_ML_PRIMITIVE_MIGRATION_STAGES);
   const outputCompatibilityCoverageStatus = stageAudits.every((stage) => stage.outputCompatibilityStatus === "complete") ? "complete" : "incomplete";
+  const contractScenarioCoverageStatus = stageAudits.every((stage) => stage.contractScenarioCoverageStatus === "complete") ? "complete" : "incomplete";
+  const migrationRegressionCoverageStatus = stageAudits.every((stage) => stage.migrationRegressionCoverageStatus === "complete") ? "complete" : "incomplete";
   const helperLegacyRemainingCount = stageAudits.reduce(
     (sum, stage) => sum + stage.helperAdoption.legacyHelpers.filter((helper) => helper.status === "legacy_helper_remaining").length,
     0,
@@ -978,7 +1112,11 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
     unclassifiedProtectedFlagCount,
     protectedFlagRegistryStatus: protectedFlagRegistryValidation.ok ? "complete" : "invalid",
     protectedFlagRegistryErrors: protectedFlagRegistryValidation.errors,
+    migrationScenarioTaxonomyStatus: migrationScenarioTaxonomyValidation.ok ? "separated_and_complete" : "invalid",
+    migrationScenarioTaxonomyErrors: migrationScenarioTaxonomyValidation.errors,
     outputCompatibilityCoverageStatus,
+    contractScenarioCoverageStatus,
+    migrationRegressionCoverageStatus,
     groupedRegressionStatus: "externally_validated",
     runtimeCapabilityStatus: "not_implemented",
     executionReadinessStatus: "blocked",
@@ -1002,7 +1140,9 @@ async function buildAiMlPrimitivesMigrationAudit(options = {}) {
 function validateAiMlPrimitivesMigrationAudit(audit) {
   const errors = [];
   const protectedFlagRegistryValidation = validateAiMlProtectedFlagStageRegistry(AI_ML_PRIMITIVE_MIGRATION_STAGES);
+  const migrationScenarioTaxonomyValidation = validateAiMlMigrationScenarioTaxonomy(AI_ML_PRIMITIVE_MIGRATION_STAGES);
   for (const error of protectedFlagRegistryValidation.errors) errors.push(`protected flag registry: ${error}`);
+  for (const error of migrationScenarioTaxonomyValidation.errors) errors.push(`migration scenario taxonomy: ${error}`);
   if (!audit || typeof audit !== "object") errors.push("audit missing");
   if (audit?.auditId !== "step212_shared_ai_ml_primitives_migration_milestone") errors.push("audit id mismatch");
   if (audit?.scope !== "step194_to_step200") errors.push("audit scope mismatch");
@@ -1018,13 +1158,18 @@ function validateAiMlPrimitivesMigrationAudit(audit) {
   if (audit?.unexpectedApplicableFlagCount !== 0) errors.push("unexpected applicable protected flag remains");
   if (audit?.unclassifiedProtectedFlagCount !== 0) errors.push("unclassified protected flag remains");
   if (audit?.protectedFlagRegistryStatus !== "complete") errors.push("protected flag registry incomplete");
+  if (audit?.migrationScenarioTaxonomyStatus !== "separated_and_complete") errors.push("migration scenario taxonomy incomplete");
   if (audit?.outputCompatibilityCoverageStatus !== "complete") errors.push("output compatibility coverage incomplete");
+  if (audit?.contractScenarioCoverageStatus !== "complete") errors.push("contract scenario coverage incomplete");
+  if (audit?.migrationRegressionCoverageStatus !== "complete") errors.push("migration regression coverage incomplete");
   if (audit?.runtimeCapabilityStatus !== "not_implemented") errors.push("runtime capability changed");
   if (audit?.executionReadinessStatus !== "blocked") errors.push("execution readiness changed");
   if (audit?.orderAuthorityStatus !== "external_blocker") errors.push("order authority changed");
   if (audit?.helperLegacyRemainingCount !== 0) errors.push("legacy helper remains");
   for (const stage of audit?.stageAudits || []) {
     if (stage.scenarioCoverageStatus !== "complete") errors.push(`${stage.stepId} scenario coverage incomplete`);
+    if (stage.contractScenarioCoverageStatus !== "complete") errors.push(`${stage.stepId} contract scenario coverage incomplete`);
+    if (stage.migrationRegressionCoverageStatus !== "complete") errors.push(`${stage.stepId} migration regression coverage incomplete`);
     if (!stage.additionalFalseFlags) errors.push(`${stage.stepId} additional false flag status missing`);
     if (stage.missingAllowedKeys.length > 0) errors.push(`${stage.stepId} allowlist missing keys`);
     if (stage.unexpectedTrueKeys.length > 0) errors.push(`${stage.stepId} unexpected true keys`);
@@ -1057,6 +1202,9 @@ if (require.main === module) {
         unexpectedApplicableFlagCount: audit.unexpectedApplicableFlagCount,
         unclassifiedProtectedFlagCount: audit.unclassifiedProtectedFlagCount,
         protectedFlagRegistryStatus: audit.protectedFlagRegistryStatus,
+        migrationScenarioTaxonomyStatus: audit.migrationScenarioTaxonomyStatus,
+        contractScenarioCoverageStatus: audit.contractScenarioCoverageStatus,
+        migrationRegressionCoverageStatus: audit.migrationRegressionCoverageStatus,
         overallStatus: audit.overallStatus,
       }, null, 2));
     })
@@ -1072,6 +1220,7 @@ module.exports = {
   AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS,
   classifyProtectedFlags,
   buildAiMlPrimitivesMigrationAudit,
+  validateAiMlMigrationScenarioTaxonomy,
   validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 };

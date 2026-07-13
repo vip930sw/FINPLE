@@ -6,6 +6,7 @@ const {
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   buildAiMlPrimitivesMigrationAudit,
   classifyProtectedFlags,
+  validateAiMlMigrationScenarioTaxonomy,
   validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
@@ -18,6 +19,10 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.test.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
 ];
 
 const FORBIDDEN_TOUCHED_FILES = [
@@ -129,6 +134,9 @@ function getTouchedFiles() {
   const registryValidation = validateAiMlProtectedFlagStageRegistry();
   assert(registryValidation.ok, `registry validation failed: ${registryValidation.errors.join(", ")}`);
   assertIncludes(auditScript, "function validateAiMlProtectedFlagStageRegistry", "registry validator");
+  assertIncludes(auditScript, "function validateAiMlMigrationScenarioTaxonomy", "taxonomy validator");
+  assertIncludes(auditScript, "expectedContractScenarioMarkers", "contract taxonomy");
+  assertIncludes(auditScript, "expectedMigrationRegressionTestMarkers", "migration taxonomy");
   assertIncludes(auditScript, "missing_unexpectedly", "required missing return path");
   assertIncludes(auditScript, "unexpected_applicable_flag", "unexpected applicable return path");
   assertIncludes(auditScript, "unclassified_protected_flag", "unclassified return path");
@@ -179,12 +187,17 @@ function getTouchedFiles() {
   assert(classifiedUnexpectedApplicable.some((item) => item.flag === "orderSubmissionAllowed" && item.status === "unexpected_applicable_flag"), "not-applicable present fixture did not fail");
 
   const audit = await buildAiMlPrimitivesMigrationAudit();
+  const taxonomyValidation = validateAiMlMigrationScenarioTaxonomy();
+  assert(taxonomyValidation.ok, `taxonomy validation failed: ${taxonomyValidation.errors.join(", ")}`);
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
   assert(validation.ok, `Step212 audit validation failed: ${validation.errors.join(", ")}`);
   assert(audit.missingProtectedFlagCount === 0, "missing protected count must remain zero");
   assert(audit.unexpectedApplicableFlagCount === 0, "unexpected applicable count must remain zero");
   assert(audit.unclassifiedProtectedFlagCount === 0, "unclassified count must remain zero");
   assert(audit.protectedFlagRegistryStatus === "complete", "protected registry must be complete");
+  assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "taxonomy must be separated");
+  assert(audit.contractScenarioCoverageStatus === "complete", "contract scenario coverage must be complete");
+  assert(audit.migrationRegressionCoverageStatus === "complete", "migration regression coverage must be complete");
   assert(audit.scope === "step194_to_step200", "Step213 audit scope must include Step194 after Step214");
   assert(audit.expectedStageCount === 7, "Step213 audit stage count must include Step194 after Step214");
 

@@ -24,6 +24,9 @@ test("Step213 package script links audit, checkers, and regression checker tests
   assert.match(packageJson, /scripts\/check-trading-step202-ai-ml-contract-primitives-step199-pilot\.test\.cjs/);
   assert.match(packageJson, /scripts\/check-trading-step206-finple-test-temp-guard\.test\.cjs/);
   assert.match(packageJson, /scripts\/check-trading-step203-ai-ml-grouped-regression\.test\.cjs/);
+  assert.match(packageJson, /check:trading-ai-ml-primitives-migration-regression/);
+  assert.match(packageJson, /scripts\/run-trading-ai-ml-primitives-migration-regression\.test\.cjs/);
+  assert.match(packageJson, /check:trading-step215-ai-ml-migration-regression-consolidation/);
 });
 
 test("Step213 remains compatible after Step194 service migration without UI or route edits", () => {

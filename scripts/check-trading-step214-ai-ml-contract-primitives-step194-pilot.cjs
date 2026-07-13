@@ -24,6 +24,10 @@ const REQUIRED_FILES = [
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.cjs",
   "scripts/check-trading-step213-ai-ml-protected-flag-audit.test.cjs",
   "scripts/check-trading-step201-ai-ml-contract-primitives-pilot.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
 ];
 
 const ALLOWED_TOUCHED_FILES = new Set(REQUIRED_FILES);
@@ -139,6 +143,8 @@ function getTouchedFiles() {
     "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
     "scripts/check-trading-step211-ai-ml-contract-primitives-step195-pilot.test.cjs",
     "scripts/check-trading-step203-ai-ml-grouped-regression.test.cjs",
+    "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
+    "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
   ]) {
     assertIncludes(packageJson, requiredLink, "package Step214 regression link");
   }
@@ -249,6 +255,9 @@ function getTouchedFiles() {
     "audit stage order mismatch",
   );
   assert(audit.protectedFlagRegistryStatus === "complete", "audit protected registry must be complete");
+  assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "audit scenario taxonomy must be separated");
+  assert(audit.contractScenarioCoverageStatus === "complete", "audit contract scenario coverage must be complete");
+  assert(audit.migrationRegressionCoverageStatus === "complete", "audit migration regression coverage must be complete");
   assert(audit.checkerConsolidationStatus === "eligible_for_post_step194_review", "checker consolidation status mismatch");
   assert(audit.nextRecommendedImplementation === "post_step194_checker_and_marker_consolidation_review", "next recommendation mismatch");
 

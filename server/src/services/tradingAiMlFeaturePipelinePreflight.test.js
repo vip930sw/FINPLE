@@ -369,17 +369,33 @@ test("Step194 scenario L explicit metadata allowlist exactly matches final true 
 test("Step194 scenario M shared helper compatibility keeps ordering and redaction deterministic", () => {
   const request = withRequest((draft) => {
     draft.featureSetReference.requestedFeatures.reverse();
+    draft.featureSetReference.requestedFeatures.push({
+      featureKey: "api key value",
+      featureVersion: "1.0.0",
+      availableAtPolicy: "point_in_time",
+      labelOverlap: false,
+      rollingWindowDays: 252,
+      minimumHistoryDays: 504,
+      missingValuePolicy: "forward_fill_with_indicator",
+      normalizationScope: "train_only",
+    });
     draft.executionIntent.requestedActions = ["validate_contract_metadata", "write_database"];
   });
   const preflight = evaluateAiMlFeaturePipelinePreflight({ request });
   const registryCheck = checkById(preflight, "02_feature_registry");
   const prohibitedCheck = checkById(preflight, "11_prohibited_execution_intent");
+  const serialized = JSON.stringify(preflight);
 
   assert.deepEqual(preflight.checkResults.map((check) => check.checkId), [...preflight.checkResults.map((check) => check.checkId)].sort());
   assert.equal(registryCheck.status, "fail");
   assert.deepEqual(registryCheck.evidence, [...registryCheck.evidence].sort());
+  assert.equal(registryCheck.evidence.includes("redacted_metadata"), true);
+  assert.equal(serialized.includes("api key value"), false);
+  assert.equal(serialized.includes("redacted_metadata"), true);
+  assert.equal(serialized.includes("02_feature_registry"), true);
+  assert.equal(serialized.includes("11_prohibited_execution_intent"), true);
   assert.equal(prohibitedCheck.status, "blocked");
-  assert.equal(JSON.stringify(preflight).includes("C:\\"), false);
+  assert.equal(serialized.includes("C:\\"), false);
 });
 
 test("Step194 scenario N full default output remains compatible", () => {

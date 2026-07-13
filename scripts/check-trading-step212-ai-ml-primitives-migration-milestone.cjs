@@ -4,6 +4,7 @@ const {
   AI_ML_PRIMITIVE_MIGRATION_REQUIRED_STAGE_IDS,
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   buildAiMlPrimitivesMigrationAudit,
+  validateAiMlMigrationScenarioTaxonomy,
   validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
@@ -14,6 +15,10 @@ const REQUIRED_FILES = [
   "scripts/trading-ai-ml-primitives-migration-audit.test.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.cjs",
   "scripts/check-trading-step212-ai-ml-primitives-migration-milestone.test.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.cjs",
+  "scripts/run-trading-ai-ml-primitives-migration-regression.test.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.cjs",
+  "scripts/check-trading-step215-ai-ml-migration-regression-consolidation.test.cjs",
   "scripts/check-trading-step194-ai-ml-feature-pipeline-preflight.test.cjs",
   "scripts/check-trading-step211-ai-ml-contract-primitives-step195-pilot.test.cjs",
   "scripts/check-trading-step210-ai-ml-contract-primitives-step196-pilot.test.cjs",
@@ -125,11 +130,18 @@ function extractArrayBlock(source, name) {
     "AI_ML_PRIMITIVE_MIGRATION_PROTECTED_FLAGS",
     "classifyProtectedFlags",
     "buildAiMlPrimitivesMigrationAudit",
+    "validateAiMlMigrationScenarioTaxonomy",
     "validateAiMlProtectedFlagStageRegistry",
     "validateAiMlPrimitivesMigrationAudit",
   ]) {
     assertIncludes(auditScript, exportName, "audit export");
   }
+  assertIncludes(auditScript, "expectedContractScenarioMarkers", "audit contract scenario taxonomy");
+  assertIncludes(auditScript, "expectedMigrationRegressionTestMarkers", "audit migration regression taxonomy");
+  assertIncludes(auditScript, "contractScenarioCoverageStatus", "audit contract scenario coverage");
+  assertIncludes(auditScript, "migrationRegressionCoverageStatus", "audit migration regression coverage");
+  assertIncludes(packageJson, "check:trading-ai-ml-primitives-migration-regression", "package consolidated regression script");
+  assertIncludes(packageJson, "check:trading-step215-ai-ml-migration-regression-consolidation", "package Step215 script");
   for (const stage of AI_ML_PRIMITIVE_MIGRATION_STAGES) {
     assert(Array.isArray(stage.requiredProtectedFlags), `${stage.stepId} required protected flags missing`);
     assert(Array.isArray(stage.notApplicableProtectedFlags), `${stage.stepId} not-applicable protected flags missing`);
@@ -163,6 +175,8 @@ function extractArrayBlock(source, name) {
   assert((forbiddenBlock.match(/"dbWriteAllowed"/g) || []).length === 1, "Step195 FORBIDDEN_PERMISSION_KEYS must contain dbWriteAllowed exactly once");
 
   const audit = await buildAiMlPrimitivesMigrationAudit();
+  const taxonomyValidation = validateAiMlMigrationScenarioTaxonomy();
+  assert(taxonomyValidation.ok, `taxonomy validation failed: ${taxonomyValidation.errors.join(", ")}`);
   const registryValidation = validateAiMlProtectedFlagStageRegistry();
   assert(registryValidation.ok, `protected flag registry failed: ${registryValidation.errors.join(", ")}`);
   const validation = validateAiMlPrimitivesMigrationAudit(audit);
@@ -180,6 +194,9 @@ function extractArrayBlock(source, name) {
   assert(audit.unclassifiedProtectedFlagCount === 0, "unclassified protected flag count must be zero");
   assert(audit.protectedFlagRegistryStatus === "complete", "protected flag registry must be complete");
   assert(audit.outputCompatibilityCoverageStatus === "complete", "output compatibility coverage must be complete");
+  assert(audit.migrationScenarioTaxonomyStatus === "separated_and_complete", "migration scenario taxonomy must be separated");
+  assert(audit.contractScenarioCoverageStatus === "complete", "contract scenario coverage must be complete");
+  assert(audit.migrationRegressionCoverageStatus === "complete", "migration regression coverage must be complete");
   assert(audit.groupedRegressionStatus === "externally_validated", "grouped regression status mismatch");
   assert(audit.runtimeCapabilityStatus === "not_implemented", "runtime capability must remain not implemented");
   assert(audit.executionReadinessStatus === "blocked", "execution readiness must remain blocked");

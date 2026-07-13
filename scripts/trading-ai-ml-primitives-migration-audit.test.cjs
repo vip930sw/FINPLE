@@ -5,6 +5,7 @@ const {
   AI_ML_PRIMITIVE_MIGRATION_STAGES,
   buildAiMlPrimitivesMigrationAudit,
   classifyProtectedFlags,
+  validateAiMlMigrationScenarioTaxonomy,
   validateAiMlProtectedFlagStageRegistry,
   validateAiMlPrimitivesMigrationAudit,
 } = require("./trading-ai-ml-primitives-migration-audit.cjs");
@@ -85,8 +86,18 @@ test("Scenario F: protected false coverage", async () => {
 test("Scenario G: output compatibility coverage", async () => {
   const audit = await getAudit();
   assert.equal(audit.outputCompatibilityCoverageStatus, "complete");
+  assert.equal(audit.contractScenarioCoverageStatus, "complete");
+  assert.equal(audit.migrationRegressionCoverageStatus, "complete");
+  assert.equal(audit.migrationScenarioTaxonomyStatus, "separated_and_complete");
   assert.ok(audit.stageAudits.every((stage) => stage.outputCompatibilityStatus === "complete"));
   assert.ok(audit.stageAudits.every((stage) => stage.scenarioCoverageStatus === "complete"));
+  assert.ok(audit.stageAudits.every((stage) => stage.contractScenarioCoverageStatus === "complete"));
+  assert.ok(audit.stageAudits.every((stage) => stage.migrationRegressionCoverageStatus === "complete"));
+  const step194 = audit.stageAudits.find((stage) => stage.stepId === "step194");
+  assert.equal(step194.contractScenarioExpectedCount, 9);
+  assert.equal(step194.migrationRegressionTestExpectedCount, 6);
+  assert.equal(step194.contractScenarioCoveredCount, 9);
+  assert.equal(step194.migrationRegressionTestCoveredCount, 6);
 });
 
 test("Scenario H: helper adoption", async () => {
@@ -245,4 +256,46 @@ test("Scenario T: unknown registry key fails validation", () => {
   const validation = validateAiMlProtectedFlagStageRegistry([stage]);
   assert.equal(validation.ok, false);
   assert.match(validation.errors.join("\n"), /unknown required protected flag/);
+});
+
+test("Scenario U: migration scenario taxonomy rejects overlap", () => {
+  const stage = {
+    stepId: "step194",
+    expectedContractScenarioMarkers: ["scenario_a_valid_metadata_contract"],
+    expectedMigrationRegressionTestMarkers: ["scenario_a_valid_metadata_contract"],
+  };
+  const validation = validateAiMlMigrationScenarioTaxonomy([stage]);
+  assert.equal(validation.ok, false);
+  assert.match(validation.errors.join("\n"), /contract\/migration marker overlap/);
+});
+
+test("Scenario V: migration scenario taxonomy rejects duplicate and empty markers", () => {
+  const stage = {
+    stepId: "step194",
+    expectedContractScenarioMarkers: ["scenario_a_valid_metadata_contract", "scenario_a_valid_metadata_contract", ""],
+    expectedMigrationRegressionTestMarkers: ["scenario J shared flag compatibility"],
+  };
+  const validation = validateAiMlMigrationScenarioTaxonomy([stage]);
+  assert.equal(validation.ok, false);
+  assert.match(validation.errors.join("\n"), /duplicate contract marker/);
+  assert.match(validation.errors.join("\n"), /empty contract marker/);
+});
+
+test("Scenario W: Step194 contract and migration marker lists stay separated", () => {
+  const stage = AI_ML_PRIMITIVE_MIGRATION_STAGES.find((candidate) => candidate.stepId === "step194");
+  assert.equal(validateAiMlMigrationScenarioTaxonomy().ok, true);
+  assert.equal(stage.expectedContractScenarioMarkers.length, 9);
+  assert.equal(stage.expectedMigrationRegressionTestMarkers.length, 6);
+  assert.deepEqual(stage.expectedContractScenarioMarkers, [
+    "scenario_a_valid_metadata_contract",
+    "scenario_b_unknown_feature",
+    "scenario_c_future_available_at_leakage",
+    "scenario_d_label_overlap",
+    "scenario_e_insufficient_rolling_history",
+    "scenario_f_invalid_normalization_scope",
+    "scenario_g_unconditional_zero_fill",
+    "scenario_h_unpinned_version",
+    "scenario_i_prohibited_execution_intent",
+  ]);
+  assert.ok(stage.expectedMigrationRegressionTestMarkers.every((marker) => !marker.startsWith("scenario_")));
 });
