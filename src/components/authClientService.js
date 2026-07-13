@@ -21,11 +21,13 @@ const EDUCATION_LOCAL_STORAGE_KEYS = [
   "finple-simulator-state",
   "finple-mbti-simulator-preset",
 ];
-const OAUTH_WAKEUP_TIMEOUT_MS = 9000;
-const OAUTH_WAKEUP_MAX_ATTEMPTS = 1;
-const OAUTH_LOADING_MESSAGE = "서버 상태를 확인하고 있습니다.";
+const AUTH_REQUEST_TIMEOUT_MS = 30000;
+const OAUTH_WAKEUP_TIMEOUT_MS = 12000;
+const OAUTH_WAKEUP_MAX_ATTEMPTS = 5;
+const OAUTH_WAKEUP_RETRY_BASE_MS = 1200;
+const OAUTH_LOADING_MESSAGE = "로그인 서버를 준비하고 있습니다.";
 const OAUTH_READY_MESSAGE = "곧 이동합니다.";
-const OAUTH_RETRY_MESSAGE = "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
+const OAUTH_RETRY_MESSAGE = "로그인 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
 
 function readJson(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -54,7 +56,7 @@ function sleep(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = OAUTH_WAKEUP_TIMEOUT_MS) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
@@ -82,28 +84,35 @@ async function ensureFinpleApiReadyForOAuth() {
   if (typeof window === "undefined") return;
 
   const apiBaseUrl = getFinpleApiBaseUrl().replace(/\/+$/, "");
-  const healthUrl = `${apiBaseUrl}/health`;
+  const healthUrl = `${apiBaseUrl}/health/live`;
+  let lastError = null;
 
   for (let attempt = 1; attempt <= OAUTH_WAKEUP_MAX_ATTEMPTS; attempt += 1) {
     try {
-      dispatchOAuthWakeupStatus(OAUTH_LOADING_MESSAGE);
-      const response = await fetchWithTimeout(healthUrl, { headers: { Accept: "application/json" } });
+      dispatchOAuthWakeupStatus(`${OAUTH_LOADING_MESSAGE} (${attempt}/${OAUTH_WAKEUP_MAX_ATTEMPTS})`);
+      const response = await fetchWithTimeout(
+        healthUrl,
+        { headers: { Accept: "application/json" }, cache: "no-store" },
+        OAUTH_WAKEUP_TIMEOUT_MS
+      );
       const payload = await response.json().catch(() => null);
 
       if (response.ok && payload?.ok !== false) {
         dispatchOAuthWakeupStatus(OAUTH_READY_MESSAGE);
         return;
       }
+
+      lastError = new Error(`Health check failed with status ${response.status}`);
     } catch (error) {
-      if (attempt >= OAUTH_WAKEUP_MAX_ATTEMPTS) {
-        throw new Error(OAUTH_RETRY_MESSAGE, { cause: error });
-      }
+      lastError = error;
     }
 
-    await sleep(1200 * attempt);
+    if (attempt < OAUTH_WAKEUP_MAX_ATTEMPTS) {
+      await sleep(OAUTH_WAKEUP_RETRY_BASE_MS * attempt);
+    }
   }
 
-  throw new Error(OAUTH_RETRY_MESSAGE);
+  throw new Error(OAUTH_RETRY_MESSAGE, { cause: lastError });
 }
 
 async function startOAuthLoginWithWakeup(startUrl) {
@@ -176,15 +185,33 @@ function resetEducationLocalDataIfNeeded(user, authMode, previousUser = null) {
 async function requestAuth(path, body, options = {}) {
   const session = getStoredFinpleAuthSession();
   const method = options.method || (body ? "POST" : "GET");
-  const response = await fetch(`${getFinpleApiBaseUrl()}${path}`, {
-    method,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let response;
+
+  try {
+    response = await fetchWithTimeout(
+      `${getFinpleApiBaseUrl()}${path}`,
+      {
+        method,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      },
+      Number(options.timeoutMs || AUTH_REQUEST_TIMEOUT_MS)
+    );
+  } catch (error) {
+    const isTimeout = error?.name === "AbortError";
+    const requestError = new Error(
+      isTimeout
+        ? "로그인 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요."
+        : "로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      { cause: error }
+    );
+    requestError.code = isTimeout ? "AUTH_REQUEST_TIMEOUT" : "AUTH_NETWORK_ERROR";
+    throw requestError;
+  }
 
   const payload = await response.json().catch(() => null);
 
@@ -193,6 +220,7 @@ async function requestAuth(path, body, options = {}) {
     const error = new Error(normalizeFinpleAuthMessage(rawMessage, response.status));
     error.payload = payload;
     error.status = response.status;
+    error.requestId = payload?.requestId || response.headers.get("x-request-id") || null;
     throw error;
   }
 
