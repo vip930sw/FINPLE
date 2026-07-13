@@ -525,7 +525,8 @@
     "report:trading-ai-ml-audit-summary": "node scripts/report-trading-ai-ml-audit-summary.cjs",
     "check:trading-step227-ai-ml-audit-reporting-baseline": "node scripts/check-trading-step227-ai-ml-audit-reporting-baseline.cjs && node --test scripts/check-trading-step227-ai-ml-audit-reporting-baseline.test.cjs scripts/report-trading-ai-ml-audit-summary.test.cjs",
     "snapshot:trading-step192-contract-hardening-audit": "node scripts/snapshot-trading-step192-contract-hardening-audit.cjs",
-    "check:trading-step228-contract-hardening-handoff": "node scripts/check-trading-step228-contract-hardening-handoff.cjs && node --test scripts/check-trading-step228-contract-hardening-handoff.test.cjs"
+    "check:trading-step228-contract-hardening-handoff": "node scripts/check-trading-step228-contract-hardening-handoff.cjs && node --test scripts/check-trading-step228-contract-hardening-handoff.test.cjs",
+    "check:trading-step229-offline-dataset-quality-profile": "node scripts/check-trading-step229-offline-dataset-quality-profile.cjs && node --test server/src/services/tradingAiMlDatasetQualityProfile.test.js scripts/check-trading-step229-offline-dataset-quality-profile.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
