@@ -535,7 +535,9 @@
     "check:trading-step234a-real-format-dataset-inventory": "node scripts/check-trading-step234a-real-format-dataset-inventory.cjs && node --test scripts/check-trading-step234a-real-format-dataset-inventory.test.cjs",
     "report:trading-step234b-real-format-dataset-dry-run": "node scripts/report-trading-step234b-real-format-dataset-dry-run.cjs",
     "check:trading-step234b-real-format-dataset-adapter-dry-run": "node scripts/check-trading-step234b-real-format-dataset-adapter-dry-run.cjs && node --test server/src/services/tradingAiMlRealFormatDatasetAdapter.test.js scripts/report-trading-step234b-real-format-dataset-dry-run.test.cjs scripts/check-trading-step234b-real-format-dataset-adapter-dry-run.test.cjs",
-    "check:trading-step235a-offline-trading-feature-contract": "node scripts/check-trading-step235a-offline-trading-feature-contract.cjs && node --test server/src/services/tradingAiMlTradingFeatureContract.test.js server/src/services/tradingAiMlOfflineFeatureBuilder.test.js scripts/check-trading-step235a-offline-trading-feature-contract.test.cjs"
+    "check:trading-step235a-offline-trading-feature-contract": "node scripts/check-trading-step235a-offline-trading-feature-contract.cjs && node --test server/src/services/tradingAiMlTradingFeatureContract.test.js server/src/services/tradingAiMlOfflineFeatureBuilder.test.js scripts/check-trading-step235a-offline-trading-feature-contract.test.cjs",
+    "report:trading-step235b-offline-feature-coverage": "node scripts/report-trading-step235b-offline-feature-coverage.cjs",
+    "check:trading-step235b-offline-feature-coverage": "node scripts/check-trading-step235b-offline-feature-coverage.cjs && node --test server/src/services/tradingAiMlTradingFeatureCoverageReport.test.js scripts/report-trading-step235b-offline-feature-coverage.test.cjs scripts/check-trading-step235b-offline-feature-coverage.test.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",
