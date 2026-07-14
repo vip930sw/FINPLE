@@ -90,11 +90,14 @@ portfolioValueReal
 cumulativeContributions
 investmentGainNominal
 contributionExcludedIndex
+priceOnlyContributionExcludedIndex
+totalReturnContributionExcludedIndex
 monthlyContributionApplied
 monthlyPriceReturnApplied
 monthlyPriceReturnRate
 monthlyDividendCashFlow
 cumulativeDividendCashFlow
+cumulativeExternalDividendCashFlow
 ```
 
 Compatibility annual rows are still emitted for the existing simulator chart/table surface. They are derived from the same monthly points, not from a separate annual calculation path.
@@ -163,13 +166,20 @@ metricBaseDate
 metricsSource
 sourceHash or normalizedSeriesHash
 calculationPolicyVersion
+pipelineVersion
 ```
 
-The legacy May 2026 app-ready overlays are accepted only through the explicit compatibility adapter:
+`calculationPolicyVersion` and `pipelineVersion` are separate lineage fields. Calculation policy allowlist entries are limited to calculation-policy identifiers. Pipeline or rolling metric versions are kept in `pipelineVersion`, `normalizationVersion`, or `rollingMetricVersion`.
+
+The legacy May 2026 app-ready overlays are accepted only through the explicit compatibility adapter and actual loader-match evidence:
 
 ```text
 legacy-may-app-ready-compat-v1-step114-2e
+metricMode=us_price_metrics_overlay_price_close or kr_price_metrics_overlay_price_close
+dataSource contains the matched May 2026 app-ready source name
 ```
+
+The source string alone is not approval evidence. A ticker that only spoofs `metricsSource` without loader evidence fails closed.
 
 Missing selected CAGR blocks calculation. Missing dividend yield blocks calculation when dividend reinvestment is enabled, and is preserved as `null` rather than inferred as `0.00` when reinvestment is disabled.
 
@@ -188,13 +198,31 @@ inflationAdjustedFutureValue=null
 
 Blocked portfolios are excluded from Step 2 rank, chart, and insight best-value calculations. Step 3 shows a blocked baseline state instead of rendering zero-like metric values.
 
+Public UI display policy:
+
+```text
+null metric values display as "미확인" or "-"
+missing dividend, MDD, and beta are excluded from ranking
+technical blockReasons stay in result metadata for audit/development use only
+Step 3 public blocked copy is Korean user-facing guidance
+```
+
 ## Contribution-Excluded Return Policy
 
-`contributionExcludedIndex` is a time-weighted index based on the actual no-rebalance sleeve path:
+The engine emits both contribution-excluded indices:
+
+```text
+priceOnlyContributionExcludedIndex
+totalReturnContributionExcludedIndex
+```
+
+`contributionExcludedIndex` is an alias for `totalReturnContributionExcludedIndex` so the economic return scope is stable regardless of the dividend reinvestment setting. `priceOnlyContributionExcludedIndex` remains available when the UI or audit needs a dividend-excluded reference.
+
+The total-return index is based on the actual no-rebalance sleeve path:
 
 ```text
 monthlyContributionExcludedReturn
-= (monthlyPriceReturnApplied + reinvestedDividendPerformanceAmount)
+= (monthlyPriceReturnApplied + monthlyDividendCashFlow)
   / portfolioValueAfterMonthStartContribution
 ```
 
@@ -210,13 +238,19 @@ cumulativePriceGain
 monthlyDividendCashFlow
 cumulativeDividendCashFlow
 investmentGainNominal
+externalDividendCashFlow
+endingValuePlusExternalDividends
 ```
 
-`annualProfit` and `cumulativeProfit` retain price-gain meaning. Reinvested dividends affect ending value, but are still reported separately as dividend cash flow so they are not double-counted as price gain.
+Annual dividend yield is converted into monthly cash flow with the same monthly compounding policy used for annual rates. `expectedAnnualDividend` is reconciled to the first 12 months of emitted monthly dividend cash flow. If dividend yield is missing, `expectedAnnualDividend` remains `null` and is not inferred as zero.
+
+`annualProfit` and `cumulativeProfit` retain price-gain meaning. Reinvested dividends affect ending value, and non-reinvested dividends are reported as external dividend cash. Ending economic value reconciles as `ending portfolio value + external dividend cash`.
 
 ## Stable Ordering
 
-Step 2 portfolios are sorted by `portfolioId`. Normalized assets are sorted by `(market, ticker, id)` before calculation so input array permutations produce the same baseline result.
+Step 2 portfolios are sorted by `portfolioId`. Normalized assets and Step 2 top-level portfolio assets are sorted by `(market, ticker, id)` before calculation so input array permutations produce the same serialized comparison result.
+
+Duplicate `portfolioId` values fail closed with `duplicate_portfolio_id`. Duplicate asset `(market,ticker)` identities inside one baseline calculation fail closed with `duplicate_asset_identity`.
 
 KR tickers are kept as strings, preserving leading zeros such as:
 

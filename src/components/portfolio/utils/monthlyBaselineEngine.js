@@ -4,7 +4,12 @@ export const LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION = "legacy-may-app-ready-
 const EPSILON = 1e-9;
 const APPROVED_CALCULATION_POLICY_VERSIONS = new Set([
   "monthly-baseline-fixture-v1-step114-2e",
+  "metrics-calculation-policy-2026-06-26",
+]);
+const APPROVED_PIPELINE_VERSIONS = new Set([
+  "monthly-baseline-fixture-pipeline-v1-step114-2e",
   "metrics-v3.0-step114-2d",
+  "legacy-may-app-ready-loader-v1",
   LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION,
 ]);
 
@@ -13,6 +18,8 @@ const LEGACY_MAY_APP_READY_SOURCES = new Map([
     "us_price_metrics_overlay_20260528_app_ready",
     {
       market: "US",
+      metricMode: "us_price_metrics_overlay_price_close",
+      pipelineVersion: "legacy-may-app-ready-loader-v1",
       sourceHash: "9df1ffa8f19b68f41b63699e3e8bd1d82c7720c1acc9786b48b28040ed56ceec",
     },
   ],
@@ -20,6 +27,8 @@ const LEGACY_MAY_APP_READY_SOURCES = new Map([
     "kr_price_metrics_overlay_20260528_app_ready",
     {
       market: "KR",
+      metricMode: "kr_price_metrics_overlay_price_close",
+      pipelineVersion: "legacy-may-app-ready-loader-v1",
       sourceHash: "4e683d29181f9deb49dbea74faea1c6af573a67e2beb0909c1ce11e66ca19002",
     },
   ],
@@ -29,6 +38,10 @@ function toFiniteNumber(value, fallback = null) {
   if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
+}
+
+function hasOwnValue(object, field) {
+  return Object.prototype.hasOwnProperty.call(Object(object), field);
 }
 
 function normalizeTicker(value) {
@@ -62,12 +75,22 @@ function parseBooleanLike(value) {
   return null;
 }
 
+function hasLegacyMayLoaderEvidence(asset = {}, legacy) {
+  const metricMode = String(asset.metricMode || "").trim();
+  const dataSource = String(asset.dataSource || "");
+  const explicitEvidence = parseBooleanLike(asset.legacyAppReadyEvidence) === true;
+  return (
+    explicitEvidence ||
+    (metricMode === legacy.metricMode && dataSource.includes(String(asset.metricsSource || "").trim()))
+  );
+}
+
 function isLegacyMayAppReadySource(asset = {}) {
   const source = String(asset.metricsSource || "").trim();
   const legacy = LEGACY_MAY_APP_READY_SOURCES.get(source);
   if (!legacy) return false;
   const market = normalizeMarket(asset.market);
-  return !market || market === legacy.market;
+  return (!market || market === legacy.market) && hasLegacyMayLoaderEvidence(asset, legacy);
 }
 
 function adaptMetricMetadata(asset = {}) {
@@ -88,7 +111,8 @@ function adaptMetricMetadata(asset = {}) {
     appExportApproved: asset.appExportApproved ?? true,
     metricBaseDate: asset.metricBaseDate || "2026-05-28",
     sourceHash: asset.sourceHash || legacy.sourceHash,
-    calculationPolicyVersion: asset.calculationPolicyVersion || LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION,
+    pipelineVersion: asset.pipelineVersion || legacy.pipelineVersion,
+    calculationPolicyVersion: asset.calculationPolicyVersion || "metrics-calculation-policy-2026-06-26",
     compatibilityAdapter: LEGACY_MAY_APP_READY_COMPATIBILITY_VERSION,
   };
 }
@@ -105,7 +129,7 @@ function validateReadyStatus(metadata, field, allowedValues, reasons, ticker) {
 }
 
 function validateRequiredLineage(metadata, reasons, ticker) {
-  for (const field of ["metricBaseDate", "metricsSource", "calculationPolicyVersion"]) {
+  for (const field of ["metricBaseDate", "metricsSource", "calculationPolicyVersion", "pipelineVersion"]) {
     if (isBlank(metadata[field])) addBlockReason(reasons, "missing_metric_lineage", `${ticker}.${field}`);
   }
 
@@ -118,6 +142,14 @@ function validateRequiredLineage(metadata, reasons, ticker) {
       reasons,
       "unsupported_calculation_policy_version",
       `${ticker}.${metadata.calculationPolicyVersion || "missing"}`,
+    );
+  }
+
+  if (!APPROVED_PIPELINE_VERSIONS.has(String(metadata.pipelineVersion || "").trim())) {
+    addBlockReason(
+      reasons,
+      "unsupported_pipeline_version",
+      `${ticker}.${metadata.pipelineVersion || "missing"}`,
     );
   }
 }
@@ -141,6 +173,27 @@ function validateAnnualPercentValue(value, label, reasons, allowNull = false) {
   }
   if (number <= -100) {
     addBlockReason(reasons, "invalid_rate", `${label}=${number}`);
+    return null;
+  }
+  return number;
+}
+
+function validateRawFiniteNumber(value, label, reasons, { required = false, min = -Infinity, integer = false } = {}) {
+  if (isBlank(value)) {
+    if (required) addBlockReason(reasons, "invalid_setting", `${label}=missing`);
+    return null;
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    addBlockReason(reasons, "invalid_setting", `${label}=${String(value)}`);
+    return null;
+  }
+  if (number < min) {
+    addBlockReason(reasons, "invalid_setting", `${label}=${number}`);
+    return null;
+  }
+  if (integer && !Number.isInteger(number)) {
+    addBlockReason(reasons, "invalid_setting", `${label}=${number}`);
     return null;
   }
   return number;
@@ -294,6 +347,7 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
       normalizationVersion: asset.normalizationVersion || "",
       normalizedSeriesHash: asset.normalizedSeriesHash || "",
       rollingMetricVersion: asset.rollingMetricVersion || "",
+      pipelineVersion: asset.pipelineVersion || "",
       metricBaseDate: asset.metricBaseDate || "",
       calculationPolicyVersion: asset.calculationPolicyVersion || "",
     },
@@ -333,7 +387,11 @@ function createBlockedResult({ settings, assets, blockReasons, totalAssetValue, 
       investmentGainNominal: null,
       cumulativePriceGain: null,
       cumulativeDividendCashFlow: null,
+      cumulativeExternalDividendCashFlow: null,
+      endingValuePlusExternalDividends: null,
       contributionExcludedIndex: null,
+      priceOnlyContributionExcludedIndex: null,
+      totalReturnContributionExcludedIndex: null,
       blocked: true,
     },
     step3BlockedState: {
@@ -356,6 +414,7 @@ function roundNumber(value, digits = 6) {
 function buildAnnualRows(points, monthlyContribution) {
   const rows = [];
   let previousDividend = 0;
+  let previousExternalDividend = 0;
   let previousPriceGain = 0;
   let previousTotalGain = 0;
 
@@ -363,17 +422,20 @@ function buildAnnualRows(points, monthlyContribution) {
     if (point.monthIndex === 0 || point.monthIndex % 12 !== 0) continue;
     const year = point.monthIndex / 12;
     const annualDividend = point.cumulativeDividendCashFlow - previousDividend;
+    const annualExternalDividend = point.cumulativeExternalDividendCashFlow - previousExternalDividend;
     const annualProfit = point.cumulativePriceGain - previousPriceGain;
     const annualTotalInvestmentGain = point.investmentGainNominal - previousTotalGain;
     rows.push({
       year,
       annualContribution: monthlyContribution * 12,
       annualDividend,
+      annualExternalDividend,
       annualProfit,
       annualPriceGain: annualProfit,
       annualTotalInvestmentGain,
       cumulativeContribution: point.cumulativeContributions,
       cumulativeDividend: point.cumulativeDividendCashFlow,
+      cumulativeExternalDividend: point.cumulativeExternalDividendCashFlow,
       cumulativeProfit: point.cumulativePriceGain,
       cumulativePriceGain: point.cumulativePriceGain,
       cumulativeTotalInvestmentGain: point.investmentGainNominal,
@@ -382,6 +444,7 @@ function buildAnnualRows(points, monthlyContribution) {
       baselineMonthIndex: point.monthIndex,
     });
     previousDividend = point.cumulativeDividendCashFlow;
+    previousExternalDividend = point.cumulativeExternalDividendCashFlow;
     previousPriceGain = point.cumulativePriceGain;
     previousTotalGain = point.investmentGainNominal;
   }
@@ -393,21 +456,62 @@ function sortPortfoliosForDeterminism(portfolios) {
   return [...portfolios].sort((a, b) => String(a?.id || "").localeCompare(String(b?.id || "")));
 }
 
+function findDuplicatePortfolioIds(portfolios) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const portfolio of portfolios) {
+    const id = String(portfolio?.id || "").trim();
+    if (!id) continue;
+    if (seen.has(id)) duplicates.add(id);
+    seen.add(id);
+  }
+  return duplicates;
+}
+
 function normalizeRawSettings(settings = {}) {
-  const rawInvestmentMonths =
-    settings.investmentMonths !== undefined
-      ? toFiniteNumber(settings.investmentMonths)
-      : toFiniteNumber(settings.years, 0) * 12;
-  const rawMonthlyContribution = toFiniteNumber(settings.monthlyCashFlow, 0);
-  const rawInflationRate = toFiniteNumber(settings.inflationRate, 0);
-  const rawStartValue = toFiniteNumber(settings.startValue, 0);
+  const settingsIsObject = settings && typeof settings === "object" && !Array.isArray(settings);
+  const safeSettings = settingsIsObject ? settings : {};
+  const validationReasons = [];
+  if (!settingsIsObject) addBlockReason(validationReasons, "invalid_settings", "settings must be an object");
+
+  const hasInvestmentMonths = hasOwnValue(safeSettings, "investmentMonths");
+  const hasYears = hasOwnValue(safeSettings, "years");
+  const hasMonthlyContribution = hasOwnValue(safeSettings, "monthlyCashFlow");
+  const hasInflationRate = hasOwnValue(safeSettings, "inflationRate");
+  const hasStartValue = hasOwnValue(safeSettings, "startValue");
+  let rawInvestmentMonths = 0;
+  if (hasInvestmentMonths) {
+    rawInvestmentMonths = validateRawFiniteNumber(safeSettings.investmentMonths, "investmentMonths", validationReasons, { min: 0, integer: true });
+  } else if (hasYears) {
+    const years = validateRawFiniteNumber(safeSettings.years, "years", validationReasons, { min: 0 });
+    rawInvestmentMonths = years === null ? null : years * 12;
+    if (rawInvestmentMonths !== null && !Number.isInteger(rawInvestmentMonths)) {
+      addBlockReason(validationReasons, "invalid_setting", `investmentMonths=${rawInvestmentMonths}`);
+    }
+  }
+  const rawMonthlyContribution = hasMonthlyContribution
+    ? validateRawFiniteNumber(safeSettings.monthlyCashFlow, "monthlyCashFlow", validationReasons, { min: 0 })
+    : 0;
+  const rawInflationRate = hasInflationRate
+    ? validateRawFiniteNumber(safeSettings.inflationRate, "inflationRate", validationReasons)
+    : 0;
+  const rawStartValue = hasStartValue
+    ? validateRawFiniteNumber(safeSettings.startValue, "startValue", validationReasons, { min: 0 })
+    : 0;
+  const dividendReinvest =
+    safeSettings.dividendReinvest !== undefined ? parseBooleanLike(safeSettings.dividendReinvest) : true;
+  if (dividendReinvest === null) {
+    addBlockReason(validationReasons, "invalid_setting", `dividendReinvest=${String(safeSettings.dividendReinvest)}`);
+  }
 
   return {
+    validationReasons,
+    hasStartValue,
     rawInvestmentMonths,
     rawMonthlyContribution,
     rawInflationRate,
     rawStartValue,
-    dividendReinvest: settings.dividendReinvest !== undefined ? Boolean(settings.dividendReinvest) : true,
+    dividendReinvest: dividendReinvest ?? true,
   };
 }
 
@@ -415,14 +519,14 @@ export function buildMonthlyBaselineProjection({
   portfolioId = "",
   settings = {},
   assets = [],
+  forcedBlockReasons = [],
 } = {}) {
   const rawSettings = normalizeRawSettings(settings);
   const assetList = Array.isArray(assets) ? sortAssetsForDeterminism(assets) : [];
-  const totalAssetValue = assetList.reduce((sum, asset) => sum + getAssetWeightValue(asset), 0);
+  const totalAssetValue = assetList.reduce((sum, asset) => sum + getAssetWeightValue(asset || {}), 0);
   const simulationStartValue = rawSettings.rawStartValue > 0 ? rawSettings.rawStartValue : totalAssetValue;
   const weightBaseValue = totalAssetValue > 0 ? totalAssetValue : simulationStartValue;
-  const investmentMonths =
-    rawSettings.rawInvestmentMonths === null ? 0 : Math.trunc(rawSettings.rawInvestmentMonths);
+  const investmentMonths = rawSettings.rawInvestmentMonths === null ? 0 : rawSettings.rawInvestmentMonths;
   const monthlyContribution = rawSettings.rawMonthlyContribution ?? 0;
 
   const baseSettings = {
@@ -435,11 +539,20 @@ export function buildMonthlyBaselineProjection({
     startValue: simulationStartValue,
   };
 
-  const blockReasons = [];
+  const blockReasons = [...forcedBlockReasons, ...rawSettings.validationReasons];
   if (!Array.isArray(assets)) addBlockReason(blockReasons, "invalid_assets", "assets must be an array");
   if (assetList.length === 0) addBlockReason(blockReasons, "missing_assets");
+  if (assetList.some((asset) => !asset || typeof asset !== "object" || Array.isArray(asset))) {
+    addBlockReason(blockReasons, "invalid_asset_entry", "assets must contain objects");
+  }
   if (simulationStartValue <= 0) addBlockReason(blockReasons, "missing_initial_investment");
+  if (rawSettings.hasStartValue && (rawSettings.rawStartValue === null || rawSettings.rawStartValue <= 0)) {
+    addBlockReason(blockReasons, "invalid_start_value", String(rawSettings.rawStartValue));
+  }
   if (rawSettings.rawInvestmentMonths === null || rawSettings.rawInvestmentMonths < 0) {
+    addBlockReason(blockReasons, "invalid_investment_months", String(rawSettings.rawInvestmentMonths));
+  }
+  if (rawSettings.rawInvestmentMonths !== null && !Number.isInteger(rawSettings.rawInvestmentMonths)) {
     addBlockReason(blockReasons, "invalid_investment_months", String(rawSettings.rawInvestmentMonths));
   }
   if (rawSettings.rawMonthlyContribution === null || rawSettings.rawMonthlyContribution < 0) {
@@ -448,9 +561,16 @@ export function buildMonthlyBaselineProjection({
   validateAnnualPercentValue(rawSettings.rawInflationRate, "inflationRate", blockReasons);
 
   const validatedAssets = [];
+  const assetIdentitySet = new Set();
   for (const [index, asset] of assetList.entries()) {
+    if (!asset || typeof asset !== "object" || Array.isArray(asset)) continue;
     const validation = validateAssetMetricSource(asset, index, rawSettings.dividendReinvest);
     blockReasons.push(...validation.reasons);
+    const identity = `${normalizeMarket(validation.metadata.market)}:${normalizeTicker(validation.metadata.ticker)}`;
+    if (assetIdentitySet.has(identity)) {
+      addBlockReason(blockReasons, "duplicate_asset_identity", identity);
+    }
+    assetIdentitySet.add(identity);
     validatedAssets.push(validation.metadata);
   }
 
@@ -491,14 +611,21 @@ export function buildMonthlyBaselineProjection({
     ? null
     : normalizedAssets.reduce((sum, asset) => sum + asset.targetWeight * asset.mdd, 0);
   const expectedCalmar = simpleMdd !== null && Math.abs(simpleMdd) > EPSILON ? expectedCagr / Math.abs(simpleMdd) : null;
+  const expectedMonthlyDividendOnInitial =
+    expectedDividendYield === null ? null : normalizedAssets.reduce((sum, asset) => {
+      if (asset.monthlyDividendRate === null) return sum;
+      return sum + simulationStartValue * asset.targetWeight * asset.monthlyDividendRate;
+    }, 0);
   const expectedAnnualDividend =
-    expectedDividendYield === null ? null : simulationStartValue * (expectedDividendYield / 100);
+    expectedMonthlyDividendOnInitial === null ? null : expectedMonthlyDividendOnInitial * 12;
 
   const sleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
   let cumulativeContributions = simulationStartValue;
   let cumulativeDividendCashFlow = 0;
+  let cumulativeExternalDividendCashFlow = 0;
   let cumulativePriceGain = 0;
-  let contributionExcludedIndex = 100;
+  let priceOnlyContributionExcludedIndex = 100;
+  let totalReturnContributionExcludedIndex = 100;
   const monthlyBaselinePoints = [];
 
   monthlyBaselinePoints.push({
@@ -509,13 +636,19 @@ export function buildMonthlyBaselineProjection({
     cumulativeContributions: roundNumber(cumulativeContributions),
     investmentGainNominal: 0,
     cumulativePriceGain: 0,
-    contributionExcludedIndex,
+    contributionExcludedIndex: 100,
+    priceOnlyContributionExcludedIndex: 100,
+    totalReturnContributionExcludedIndex: 100,
     monthlyContributionApplied: 0,
     monthlyPriceReturnApplied: 0,
     monthlyPriceReturnRate: 0,
     monthlyContributionExcludedReturn: 0,
+    monthlyPriceOnlyContributionExcludedReturn: 0,
+    monthlyTotalReturnContributionExcludedReturn: 0,
     monthlyDividendCashFlow: 0,
     cumulativeDividendCashFlow: 0,
+    monthlyExternalDividendCashFlow: 0,
+    cumulativeExternalDividendCashFlow: 0,
   });
 
   for (let monthIndex = 1; monthIndex <= investmentMonths; monthIndex += 1) {
@@ -526,7 +659,7 @@ export function buildMonthlyBaselineProjection({
     const startValueAfterContribution = sleeveValues.reduce((sum, value) => sum + value, 0);
     let monthlyPriceReturnAmount = 0;
     let monthlyDividendCashFlow = 0;
-    let monthlyDividendPerformanceAmount = 0;
+    let monthlyExternalDividendCashFlow = 0;
 
     for (const [index, asset] of normalizedAssets.entries()) {
       const baseValue = sleeveValues[index];
@@ -534,18 +667,24 @@ export function buildMonthlyBaselineProjection({
       const dividendFlow = asset.monthlyDividendRate === null ? 0 : baseValue * asset.monthlyDividendRate;
       monthlyPriceReturnAmount += priceReturn;
       monthlyDividendCashFlow += dividendFlow;
-      if (asset.dividendIncludedInReturn) monthlyDividendPerformanceAmount += dividendFlow;
+      if (!asset.dividendIncludedInReturn) monthlyExternalDividendCashFlow += dividendFlow;
       sleeveValues[index] += priceReturn + (asset.dividendIncludedInReturn ? dividendFlow : 0);
     }
 
     cumulativeContributions += monthlyContribution;
     cumulativeDividendCashFlow += monthlyDividendCashFlow;
+    cumulativeExternalDividendCashFlow += monthlyExternalDividendCashFlow;
     cumulativePriceGain += monthlyPriceReturnAmount;
-    const monthlyContributionExcludedReturn =
+    const monthlyPriceOnlyContributionExcludedReturn =
       startValueAfterContribution > 0
-        ? (monthlyPriceReturnAmount + monthlyDividendPerformanceAmount) / startValueAfterContribution
+        ? monthlyPriceReturnAmount / startValueAfterContribution
         : 0;
-    contributionExcludedIndex *= 1 + monthlyContributionExcludedReturn;
+    const monthlyTotalReturnContributionExcludedReturn =
+      startValueAfterContribution > 0
+        ? (monthlyPriceReturnAmount + monthlyDividendCashFlow) / startValueAfterContribution
+        : 0;
+    priceOnlyContributionExcludedIndex *= 1 + monthlyPriceOnlyContributionExcludedReturn;
+    totalReturnContributionExcludedIndex *= 1 + monthlyTotalReturnContributionExcludedReturn;
 
     const portfolioValueNominal = sleeveValues.reduce((sum, value) => sum + value, 0);
     const inflationDivisor = (1 + monthlyInflationRate) ** monthIndex;
@@ -560,18 +699,26 @@ export function buildMonthlyBaselineProjection({
       cumulativeContributions: roundNumber(cumulativeContributions),
       investmentGainNominal: roundNumber(investmentGainNominal),
       cumulativePriceGain: roundNumber(cumulativePriceGain),
-      contributionExcludedIndex: roundNumber(contributionExcludedIndex),
+      contributionExcludedIndex: roundNumber(totalReturnContributionExcludedIndex),
+      priceOnlyContributionExcludedIndex: roundNumber(priceOnlyContributionExcludedIndex),
+      totalReturnContributionExcludedIndex: roundNumber(totalReturnContributionExcludedIndex),
       monthlyContributionApplied: roundNumber(monthlyContribution),
       monthlyPriceReturnApplied: roundNumber(monthlyPriceReturnAmount),
       monthlyPriceReturnRate: roundNumber(monthlyPriceReturnAmount / startValueAfterContribution, 10),
-      monthlyContributionExcludedReturn: roundNumber(monthlyContributionExcludedReturn, 10),
+      monthlyContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
+      monthlyPriceOnlyContributionExcludedReturn: roundNumber(monthlyPriceOnlyContributionExcludedReturn, 10),
+      monthlyTotalReturnContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
       monthlyDividendCashFlow: roundNumber(monthlyDividendCashFlow),
       cumulativeDividendCashFlow: roundNumber(cumulativeDividendCashFlow),
+      monthlyExternalDividendCashFlow: roundNumber(monthlyExternalDividendCashFlow),
+      cumulativeExternalDividendCashFlow: roundNumber(cumulativeExternalDividendCashFlow),
     });
   }
 
   const performanceRows = buildAnnualRows(monthlyBaselinePoints, monthlyContribution);
   const lastPoint = monthlyBaselinePoints[monthlyBaselinePoints.length - 1];
+  const expectedAnnualDividendResult =
+    expectedDividendYield === null ? null : performanceRows[0]?.annualDividend ?? expectedAnnualDividend;
 
   return {
     baselineEngineVersion: MONTHLY_BASELINE_ENGINE_VERSION,
@@ -589,13 +736,15 @@ export function buildMonthlyBaselineProjection({
     expectedBeta,
     simpleMdd,
     expectedCalmar,
-    expectedAnnualDividend,
+    expectedAnnualDividend: expectedAnnualDividendResult,
     monthlyBaselinePoints,
     performanceRows,
     futureValue: lastPoint.portfolioValueNominal,
     inflationAdjustedFutureValue: lastPoint.portfolioValueReal,
     cumulativeDividendResult: lastPoint.cumulativeDividendCashFlow,
     cumulativePriceGainResult: lastPoint.cumulativePriceGain,
+    cumulativeExternalDividendResult: lastPoint.cumulativeExternalDividendCashFlow,
+    endingValuePlusExternalDividends: roundNumber(lastPoint.portfolioValueNominal + lastPoint.cumulativeExternalDividendCashFlow),
     summary: {
       initialInvestment: simulationStartValue,
       monthlyContribution,
@@ -605,7 +754,11 @@ export function buildMonthlyBaselineProjection({
       investmentGainNominal: lastPoint.investmentGainNominal,
       cumulativePriceGain: lastPoint.cumulativePriceGain,
       cumulativeDividendCashFlow: lastPoint.cumulativeDividendCashFlow,
+      cumulativeExternalDividendCashFlow: lastPoint.cumulativeExternalDividendCashFlow,
+      endingValuePlusExternalDividends: roundNumber(lastPoint.portfolioValueNominal + lastPoint.cumulativeExternalDividendCashFlow),
       contributionExcludedIndex: lastPoint.contributionExcludedIndex,
+      priceOnlyContributionExcludedIndex: lastPoint.priceOnlyContributionExcludedIndex,
+      totalReturnContributionExcludedIndex: lastPoint.totalReturnContributionExcludedIndex,
       baselineAnnualAssumption: expectedCagr,
       baselineDividendAssumption: expectedDividendYield,
       mddReference: simpleMdd,
@@ -615,16 +768,23 @@ export function buildMonthlyBaselineProjection({
 }
 
 export function buildStep2MonthlyBaselineComparison({ portfolios = [], activePortfolioId = "", assets = [], settings = {} } = {}) {
-  return sortPortfoliosForDeterminism(portfolios).map((portfolio) => {
+  const portfolioList = Array.isArray(portfolios) ? portfolios : [];
+  const duplicatePortfolioIds = findDuplicatePortfolioIds(portfolioList);
+  return sortPortfoliosForDeterminism(portfolioList).map((portfolio) => {
     const portfolioAssets = portfolio.id === activePortfolioId ? assets : portfolio.assets;
+    const sortedPortfolioAssets = Array.isArray(portfolioAssets) ? sortAssetsForDeterminism(portfolioAssets) : portfolioAssets;
+    const forcedBlockReasons = duplicatePortfolioIds.has(String(portfolio?.id || "").trim())
+      ? [`duplicate_portfolio_id:${String(portfolio?.id || "").trim()}`]
+      : [];
     return {
       ...portfolio,
       settings,
-      assets: portfolioAssets,
+      assets: sortedPortfolioAssets,
       result: buildMonthlyBaselineProjection({
         portfolioId: portfolio.id,
         settings,
-        assets: portfolioAssets,
+        assets: sortedPortfolioAssets,
+        forcedBlockReasons,
       }),
     };
   });

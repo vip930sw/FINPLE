@@ -19,26 +19,38 @@ function getAssetWeightValue(asset = {}) {
   return getAssetPlannedValue(asset) || getAssetActualValue(asset);
 }
 
-export function calculatePortfolioResult(settings, assets) {
-  const safeAssets = Array.isArray(assets) ? assets : [];
-  const totalAssetValue = safeAssets.reduce((sum, asset) => {
-    return sum + getAssetWeightValue(asset);
-  }, 0);
+function isReadyPortfolio(portfolio = {}) {
+  return portfolio?.result?.ready === true && portfolio?.result?.status === "ready";
+}
 
-  const configuredStartValue = Number(settings.startValue || 0);
-  const simulationStartValue = configuredStartValue > 0 ? configuredStartValue : totalAssetValue;
+function isFiniteMetricValue(value) {
+  if (value === null || value === undefined || value === "") return false;
+  return Number.isFinite(Number(value));
+}
+
+function toMetricNumber(value) {
+  return isFiniteMetricValue(value) ? Number(value) : null;
+}
+
+export function calculatePortfolioResult(settings = {}, assets) {
+  const safeSettings = settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {};
+  const safeAssets = Array.isArray(assets) ? assets : [];
+  const totalAssetValue = safeAssets.reduce((sum, asset) => sum + getAssetWeightValue(asset || {}), 0);
+  const configuredStartValue = toMetricNumber(safeSettings.startValue);
+  const simulationStartValue = configuredStartValue !== null && configuredStartValue > 0 ? configuredStartValue : totalAssetValue;
+  const investmentMonths =
+    safeSettings.investmentMonths !== undefined
+      ? safeSettings.investmentMonths
+      : Number(safeSettings.years || 0) * 12;
+
   return buildMonthlyBaselineProjection({
     settings: {
-      ...settings,
-      startValue: simulationStartValue,
-      investmentMonths: Number(settings.years || 0) * 12,
+      ...safeSettings,
+      startValue: safeSettings.startValue ?? simulationStartValue,
+      investmentMonths,
     },
     assets: safeAssets,
   });
-}
-
-function isReadyPortfolio(portfolio = {}) {
-  return portfolio?.result?.ready === true && portfolio?.result?.status === "ready";
 }
 
 export function getRank(portfolios, targetId, selector, direction = "desc") {
@@ -46,13 +58,15 @@ export function getRank(portfolios, targetId, selector, direction = "desc") {
   if (!targetPortfolio || !isReadyPortfolio(targetPortfolio)) return "-";
 
   const targetValue = selector(targetPortfolio);
-  if (!Number.isFinite(Number(targetValue))) return "-";
+  if (!isFiniteMetricValue(targetValue)) return "-";
+  const numericTargetValue = Number(targetValue);
 
   const betterCount = portfolios.filter((portfolio) => {
     if (!isReadyPortfolio(portfolio)) return false;
     const value = selector(portfolio);
-    if (!Number.isFinite(Number(value))) return false;
-    return direction === "asc" ? value < targetValue : value > targetValue;
+    if (!isFiniteMetricValue(value)) return false;
+    const numericValue = Number(value);
+    return direction === "asc" ? numericValue < numericTargetValue : numericValue > numericTargetValue;
   }).length;
 
   return betterCount + 1;
@@ -103,7 +117,7 @@ export function createInsightComparisonPortfolios(rankedComparisonPortfolios) {
 export function getChartComparisonPortfolios(insightComparisonPortfolios) {
   return [...insightComparisonPortfolios]
     .filter(isReadyPortfolio)
-    .sort((a, b) => b.result.inflationAdjustedFutureValue - a.result.inflationAdjustedFutureValue)
+    .sort((a, b) => Number(b.result.inflationAdjustedFutureValue) - Number(a.result.inflationAdjustedFutureValue))
     .filter((portfolio) => portfolio.realValueRank <= 3);
 }
 
@@ -111,44 +125,49 @@ export function getPortfolioInsight(portfolio, allPortfolios) {
   const result = portfolio.result;
   if (!isReadyPortfolio(portfolio)) {
     return {
-      type: "Baseline blocked",
-      text: "Metric source review is required before this portfolio can be ranked or charted.",
+      type: "기준 계산 보류",
+      text: "지표 출처 확인이 끝나야 이 포트폴리오를 순위와 차트에 포함할 수 있습니다.",
     };
   }
 
-  const cagr = Number(result.expectedCagr || 0);
-  const mdd = Number(result.simpleMdd || 0);
-  const dividendYield = Number(result.expectedDividendYield || 0);
-  const realValue = Number(result.inflationAdjustedFutureValue || 0);
+  const cagr = toMetricNumber(result.expectedCagr);
+  const mdd = toMetricNumber(result.simpleMdd);
+  const dividendYield = toMetricNumber(result.expectedDividendYield);
+  const realValue = toMetricNumber(result.inflationAdjustedFutureValue) ?? 0;
   const readyPortfolios = allPortfolios.filter(isReadyPortfolio);
-  const bestRealValue = Math.max(...readyPortfolios.map((item) => item.result.inflationAdjustedFutureValue || 0));
+  const realValues = readyPortfolios
+    .map((item) => toMetricNumber(item.result.inflationAdjustedFutureValue))
+    .filter((value) => value !== null);
+  const bestRealValue = realValues.length > 0 ? Math.max(...realValues) : 0;
   const realValueGapRate = bestRealValue > 0 ? ((bestRealValue - realValue) / bestRealValue) * 100 : 0;
 
-  const cagrValues = readyPortfolios.map((item) => item.result.expectedCagr);
-  const mddValues = readyPortfolios.map((item) => item.result.simpleMdd);
-  const dividendValues = readyPortfolios.map((item) => item.result.expectedDividendYield);
+  const cagrValues = readyPortfolios.map((item) => toMetricNumber(item.result.expectedCagr)).filter((value) => value !== null);
+  const mddValues = readyPortfolios.map((item) => toMetricNumber(item.result.simpleMdd)).filter((value) => value !== null);
+  const dividendValues = readyPortfolios
+    .map((item) => toMetricNumber(item.result.expectedDividendYield))
+    .filter((value) => value !== null);
 
-  const maxCagr = Math.max(...cagrValues);
-  const maxMdd = Math.max(...mddValues);
-  const maxDividend = Math.max(...dividendValues);
+  const maxCagr = cagrValues.length > 0 ? Math.max(...cagrValues) : null;
+  const maxMdd = mddValues.length > 0 ? Math.max(...mddValues) : null;
+  const maxDividend = dividendValues.length > 0 ? Math.max(...dividendValues) : null;
 
   const isRealValueSimilarToBest = realValueGapRate <= 5;
-  const isCagrSimilar = Math.abs(maxCagr - cagr) <= 0.5;
-  const isMddSimilar = Math.abs(maxMdd - mdd) <= 3;
-  const isDividendSimilar = Math.abs(maxDividend - dividendYield) <= 0.3;
+  const isCagrSimilar = maxCagr !== null && cagr !== null && Math.abs(maxCagr - cagr) <= 0.5;
+  const isMddSimilar = maxMdd !== null && mdd !== null && Math.abs(maxMdd - mdd) <= 3;
+  const isDividendSimilar = maxDividend !== null && dividendYield !== null && Math.abs(maxDividend - dividendYield) <= 0.3;
 
   let type = "균형형";
   let text = "";
 
   if (portfolio.realValueRank === 1) {
     type = "실질가치 우위";
-    text = "물가를 반영한 장기 실질가치 기준으로 가장 앞서는 포트폴리오입니다.";
+    text = "물가를 반영한 장기 실질가치 기준으로 가장 앞선 포트폴리오입니다.";
   } else if (portfolio.growthRank === 1) {
     type = "성장성 우위";
     text = "예상 CAGR이 높아 장기 성장성 측면에서 강점이 있습니다.";
   } else if (portfolio.stabilityRank === 1) {
     type = "안정성 우위";
-    text = "MDD 기준 하락 위험이 상대적으로 낮아 방어력이 우수합니다.";
+    text = "MDD 기준 하락 위험이 상대적으로 낮아 방어력이 좋습니다.";
   } else if (portfolio.dividendRank === 1) {
     type = "배당 매력";
     text = "예상 배당률이 높아 현금흐름 측면에서 매력이 있습니다.";

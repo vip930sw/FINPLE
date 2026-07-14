@@ -43,6 +43,7 @@ function asset(overrides = {}) {
     metricsSource: "fixture_app_ready",
     sourceHash: "fixture-source-hash",
     calculationPolicyVersion: "monthly-baseline-fixture-v1-step114-2e",
+    pipelineVersion: "monthly-baseline-fixture-pipeline-v1-step114-2e",
     ...overrides,
   };
 }
@@ -152,6 +153,11 @@ test("dividend reinvestment is separate from price CAGR and can be disabled", ()
   assertClose(reinvested.futureValue, 1344);
   assertClose(cashFlowOnly.futureValue, 1200);
   assertClose(cashFlowOnly.cumulativeDividendResult, 1200 * annualPercentToMonthlyRate(12) * 12);
+  assertClose(cashFlowOnly.expectedAnnualDividend, cashFlowOnly.cumulativeDividendResult);
+  assertClose(cashFlowOnly.summary.endingValuePlusExternalDividends, 1200 + cashFlowOnly.cumulativeDividendResult);
+  assertClose(reinvested.summary.endingValuePlusExternalDividends, reinvested.futureValue);
+  assertClose(reinvested.summary.totalReturnContributionExcludedIndex, cashFlowOnly.summary.totalReturnContributionExcludedIndex);
+  assertClose(cashFlowOnly.summary.priceOnlyContributionExcludedIndex, 100);
   assertClose(reinvested.cumulativePriceGainResult, 0);
   assertClose(cashFlowOnly.cumulativePriceGainResult, 0);
   assertClose(reinvested.performanceRows[0].annualProfit, 0);
@@ -229,6 +235,22 @@ test("approved metric lineage is required and unknown CAGR fallback is blocked",
 });
 
 test("legacy May app-ready source is accepted only through compatibility adapter", () => {
+  const sourceOnlySpoof = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      {
+        ticker: "FAKE",
+        market: "US",
+        targetWeight: 100,
+        cagr: 7,
+        dividendYield: 1,
+        metricsSource: "us_price_metrics_overlay_20260528_app_ready",
+      },
+    ],
+  });
+  assert.equal(sourceOnlySpoof.status, "blocked");
+  assert.match(sourceOnlySpoof.blockReasons.join("|"), /missing_metric_status|missing_metric_lineage/);
+
   const result = buildMonthlyBaselineProjection({
     settings: BASE_SETTINGS,
     assets: [
@@ -239,14 +261,19 @@ test("legacy May app-ready source is accepted only through compatibility adapter
         cagr: 7,
         dividendYield: 1,
         metricsSource: "us_price_metrics_overlay_20260528_app_ready",
+        metricMode: "us_price_metrics_overlay_price_close",
+        dataSource:
+          "finple_app_candidates_6000_balanced_v1+final_2000_overlay+us_price_metrics_overlay_20260528_app_ready",
       },
     ],
   });
   assert.equal(result.status, "ready");
   assert.equal(
-    result.assets[0].metricLineage.calculationPolicyVersion,
+    result.assets[0].metricLineage.compatibilityAdapter,
     "legacy-may-app-ready-compat-v1-step114-2e",
   );
+  assert.equal(result.assets[0].metricLineage.calculationPolicyVersion, "metrics-calculation-policy-2026-06-26");
+  assert.equal(result.assets[0].metricLineage.pipelineVersion, "legacy-may-app-ready-loader-v1");
   assert.equal(result.assets[0].metricLineage.metricBaseDate, "2026-05-28");
   assert.match(result.assets[0].metricLineage.sourceHash, /^[0-9a-f]{64}$/);
 });
@@ -292,6 +319,13 @@ test("contributionExcludedIndex follows actual no-rebalance sleeve drift", () =>
 test("invalid inputs return blocked result instead of throwing", () => {
   for (const input of [
     { settings: { ...BASE_SETTINGS, investmentMonths: -1 }, assets: [asset()] },
+    { settings: { ...BASE_SETTINGS, investmentMonths: 1.5 }, assets: [asset()] },
+    { settings: { ...BASE_SETTINGS, investmentMonths: Number.NaN }, assets: [asset()] },
+    { settings: { ...BASE_SETTINGS, investmentMonths: Number.POSITIVE_INFINITY }, assets: [asset()] },
+    { settings: { ...BASE_SETTINGS, startValue: -1 }, assets: [asset()] },
+    { settings: { ...BASE_SETTINGS, startValue: "bad" }, assets: [asset()] },
+    { settings: null, assets: [asset()] },
+    { settings: BASE_SETTINGS, assets: [null] },
     { settings: { ...BASE_SETTINGS, inflationRate: -100 }, assets: [asset()] },
     { settings: BASE_SETTINGS, assets: [asset({ cagr: -100 })] },
     { settings: BASE_SETTINGS, assets: [asset({ dividendYield: -1 })] },
@@ -302,6 +336,13 @@ test("invalid inputs return blocked result instead of throwing", () => {
     assert.doesNotThrow(() => buildMonthlyBaselineProjection(input));
     assert.equal(buildMonthlyBaselineProjection(input).status, "blocked");
   }
+
+  const stringFalse = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: "false" },
+    assets: [asset({ dividendYield: null })],
+  });
+  assert.equal(stringFalse.status, "ready");
+  assert.equal(stringFalse.settings.dividendReinvest, false);
 });
 
 test("stable ordering is independent from input portfolio and asset order", () => {
@@ -317,10 +358,50 @@ test("stable ordering is independent from input portfolio and asset order", () =
 
   const portfolios = [
     { id: "z", assets: [asset({ ticker: "ZZZ" })] },
+    {
+      id: "m",
+      assets: [
+        asset({ ticker: "BBB", market: "US", targetWeight: 40, cagr: 4, dividendYield: 0 }),
+        asset({ ticker: "005930", market: "KR", targetWeight: 60, cagr: 6, dividendYield: 1 }),
+      ],
+    },
     { id: "a", assets: [asset({ ticker: "AAA" })] },
   ];
   const comparison = buildStep2MonthlyBaselineComparison({ portfolios, settings: BASE_SETTINGS });
-  assert.deepEqual(comparison.map((portfolio) => portfolio.id), ["a", "z"]);
+  assert.deepEqual(comparison.map((portfolio) => portfolio.id), ["a", "m", "z"]);
+
+  const reversedComparison = buildStep2MonthlyBaselineComparison({
+    portfolios: [...portfolios].reverse().map((portfolio) => ({
+      ...portfolio,
+      assets: [...portfolio.assets].reverse(),
+    })),
+    settings: BASE_SETTINGS,
+  });
+  assert.equal(JSON.stringify(comparison), JSON.stringify(reversedComparison));
+  assert.deepEqual(comparison[0].assets.map((item) => item.ticker), ["AAA"]);
+  assert.deepEqual(comparison[1].assets.map((item) => `${item.market}:${item.ticker}`), ["KR:005930", "US:BBB"]);
+});
+
+test("duplicate portfolio IDs and duplicate market/ticker assets fail closed", () => {
+  const duplicatePortfolios = buildStep2MonthlyBaselineComparison({
+    portfolios: [
+      { id: "dup", assets: [asset({ ticker: "AAA" })] },
+      { id: "dup", assets: [asset({ ticker: "BBB" })] },
+    ],
+    settings: BASE_SETTINGS,
+  });
+  assert.equal(duplicatePortfolios[0].result.status, "blocked");
+  assert.match(duplicatePortfolios[0].result.blockReasons.join("|"), /duplicate_portfolio_id:dup/);
+
+  const duplicateAsset = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      asset({ ticker: "AAA", market: "US", targetWeight: 50 }),
+      asset({ ticker: "AAA", market: "US", targetWeight: 50 }),
+    ],
+  });
+  assert.equal(duplicateAsset.status, "blocked");
+  assert.match(duplicateAsset.blockReasons.join("|"), /duplicate_asset_identity:US:AAA/);
 });
 
 test("Step 2 comparison and Step 3 detail consume the same monthly baseline object", () => {
@@ -360,8 +441,31 @@ test("blocked portfolio is excluded from ranks, charts, and insight comparison",
   assert.equal(blocked.realValueRank, "-");
   assert.equal(blocked.growthRank, "-");
   assert.equal(blocked.result.expectedCagr, null);
-  assert.equal(blocked.insight.type, "Baseline blocked");
+  assert.equal(blocked.insight.type, "기준 계산 보류");
   assert.deepEqual(getChartComparisonPortfolios(withInsight).map((portfolio) => portfolio.id), ["ready"]);
+});
+
+test("ready portfolios with missing dividend and risk metrics keep unknown ranks", () => {
+  const portfolios = [
+    { id: "ready", name: "ready", assets: [asset({ ticker: "AAA", dividendYield: 1, mdd: -10, beta: 1 })] },
+    {
+      id: "missing",
+      name: "missing",
+      assets: [asset({ ticker: "BBB", dividendYield: null, mdd: null, beta: null })],
+    },
+  ];
+  const comparison = createComparisonPortfolios(portfolios, "", [], BASE_SETTINGS);
+  const ranked = createRankedComparisonPortfolios(comparison);
+  const missing = ranked.find((portfolio) => portfolio.id === "missing");
+  assert.equal(missing.result.status, "ready");
+  assert.equal(missing.result.expectedDividendYield, null);
+  assert.equal(missing.result.simpleMdd, null);
+  assert.equal(missing.dividendRank, "-");
+  assert.equal(missing.stabilityRank, "-");
+
+  const comparePanelSource = fs.readFileSync("src/components/portfolio/components/ComparePanel.jsx", "utf8");
+  assert.match(comparePanelSource, /return "미확인"/);
+  assert.match(comparePanelSource, /예시\\s\*포트폴리오|예시/);
 });
 
 test("review overlay is not connected to the production loader pointer", () => {

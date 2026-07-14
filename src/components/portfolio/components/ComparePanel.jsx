@@ -1,19 +1,25 @@
 import PortfolioCompareLineChart from "./PortfolioCompareLineChart";
 
 function getCompactPortfolioName(name) {
-  return String(name || "Portfolio")
+  return String(name || "포트폴리오")
+    .replace(/\s*예시\s*포트폴리오\s*$/u, "")
     .replace(/\s*sample\s*portfolio\s*$/iu, "")
-    .trim() || "Portfolio";
+    .trim() || "포트폴리오";
+}
+
+function hasMetricValue(value) {
+  if (value === null || value === undefined || value === "") return false;
+  return Number.isFinite(Number(value));
 }
 
 function formatMaybeNumber(value) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? `${Math.floor(numberValue).toLocaleString()}원` : "-";
+  if (!hasMetricValue(value)) return "미확인";
+  return `${Math.floor(Number(value)).toLocaleString()}원`;
 }
 
 function formatMaybeFixed(value, digits = 2) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? `${numberValue.toFixed(digits)}%` : "-";
+  if (!hasMetricValue(value)) return "-";
+  return `${Number(value).toFixed(digits)}%`;
 }
 
 function formatRank(value) {

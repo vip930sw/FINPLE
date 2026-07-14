@@ -139,27 +139,21 @@ export default function DetailPanel({
   ];
 
   if (safeResult.ready === false || safeResult.status === "blocked") {
-    const blockReasons = safeArray(safeResult.blockReasons);
     return (
       <div id="detail" className="simulatorTabPanel detailPanel">
         <div className="tabSectionHeader tabSectionHeaderRow">
           <div>
             <p className="sectionLabel">Step 3. Detail</p>
-            <h3>Baseline blocked</h3>
-            <p>Metric source review is required before this portfolio can be analyzed.</p>
+            <h3>기준 계산 보류</h3>
+            <p>지표 출처 확인이 끝나야 이 포트폴리오의 상세 분석을 표시할 수 있습니다.</p>
           </div>
         </div>
         <div className="detailInfoSection">
           <div className="detailInfoHeader">
             <p className="sectionLabel">Baseline Status</p>
-            <h4>blocked</h4>
-            <span>{safeResult.step3BlockedState?.operatorAction || "review_metric_source_before_baseline"}</span>
+            <h4>계산 보류</h4>
+            <span>준비된 지표만 순위와 차트, 상세 분석에 포함됩니다.</span>
           </div>
-          {blockReasons.length > 0 ? (
-            <ul>
-              {blockReasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
-            </ul>
-          ) : null}
         </div>
       </div>
     );
