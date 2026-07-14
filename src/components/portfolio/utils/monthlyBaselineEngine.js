@@ -382,6 +382,7 @@ function createBlockedResult({ settings, assets, blockReasons, totalAssetValue, 
     yearlyContribution: Number(settings.monthlyCashFlow || 0) * 12,
     expectedCagr: null,
     expectedDividendYield: null,
+    totalReturnStatus: "blocked",
     expectedBeta: null,
     simpleMdd: null,
     expectedCalmar: null,
@@ -406,6 +407,7 @@ function createBlockedResult({ settings, assets, blockReasons, totalAssetValue, 
       contributionExcludedIndex: null,
       priceOnlyContributionExcludedIndex: null,
       totalReturnContributionExcludedIndex: null,
+      totalReturnStatus: "blocked",
       blocked: true,
     },
     step3BlockedState: {
@@ -618,6 +620,7 @@ export function buildMonthlyBaselineProjection({
   const expectedDividendYield = hasMissingDividendYield
     ? null
     : normalizedAssets.reduce((sum, asset) => sum + asset.targetWeight * asset.annualDividendYield, 0);
+  const totalReturnStatus = hasMissingDividendYield ? "unavailable_missing_dividend" : "ready";
   const expectedBeta = normalizedAssets.some((asset) => asset.beta === null)
     ? null
     : normalizedAssets.reduce((sum, asset) => sum + asset.targetWeight * asset.beta, 0);
@@ -652,15 +655,19 @@ export function buildMonthlyBaselineProjection({
     cumulativeContributions: roundNumber(cumulativeContributions),
     investmentGainNominal: 0,
     cumulativePriceGain: 0,
-    contributionExcludedIndex: 100,
+    contributionExcludedIndex: hasMissingDividendYield ? null : 100,
     priceOnlyContributionExcludedIndex: 100,
-    totalReturnContributionExcludedIndex: 100,
+    totalReturnContributionExcludedIndex: hasMissingDividendYield ? null : 100,
+    totalReturnStatus,
     monthlyContributionApplied: 0,
     monthlyPriceReturnApplied: 0,
     monthlyPriceReturnRate: 0,
-    monthlyContributionExcludedReturn: 0,
+    monthlyContributionExcludedReturn: hasMissingDividendYield ? null : 0,
     monthlyPriceOnlyContributionExcludedReturn: 0,
-    monthlyTotalReturnContributionExcludedReturn: 0,
+    monthlyTotalReturnContributionExcludedReturn: hasMissingDividendYield ? null : 0,
+    monthlyPriceOnlyPerformanceReturnApplied: 0,
+    monthlyTotalReturnPerformancePriceApplied: hasMissingDividendYield ? null : 0,
+    monthlyTotalReturnPerformanceDividendApplied: hasMissingDividendYield ? null : 0,
     monthlyDividendCashFlow: 0,
     cumulativeDividendCashFlow: 0,
     monthlyExternalDividendCashFlow: 0,
@@ -698,13 +705,14 @@ export function buildMonthlyBaselineProjection({
       monthlyPriceOnlyPerformanceReturnAmount += pricePerformanceReturn;
       pricePerformanceSleeveValues[index] += pricePerformanceReturn;
 
-      const totalReturnPerformanceBaseValue = totalReturnPerformanceSleeveValues[index];
-      const totalReturnPerformancePrice = totalReturnPerformanceBaseValue * asset.monthlyPriceRate;
-      const totalReturnPerformanceDividend =
-        asset.monthlyDividendRate === null ? 0 : totalReturnPerformanceBaseValue * asset.monthlyDividendRate;
-      monthlyTotalReturnPerformancePriceAmount += totalReturnPerformancePrice;
-      monthlyTotalReturnPerformanceDividendAmount += totalReturnPerformanceDividend;
-      totalReturnPerformanceSleeveValues[index] += totalReturnPerformancePrice + totalReturnPerformanceDividend;
+      if (!hasMissingDividendYield) {
+        const totalReturnPerformanceBaseValue = totalReturnPerformanceSleeveValues[index];
+        const totalReturnPerformancePrice = totalReturnPerformanceBaseValue * asset.monthlyPriceRate;
+        const totalReturnPerformanceDividend = totalReturnPerformanceBaseValue * asset.monthlyDividendRate;
+        monthlyTotalReturnPerformancePriceAmount += totalReturnPerformancePrice;
+        monthlyTotalReturnPerformanceDividendAmount += totalReturnPerformanceDividend;
+        totalReturnPerformanceSleeveValues[index] += totalReturnPerformancePrice + totalReturnPerformanceDividend;
+      }
     }
 
     cumulativeContributions += monthlyContribution;
@@ -716,12 +724,14 @@ export function buildMonthlyBaselineProjection({
         ? monthlyPriceOnlyPerformanceReturnAmount / pricePerformanceStartValue
         : 0;
     const monthlyTotalReturnContributionExcludedReturn =
-      totalReturnPerformanceStartValue > 0
+      !hasMissingDividendYield && totalReturnPerformanceStartValue > 0
         ? (monthlyTotalReturnPerformancePriceAmount + monthlyTotalReturnPerformanceDividendAmount) /
           totalReturnPerformanceStartValue
-        : 0;
+        : null;
     priceOnlyContributionExcludedIndex *= 1 + monthlyPriceOnlyContributionExcludedReturn;
-    totalReturnContributionExcludedIndex *= 1 + monthlyTotalReturnContributionExcludedReturn;
+    if (monthlyTotalReturnContributionExcludedReturn !== null) {
+      totalReturnContributionExcludedIndex *= 1 + monthlyTotalReturnContributionExcludedReturn;
+    }
 
     const portfolioValueNominal = actualSleeveValues.reduce((sum, value) => sum + value, 0);
     const inflationDivisor = (1 + monthlyInflationRate) ** monthIndex;
@@ -736,18 +746,29 @@ export function buildMonthlyBaselineProjection({
       cumulativeContributions: roundNumber(cumulativeContributions),
       investmentGainNominal: roundNumber(investmentGainNominal),
       cumulativePriceGain: roundNumber(cumulativePriceGain),
-      contributionExcludedIndex: roundNumber(totalReturnContributionExcludedIndex),
+      contributionExcludedIndex: hasMissingDividendYield ? null : roundNumber(totalReturnContributionExcludedIndex),
       priceOnlyContributionExcludedIndex: roundNumber(priceOnlyContributionExcludedIndex),
-      totalReturnContributionExcludedIndex: roundNumber(totalReturnContributionExcludedIndex),
+      totalReturnContributionExcludedIndex: hasMissingDividendYield ? null : roundNumber(totalReturnContributionExcludedIndex),
+      totalReturnStatus,
       monthlyContributionApplied: roundNumber(monthlyContribution),
       monthlyPriceReturnApplied: roundNumber(monthlyPriceReturnAmount),
       monthlyPriceReturnRate: roundNumber(monthlyPriceReturnAmount / actualStartValueAfterContribution, 10),
-      monthlyContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
+      monthlyContributionExcludedReturn:
+        monthlyTotalReturnContributionExcludedReturn === null
+          ? null
+          : roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
       monthlyPriceOnlyContributionExcludedReturn: roundNumber(monthlyPriceOnlyContributionExcludedReturn, 10),
-      monthlyTotalReturnContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
+      monthlyTotalReturnContributionExcludedReturn:
+        monthlyTotalReturnContributionExcludedReturn === null
+          ? null
+          : roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
       monthlyPriceOnlyPerformanceReturnApplied: roundNumber(monthlyPriceOnlyPerformanceReturnAmount),
-      monthlyTotalReturnPerformancePriceApplied: roundNumber(monthlyTotalReturnPerformancePriceAmount),
-      monthlyTotalReturnPerformanceDividendApplied: roundNumber(monthlyTotalReturnPerformanceDividendAmount),
+      monthlyTotalReturnPerformancePriceApplied: hasMissingDividendYield
+        ? null
+        : roundNumber(monthlyTotalReturnPerformancePriceAmount),
+      monthlyTotalReturnPerformanceDividendApplied: hasMissingDividendYield
+        ? null
+        : roundNumber(monthlyTotalReturnPerformanceDividendAmount),
       monthlyDividendCashFlow: roundNumber(monthlyDividendCashFlow),
       cumulativeDividendCashFlow: roundNumber(cumulativeDividendCashFlow),
       monthlyExternalDividendCashFlow: roundNumber(monthlyExternalDividendCashFlow),
@@ -773,6 +794,7 @@ export function buildMonthlyBaselineProjection({
     yearlyContribution: monthlyContribution * 12,
     expectedCagr,
     expectedDividendYield,
+    totalReturnStatus,
     expectedBeta,
     simpleMdd,
     expectedCalmar,
@@ -799,6 +821,7 @@ export function buildMonthlyBaselineProjection({
       contributionExcludedIndex: lastPoint.contributionExcludedIndex,
       priceOnlyContributionExcludedIndex: lastPoint.priceOnlyContributionExcludedIndex,
       totalReturnContributionExcludedIndex: lastPoint.totalReturnContributionExcludedIndex,
+      totalReturnStatus,
       baselineAnnualAssumption: expectedCagr,
       baselineDividendAssumption: expectedDividendYield,
       mddReference: simpleMdd,

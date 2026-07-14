@@ -210,6 +210,61 @@ test("missing dividend is not inferred as zero", () => {
   assert.equal(priceOnly.status, "ready");
   assert.equal(priceOnly.expectedDividendYield, null);
   assert.equal(priceOnly.expectedAnnualDividend, null);
+  assert.equal(priceOnly.totalReturnStatus, "unavailable_missing_dividend");
+  assert.equal(priceOnly.summary.totalReturnStatus, "unavailable_missing_dividend");
+  assert.equal(priceOnly.summary.contributionExcludedIndex, null);
+  assert.equal(priceOnly.summary.totalReturnContributionExcludedIndex, null);
+  assert.equal(typeof priceOnly.summary.priceOnlyContributionExcludedIndex, "number");
+  assert.equal(priceOnly.monthlyBaselinePoints.at(-1).contributionExcludedIndex, null);
+  assert.equal(priceOnly.monthlyBaselinePoints.at(-1).totalReturnContributionExcludedIndex, null);
+  assert.equal(priceOnly.monthlyBaselinePoints.at(-1).monthlyTotalReturnContributionExcludedReturn, null);
+  assert.equal(priceOnly.monthlyBaselinePoints.at(-1).monthlyTotalReturnPerformanceDividendApplied, null);
+  assert.equal(priceOnly.monthlyBaselinePoints.at(-1).totalReturnStatus, "unavailable_missing_dividend");
+});
+
+test("missing dividend keeps price-only performance but makes total-return performance unavailable", () => {
+  const missingDividend = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: false, investmentMonths: 12 },
+    assets: [
+      asset({ ticker: "MISS", targetWeight: 50, cagr: 0, dividendYield: null }),
+      asset({ ticker: "ZERO", targetWeight: 50, cagr: 0, dividendYield: 0 }),
+    ],
+  });
+  const confirmedZero = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: false, investmentMonths: 12 },
+    assets: [
+      asset({ ticker: "MISS", targetWeight: 50, cagr: 0, dividendYield: 0 }),
+      asset({ ticker: "ZERO", targetWeight: 50, cagr: 0, dividendYield: 0 }),
+    ],
+  });
+  const confirmedValue = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: false, investmentMonths: 12 },
+    assets: [
+      asset({ ticker: "MISS", targetWeight: 50, cagr: 0, dividendYield: 12 }),
+      asset({ ticker: "ZERO", targetWeight: 50, cagr: 0, dividendYield: 0 }),
+    ],
+  });
+
+  assert.equal(missingDividend.status, "ready");
+  assert.equal(missingDividend.totalReturnStatus, "unavailable_missing_dividend");
+  assert.equal(missingDividend.summary.totalReturnStatus, "unavailable_missing_dividend");
+  assert.equal(missingDividend.futureValue, 1200);
+  assertClose(missingDividend.summary.priceOnlyContributionExcludedIndex, 100);
+  assert.equal(missingDividend.summary.totalReturnContributionExcludedIndex, null);
+  assert.equal(missingDividend.summary.contributionExcludedIndex, null);
+  assert.equal(missingDividend.monthlyBaselinePoints.at(-1).totalReturnContributionExcludedIndex, null);
+  assert.equal(missingDividend.monthlyBaselinePoints.at(-1).contributionExcludedIndex, null);
+  assert.equal(missingDividend.monthlyBaselinePoints.at(-1).monthlyTotalReturnPerformancePriceApplied, null);
+  assert.equal(missingDividend.monthlyBaselinePoints.at(-1).monthlyTotalReturnPerformanceDividendApplied, null);
+  assert.equal(missingDividend.monthlyBaselinePoints.at(-1).monthlyTotalReturnContributionExcludedReturn, null);
+
+  assert.equal(confirmedZero.status, "ready");
+  assert.equal(confirmedZero.totalReturnStatus, "ready");
+  assertClose(confirmedZero.summary.totalReturnContributionExcludedIndex, 100);
+  assertClose(confirmedZero.summary.contributionExcludedIndex, 100);
+  assert.equal(confirmedValue.status, "ready");
+  assert.ok(confirmedValue.summary.totalReturnContributionExcludedIndex > confirmedZero.summary.totalReturnContributionExcludedIndex);
+  assert.notEqual(missingDividend.summary.totalReturnContributionExcludedIndex, confirmedZero.summary.totalReturnContributionExcludedIndex);
 });
 
 test("blocked and review-only metric sources fail closed", () => {

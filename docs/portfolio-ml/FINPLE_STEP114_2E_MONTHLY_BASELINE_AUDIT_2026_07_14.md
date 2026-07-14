@@ -227,6 +227,8 @@ totalReturnContributionExcludedIndex
 
 `contributionExcludedIndex` is an alias for `totalReturnContributionExcludedIndex` so the economic return scope is stable regardless of the dividend reinvestment setting. `priceOnlyContributionExcludedIndex` remains available when the UI or audit needs a dividend-excluded reference.
 
+If at least one asset has missing dividend evidence, the engine does not infer that missing yield as 0%. In that case the price-only path remains available, but `totalReturnContributionExcludedIndex` and its alias `contributionExcludedIndex` are `null`, with `totalReturnStatus=unavailable_missing_dividend`. Monthly total-return fields such as `monthlyContributionExcludedReturn`, `monthlyTotalReturnContributionExcludedReturn`, `monthlyTotalReturnPerformancePriceApplied`, and `monthlyTotalReturnPerformanceDividendApplied` are also `null` for the same scope.
+
 The actual portfolio sleeve and performance measurement sleeves are separate:
 
 ```text
