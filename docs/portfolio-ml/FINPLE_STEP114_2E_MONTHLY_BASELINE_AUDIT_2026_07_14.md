@@ -95,6 +95,9 @@ totalReturnContributionExcludedIndex
 monthlyContributionApplied
 monthlyPriceReturnApplied
 monthlyPriceReturnRate
+monthlyPriceOnlyPerformanceReturnApplied
+monthlyTotalReturnPerformancePriceApplied
+monthlyTotalReturnPerformanceDividendApplied
 monthlyDividendCashFlow
 cumulativeDividendCashFlow
 cumulativeExternalDividendCashFlow
@@ -177,9 +180,15 @@ The legacy May 2026 app-ready overlays are accepted only through the explicit co
 legacy-may-app-ready-compat-v1-step114-2e
 metricMode=us_price_metrics_overlay_price_close or kr_price_metrics_overlay_price_close
 dataSource contains the matched May 2026 app-ready source name
+US provider metricsSource=yfinance_close_price_20260528
+KR provider metricsSource=yfinance_kr_close_price_20260528
+legacyMayAppReadyEligibility=true
+legacyMayAppReadyEligibilityKey={market}:{ticker}
+legacyMayAppReadySourceName={matched May app-ready overlay marker}
+legacyMayAppReadyProviderMetricsSource={provider metricsSource}
 ```
 
-The source string alone is not approval evidence. A ticker that only spoofs `metricsSource` without loader evidence fails closed.
+The source string alone is not approval evidence. The old `legacyAppReadyEvidence=true` field is not sufficient. A ticker that only spoofs `metricsSource`, `metricMode`, or `dataSource` without the loader map-match evidence fails closed.
 
 Missing selected CAGR blocks calculation. Missing dividend yield blocks calculation when dividend reinvestment is enabled, and is preserved as `null` rather than inferred as `0.00` when reinvestment is disabled.
 
@@ -218,12 +227,23 @@ totalReturnContributionExcludedIndex
 
 `contributionExcludedIndex` is an alias for `totalReturnContributionExcludedIndex` so the economic return scope is stable regardless of the dividend reinvestment setting. `priceOnlyContributionExcludedIndex` remains available when the UI or audit needs a dividend-excluded reference.
 
-The total-return index is based on the actual no-rebalance sleeve path:
+The actual portfolio sleeve and performance measurement sleeves are separate:
+
+```text
+actual sleeve:
+  applies dividendReinvest to ending value and external dividend cash
+price-only performance sleeve:
+  applies price return only
+total-return performance sleeve:
+  assumes dividend reinvestment for TWR regardless of dividendReinvest
+```
+
+The total-return index is based on the total-return performance sleeve path:
 
 ```text
 monthlyContributionExcludedReturn
-= (monthlyPriceReturnApplied + monthlyDividendCashFlow)
-  / portfolioValueAfterMonthStartContribution
+= (monthlyTotalReturnPerformancePriceApplied + monthlyTotalReturnPerformanceDividendApplied)
+  / totalReturnPerformanceValueAfterMonthStartContribution
 ```
 
 The engine does not use fixed target-weight returns for this index after month 0. Sleeves drift naturally when asset returns differ.

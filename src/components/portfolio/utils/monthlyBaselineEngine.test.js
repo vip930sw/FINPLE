@@ -48,6 +48,33 @@ function asset(overrides = {}) {
   };
 }
 
+function legacyMayLoaderAsset(overrides = {}) {
+  const market = overrides.market || "US";
+  const ticker = overrides.ticker || "GSST";
+  const isKr = market === "KR";
+  const marker = isKr ? "kr_price_metrics_overlay_20260528_app_ready" : "us_price_metrics_overlay_20260528_app_ready";
+  const metricMode = isKr ? "kr_price_metrics_overlay_price_close" : "us_price_metrics_overlay_price_close";
+  const providerMetricsSource = isKr ? "yfinance_kr_close_price_20260528" : "yfinance_close_price_20260528";
+  return {
+    ticker,
+    market,
+    targetWeight: 100,
+    cagr: 7,
+    dividendYield: 1,
+    beta: 1,
+    mdd: -20,
+    metricsSource: providerMetricsSource,
+    metricMode,
+    dataSource: `finple_app_candidates_6000_balanced_v1+final_2000_overlay+${marker}`,
+    legacyMayAppReadyEligibility: true,
+    legacyMayAppReadyEligibilityKey: `${market}:${ticker}`,
+    legacyMayAppReadyMetricMode: metricMode,
+    legacyMayAppReadySourceName: marker,
+    legacyMayAppReadyProviderMetricsSource: providerMetricsSource,
+    ...overrides,
+  };
+}
+
 function assertClose(actual, expected, epsilon = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} is not close to ${expected}`);
 }
@@ -234,7 +261,7 @@ test("approved metric lineage is required and unknown CAGR fallback is blocked",
   assert.match(missingPolicy.blockReasons.join("|"), /missing_metric_lineage|unsupported_calculation_policy_version/);
 });
 
-test("legacy May app-ready source is accepted only through compatibility adapter", () => {
+test("legacy May app-ready compatibility requires real loader-shaped eligibility evidence", () => {
   const sourceOnlySpoof = buildMonthlyBaselineProjection({
     settings: BASE_SETTINGS,
     assets: [
@@ -244,49 +271,99 @@ test("legacy May app-ready source is accepted only through compatibility adapter
         targetWeight: 100,
         cagr: 7,
         dividendYield: 1,
-        metricsSource: "us_price_metrics_overlay_20260528_app_ready",
+        metricsSource: "yfinance_close_price_20260528",
       },
     ],
   });
   assert.equal(sourceOnlySpoof.status, "blocked");
   assert.match(sourceOnlySpoof.blockReasons.join("|"), /missing_metric_status|missing_metric_lineage/);
 
-  const result = buildMonthlyBaselineProjection({
+  const evidenceOnly = buildMonthlyBaselineProjection({
     settings: BASE_SETTINGS,
     assets: [
       {
-        ticker: "SPY",
+        ticker: "FAKE",
         market: "US",
         targetWeight: 100,
         cagr: 7,
         dividendYield: 1,
-        metricsSource: "us_price_metrics_overlay_20260528_app_ready",
-        metricMode: "us_price_metrics_overlay_price_close",
-        dataSource:
-          "finple_app_candidates_6000_balanced_v1+final_2000_overlay+us_price_metrics_overlay_20260528_app_ready",
+        metricsSource: "yfinance_close_price_20260528",
+        legacyAppReadyEvidence: true,
       },
     ],
   });
-  assert.equal(result.status, "ready");
+  assert.equal(evidenceOnly.status, "blocked");
+
+  const arbitraryCombo = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [
+      {
+        ...legacyMayLoaderAsset({ ticker: "FAKE" }),
+        legacyMayAppReadyEligibilityKey: "US:GSST",
+      },
+    ],
+  });
+  assert.equal(arbitraryCombo.status, "blocked");
+
+  const us = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [legacyMayLoaderAsset({ ticker: "GSST", market: "US" })],
+  });
+  assert.equal(us.status, "ready");
   assert.equal(
-    result.assets[0].metricLineage.compatibilityAdapter,
+    us.assets[0].metricLineage.compatibilityAdapter,
     "legacy-may-app-ready-compat-v1-step114-2e",
   );
-  assert.equal(result.assets[0].metricLineage.calculationPolicyVersion, "metrics-calculation-policy-2026-06-26");
-  assert.equal(result.assets[0].metricLineage.pipelineVersion, "legacy-may-app-ready-loader-v1");
-  assert.equal(result.assets[0].metricLineage.metricBaseDate, "2026-05-28");
-  assert.match(result.assets[0].metricLineage.sourceHash, /^[0-9a-f]{64}$/);
+  assert.equal(us.assets[0].metricLineage.metricsSource, "yfinance_close_price_20260528");
+  assert.equal(us.assets[0].metricLineage.pipelineVersion, "legacy-may-app-ready-loader-v1");
+  assert.equal(us.assets[0].metricLineage.metricBaseDate, "2026-05-28");
+  assert.match(us.assets[0].metricLineage.sourceHash, /^[0-9a-f]{64}$/);
+
+  const kr = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [legacyMayLoaderAsset({ ticker: "069500", market: "KR", cagr: 18.43 })],
+  });
+  assert.equal(kr.status, "ready");
+  assert.equal(kr.assets[0].ticker, "069500");
+  assert.equal(kr.assets[0].metricLineage.metricsSource, "yfinance_kr_close_price_20260528");
 });
 
 test("KR leading-zero tickers are preserved in normalized baseline assets", () => {
   const result = buildMonthlyBaselineProjection({
     settings: BASE_SETTINGS,
     assets: [
-      asset({ ticker: "005930", market: "KR", targetWeight: 50, cagr: 5, dividendYield: 1 }),
-      asset({ ticker: "069500", market: "KR", targetWeight: 50, cagr: 4, dividendYield: 1 }),
+      legacyMayLoaderAsset({ ticker: "005930", market: "KR", targetWeight: 50, cagr: 28.23 }),
+      legacyMayLoaderAsset({ ticker: "069500", market: "KR", targetWeight: 50, cagr: 18.43 }),
     ],
   });
   assert.deepEqual(result.assets.map((item) => item.ticker), ["005930", "069500"]);
+});
+
+test("total-return contribution index is independent from dividend reinvest setting", () => {
+  const dividendAsset = asset({ ticker: "DIV", targetWeight: 50, cagr: 0, dividendYield: 12 });
+  const noDividendAsset = asset({ ticker: "NODIV", targetWeight: 50, cagr: 0, dividendYield: 0 });
+  const reinvested = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: true },
+    assets: [dividendAsset, noDividendAsset],
+  });
+  const externalCash = buildMonthlyBaselineProjection({
+    settings: { ...BASE_SETTINGS, dividendReinvest: false },
+    assets: [dividendAsset, noDividendAsset],
+  });
+
+  assert.equal(reinvested.status, "ready");
+  assert.equal(externalCash.status, "ready");
+  assertClose(
+    reinvested.summary.totalReturnContributionExcludedIndex,
+    externalCash.summary.totalReturnContributionExcludedIndex,
+  );
+  assertClose(reinvested.summary.contributionExcludedIndex, reinvested.summary.totalReturnContributionExcludedIndex);
+  assertClose(externalCash.summary.contributionExcludedIndex, externalCash.summary.totalReturnContributionExcludedIndex);
+  assert.notEqual(reinvested.futureValue, externalCash.futureValue);
+  assertClose(
+    externalCash.summary.endingValuePlusExternalDividends,
+    externalCash.futureValue + externalCash.cumulativeExternalDividendResult,
+  );
 });
 
 test("contributionExcludedIndex follows actual no-rebalance sleeve drift", () => {

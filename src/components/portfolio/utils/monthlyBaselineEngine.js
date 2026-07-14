@@ -15,19 +15,21 @@ const APPROVED_PIPELINE_VERSIONS = new Set([
 
 const LEGACY_MAY_APP_READY_SOURCES = new Map([
   [
-    "us_price_metrics_overlay_20260528_app_ready",
+    "yfinance_close_price_20260528",
     {
       market: "US",
       metricMode: "us_price_metrics_overlay_price_close",
+      overlayMarker: "us_price_metrics_overlay_20260528_app_ready",
       pipelineVersion: "legacy-may-app-ready-loader-v1",
       sourceHash: "9df1ffa8f19b68f41b63699e3e8bd1d82c7720c1acc9786b48b28040ed56ceec",
     },
   ],
   [
-    "kr_price_metrics_overlay_20260528_app_ready",
+    "yfinance_kr_close_price_20260528",
     {
       market: "KR",
       metricMode: "kr_price_metrics_overlay_price_close",
+      overlayMarker: "kr_price_metrics_overlay_20260528_app_ready",
       pipelineVersion: "legacy-may-app-ready-loader-v1",
       sourceHash: "4e683d29181f9deb49dbea74faea1c6af573a67e2beb0909c1ce11e66ca19002",
     },
@@ -78,10 +80,18 @@ function parseBooleanLike(value) {
 function hasLegacyMayLoaderEvidence(asset = {}, legacy) {
   const metricMode = String(asset.metricMode || "").trim();
   const dataSource = String(asset.dataSource || "");
-  const explicitEvidence = parseBooleanLike(asset.legacyAppReadyEvidence) === true;
+  const source = String(asset.metricsSource || "").trim();
+  const market = normalizeMarket(asset.market);
+  const ticker = normalizeTicker(asset.ticker);
+  const eligibilityKey = String(asset.legacyMayAppReadyEligibilityKey || "").trim().toUpperCase();
   return (
-    explicitEvidence ||
-    (metricMode === legacy.metricMode && dataSource.includes(String(asset.metricsSource || "").trim()))
+    parseBooleanLike(asset.legacyMayAppReadyEligibility) === true &&
+    metricMode === legacy.metricMode &&
+    dataSource.includes(legacy.overlayMarker) &&
+    String(asset.legacyMayAppReadyMetricMode || "").trim() === legacy.metricMode &&
+    String(asset.legacyMayAppReadySourceName || "").trim() === legacy.overlayMarker &&
+    String(asset.legacyMayAppReadyProviderMetricsSource || "").trim() === source &&
+    eligibilityKey === `${market}:${ticker}`
   );
 }
 
@@ -90,7 +100,7 @@ function isLegacyMayAppReadySource(asset = {}) {
   const legacy = LEGACY_MAY_APP_READY_SOURCES.get(source);
   if (!legacy) return false;
   const market = normalizeMarket(asset.market);
-  return (!market || market === legacy.market) && hasLegacyMayLoaderEvidence(asset, legacy);
+  return market === legacy.market && hasLegacyMayLoaderEvidence(asset, legacy);
 }
 
 function adaptMetricMetadata(asset = {}) {
@@ -342,6 +352,10 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
       metricMode: asset.metricMode || "",
       dataSource: asset.dataSource || "",
       metricsSource: asset.metricsSource || "",
+      legacyMayAppReadyEligibility: asset.legacyMayAppReadyEligibility || "",
+      legacyMayAppReadyEligibilityKey: asset.legacyMayAppReadyEligibilityKey || "",
+      legacyMayAppReadySourceName: asset.legacyMayAppReadySourceName || "",
+      legacyMayAppReadyProviderMetricsSource: asset.legacyMayAppReadyProviderMetricsSource || "",
       sourceHash: asset.sourceHash || "",
       rawSourceSha256: asset.rawSourceSha256 || "",
       normalizationVersion: asset.normalizationVersion || "",
@@ -619,7 +633,9 @@ export function buildMonthlyBaselineProjection({
   const expectedAnnualDividend =
     expectedMonthlyDividendOnInitial === null ? null : expectedMonthlyDividendOnInitial * 12;
 
-  const sleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
+  const actualSleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
+  const pricePerformanceSleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
+  const totalReturnPerformanceSleeveValues = normalizedAssets.map((asset) => simulationStartValue * asset.targetWeight);
   let cumulativeContributions = simulationStartValue;
   let cumulativeDividendCashFlow = 0;
   let cumulativeExternalDividendCashFlow = 0;
@@ -653,22 +669,42 @@ export function buildMonthlyBaselineProjection({
 
   for (let monthIndex = 1; monthIndex <= investmentMonths; monthIndex += 1) {
     for (const [index, asset] of normalizedAssets.entries()) {
-      sleeveValues[index] += monthlyContribution * asset.targetWeight;
+      actualSleeveValues[index] += monthlyContribution * asset.targetWeight;
+      pricePerformanceSleeveValues[index] += monthlyContribution * asset.targetWeight;
+      totalReturnPerformanceSleeveValues[index] += monthlyContribution * asset.targetWeight;
     }
 
-    const startValueAfterContribution = sleeveValues.reduce((sum, value) => sum + value, 0);
+    const actualStartValueAfterContribution = actualSleeveValues.reduce((sum, value) => sum + value, 0);
+    const pricePerformanceStartValue = pricePerformanceSleeveValues.reduce((sum, value) => sum + value, 0);
+    const totalReturnPerformanceStartValue = totalReturnPerformanceSleeveValues.reduce((sum, value) => sum + value, 0);
     let monthlyPriceReturnAmount = 0;
     let monthlyDividendCashFlow = 0;
     let monthlyExternalDividendCashFlow = 0;
+    let monthlyPriceOnlyPerformanceReturnAmount = 0;
+    let monthlyTotalReturnPerformancePriceAmount = 0;
+    let monthlyTotalReturnPerformanceDividendAmount = 0;
 
     for (const [index, asset] of normalizedAssets.entries()) {
-      const baseValue = sleeveValues[index];
+      const baseValue = actualSleeveValues[index];
       const priceReturn = baseValue * asset.monthlyPriceRate;
       const dividendFlow = asset.monthlyDividendRate === null ? 0 : baseValue * asset.monthlyDividendRate;
       monthlyPriceReturnAmount += priceReturn;
       monthlyDividendCashFlow += dividendFlow;
       if (!asset.dividendIncludedInReturn) monthlyExternalDividendCashFlow += dividendFlow;
-      sleeveValues[index] += priceReturn + (asset.dividendIncludedInReturn ? dividendFlow : 0);
+      actualSleeveValues[index] += priceReturn + (asset.dividendIncludedInReturn ? dividendFlow : 0);
+
+      const pricePerformanceBaseValue = pricePerformanceSleeveValues[index];
+      const pricePerformanceReturn = pricePerformanceBaseValue * asset.monthlyPriceRate;
+      monthlyPriceOnlyPerformanceReturnAmount += pricePerformanceReturn;
+      pricePerformanceSleeveValues[index] += pricePerformanceReturn;
+
+      const totalReturnPerformanceBaseValue = totalReturnPerformanceSleeveValues[index];
+      const totalReturnPerformancePrice = totalReturnPerformanceBaseValue * asset.monthlyPriceRate;
+      const totalReturnPerformanceDividend =
+        asset.monthlyDividendRate === null ? 0 : totalReturnPerformanceBaseValue * asset.monthlyDividendRate;
+      monthlyTotalReturnPerformancePriceAmount += totalReturnPerformancePrice;
+      monthlyTotalReturnPerformanceDividendAmount += totalReturnPerformanceDividend;
+      totalReturnPerformanceSleeveValues[index] += totalReturnPerformancePrice + totalReturnPerformanceDividend;
     }
 
     cumulativeContributions += monthlyContribution;
@@ -676,17 +712,18 @@ export function buildMonthlyBaselineProjection({
     cumulativeExternalDividendCashFlow += monthlyExternalDividendCashFlow;
     cumulativePriceGain += monthlyPriceReturnAmount;
     const monthlyPriceOnlyContributionExcludedReturn =
-      startValueAfterContribution > 0
-        ? monthlyPriceReturnAmount / startValueAfterContribution
+      pricePerformanceStartValue > 0
+        ? monthlyPriceOnlyPerformanceReturnAmount / pricePerformanceStartValue
         : 0;
     const monthlyTotalReturnContributionExcludedReturn =
-      startValueAfterContribution > 0
-        ? (monthlyPriceReturnAmount + monthlyDividendCashFlow) / startValueAfterContribution
+      totalReturnPerformanceStartValue > 0
+        ? (monthlyTotalReturnPerformancePriceAmount + monthlyTotalReturnPerformanceDividendAmount) /
+          totalReturnPerformanceStartValue
         : 0;
     priceOnlyContributionExcludedIndex *= 1 + monthlyPriceOnlyContributionExcludedReturn;
     totalReturnContributionExcludedIndex *= 1 + monthlyTotalReturnContributionExcludedReturn;
 
-    const portfolioValueNominal = sleeveValues.reduce((sum, value) => sum + value, 0);
+    const portfolioValueNominal = actualSleeveValues.reduce((sum, value) => sum + value, 0);
     const inflationDivisor = (1 + monthlyInflationRate) ** monthIndex;
     const portfolioValueReal = portfolioValueNominal / inflationDivisor;
     const investmentGainNominal = portfolioValueNominal - cumulativeContributions;
@@ -704,10 +741,13 @@ export function buildMonthlyBaselineProjection({
       totalReturnContributionExcludedIndex: roundNumber(totalReturnContributionExcludedIndex),
       monthlyContributionApplied: roundNumber(monthlyContribution),
       monthlyPriceReturnApplied: roundNumber(monthlyPriceReturnAmount),
-      monthlyPriceReturnRate: roundNumber(monthlyPriceReturnAmount / startValueAfterContribution, 10),
+      monthlyPriceReturnRate: roundNumber(monthlyPriceReturnAmount / actualStartValueAfterContribution, 10),
       monthlyContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
       monthlyPriceOnlyContributionExcludedReturn: roundNumber(monthlyPriceOnlyContributionExcludedReturn, 10),
       monthlyTotalReturnContributionExcludedReturn: roundNumber(monthlyTotalReturnContributionExcludedReturn, 10),
+      monthlyPriceOnlyPerformanceReturnApplied: roundNumber(monthlyPriceOnlyPerformanceReturnAmount),
+      monthlyTotalReturnPerformancePriceApplied: roundNumber(monthlyTotalReturnPerformancePriceAmount),
+      monthlyTotalReturnPerformanceDividendApplied: roundNumber(monthlyTotalReturnPerformanceDividendAmount),
       monthlyDividendCashFlow: roundNumber(monthlyDividendCashFlow),
       cumulativeDividendCashFlow: roundNumber(cumulativeDividendCashFlow),
       monthlyExternalDividendCashFlow: roundNumber(monthlyExternalDividendCashFlow),
