@@ -25,9 +25,13 @@ from .schemas import (
     FULL_METRICS_COLUMNS,
     MONTHLY_PRICE_COLUMNS,
     MONTHLY_RETURNS_COLUMNS,
+    NORMALIZED_MONTH_END_COLUMNS,
+    RAW_DAILY_PRICE_COLUMNS,
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
+    TIMESERIES_AUDIT_COLUMNS,
 )
+from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
 
 
 class PipelineCriticalError(RuntimeError):
@@ -47,7 +51,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     candidates_path = input_dir / pipeline_config.candidate_file
     benchmark_path = input_dir / pipeline_config.benchmark_map_file
     prices_path = input_dir / pipeline_config.monthly_prices_file
-    source_paths = [candidates_path, benchmark_path, prices_path]
+    raw_daily_path = input_dir / pipeline_config.raw_daily_prices_file
+    source_paths = [candidates_path, benchmark_path, prices_path, raw_daily_path]
     for path in source_paths:
         if not path.exists():
             critical_errors.append(f"Required input file missing: {path.name}")
@@ -57,12 +62,21 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     candidates = _read_csv(candidates_path)
     benchmark_map = _read_benchmark_map(benchmark_path)
     price_rows = _read_csv(prices_path)
+    raw_daily_rows = _read_csv(raw_daily_path)
     critical_errors.extend(_validate_candidates(candidates, pipeline_config))
     critical_errors.extend(_validate_price_rows(price_rows))
+    critical_errors.extend(_validate_raw_daily_schema(raw_daily_rows))
     if critical_errors:
         raise PipelineCriticalError("; ".join(critical_errors))
 
     source_hashes = {path.name: _sha256(path) for path in source_paths}
+    raw_daily_normalization = normalize_daily_price_rows(
+        raw_daily_rows,
+        source_file_name=raw_daily_path.name,
+        source_sha256=source_hashes[raw_daily_path.name],
+    )
+    normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
+    timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
     price_hash_by_ticker = _hash_price_rows(price_rows)
     prices_by_ticker = _group_prices(price_rows)
 
@@ -95,6 +109,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     selected_csv = output_dir / f"finple_metrics_selected_{version}.csv"
     review_csv = output_dir / f"finple_metrics_review_required_{version}.csv"
     returns_csv = output_dir / f"finple_monthly_returns_{version}.csv"
+    normalized_csv = output_dir / f"finple_normalized_month_end_{version}.csv"
+    timeseries_audit_csv = output_dir / f"finple_timeseries_audit_{version}.csv"
     audit_html = output_dir / f"finple_metrics_audit_report_{version}.html"
     manifest_json = output_dir / f"finple_metrics_manifest_{version}.json"
     package_zip = output_dir / f"finple_monthly_metrics_{version}_package.zip"
@@ -103,16 +119,24 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     _write_csv(selected_csv, SELECTED_COLUMNS, selected_rows)
     _write_csv(review_csv, REVIEW_REQUIRED_COLUMNS, review_rows)
     _write_csv(returns_csv, MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
+    _write_csv(normalized_csv, NORMALIZED_MONTH_END_COLUMNS, normalized_month_end_rows)
+    _write_csv(timeseries_audit_csv, TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
 
-    audit_summary = build_audit_summary(full_rows, review_rows)
+    audit_summary = build_audit_summary(
+        full_rows,
+        review_rows,
+        normalized_rows=normalized_month_end_rows,
+        timeseries_audit_rows=timeseries_audit_rows,
+    )
     write_audit_report(audit_html, audit_summary, source_hashes)
 
-    output_files = [output_csv, selected_csv, review_csv, audit_html, manifest_json, returns_csv]
+    output_files = [output_csv, selected_csv, review_csv, audit_html, manifest_json, returns_csv, normalized_csv, timeseries_audit_csv]
     manifest = _build_manifest(
         config=pipeline_config,
         source_hashes=source_hashes,
-        output_files=[output_csv, selected_csv, review_csv, audit_html, returns_csv],
+        output_files=[output_csv, selected_csv, review_csv, audit_html, returns_csv, normalized_csv, timeseries_audit_csv],
         audit_summary=audit_summary,
+        source_metadata=[raw_daily_normalization["sourceMetadata"]],
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -136,6 +160,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             "auditReportHtml": str(audit_html),
             "manifestJson": str(manifest_json),
             "monthlyReturnsCsv": str(returns_csv),
+            "normalizedMonthEndCsv": str(normalized_csv),
+            "timeseriesAuditCsv": str(timeseries_audit_csv),
             "zipPackage": str(package_zip),
         },
     }
@@ -210,6 +236,15 @@ def _validate_price_rows(rows: list[dict[str, str]]) -> list[str]:
             errors.append(f"publicationEligibility must be approved in fixture publish path: {key[0]}")
     errors.extend(_validate_continuous_month_end_rows(rows))
     return errors
+
+
+def _validate_raw_daily_schema(rows: list[dict[str, str]]) -> list[str]:
+    if not rows:
+        return ["raw daily fixture input missing"]
+    missing_columns = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(rows[0]))
+    if missing_columns:
+        return [f"raw daily fixture missing required columns: {', '.join(missing_columns)}"]
+    return []
 
 
 def _validate_continuous_month_end_rows(rows: list[dict[str, str]]) -> list[str]:
@@ -440,6 +475,7 @@ def _build_manifest(
     source_hashes: Mapping[str, str],
     output_files: list[Path],
     audit_summary: Mapping[str, int],
+    source_metadata: list[Mapping[str, Any]],
 ) -> dict[str, Any]:
     return {
         "metricBaseDate": config.metric_base_date,
@@ -457,9 +493,8 @@ def _build_manifest(
             "deterministicFixture": config.deterministic_fixture,
             "randomSeed": config.random_seed,
         },
-        "sourceFiles": [
-            {"name": name, "sha256": sha256, "mode": "fixture"} for name, sha256 in sorted(source_hashes.items())
-        ],
+        "sourceFiles": [_source_file_manifest_item(name, sha256) for name, sha256 in sorted(source_hashes.items())],
+        "sourceMetadata": list(source_metadata),
         "outputs": [path.name for path in output_files],
         "outputHashes": {path.name: _sha256(path) for path in output_files},
         "policy": {
@@ -474,6 +509,28 @@ def _build_manifest(
         "productionPublishReady": False,
         "appExportApproved": False,
         "externalProviderCalls": False,
+        "normalizationVersion": NORMALIZATION_VERSION,
+    }
+
+
+def _source_file_manifest_item(name: str, sha256: str) -> dict[str, Any]:
+    return {
+        "name": name,
+        "sourceFileName": name,
+        "sha256": sha256,
+        "sourceSha256": sha256,
+        "mode": "fixture",
+        "sourceId": f"fixture_{name}",
+        "retrievedAt": "2026-07-14T00:00:00+09:00",
+        "providerOrInstitution": "FINPLE synthetic fixture",
+        "licenseStatus": "approved" if name != "raw_daily_prices.csv" else "mixed_or_review_required",
+        "internalUseAllowed": True,
+        "publicationAllowed": False,
+        "redistributionAllowed": False,
+        "priceAdjustmentBasis": "fixture_contract",
+        "normalizationVersion": NORMALIZATION_VERSION,
+        "schemaVersion": SCHEMA_VERSION,
+        "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
     }
 
 

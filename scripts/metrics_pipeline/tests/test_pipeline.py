@@ -47,13 +47,20 @@ class MetricsPipelineTests(unittest.TestCase):
 
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
-            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2a")
+            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2b")
             self.assertEqual(manifest["schemaVersion"], "metrics-csv-schema-v3")
             self.assertFalse(manifest["externalProviderCalls"])
             self.assertTrue(manifest["fixturePackageReady"])
             self.assertFalse(manifest["productionPublishReady"])
             self.assertFalse(manifest["appExportApproved"])
-            self.assertEqual({item["name"] for item in manifest["sourceFiles"]}, {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv"})
+            self.assertEqual(
+                {item["name"] for item in manifest["sourceFiles"]},
+                {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv", "raw_daily_prices.csv"},
+            )
+            self.assertIn("sourceMetadata", manifest)
+            self.assertEqual(manifest["sourceMetadata"][0]["sourceFileName"], "raw_daily_prices.csv")
+            self.assertFalse(manifest["sourceMetadata"][0]["publicationAllowed"])
+            self.assertFalse(manifest["sourceMetadata"][0]["redistributionAllowed"])
 
             with ZipFile(outputs["zipPackage"]) as package:
                 names = set(package.namelist())
@@ -63,6 +70,8 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("finple_metrics_audit_report_2026_06.html", names)
             self.assertIn("finple_metrics_manifest_2026_06.json", names)
             self.assertIn("finple_monthly_returns_2026_06.csv", names)
+            self.assertIn("finple_normalized_month_end_2026_06.csv", names)
+            self.assertIn("finple_timeseries_audit_2026_06.csv", names)
 
     def test_output_schema_review_split_and_kr_ticker_preservation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -172,6 +181,94 @@ class MetricsPipelineTests(unittest.TestCase):
                 run_finple_monthly_metrics_pipeline(
                     build_config(Path(temp_dir), selected_cagr_policy="raw_10y", current_price_display=True)
                 )
+
+    def test_daily_to_month_end_selects_last_valid_observation_and_preserves_kr_tickers(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+
+            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+            by_ticker_month = {(row["ticker"], row["month"]): row for row in rows}
+            self.assertEqual(by_ticker_month[("SPY", "2026-01-31")]["sourceDate"], "2026-01-30")
+            self.assertEqual(by_ticker_month[("SPY", "2026-02-28")]["sourceDate"], "2026-02-27")
+            self.assertEqual(by_ticker_month[("005930", "2026-01-31")]["ticker"], "005930")
+            self.assertEqual(by_ticker_month[("069500", "2026-01-31")]["priceSeriesClassification"], "total_return_adjusted")
+
+    def test_timeseries_audit_blocks_bad_rows_without_forward_fill_or_app_approval(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+
+            with outputs["timeseriesAuditCsv"].open("r", encoding="utf-8", newline="") as handle:
+                audit_rows = list(csv.DictReader(handle))
+            issue_types = {row["issueType"] for row in audit_rows}
+
+            for expected in [
+                "missing_calendar_month",
+                "duplicate_date",
+                "non_positive_price",
+                "non_monotonic_date_order",
+                "malformed_or_missing_date",
+                "missing_required_price_basis",
+                "inconsistent_currency",
+                "inconsistent_market_ticker_identifier",
+                "implausible_split_factor",
+                "corporate_action_inconsistency",
+                "ambiguous_adjustment_basis",
+                "invalid_provenance_publication_policy",
+                "duplicate_corporate_action_entry",
+            ]:
+                self.assertIn(expected, issue_types)
+
+            blocking_rows = [row for row in audit_rows if row["blocksPublication"] == "true"]
+            self.assertGreaterEqual(len(blocking_rows), 10)
+            self.assertTrue(result["fixturePackageReady"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
+
+            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            missing_month_rows = [row for row in normalized_rows if row["ticker"] == "MISSING"]
+            self.assertEqual([row["month"] for row in missing_month_rows], ["2026-01-31", "2026-03-31"])
+
+    def test_adjustment_basis_and_corporate_action_audit_are_explicit(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+
+            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            classifications = {row["ticker"]: row["priceSeriesClassification"] for row in normalized}
+            self.assertEqual(classifications["NOACT"], "raw_close")
+            self.assertEqual(classifications["SPLT"], "split_adjusted")
+            self.assertEqual(classifications["DIVD"], "split_adjusted")
+            self.assertEqual(classifications["069500"], "total_return_adjusted")
+            self.assertNotIn("AMBIG", classifications)
+
+            with outputs["timeseriesAuditCsv"].open("r", encoding="utf-8", newline="") as handle:
+                audit_rows = list(csv.DictReader(handle))
+            self.assertTrue(any(row["ticker"] == "SPLT" and row["issueType"] == "valid_stock_split" for row in audit_rows))
+            self.assertTrue(any(row["ticker"] == "DIVD" and row["issueType"] == "cash_dividend" for row in audit_rows))
+            self.assertTrue(any(row["ticker"] == "AMBIG" and row["priceSeriesClassification"] == "ambiguous" for row in audit_rows))
+
+    def test_provenance_hashes_are_deterministic_and_raw_fixture_is_immutable(self):
+        raw_fixture = FIXTURE_DIR / "raw_daily_prices.csv"
+        before = raw_fixture.read_bytes()
+
+        with tempfile.TemporaryDirectory() as first_dir, tempfile.TemporaryDirectory() as second_dir:
+            first = run_finple_monthly_metrics_pipeline(build_config(Path(first_dir)))
+            second = run_finple_monthly_metrics_pipeline(build_config(Path(second_dir)))
+
+            first_manifest = json.loads(Path(first["outputs"]["manifestJson"]).read_text(encoding="utf-8"))
+            second_manifest = json.loads(Path(second["outputs"]["manifestJson"]).read_text(encoding="utf-8"))
+            first_raw = next(item for item in first_manifest["sourceFiles"] if item["name"] == "raw_daily_prices.csv")
+            second_raw = next(item for item in second_manifest["sourceFiles"] if item["name"] == "raw_daily_prices.csv")
+            self.assertEqual(first_raw["sourceSha256"], second_raw["sourceSha256"])
+            self.assertEqual(first_manifest["sourceMetadata"][0]["sourceSha256"], second_manifest["sourceMetadata"][0]["sourceSha256"])
+
+        self.assertEqual(raw_fixture.read_bytes(), before)
 
 
 if __name__ == "__main__":
