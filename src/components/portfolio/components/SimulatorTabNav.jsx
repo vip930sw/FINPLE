@@ -3,6 +3,7 @@ const TAB_ITEMS = [
   { key: "compare", step: "STEP 2", title: "포트폴리오" },
   { key: "detail", step: "STEP 3", title: "상세분석" },
   { key: "probability", step: "STEP 4", title: "확률분석" },
+  { key: "shock", step: "STEP 5", title: "외부충격분석" },
   { key: "ai", step: "AI", title: "포트폴리오 AI 분석" },
 ];
 

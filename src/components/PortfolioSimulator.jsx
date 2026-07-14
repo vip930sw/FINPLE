@@ -6,11 +6,12 @@ import ComparePanel from "./portfolio/components/ComparePanel";
 import SettingsPanel from "./portfolio/components/SettingsPanel";
 import DetailPanel from "./portfolio/components/DetailPanel";
 import ProbabilityAnalysisPanel from "./portfolio/components/ProbabilityAnalysisPanel";
+import ExternalShockAnalysisPanel from "./portfolio/components/ExternalShockAnalysisPanel";
 import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 
-const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "probability", "ai"];
+const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "probability", "shock", "ai"];
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange } = props || {};
@@ -112,6 +113,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       compare: "compare",
       detail: "detail",
       probability: "probability-analysis",
+      shock: "external-shock-analysis",
       ai: "ai-analysis",
     };
 
@@ -146,7 +148,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     [handleSimulatorTabChange, scrollToSimulatorTop]
   );
 
-  const shouldShowFloatingPortfolioDropdown = ["settings", "detail", "probability", "ai"].includes(
+  const shouldShowFloatingPortfolioDropdown = ["settings", "detail", "probability", "shock", "ai"].includes(
     effectiveActiveSimulatorTab
   );
 
@@ -155,6 +157,8 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       ? "현재 편집 중"
       : effectiveActiveSimulatorTab === "probability"
         ? "확률분석 대상 포트폴리오"
+        : effectiveActiveSimulatorTab === "shock"
+        ? "외부충격분석 대상 포트폴리오"
         : effectiveActiveSimulatorTab === "ai"
         ? "포트폴리오 AI 분석 대상"
         : "현재 분석 중";
@@ -254,6 +258,18 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       {effectiveActiveSimulatorTab === "probability" && (
         <div id="probability-analysis" className="simulatorTabAnchor">
           <ProbabilityAnalysisPanel
+            activePortfolio={activePortfolio}
+            assets={assets}
+            result={result}
+            settings={settings}
+            isEmptyAssetRow={isEmptyAssetRow}
+          />
+        </div>
+      )}
+
+      {effectiveActiveSimulatorTab === "shock" && (
+        <div id="external-shock-analysis" className="simulatorTabAnchor">
+          <ExternalShockAnalysisPanel
             activePortfolio={activePortfolio}
             assets={assets}
             result={result}
