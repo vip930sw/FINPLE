@@ -1,10 +1,6 @@
 import { AlertTriangle, BarChart3, Info, ShieldCheck } from "lucide-react";
 
 import {
-  STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
-  STEP114_2G_PROBABILITY_FIXTURE_RESULT,
-} from "../fixtures/probabilityScenarioResultFixture";
-import {
   buildProbabilityScenarioViewModel,
   isProbabilityViewModelReady,
 } from "../utils/probabilityScenarioAdapter";
@@ -25,6 +21,7 @@ function formatAssetList(assets = []) {
 }
 
 function ProbabilityStatusPanel({ viewModel }) {
+  const isWarning = viewModel.status === "blocked" || viewModel.status === "error" || viewModel.status === "stale";
   return (
     <section
       className={`probabilityStatusPanel probabilityStatus-${viewModel.status}`}
@@ -32,7 +29,7 @@ function ProbabilityStatusPanel({ viewModel }) {
       aria-label="확률분석 상태"
     >
       <div className="probabilityStatusIcon" aria-hidden="true">
-        {viewModel.status === "blocked" || viewModel.status === "error" ? <AlertTriangle size={22} /> : <Info size={22} />}
+        {isWarning ? <AlertTriangle size={22} /> : <Info size={22} />}
       </div>
       <div>
         <strong>{viewModel.title}</strong>
@@ -63,7 +60,7 @@ function MethodologyPanel({ viewModel }) {
         <ShieldCheck size={18} aria-hidden="true" />
         <div>
           <p className="sectionLabel">Methodology</p>
-          <h4>데이터 품질 및 방법론</h4>
+          <h4>데이터 범위와 방법론</h4>
         </div>
       </div>
 
@@ -97,8 +94,11 @@ export default function ProbabilityAnalysisPanel({
   settings,
   result,
   isEmptyAssetRow,
-  scenarioResult = STEP114_2G_PROBABILITY_FIXTURE_RESULT,
-  expectedInputHash = STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
+  scenarioResult = null,
+  expectedInputHash = null,
+  expectedOutputHash = null,
+  enableFixtureReview = false,
+  fixtureBaselineResult = null,
 }) {
   const activeAssets = getActiveAssets(assets, isEmptyAssetRow);
   const viewModel = buildProbabilityScenarioViewModel({
@@ -106,22 +106,12 @@ export default function ProbabilityAnalysisPanel({
     activePortfolio,
     assets: activeAssets,
     settings,
-    baselineResult: result,
+    baselineResult: fixtureBaselineResult || result,
     expectedInputHash,
+    expectedOutputHash,
+    enableFixtureReview,
   });
-  const staleDisplayViewModel = viewModel.status === "stale" && viewModel.previousResult
-    ? buildProbabilityScenarioViewModel({
-      result: viewModel.previousResult,
-      activePortfolio,
-      assets: activeAssets,
-      settings,
-      baselineResult: result,
-      expectedInputHash: null,
-    })
-    : null;
   const isReady = isProbabilityViewModelReady(viewModel);
-  const canShowStaleChart = isProbabilityViewModelReady(staleDisplayViewModel);
-  const chartViewModel = isReady ? viewModel : staleDisplayViewModel;
 
   return (
     <div className="simulatorTabPanel probabilityAnalysisPanel">
@@ -130,54 +120,68 @@ export default function ProbabilityAnalysisPanel({
           <p className="sectionLabel">Step 4. Probability</p>
           <h3>확률분석</h3>
           <p>
-            검증된 fixture 결과를 이용해 과거 월간 수익률 재표본화 기반의 확률 밴드를 확인합니다.
+            검증된 precomputed 결과가 준비된 경우에만 과거 월간 수익률 재표본화 기반 확률 밴드를 표시합니다.
           </p>
         </div>
         <div className="probabilityFixtureBadge">
-          <span>fixture review</span>
-          <strong>production 비활성</strong>
+          <span>{enableFixtureReview ? "fixture review" : "idle"}</span>
+          <strong>{enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
         </div>
       </div>
 
-      <section className="probabilityPortfolioContext" aria-label="선택 포트폴리오 확률분석 컨텍스트">
-        <div>
-          <span>선택 포트폴리오</span>
-          <strong>{activePortfolio?.name || "선택 포트폴리오"}</strong>
-        </div>
-        <div>
-          <span>표시 자산</span>
-          <strong>{formatAssetList(activeAssets)}</strong>
-        </div>
+      <section className="probabilityPortfolioContext" aria-label="확률분석 컨텍스트">
+        {isReady ? (
+          <>
+            <div>
+              <span>분석 identity</span>
+              <strong>{viewModel.selectedPortfolioName}</strong>
+            </div>
+            <div>
+              <span>분석 자산</span>
+              <strong>{viewModel.displayAssets?.join(" · ") || "-"}</strong>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <span>현재 포트폴리오</span>
+              <strong>{activePortfolio?.name || "선택 포트폴리오"}</strong>
+            </div>
+            <div>
+              <span>현재 자산</span>
+              <strong>{formatAssetList(activeAssets)}</strong>
+            </div>
+          </>
+        )}
         <div>
           <span>상태</span>
           <strong>{viewModel.status}</strong>
         </div>
       </section>
 
-      {!isReady ? (
-        <ProbabilityStatusPanel viewModel={viewModel} />
-      ) : null}
+      {!isReady ? <ProbabilityStatusPanel viewModel={viewModel} /> : null}
 
-      {isReady || canShowStaleChart ? (
+      {isReady ? (
         <>
           <section className="probabilityReadyNotice" aria-label="확률분석 검증 상태">
             <BarChart3 size={20} aria-hidden="true" />
             <div>
-              <strong>{viewModel.status === "stale" ? "이전 fixture-safe 확률 밴드" : "검증된 fixture-safe 확률 밴드"}</strong>
+              <strong>검증된 fixture-safe 확률 밴드</strong>
               <p>
-                P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은 별도 선으로 표시합니다.
-                {viewModel.status === "stale" ? " 현재 포트폴리오와 일치하지 않는 이전 결과입니다." : ""}
+                P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은
+                동일 analysis identity가 확인된 경우에만 함께 표시됩니다.
               </p>
             </div>
           </section>
 
-          <ProbabilityBandChart chart={chartViewModel.chart} />
-          <SummaryCards cards={chartViewModel.summaryCards} />
+          <ProbabilityBandChart chart={viewModel.chart} />
+          <SummaryCards cards={viewModel.summaryCards} />
 
           <section className="probabilityMddNotice" aria-label="시나리오 MDD 안내">
-            <strong>시나리오 MDD와 기존 historical MDD는 다른 지표입니다.</strong>
+            <strong>시나리오 MDD는 기존 historical MDD와 다른 지표입니다.</strong>
             <p>
-              시나리오 MDD는 bootstrap 경로별 risk NAV 하락폭 분포입니다. 음수 값에서는 더 낮은 분위수가 더 불리한 하방 위험입니다.
+              시나리오 MDD는 bootstrap 경로별 risk NAV 하락률 분포입니다. 회복 값에서는 미회복 비율과
+              회복 기간을 별도 지표로 분리합니다.
             </p>
           </section>
         </>
@@ -188,8 +192,8 @@ export default function ProbabilityAnalysisPanel({
       <section className="probabilityDisclaimer" aria-label="확률분석 고지">
         <strong>투자 유의사항</strong>
         <p>
-          이 확률분석은 과거 월간 수익률을 재표본화한 시뮬레이션입니다.
-          미래 수익을 예측하거나 보장하지 않으며, 투자 권유가 아닙니다.
+          이 확률분석은 과거 월간 수익률 재표본화 시뮬레이션입니다.
+          미래 수익을 예측하거나 보장하지 않으며 투자 권유가 아닙니다.
         </p>
       </section>
     </div>

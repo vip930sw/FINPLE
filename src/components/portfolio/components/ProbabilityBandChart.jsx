@@ -1,18 +1,21 @@
-function safeNumber(value, fallback = 0) {
-  return Number.isFinite(Number(value)) ? Number(value) : fallback;
+function strictNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function formatCompactWon(value) {
-  const number = safeNumber(value);
+  const number = strictNumber(value);
+  if (number === null) return "-";
   if (number >= 100000000) return `${(number / 100000000).toFixed(1)}억`;
   if (number >= 10000) return `${Math.round(number / 10000).toLocaleString("ko-KR")}만`;
   return Math.round(number).toLocaleString("ko-KR");
 }
 
 function formatMonthLabel(monthIndex) {
-  const months = Math.max(0, Number(monthIndex || 0));
-  const years = Math.floor(months / 12);
-  const rest = months % 12;
+  const months = strictNumber(monthIndex);
+  if (months === null) return "-";
+  const safeMonths = Math.max(0, months);
+  const years = Math.floor(safeMonths / 12);
+  const rest = safeMonths % 12;
   if (years <= 0) return `${rest}개월`;
   return rest > 0 ? `${years}년 ${rest}개월` : `${years}년`;
 }
@@ -32,6 +35,10 @@ function createBandPath(upperPoints, lowerPoints, getX, getY) {
     .map((point) => `L ${getX(point.monthIndex).toFixed(2)} ${getY(point.value).toFixed(2)}`)
     .join(" ");
   return `${top} ${bottom} Z`;
+}
+
+function toLinePoints(bands, key) {
+  return bands.map((band) => ({ monthIndex: band.monthIndex, value: band[key] }));
 }
 
 export default function ProbabilityBandChart({ chart }) {
@@ -58,28 +65,28 @@ export default function ProbabilityBandChart({ chart }) {
       contributionMap.get(band.monthIndex),
     ]),
     ...baselineReference.map((point) => point.value),
-  ].map((value) => Number(value)).filter(Number.isFinite);
-  const maxMonth = Math.max(...bands.map((band) => safeNumber(band.monthIndex)), 1);
+  ].map(strictNumber).filter((value) => value !== null);
+  const maxMonth = Math.max(...bands.map((band) => band.monthIndex), 1);
   const maxValue = Math.max(...allValues, 1);
   const yTicks = [0, 0.25, 0.5, 0.75, 1];
 
   function getX(monthIndex) {
-    return padding + (safeNumber(monthIndex) / maxMonth) * chartWidth;
+    return padding + (monthIndex / maxMonth) * chartWidth;
   }
 
   function getY(value) {
-    return height - padding - (safeNumber(value) / maxValue) * chartHeight;
+    return height - padding - (value / maxValue) * chartHeight;
   }
 
-  const p10 = bands.map((band) => ({ monthIndex: band.monthIndex, value: band.p10Nominal }));
-  const p25 = bands.map((band) => ({ monthIndex: band.monthIndex, value: band.p25Nominal }));
-  const p50 = bands.map((band) => ({ monthIndex: band.monthIndex, value: band.p50Nominal }));
-  const p75 = bands.map((band) => ({ monthIndex: band.monthIndex, value: band.p75Nominal }));
-  const p90 = bands.map((band) => ({ monthIndex: band.monthIndex, value: band.p90Nominal }));
+  const p10 = toLinePoints(bands, "p10Nominal");
+  const p25 = toLinePoints(bands, "p25Nominal");
+  const p50 = toLinePoints(bands, "p50Nominal");
+  const p75 = toLinePoints(bands, "p75Nominal");
+  const p90 = toLinePoints(bands, "p90Nominal");
   const contributions = bands.map((band) => ({
     monthIndex: band.monthIndex,
     value: contributionMap.get(band.monthIndex),
-  })).filter((point) => Number.isFinite(Number(point.value)));
+  }));
   const monthTicks = Array.from(new Set([0, 12, 24, 36, 48, 60, maxMonth].filter((tick) => tick <= maxMonth)));
 
   return (
@@ -99,12 +106,6 @@ export default function ProbabilityBandChart({ chart }) {
           role="img"
           aria-label={chart.ariaLabel || "확률분석 P10 P25 P50 P75 P90 밴드 차트"}
         >
-          <defs>
-            <pattern id="probabilityContributionPattern" width="8" height="8" patternUnits="userSpaceOnUse">
-              <path d="M0 8 L8 0" stroke="#334155" strokeWidth="1.5" />
-            </pattern>
-          </defs>
-
           {yTicks.map((ratio) => {
             const value = maxValue * ratio;
             const y = height - padding - ratio * chartHeight;
