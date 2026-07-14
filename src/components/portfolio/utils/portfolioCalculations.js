@@ -1,3 +1,5 @@
+import { buildMonthlyBaselineProjection } from "./monthlyBaselineEngine";
+
 function getAssetActualValue(asset = {}) {
   const quantity = Number(asset.quantity || 0);
   const price = Number(asset.price || 0);
@@ -15,97 +17,20 @@ function getAssetWeightValue(asset = {}) {
 }
 
 export function calculatePortfolioResult(settings, assets) {
-  const yearlyContribution = Number(settings.monthlyCashFlow || 0) * 12;
-
   const totalAssetValue = assets.reduce((sum, asset) => {
     return sum + getAssetWeightValue(asset);
   }, 0);
 
   const configuredStartValue = Number(settings.startValue || 0);
   const simulationStartValue = configuredStartValue > 0 ? configuredStartValue : totalAssetValue;
-  const weightBaseValue = totalAssetValue > 0 ? totalAssetValue : simulationStartValue;
-
-  const expectedCagr = assets.reduce((sum, asset) => {
-    const value = getAssetWeightValue(asset);
-    const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
-    return sum + weight * Number(asset.cagr || 0);
-  }, 0);
-
-  const expectedDividendYield = assets.reduce((sum, asset) => {
-    const value = getAssetWeightValue(asset);
-    const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
-    return sum + weight * Number(asset.dividendYield || 0);
-  }, 0);
-
-  const expectedBeta = assets.reduce((sum, asset) => {
-    const value = getAssetWeightValue(asset);
-    const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
-    return sum + weight * Number(asset.beta || 0);
-  }, 0);
-
-  const simpleMdd = assets.reduce((sum, asset) => {
-    const value = getAssetWeightValue(asset);
-    const weight = weightBaseValue > 0 ? value / weightBaseValue : 0;
-    return sum + weight * Number(asset.mdd || 0);
-  }, 0);
-
-  const expectedCalmar = Math.abs(simpleMdd) > 0 ? expectedCagr / Math.abs(simpleMdd) : 0;
-  const expectedAnnualDividend = Math.floor(simulationStartValue * (expectedDividendYield / 100));
-  const performanceRows = [];
-
-  let portfolioValue = simulationStartValue;
-  let cumulativeContribution = simulationStartValue;
-  let cumulativeDividend = 0;
-  let cumulativeProfit = 0;
-
-  for (let year = 1; year <= Number(settings.years || 0); year++) {
-    const annualContribution = yearlyContribution;
-    const annualDividend = Math.floor(portfolioValue * (expectedDividendYield / 100));
-    const baseForGrowth = portfolioValue + annualContribution + (settings.dividendReinvest ? annualDividend : 0);
-    const annualProfit = Math.floor(baseForGrowth * (expectedCagr / 100));
-    const endingValue = Math.floor(baseForGrowth + annualProfit);
-    const inflationFactor = Math.pow(1 + Number(settings.inflationRate || 0) / 100, year);
-    const inflationAdjustedValue = Math.floor(endingValue / inflationFactor);
-
-    cumulativeContribution += annualContribution;
-    cumulativeDividend += annualDividend;
-    cumulativeProfit += annualProfit;
-
-    performanceRows.push({
-      year,
-      annualContribution,
-      annualDividend,
-      annualProfit,
-      cumulativeContribution,
-      cumulativeDividend,
-      cumulativeProfit,
-      endingValue,
-      inflationAdjustedValue,
-    });
-
-    portfolioValue = endingValue;
-  }
-
-  const lastPerformanceRow = performanceRows.length > 0 ? performanceRows[performanceRows.length - 1] : null;
-  const futureValue = lastPerformanceRow ? lastPerformanceRow.endingValue : simulationStartValue;
-  const inflationAdjustedFutureValue = lastPerformanceRow ? lastPerformanceRow.inflationAdjustedValue : simulationStartValue;
-  const cumulativeDividendResult = lastPerformanceRow ? lastPerformanceRow.cumulativeDividend : 0;
-
-  return {
-    yearlyContribution,
-    totalAssetValue,
-    simulationStartValue,
-    expectedCagr,
-    expectedDividendYield,
-    expectedBeta,
-    simpleMdd,
-    expectedCalmar,
-    expectedAnnualDividend,
-    performanceRows,
-    futureValue,
-    inflationAdjustedFutureValue,
-    cumulativeDividendResult,
-  };
+  return buildMonthlyBaselineProjection({
+    settings: {
+      ...settings,
+      startValue: simulationStartValue,
+      investmentMonths: Number(settings.years || 0) * 12,
+    },
+    assets,
+  });
 }
 
 export function getRank(portfolios, targetId, selector, direction = "desc") {
@@ -140,6 +65,14 @@ export function createComparisonPortfolios(portfolioList, activePortfolioId, ass
       result: calculatePortfolioResult(settings, portfolioAssets),
     };
   });
+}
+
+export function createStep2BaselineComparison(portfolioList, activePortfolioId, assets, settings) {
+  return createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings);
+}
+
+export function createStep3BaselineDetail(settings, assets) {
+  return calculatePortfolioResult(settings, assets);
 }
 
 export function createRankedComparisonPortfolios(comparisonPortfolios) {
