@@ -119,7 +119,29 @@ The same portfolio input must produce identical Step 2 and Step 3 baseline resul
 
 ## Metric Source Gate
 
-The baseline engine fails closed for metric sources marked as:
+The baseline engine uses an allowlist gate. Missing, blank, or unsupported status values fail closed.
+
+Required ready statuses:
+
+```text
+dataStatus=ready
+metricsStatus=ready
+reviewFlag=none
+overlayStatus=app_ready or ready
+productionPublishReady=true
+appExportApproved=true
+```
+
+Boolean-like values are normalized before validation, including:
+
+```text
+false
+"false"
+0
+"0"
+```
+
+The following status families are blocked because they are not in the allowlist:
 
 ```text
 review_only
@@ -128,9 +150,73 @@ blocked
 excluded
 insufficient_history
 short_history
+limited_history
+stale
+missing
+error
 ```
 
-Explicit `productionPublishReady=false` or `appExportApproved=false` also blocks baseline readiness. Missing selected CAGR blocks calculation. Missing dividend yield blocks calculation when dividend reinvestment is enabled, and is preserved as `null` rather than inferred as `0.00` when reinvestment is disabled.
+Required lineage fields:
+
+```text
+metricBaseDate
+metricsSource
+sourceHash or normalizedSeriesHash
+calculationPolicyVersion
+```
+
+The legacy May 2026 app-ready overlays are accepted only through the explicit compatibility adapter:
+
+```text
+legacy-may-app-ready-compat-v1-step114-2e
+```
+
+Missing selected CAGR blocks calculation. Missing dividend yield blocks calculation when dividend reinvestment is enabled, and is preserved as `null` rather than inferred as `0.00` when reinvestment is disabled.
+
+Blocked result contract:
+
+```text
+ready=false
+status=blocked
+expectedCagr=null
+expectedDividendYield=null
+expectedBeta=null
+simpleMdd=null
+futureValue=null
+inflationAdjustedFutureValue=null
+```
+
+Blocked portfolios are excluded from Step 2 rank, chart, and insight best-value calculations. Step 3 shows a blocked baseline state instead of rendering zero-like metric values.
+
+## Contribution-Excluded Return Policy
+
+`contributionExcludedIndex` is a time-weighted index based on the actual no-rebalance sleeve path:
+
+```text
+monthlyContributionExcludedReturn
+= (monthlyPriceReturnApplied + reinvestedDividendPerformanceAmount)
+  / portfolioValueAfterMonthStartContribution
+```
+
+The engine does not use fixed target-weight returns for this index after month 0. Sleeves drift naturally when asset returns differ.
+
+## Price Gain And Dividend Reconciliation
+
+The engine tracks:
+
+```text
+monthlyPriceReturnApplied
+cumulativePriceGain
+monthlyDividendCashFlow
+cumulativeDividendCashFlow
+investmentGainNominal
+```
+
+`annualProfit` and `cumulativeProfit` retain price-gain meaning. Reinvested dividends affect ending value, but are still reported separately as dividend cash flow so they are not double-counted as price gain.
+
+## Stable Ordering
+
+Step 2 portfolios are sorted by `portfolioId`. Normalized assets are sorted by `(market, ticker, id)` before calculation so input array permutations produce the same baseline result.
 
 KR tickers are kept as strings, preserving leading zeros such as:
 

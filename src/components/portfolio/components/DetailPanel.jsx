@@ -138,6 +138,33 @@ export default function DetailPanel({
     { label: "배당재투자", value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
   ];
 
+  if (safeResult.ready === false || safeResult.status === "blocked") {
+    const blockReasons = safeArray(safeResult.blockReasons);
+    return (
+      <div id="detail" className="simulatorTabPanel detailPanel">
+        <div className="tabSectionHeader tabSectionHeaderRow">
+          <div>
+            <p className="sectionLabel">Step 3. Detail</p>
+            <h3>Baseline blocked</h3>
+            <p>Metric source review is required before this portfolio can be analyzed.</p>
+          </div>
+        </div>
+        <div className="detailInfoSection">
+          <div className="detailInfoHeader">
+            <p className="sectionLabel">Baseline Status</p>
+            <h4>blocked</h4>
+            <span>{safeResult.step3BlockedState?.operatorAction || "review_metric_source_before_baseline"}</span>
+          </div>
+          {blockReasons.length > 0 ? (
+            <ul>
+              {blockReasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="detail" className="simulatorTabPanel detailPanel">
       <div className="tabSectionHeader tabSectionHeaderRow">

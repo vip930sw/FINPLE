@@ -1,4 +1,7 @@
-import { buildMonthlyBaselineProjection } from "./monthlyBaselineEngine";
+import {
+  buildMonthlyBaselineProjection,
+  buildStep2MonthlyBaselineComparison,
+} from "./monthlyBaselineEngine.js";
 
 function getAssetActualValue(asset = {}) {
   const quantity = Number(asset.quantity || 0);
@@ -17,7 +20,8 @@ function getAssetWeightValue(asset = {}) {
 }
 
 export function calculatePortfolioResult(settings, assets) {
-  const totalAssetValue = assets.reduce((sum, asset) => {
+  const safeAssets = Array.isArray(assets) ? assets : [];
+  const totalAssetValue = safeAssets.reduce((sum, asset) => {
     return sum + getAssetWeightValue(asset);
   }, 0);
 
@@ -29,17 +33,25 @@ export function calculatePortfolioResult(settings, assets) {
       startValue: simulationStartValue,
       investmentMonths: Number(settings.years || 0) * 12,
     },
-    assets,
+    assets: safeAssets,
   });
+}
+
+function isReadyPortfolio(portfolio = {}) {
+  return portfolio?.result?.ready === true && portfolio?.result?.status === "ready";
 }
 
 export function getRank(portfolios, targetId, selector, direction = "desc") {
   const targetPortfolio = portfolios.find((portfolio) => portfolio.id === targetId);
-  if (!targetPortfolio) return "-";
+  if (!targetPortfolio || !isReadyPortfolio(targetPortfolio)) return "-";
 
   const targetValue = selector(targetPortfolio);
+  if (!Number.isFinite(Number(targetValue))) return "-";
+
   const betterCount = portfolios.filter((portfolio) => {
+    if (!isReadyPortfolio(portfolio)) return false;
     const value = selector(portfolio);
+    if (!Number.isFinite(Number(value))) return false;
     return direction === "asc" ? value < targetValue : value > targetValue;
   }).length;
 
@@ -55,15 +67,11 @@ export function getDetailPortfolioById(rankedComparisonPortfolios, activePortfol
 }
 
 export function createComparisonPortfolios(portfolioList, activePortfolioId, assets, settings) {
-  return portfolioList.map((portfolio) => {
-    const portfolioAssets = portfolio.id === activePortfolioId ? assets : portfolio.assets;
-
-    return {
-      ...portfolio,
-      settings,
-      assets: portfolioAssets,
-      result: calculatePortfolioResult(settings, portfolioAssets),
-    };
+  return buildStep2MonthlyBaselineComparison({
+    portfolios: portfolioList,
+    activePortfolioId,
+    assets,
+    settings,
   });
 }
 
@@ -94,23 +102,31 @@ export function createInsightComparisonPortfolios(rankedComparisonPortfolios) {
 
 export function getChartComparisonPortfolios(insightComparisonPortfolios) {
   return [...insightComparisonPortfolios]
+    .filter(isReadyPortfolio)
     .sort((a, b) => b.result.inflationAdjustedFutureValue - a.result.inflationAdjustedFutureValue)
     .filter((portfolio) => portfolio.realValueRank <= 3);
 }
 
 export function getPortfolioInsight(portfolio, allPortfolios) {
   const result = portfolio.result;
+  if (!isReadyPortfolio(portfolio)) {
+    return {
+      type: "Baseline blocked",
+      text: "Metric source review is required before this portfolio can be ranked or charted.",
+    };
+  }
 
   const cagr = Number(result.expectedCagr || 0);
   const mdd = Number(result.simpleMdd || 0);
   const dividendYield = Number(result.expectedDividendYield || 0);
   const realValue = Number(result.inflationAdjustedFutureValue || 0);
-  const bestRealValue = Math.max(...allPortfolios.map((item) => item.result.inflationAdjustedFutureValue || 0));
+  const readyPortfolios = allPortfolios.filter(isReadyPortfolio);
+  const bestRealValue = Math.max(...readyPortfolios.map((item) => item.result.inflationAdjustedFutureValue || 0));
   const realValueGapRate = bestRealValue > 0 ? ((bestRealValue - realValue) / bestRealValue) * 100 : 0;
 
-  const cagrValues = allPortfolios.map((item) => item.result.expectedCagr);
-  const mddValues = allPortfolios.map((item) => item.result.simpleMdd);
-  const dividendValues = allPortfolios.map((item) => item.result.expectedDividendYield);
+  const cagrValues = readyPortfolios.map((item) => item.result.expectedCagr);
+  const mddValues = readyPortfolios.map((item) => item.result.simpleMdd);
+  const dividendValues = readyPortfolios.map((item) => item.result.expectedDividendYield);
 
   const maxCagr = Math.max(...cagrValues);
   const maxMdd = Math.max(...mddValues);
@@ -146,4 +162,4 @@ export function getPortfolioInsight(portfolio, allPortfolios) {
   return { type, text };
 }
 
-export { analyzePortfolioProfile, getPortfolioDetailReport } from "./portfolioAnalysis";
+export { analyzePortfolioProfile, getPortfolioDetailReport } from "./portfolioAnalysis.js";
