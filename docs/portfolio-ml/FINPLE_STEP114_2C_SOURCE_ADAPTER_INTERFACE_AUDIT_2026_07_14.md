@@ -87,6 +87,8 @@ The public-source fixture adapter records:
 - next cursor placeholder
 - raw source SHA256
 
+Resume checkpoints are loaded through a single identity-and-schema validation path before any skip list is used. The adapter compares the checkpoint `adapterId`, `adapterVersion`, `mode`, `sourceFileName`, and `rawSourceSha256` against the current synthetic fixture adapter and input file. Only fully matching checkpoints may supply `acceptedRecordIds` and `completedPageNumbers`.
+
 The retry behavior is bounded by CONFIG `source_adapter_max_retry_count` and supports:
 
 - `none`
@@ -106,6 +108,7 @@ The adapter fails closed before normalization when:
 - CSV rows have mismatched field counts
 - CSV quoting/structure is malformed
 - CSV encoding cannot be decoded as UTF-8/UTF-8-SIG
+- a resume checkpoint is stale, malformed, invalidly encoded, missing required identity fields, or does not match the current source file and adapter identity
 
 `fixturePackageReady` may remain true for offline fixture outputs, but `productionPublishReady=false` and `appExportApproved=false` remain unchanged.
 

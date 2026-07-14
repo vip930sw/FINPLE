@@ -1,4 +1,6 @@
 {
+  "adapterId": "finple.synthetic_public_source_fixture.v1",
+  "adapterVersion": "source-adapter-contract-v1-step114-2c",
   "acceptedRecordIds": [
     "public-fixture-kr-stock-001",
     "public-fixture-kr-stock-002"
@@ -7,5 +9,8 @@
     1
   ],
   "cumulativeAcceptedRecordCount": 2,
-  "checkpointId": "public_source_fixture:synthetic-page-1"
+  "checkpointId": "public_source_fixture:synthetic-page-1",
+  "mode": "public_source_fixture",
+  "rawSourceSha256": "f291b1ef641dcf98650739dd80e15cd58e4c6d50ba58a63ec83f10f13aa58db3",
+  "sourceFileName": "public_source_fixture_prices.csv"
 }

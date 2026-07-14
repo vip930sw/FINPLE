@@ -16,6 +16,8 @@ from scripts.metrics_pipeline.config import load_config
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURE_DIR = REPO_ROOT / "data" / "fixtures" / "monthly-metrics"
+PUBLIC_SOURCE_ADAPTER_ID = "finple.synthetic_public_source_fixture.v1"
+SOURCE_ADAPTER_VERSION = "source-adapter-contract-v1-step114-2c"
 
 
 def build_config(output_dir: Path, **overrides):
@@ -34,6 +36,28 @@ def build_config(output_dir: Path, **overrides):
     }
     config.update(overrides)
     return config
+
+
+def fixture_sha256(file_name: str) -> str:
+    return hashlib.sha256((FIXTURE_DIR / file_name).read_bytes()).hexdigest()
+
+
+def public_source_checkpoint_payload(**overrides):
+    payload = {
+        "checkpointId": "public_source_fixture:test-checkpoint",
+        "adapterId": PUBLIC_SOURCE_ADAPTER_ID,
+        "adapterVersion": SOURCE_ADAPTER_VERSION,
+        "mode": "public_source_fixture",
+        "sourceFileName": "public_source_fixture_prices.csv",
+        "rawSourceSha256": fixture_sha256("public_source_fixture_prices.csv"),
+        "acceptedRecordIds": [
+            "public-fixture-kr-stock-001",
+            "public-fixture-kr-stock-002",
+        ],
+        "completedPageNumbers": [1],
+    }
+    payload.update(overrides)
+    return payload
 
 
 class MetricsPipelineTests(unittest.TestCase):
@@ -538,6 +562,67 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertEqual(repeat.checkpoint["cumulativeAcceptedRecordCount"], 3)
             self.assertEqual(repeat.checkpoint["duplicateAcceptedRecordCount"], 0)
 
+    def test_public_source_checkpoint_identity_fail_closed(self):
+        checkpoint_cases = [
+            ("stale_source_sha", {"rawSourceSha256": "0" * 64}, "rawSourceSha256"),
+            ("wrong_adapter_id", {"adapterId": "wrong.synthetic.adapter"}, "adapterId"),
+            ("wrong_adapter_version", {"adapterVersion": "source-adapter-contract-v0"}, "adapterVersion"),
+            ("wrong_mode", {"mode": "manual_upload"}, "mode"),
+            ("wrong_source_file", {"sourceFileName": "other_fixture.csv"}, "sourceFileName"),
+            ("missing_required_field", {"rawSourceSha256": None}, "rawSourceSha256"),
+            ("wrong_accepted_type", {"acceptedRecordIds": "public-fixture-kr-stock-001"}, "acceptedRecordIds"),
+            ("wrong_completed_page_type", {"completedPageNumbers": ["1"]}, "completedPageNumbers"),
+        ]
+        for name, overrides, expected_warning in checkpoint_cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp_dir:
+                checkpoint_path = Path(temp_dir) / f"{name}.json"
+                payload = public_source_checkpoint_payload(**overrides)
+                if overrides.get("rawSourceSha256") is None:
+                    payload.pop("rawSourceSha256")
+                checkpoint_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+                adapter_result = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path(temp_dir) / "outputs",
+                            input_mode="public_source_fixture",
+                            public_source_resume_checkpoint_file=str(checkpoint_path),
+                        )
+                    )
+                )
+                self.assertFalse(adapter_result.rows)
+                self.assertIn("source adapter checkpoint", "; ".join(adapter_result.warnings))
+                self.assertIn(expected_warning, "; ".join(adapter_result.warnings))
+                self.assertTrue(
+                    any(error.startswith("source adapter checkpoint") for error in validate_adapter_result(adapter_result))
+                )
+
+    def test_public_source_malformed_checkpoint_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            malformed_checkpoint = Path(temp_dir) / "malformed-checkpoint.json"
+            malformed_checkpoint.write_text('{"acceptedRecordIds": [', encoding="utf-8")
+            adapter_result = run_source_adapter(
+                load_config(
+                    build_config(
+                        Path(temp_dir) / "malformed-output",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(malformed_checkpoint),
+                    )
+                )
+            )
+            self.assertFalse(adapter_result.rows)
+            self.assertIn("source adapter checkpoint malformed json blocked", "; ".join(adapter_result.warnings))
+
+            invalid_encoding_checkpoint = Path(temp_dir) / "invalid-encoding-checkpoint.json"
+            invalid_encoding_checkpoint.write_bytes(b"\xff\xfe\x00\x00not-json")
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter checkpoint invalid encoding blocked"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir) / "invalid-encoding-output",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(invalid_encoding_checkpoint),
+                    )
+                )
+
     def test_public_source_completed_checkpoint_pipeline_noop_is_reproducible(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             first = run_finple_monthly_metrics_pipeline(
@@ -580,6 +665,19 @@ class MetricsPipelineTests(unittest.TestCase):
                 normalized_rows = list(csv.DictReader(handle))
             self.assertEqual(normalized_rows, [])
             self.assertEqual(len(normalized_rows), len({(row["ticker"], row["month"]) for row in normalized_rows}))
+
+            tampered_checkpoint = Path(temp_dir) / "tampered-complete-checkpoint.json"
+            tampered_payload = json.loads(checkpoint_one.read_text(encoding="utf-8"))
+            tampered_payload["rawSourceSha256"] = "1" * 64
+            tampered_checkpoint.write_text(json.dumps(tampered_payload, sort_keys=True), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter checkpoint identity mismatch blocked: rawSourceSha256"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir) / "tampered-noop",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(tampered_checkpoint),
+                    )
+                )
 
     def test_public_source_retry_count_respects_configured_max(self):
         for max_retry in [0, 1, 2, 3]:

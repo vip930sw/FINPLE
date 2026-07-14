@@ -12,6 +12,7 @@ from .schemas import RAW_DAILY_PRICE_COLUMNS
 
 
 ADAPTER_VERSION = "source-adapter-contract-v1-step114-2c"
+PUBLIC_SOURCE_ADAPTER_ID = "finple.synthetic_public_source_fixture.v1"
 SUPPORTED_INPUT_MODES = {"fixture", "manual_upload", "public_source_fixture"}
 UNKNOWN_LICENSE_STATUSES = {"", "unknown", "unconfirmed", "review_required"}
 PUBLIC_SOURCE_FIXTURE_COLUMNS = [
@@ -106,6 +107,13 @@ class SourceAdapterResult:
         }
 
 
+@dataclass(frozen=True)
+class ResumeCheckpoint:
+    acceptedRecordIds: set[str]
+    completedPageNumbers: set[int]
+    warnings: tuple[str, ...] = ()
+
+
 def run_source_adapter(config: Any) -> SourceAdapterResult:
     mode = str(config.input_mode)
     if mode == "fixture":
@@ -142,6 +150,9 @@ def validate_adapter_result(result: SourceAdapterResult) -> list[str]:
         errors.append("source adapter internalUseAllowed must be true")
     if result.sanitizationStatus != "passed":
         errors.append("source adapter sanitizationStatus must be passed")
+    for warning in result.warnings:
+        if warning.startswith("source adapter checkpoint"):
+            errors.append(warning)
     if not result.rows and not is_noop:
         errors.append("source adapter produced no accepted rows")
     if result.licenseStatus in UNKNOWN_LICENSE_STATUSES:
@@ -202,6 +213,7 @@ def _run_manual_upload_adapter(config: Any) -> SourceAdapterResult:
 
 def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
     source_path = config.input_dir / config.public_source_fixture_file
+    source_sha256 = _sha256(source_path) if source_path.exists() else ""
     provider_rows, warnings = _read_csv_with_exact_header(source_path, PUBLIC_SOURCE_FIXTURE_COLUMNS)
     retry_count, last_status = _bounded_retry_status(
         config.public_source_fixture_failure_mode,
@@ -223,9 +235,18 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
             mapped_by_record_id[row.get("recordId", "")] = mapped_row
     warnings.extend(sorted(set(mapping_warnings)))
 
+    resume_checkpoint = _load_resume_checkpoint(
+        config.public_source_resume_checkpoint_file,
+        expected_adapter_id=PUBLIC_SOURCE_ADAPTER_ID,
+        expected_adapter_version=ADAPTER_VERSION,
+        expected_mode="public_source_fixture",
+        expected_source_file_name=source_path.name,
+        expected_raw_source_sha256=source_sha256,
+    )
+    warnings.extend(resume_checkpoint.warnings)
     accepted_candidates: list[tuple[str, dict[str, str]]] = []
-    accepted_record_ids = _load_accepted_record_ids(config.public_source_resume_checkpoint_file)
-    previous_completed_pages = _load_completed_page_numbers(config.public_source_resume_checkpoint_file)
+    accepted_record_ids = resume_checkpoint.acceptedRecordIds
+    previous_completed_pages = resume_checkpoint.completedPageNumbers
     skipped_previously_accepted = 0
     for row in sorted(provider_rows, key=lambda item: (int(item.get("pageNumber") or "0"), item.get("recordId", ""))):
         record_id = row.get("recordId", "")
@@ -246,8 +267,8 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
     cumulative_accepted_ids = sorted(accepted_record_ids.union(newly_accepted_ids))
     completed_pages = sorted(previous_completed_pages.union({int(row.get("pageNumber") or "0") for row in provider_rows}))
     checkpoint = {
-        "checkpointId": f"public_source_fixture:{_sha256(source_path)[:12]}:complete" if source_path.exists() else "public_source_fixture:missing",
-        "adapterId": "finple.synthetic_public_source_fixture.v1",
+        "checkpointId": f"public_source_fixture:{source_sha256[:12]}:complete" if source_path.exists() else "public_source_fixture:missing",
+        "adapterId": PUBLIC_SOURCE_ADAPTER_ID,
         "adapterVersion": ADAPTER_VERSION,
         "mode": "public_source_fixture",
         "resumeSupported": True,
@@ -264,10 +285,10 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         "rejectedRecordCount": gated_count + len(mapping_warnings),
         "nextCursor": "",
         "sourceFileName": source_path.name,
-        "rawSourceSha256": _sha256(source_path) if source_path.exists() else "",
+        "rawSourceSha256": source_sha256,
     }
     return _build_result(
-        adapter_id="finple.synthetic_public_source_fixture.v1",
+        adapter_id=PUBLIC_SOURCE_ADAPTER_ID,
         mode="public_source_fixture",
         source_path=source_path,
         rows=accepted_rows if not warnings else [],
@@ -516,24 +537,56 @@ def _single_or_mixed(rows: list[dict[str, str]], column: str, default: str) -> s
     return "mixed"
 
 
-def _load_accepted_record_ids(path_value: str) -> set[str]:
+def _load_resume_checkpoint(
+    path_value: str,
+    *,
+    expected_adapter_id: str,
+    expected_adapter_version: str,
+    expected_mode: str,
+    expected_source_file_name: str,
+    expected_raw_source_sha256: str,
+) -> ResumeCheckpoint:
     if not path_value:
-        return set()
+        return ResumeCheckpoint(set(), set())
     path = Path(path_value)
     if not path.exists():
-        return set()
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return {str(item) for item in payload.get("acceptedRecordIds", [])}
+        return ResumeCheckpoint(set(), set(), (f"source adapter checkpoint file missing blocked: {path.name}",))
+    try:
+        checkpoint_text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return ResumeCheckpoint(set(), set(), (f"source adapter checkpoint invalid encoding blocked: {path.name}",))
+    try:
+        payload = json.loads(checkpoint_text)
+    except json.JSONDecodeError as error:
+        return ResumeCheckpoint(set(), set(), (f"source adapter checkpoint malformed json blocked: {path.name}: {error.msg}",))
+    if not isinstance(payload, dict):
+        return ResumeCheckpoint(set(), set(), (f"source adapter checkpoint schema blocked: {path.name}: root must be object",))
 
+    expected_values = {
+        "adapterId": expected_adapter_id,
+        "adapterVersion": expected_adapter_version,
+        "mode": expected_mode,
+        "sourceFileName": expected_source_file_name,
+        "rawSourceSha256": expected_raw_source_sha256,
+    }
+    warnings: list[str] = []
+    for field_name, expected_value in expected_values.items():
+        actual_value = payload.get(field_name)
+        if not isinstance(actual_value, str) or not actual_value:
+            warnings.append(f"source adapter checkpoint required field blocked: {field_name}")
+        elif actual_value != expected_value:
+            warnings.append(f"source adapter checkpoint identity mismatch blocked: {field_name}")
 
-def _load_completed_page_numbers(path_value: str) -> set[int]:
-    if not path_value:
-        return set()
-    path = Path(path_value)
-    if not path.exists():
-        return set()
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return {int(item) for item in payload.get("completedPageNumbers", [])}
+    accepted_record_ids = payload.get("acceptedRecordIds")
+    completed_page_numbers = payload.get("completedPageNumbers")
+    if not isinstance(accepted_record_ids, list) or not all(isinstance(item, str) and item for item in accepted_record_ids):
+        warnings.append("source adapter checkpoint schema blocked: acceptedRecordIds must be non-empty strings list")
+    if not isinstance(completed_page_numbers, list) or not all(type(item) is int and item >= 0 for item in completed_page_numbers):
+        warnings.append("source adapter checkpoint schema blocked: completedPageNumbers must be non-negative integers list")
+
+    if warnings:
+        return ResumeCheckpoint(set(), set(), tuple(sorted(set(warnings))))
+    return ResumeCheckpoint(set(accepted_record_ids), set(completed_page_numbers))
 
 
 def _bounded_retry_status(failure_mode: str, max_retry_count: int) -> tuple[int, str]:
