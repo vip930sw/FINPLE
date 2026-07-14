@@ -5,11 +5,12 @@ import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
 import ComparePanel from "./portfolio/components/ComparePanel";
 import SettingsPanel from "./portfolio/components/SettingsPanel";
 import DetailPanel from "./portfolio/components/DetailPanel";
+import ProbabilityAnalysisPanel from "./portfolio/components/ProbabilityAnalysisPanel";
 import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 
-const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "ai"];
+const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "probability", "ai"];
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange } = props || {};
@@ -110,6 +111,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
       settings: "settings",
       compare: "compare",
       detail: "detail",
+      probability: "probability-analysis",
       ai: "ai-analysis",
     };
 
@@ -144,14 +146,16 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     [handleSimulatorTabChange, scrollToSimulatorTop]
   );
 
-  const shouldShowFloatingPortfolioDropdown = ["settings", "detail", "ai"].includes(
+  const shouldShowFloatingPortfolioDropdown = ["settings", "detail", "probability", "ai"].includes(
     effectiveActiveSimulatorTab
   );
 
   const floatingPortfolioContextLabel =
     effectiveActiveSimulatorTab === "settings"
       ? "현재 편집 중"
-      : effectiveActiveSimulatorTab === "ai"
+      : effectiveActiveSimulatorTab === "probability"
+        ? "확률분석 대상 포트폴리오"
+        : effectiveActiveSimulatorTab === "ai"
         ? "포트폴리오 AI 분석 대상"
         : "현재 분석 중";
 
@@ -243,6 +247,18 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             printReport={printReport}
             reportPdfFileName={reportPdfFileName}
             copyReportSummary={copyReportSummary}
+          />
+        </div>
+      )}
+
+      {effectiveActiveSimulatorTab === "probability" && (
+        <div id="probability-analysis" className="simulatorTabAnchor">
+          <ProbabilityAnalysisPanel
+            activePortfolio={activePortfolio}
+            assets={assets}
+            result={result}
+            settings={settings}
+            isEmptyAssetRow={isEmptyAssetRow}
           />
         </div>
       )}
