@@ -61,13 +61,15 @@ Every sampled block start is applied jointly to all assets. Asset-level independ
 
 ## History And Coverage Gate
 
-The default minimum common history is:
+The effective minimum common history is:
 
 ```text
-minimumCommonHistoryMonths = max(60, 36, blockMonths * 3)
+minimumCommonHistoryMonths = max(60, requestedMinimumCommonHistoryMonths, 36, blockMonths * 3)
 ```
 
-The matrix must contain one complete synchronized monthly row for every requested asset and month. Duplicate asset identities, duplicate asset-month rows, missing synchronized months, missing returns, mixed return bases, mixed currency mode, missing lineage, or insufficient history fail closed.
+`requestedMinimumCommonHistoryMonths` must be a finite positive integer when provided. It cannot lower the effective minimum below 60 months; string, NaN, fractional, zero, or negative values fail closed.
+
+Input months are canonicalized to `YYYY-MM` calendar months. `YYYY-MM-DD` inputs are allowed only when the date is valid, and the day is ignored after validation. The matrix must contain one complete synchronized monthly row for every requested asset and every adjacent calendar month. Duplicate asset identities, duplicate same-asset calendar months, missing asset-month rows, missing full calendar months, invalid month/date values, missing returns, mixed return bases, mixed currency mode, missing lineage, or insufficient history fail closed.
 
 Short data returns:
 
@@ -199,6 +201,14 @@ The engine emits:
 P10 / P25 / P50 / P75 / P90
 ```
 
+The requested percentile contract is fixed to exactly:
+
+```text
+[0.10, 0.25, 0.50, 0.75, 0.90]
+```
+
+The engine canonicalizes ordering but fails closed on duplicates, missing values, non-numeric values, or unsupported percentile probabilities.
+
 For nominal and real value bands, ordered values satisfy:
 
 ```text
@@ -240,7 +250,9 @@ calculationPolicyVersion
 pipelineVersion
 ```
 
-`inputHash` is SHA256 over the normalized deterministic input. `outputHash` is SHA256 over the deterministic result object before `outputHash` is attached.
+`sourceHashes[]` is the deterministic union of metadata-level source hashes and row-level source hashes. An empty effective source-hash set fails closed. The effective source-hash set, canonical history policy, canonical percentile policy, and normalized monthly matrix are part of `inputHash`, so changing only source lineage changes both `inputHash` and `outputHash`.
+
+Blocked and insufficient-data results still emit deterministic `inputHash`, `outputHash`, and any source lineage that can be safely derived from the input.
 
 ## Fixture Inventory
 
@@ -256,9 +268,21 @@ Included fixtures:
 synchronized_two_asset_monthly_matrix.json
 joint_relation_asset_b_2x_asset_a.json
 drawdown_recovery_matrix.json
-missing_month_matrix.json
+missing_asset_month_matrix.json
+missing_calendar_month_matrix.json
+same_calendar_month_duplicate_matrix.json
+invalid_calendar_month_matrix.json
 insufficient_history_matrix.json
 kr_leading_zero_matrix.json
+```
+
+The invalid coverage fixtures are intentionally distinct:
+
+```text
+missing_asset_month = one requested asset row absent while the calendar month exists
+missing_calendar_month = an entire calendar month absent from the synchronized matrix
+same_calendar_month_duplicate = one asset repeated in the same calendar month with a different day
+invalid_calendar_month = malformed or impossible calendar month/date
 ```
 
 All fixtures are synthetic and fixture-only. They are not production market data and are not connected to loader pointers.

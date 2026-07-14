@@ -18,16 +18,30 @@ function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function normalizeMonth(value, label = "month") {
-  const month = String(value || "").trim();
-  if (!MONTH_PATTERN.test(month)) {
-    throw new TypeError(`${label} must be YYYY-MM or YYYY-MM-DD`);
+function canonicalMonth(value, label = "month") {
+  const rawMonth = String(value || "").trim();
+  if (!MONTH_PATTERN.test(rawMonth)) {
+    throw new TypeError(`invalid_calendar_month:${label}:must_be_YYYY-MM_or_YYYY-MM-DD`);
   }
-  return month.length === 7 ? `${month}-01` : month;
+  const [yearText, monthText, dayText] = rawMonth.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (!Number.isInteger(year) || year < 1 || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new TypeError(`invalid_calendar_month:${label}:invalid_year_or_month`);
+  }
+  if (dayText !== undefined) {
+    const day = Number(dayText);
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    if (!Number.isInteger(day) || day < 1 || day > lastDay) {
+      throw new TypeError(`invalid_calendar_month:${label}:invalid_day`);
+    }
+  }
+  return `${yearText}-${monthText}`;
 }
 
-function monthKey(value) {
-  return normalizeMonth(value).slice(0, 7);
+function monthOrdinal(month) {
+  const [yearText, monthText] = month.split("-");
+  return Number(yearText) * 12 + Number(monthText) - 1;
 }
 
 function normalizeMarket(value) {
@@ -105,8 +119,120 @@ function percentileObject(values) {
   };
 }
 
-function buildBlockedResult({ status = "blocked", reasons = [], input = {}, metadata = {} }) {
+function normalizePercentiles(percentiles) {
+  const rawPercentiles = percentiles === undefined || percentiles === null
+    ? DEFAULT_PERCENTILES
+    : percentiles;
+  if (!Array.isArray(rawPercentiles)) {
+    throw new TypeError("unsupported_percentile_contract:not_array");
+  }
+  if (rawPercentiles.length !== DEFAULT_PERCENTILES.length) {
+    throw new RangeError("unsupported_percentile_contract:missing_or_extra_values");
+  }
+  const values = rawPercentiles.map((value, index) => {
+    if (typeof value !== "number") {
+      throw new TypeError(`unsupported_percentile_contract:non_number:${index}`);
+    }
+    const number = toFiniteNumber(value, `scenario.percentiles[${index}]`);
+    if (number < 0 || number > 1) {
+      throw new RangeError(`unsupported_percentile_contract:out_of_range:${index}`);
+    }
+    return number;
+  });
+  const sorted = [...values].sort((a, b) => a - b);
+  const unique = new Set(sorted.map((value) => value.toFixed(12)));
+  if (unique.size !== sorted.length) {
+    throw new RangeError("unsupported_percentile_contract:duplicate_values");
+  }
+  for (const [index, value] of sorted.entries()) {
+    if (Math.abs(value - DEFAULT_PERCENTILES[index]) > EPSILON) {
+      throw new RangeError("unsupported_percentile_contract:fixed_set_required");
+    }
+  }
+  return [...DEFAULT_PERCENTILES];
+}
+
+function buildHistoryPolicy(metadata = {}, blockMonths = null) {
+  const requestedRaw = metadata.minimumCommonHistoryMonths;
+  let requestedMinimumCommonHistoryMonths = null;
+  if (requestedRaw !== undefined && requestedRaw !== null) {
+    if (typeof requestedRaw !== "number") {
+      throw new TypeError("invalid_minimum_common_history_months:must_be_number");
+    }
+    if (!Number.isFinite(requestedRaw) || !Number.isInteger(requestedRaw) || requestedRaw <= 0) {
+      throw new RangeError("invalid_minimum_common_history_months:must_be_positive_integer");
+    }
+    requestedMinimumCommonHistoryMonths = requestedRaw;
+  }
+  const blockMultiplierMinimumCommonHistoryMonths = Number.isFinite(blockMonths) ? blockMonths * 3 : null;
+  const effectiveMinimumCommonHistoryMonths = Math.max(
+    DEFAULT_MINIMUM_COMMON_HISTORY_MONTHS,
+    requestedMinimumCommonHistoryMonths ?? DEFAULT_MINIMUM_COMMON_HISTORY_MONTHS,
+    36,
+    blockMultiplierMinimumCommonHistoryMonths ?? 0,
+  );
   return {
+    defaultMinimumCommonHistoryMonths: DEFAULT_MINIMUM_COMMON_HISTORY_MONTHS,
+    requestedMinimumCommonHistoryMonths,
+    floorMinimumCommonHistoryMonths: 36,
+    blockMultiplierMinimumCommonHistoryMonths,
+    effectiveMinimumCommonHistoryMonths,
+  };
+}
+
+function safeBuildHistoryPolicy(metadata = {}, blockMonths = null) {
+  try {
+    return Number.isFinite(blockMonths) ? buildHistoryPolicy(metadata, blockMonths) : null;
+  } catch {
+    return null;
+  }
+}
+
+function collectSourceHashesFromRows(rows = []) {
+  const sourceHashes = new Set();
+  if (!Array.isArray(rows)) return [];
+  for (const row of rows) {
+    if (isPlainObject(row) && String(row.sourceHash || "").trim()) {
+      sourceHashes.add(String(row.sourceHash).trim());
+    }
+  }
+  return Array.from(sourceHashes).sort();
+}
+
+function collectEffectiveSourceHashes(metadataSourceHashes = [], rowSourceHashes = []) {
+  return Array.from(new Set([
+    ...(Array.isArray(metadataSourceHashes) ? metadataSourceHashes : []),
+    ...(Array.isArray(rowSourceHashes) ? rowSourceHashes : []),
+  ].map((value) => String(value || "").trim()).filter(Boolean))).sort();
+}
+
+function buildBlockedResult({
+  status = "blocked",
+  reasons = [],
+  input = {},
+  metadata = {},
+  normalizedInputForHash = null,
+  sourceHashes = null,
+  historyPolicy = null,
+  percentiles = null,
+}) {
+  const effectiveSourceHashes = sourceHashes ?? collectEffectiveSourceHashes(
+    Array.isArray(input?.metadata?.sourceHashes) ? input.metadata.sourceHashes : [],
+    collectSourceHashesFromRows(input?.monthlyReturnMatrix),
+  );
+  const effectiveHistoryPolicy = historyPolicy ?? (
+    safeBuildHistoryPolicy(input?.metadata, input?.scenario?.blockMonths)
+  );
+  const blockedInputHash = sha256Stable(normalizedInputForHash ?? {
+    status,
+    reasons,
+    portfolioId: input?.portfolioId || "",
+    sourceHashes: effectiveSourceHashes,
+    historyPolicy: effectiveHistoryPolicy,
+    percentiles: percentiles ?? null,
+    inputSnapshot: input,
+  });
+  const resultWithoutHash = {
     status,
     scenarioVersion: PROBABILISTIC_SCENARIO_VERSION,
     method: input?.scenario?.method || "joint_block_bootstrap",
@@ -119,9 +245,16 @@ function buildBlockedResult({ status = "blocked", reasons = [], input = {}, meta
     currencyMode: metadata?.currencyMode ?? input?.metadata?.currencyMode ?? null,
     dataStartDate: metadata?.dataStartDate ?? null,
     dataEndDate: metadata?.dataEndDate ?? null,
+    sourceHashes: effectiveSourceHashes,
+    normalizationVersion: metadata?.normalizationVersion ?? input?.metadata?.normalizationVersion ?? null,
+    calculationPolicyVersion: metadata?.calculationPolicyVersion ?? input?.metadata?.calculationPolicyVersion ?? null,
+    pipelineVersion: metadata?.pipelineVersion ?? input?.metadata?.pipelineVersion ?? null,
+    percentiles: percentiles ?? DEFAULT_PERCENTILES,
+    inputHash: blockedInputHash,
     dataQuality: {
       status,
       blockReasons: reasons,
+      historyPolicy: effectiveHistoryPolicy,
     },
     betaApplied: false,
     cagrCalibrationApplied: false,
@@ -143,6 +276,10 @@ function buildBlockedResult({ status = "blocked", reasons = [], input = {}, meta
     trace: {
       sampledBlockStarts: [],
     },
+  };
+  return {
+    ...resultWithoutHash,
+    outputHash: sha256Stable(resultWithoutHash),
   };
 }
 
@@ -214,18 +351,13 @@ function normalizeScenario(scenario = {}) {
   const simulationCount = toFiniteNumber(scenario.simulationCount, "scenario.simulationCount");
   const blockMonths = toFiniteNumber(scenario.blockMonths, "scenario.blockMonths");
   const randomSeed = toFiniteNumber(scenario.randomSeed, "scenario.randomSeed");
-  const percentiles = Array.isArray(scenario.percentiles) && scenario.percentiles.length > 0
-    ? scenario.percentiles.map((value) => toFiniteNumber(value, "scenario.percentiles[]"))
-    : DEFAULT_PERCENTILES;
+  const percentiles = normalizePercentiles(scenario.percentiles);
   if (method !== "joint_block_bootstrap") throw new TypeError("scenario.method must be joint_block_bootstrap");
   if (!Number.isInteger(simulationCount) || simulationCount <= 0) {
     throw new RangeError("scenario.simulationCount must be a positive integer");
   }
   if (![6, 12].includes(blockMonths)) throw new RangeError("scenario.blockMonths must be 6 or 12");
   if (!Number.isInteger(randomSeed)) throw new RangeError("scenario.randomSeed must be an integer");
-  for (const value of percentiles) {
-    if (value < 0 || value > 1) throw new RangeError("scenario.percentiles values must be between 0 and 1");
-  }
   return { method, simulationCount, blockMonths, randomSeed, percentiles };
 }
 
@@ -269,7 +401,7 @@ function normalizeMonthlyReturnMatrix({ monthlyReturnMatrix, assets, metadata })
 
   for (const [index, rawRow] of monthlyReturnMatrix.entries()) {
     if (!isPlainObject(rawRow)) throw new TypeError(`monthlyReturnMatrix[${index}] must be an object`);
-    const month = normalizeMonth(rawRow.month, `monthlyReturnMatrix[${index}].month`);
+    const month = canonicalMonth(rawRow.month, `monthlyReturnMatrix[${index}].month`);
     const market = normalizeMarket(rawRow.market);
     const ticker = normalizeTicker(rawRow.ticker);
     const key = `${market}:${ticker}`;
@@ -288,19 +420,29 @@ function normalizeMonthlyReturnMatrix({ monthlyReturnMatrix, assets, metadata })
 
     if (!rowsByMonth.has(month)) rowsByMonth.set(month, new Map());
     const monthMap = rowsByMonth.get(month);
-    if (monthMap.has(key)) throw new TypeError(`duplicate monthly return row: ${key} ${month}`);
+    if (monthMap.has(key)) throw new TypeError(`same_calendar_month_duplicate:${key}:${month}`);
     monthMap.set(key, monthlyReturn);
   }
 
   const months = Array.from(rowsByMonth.keys()).sort();
   if (months.length === 0) throw new RangeError("monthlyReturnMatrix has no rows for requested assets");
+  for (let index = 1; index < months.length; index += 1) {
+    if (monthOrdinal(months[index]) - monthOrdinal(months[index - 1]) !== 1) {
+      throw new TypeError(`missing_calendar_month:${months[index - 1]}:${months[index]}`);
+    }
+  }
+
+  const effectiveSourceHashes = Array.from(sourceHashes).sort();
+  if (effectiveSourceHashes.length === 0) {
+    throw new TypeError("missing_source_hash:effective_source_hashes_empty");
+  }
 
   const matrix = months.map((month) => {
     const monthMap = rowsByMonth.get(month);
     const assetReturns = {};
     for (const asset of assets) {
       if (!monthMap.has(asset.key)) {
-        throw new TypeError(`missing monthly return row: ${asset.key} ${month}`);
+        throw new TypeError(`missing_asset_month:${asset.key}:${month}`);
       }
       assetReturns[asset.key] = monthMap.get(asset.key);
     }
@@ -311,7 +453,7 @@ function normalizeMonthlyReturnMatrix({ monthlyReturnMatrix, assets, metadata })
     matrix,
     dataStartDate: matrix[0].month,
     dataEndDate: matrix[matrix.length - 1].month,
-    sourceHashes: Array.from(sourceHashes).sort(),
+    sourceHashes: effectiveSourceHashes,
   };
 }
 
@@ -475,17 +617,27 @@ export function buildProbabilisticBootstrapScenario(input = {}) {
     const settings = normalizeSettings(input.settings);
     const scenario = normalizeScenario(input.scenario);
     const metadata = normalizeMetadata(input.metadata);
+    const historyPolicy = buildHistoryPolicy(input.metadata, scenario.blockMonths);
     const matrixResult = normalizeMonthlyReturnMatrix({
       monthlyReturnMatrix: input.monthlyReturnMatrix,
       assets,
       metadata,
     });
 
-    const minimumCommonHistoryMonths = Math.max(
-      Number(input.metadata?.minimumCommonHistoryMonths || DEFAULT_MINIMUM_COMMON_HISTORY_MONTHS),
-      36,
-      scenario.blockMonths * 3,
-    );
+    const minimumCommonHistoryMonths = historyPolicy.effectiveMinimumCommonHistoryMonths;
+    const normalizedInputForHash = {
+      portfolioId: input.portfolioId || "",
+      assets,
+      settings,
+      scenario,
+      metadata: {
+        ...metadata,
+        effectiveSourceHashes: matrixResult.sourceHashes,
+      },
+      historyPolicy,
+      matrix: matrixResult.matrix,
+    };
+    const inputHash = sha256Stable(normalizedInputForHash);
     if (matrixResult.matrix.length < minimumCommonHistoryMonths) {
       return buildBlockedResult({
         status: "insufficient_data",
@@ -496,6 +648,10 @@ export function buildProbabilisticBootstrapScenario(input = {}) {
           dataStartDate: matrixResult.dataStartDate,
           dataEndDate: matrixResult.dataEndDate,
         },
+        normalizedInputForHash,
+        sourceHashes: matrixResult.sourceHashes,
+        historyPolicy,
+        percentiles: scenario.percentiles,
       });
     }
 
@@ -505,19 +661,18 @@ export function buildProbabilisticBootstrapScenario(input = {}) {
         status: "insufficient_data",
         reasons: ["insufficient_history_for_block_sampling"],
         input,
-        metadata,
+        metadata: {
+          ...metadata,
+          dataStartDate: matrixResult.dataStartDate,
+          dataEndDate: matrixResult.dataEndDate,
+        },
+        normalizedInputForHash,
+        sourceHashes: matrixResult.sourceHashes,
+        historyPolicy,
+        percentiles: scenario.percentiles,
       });
     }
 
-    const normalizedInputForHash = {
-      portfolioId: input.portfolioId || "",
-      assets,
-      settings,
-      scenario,
-      metadata,
-      matrix: matrixResult.matrix,
-    };
-    const inputHash = sha256Stable(normalizedInputForHash);
     const nextRandom = createXorShift32(scenario.randomSeed);
     const paths = [];
     const sampledTrace = [];
@@ -566,6 +721,7 @@ export function buildProbabilisticBootstrapScenario(input = {}) {
       randomSeed: scenario.randomSeed,
       simulationCount: scenario.simulationCount,
       blockMonths: scenario.blockMonths,
+      percentiles: scenario.percentiles,
       rebalanceFrequency: settings.rebalanceFrequency,
       returnBasis: metadata.returnBasis,
       currencyMode: metadata.currencyMode,
@@ -583,6 +739,7 @@ export function buildProbabilisticBootstrapScenario(input = {}) {
         status: "ready",
         commonHistoryMonths: matrixResult.matrix.length,
         minimumCommonHistoryMonths,
+        historyPolicy,
         validBlockStartCount,
       },
       assets: assets.map((asset) => ({

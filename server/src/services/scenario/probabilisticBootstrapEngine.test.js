@@ -180,26 +180,75 @@ test("unsorted asset and row input normalizes deterministically", () => {
   assert.equal(stableSerialize(sorted), stableSerialize(unsorted));
 });
 
-test("duplicate month fails closed", () => {
-  const input = baseInput();
-  const duplicate = { ...input.monthlyReturnMatrix[0] };
-  const result = buildProbabilisticBootstrapScenario({
-    ...input,
-    monthlyReturnMatrix: [duplicate, ...input.monthlyReturnMatrix],
-  });
+test("same calendar month duplicate fails closed even when day differs", () => {
+  const duplicate = fixture("same_calendar_month_duplicate_matrix.json");
+  const result = buildProbabilisticBootstrapScenario(baseInput({
+    assets: duplicate.assets.map((asset) => ({ ...asset, targetWeight: 50 })),
+    monthlyReturnMatrix: duplicate.monthlyReturnMatrix,
+    metadata: duplicate.metadata,
+  }));
   assert.equal(result.status, "blocked");
-  assert.match(result.dataQuality.blockReasons.join("|"), /duplicate monthly return row/);
+  assert.match(result.dataQuality.blockReasons.join("|"), /same_calendar_month_duplicate/);
+  assert.match(result.inputHash, /^[a-f0-9]{64}$/);
+  assert.match(result.outputHash, /^[a-f0-9]{64}$/);
 });
 
-test("missing synchronized month fails closed", () => {
-  const missing = fixture("missing_month_matrix.json");
+test("missing asset month fails closed separately from missing calendar month", () => {
+  const missing = fixture("missing_asset_month_matrix.json");
   const result = buildProbabilisticBootstrapScenario(baseInput({
     assets: missing.assets.map((asset) => ({ ...asset, targetWeight: 50 })),
     monthlyReturnMatrix: missing.monthlyReturnMatrix,
     metadata: missing.metadata,
   }));
   assert.equal(result.status, "blocked");
-  assert.match(result.dataQuality.blockReasons.join("|"), /missing monthly return row/);
+  assert.match(result.dataQuality.blockReasons.join("|"), /missing_asset_month/);
+});
+
+test("missing full calendar month fails closed", () => {
+  const missing = fixture("missing_calendar_month_matrix.json");
+  const result = buildProbabilisticBootstrapScenario(baseInput({
+    assets: missing.assets.map((asset) => ({ ...asset, targetWeight: 50 })),
+    monthlyReturnMatrix: missing.monthlyReturnMatrix,
+    metadata: missing.metadata,
+  }));
+  assert.equal(result.status, "blocked");
+  assert.match(result.dataQuality.blockReasons.join("|"), /missing_calendar_month/);
+});
+
+test("invalid calendar month or date fails closed", () => {
+  const invalid = fixture("invalid_calendar_month_matrix.json");
+  const invalidDate = buildProbabilisticBootstrapScenario(baseInput({
+    assets: invalid.assets.map((asset) => ({ ...asset, targetWeight: 50 })),
+    monthlyReturnMatrix: invalid.monthlyReturnMatrix,
+    metadata: invalid.metadata,
+  }));
+  assert.equal(invalidDate.status, "blocked");
+  assert.match(invalidDate.dataQuality.blockReasons.join("|"), /invalid_calendar_month/);
+
+  const input = baseInput();
+  const invalidMonth = buildProbabilisticBootstrapScenario({
+    ...input,
+    monthlyReturnMatrix: input.monthlyReturnMatrix.map((row, index) => (
+      index === 0 ? { ...row, month: "2018-13" } : row
+    )),
+  });
+  assert.equal(invalidMonth.status, "blocked");
+  assert.match(invalidMonth.dataQuality.blockReasons.join("|"), /invalid_calendar_month/);
+});
+
+test("month days are canonicalized to YYYY-MM calendar months", () => {
+  const input = baseInput();
+  const result = buildProbabilisticBootstrapScenario({
+    ...input,
+    monthlyReturnMatrix: input.monthlyReturnMatrix.map((row) => ({
+      ...row,
+      month: `${row.month.slice(0, 7)}-01`,
+    })),
+  });
+  assertReady(result);
+  assert.equal(result.dataStartDate, "2018-01");
+  assert.equal(result.dataEndDate, "2023-12");
+  assert.match(result.trace.sampledBlockStarts[0].sampledRows[0].sourceMonth, /^\d{4}-\d{2}$/);
 });
 
 test("missing return is not replaced with zero", () => {
@@ -216,6 +265,106 @@ test("target weights must sum to 1 or 100", () => {
   }));
   assert.equal(result.status, "blocked");
   assert.match(result.dataQuality.blockReasons.join("|"), /target weights must sum/);
+});
+
+test("minimum common history policy cannot be lowered below 60 months", () => {
+  const requested36 = buildProbabilisticBootstrapScenario(baseInput({
+    metadata: { ...baseInput().metadata, minimumCommonHistoryMonths: 36 },
+  }));
+  assertReady(requested36);
+  assert.equal(requested36.dataQuality.minimumCommonHistoryMonths, 60);
+  assert.equal(requested36.dataQuality.historyPolicy.requestedMinimumCommonHistoryMonths, 36);
+  assert.equal(requested36.dataQuality.historyPolicy.effectiveMinimumCommonHistoryMonths, 60);
+
+  const assets = [{ market: "US", ticker: "AAA" }, { market: "US", ticker: "BBB" }];
+  const shortResult = buildProbabilisticBootstrapScenario(baseInput({
+    assets: assets.map((asset) => ({ ...asset, targetWeight: 50 })),
+    metadata: { ...baseInput().metadata, minimumCommonHistoryMonths: 36 },
+    monthlyReturnMatrix: makeRows({
+      count: 59,
+      assets,
+      returnsFor: () => 0.01,
+    }),
+  }));
+  assert.equal(shortResult.status, "insufficient_data");
+  assert.match(shortResult.dataQuality.blockReasons.join("|"), /insufficient_common_history:59<60/);
+  assert.equal(shortResult.dataQuality.historyPolicy.effectiveMinimumCommonHistoryMonths, 60);
+});
+
+test("minimum common history policy honors higher positive integer requests", () => {
+  const requested72 = buildProbabilisticBootstrapScenario(baseInput({
+    metadata: { ...baseInput().metadata, minimumCommonHistoryMonths: 72 },
+  }));
+  assertReady(requested72);
+  assert.equal(requested72.dataQuality.minimumCommonHistoryMonths, 72);
+  assert.equal(requested72.dataQuality.historyPolicy.effectiveMinimumCommonHistoryMonths, 72);
+});
+
+test("invalid minimum common history values fail closed", () => {
+  for (const value of [Number.NaN, "61", 1.5, 0, -1]) {
+    const result = buildProbabilisticBootstrapScenario(baseInput({
+      metadata: { ...baseInput().metadata, minimumCommonHistoryMonths: value },
+    }));
+    assert.equal(result.status, "blocked");
+    assert.match(result.dataQuality.blockReasons.join("|"), /invalid_minimum_common_history_months/);
+    assert.match(result.inputHash, /^[a-f0-9]{64}$/);
+    assert.match(result.outputHash, /^[a-f0-9]{64}$/);
+  }
+});
+
+test("fixed percentile contract accepts only canonical p10 p25 p50 p75 p90 set", () => {
+  const unsorted = buildProbabilisticBootstrapScenario(baseInput({
+    scenario: { ...baseInput().scenario, percentiles: [0.9, 0.25, 0.1, 0.75, 0.5] },
+  }));
+  assertReady(unsorted);
+  assert.deepEqual(unsorted.percentiles, [0.1, 0.25, 0.5, 0.75, 0.9]);
+
+  for (const percentiles of [
+    [0.1, 0.25, 0.5, 0.75],
+    [0.1, 0.25, 0.5, 0.75, 0.75],
+    [0.05, 0.25, 0.5, 0.75, 0.9],
+    ["0.1", 0.25, 0.5, 0.75, 0.9],
+  ]) {
+    const result = buildProbabilisticBootstrapScenario(baseInput({
+      scenario: { ...baseInput().scenario, percentiles },
+    }));
+    assert.equal(result.status, "blocked");
+    assert.match(result.dataQuality.blockReasons.join("|"), /unsupported_percentile_contract/);
+  }
+});
+
+test("effective source hashes combine metadata and row hashes and affect deterministic hashes", () => {
+  const input = baseInput();
+  const first = buildProbabilisticBootstrapScenario(input);
+  const second = buildProbabilisticBootstrapScenario({
+    ...input,
+    monthlyReturnMatrix: input.monthlyReturnMatrix.map((row) => ({
+      ...row,
+      sourceHash: "changed-row-source-hash",
+    })),
+  });
+  assertReady(first);
+  assertReady(second);
+  assert.deepEqual(second.sourceHashes, [
+    "changed-row-source-hash",
+    "synthetic-scenario-probabilistic-fixture-sha",
+  ]);
+  assert.notEqual(first.inputHash, second.inputHash);
+  assert.notEqual(first.outputHash, second.outputHash);
+});
+
+test("missing effective source hash fails closed", () => {
+  const input = baseInput();
+  const result = buildProbabilisticBootstrapScenario({
+    ...input,
+    metadata: { ...input.metadata, sourceHashes: [] },
+    monthlyReturnMatrix: input.monthlyReturnMatrix.map(({ sourceHash, ...row }) => row),
+  });
+  assert.equal(result.status, "blocked");
+  assert.match(result.dataQuality.blockReasons.join("|"), /missing_source_hash/);
+  assert.deepEqual(result.sourceHashes, []);
+  assert.match(result.inputHash, /^[a-f0-9]{64}$/);
+  assert.match(result.outputHash, /^[a-f0-9]{64}$/);
 });
 
 test("month-start contribution is applied before sampled return", () => {
@@ -370,6 +519,9 @@ test("insufficient history returns insufficient_data without precise probabiliti
   assert.equal(result.status, "insufficient_data");
   assert.equal(result.terminalValue, null);
   assert.equal(result.principalShortfallProbability.month12, null);
+  assert.deepEqual(result.sourceHashes, ["synthetic-scenario-probabilistic-fixture-sha"]);
+  assert.match(result.inputHash, /^[a-f0-9]{64}$/);
+  assert.match(result.outputHash, /^[a-f0-9]{64}$/);
 });
 
 test("KR leading-zero tickers are preserved", () => {

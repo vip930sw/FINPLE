@@ -1,5 +1,5 @@
 {
-  "description": "Invalid matrix missing one synchronized asset-month row.",
+  "description": "Invalid fixture with one asset duplicated in the same calendar month using a different day value.",
   "assets": [
     {
       "market": "US",
@@ -22,12 +22,21 @@
   },
   "monthlyReturnMatrix": [
     {
+      "month": "2018-01-01",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": -0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
       "month": "2018-01-31",
       "market": "US",
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -36,7 +45,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -45,7 +54,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -54,7 +63,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -63,7 +72,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -72,7 +81,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -81,7 +90,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -90,7 +99,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -99,7 +108,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -108,7 +117,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -117,7 +126,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -126,7 +135,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -135,7 +144,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -144,7 +153,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -153,7 +162,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -162,7 +171,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -171,7 +180,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -180,7 +189,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -189,7 +198,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -198,7 +207,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -211,12 +220,21 @@
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
+      "month": "2018-11-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": -0.007,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
       "month": "2018-12-31",
       "market": "US",
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -225,7 +243,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.007,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -234,7 +252,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -243,7 +261,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.005,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -252,7 +270,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -261,7 +279,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.005,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -270,7 +288,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -279,7 +297,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.005,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -288,7 +306,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -297,7 +315,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -306,7 +324,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -315,7 +333,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -324,7 +342,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -333,7 +351,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -342,7 +360,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -351,7 +369,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -360,7 +378,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -369,7 +387,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -378,7 +396,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -396,7 +414,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -432,7 +450,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -450,7 +468,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -459,7 +477,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.007,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -468,7 +486,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -477,7 +495,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -486,7 +504,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -495,7 +513,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -504,7 +522,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -513,7 +531,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -522,7 +540,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -531,7 +549,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -540,7 +558,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -549,7 +567,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -558,7 +576,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -567,7 +585,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -576,7 +594,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -585,7 +603,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -594,7 +612,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -603,7 +621,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -612,7 +630,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -621,7 +639,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -639,7 +657,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -648,7 +666,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -657,7 +675,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -666,7 +684,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -675,7 +693,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -684,7 +702,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -693,7 +711,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -702,7 +720,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -711,7 +729,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -720,7 +738,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -729,7 +747,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -738,7 +756,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -747,7 +765,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -756,7 +774,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -765,7 +783,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -774,7 +792,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -783,7 +801,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -792,7 +810,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -801,7 +819,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -810,7 +828,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -819,7 +837,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -828,7 +846,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -837,7 +855,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -855,7 +873,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -864,7 +882,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -873,7 +891,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -882,7 +900,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -891,7 +909,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -900,7 +918,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -909,7 +927,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -918,7 +936,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -927,7 +945,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -936,7 +954,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -945,7 +963,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -954,7 +972,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -963,7 +981,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -972,7 +990,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -981,7 +999,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -990,7 +1008,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -999,7 +1017,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.001,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1008,7 +1026,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1017,7 +1035,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1026,7 +1044,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1035,7 +1053,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1044,7 +1062,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1053,7 +1071,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1071,7 +1089,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1080,7 +1098,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1089,7 +1107,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1098,7 +1116,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.01,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1107,7 +1125,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1116,7 +1134,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1125,7 +1143,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1134,7 +1152,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1143,7 +1161,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1152,7 +1170,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1161,7 +1179,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1170,7 +1188,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1179,7 +1197,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": 0.003,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1188,7 +1206,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1197,7 +1215,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1206,7 +1224,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1215,7 +1233,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1224,7 +1242,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.004,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1233,7 +1251,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1242,7 +1260,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.006,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1251,7 +1269,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1260,7 +1278,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.008,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1269,7 +1287,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.002,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1287,7 +1305,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.007,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1296,7 +1314,7 @@
       "ticker": "AAA",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": 0.01,
+      "return": 0.012,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     },
     {
@@ -1305,7 +1323,7 @@
       "ticker": "BBB",
       "currencyMode": "USD",
       "returnBasis": "price_return",
-      "return": -0.005,
+      "return": -0.007,
       "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
     }
   ]
