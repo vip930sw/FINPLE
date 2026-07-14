@@ -8114,7 +8114,7 @@ nav {
 ========================================================= */
 
 .simulatorTabNav.fourStepNav {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   gap: 10px !important;
 }
 
@@ -8215,6 +8215,357 @@ nav {
 @media (max-width: 620px) {
   .simulatorTabNav.fourStepNav {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================
+   STEP 114-2G. Probability Analysis UI Shell
+========================= */
+
+.probabilityAnalysisPanel {
+  background: #f8fafc;
+}
+
+.probabilityFixtureBadge,
+.probabilityPortfolioContext,
+.probabilityReadyNotice,
+.probabilityStatusPanel,
+.probabilityChartCard,
+.probabilitySummaryCard,
+.probabilityMethodologyPanel,
+.probabilityMddNotice,
+.probabilityDisclaimer {
+  border: 1px solid #dbe4f0;
+  background: #ffffff;
+}
+
+.probabilityFixtureBadge {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.probabilityFixtureBadge span {
+  color: #0f766e;
+  text-transform: uppercase;
+}
+
+.probabilityFixtureBadge strong {
+  color: #0f172a;
+}
+
+.probabilityPortfolioContext {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(110px, 0.5fr);
+  gap: 12px;
+  margin: 0 0 18px;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.probabilityPortfolioContext div {
+  min-width: 0;
+}
+
+.probabilityPortfolioContext span,
+.probabilitySummaryCard span,
+.probabilityMethodologyGrid dt {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.probabilityPortfolioContext strong,
+.probabilitySummaryCard strong,
+.probabilityMethodologyGrid dd {
+  display: block;
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.probabilityReadyNotice,
+.probabilityStatusPanel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 0 0 18px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.probabilityReadyNotice svg,
+.probabilityStatusIcon {
+  color: #0f766e;
+}
+
+.probabilityStatus-blocked .probabilityStatusIcon,
+.probabilityStatus-error .probabilityStatusIcon {
+  color: #b91c1c;
+}
+
+.probabilityReadyNotice strong,
+.probabilityStatusPanel strong,
+.probabilityMddNotice strong,
+.probabilityDisclaimer strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.probabilityReadyNotice p,
+.probabilityStatusPanel p,
+.probabilityMddNotice p,
+.probabilityDisclaimer p,
+.probabilityChartHeader p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.65;
+}
+
+.probabilityChartCard {
+  margin: 0 0 18px;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.probabilityChartHeader,
+.probabilitySectionTitle {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px;
+}
+
+.probabilityChartHeader h4,
+.probabilitySectionTitle h4 {
+  margin: 3px 0 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.probabilityChartSvgWrap {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.probabilityBandSvg {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+}
+
+.probabilityOuterBand {
+  fill: #dbeafe;
+  opacity: 0.75;
+}
+
+.probabilityInnerBand {
+  fill: #bfdbfe;
+  opacity: 0.9;
+}
+
+.probabilityMedianLine,
+.probabilityBaselineLine,
+.probabilityContributionLine {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.probabilityMedianLine {
+  stroke: #1d4ed8;
+  stroke-width: 5;
+}
+
+.probabilityBaselineLine {
+  stroke: #0f766e;
+  stroke-width: 3.5;
+  stroke-dasharray: 12 8;
+}
+
+.probabilityContributionLine {
+  stroke: #334155;
+  stroke-width: 3.5;
+  stroke-dasharray: 3 9;
+}
+
+.probabilityChartPoint circle {
+  fill: #ffffff;
+  stroke: #1d4ed8;
+  stroke-width: 2;
+}
+
+.probabilityChartPoint:focus {
+  outline: none;
+}
+
+.probabilityChartPoint:focus circle {
+  stroke: #0f172a;
+  stroke-width: 4;
+}
+
+.probabilityChartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 12px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.probabilityChartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.probabilityChartLegend i {
+  display: inline-block;
+  width: 24px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.probabilityLegendOuter {
+  background: #dbeafe;
+}
+
+.probabilityLegendInner {
+  background: #93c5fd;
+}
+
+.probabilityLegendMedian,
+.probabilityLegendBaseline,
+.probabilityLegendContribution {
+  height: 3px !important;
+  background: #1d4ed8;
+}
+
+.probabilityLegendBaseline {
+  background: repeating-linear-gradient(90deg, #0f766e 0 8px, transparent 8px 14px);
+}
+
+.probabilityLegendContribution {
+  background: repeating-linear-gradient(90deg, #334155 0 3px, transparent 3px 8px);
+}
+
+.probabilitySummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.probabilitySummaryCard {
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.probabilityMddNotice,
+.probabilityDisclaimer,
+.probabilityMethodologyPanel {
+  margin: 0 0 18px;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.probabilityMethodologyGrid,
+.probabilityAuditDetails dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.probabilityMethodologyGrid div,
+.probabilityAuditDetails div {
+  min-width: 0;
+}
+
+.probabilityAuditDetails {
+  margin-top: 14px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.probabilityAuditDetails summary {
+  cursor: pointer;
+  color: #334155;
+  font-weight: 950;
+}
+
+.probabilityMobileSummary {
+  display: none;
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  color: #334155;
+  font-size: 12px;
+}
+
+.probabilityMobileSummary caption {
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-weight: 950;
+  text-align: left;
+}
+
+.probabilityMobileSummary th,
+.probabilityMobileSummary td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 6px;
+  text-align: right;
+}
+
+.probabilityMobileSummary th:first-child,
+.probabilityMobileSummary td:first-child {
+  text-align: left;
+}
+
+@media (max-width: 980px) {
+  .probabilityPortfolioContext,
+  .probabilitySummaryGrid,
+  .probabilityMethodologyGrid,
+  .probabilityAuditDetails dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .probabilityAnalysisPanel {
+    padding: 20px;
+  }
+
+  .probabilityPortfolioContext,
+  .probabilitySummaryGrid,
+  .probabilityMethodologyGrid,
+  .probabilityAuditDetails dl {
+    grid-template-columns: 1fr;
+  }
+
+  .probabilityChartSvgWrap {
+    display: none;
+  }
+
+  .probabilityMobileSummary {
+    display: table;
   }
 }
 
