@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -343,6 +344,8 @@ class MetricsPipelineTests(unittest.TestCase):
             "manual_upload_empty.csv",
             "manual_upload_unknown_license.csv",
             "manual_upload_internal_use_blocked.csv",
+            "manual_upload_row_mismatch.csv",
+            "manual_upload_malformed_csv.csv",
         ]
         for file_name in blocked_files:
             with self.subTest(file_name=file_name), tempfile.TemporaryDirectory() as temp_dir:
@@ -351,6 +354,52 @@ class MetricsPipelineTests(unittest.TestCase):
                         build_config(Path(temp_dir), input_mode="manual_upload", manual_upload_file=file_name)
                     )
                 self.assertFalse((Path(temp_dir) / "finple_monthly_metrics_2026_06_package.zip").exists())
+
+    def test_manual_upload_invalid_encoding_is_adapter_level_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = Path(temp_dir) / "inputs"
+            input_dir.mkdir()
+            for file_name in ["candidates.csv", "benchmark_map.csv", "monthly_prices.csv"]:
+                shutil.copy2(FIXTURE_DIR / file_name, input_dir / file_name)
+            (input_dir / "manual_upload_invalid_encoding.csv").write_bytes(b"\xff\xfe\x00\x00not-utf8")
+
+            config = build_config(
+                Path(temp_dir) / "outputs",
+                input_mode="manual_upload",
+                input_dir=str(input_dir),
+                manual_upload_file="manual_upload_invalid_encoding.csv",
+            )
+            adapter_result = run_source_adapter(load_config(config))
+            self.assertIn("source adapter invalid encoding blocked", "; ".join(adapter_result.warnings))
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter produced no accepted rows"):
+                run_finple_monthly_metrics_pipeline(config)
+
+    def test_public_source_provider_shaped_mapping_preserves_kr_etf_leading_zero(self):
+        config = load_config(build_config(Path("unused"), input_mode="public_source_fixture"))
+        adapter_result = run_source_adapter(config)
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual(adapter_result.adapterId, "finple.synthetic_public_source_fixture.v1")
+        rows_by_ticker = {row["ticker"]: row for row in adapter_result.rows}
+
+        self.assertIn("005930", rows_by_ticker)
+        self.assertIn("000660", rows_by_ticker)
+        self.assertIn("069500", rows_by_ticker)
+        self.assertEqual(rows_by_ticker["069500"]["ticker"], "069500")
+        self.assertEqual(rows_by_ticker["069500"]["totalReturnAdjustedClose"], "33100")
+        self.assertEqual(rows_by_ticker["069500"]["priceAdjustmentBasis"], "total_return_adjusted")
+        self.assertTrue(rows_by_ticker["069500"]["sourceId"].startswith("public_fixture:kr_securities_product:"))
+        self.assertEqual(rows_by_ticker["005930"]["splitAdjustedClose"], rows_by_ticker["005930"]["close"])
+
+    def test_public_source_unsupported_provider_shape_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter produced no accepted rows"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir),
+                        input_mode="public_source_fixture",
+                        public_source_fixture_file="public_source_fixture_unsupported_shape.csv",
+                    )
+                )
 
     def test_public_source_fixture_checkpoint_retry_resume_and_determinism(self):
         config = load_config(
@@ -367,6 +416,11 @@ class MetricsPipelineTests(unittest.TestCase):
         self.assertTrue(adapter_result.resumeSupported)
         self.assertEqual(adapter_result.checkpoint["completedPageNumbers"], [1, 2])
         self.assertEqual(len(adapter_result.checkpoint["acceptedRecordIds"]), 3)
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], 3)
+        self.assertEqual(adapter_result.checkpoint["cumulativeAcceptedRecordCount"], 3)
+        self.assertEqual(adapter_result.checkpoint["duplicateAcceptedRecordCount"], 0)
+        self.assertEqual(adapter_result.checkpoint["lastStatus"], "success_after_retry")
+        self.assertEqual(adapter_result.public_summary()["lastStatus"], "success_after_retry")
 
         with tempfile.TemporaryDirectory() as temp_dir:
             first = run_finple_monthly_metrics_pipeline(
@@ -386,7 +440,12 @@ class MetricsPipelineTests(unittest.TestCase):
             )
             resumed = run_source_adapter(second_config)
             self.assertEqual(len(resumed.rows), 0)
-            self.assertEqual(resumed.rejectedRowCount, 3)
+            self.assertEqual(resumed.rejectedRowCount, 0)
+            self.assertEqual(resumed.checkpoint["previousAcceptedRecordCount"], 3)
+            self.assertEqual(resumed.checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(resumed.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(len(resumed.checkpoint["acceptedRecordIds"]), 3)
+            self.assertEqual(resumed.checkpoint["duplicateAcceptedRecordCount"], 0)
 
             second = run_finple_monthly_metrics_pipeline(
                 build_config(
@@ -403,10 +462,94 @@ class MetricsPipelineTests(unittest.TestCase):
                 Path(second["outputs"]["sourceAdapterCheckpointJson"]).read_bytes(),
             )
 
+    def test_public_source_partial_checkpoint_page_two_resume_and_repeat_resume_are_deterministic(self):
+        partial_checkpoint = FIXTURE_DIR / "public_source_fixture_page1_checkpoint.json"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            page_two_config = load_config(
+                build_config(
+                    Path(temp_dir) / "page-two",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(partial_checkpoint),
+                )
+            )
+            page_two = run_source_adapter(page_two_config)
+            self.assertEqual([row["ticker"] for row in page_two.rows], ["069500"])
+            self.assertEqual(page_two.checkpoint["previousAcceptedRecordCount"], 2)
+            self.assertEqual(page_two.checkpoint["newlyAcceptedRecordCount"], 1)
+            self.assertEqual(page_two.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(page_two.checkpoint["acceptedRecordIds"], [
+                "public-fixture-kr-etf-069500",
+                "public-fixture-kr-stock-001",
+                "public-fixture-kr-stock-002",
+            ])
+            self.assertEqual(page_two.checkpoint["completedPageNumbers"], [1, 2])
+            self.assertEqual(page_two.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+            completed_checkpoint = Path(temp_dir) / "completed_checkpoint.json"
+            completed_checkpoint.write_text(json.dumps(page_two.checkpoint, sort_keys=True), encoding="utf-8")
+            repeat_config = load_config(
+                build_config(
+                    Path(temp_dir) / "repeat",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(completed_checkpoint),
+                )
+            )
+            repeat = run_source_adapter(repeat_config)
+            self.assertEqual(len(repeat.rows), 0)
+            self.assertEqual(repeat.rejectedRowCount, 0)
+            self.assertEqual(repeat.checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(repeat.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(repeat.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+    def test_public_source_retry_count_respects_configured_max(self):
+        for max_retry in [0, 1, 2, 3]:
+            with self.subTest(mode="permanent_failure", max_retry=max_retry):
+                permanent = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path("unused"),
+                            input_mode="public_source_fixture",
+                            public_source_fixture_failure_mode="permanent_failure",
+                            source_adapter_max_retry_count=max_retry,
+                        )
+                    )
+                )
+                self.assertEqual(permanent.retryCount, max_retry)
+                self.assertEqual(permanent.maxRetryCount, max_retry)
+                self.assertEqual(permanent.lastStatus, "retry_exhausted")
+                self.assertEqual(permanent.checkpoint["retryCount"], max_retry)
+                self.assertEqual(permanent.checkpoint["maxRetryCount"], max_retry)
+                self.assertEqual(permanent.checkpoint["lastStatus"], "retry_exhausted")
+                self.assertFalse(permanent.rows)
+
+            with self.subTest(mode="transient_then_success", max_retry=max_retry):
+                transient = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path("unused"),
+                            input_mode="public_source_fixture",
+                            public_source_fixture_failure_mode="transient_then_success",
+                            source_adapter_max_retry_count=max_retry,
+                        )
+                    )
+                )
+                self.assertLessEqual(transient.retryCount, max_retry)
+                self.assertEqual(transient.maxRetryCount, max_retry)
+                self.assertEqual(transient.checkpoint["maxRetryCount"], max_retry)
+                if max_retry == 0:
+                    self.assertEqual(transient.retryCount, 0)
+                    self.assertEqual(transient.lastStatus, "retry_exhausted")
+                    self.assertFalse(transient.rows)
+                else:
+                    self.assertEqual(transient.retryCount, 1)
+                    self.assertEqual(transient.lastStatus, "success_after_retry")
+                    self.assertTrue(transient.rows)
+
     def test_public_source_fixture_license_and_permanent_retry_fail_closed(self):
         for overrides in [
             {"public_source_fixture_file": "public_source_fixture_unknown_license.csv"},
             {"public_source_fixture_failure_mode": "permanent_failure"},
+            {"public_source_fixture_failure_mode": "transient_then_success", "source_adapter_max_retry_count": 0},
         ]:
             with self.subTest(overrides=overrides), tempfile.TemporaryDirectory() as temp_dir:
                 with self.assertRaises(PipelineCriticalError):

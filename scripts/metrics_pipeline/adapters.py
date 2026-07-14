@@ -14,7 +14,36 @@ from .schemas import RAW_DAILY_PRICE_COLUMNS
 ADAPTER_VERSION = "source-adapter-contract-v1-step114-2c"
 SUPPORTED_INPUT_MODES = {"fixture", "manual_upload", "public_source_fixture"}
 UNKNOWN_LICENSE_STATUSES = {"", "unknown", "unconfirmed", "review_required"}
-PUBLIC_SOURCE_FIXTURE_COLUMNS = ["pageNumber", "recordId", *RAW_DAILY_PRICE_COLUMNS]
+PUBLIC_SOURCE_FIXTURE_COLUMNS = [
+    "pageNumber",
+    "recordId",
+    "sourceShape",
+    "krMarketCode",
+    "krIssueCode",
+    "krTradeDate",
+    "krClosePrice",
+    "krCurrency",
+    "krVolume",
+    "krSplitFactor",
+    "krCashDividend",
+    "krProductMarketCode",
+    "krProductCode",
+    "krProductBaseDate",
+    "krProductClosePrice",
+    "krProductTotalReturnAdjustedClose",
+    "krProductCurrency",
+    "krProductVolume",
+    "krProductCashDistribution",
+    "retrievedAt",
+    "licenseStatus",
+    "internalUseAllowed",
+    "publicationAllowed",
+    "redistributionAllowed",
+    "providerOrInstitution",
+    "priceAdjustmentBasis",
+    "publicationEligibility",
+]
+PROVIDER_SOURCE_SHAPES = {"kr_public_daily_price", "kr_securities_product"}
 
 
 @dataclass(frozen=True)
@@ -42,6 +71,8 @@ class SourceAdapterResult:
     sourcePath: Path
     rejectedRowCount: int = 0
     retryCount: int = 0
+    maxRetryCount: int = 0
+    lastStatus: str = "success"
     checkpoint: Mapping[str, Any] | None = None
     sanitizationStatus: str = "passed"
 
@@ -68,6 +99,8 @@ class SourceAdapterResult:
             "checkpointId": self.checkpointId,
             "resumeSupported": self.resumeSupported,
             "retryCount": self.retryCount,
+            "maxRetryCount": self.maxRetryCount,
+            "lastStatus": self.lastStatus,
             "sanitizationStatus": self.sanitizationStatus,
             "warnings": list(self.warnings),
         }
@@ -167,24 +200,43 @@ def _run_manual_upload_adapter(config: Any) -> SourceAdapterResult:
 
 def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
     source_path = config.input_dir / config.public_source_fixture_file
-    rows, warnings = _read_csv_with_exact_header(source_path, PUBLIC_SOURCE_FIXTURE_COLUMNS)
-    retry_count = _bounded_retry_count(config.public_source_fixture_failure_mode)
+    provider_rows, warnings = _read_csv_with_exact_header(source_path, PUBLIC_SOURCE_FIXTURE_COLUMNS)
+    retry_count, last_status = _bounded_retry_status(
+        config.public_source_fixture_failure_mode,
+        config.source_adapter_max_retry_count,
+    )
     if config.public_source_fixture_failure_mode == "permanent_failure":
         warnings.append("public_source_fixture permanent_failure blocked after bounded retry")
-        rows = []
+        provider_rows = []
+    elif config.public_source_fixture_failure_mode == "transient_then_success" and config.source_adapter_max_retry_count == 0:
+        warnings.append("public_source_fixture transient failure blocked because max retry is zero")
+        provider_rows = []
+
+    mapped_rows: list[dict[str, str]] = []
+    mapping_warnings: list[str] = []
+    for row in provider_rows:
+        mapped_row, row_warnings = _map_public_source_fixture_row(row)
+        mapping_warnings.extend(row_warnings)
+        if not row_warnings:
+            mapped_rows.append(mapped_row)
+    warnings.extend(sorted(set(mapping_warnings)))
 
     accepted_by_record_id: dict[str, dict[str, str]] = {}
-    rejected_count = 0
     accepted_record_ids = _load_accepted_record_ids(config.public_source_resume_checkpoint_file)
-    for row in sorted(rows, key=lambda item: (int(item.get("pageNumber") or "0"), item.get("recordId", ""))):
+    previous_completed_pages = _load_completed_page_numbers(config.public_source_resume_checkpoint_file)
+    skipped_previously_accepted = 0
+    for row in sorted(provider_rows, key=lambda item: (int(item.get("pageNumber") or "0"), item.get("recordId", ""))):
         record_id = row.get("recordId", "")
-        raw_row = {column: row.get(column, "") for column in RAW_DAILY_PRICE_COLUMNS}
         if record_id in accepted_record_ids:
-            rejected_count += 1
+            skipped_previously_accepted += 1
             continue
-        accepted_by_record_id[record_id] = raw_row
+        mapped_row, row_warnings = _map_public_source_fixture_row(row)
+        if not row_warnings:
+            accepted_by_record_id[record_id] = mapped_row
 
     accepted_rows, gated_count, gate_warnings, policy = _apply_license_gate(list(accepted_by_record_id.values()))
+    cumulative_accepted_ids = sorted(accepted_record_ids.union(accepted_by_record_id))
+    completed_pages = sorted(previous_completed_pages.union({int(row.get("pageNumber") or "0") for row in provider_rows}))
     checkpoint = {
         "checkpointId": f"public_source_fixture:{_sha256(source_path)[:12]}:complete" if source_path.exists() else "public_source_fixture:missing",
         "adapterId": "finple.synthetic_public_source_fixture.v1",
@@ -193,8 +245,15 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         "resumeSupported": True,
         "retryCount": retry_count,
         "maxRetryCount": config.source_adapter_max_retry_count,
-        "acceptedRecordIds": sorted(accepted_by_record_id),
-        "completedPageNumbers": sorted({int(row.get("pageNumber") or "0") for row in rows}),
+        "lastStatus": last_status,
+        "acceptedRecordIds": cumulative_accepted_ids,
+        "completedPageNumbers": completed_pages,
+        "previousAcceptedRecordCount": len(accepted_record_ids),
+        "newlyAcceptedRecordCount": len(accepted_by_record_id),
+        "cumulativeAcceptedRecordCount": len(cumulative_accepted_ids),
+        "skippedPreviouslyAcceptedCount": skipped_previously_accepted,
+        "duplicateAcceptedRecordCount": 0,
+        "rejectedRecordCount": gated_count + len(mapping_warnings),
         "nextCursor": "",
         "sourceFileName": source_path.name,
         "rawSourceSha256": _sha256(source_path) if source_path.exists() else "",
@@ -204,20 +263,22 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         mode="public_source_fixture",
         source_path=source_path,
         rows=accepted_rows if not warnings else [],
-        row_count=len(rows),
+        row_count=len(provider_rows),
         market_scope=config.market_scope,
         checkpoint_id=str(checkpoint["checkpointId"]),
-        source_id=_single_or_mixed(rows, "sourceId", default=f"public_source_fixture_{source_path.name}"),
-        provider_or_institution=_single_or_mixed(rows, "providerOrInstitution", default="FINPLE synthetic public-source fixture"),
-        retrieved_at=_single_or_mixed(rows, "retrievedAt", default=config.created_at),
+        source_id=_single_or_mixed(mapped_rows, "sourceId", default=f"public_source_fixture_{source_path.name}"),
+        provider_or_institution=_single_or_mixed(mapped_rows, "providerOrInstitution", default="FINPLE synthetic public-source fixture"),
+        retrieved_at=_single_or_mixed(mapped_rows, "retrievedAt", default=config.created_at),
         license_status=policy["licenseStatus"],
         internal_use_allowed=policy["internalUseAllowed"],
         publication_allowed=policy["publicationAllowed"],
         redistribution_allowed=policy["redistributionAllowed"],
-        price_adjustment_basis=_single_or_mixed(rows, "priceAdjustmentBasis", default="mixed_or_review_required"),
+        price_adjustment_basis=_single_or_mixed(mapped_rows, "priceAdjustmentBasis", default="mixed_or_review_required"),
         warnings=tuple(warnings + gate_warnings),
-        rejected_row_count=rejected_count + gated_count,
+        rejected_row_count=gated_count + len(mapping_warnings),
         retry_count=retry_count,
+        max_retry_count=config.source_adapter_max_retry_count,
+        last_status=last_status,
         checkpoint=checkpoint,
     )
 
@@ -242,6 +303,8 @@ def _build_result(
     warnings: tuple[str, ...],
     rejected_row_count: int = 0,
     retry_count: int = 0,
+    max_retry_count: int = 0,
+    last_status: str = "success",
     checkpoint: Mapping[str, Any] | None = None,
 ) -> SourceAdapterResult:
     public_values = _sanitize_payload(
@@ -278,6 +341,8 @@ def _build_result(
         sourcePath=source_path,
         rejectedRowCount=rejected_row_count,
         retryCount=retry_count,
+        maxRetryCount=max_retry_count,
+        lastStatus=last_status,
         checkpoint=checkpoint,
     )
 
@@ -285,26 +350,101 @@ def _build_result(
 def _read_csv_with_exact_header(path: Path, expected_columns: list[str]) -> tuple[list[dict[str, str]], list[str]]:
     if not path.exists():
         return [], [f"source adapter input missing: {path.name}"]
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.reader(handle)
-        try:
-            header = next(reader)
-        except StopIteration:
-            return [], [f"source adapter input is empty: {path.name}"]
-        warnings: list[str] = []
-        duplicate_headers = sorted({column for column in header if header.count(column) > 1})
-        if duplicate_headers:
-            warnings.append(f"source adapter duplicate header blocked: {', '.join(duplicate_headers)}")
-        if header != expected_columns:
-            missing = sorted(set(expected_columns).difference(header))
-            extra = sorted(set(header).difference(expected_columns))
-            warnings.append(
-                "source adapter header mismatch blocked"
-                + (f"; missing={','.join(missing)}" if missing else "")
-                + (f"; extra={','.join(extra)}" if extra else "")
-            )
-        rows = [{key: (value or "") for key, value in zip(header, record)} for record in reader]
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.reader(handle, strict=True)
+            try:
+                header = next(reader)
+            except StopIteration:
+                return [], [f"source adapter input is empty: {path.name}"]
+            warnings: list[str] = []
+            rows: list[dict[str, str]] = []
+            for row_number, record in enumerate(reader, start=2):
+                if len(record) != len(header):
+                    warnings.append(
+                        f"source adapter row field count mismatch blocked: {path.name}:{row_number} expected={len(header)} actual={len(record)}"
+                    )
+                    continue
+                rows.append({key: (value or "") for key, value in zip(header, record)})
+    except UnicodeDecodeError:
+        return [], [f"source adapter invalid encoding blocked: {path.name}"]
+    except csv.Error as error:
+        return [], [f"source adapter malformed csv blocked: {path.name}: {error}"]
+
+    if not header:
+        return [], [f"source adapter header missing: {path.name}"]
+    warnings = list(warnings)
+    duplicate_headers = sorted({column for column in header if header.count(column) > 1})
+    if duplicate_headers:
+        warnings.append(f"source adapter duplicate header blocked: {', '.join(duplicate_headers)}")
+    if header != expected_columns:
+        missing = sorted(set(expected_columns).difference(header))
+        extra = sorted(set(header).difference(expected_columns))
+        warnings.append(
+            "source adapter header mismatch blocked"
+            + (f"; missing={','.join(missing)}" if missing else "")
+            + (f"; extra={','.join(extra)}" if extra else "")
+        )
     return rows, warnings
+
+
+def _map_public_source_fixture_row(row: Mapping[str, str]) -> tuple[dict[str, str], list[str]]:
+    source_shape = row.get("sourceShape", "")
+    if source_shape not in PROVIDER_SOURCE_SHAPES:
+        return {}, [f"source adapter unsupported provider shape blocked: {source_shape or 'blank'}"]
+    if source_shape == "kr_public_daily_price":
+        return _map_kr_public_daily_price_row(row), []
+    return _map_kr_securities_product_row(row), []
+
+
+def _map_kr_public_daily_price_row(row: Mapping[str, str]) -> dict[str, str]:
+    ticker = row.get("krIssueCode", "")
+    return {
+        "market": "KR",
+        "ticker": ticker,
+        "date": row.get("krTradeDate", ""),
+        "currency": row.get("krCurrency", "KRW"),
+        "close": row.get("krClosePrice", ""),
+        "splitAdjustedClose": row.get("krClosePrice", ""),
+        "totalReturnAdjustedClose": "",
+        "volume": row.get("krVolume", ""),
+        "splitFactor": row.get("krSplitFactor", "1.0") or "1.0",
+        "cashDividend": row.get("krCashDividend", "0.00") or "0.00",
+        "sourceId": f"public_fixture:{row.get('sourceShape', '')}:{row.get('recordId', '')}",
+        "retrievedAt": row.get("retrievedAt", ""),
+        "priceAdjustmentBasis": row.get("priceAdjustmentBasis", "split_adjusted") or "split_adjusted",
+        "publicationEligibility": row.get("publicationEligibility", "approved"),
+        "providerOrInstitution": row.get("providerOrInstitution", "FINPLE synthetic public-source fixture"),
+        "licenseStatus": row.get("licenseStatus", ""),
+        "internalUseAllowed": row.get("internalUseAllowed", ""),
+        "publicationAllowed": row.get("publicationAllowed", ""),
+        "redistributionAllowed": row.get("redistributionAllowed", ""),
+    }
+
+
+def _map_kr_securities_product_row(row: Mapping[str, str]) -> dict[str, str]:
+    ticker = row.get("krProductCode", "")
+    return {
+        "market": "KR",
+        "ticker": ticker,
+        "date": row.get("krProductBaseDate", ""),
+        "currency": row.get("krProductCurrency", "KRW"),
+        "close": row.get("krProductClosePrice", ""),
+        "splitAdjustedClose": row.get("krProductClosePrice", ""),
+        "totalReturnAdjustedClose": row.get("krProductTotalReturnAdjustedClose", ""),
+        "volume": row.get("krProductVolume", ""),
+        "splitFactor": "1.0",
+        "cashDividend": row.get("krProductCashDistribution", "0.00") or "0.00",
+        "sourceId": f"public_fixture:{row.get('sourceShape', '')}:{row.get('recordId', '')}",
+        "retrievedAt": row.get("retrievedAt", ""),
+        "priceAdjustmentBasis": row.get("priceAdjustmentBasis", "total_return_adjusted") or "total_return_adjusted",
+        "publicationEligibility": row.get("publicationEligibility", "approved"),
+        "providerOrInstitution": row.get("providerOrInstitution", "FINPLE synthetic public-source fixture"),
+        "licenseStatus": row.get("licenseStatus", ""),
+        "internalUseAllowed": row.get("internalUseAllowed", ""),
+        "publicationAllowed": row.get("publicationAllowed", ""),
+        "redistributionAllowed": row.get("redistributionAllowed", ""),
+    }
 
 
 def _apply_license_gate(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], int, list[str], dict[str, Any]]:
@@ -355,12 +495,24 @@ def _load_accepted_record_ids(path_value: str) -> set[str]:
     return {str(item) for item in payload.get("acceptedRecordIds", [])}
 
 
-def _bounded_retry_count(failure_mode: str) -> int:
+def _load_completed_page_numbers(path_value: str) -> set[int]:
+    if not path_value:
+        return set()
+    path = Path(path_value)
+    if not path.exists():
+        return set()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {int(item) for item in payload.get("completedPageNumbers", [])}
+
+
+def _bounded_retry_status(failure_mode: str, max_retry_count: int) -> tuple[int, str]:
     if failure_mode == "transient_then_success":
-        return 1
+        if max_retry_count < 1:
+            return 0, "retry_exhausted"
+        return 1, "success_after_retry"
     if failure_mode == "permanent_failure":
-        return 3
-    return 0
+        return max_retry_count, "retry_exhausted"
+    return 0, "success"
 
 
 def _default_checkpoint(result: SourceAdapterResult) -> dict[str, Any]:
@@ -371,8 +523,16 @@ def _default_checkpoint(result: SourceAdapterResult) -> dict[str, Any]:
         "mode": result.mode,
         "resumeSupported": result.resumeSupported,
         "retryCount": result.retryCount,
+        "maxRetryCount": result.maxRetryCount,
+        "lastStatus": result.lastStatus,
         "acceptedRecordIds": [],
         "completedPageNumbers": [],
+        "previousAcceptedRecordCount": 0,
+        "newlyAcceptedRecordCount": len(result.rows),
+        "cumulativeAcceptedRecordCount": len(result.rows),
+        "skippedPreviouslyAcceptedCount": 0,
+        "duplicateAcceptedRecordCount": 0,
+        "rejectedRecordCount": result.rejectedRowCount,
         "nextCursor": "",
         "sourceFileName": result.sourceFileName,
         "rawSourceSha256": result.rawSourceSha256,

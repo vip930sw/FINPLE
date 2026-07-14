@@ -23,6 +23,7 @@ For Step 114-2B, `data/fixtures/monthly-metrics/raw_daily_prices.csv` must be in
 ```text
 data/fixtures/monthly-metrics/manual_upload_raw_daily_prices.csv
 data/fixtures/monthly-metrics/public_source_fixture_prices.csv
+data/fixtures/monthly-metrics/public_source_fixture_page1_checkpoint.json
 ```
 
 One simple local packaging method is to create a ZIP from the PR branch that preserves those paths plus the notebook:
@@ -50,6 +51,7 @@ The notebook bootstrap checks the current working tree first. If those paths are
    - `raw_daily_prices.csv`
    - `manual_upload_raw_daily_prices.csv` when CONFIG `input_mode` is `manual_upload`
    - `public_source_fixture_prices.csv` when CONFIG `input_mode` is `public_source_fixture`
+   - `public_source_fixture_page1_checkpoint.json` only when testing resume from a partial checkpoint
 7. Confirm section 4 prints:
    - `Fixture package ready: True`
    - `Production publish ready: False`

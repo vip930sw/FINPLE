@@ -45,6 +45,7 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn("manual_upload_raw_daily_prices.csv", payload)
         self.assertIn("public_source_fixture_prices.csv", payload)
         self.assertIn("finple_step114_2c_execution_package", payload)
+        self.assertIn("public_source_fixture", payload)
         self.assertIn("sourceAdapterSummaryJson", payload)
         self.assertIn("sourceAdapterCheckpointJson", payload)
         self.assertIn("productionPublishReady", payload)

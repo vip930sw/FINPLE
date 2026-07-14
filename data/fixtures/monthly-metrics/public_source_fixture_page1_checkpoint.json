@@ -1,0 +1,11 @@
+{
+  "acceptedRecordIds": [
+    "public-fixture-kr-stock-001",
+    "public-fixture-kr-stock-002"
+  ],
+  "completedPageNumbers": [
+    1
+  ],
+  "cumulativeAcceptedRecordCount": 2,
+  "checkpointId": "public_source_fixture:synthetic-page-1"
+}

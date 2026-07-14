@@ -57,30 +57,42 @@ New Step 114-2C fixtures:
 - `manual_upload_empty.csv`: empty upload blocker.
 - `manual_upload_unknown_license.csv`: unknown license blocker.
 - `manual_upload_internal_use_blocked.csv`: internal-use blocker.
-- `public_source_fixture_prices.csv`: deterministic two-page synthetic public-source fixture.
+- `public_source_fixture_prices.csv`: deterministic two-page provider-shaped synthetic public-source fixture.
 - `public_source_fixture_unknown_license.csv`: public-source fixture license blocker.
+- `public_source_fixture_unsupported_shape.csv`: provider-shaped mapping blocker.
+- `public_source_fixture_page1_checkpoint.json`: partial page checkpoint for page 1 to page 2 resume tests.
+- `manual_upload_row_mismatch.csv`: row field count blocker.
+- `manual_upload_malformed_csv.csv`: malformed CSV structure blocker.
 
 All fixtures are synthetic and committed for offline tests only.
 
 ## Checkpoint, Retry, Resume
 
+The public-source fixture adapter maps provider-shaped synthetic rows into the FINPLE raw daily contract before normalization:
+
+- `kr_public_daily_price`: synthetic KR daily-price shape.
+- `kr_securities_product`: synthetic KR ETF/securities-product shape, including the `069500` leading-zero ETF case.
+
+Unsupported `sourceShape` values fail closed before normalization.
+
 The public-source fixture adapter records:
 
 - deterministic `checkpointId`
 - completed page numbers
-- accepted record IDs
+- accepted record IDs as `previousAcceptedIds union newlyAcceptedIds`
 - retry count
 - max retry count
+- last status
 - next cursor placeholder
 - raw source SHA256
 
-The retry behavior is bounded by CONFIG and supports:
+The retry behavior is bounded by CONFIG `source_adapter_max_retry_count` and supports:
 
 - `none`
 - `transient_then_success`
 - `permanent_failure`
 
-Resume skips previously accepted record IDs and avoids duplicate normalized rows.
+Resume skips previously accepted record IDs, preserves cumulative accepted history, and avoids duplicate normalized rows on repeated resume.
 
 ## License And Publication Gates
 
@@ -90,6 +102,9 @@ The adapter fails closed before normalization when:
 - `licenseStatus` is blank, unknown, unconfirmed, or review-required
 - the adapter produces no accepted rows
 - the adapter schema is malformed
+- CSV rows have mismatched field counts
+- CSV quoting/structure is malformed
+- CSV encoding cannot be decoded as UTF-8/UTF-8-SIG
 
 `fixturePackageReady` may remain true for offline fixture outputs, but `productionPublishReady=false` and `appExportApproved=false` remain unchanged.
 
