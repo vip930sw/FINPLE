@@ -1,0 +1,2 @@
+market,ticker,date,currency,close,close,totalReturnAdjustedClose,volume,splitFactor,cashDividend,sourceId,retrievedAt,priceAdjustmentBasis,publicationEligibility,providerOrInstitution,licenseStatus,internalUseAllowed,publicationAllowed,redistributionAllowed
+US,SPY,2026-01-30,USD,101.00,101.00,,1200,1.0,0.00,manual_upload_bad_header,2026-07-14T00:00:00+09:00,split_adjusted,approved,Manual upload,approved,true,false,false

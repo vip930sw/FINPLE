@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-PIPELINE_VERSION = "metrics-v3.0-step114-2b"
+PIPELINE_VERSION = "metrics-v3.0-step114-2c"
 SCHEMA_VERSION = "metrics-csv-schema-v3"
 CALCULATION_POLICY_VERSION = "metrics-calculation-policy-2026-06-26"
 
@@ -30,6 +30,11 @@ class PipelineConfig:
     benchmark_map_file: str = "benchmark_map.csv"
     monthly_prices_file: str = "monthly_prices.csv"
     raw_daily_prices_file: str = "raw_daily_prices.csv"
+    manual_upload_file: str = "manual_upload_raw_daily_prices.csv"
+    public_source_fixture_file: str = "public_source_fixture_prices.csv"
+    public_source_fixture_failure_mode: str = "none"
+    public_source_resume_checkpoint_file: str = ""
+    source_adapter_max_retry_count: int = 3
 
     @property
     def created_at(self) -> str:
@@ -72,6 +77,11 @@ def load_config(config: Mapping[str, Any]) -> PipelineConfig:
         benchmark_map_file=str(config.get("benchmark_map_file", "benchmark_map.csv")),
         monthly_prices_file=str(config.get("monthly_prices_file", "monthly_prices.csv")),
         raw_daily_prices_file=str(config.get("raw_daily_prices_file", "raw_daily_prices.csv")),
+        manual_upload_file=str(config.get("manual_upload_file", "manual_upload_raw_daily_prices.csv")),
+        public_source_fixture_file=str(config.get("public_source_fixture_file", "public_source_fixture_prices.csv")),
+        public_source_fixture_failure_mode=str(config.get("public_source_fixture_failure_mode", "none")),
+        public_source_resume_checkpoint_file=str(config.get("public_source_resume_checkpoint_file", "")),
+        source_adapter_max_retry_count=int(config.get("source_adapter_max_retry_count", 3)),
     )
 
 
@@ -83,8 +93,12 @@ def validate_config(config: PipelineConfig) -> list[str]:
         errors.append("current_price_display must be false")
     if config.total_return_cagr_mode != "reference_only":
         errors.append("total_return_cagr_mode must be reference_only")
-    if config.input_mode != "fixture":
-        errors.append("Step 114-2B only supports input_mode=fixture")
+    if config.input_mode not in {"fixture", "manual_upload", "public_source_fixture"}:
+        errors.append("Step 114-2C supports input_mode=fixture, manual_upload, or public_source_fixture")
+    if config.public_source_fixture_failure_mode not in {"none", "transient_then_success", "permanent_failure"}:
+        errors.append("public_source_fixture_failure_mode must be none, transient_then_success, or permanent_failure")
+    if config.source_adapter_max_retry_count < 0 or config.source_adapter_max_retry_count > 3:
+        errors.append("source_adapter_max_retry_count must be between 0 and 3")
     for market in config.market_scope:
         if market not in {"US", "KR"}:
             errors.append(f"Unsupported market in Step 114-2B fixture mode: {market}")

@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
 
 from scripts.metrics_pipeline import PipelineCriticalError, run_finple_monthly_metrics_pipeline
+from scripts.metrics_pipeline.adapters import run_source_adapter, validate_adapter_result
+from scripts.metrics_pipeline.config import load_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURE_DIR = REPO_ROOT / "data" / "fixtures" / "monthly-metrics"
+PUBLIC_SOURCE_ADAPTER_ID = "finple.synthetic_public_source_fixture.v1"
+SOURCE_ADAPTER_VERSION = "source-adapter-contract-v1-step114-2c"
 
 
 def build_config(output_dir: Path, **overrides):
@@ -32,6 +38,28 @@ def build_config(output_dir: Path, **overrides):
     return config
 
 
+def fixture_sha256(file_name: str) -> str:
+    return hashlib.sha256((FIXTURE_DIR / file_name).read_bytes()).hexdigest()
+
+
+def public_source_checkpoint_payload(**overrides):
+    payload = {
+        "checkpointId": "public_source_fixture:test-checkpoint",
+        "adapterId": PUBLIC_SOURCE_ADAPTER_ID,
+        "adapterVersion": SOURCE_ADAPTER_VERSION,
+        "mode": "public_source_fixture",
+        "sourceFileName": "public_source_fixture_prices.csv",
+        "rawSourceSha256": fixture_sha256("public_source_fixture_prices.csv"),
+        "acceptedRecordIds": [
+            "public-fixture-kr-stock-001",
+            "public-fixture-kr-stock-002",
+        ],
+        "completedPageNumbers": [1],
+    }
+    payload.update(overrides)
+    return payload
+
+
 class MetricsPipelineTests(unittest.TestCase):
     def test_fixture_pipeline_creates_required_outputs(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -47,12 +75,20 @@ class MetricsPipelineTests(unittest.TestCase):
 
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
-            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2b")
+            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2c")
             self.assertEqual(manifest["schemaVersion"], "metrics-csv-schema-v3")
             self.assertFalse(manifest["externalProviderCalls"])
             self.assertTrue(manifest["fixturePackageReady"])
             self.assertFalse(manifest["productionPublishReady"])
             self.assertFalse(manifest["appExportApproved"])
+            self.assertIn("sourceAdapter", manifest)
+            self.assertEqual(manifest["sourceAdapter"]["adapterId"], "finple.raw_daily_fixture.v1")
+            self.assertEqual(manifest["sourceAdapter"]["adapterVersion"], "source-adapter-contract-v1-step114-2c")
+            self.assertEqual(manifest["sourceAdapter"]["mode"], "fixture")
+            self.assertEqual(manifest["sourceAdapter"]["sourceFileName"], "raw_daily_prices.csv")
+            self.assertTrue(manifest["sourceAdapter"]["internalUseAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["publicationAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["redistributionAllowed"])
             self.assertEqual(
                 {item["name"] for item in manifest["sourceFiles"]},
                 {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv", "raw_daily_prices.csv"},
@@ -75,6 +111,8 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("finple_monthly_returns_2026_06.csv", names)
             self.assertIn("finple_normalized_month_end_2026_06.csv", names)
             self.assertIn("finple_timeseries_audit_2026_06.csv", names)
+            self.assertIn("finple_source_adapter_summary_2026_06.json", names)
+            self.assertIn("finple_source_adapter_checkpoint_2026_06.json", names)
 
     def test_output_schema_review_split_and_kr_ticker_preservation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -287,6 +325,415 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("fixture_daily_corporate_action_only", source_ids)
 
         self.assertEqual(raw_fixture.read_bytes(), before)
+
+    def test_manual_upload_adapter_contract_and_sanitized_artifacts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir), input_mode="manual_upload")
+            )
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+            manifest = json.loads(outputs["manifestJson"].read_text(encoding="utf-8"))
+            self.assertEqual(manifest["sourceAdapter"]["adapterId"], "finple.manual_upload_csv.v1")
+            self.assertEqual(manifest["sourceAdapter"]["mode"], "manual_upload")
+            self.assertEqual(manifest["sourceAdapter"]["sourceFileName"], "manual_upload_raw_daily_prices.csv")
+            self.assertTrue(manifest["sourceAdapter"]["internalUseAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["publicationAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["redistributionAllowed"])
+            self.assertTrue(manifest["fixturePackageReady"])
+            self.assertFalse(manifest["productionPublishReady"])
+            self.assertFalse(manifest["appExportApproved"])
+
+            artifact_text = "\n".join(
+                path.read_text(encoding="utf-8")
+                for path in [
+                    outputs["manifestJson"],
+                    outputs["sourceAdapterSummaryJson"],
+                    outputs["sourceAdapterCheckpointJson"],
+                    outputs["normalizedMonthEndCsv"],
+                    outputs["timeseriesAuditCsv"],
+                ]
+            )
+            self.assertNotIn("C:\\Users\\owner", artifact_text)
+            self.assertNotIn("serviceKey=SHOULD_NOT_LEAK", artifact_text)
+            self.assertIn("[REDACTED_LOCAL_PATH]", artifact_text)
+            self.assertIn("[REDACTED_SECRET]", artifact_text)
+
+            with ZipFile(outputs["zipPackage"]) as package:
+                zip_payload = "\n".join(package.read(name).decode("utf-8") for name in package.namelist())
+            self.assertNotIn("C:\\Users\\owner", zip_payload)
+            self.assertNotIn("serviceKey=SHOULD_NOT_LEAK", zip_payload)
+
+    def test_manual_upload_fail_closed_gates_block_normalization(self):
+        blocked_files = [
+            "manual_upload_bad_header.csv",
+            "manual_upload_empty.csv",
+            "manual_upload_unknown_license.csv",
+            "manual_upload_internal_use_blocked.csv",
+            "manual_upload_row_mismatch.csv",
+            "manual_upload_malformed_csv.csv",
+        ]
+        for file_name in blocked_files:
+            with self.subTest(file_name=file_name), tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaises(PipelineCriticalError):
+                    run_finple_monthly_metrics_pipeline(
+                        build_config(Path(temp_dir), input_mode="manual_upload", manual_upload_file=file_name)
+                    )
+                self.assertFalse((Path(temp_dir) / "finple_monthly_metrics_2026_06_package.zip").exists())
+
+    def test_manual_upload_invalid_encoding_is_adapter_level_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = Path(temp_dir) / "inputs"
+            input_dir.mkdir()
+            for file_name in ["candidates.csv", "benchmark_map.csv", "monthly_prices.csv"]:
+                shutil.copy2(FIXTURE_DIR / file_name, input_dir / file_name)
+            (input_dir / "manual_upload_invalid_encoding.csv").write_bytes(b"\xff\xfe\x00\x00not-utf8")
+
+            config = build_config(
+                Path(temp_dir) / "outputs",
+                input_mode="manual_upload",
+                input_dir=str(input_dir),
+                manual_upload_file="manual_upload_invalid_encoding.csv",
+            )
+            adapter_result = run_source_adapter(load_config(config))
+            self.assertIn("source adapter invalid encoding blocked", "; ".join(adapter_result.warnings))
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter produced no accepted rows"):
+                run_finple_monthly_metrics_pipeline(config)
+
+    def test_public_source_provider_shaped_mapping_preserves_kr_etf_leading_zero(self):
+        config = load_config(build_config(Path("unused"), input_mode="public_source_fixture"))
+        adapter_result = run_source_adapter(config)
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual(adapter_result.adapterId, "finple.synthetic_public_source_fixture.v1")
+        rows_by_ticker = {row["ticker"]: row for row in adapter_result.rows}
+
+        self.assertIn("005930", rows_by_ticker)
+        self.assertIn("000660", rows_by_ticker)
+        self.assertIn("069500", rows_by_ticker)
+        self.assertEqual(rows_by_ticker["069500"]["ticker"], "069500")
+        self.assertEqual(rows_by_ticker["069500"]["totalReturnAdjustedClose"], "33100")
+        self.assertEqual(rows_by_ticker["069500"]["priceAdjustmentBasis"], "total_return_adjusted")
+        self.assertTrue(rows_by_ticker["069500"]["sourceId"].startswith("public_fixture:kr_securities_product:"))
+        self.assertEqual(rows_by_ticker["005930"]["splitAdjustedClose"], rows_by_ticker["005930"]["close"])
+
+    def test_public_source_mixed_license_checkpoint_counts_only_accepted_rows(self):
+        config = load_config(
+            build_config(
+                Path("unused"),
+                input_mode="public_source_fixture",
+                public_source_fixture_file="public_source_fixture_mixed_license.csv",
+            )
+        )
+        adapter_result = run_source_adapter(config)
+
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual([row["ticker"] for row in adapter_result.rows], ["005930"])
+        self.assertEqual(adapter_result.rejectedRowCount, 1)
+        self.assertEqual(adapter_result.checkpoint["acceptedRecordIds"], ["public-fixture-mixed-accepted"])
+        self.assertNotIn("public-fixture-mixed-license-blocked", adapter_result.checkpoint["acceptedRecordIds"])
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], len(adapter_result.rows))
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], 1)
+        self.assertEqual(adapter_result.checkpoint["cumulativeAcceptedRecordCount"], 1)
+        self.assertEqual(adapter_result.checkpoint["rejectedRecordCount"], 1)
+        self.assertIn("public-fixture-mixed-license-blocked", "; ".join(adapter_result.warnings))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            outputs = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir),
+                    input_mode="public_source_fixture",
+                    public_source_fixture_file="public_source_fixture_mixed_license.csv",
+                )
+            )["outputs"]
+            with Path(outputs["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            self.assertEqual([row["ticker"] for row in normalized_rows], ["005930"])
+            self.assertNotIn("000660", {row["ticker"] for row in normalized_rows})
+
+    def test_public_source_unsupported_provider_shape_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter produced no accepted rows"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir),
+                        input_mode="public_source_fixture",
+                        public_source_fixture_file="public_source_fixture_unsupported_shape.csv",
+                    )
+                )
+
+    def test_public_source_fixture_checkpoint_retry_resume_and_determinism(self):
+        config = load_config(
+            build_config(
+                Path("unused"),
+                input_mode="public_source_fixture",
+                public_source_fixture_failure_mode="transient_then_success",
+            )
+        )
+        adapter_result = run_source_adapter(config)
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual(adapter_result.adapterId, "finple.synthetic_public_source_fixture.v1")
+        self.assertEqual(adapter_result.retryCount, 1)
+        self.assertTrue(adapter_result.resumeSupported)
+        self.assertEqual(adapter_result.checkpoint["completedPageNumbers"], [1, 2])
+        self.assertEqual(len(adapter_result.checkpoint["acceptedRecordIds"]), 3)
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], 3)
+        self.assertEqual(adapter_result.checkpoint["cumulativeAcceptedRecordCount"], 3)
+        self.assertEqual(adapter_result.checkpoint["duplicateAcceptedRecordCount"], 0)
+        self.assertEqual(adapter_result.checkpoint["lastStatus"], "success_after_retry")
+        self.assertEqual(adapter_result.public_summary()["lastStatus"], "success_after_retry")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "first",
+                    input_mode="public_source_fixture",
+                    public_source_fixture_failure_mode="transient_then_success",
+                )
+            )
+            checkpoint_path = Path(first["outputs"]["sourceAdapterCheckpointJson"])
+            second_config = load_config(
+                build_config(
+                    Path(temp_dir) / "second",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+            resumed = run_source_adapter(second_config)
+            self.assertEqual(len(resumed.rows), 0)
+            self.assertEqual(resumed.lastStatus, "already_complete")
+            self.assertEqual(resumed.rejectedRowCount, 0)
+            self.assertEqual(resumed.checkpoint["previousAcceptedRecordCount"], 3)
+            self.assertEqual(resumed.checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(resumed.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(len(resumed.checkpoint["acceptedRecordIds"]), 3)
+            self.assertEqual(resumed.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+            second = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "third",
+                    input_mode="public_source_fixture",
+                    public_source_fixture_failure_mode="transient_then_success",
+                )
+            )
+            first_manifest = Path(first["outputs"]["manifestJson"]).read_bytes()
+            second_manifest = Path(second["outputs"]["manifestJson"]).read_bytes()
+            self.assertEqual(first_manifest, second_manifest)
+            self.assertEqual(
+                Path(first["outputs"]["sourceAdapterCheckpointJson"]).read_bytes(),
+                Path(second["outputs"]["sourceAdapterCheckpointJson"]).read_bytes(),
+            )
+
+    def test_public_source_partial_checkpoint_page_two_resume_and_repeat_resume_are_deterministic(self):
+        partial_checkpoint = FIXTURE_DIR / "public_source_fixture_page1_checkpoint.json"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            page_two_config = load_config(
+                build_config(
+                    Path(temp_dir) / "page-two",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(partial_checkpoint),
+                )
+            )
+            page_two = run_source_adapter(page_two_config)
+            self.assertEqual([row["ticker"] for row in page_two.rows], ["069500"])
+            self.assertEqual(page_two.checkpoint["previousAcceptedRecordCount"], 2)
+            self.assertEqual(page_two.checkpoint["newlyAcceptedRecordCount"], 1)
+            self.assertEqual(page_two.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(page_two.checkpoint["acceptedRecordIds"], [
+                "public-fixture-kr-etf-069500",
+                "public-fixture-kr-stock-001",
+                "public-fixture-kr-stock-002",
+            ])
+            self.assertEqual(page_two.checkpoint["completedPageNumbers"], [1, 2])
+            self.assertEqual(page_two.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+            completed_checkpoint = Path(temp_dir) / "completed_checkpoint.json"
+            completed_checkpoint.write_text(json.dumps(page_two.checkpoint, sort_keys=True), encoding="utf-8")
+            repeat_config = load_config(
+                build_config(
+                    Path(temp_dir) / "repeat",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(completed_checkpoint),
+                )
+            )
+            repeat = run_source_adapter(repeat_config)
+            self.assertEqual(len(repeat.rows), 0)
+            self.assertEqual(repeat.lastStatus, "already_complete")
+            self.assertEqual(repeat.rejectedRowCount, 0)
+            self.assertEqual(repeat.checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(repeat.checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(repeat.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+    def test_public_source_checkpoint_identity_fail_closed(self):
+        checkpoint_cases = [
+            ("stale_source_sha", {"rawSourceSha256": "0" * 64}, "rawSourceSha256"),
+            ("wrong_adapter_id", {"adapterId": "wrong.synthetic.adapter"}, "adapterId"),
+            ("wrong_adapter_version", {"adapterVersion": "source-adapter-contract-v0"}, "adapterVersion"),
+            ("wrong_mode", {"mode": "manual_upload"}, "mode"),
+            ("wrong_source_file", {"sourceFileName": "other_fixture.csv"}, "sourceFileName"),
+            ("missing_required_field", {"rawSourceSha256": None}, "rawSourceSha256"),
+            ("wrong_accepted_type", {"acceptedRecordIds": "public-fixture-kr-stock-001"}, "acceptedRecordIds"),
+            ("wrong_completed_page_type", {"completedPageNumbers": ["1"]}, "completedPageNumbers"),
+        ]
+        for name, overrides, expected_warning in checkpoint_cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp_dir:
+                checkpoint_path = Path(temp_dir) / f"{name}.json"
+                payload = public_source_checkpoint_payload(**overrides)
+                if overrides.get("rawSourceSha256") is None:
+                    payload.pop("rawSourceSha256")
+                checkpoint_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+                adapter_result = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path(temp_dir) / "outputs",
+                            input_mode="public_source_fixture",
+                            public_source_resume_checkpoint_file=str(checkpoint_path),
+                        )
+                    )
+                )
+                self.assertFalse(adapter_result.rows)
+                self.assertIn("source adapter checkpoint", "; ".join(adapter_result.warnings))
+                self.assertIn(expected_warning, "; ".join(adapter_result.warnings))
+                self.assertTrue(
+                    any(error.startswith("source adapter checkpoint") for error in validate_adapter_result(adapter_result))
+                )
+
+    def test_public_source_malformed_checkpoint_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            malformed_checkpoint = Path(temp_dir) / "malformed-checkpoint.json"
+            malformed_checkpoint.write_text('{"acceptedRecordIds": [', encoding="utf-8")
+            adapter_result = run_source_adapter(
+                load_config(
+                    build_config(
+                        Path(temp_dir) / "malformed-output",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(malformed_checkpoint),
+                    )
+                )
+            )
+            self.assertFalse(adapter_result.rows)
+            self.assertIn("source adapter checkpoint malformed json blocked", "; ".join(adapter_result.warnings))
+
+            invalid_encoding_checkpoint = Path(temp_dir) / "invalid-encoding-checkpoint.json"
+            invalid_encoding_checkpoint.write_bytes(b"\xff\xfe\x00\x00not-json")
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter checkpoint invalid encoding blocked"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir) / "invalid-encoding-output",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(invalid_encoding_checkpoint),
+                    )
+                )
+
+    def test_public_source_completed_checkpoint_pipeline_noop_is_reproducible(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "first", input_mode="public_source_fixture")
+            )
+            checkpoint_path = Path(first["outputs"]["sourceAdapterCheckpointJson"])
+
+            noop_one = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "noop-one",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+            noop_two = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "noop-two",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+
+            checkpoint_one = Path(noop_one["outputs"]["sourceAdapterCheckpointJson"])
+            checkpoint_two = Path(noop_two["outputs"]["sourceAdapterCheckpointJson"])
+            manifest_one = Path(noop_one["outputs"]["manifestJson"])
+            manifest_two = Path(noop_two["outputs"]["manifestJson"])
+            self.assertEqual(hashlib.sha256(checkpoint_one.read_bytes()).hexdigest(), hashlib.sha256(checkpoint_two.read_bytes()).hexdigest())
+            self.assertEqual(hashlib.sha256(manifest_one.read_bytes()).hexdigest(), hashlib.sha256(manifest_two.read_bytes()).hexdigest())
+
+            checkpoint = json.loads(checkpoint_one.read_text(encoding="utf-8"))
+            self.assertEqual(checkpoint["lastStatus"], "already_complete")
+            self.assertEqual(checkpoint["previousAcceptedRecordCount"], 3)
+            self.assertEqual(checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(checkpoint["duplicateAcceptedRecordCount"], 0)
+
+            manifest = json.loads(manifest_one.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["sourceAdapter"]["lastStatus"], "already_complete")
+            with Path(noop_one["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            self.assertEqual(normalized_rows, [])
+            self.assertEqual(len(normalized_rows), len({(row["ticker"], row["month"]) for row in normalized_rows}))
+
+            tampered_checkpoint = Path(temp_dir) / "tampered-complete-checkpoint.json"
+            tampered_payload = json.loads(checkpoint_one.read_text(encoding="utf-8"))
+            tampered_payload["rawSourceSha256"] = "1" * 64
+            tampered_checkpoint.write_text(json.dumps(tampered_payload, sort_keys=True), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineCriticalError, "source adapter checkpoint identity mismatch blocked: rawSourceSha256"):
+                run_finple_monthly_metrics_pipeline(
+                    build_config(
+                        Path(temp_dir) / "tampered-noop",
+                        input_mode="public_source_fixture",
+                        public_source_resume_checkpoint_file=str(tampered_checkpoint),
+                    )
+                )
+
+    def test_public_source_retry_count_respects_configured_max(self):
+        for max_retry in [0, 1, 2, 3]:
+            with self.subTest(mode="permanent_failure", max_retry=max_retry):
+                permanent = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path("unused"),
+                            input_mode="public_source_fixture",
+                            public_source_fixture_failure_mode="permanent_failure",
+                            source_adapter_max_retry_count=max_retry,
+                        )
+                    )
+                )
+                self.assertEqual(permanent.retryCount, max_retry)
+                self.assertEqual(permanent.maxRetryCount, max_retry)
+                self.assertEqual(permanent.lastStatus, "retry_exhausted")
+                self.assertEqual(permanent.checkpoint["retryCount"], max_retry)
+                self.assertEqual(permanent.checkpoint["maxRetryCount"], max_retry)
+                self.assertEqual(permanent.checkpoint["lastStatus"], "retry_exhausted")
+                self.assertFalse(permanent.rows)
+
+            with self.subTest(mode="transient_then_success", max_retry=max_retry):
+                transient = run_source_adapter(
+                    load_config(
+                        build_config(
+                            Path("unused"),
+                            input_mode="public_source_fixture",
+                            public_source_fixture_failure_mode="transient_then_success",
+                            source_adapter_max_retry_count=max_retry,
+                        )
+                    )
+                )
+                self.assertLessEqual(transient.retryCount, max_retry)
+                self.assertEqual(transient.maxRetryCount, max_retry)
+                self.assertEqual(transient.checkpoint["maxRetryCount"], max_retry)
+                if max_retry == 0:
+                    self.assertEqual(transient.retryCount, 0)
+                    self.assertEqual(transient.lastStatus, "retry_exhausted")
+                    self.assertFalse(transient.rows)
+                else:
+                    self.assertEqual(transient.retryCount, 1)
+                    self.assertEqual(transient.lastStatus, "success_after_retry")
+                    self.assertTrue(transient.rows)
+
+    def test_public_source_fixture_license_and_permanent_retry_fail_closed(self):
+        for overrides in [
+            {"public_source_fixture_file": "public_source_fixture_unknown_license.csv"},
+            {"public_source_fixture_failure_mode": "permanent_failure"},
+            {"public_source_fixture_failure_mode": "transient_then_success", "source_adapter_max_retry_count": 0},
+        ]:
+            with self.subTest(overrides=overrides), tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaises(PipelineCriticalError):
+                    run_finple_monthly_metrics_pipeline(
+                        build_config(Path(temp_dir), input_mode="public_source_fixture", **overrides)
+                    )
 
 
 if __name__ == "__main__":
