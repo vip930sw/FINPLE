@@ -1,0 +1,7 @@
+ticker,nameKr,nameEn,market,assetType,exchange,sector,industry,strategy,riskLevel,goals,beginnerFit,tags,listingDate,benchmarkKey,proxyTicker,hedged,isActive
+SPY,SPDR S&P 500 ETF Trust,SPDR S&P 500 ETF Trust,US,ETF,NYSE Arca,broad_market,index,core,medium,long_term,true,us;broad;fixture,1993-01-22,SP500,,false,true
+QQQ,Invesco QQQ Trust,Invesco QQQ Trust,US,ETF,NASDAQ,growth,index,growth,high,long_term,false,us;growth;fixture,1999-03-10,NASDAQ100,,false,true
+MSFT,마이크로소프트,Microsoft Corporation,US,stock,NASDAQ,technology,software,growth,high,long_term,false,us;stock;split_fixture,1986-03-13,SP500,,false,true
+069500,KODEX 200,KODEX 200,KR,ETF,KRX,broad_market,index,core,medium,long_term,true,kr;etf;leading_zero,2002-10-14,KOSPI200,,false,true
+005930,삼성전자,Samsung Electronics,KR,stock,KRX,technology,semiconductor,core,high,long_term,false,kr;stock;leading_zero;dividend_fixture,1975-06-11,KOSPI200,,false,true
+123456,짧은상장 Fixture,Short History Fixture,KR,ETF,KRX,test,test,review,medium,review,false,kr;short_history;fixture,2024-01-02,KOSPI200,069500,false,true

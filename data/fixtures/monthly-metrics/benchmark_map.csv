@@ -1,0 +1,4 @@
+benchmarkKey,benchmarkTicker,label,market,currency
+SP500,SPY,S&P 500 ETF fixture,US,USD
+NASDAQ100,QQQ,Nasdaq-100 ETF fixture,US,USD
+KOSPI200,069500,KOSPI 200 ETF fixture,KR,KRW
