@@ -14,6 +14,11 @@ US,SPLT,2026-01-30,USD,200.00,100.00,,900,2.0,0.00,fixture_daily_split,2026-07-1
 US,DIVD,2026-01-30,USD,80.00,80.00,,950,1.0,0.75,fixture_daily_dividend,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic fixture,approved,true,true,false
 US,SPLDIV,2026-01-30,USD,150.00,50.00,,980,3.0,0.00,fixture_daily_split_dividend,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic fixture,approved,true,true,false
 US,SPLDIV,2026-02-27,USD,52.00,52.00,,990,1.0,0.40,fixture_daily_split_dividend,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic fixture,approved,true,true,false
+US,DUPONLY,2026-01-30,USD,44.00,,,991,1.0,0.00,fixture_daily_duplicate_only,2026-07-14T00:00:00+09:00,raw_close,approved,FINPLE synthetic fixture,approved,true,true,false
+US,DUPONLY,2026-01-30,USD,44.50,,,992,1.0,0.00,fixture_daily_duplicate_only,2026-07-14T00:00:00+09:00,raw_close,approved,FINPLE synthetic fixture,approved,true,true,false
+US,REVONLY,2026-02-27,USD,55.00,,,993,1.0,0.00,fixture_daily_reverse_only,2026-07-14T00:00:00+09:00,raw_close,approved,FINPLE synthetic fixture,approved,true,true,false
+US,REVONLY,2026-01-30,USD,54.00,,,994,1.0,0.00,fixture_daily_reverse_only,2026-07-14T00:00:00+09:00,raw_close,approved,FINPLE synthetic fixture,approved,true,true,false
+US,CORPONLY,2026-01-30,USD,66.00,,,995,2.0,0.00,fixture_daily_corporate_action_only,2026-07-14T00:00:00+09:00,raw_close,approved,FINPLE synthetic fixture,approved,true,true,false
 US,AMBIG,2026-01-30,USD,40.00,39.50,40.25,700,1.0,0.10,fixture_daily_ambiguous,2026-07-14T00:00:00+09:00,ambiguous,review_required,FINPLE synthetic fixture,approved,true,false,false
 US,BADSP,2026-01-30,USD,70.00,70.00,,710,500.0,0.00,fixture_daily_bad_split,2026-07-14T00:00:00+09:00,split_adjusted,review_required,FINPLE synthetic fixture,approved,true,false,false
 US,BADCORP,2026-01-30,USD,70.00,,,711,2.0,0.00,fixture_daily_bad_corporate_action,2026-07-14T00:00:00+09:00,split_adjusted,review_required,FINPLE synthetic fixture,approved,true,false,false

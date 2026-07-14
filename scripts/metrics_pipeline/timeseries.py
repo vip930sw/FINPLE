@@ -63,11 +63,13 @@ def normalize_daily_price_rows(
 
         key = (series_key[0], series_key[1], row_date)
         if key in seen_dates:
+            blocked_series.add(series_key)
             audit_rows.append(_audit_row(row, "duplicate_date", "critical", True, "Duplicate date within market/ticker."))
         seen_dates.add(key)
 
         previous_date = previous_by_series.get(series_key)
         if previous_date and row_date < previous_date:
+            blocked_series.add(series_key)
             audit_rows.append(
                 _audit_row(row, "non_monotonic_date_order", "critical", True, "Raw rows must not reverse within a series.")
             )
@@ -79,6 +81,7 @@ def normalize_daily_price_rows(
 
         if _has_corporate_action(row):
             if key in action_dates:
+                blocked_series.add(series_key)
                 audit_rows.append(
                     _audit_row(row, "duplicate_corporate_action_entry", "critical", True, "Duplicate corporate action date.")
                 )
@@ -207,6 +210,7 @@ def _row_is_normalizable(row: Mapping[str, str], errors: list[tuple[str, str]], 
         "missing_required_price_basis",
         "inconsistent_market_ticker_identifier",
         "implausible_split_factor",
+        "corporate_action_inconsistency",
         "invalid_provenance_publication_policy",
     }
     return classification != "ambiguous" and not any(issue_type in blocking for issue_type, _ in errors)
@@ -313,27 +317,36 @@ def _result(
     rows: list[dict[str, str]],
 ) -> dict[str, object]:
     source_rows = rows or []
-    first = source_rows[0] if source_rows else {}
     return {
         "normalizedRows": normalized_rows,
         "auditRows": audit_rows,
         "sourceMetadata": {
-            "sourceId": first.get("sourceId", "fixture_raw_daily_prices"),
+            "sourceId": _combined_value(source_rows, "sourceId", "fixture_raw_daily_prices"),
             "sourceFileName": source_file_name,
             "sourceSha256": source_sha256,
-            "retrievedAt": first.get("retrievedAt", ""),
-            "providerOrInstitution": first.get("providerOrInstitution", "FINPLE synthetic fixture"),
+            "retrievedAt": _combined_value(source_rows, "retrievedAt", ""),
+            "providerOrInstitution": _combined_value(source_rows, "providerOrInstitution", "FINPLE synthetic fixture"),
             "licenseStatus": _combined_status(source_rows, "licenseStatus"),
             "internalUseAllowed": _combined_bool(source_rows, "internalUseAllowed"),
             "publicationAllowed": _combined_bool(source_rows, "publicationAllowed"),
             "redistributionAllowed": _combined_bool(source_rows, "redistributionAllowed"),
             "priceAdjustmentBasis": "mixed_fixture_with_review_required_rows",
+            "sources": _source_entries(source_rows),
             "normalizationVersion": NORMALIZATION_VERSION,
             "schemaVersion": SCHEMA_VERSION,
             "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
         },
         "blockingIssueCount": sum(1 for row in audit_rows if row["blocksPublication"] == "true"),
     }
+
+
+def _combined_value(rows: list[Mapping[str, str]], key: str, default: str) -> str:
+    values = {row.get(key, "") for row in rows if row.get(key, "")}
+    if not values:
+        return default
+    if len(values) == 1:
+        return next(iter(values))
+    return "mixed_or_review_required"
 
 
 def _combined_status(rows: list[Mapping[str, str]], key: str) -> str:
@@ -343,6 +356,33 @@ def _combined_status(rows: list[Mapping[str, str]], key: str) -> str:
 
 def _combined_bool(rows: list[Mapping[str, str]], key: str) -> bool:
     return bool(rows) and all(row.get(key) == "true" for row in rows)
+
+
+def _source_entries(rows: list[Mapping[str, str]]) -> list[dict[str, object]]:
+    entries: dict[tuple[str, str, str, str], dict[str, object]] = {}
+    for row in rows:
+        key = (
+            row.get("sourceId", ""),
+            row.get("retrievedAt", ""),
+            row.get("providerOrInstitution", ""),
+            row.get("priceAdjustmentBasis", ""),
+        )
+        entry = entries.setdefault(
+            key,
+            {
+                "sourceId": row.get("sourceId", ""),
+                "retrievedAt": row.get("retrievedAt", ""),
+                "providerOrInstitution": row.get("providerOrInstitution", ""),
+                "licenseStatus": row.get("licenseStatus", ""),
+                "internalUseAllowed": row.get("internalUseAllowed", "") == "true",
+                "publicationAllowed": row.get("publicationAllowed", "") == "true",
+                "redistributionAllowed": row.get("redistributionAllowed", "") == "true",
+                "priceAdjustmentBasis": row.get("priceAdjustmentBasis", ""),
+                "rowCount": 0,
+            },
+        )
+        entry["rowCount"] = int(entry["rowCount"]) + 1
+    return [entries[key] for key in sorted(entries)]
 
 
 def _has_corporate_action(row: Mapping[str, str]) -> bool:

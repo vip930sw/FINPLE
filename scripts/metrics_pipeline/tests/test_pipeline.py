@@ -59,6 +59,9 @@ class MetricsPipelineTests(unittest.TestCase):
             )
             self.assertIn("sourceMetadata", manifest)
             self.assertEqual(manifest["sourceMetadata"][0]["sourceFileName"], "raw_daily_prices.csv")
+            self.assertEqual(manifest["sourceMetadata"][0]["sourceId"], "mixed_or_review_required")
+            self.assertEqual(manifest["sourceMetadata"][0]["providerOrInstitution"], "FINPLE synthetic fixture")
+            self.assertGreater(len(manifest["sourceMetadata"][0]["sources"]), 1)
             self.assertFalse(manifest["sourceMetadata"][0]["publicationAllowed"])
             self.assertFalse(manifest["sourceMetadata"][0]["redistributionAllowed"])
 
@@ -232,6 +235,10 @@ class MetricsPipelineTests(unittest.TestCase):
                 normalized_rows = list(csv.DictReader(handle))
             missing_month_rows = [row for row in normalized_rows if row["ticker"] == "MISSING"]
             self.assertEqual([row["month"] for row in missing_month_rows], ["2026-01-31", "2026-03-31"])
+            normalized_tickers = {row["ticker"] for row in normalized_rows}
+            self.assertNotIn("DUPONLY", normalized_tickers)
+            self.assertNotIn("REVONLY", normalized_tickers)
+            self.assertNotIn("CORPONLY", normalized_tickers)
 
     def test_adjustment_basis_and_corporate_action_audit_are_explicit(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -252,6 +259,9 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertTrue(any(row["ticker"] == "SPLT" and row["issueType"] == "valid_stock_split" for row in audit_rows))
             self.assertTrue(any(row["ticker"] == "DIVD" and row["issueType"] == "cash_dividend" for row in audit_rows))
             self.assertTrue(any(row["ticker"] == "AMBIG" and row["priceSeriesClassification"] == "ambiguous" for row in audit_rows))
+            self.assertTrue(any(row["ticker"] == "DUPONLY" and row["issueType"] == "duplicate_date" for row in audit_rows))
+            self.assertTrue(any(row["ticker"] == "REVONLY" and row["issueType"] == "non_monotonic_date_order" for row in audit_rows))
+            self.assertTrue(any(row["ticker"] == "CORPONLY" and row["issueType"] == "corporate_action_inconsistency" for row in audit_rows))
 
     def test_provenance_hashes_are_deterministic_and_raw_fixture_is_immutable(self):
         raw_fixture = FIXTURE_DIR / "raw_daily_prices.csv"
@@ -267,6 +277,14 @@ class MetricsPipelineTests(unittest.TestCase):
             second_raw = next(item for item in second_manifest["sourceFiles"] if item["name"] == "raw_daily_prices.csv")
             self.assertEqual(first_raw["sourceSha256"], second_raw["sourceSha256"])
             self.assertEqual(first_manifest["sourceMetadata"][0]["sourceSha256"], second_manifest["sourceMetadata"][0]["sourceSha256"])
+            self.assertEqual(first_manifest["sourceMetadata"][0]["sourceId"], "mixed_or_review_required")
+            self.assertEqual(first_manifest["sourceMetadata"][0]["retrievedAt"], "2026-07-14T00:00:00+09:00")
+            self.assertEqual(first_manifest["sourceMetadata"][0]["sources"], second_manifest["sourceMetadata"][0]["sources"])
+            source_ids = [entry["sourceId"] for entry in first_manifest["sourceMetadata"][0]["sources"]]
+            self.assertEqual(source_ids, sorted(source_ids))
+            self.assertIn("fixture_daily_duplicate_only", source_ids)
+            self.assertIn("fixture_daily_reverse_only", source_ids)
+            self.assertIn("fixture_daily_corporate_action_only", source_ids)
 
         self.assertEqual(raw_fixture.read_bytes(), before)
 
