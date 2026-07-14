@@ -238,6 +238,11 @@ function createPriceMetricsOverlay(
   overlay.metricMode = metricMode;
   overlay.metricsSource = overlay.metricsSource || sourceName;
   overlay.dataSource = `finple_app_candidates_6000_balanced_v1+final_2000_overlay+${sourceName}`;
+  overlay.legacyMayAppReadyEligibility = true;
+  overlay.legacyMayAppReadyEligibilityKey = overlayKey(row);
+  overlay.legacyMayAppReadyMetricMode = metricMode;
+  overlay.legacyMayAppReadySourceName = sourceName;
+  overlay.legacyMayAppReadyProviderMetricsSource = overlay.metricsSource;
 
   return overlay;
 }

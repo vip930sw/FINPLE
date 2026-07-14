@@ -138,6 +138,27 @@ export default function DetailPanel({
     { label: "배당재투자", value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
   ];
 
+  if (safeResult.ready === false || safeResult.status === "blocked") {
+    return (
+      <div id="detail" className="simulatorTabPanel detailPanel">
+        <div className="tabSectionHeader tabSectionHeaderRow">
+          <div>
+            <p className="sectionLabel">Step 3. Detail</p>
+            <h3>기준 계산 보류</h3>
+            <p>지표 출처 확인이 끝나야 이 포트폴리오의 상세 분석을 표시할 수 있습니다.</p>
+          </div>
+        </div>
+        <div className="detailInfoSection">
+          <div className="detailInfoHeader">
+            <p className="sectionLabel">Baseline Status</p>
+            <h4>계산 보류</h4>
+            <span>준비된 지표만 순위와 차트, 상세 분석에 포함됩니다.</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="detail" className="simulatorTabPanel detailPanel">
       <div className="tabSectionHeader tabSectionHeaderRow">

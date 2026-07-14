@@ -3,7 +3,27 @@ import PortfolioCompareLineChart from "./PortfolioCompareLineChart";
 function getCompactPortfolioName(name) {
   return String(name || "포트폴리오")
     .replace(/\s*예시\s*포트폴리오\s*$/u, "")
+    .replace(/\s*sample\s*portfolio\s*$/iu, "")
     .trim() || "포트폴리오";
+}
+
+function hasMetricValue(value) {
+  if (value === null || value === undefined || value === "") return false;
+  return Number.isFinite(Number(value));
+}
+
+function formatMaybeNumber(value) {
+  if (!hasMetricValue(value)) return "미확인";
+  return `${Math.floor(Number(value)).toLocaleString()}원`;
+}
+
+function formatMaybeFixed(value, digits = 2) {
+  if (!hasMetricValue(value)) return "-";
+  return `${Number(value).toFixed(digits)}%`;
+}
+
+function formatRank(value) {
+  return value === "-" || value === null || value === undefined ? "-" : `${value}위`;
 }
 
 export default function ComparePanel({ insightComparisonPortfolios, chartComparisonPortfolios }) {
@@ -12,9 +32,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
       <div className="tabSectionHeader">
         <p className="sectionLabel">Step 2. Portfolio</p>
         <h3>포트폴리오 비교</h3>
-        <p>
-          저장된 포트폴리오의 실질가치, 성장성, 안정성, 배당 매력을 비교합니다.
-        </p>
+        <p>저장된 포트폴리오의 월간 baseline 결과를 비교합니다.</p>
       </div>
 
       <div className="portfolioComparePanel" id="portfolio-data">
@@ -22,10 +40,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
           <div>
             <p className="sectionLabel">Portfolio Compare</p>
             <h3>포트폴리오 비교</h3>
-
-            <p>
-              저장된 포트폴리오의 실질가치, 성장성, 안정성, 배당 매력을 비교합니다.
-            </p>
+            <p>차트와 순위는 baseline 계산이 준비된 포트폴리오만 사용합니다.</p>
           </div>
         </div>
 
@@ -42,7 +57,7 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
 
                 {portfolio.realValueRank <= 3 && (
                   <span className={`rankBadge rank${portfolio.realValueRank}`}>
-                    실질가치 {portfolio.realValueRank}위
+                    실질가치 {formatRank(portfolio.realValueRank)}
                   </span>
                 )}
               </div>
@@ -50,22 +65,22 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
               <div className="compareRankGrid">
                 <div>
                   <p>실질가치</p>
-                  <strong>{portfolio.realValueRank}위</strong>
+                  <strong>{formatRank(portfolio.realValueRank)}</strong>
                 </div>
 
                 <div>
                   <p>성장성</p>
-                  <strong>{portfolio.growthRank}위</strong>
+                  <strong>{formatRank(portfolio.growthRank)}</strong>
                 </div>
 
                 <div>
                   <p>안정성</p>
-                  <strong>{portfolio.stabilityRank}위</strong>
+                  <strong>{formatRank(portfolio.stabilityRank)}</strong>
                 </div>
 
                 <div>
                   <p>배당</p>
-                  <strong>{portfolio.dividendRank}위</strong>
+                  <strong>{formatRank(portfolio.dividendRank)}</strong>
                 </div>
               </div>
 
@@ -73,23 +88,23 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
                 <div>
                   <dt>물가 반영 평가금액</dt>
                   <dd className="realValue">
-                    {portfolio.result.inflationAdjustedFutureValue.toLocaleString()}원
+                    {formatMaybeNumber(portfolio.result.inflationAdjustedFutureValue)}
                   </dd>
                 </div>
 
                 <div>
                   <dt>예상 CAGR</dt>
-                  <dd>{portfolio.result.expectedCagr.toFixed(2)}%</dd>
+                  <dd>{formatMaybeFixed(portfolio.result.expectedCagr)}</dd>
                 </div>
 
                 <div>
                   <dt>예상 MDD</dt>
-                  <dd>{portfolio.result.simpleMdd.toFixed(2)}%</dd>
+                  <dd>{formatMaybeFixed(portfolio.result.simpleMdd)}</dd>
                 </div>
 
                 <div>
                   <dt>예상 배당률</dt>
-                  <dd>{portfolio.result.expectedDividendYield.toFixed(2)}%</dd>
+                  <dd>{formatMaybeFixed(portfolio.result.expectedDividendYield)}</dd>
                 </div>
               </dl>
 
