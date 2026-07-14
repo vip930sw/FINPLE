@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import shutil
 import tempfile
@@ -390,6 +391,40 @@ class MetricsPipelineTests(unittest.TestCase):
         self.assertTrue(rows_by_ticker["069500"]["sourceId"].startswith("public_fixture:kr_securities_product:"))
         self.assertEqual(rows_by_ticker["005930"]["splitAdjustedClose"], rows_by_ticker["005930"]["close"])
 
+    def test_public_source_mixed_license_checkpoint_counts_only_accepted_rows(self):
+        config = load_config(
+            build_config(
+                Path("unused"),
+                input_mode="public_source_fixture",
+                public_source_fixture_file="public_source_fixture_mixed_license.csv",
+            )
+        )
+        adapter_result = run_source_adapter(config)
+
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual([row["ticker"] for row in adapter_result.rows], ["005930"])
+        self.assertEqual(adapter_result.rejectedRowCount, 1)
+        self.assertEqual(adapter_result.checkpoint["acceptedRecordIds"], ["public-fixture-mixed-accepted"])
+        self.assertNotIn("public-fixture-mixed-license-blocked", adapter_result.checkpoint["acceptedRecordIds"])
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], len(adapter_result.rows))
+        self.assertEqual(adapter_result.checkpoint["newlyAcceptedRecordCount"], 1)
+        self.assertEqual(adapter_result.checkpoint["cumulativeAcceptedRecordCount"], 1)
+        self.assertEqual(adapter_result.checkpoint["rejectedRecordCount"], 1)
+        self.assertIn("public-fixture-mixed-license-blocked", "; ".join(adapter_result.warnings))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            outputs = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir),
+                    input_mode="public_source_fixture",
+                    public_source_fixture_file="public_source_fixture_mixed_license.csv",
+                )
+            )["outputs"]
+            with Path(outputs["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            self.assertEqual([row["ticker"] for row in normalized_rows], ["005930"])
+            self.assertNotIn("000660", {row["ticker"] for row in normalized_rows})
+
     def test_public_source_unsupported_provider_shape_fail_closed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             with self.assertRaisesRegex(PipelineCriticalError, "source adapter produced no accepted rows"):
@@ -440,6 +475,7 @@ class MetricsPipelineTests(unittest.TestCase):
             )
             resumed = run_source_adapter(second_config)
             self.assertEqual(len(resumed.rows), 0)
+            self.assertEqual(resumed.lastStatus, "already_complete")
             self.assertEqual(resumed.rejectedRowCount, 0)
             self.assertEqual(resumed.checkpoint["previousAcceptedRecordCount"], 3)
             self.assertEqual(resumed.checkpoint["newlyAcceptedRecordCount"], 0)
@@ -496,10 +532,54 @@ class MetricsPipelineTests(unittest.TestCase):
             )
             repeat = run_source_adapter(repeat_config)
             self.assertEqual(len(repeat.rows), 0)
+            self.assertEqual(repeat.lastStatus, "already_complete")
             self.assertEqual(repeat.rejectedRowCount, 0)
             self.assertEqual(repeat.checkpoint["newlyAcceptedRecordCount"], 0)
             self.assertEqual(repeat.checkpoint["cumulativeAcceptedRecordCount"], 3)
             self.assertEqual(repeat.checkpoint["duplicateAcceptedRecordCount"], 0)
+
+    def test_public_source_completed_checkpoint_pipeline_noop_is_reproducible(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "first", input_mode="public_source_fixture")
+            )
+            checkpoint_path = Path(first["outputs"]["sourceAdapterCheckpointJson"])
+
+            noop_one = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "noop-one",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+            noop_two = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "noop-two",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+
+            checkpoint_one = Path(noop_one["outputs"]["sourceAdapterCheckpointJson"])
+            checkpoint_two = Path(noop_two["outputs"]["sourceAdapterCheckpointJson"])
+            manifest_one = Path(noop_one["outputs"]["manifestJson"])
+            manifest_two = Path(noop_two["outputs"]["manifestJson"])
+            self.assertEqual(hashlib.sha256(checkpoint_one.read_bytes()).hexdigest(), hashlib.sha256(checkpoint_two.read_bytes()).hexdigest())
+            self.assertEqual(hashlib.sha256(manifest_one.read_bytes()).hexdigest(), hashlib.sha256(manifest_two.read_bytes()).hexdigest())
+
+            checkpoint = json.loads(checkpoint_one.read_text(encoding="utf-8"))
+            self.assertEqual(checkpoint["lastStatus"], "already_complete")
+            self.assertEqual(checkpoint["previousAcceptedRecordCount"], 3)
+            self.assertEqual(checkpoint["newlyAcceptedRecordCount"], 0)
+            self.assertEqual(checkpoint["cumulativeAcceptedRecordCount"], 3)
+            self.assertEqual(checkpoint["duplicateAcceptedRecordCount"], 0)
+
+            manifest = json.loads(manifest_one.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["sourceAdapter"]["lastStatus"], "already_complete")
+            with Path(noop_one["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            self.assertEqual(normalized_rows, [])
+            self.assertEqual(len(normalized_rows), len({(row["ticker"], row["month"]) for row in normalized_rows}))
 
     def test_public_source_retry_count_respects_configured_max(self):
         for max_retry in [0, 1, 2, 3]:

@@ -71,11 +71,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         raise PipelineCriticalError("; ".join(critical_errors))
 
     source_hashes = {path.name: _sha256(path) for path in source_paths}
-    raw_daily_normalization = normalize_daily_price_rows(
-        raw_daily_rows,
-        source_file_name=source_adapter_result.sourceFileName,
-        source_sha256=source_adapter_result.rawSourceSha256,
-    )
+    raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows)
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
     price_hash_by_ticker = _hash_price_rows(price_rows)
@@ -192,6 +188,37 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             "sourceAdapterCheckpointJson": str(adapter_checkpoint_json),
             "zipPackage": str(package_zip),
         },
+    }
+
+
+def _normalize_adapter_rows(source_adapter_result: Any, raw_daily_rows: list[dict[str, str]]) -> dict[str, object]:
+    if source_adapter_result.lastStatus not in {"already_complete", "resume_no_new_rows"}:
+        return normalize_daily_price_rows(
+            raw_daily_rows,
+            source_file_name=source_adapter_result.sourceFileName,
+            source_sha256=source_adapter_result.rawSourceSha256,
+        )
+    return {
+        "normalizedRows": [],
+        "auditRows": [],
+        "sourceMetadata": {
+            "sourceId": source_adapter_result.sourceId,
+            "sourceFileName": source_adapter_result.sourceFileName,
+            "sourceSha256": source_adapter_result.rawSourceSha256,
+            "retrievedAt": source_adapter_result.retrievedAt,
+            "providerOrInstitution": source_adapter_result.providerOrInstitution,
+            "licenseStatus": source_adapter_result.licenseStatus,
+            "internalUseAllowed": source_adapter_result.internalUseAllowed,
+            "publicationAllowed": source_adapter_result.publicationAllowed,
+            "redistributionAllowed": source_adapter_result.redistributionAllowed,
+            "priceAdjustmentBasis": source_adapter_result.priceAdjustmentBasis,
+            "sources": [],
+            "normalizationVersion": NORMALIZATION_VERSION,
+            "schemaVersion": SCHEMA_VERSION,
+            "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
+            "dataStatus": source_adapter_result.lastStatus,
+        },
+        "blockingIssueCount": 0,
     }
 
 

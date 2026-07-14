@@ -134,18 +134,20 @@ def write_adapter_artifacts(output_dir: Path, output_version: str, result: Sourc
 
 def validate_adapter_result(result: SourceAdapterResult) -> list[str]:
     errors: list[str] = []
+    noop_statuses = {"already_complete", "resume_no_new_rows"}
+    is_noop = result.lastStatus in noop_statuses
     if result.inputFormat != "csv":
         errors.append("source adapter inputFormat must be csv")
     if result.internalUseAllowed is not True:
         errors.append("source adapter internalUseAllowed must be true")
     if result.sanitizationStatus != "passed":
         errors.append("source adapter sanitizationStatus must be passed")
-    if not result.rows:
+    if not result.rows and not is_noop:
         errors.append("source adapter produced no accepted rows")
     if result.licenseStatus in UNKNOWN_LICENSE_STATUSES:
         errors.append(f"source adapter licenseStatus blocks normalization: {result.licenseStatus or 'blank'}")
     missing_columns = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(result.rows[0] if result.rows else {}))
-    if missing_columns:
+    if missing_columns and not is_noop:
         errors.append(f"source adapter rows missing required columns: {', '.join(missing_columns)}")
     return errors
 
@@ -212,16 +214,16 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         warnings.append("public_source_fixture transient failure blocked because max retry is zero")
         provider_rows = []
 
-    mapped_rows: list[dict[str, str]] = []
+    mapped_by_record_id: dict[str, dict[str, str]] = {}
     mapping_warnings: list[str] = []
     for row in provider_rows:
         mapped_row, row_warnings = _map_public_source_fixture_row(row)
         mapping_warnings.extend(row_warnings)
         if not row_warnings:
-            mapped_rows.append(mapped_row)
+            mapped_by_record_id[row.get("recordId", "")] = mapped_row
     warnings.extend(sorted(set(mapping_warnings)))
 
-    accepted_by_record_id: dict[str, dict[str, str]] = {}
+    accepted_candidates: list[tuple[str, dict[str, str]]] = []
     accepted_record_ids = _load_accepted_record_ids(config.public_source_resume_checkpoint_file)
     previous_completed_pages = _load_completed_page_numbers(config.public_source_resume_checkpoint_file)
     skipped_previously_accepted = 0
@@ -230,12 +232,18 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         if record_id in accepted_record_ids:
             skipped_previously_accepted += 1
             continue
-        mapped_row, row_warnings = _map_public_source_fixture_row(row)
-        if not row_warnings:
-            accepted_by_record_id[record_id] = mapped_row
+        if record_id in mapped_by_record_id:
+            accepted_candidates.append((record_id, mapped_by_record_id[record_id]))
 
-    accepted_rows, gated_count, gate_warnings, policy = _apply_license_gate(list(accepted_by_record_id.values()))
-    cumulative_accepted_ids = sorted(accepted_record_ids.union(accepted_by_record_id))
+    accepted_records, gated_count, gate_warnings, policy = _apply_license_gate_to_records(accepted_candidates)
+    accepted_rows = [row for _, row in accepted_records]
+    newly_accepted_ids = {record_id for record_id, _ in accepted_records}
+    mapped_rows = list(mapped_by_record_id.values())
+    if not accepted_rows and skipped_previously_accepted and not warnings and not gate_warnings:
+        last_status = "already_complete"
+        policy = _policy_from_rows(mapped_rows)
+    summary_rows = accepted_rows if accepted_rows else mapped_rows
+    cumulative_accepted_ids = sorted(accepted_record_ids.union(newly_accepted_ids))
     completed_pages = sorted(previous_completed_pages.union({int(row.get("pageNumber") or "0") for row in provider_rows}))
     checkpoint = {
         "checkpointId": f"public_source_fixture:{_sha256(source_path)[:12]}:complete" if source_path.exists() else "public_source_fixture:missing",
@@ -249,7 +257,7 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         "acceptedRecordIds": cumulative_accepted_ids,
         "completedPageNumbers": completed_pages,
         "previousAcceptedRecordCount": len(accepted_record_ids),
-        "newlyAcceptedRecordCount": len(accepted_by_record_id),
+        "newlyAcceptedRecordCount": len(accepted_rows),
         "cumulativeAcceptedRecordCount": len(cumulative_accepted_ids),
         "skippedPreviouslyAcceptedCount": skipped_previously_accepted,
         "duplicateAcceptedRecordCount": 0,
@@ -266,14 +274,14 @@ def _run_public_source_fixture_adapter(config: Any) -> SourceAdapterResult:
         row_count=len(provider_rows),
         market_scope=config.market_scope,
         checkpoint_id=str(checkpoint["checkpointId"]),
-        source_id=_single_or_mixed(mapped_rows, "sourceId", default=f"public_source_fixture_{source_path.name}"),
-        provider_or_institution=_single_or_mixed(mapped_rows, "providerOrInstitution", default="FINPLE synthetic public-source fixture"),
-        retrieved_at=_single_or_mixed(mapped_rows, "retrievedAt", default=config.created_at),
+        source_id=_single_or_mixed(summary_rows, "sourceId", default=f"public_source_fixture_{source_path.name}"),
+        provider_or_institution=_single_or_mixed(summary_rows, "providerOrInstitution", default="FINPLE synthetic public-source fixture"),
+        retrieved_at=_single_or_mixed(summary_rows, "retrievedAt", default=config.created_at),
         license_status=policy["licenseStatus"],
         internal_use_allowed=policy["internalUseAllowed"],
         publication_allowed=policy["publicationAllowed"],
         redistribution_allowed=policy["redistributionAllowed"],
-        price_adjustment_basis=_single_or_mixed(mapped_rows, "priceAdjustmentBasis", default="mixed_or_review_required"),
+        price_adjustment_basis=_single_or_mixed(summary_rows, "priceAdjustmentBasis", default="mixed_or_review_required"),
         warnings=tuple(warnings + gate_warnings),
         rejected_row_count=gated_count + len(mapping_warnings),
         retry_count=retry_count,
@@ -462,6 +470,29 @@ def _apply_license_gate(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]
             continue
         accepted.append(row)
     policy = _policy_from_rows(accepted if accepted else rows)
+    if policy["publicationAllowed"] is not True or policy["redistributionAllowed"] is not True:
+        warnings.append("source adapter publish/app export gate remains fail-closed")
+    return accepted, rejected, sorted(set(warnings)), policy
+
+
+def _apply_license_gate_to_records(
+    records: list[tuple[str, dict[str, str]]]
+) -> tuple[list[tuple[str, dict[str, str]]], int, list[str], dict[str, Any]]:
+    if not records:
+        return [], 0, [], _policy_from_rows([])
+    accepted: list[tuple[str, dict[str, str]]] = []
+    rejected = 0
+    warnings: list[str] = []
+    for record_id, row in records:
+        internal_allowed = _bool_cell(row.get("internalUseAllowed", ""))
+        license_status = row.get("licenseStatus", "")
+        if internal_allowed is not True or license_status in UNKNOWN_LICENSE_STATUSES:
+            rejected += 1
+            warnings.append(f"source adapter row blocked by license gate: {record_id or row.get('sourceId', 'unknown')}")
+            continue
+        accepted.append((record_id, row))
+    accepted_rows = [row for _, row in accepted]
+    policy = _policy_from_rows(accepted_rows if accepted_rows else [row for _, row in records])
     if policy["publicationAllowed"] is not True or policy["redistributionAllowed"] is not True:
         warnings.append("source adapter publish/app export gate remains fail-closed")
     return accepted, rejected, sorted(set(warnings)), policy

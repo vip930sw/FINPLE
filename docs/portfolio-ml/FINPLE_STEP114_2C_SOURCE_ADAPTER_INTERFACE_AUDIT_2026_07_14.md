@@ -59,6 +59,7 @@ New Step 114-2C fixtures:
 - `manual_upload_internal_use_blocked.csv`: internal-use blocker.
 - `public_source_fixture_prices.csv`: deterministic two-page provider-shaped synthetic public-source fixture.
 - `public_source_fixture_unknown_license.csv`: public-source fixture license blocker.
+- `public_source_fixture_mixed_license.csv`: one accepted synthetic public-source row plus one license/internal-use blocked row.
 - `public_source_fixture_unsupported_shape.csv`: provider-shaped mapping blocker.
 - `public_source_fixture_page1_checkpoint.json`: partial page checkpoint for page 1 to page 2 resume tests.
 - `manual_upload_row_mismatch.csv`: row field count blocker.
@@ -79,7 +80,7 @@ The public-source fixture adapter records:
 
 - deterministic `checkpointId`
 - completed page numbers
-- accepted record IDs as `previousAcceptedIds union newlyAcceptedIds`
+- accepted record IDs as `previousAcceptedIds union newlyAcceptedIds`, where `newlyAcceptedIds` is calculated only after license/internal-use gates pass
 - retry count
 - max retry count
 - last status
@@ -92,7 +93,7 @@ The retry behavior is bounded by CONFIG `source_adapter_max_retry_count` and sup
 - `transient_then_success`
 - `permanent_failure`
 
-Resume skips previously accepted record IDs, preserves cumulative accepted history, and avoids duplicate normalized rows on repeated resume.
+Resume skips previously accepted record IDs, preserves cumulative accepted history, and avoids duplicate normalized rows on repeated resume. When a completed checkpoint is replayed with no new accepted rows, the adapter returns the explicit normal no-op status `already_complete` so the full offline pipeline can still write deterministic header-only normalized outputs, checkpoint JSON, manifest JSON, audit artifacts, and ZIP output.
 
 ## License And Publication Gates
 
