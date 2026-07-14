@@ -85,6 +85,62 @@ MONTHLY_RETURNS_COLUMNS = [
     "dataStatus",
 ]
 
+RAW_DAILY_PRICE_COLUMNS = [
+    "market",
+    "ticker",
+    "date",
+    "currency",
+    "close",
+    "splitAdjustedClose",
+    "totalReturnAdjustedClose",
+    "volume",
+    "splitFactor",
+    "cashDividend",
+    "sourceId",
+    "retrievedAt",
+    "priceAdjustmentBasis",
+    "publicationEligibility",
+    "providerOrInstitution",
+    "licenseStatus",
+    "internalUseAllowed",
+    "publicationAllowed",
+    "redistributionAllowed",
+]
+
+NORMALIZED_MONTH_END_COLUMNS = [
+    "market",
+    "ticker",
+    "month",
+    "sourceDate",
+    "currency",
+    "close",
+    "splitAdjustedClose",
+    "totalReturnAdjustedClose",
+    "volume",
+    "splitFactor",
+    "cashDividend",
+    "sourceId",
+    "retrievedAt",
+    "priceAdjustmentBasis",
+    "priceSeriesClassification",
+    "publicationEligibility",
+    "dataStatus",
+    "normalizationVersion",
+]
+
+TIMESERIES_AUDIT_COLUMNS = [
+    "market",
+    "ticker",
+    "date",
+    "issueType",
+    "severity",
+    "blocksPublication",
+    "priceSeriesClassification",
+    "reviewReason",
+    "sourceId",
+    "normalizationVersion",
+]
+
 CANDIDATE_COLUMNS = [
     "ticker",
     "nameKr",

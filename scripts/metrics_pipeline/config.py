@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-PIPELINE_VERSION = "metrics-v3.0-step114-2a"
+PIPELINE_VERSION = "metrics-v3.0-step114-2b"
 SCHEMA_VERSION = "metrics-csv-schema-v3"
 CALCULATION_POLICY_VERSION = "metrics-calculation-policy-2026-06-26"
 
@@ -29,6 +29,7 @@ class PipelineConfig:
     candidate_file: str = "candidates.csv"
     benchmark_map_file: str = "benchmark_map.csv"
     monthly_prices_file: str = "monthly_prices.csv"
+    raw_daily_prices_file: str = "raw_daily_prices.csv"
 
     @property
     def created_at(self) -> str:
@@ -70,6 +71,7 @@ def load_config(config: Mapping[str, Any]) -> PipelineConfig:
         candidate_file=str(config.get("candidate_file", "candidates.csv")),
         benchmark_map_file=str(config.get("benchmark_map_file", "benchmark_map.csv")),
         monthly_prices_file=str(config.get("monthly_prices_file", "monthly_prices.csv")),
+        raw_daily_prices_file=str(config.get("raw_daily_prices_file", "raw_daily_prices.csv")),
     )
 
 
@@ -82,8 +84,8 @@ def validate_config(config: PipelineConfig) -> list[str]:
     if config.total_return_cagr_mode != "reference_only":
         errors.append("total_return_cagr_mode must be reference_only")
     if config.input_mode != "fixture":
-        errors.append("Step 114-2A only supports input_mode=fixture")
+        errors.append("Step 114-2B only supports input_mode=fixture")
     for market in config.market_scope:
         if market not in {"US", "KR"}:
-            errors.append(f"Unsupported market in Step 114-2A fixture mode: {market}")
+            errors.append(f"Unsupported market in Step 114-2B fixture mode: {market}")
     return errors
