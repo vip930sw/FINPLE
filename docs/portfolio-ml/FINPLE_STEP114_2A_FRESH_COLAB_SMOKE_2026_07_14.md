@@ -1,11 +1,11 @@
-# FINPLE Step 114-2A / 114-2B Fresh Colab Smoke
+# FINPLE Step 114-2A / 114-2B / 114-2C Fresh Colab Smoke
 
 Date: 2026-07-14
-Scope: `Step 114-2A` fixture-only monthly metrics pipeline plus `Step 114-2B` raw daily normalization contract
+Scope: `Step 114-2A` fixture-only monthly metrics pipeline, `Step 114-2B` raw daily normalization contract, and `Step 114-2C` offline source adapter contract
 
 ## Purpose
 
-This smoke procedure verifies that `notebooks/FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb` can run in a fresh Google Colab runtime without assuming the FINPLE repository already exists on the Colab filesystem.
+This smoke procedure verifies that `notebooks/FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb` can run in a fresh Google Colab runtime without assuming the FINPLE repository already exists on the Colab filesystem. The notebook remains offline-only: it supports `fixture`, `manual_upload`, and `public_source_fixture` modes through CONFIG without calling an external provider.
 
 ## Preferred Bootstrap
 
@@ -18,7 +18,12 @@ scripts/metrics_pipeline/
 data/fixtures/monthly-metrics/
 ```
 
-For Step 114-2B, `data/fixtures/monthly-metrics/raw_daily_prices.csv` must be included in the same fixture folder.
+For Step 114-2B, `data/fixtures/monthly-metrics/raw_daily_prices.csv` must be included in the same fixture folder. For Step 114-2C, include the offline adapter fixtures:
+
+```text
+data/fixtures/monthly-metrics/manual_upload_raw_daily_prices.csv
+data/fixtures/monthly-metrics/public_source_fixture_prices.csv
+```
 
 One simple local packaging method is to create a ZIP from the PR branch that preserves those paths plus the notebook:
 
@@ -29,24 +34,27 @@ data/fixtures/monthly-metrics/
 docs/portfolio-ml/FINPLE_STEP114_2A_FRESH_COLAB_SMOKE_2026_07_14.md
 ```
 
-The notebook bootstrap checks the current working tree first. If those paths are not found, it asks the Colab operator to upload the execution package ZIP, extracts it under `/content/finple_step114_2b_execution_package`, locates the package root, and adds that root to `sys.path`.
+The notebook bootstrap checks the current working tree first. If those paths are not found, it asks the Colab operator to upload the execution package ZIP, extracts it under `/content/finple_step114_2c_execution_package`, locates the package root, and adds that root to `sys.path`.
 
 ## Fresh Colab Run All Procedure
 
 1. Open a new Google Colab runtime.
 2. Upload or open `notebooks/FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb`.
 3. Choose `Runtime > Run all`.
-4. When prompted, upload the Step 114-2B execution package ZIP.
+4. When prompted, upload the Step 114-2C execution package ZIP.
 5. Confirm section 1 prints the resolved repository root.
 6. Confirm section 2 prints `OK` for:
    - `candidates.csv`
    - `benchmark_map.csv`
    - `monthly_prices.csv`
    - `raw_daily_prices.csv`
+   - `manual_upload_raw_daily_prices.csv` when CONFIG `input_mode` is `manual_upload`
+   - `public_source_fixture_prices.csv` when CONFIG `input_mode` is `public_source_fixture`
 7. Confirm section 4 prints:
    - `Fixture package ready: True`
    - `Production publish ready: False`
    - `App export approved: False`
+   - source adapter summary and checkpoint JSON paths
 8. Confirm section 5 offers the generated fixture output ZIP for download.
 
 ## Expected Output Package
@@ -64,6 +72,8 @@ finple_metrics_manifest_2026_06.json
 finple_monthly_returns_2026_06.csv
 finple_normalized_month_end_2026_06.csv
 finple_timeseries_audit_2026_06.csv
+finple_source_adapter_summary_2026_06.json
+finple_source_adapter_checkpoint_2026_06.json
 ```
 
 ## Guardrails
@@ -71,6 +81,7 @@ finple_timeseries_audit_2026_06.csv
 - No external API call.
 - No real market-data provider call.
 - No private GitHub token.
+- No service key, credential, or local absolute path in manifest, checkpoint, ZIP, audit, or notebook output.
 - No operating overlay or loader update.
 - No simulator UI, STEP navigation, AI, auth, payment, DB, or trading change.
 - `productionPublishReady` remains `false`.

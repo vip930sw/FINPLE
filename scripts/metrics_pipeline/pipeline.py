@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .adapters import run_source_adapter, validate_adapter_result, write_adapter_artifacts
 from .audit import build_audit_summary, write_audit_report
 from .config import (
     CALCULATION_POLICY_VERSION,
@@ -51,8 +52,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     candidates_path = input_dir / pipeline_config.candidate_file
     benchmark_path = input_dir / pipeline_config.benchmark_map_file
     prices_path = input_dir / pipeline_config.monthly_prices_file
-    raw_daily_path = input_dir / pipeline_config.raw_daily_prices_file
-    source_paths = [candidates_path, benchmark_path, prices_path, raw_daily_path]
+    source_adapter_result = run_source_adapter(pipeline_config)
+    source_paths = [candidates_path, benchmark_path, prices_path, source_adapter_result.sourcePath]
     for path in source_paths:
         if not path.exists():
             critical_errors.append(f"Required input file missing: {path.name}")
@@ -62,18 +63,18 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     candidates = _read_csv(candidates_path)
     benchmark_map = _read_benchmark_map(benchmark_path)
     price_rows = _read_csv(prices_path)
-    raw_daily_rows = _read_csv(raw_daily_path)
+    raw_daily_rows = [dict(row) for row in source_adapter_result.rows]
     critical_errors.extend(_validate_candidates(candidates, pipeline_config))
     critical_errors.extend(_validate_price_rows(price_rows))
-    critical_errors.extend(_validate_raw_daily_schema(raw_daily_rows))
+    critical_errors.extend(validate_adapter_result(source_adapter_result))
     if critical_errors:
         raise PipelineCriticalError("; ".join(critical_errors))
 
     source_hashes = {path.name: _sha256(path) for path in source_paths}
     raw_daily_normalization = normalize_daily_price_rows(
         raw_daily_rows,
-        source_file_name=raw_daily_path.name,
-        source_sha256=source_hashes[raw_daily_path.name],
+        source_file_name=source_adapter_result.sourceFileName,
+        source_sha256=source_adapter_result.rawSourceSha256,
     )
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
@@ -114,6 +115,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     audit_html = output_dir / f"finple_metrics_audit_report_{version}.html"
     manifest_json = output_dir / f"finple_metrics_manifest_{version}.json"
     package_zip = output_dir / f"finple_monthly_metrics_{version}_package.zip"
+    adapter_summary_json = output_dir / f"finple_source_adapter_summary_{version}.json"
+    adapter_checkpoint_json = output_dir / f"finple_source_adapter_checkpoint_{version}.json"
 
     _write_csv(output_csv, FULL_METRICS_COLUMNS, full_rows)
     _write_csv(selected_csv, SELECTED_COLUMNS, selected_rows)
@@ -129,14 +132,37 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         timeseries_audit_rows=timeseries_audit_rows,
     )
     write_audit_report(audit_html, audit_summary, source_hashes)
+    adapter_summary_json, adapter_checkpoint_json = write_adapter_artifacts(output_dir, version, source_adapter_result)
 
-    output_files = [output_csv, selected_csv, review_csv, audit_html, manifest_json, returns_csv, normalized_csv, timeseries_audit_csv]
+    output_files = [
+        output_csv,
+        selected_csv,
+        review_csv,
+        audit_html,
+        manifest_json,
+        returns_csv,
+        normalized_csv,
+        timeseries_audit_csv,
+        adapter_summary_json,
+        adapter_checkpoint_json,
+    ]
     manifest = _build_manifest(
         config=pipeline_config,
         source_hashes=source_hashes,
-        output_files=[output_csv, selected_csv, review_csv, audit_html, returns_csv, normalized_csv, timeseries_audit_csv],
+        output_files=[
+            output_csv,
+            selected_csv,
+            review_csv,
+            audit_html,
+            returns_csv,
+            normalized_csv,
+            timeseries_audit_csv,
+            adapter_summary_json,
+            adapter_checkpoint_json,
+        ],
         audit_summary=audit_summary,
         source_metadata=[raw_daily_normalization["sourceMetadata"]],
+        source_adapter_summary=source_adapter_result.public_summary(),
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -162,6 +188,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             "monthlyReturnsCsv": str(returns_csv),
             "normalizedMonthEndCsv": str(normalized_csv),
             "timeseriesAuditCsv": str(timeseries_audit_csv),
+            "sourceAdapterSummaryJson": str(adapter_summary_json),
+            "sourceAdapterCheckpointJson": str(adapter_checkpoint_json),
             "zipPackage": str(package_zip),
         },
     }
@@ -476,11 +504,12 @@ def _build_manifest(
     output_files: list[Path],
     audit_summary: Mapping[str, int],
     source_metadata: list[Mapping[str, Any]],
+    source_adapter_summary: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
         "metricBaseDate": config.metric_base_date,
         "createdAt": config.created_at,
-        "createdBy": "FINPLE Step 114-2A fixture pipeline",
+        "createdBy": "FINPLE Step 114-2C fixture-safe source adapter pipeline",
         "pipelineVersion": PIPELINE_VERSION,
         "schemaVersion": SCHEMA_VERSION,
         "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
@@ -493,8 +522,11 @@ def _build_manifest(
             "deterministicFixture": config.deterministic_fixture,
             "randomSeed": config.random_seed,
         },
-        "sourceFiles": [_source_file_manifest_item(name, sha256) for name, sha256 in sorted(source_hashes.items())],
+        "sourceFiles": [
+            _source_file_manifest_item(name, sha256, config.input_mode) for name, sha256 in sorted(source_hashes.items())
+        ],
         "sourceMetadata": list(source_metadata),
+        "sourceAdapter": dict(source_adapter_summary),
         "outputs": [path.name for path in output_files],
         "outputHashes": {path.name: _sha256(path) for path in output_files},
         "policy": {
@@ -513,13 +545,13 @@ def _build_manifest(
     }
 
 
-def _source_file_manifest_item(name: str, sha256: str) -> dict[str, Any]:
+def _source_file_manifest_item(name: str, sha256: str, input_mode: str) -> dict[str, Any]:
     return {
         "name": name,
         "sourceFileName": name,
         "sha256": sha256,
         "sourceSha256": sha256,
-        "mode": "fixture",
+        "mode": input_mode,
         "sourceId": f"fixture_{name}",
         "retrievedAt": "2026-07-14T00:00:00+09:00",
         "providerOrInstitution": "FINPLE synthetic fixture",

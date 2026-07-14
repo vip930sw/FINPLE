@@ -33,6 +33,7 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn("execution package ZIP", markdown)
         self.assertIn("not production app approval", markdown)
         self.assertIn("raw daily normalization", markdown)
+        self.assertIn("source adapter", markdown)
 
     def test_notebook_calls_single_pipeline_entrypoint(self):
         payload = NOTEBOOK_PATH.read_text(encoding="utf-8")
@@ -41,7 +42,11 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn("find_repo_root", payload)
         self.assertIn("files.upload()", payload)
         self.assertIn("raw_daily_prices.csv", payload)
-        self.assertIn("finple_step114_2b_execution_package", payload)
+        self.assertIn("manual_upload_raw_daily_prices.csv", payload)
+        self.assertIn("public_source_fixture_prices.csv", payload)
+        self.assertIn("finple_step114_2c_execution_package", payload)
+        self.assertIn("sourceAdapterSummaryJson", payload)
+        self.assertIn("sourceAdapterCheckpointJson", payload)
         self.assertIn("productionPublishReady", payload)
         self.assertIn("appExportApproved", payload)
         forbidden_tokens = [

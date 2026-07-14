@@ -1,0 +1,2 @@
+pageNumber,recordId,market,ticker,date,currency,close,splitAdjustedClose,totalReturnAdjustedClose,volume,splitFactor,cashDividend,sourceId,retrievedAt,priceAdjustmentBasis,publicationEligibility,providerOrInstitution,licenseStatus,internalUseAllowed,publicationAllowed,redistributionAllowed
+1,public-fixture-unknown,US,SPY,2026-01-30,USD,101.00,101.00,,1200,1.0,0.00,public_fixture_unknown,2026-07-14T00:00:00+09:00,split_adjusted,review_required,FINPLE synthetic public-source fixture,unknown,true,false,false

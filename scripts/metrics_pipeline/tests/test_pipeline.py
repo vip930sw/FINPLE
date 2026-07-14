@@ -8,6 +8,8 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from scripts.metrics_pipeline import PipelineCriticalError, run_finple_monthly_metrics_pipeline
+from scripts.metrics_pipeline.adapters import run_source_adapter, validate_adapter_result
+from scripts.metrics_pipeline.config import load_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -47,12 +49,20 @@ class MetricsPipelineTests(unittest.TestCase):
 
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
-            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2b")
+            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2c")
             self.assertEqual(manifest["schemaVersion"], "metrics-csv-schema-v3")
             self.assertFalse(manifest["externalProviderCalls"])
             self.assertTrue(manifest["fixturePackageReady"])
             self.assertFalse(manifest["productionPublishReady"])
             self.assertFalse(manifest["appExportApproved"])
+            self.assertIn("sourceAdapter", manifest)
+            self.assertEqual(manifest["sourceAdapter"]["adapterId"], "finple.raw_daily_fixture.v1")
+            self.assertEqual(manifest["sourceAdapter"]["adapterVersion"], "source-adapter-contract-v1-step114-2c")
+            self.assertEqual(manifest["sourceAdapter"]["mode"], "fixture")
+            self.assertEqual(manifest["sourceAdapter"]["sourceFileName"], "raw_daily_prices.csv")
+            self.assertTrue(manifest["sourceAdapter"]["internalUseAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["publicationAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["redistributionAllowed"])
             self.assertEqual(
                 {item["name"] for item in manifest["sourceFiles"]},
                 {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv", "raw_daily_prices.csv"},
@@ -75,6 +85,8 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("finple_monthly_returns_2026_06.csv", names)
             self.assertIn("finple_normalized_month_end_2026_06.csv", names)
             self.assertIn("finple_timeseries_audit_2026_06.csv", names)
+            self.assertIn("finple_source_adapter_summary_2026_06.json", names)
+            self.assertIn("finple_source_adapter_checkpoint_2026_06.json", names)
 
     def test_output_schema_review_split_and_kr_ticker_preservation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -287,6 +299,120 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("fixture_daily_corporate_action_only", source_ids)
 
         self.assertEqual(raw_fixture.read_bytes(), before)
+
+    def test_manual_upload_adapter_contract_and_sanitized_artifacts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir), input_mode="manual_upload")
+            )
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+            manifest = json.loads(outputs["manifestJson"].read_text(encoding="utf-8"))
+            self.assertEqual(manifest["sourceAdapter"]["adapterId"], "finple.manual_upload_csv.v1")
+            self.assertEqual(manifest["sourceAdapter"]["mode"], "manual_upload")
+            self.assertEqual(manifest["sourceAdapter"]["sourceFileName"], "manual_upload_raw_daily_prices.csv")
+            self.assertTrue(manifest["sourceAdapter"]["internalUseAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["publicationAllowed"])
+            self.assertFalse(manifest["sourceAdapter"]["redistributionAllowed"])
+            self.assertTrue(manifest["fixturePackageReady"])
+            self.assertFalse(manifest["productionPublishReady"])
+            self.assertFalse(manifest["appExportApproved"])
+
+            artifact_text = "\n".join(
+                path.read_text(encoding="utf-8")
+                for path in [
+                    outputs["manifestJson"],
+                    outputs["sourceAdapterSummaryJson"],
+                    outputs["sourceAdapterCheckpointJson"],
+                    outputs["normalizedMonthEndCsv"],
+                    outputs["timeseriesAuditCsv"],
+                ]
+            )
+            self.assertNotIn("C:\\Users\\owner", artifact_text)
+            self.assertNotIn("serviceKey=SHOULD_NOT_LEAK", artifact_text)
+            self.assertIn("[REDACTED_LOCAL_PATH]", artifact_text)
+            self.assertIn("[REDACTED_SECRET]", artifact_text)
+
+            with ZipFile(outputs["zipPackage"]) as package:
+                zip_payload = "\n".join(package.read(name).decode("utf-8") for name in package.namelist())
+            self.assertNotIn("C:\\Users\\owner", zip_payload)
+            self.assertNotIn("serviceKey=SHOULD_NOT_LEAK", zip_payload)
+
+    def test_manual_upload_fail_closed_gates_block_normalization(self):
+        blocked_files = [
+            "manual_upload_bad_header.csv",
+            "manual_upload_empty.csv",
+            "manual_upload_unknown_license.csv",
+            "manual_upload_internal_use_blocked.csv",
+        ]
+        for file_name in blocked_files:
+            with self.subTest(file_name=file_name), tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaises(PipelineCriticalError):
+                    run_finple_monthly_metrics_pipeline(
+                        build_config(Path(temp_dir), input_mode="manual_upload", manual_upload_file=file_name)
+                    )
+                self.assertFalse((Path(temp_dir) / "finple_monthly_metrics_2026_06_package.zip").exists())
+
+    def test_public_source_fixture_checkpoint_retry_resume_and_determinism(self):
+        config = load_config(
+            build_config(
+                Path("unused"),
+                input_mode="public_source_fixture",
+                public_source_fixture_failure_mode="transient_then_success",
+            )
+        )
+        adapter_result = run_source_adapter(config)
+        self.assertFalse(validate_adapter_result(adapter_result))
+        self.assertEqual(adapter_result.adapterId, "finple.synthetic_public_source_fixture.v1")
+        self.assertEqual(adapter_result.retryCount, 1)
+        self.assertTrue(adapter_result.resumeSupported)
+        self.assertEqual(adapter_result.checkpoint["completedPageNumbers"], [1, 2])
+        self.assertEqual(len(adapter_result.checkpoint["acceptedRecordIds"]), 3)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "first",
+                    input_mode="public_source_fixture",
+                    public_source_fixture_failure_mode="transient_then_success",
+                )
+            )
+            checkpoint_path = Path(first["outputs"]["sourceAdapterCheckpointJson"])
+            second_config = load_config(
+                build_config(
+                    Path(temp_dir) / "second",
+                    input_mode="public_source_fixture",
+                    public_source_resume_checkpoint_file=str(checkpoint_path),
+                )
+            )
+            resumed = run_source_adapter(second_config)
+            self.assertEqual(len(resumed.rows), 0)
+            self.assertEqual(resumed.rejectedRowCount, 3)
+
+            second = run_finple_monthly_metrics_pipeline(
+                build_config(
+                    Path(temp_dir) / "third",
+                    input_mode="public_source_fixture",
+                    public_source_fixture_failure_mode="transient_then_success",
+                )
+            )
+            first_manifest = Path(first["outputs"]["manifestJson"]).read_bytes()
+            second_manifest = Path(second["outputs"]["manifestJson"]).read_bytes()
+            self.assertEqual(first_manifest, second_manifest)
+            self.assertEqual(
+                Path(first["outputs"]["sourceAdapterCheckpointJson"]).read_bytes(),
+                Path(second["outputs"]["sourceAdapterCheckpointJson"]).read_bytes(),
+            )
+
+    def test_public_source_fixture_license_and_permanent_retry_fail_closed(self):
+        for overrides in [
+            {"public_source_fixture_file": "public_source_fixture_unknown_license.csv"},
+            {"public_source_fixture_failure_mode": "permanent_failure"},
+        ]:
+            with self.subTest(overrides=overrides), tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaises(PipelineCriticalError):
+                    run_finple_monthly_metrics_pipeline(
+                        build_config(Path(temp_dir), input_mode="public_source_fixture", **overrides)
+                    )
 
 
 if __name__ == "__main__":

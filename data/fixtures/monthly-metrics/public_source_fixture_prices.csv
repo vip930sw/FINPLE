@@ -1,0 +1,4 @@
+pageNumber,recordId,market,ticker,date,currency,close,splitAdjustedClose,totalReturnAdjustedClose,volume,splitFactor,cashDividend,sourceId,retrievedAt,priceAdjustmentBasis,publicationEligibility,providerOrInstitution,licenseStatus,internalUseAllowed,publicationAllowed,redistributionAllowed
+1,public-fixture-001,US,SPY,2026-01-30,USD,101.00,101.00,,1200,1.0,0.00,public_fixture_spy,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic public-source fixture,approved,true,true,true
+1,public-fixture-002,US,SPY,2026-02-27,USD,99.00,99.00,,1300,1.0,0.00,public_fixture_spy,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic public-source fixture,approved,true,true,true
+2,public-fixture-003,KR,005930,2026-01-30,KRW,70000,70000,,5000,1.0,0.00,public_fixture_005930,2026-07-14T00:00:00+09:00,split_adjusted,approved,FINPLE synthetic public-source fixture,approved,true,true,true
