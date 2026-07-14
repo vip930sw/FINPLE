@@ -1,7 +1,7 @@
-# FINPLE Step 114-2A / 114-2B / 114-2C Fresh Colab Smoke
+# FINPLE Step 114-2A / 114-2B / 114-2C / 114-2D Fresh Colab Smoke
 
 Date: 2026-07-14
-Scope: `Step 114-2A` fixture-only monthly metrics pipeline, `Step 114-2B` raw daily normalization contract, and `Step 114-2C` offline source adapter contract
+Scope: `Step 114-2A` fixture-only monthly metrics pipeline, `Step 114-2B` raw daily normalization contract, `Step 114-2C` offline source adapter contract, and `Step 114-2D` rolling metrics review-only overlay generation
 
 ## Purpose
 
@@ -35,14 +35,14 @@ data/fixtures/monthly-metrics/
 docs/portfolio-ml/FINPLE_STEP114_2A_FRESH_COLAB_SMOKE_2026_07_14.md
 ```
 
-The notebook bootstrap checks the current working tree first. If those paths are not found, it asks the Colab operator to upload the execution package ZIP, extracts it under `/content/finple_step114_2c_execution_package`, locates the package root, and adds that root to `sys.path`.
+The notebook bootstrap checks the current working tree first. If those paths are not found, it asks the Colab operator to upload the execution package ZIP, extracts it under `/content/finple_step114_2d_execution_package`, locates the package root, and adds that root to `sys.path`.
 
 ## Fresh Colab Run All Procedure
 
 1. Open a new Google Colab runtime.
 2. Upload or open `notebooks/FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb`.
 3. Choose `Runtime > Run all`.
-4. When prompted, upload the Step 114-2C execution package ZIP.
+4. When prompted, upload the Step 114-2D execution package ZIP.
 5. Confirm section 1 prints the resolved repository root.
 6. Confirm section 2 prints `OK` for:
    - `candidates.csv`
@@ -85,6 +85,7 @@ finple_source_adapter_checkpoint_2026_06.json
 - No private GitHub token.
 - No service key, credential, or local absolute path in manifest, checkpoint, ZIP, audit, or notebook output.
 - No operating overlay or loader update.
+- Step 114-2D review overlay remains review-only with `fixturePackageReady=true`, `productionPublishReady=false`, and `appExportApproved=false`.
 - No simulator UI, STEP navigation, AI, auth, payment, DB, or trading change.
 - `productionPublishReady` remains `false`.
 - `appExportApproved` remains `false`.

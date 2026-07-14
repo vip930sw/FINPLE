@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-PIPELINE_VERSION = "metrics-v3.0-step114-2c"
+PIPELINE_VERSION = "metrics-v3.0-step114-2d"
 SCHEMA_VERSION = "metrics-csv-schema-v3"
 CALCULATION_POLICY_VERSION = "metrics-calculation-policy-2026-06-26"
 
@@ -94,12 +94,12 @@ def validate_config(config: PipelineConfig) -> list[str]:
     if config.total_return_cagr_mode != "reference_only":
         errors.append("total_return_cagr_mode must be reference_only")
     if config.input_mode not in {"fixture", "manual_upload", "public_source_fixture"}:
-        errors.append("Step 114-2C supports input_mode=fixture, manual_upload, or public_source_fixture")
+        errors.append("Step 114-2D supports input_mode=fixture, manual_upload, or public_source_fixture")
     if config.public_source_fixture_failure_mode not in {"none", "transient_then_success", "permanent_failure"}:
         errors.append("public_source_fixture_failure_mode must be none, transient_then_success, or permanent_failure")
     if config.source_adapter_max_retry_count < 0 or config.source_adapter_max_retry_count > 3:
         errors.append("source_adapter_max_retry_count must be between 0 and 3")
     for market in config.market_scope:
         if market not in {"US", "KR"}:
-            errors.append(f"Unsupported market in Step 114-2B fixture mode: {market}")
+            errors.append(f"Unsupported market in Step 114-2D fixture mode: {market}")
     return errors

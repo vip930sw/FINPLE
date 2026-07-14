@@ -1,0 +1,36 @@
+market,ticker,date,issueType,severity,blocksPublication,priceSeriesClassification,reviewReason,sourceId,normalizationVersion
+US,DUPONLY,2026-01-30,duplicate_date,critical,true,raw_close,Duplicate date within market/ticker.,fixture_daily_duplicate_only,timeseries-normalization-v1-step114-2b
+US,REVONLY,2026-01-30,non_monotonic_date_order,critical,true,raw_close,Raw rows must not reverse within a series.,fixture_daily_reverse_only,timeseries-normalization-v1-step114-2b
+US,CORPONLY,2026-01-30,corporate_action_inconsistency,critical,true,raw_close,Split rows require splitAdjustedClose evidence.,fixture_daily_corporate_action_only,timeseries-normalization-v1-step114-2b
+US,AMBIG,2026-01-30,missing_required_price_basis,critical,true,ambiguous,priceAdjustmentBasis must be explicit.,fixture_daily_ambiguous,timeseries-normalization-v1-step114-2b
+US,AMBIG,2026-01-30,invalid_provenance_publication_policy,critical,true,ambiguous,Unknown or false publication licensing forces review-only output.,fixture_daily_ambiguous,timeseries-normalization-v1-step114-2b
+US,AMBIG,2026-01-30,ambiguous_adjustment_basis,critical,true,ambiguous,Adjusted-price basis is ambiguous and requires manual review.,fixture_daily_ambiguous,timeseries-normalization-v1-step114-2b
+US,BADSP,2026-01-30,implausible_split_factor,critical,true,split_adjusted,splitFactor must be positive and plausible.,fixture_daily_bad_split,timeseries-normalization-v1-step114-2b
+US,BADSP,2026-01-30,invalid_provenance_publication_policy,critical,true,split_adjusted,Unknown or false publication licensing forces review-only output.,fixture_daily_bad_split,timeseries-normalization-v1-step114-2b
+US,BADCORP,2026-01-30,missing_required_price_basis,critical,true,split_adjusted,split_adjusted basis requires splitAdjustedClose.,fixture_daily_bad_corporate_action,timeseries-normalization-v1-step114-2b
+US,BADCORP,2026-01-30,corporate_action_inconsistency,critical,true,split_adjusted,Split rows require splitAdjustedClose evidence.,fixture_daily_bad_corporate_action,timeseries-normalization-v1-step114-2b
+US,BADCORP,2026-01-30,invalid_provenance_publication_policy,critical,true,split_adjusted,Unknown or false publication licensing forces review-only output.,fixture_daily_bad_corporate_action,timeseries-normalization-v1-step114-2b
+US,DUPCA,2026-01-30,invalid_provenance_publication_policy,critical,true,split_adjusted,Unknown or false publication licensing forces review-only output.,fixture_daily_dup_action,timeseries-normalization-v1-step114-2b
+US,DUPCA,2026-01-30,duplicate_date,critical,true,split_adjusted,Duplicate date within market/ticker.,fixture_daily_dup_action,timeseries-normalization-v1-step114-2b
+US,DUPCA,2026-01-30,invalid_provenance_publication_policy,critical,true,split_adjusted,Unknown or false publication licensing forces review-only output.,fixture_daily_dup_action,timeseries-normalization-v1-step114-2b
+US,DUPCA,2026-01-30,duplicate_corporate_action_entry,critical,true,split_adjusted,Duplicate corporate action date.,fixture_daily_dup_action,timeseries-normalization-v1-step114-2b
+US,NEG,2026-01-30,non_positive_price,critical,true,raw_close,close must be positive.,fixture_daily_negative,timeseries-normalization-v1-step114-2b
+US,NEG,2026-01-30,invalid_provenance_publication_policy,critical,true,raw_close,Unknown or false publication licensing forces review-only output.,fixture_daily_negative,timeseries-normalization-v1-step114-2b
+US,REVRS,2026-02-27,invalid_provenance_publication_policy,critical,true,raw_close,Unknown or false publication licensing forces review-only output.,fixture_daily_reverse,timeseries-normalization-v1-step114-2b
+US,REVRS,2026-01-30,non_monotonic_date_order,critical,true,raw_close,Raw rows must not reverse within a series.,fixture_daily_reverse,timeseries-normalization-v1-step114-2b
+US,REVRS,2026-01-30,invalid_provenance_publication_policy,critical,true,raw_close,Unknown or false publication licensing forces review-only output.,fixture_daily_reverse,timeseries-normalization-v1-step114-2b
+US,BADPUB,2026-01-30,invalid_provenance_publication_policy,critical,true,raw_close,Unknown or false publication licensing forces review-only output.,fixture_daily_bad_publication,timeseries-normalization-v1-step114-2b
+US,BADDATE,2026-13-40,malformed_or_missing_date,critical,true,raw_close,Date must be YYYY-MM-DD.,fixture_daily_bad_date,timeseries-normalization-v1-step114-2b
+US,NOBASIS,2026-01-30,missing_required_price_basis,critical,true,ambiguous,priceAdjustmentBasis must be explicit.,fixture_daily_no_basis,timeseries-normalization-v1-step114-2b
+US,NOBASIS,2026-01-30,invalid_provenance_publication_policy,critical,true,ambiguous,Unknown or false publication licensing forces review-only output.,fixture_daily_no_basis,timeseries-normalization-v1-step114-2b
+US,NOBASIS,2026-01-30,ambiguous_adjustment_basis,critical,true,ambiguous,Adjusted-price basis is ambiguous and requires manual review.,fixture_daily_no_basis,timeseries-normalization-v1-step114-2b
+KR,12345,2026-01-30,inconsistent_market_ticker_identifier,critical,true,raw_close,KR tickers must remain six-character strings.,fixture_daily_bad_kr_ticker,timeseries-normalization-v1-step114-2b
+KR,12345,2026-01-30,invalid_provenance_publication_policy,critical,true,raw_close,Unknown or false publication licensing forces review-only output.,fixture_daily_bad_kr_ticker,timeseries-normalization-v1-step114-2b
+US,CURR,,inconsistent_currency,critical,true,ambiguous,"Series has multiple currencies: KRW, USD.",,timeseries-normalization-v1-step114-2b
+US,MISSING,2026-02-01,missing_calendar_month,critical,true,ambiguous,No valid daily observation exists for this calendar month; no forward fill was applied.,,timeseries-normalization-v1-step114-2b
+KR,005930,2026-02-27,cash_dividend,info,false,split_adjusted,Cash dividend evidence is present.,fixture_daily_005930,timeseries-normalization-v1-step114-2b
+KR,069500,2026-02-27,cash_dividend,info,false,total_return_adjusted,Cash dividend evidence is present.,fixture_daily_069500,timeseries-normalization-v1-step114-2b
+US,SPLT,2026-01-30,valid_stock_split,info,false,split_adjusted,Split factor evidence is present.,fixture_daily_split,timeseries-normalization-v1-step114-2b
+US,DIVD,2026-01-30,cash_dividend,info,false,split_adjusted,Cash dividend evidence is present.,fixture_daily_dividend,timeseries-normalization-v1-step114-2b
+US,SPLDIV,2026-01-30,valid_stock_split,info,false,split_adjusted,Split factor evidence is present.,fixture_daily_split_dividend,timeseries-normalization-v1-step114-2b
+US,SPLDIV,2026-02-27,cash_dividend,info,false,split_adjusted,Cash dividend evidence is present.,fixture_daily_split_dividend,timeseries-normalization-v1-step114-2b

@@ -1,0 +1,483 @@
+{
+  "appExportApproved": false,
+  "auditSummary": {
+    "etfCount": 4,
+    "krCount": 3,
+    "krTickerFormatErrors": 0,
+    "missingDividendYieldCount": 2,
+    "missingSelectedBetaCount": 0,
+    "missingSelectedCagrCount": 1,
+    "missingSelectedMddCount": 1,
+    "normalizedMonthEndRowCount": 16,
+    "readyCount": 5,
+    "reviewRequiredCount": 1,
+    "rowCount": 6,
+    "stockCount": 2,
+    "timeSeriesAuditRowCount": 35,
+    "timeSeriesBlockingIssueCount": 29,
+    "usCount": 3
+  },
+  "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+  "config": {
+    "currentPriceDisplay": false,
+    "deterministicFixture": true,
+    "inputMode": "fixture",
+    "marketScope": [
+      "US",
+      "KR"
+    ],
+    "randomSeed": 1142,
+    "selectedCagrPolicy": "rolling_median_all_markets",
+    "totalReturnCagrMode": "reference_only"
+  },
+  "createdAt": "2026-06-30T00:00:00+09:00",
+  "createdBy": "FINPLE Step 114-2D fixture-safe rolling metrics pipeline",
+  "externalProviderCalls": false,
+  "fixturePackageReady": true,
+  "historicalOverlayProtection": {
+    "protectedFiles": [
+      {
+        "afterSha256": "4e683d29181f9deb49dbea74faea1c6af573a67e2beb0909c1ce11e66ca19002",
+        "beforeSha256": "4e683d29181f9deb49dbea74faea1c6af573a67e2beb0909c1ce11e66ca19002",
+        "path": "src\\data\\tickers\\kr_price_metrics_overlay_20260528_app_ready.csv",
+        "unchanged": true
+      },
+      {
+        "afterSha256": "2eabd9a65e76f600b7595e34c9d3443b3dc8ae6428ae8730acd68f5dc0ed5870",
+        "beforeSha256": "2eabd9a65e76f600b7595e34c9d3443b3dc8ae6428ae8730acd68f5dc0ed5870",
+        "path": "src\\data\\tickers\\screenerCandidateOverlay.js",
+        "unchanged": true
+      },
+      {
+        "afterSha256": "9df1ffa8f19b68f41b63699e3e8bd1d82c7720c1acc9786b48b28040ed56ceec",
+        "beforeSha256": "9df1ffa8f19b68f41b63699e3e8bd1d82c7720c1acc9786b48b28040ed56ceec",
+        "path": "src\\data\\tickers\\us_price_metrics_overlay_20260528_app_ready.csv",
+        "unchanged": true
+      }
+    ],
+    "status": "verified_unchanged"
+  },
+  "historicalOverlayProtectionStatus": "verified_unchanged",
+  "metricBaseDate": "2026-06-30",
+  "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+  "outputHashes": {
+    "finple_metrics_audit_report_2026_07_14.html": "22e2e3032571a7f63a7fa976de46ae7d48782d71506f9998d87bcb3d3e496688",
+    "finple_metrics_output_2026_07_14.csv": "c091644af50afca8e7fec3c76c1152ec7d99bd2e3758a2f05f0ecc0951c3484a",
+    "finple_metrics_review_required_2026_07_14.csv": "ff5f93bac37779eaab0d3442d355cff500ad8887c2dd38005547bee47cd50eeb",
+    "finple_metrics_selected_2026_07_14.csv": "bf13d7163314daff6969389fb079a3793e2a45b415fd4c4ff05a518695bab8e1",
+    "finple_monthly_returns_2026_07_14.csv": "57a364b0c6573b5ad1c8fa75da062d049280530759b44c0a1b2e23310c590da0",
+    "finple_normalized_month_end_2026_07_14.csv": "92d8428aeb4f8dc8cdea3f07eb62ec972bd4040a80799597634af4ad954e0c62",
+    "finple_review_overlay_kr_2026_07_14.csv": "1df4304c8a6b356d54368dcd4deed58fb270b50e548540526756df1c77fa153e",
+    "finple_review_overlay_us_2026_07_14.csv": "136b2fb481d3f858d21e528844cb3a65438b0e3e6ddadd2046caa5783b8affe6",
+    "finple_source_adapter_checkpoint_2026_07_14.json": "779358ffb00843868d5bbda9aeaef4c635336ac5de08c04e2eb3d3d540c1beb8",
+    "finple_source_adapter_summary_2026_07_14.json": "3c2c9aaae7a2c7b499d59e6cdbbcc3fc050c0543c18ec3104495a841eace1b6d",
+    "finple_timeseries_audit_2026_07_14.csv": "82885a5e624798fe8cac4ce45e8757a233f0f28e91875c543bd7226bcc4107a9"
+  },
+  "outputs": [
+    "finple_metrics_output_2026_07_14.csv",
+    "finple_metrics_selected_2026_07_14.csv",
+    "finple_metrics_review_required_2026_07_14.csv",
+    "finple_metrics_audit_report_2026_07_14.html",
+    "finple_monthly_returns_2026_07_14.csv",
+    "finple_normalized_month_end_2026_07_14.csv",
+    "finple_timeseries_audit_2026_07_14.csv",
+    "finple_source_adapter_summary_2026_07_14.json",
+    "finple_source_adapter_checkpoint_2026_07_14.json",
+    "finple_review_overlay_us_2026_07_14.csv",
+    "finple_review_overlay_kr_2026_07_14.csv"
+  ],
+  "percentileMethod": "linear_interpolation_sorted_values_index_n_minus_1_times_p",
+  "pipelineVersion": "metrics-v3.0-step114-2d",
+  "policy": {
+    "currentPriceDisplay": "disabled",
+    "selectedBeta": "fixture_aligned_monthly_returns_review_only",
+    "selectedCagr": "rolling_median_required_for_all_markets",
+    "selectedMdd": "conservative_worst_drawdown",
+    "totalReturnCagr": "reference_only"
+  },
+  "productionPublishReady": false,
+  "reviewOverlayFileName": "finple_review_overlay_us_2026_07_14.csv,finple_review_overlay_kr_2026_07_14.csv",
+  "reviewOverlayFiles": [
+    "finple_review_overlay_us_2026_07_14.csv",
+    "finple_review_overlay_kr_2026_07_14.csv"
+  ],
+  "reviewOverlayHashes": {
+    "finple_review_overlay_kr_2026_07_14.csv": "1df4304c8a6b356d54368dcd4deed58fb270b50e548540526756df1c77fa153e",
+    "finple_review_overlay_us_2026_07_14.csv": "136b2fb481d3f858d21e528844cb3a65438b0e3e6ddadd2046caa5783b8affe6"
+  },
+  "reviewOverlaySha256": "136b2fb481d3f858d21e528844cb3a65438b0e3e6ddadd2046caa5783b8affe6,1df4304c8a6b356d54368dcd4deed58fb270b50e548540526756df1c77fa153e",
+  "rollingMetricVersion": "rolling-price-cagr-v1-step114-2d",
+  "rollingWindowMonths": {
+    "10y": 120,
+    "5y": 60
+  },
+  "schemaVersion": "metrics-csv-schema-v3",
+  "selectedCagrPolicy": "rolling_median_all_markets",
+  "sourceAdapter": {
+    "acceptedRowCount": 36,
+    "adapterId": "finple.raw_daily_fixture.v1",
+    "adapterVersion": "source-adapter-contract-v1-step114-2c",
+    "checkpointId": "fixture:raw_daily_prices:complete",
+    "inputFormat": "csv",
+    "internalUseAllowed": true,
+    "lastStatus": "success",
+    "licenseStatus": "approved",
+    "marketScope": [
+      "US",
+      "KR"
+    ],
+    "maxRetryCount": 0,
+    "mode": "fixture",
+    "priceAdjustmentBasis": "fixture_contract",
+    "providerOrInstitution": "FINPLE synthetic fixture",
+    "publicationAllowed": false,
+    "rawSourceSha256": "2759fc61d2eb019a4276fe4a486c50de7fcd282df2efe2f597ba7678599c41a7",
+    "redistributionAllowed": false,
+    "rejectedRowCount": 0,
+    "resumeSupported": false,
+    "retrievedAt": "2026-06-30T00:00:00+09:00",
+    "retryCount": 0,
+    "rowCount": 36,
+    "sanitizationStatus": "passed",
+    "sourceFileName": "raw_daily_prices.csv",
+    "sourceId": "fixture_raw_daily_prices.csv",
+    "warnings": []
+  },
+  "sourceFiles": [
+    {
+      "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+      "internalUseAllowed": true,
+      "licenseStatus": "approved",
+      "mode": "fixture",
+      "name": "benchmark_map.csv",
+      "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+      "priceAdjustmentBasis": "fixture_contract",
+      "providerOrInstitution": "FINPLE synthetic fixture",
+      "publicationAllowed": false,
+      "redistributionAllowed": false,
+      "retrievedAt": "2026-07-14T00:00:00+09:00",
+      "schemaVersion": "metrics-csv-schema-v3",
+      "sha256": "28f919c8f250b68f9b34179a539026fcba07e56d807db3f2cc6a8a1ac6003452",
+      "sourceFileName": "benchmark_map.csv",
+      "sourceId": "fixture_benchmark_map.csv",
+      "sourceSha256": "28f919c8f250b68f9b34179a539026fcba07e56d807db3f2cc6a8a1ac6003452"
+    },
+    {
+      "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+      "internalUseAllowed": true,
+      "licenseStatus": "approved",
+      "mode": "fixture",
+      "name": "candidates.csv",
+      "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+      "priceAdjustmentBasis": "fixture_contract",
+      "providerOrInstitution": "FINPLE synthetic fixture",
+      "publicationAllowed": false,
+      "redistributionAllowed": false,
+      "retrievedAt": "2026-07-14T00:00:00+09:00",
+      "schemaVersion": "metrics-csv-schema-v3",
+      "sha256": "ce984c0356e1d1770ab208a72529dd1fbad0cb03380ce45474fb4fa2601df70e",
+      "sourceFileName": "candidates.csv",
+      "sourceId": "fixture_candidates.csv",
+      "sourceSha256": "ce984c0356e1d1770ab208a72529dd1fbad0cb03380ce45474fb4fa2601df70e"
+    },
+    {
+      "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+      "internalUseAllowed": true,
+      "licenseStatus": "approved",
+      "mode": "fixture",
+      "name": "monthly_prices.csv",
+      "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+      "priceAdjustmentBasis": "fixture_contract",
+      "providerOrInstitution": "FINPLE synthetic fixture",
+      "publicationAllowed": false,
+      "redistributionAllowed": false,
+      "retrievedAt": "2026-07-14T00:00:00+09:00",
+      "schemaVersion": "metrics-csv-schema-v3",
+      "sha256": "53cfad3367d9312fb5df483d81d7a6fd19a33f772c7c143e29bd8f4494cbd4e4",
+      "sourceFileName": "monthly_prices.csv",
+      "sourceId": "fixture_monthly_prices.csv",
+      "sourceSha256": "53cfad3367d9312fb5df483d81d7a6fd19a33f772c7c143e29bd8f4494cbd4e4"
+    },
+    {
+      "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+      "internalUseAllowed": true,
+      "licenseStatus": "mixed_or_review_required",
+      "mode": "fixture",
+      "name": "raw_daily_prices.csv",
+      "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+      "priceAdjustmentBasis": "fixture_contract",
+      "providerOrInstitution": "FINPLE synthetic fixture",
+      "publicationAllowed": false,
+      "redistributionAllowed": false,
+      "retrievedAt": "2026-07-14T00:00:00+09:00",
+      "schemaVersion": "metrics-csv-schema-v3",
+      "sha256": "2759fc61d2eb019a4276fe4a486c50de7fcd282df2efe2f597ba7678599c41a7",
+      "sourceFileName": "raw_daily_prices.csv",
+      "sourceId": "fixture_raw_daily_prices.csv",
+      "sourceSha256": "2759fc61d2eb019a4276fe4a486c50de7fcd282df2efe2f597ba7678599c41a7"
+    }
+  ],
+  "sourceMetadata": [
+    {
+      "calculationPolicyVersion": "metrics-calculation-policy-2026-06-26",
+      "internalUseAllowed": true,
+      "licenseStatus": "mixed_or_review_required",
+      "normalizationVersion": "timeseries-normalization-v1-step114-2b",
+      "priceAdjustmentBasis": "mixed_fixture_with_review_required_rows",
+      "providerOrInstitution": "FINPLE synthetic fixture",
+      "publicationAllowed": false,
+      "redistributionAllowed": false,
+      "retrievedAt": "2026-07-14T00:00:00+09:00",
+      "schemaVersion": "metrics-csv-schema-v3",
+      "sourceFileName": "raw_daily_prices.csv",
+      "sourceId": "mixed_or_review_required",
+      "sourceSha256": "2759fc61d2eb019a4276fe4a486c50de7fcd282df2efe2f597ba7678599c41a7",
+      "sources": [
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 3,
+          "sourceId": "fixture_daily_005930"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "total_return_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 3,
+          "sourceId": "fixture_daily_069500"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "ambiguous",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_ambiguous"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_bad_corporate_action"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_bad_date"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_bad_kr_ticker"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "unknown",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_bad_publication"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_bad_split"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_corporate_action_only"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_currency"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_dividend"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_dup_action"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_duplicate_only"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_missing_month"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_negative"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_no_basis"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_noact"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": false,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_reverse"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "raw_close",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_reverse_only"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 1,
+          "sourceId": "fixture_daily_split"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 2,
+          "sourceId": "fixture_daily_split_dividend"
+        },
+        {
+          "internalUseAllowed": true,
+          "licenseStatus": "approved",
+          "priceAdjustmentBasis": "split_adjusted",
+          "providerOrInstitution": "FINPLE synthetic fixture",
+          "publicationAllowed": true,
+          "redistributionAllowed": false,
+          "retrievedAt": "2026-07-14T00:00:00+09:00",
+          "rowCount": 4,
+          "sourceId": "fixture_daily_spy"
+        }
+      ]
+    }
+  ],
+  "validRollingWindowCount10y": 5,
+  "validRollingWindowCount5y": 305
+}

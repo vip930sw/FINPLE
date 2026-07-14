@@ -1,0 +1,30 @@
+{
+  "acceptedRowCount": 36,
+  "adapterId": "finple.raw_daily_fixture.v1",
+  "adapterVersion": "source-adapter-contract-v1-step114-2c",
+  "checkpointId": "fixture:raw_daily_prices:complete",
+  "inputFormat": "csv",
+  "internalUseAllowed": true,
+  "lastStatus": "success",
+  "licenseStatus": "approved",
+  "marketScope": [
+    "US",
+    "KR"
+  ],
+  "maxRetryCount": 0,
+  "mode": "fixture",
+  "priceAdjustmentBasis": "fixture_contract",
+  "providerOrInstitution": "FINPLE synthetic fixture",
+  "publicationAllowed": false,
+  "rawSourceSha256": "2759fc61d2eb019a4276fe4a486c50de7fcd282df2efe2f597ba7678599c41a7",
+  "redistributionAllowed": false,
+  "rejectedRowCount": 0,
+  "resumeSupported": false,
+  "retrievedAt": "2026-06-30T00:00:00+09:00",
+  "retryCount": 0,
+  "rowCount": 36,
+  "sanitizationStatus": "passed",
+  "sourceFileName": "raw_daily_prices.csv",
+  "sourceId": "fixture_raw_daily_prices.csv",
+  "warnings": []
+}
