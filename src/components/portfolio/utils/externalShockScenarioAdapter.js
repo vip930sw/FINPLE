@@ -84,9 +84,12 @@ export function createExternalShockFixturePayloadForIntegrity(result) {
   return {
     scenarioVersion: result?.scenarioVersion,
     engineVersion: result?.engineVersion,
+    scenarioId: result?.scenarioId,
+    scenarioLabel: result?.scenarioLabel,
     method: result?.method,
     shockMode: result?.shockMode,
     rebalanceFrequency: result?.rebalanceFrequency,
+    inflationRate: result?.inflationRate,
     returnBasis: result?.returnBasis,
     currencyMode: result?.currencyMode,
     dataStartDate: result?.dataStartDate,
@@ -97,12 +100,28 @@ export function createExternalShockFixturePayloadForIntegrity(result) {
     pipelineVersion: result?.pipelineVersion,
     inputHash: result?.inputHash,
     outputHash: result?.outputHash,
+    betaApplied: result?.betaApplied,
+    bootstrapApplied: result?.bootstrapApplied,
+    probabilityApplied: result?.probabilityApplied,
+    cagrCalibrationApplied: result?.cagrCalibrationApplied,
+    historicalMddApplied: result?.historicalMddApplied,
     shockEvents: result?.shockEvents,
     baselinePath: result?.baselinePath,
     stressedPath: result?.stressedPath,
     contributionSeries: result?.contributionSeries,
     summary: result?.summary,
+    baselineTerminalValue: result?.baselineTerminalValue,
+    stressedTerminalValue: result?.stressedTerminalValue,
+    terminalDeltaValue: result?.terminalDeltaValue,
+    terminalDeltaRate: result?.terminalDeltaRate,
+    baselineMdd: result?.baselineMdd,
+    stressedMdd: result?.stressedMdd,
+    incrementalMdd: result?.incrementalMdd,
+    recoveryMonths: result?.recoveryMonths,
+    longestRecoveryMonths: result?.longestRecoveryMonths,
+    unrecovered: result?.unrecovered,
     assetImpactSummary: result?.assetImpactSummary,
+    rowSourceLineage: result?.rowSourceLineage,
   };
 }
 
@@ -129,12 +148,16 @@ function validateContractHeader(result, issues) {
     issues.push("result_not_object");
     return;
   }
+  if (!String(result.scenarioId || "").trim()) issues.push("scenarioId_missing");
+  if (!String(result.scenarioLabel || "").trim()) issues.push("scenarioLabel_missing");
   if (result.scenarioVersion !== SUPPORTED_EXTERNAL_SHOCK_SCENARIO_VERSION) issues.push("unsupported_scenarioVersion");
   if (result.method !== SUPPORTED_EXTERNAL_SHOCK_METHOD) issues.push("unsupported_method");
   if (!SUPPORTED_SHOCK_MODES.has(result.shockMode)) issues.push("unsupported_shockMode");
   if (!SUPPORTED_RETURN_BASIS.has(result.returnBasis)) issues.push("unsupported_returnBasis");
   if (!result.currencyMode) issues.push("currencyMode_missing");
   if (result.betaApplied !== (result.shockMode === "market_beta")) issues.push("betaApplied_inconsistent");
+  if (result.bootstrapApplied !== false) issues.push("bootstrapApplied_must_be_false");
+  if (result.probabilityApplied !== false) issues.push("probabilityApplied_must_be_false");
   if (result.cagrCalibrationApplied !== false) issues.push("cagrCalibrationApplied_must_be_false");
   if (result.historicalMddApplied !== false) issues.push("historicalMddApplied_must_be_false");
   validateHash(result.inputHash, "inputHash", issues);
@@ -210,6 +233,22 @@ function validateShockEvents(result, issues) {
     for (const value of Object.values(shocks || {})) {
       if (!isFiniteNumber(value) || value <= -1) issues.push(`shockEvent_assetShockReturn_invalid:${index}`);
     }
+    if (result.shockMode === "market_beta") {
+      if (!isFiniteNumber(event.marketFactorShock) || event.marketFactorShock <= -1) {
+        issues.push(`shockEvent_marketFactorShock_invalid:${index}`);
+      }
+      const betas = event.assetBetas;
+      const provenance = event.betaProvenance;
+      if (!isPlainObject(betas) || Object.keys(betas).length === 0) issues.push(`shockEvent_assetBetas_missing:${index}`);
+      if (!isPlainObject(provenance) || Object.keys(provenance).length === 0) issues.push(`shockEvent_betaProvenance_missing:${index}`);
+      for (const key of Object.keys(betas || {})) {
+        if (!isFiniteNumber(betas[key])) issues.push(`shockEvent_beta_invalid:${index}:${key}`);
+        const row = provenance?.[key];
+        for (const field of ["sourceHash", "sourceName", "asOfDate", "betaWindow", "methodVersion"]) {
+          if (!String(row?.[field] || "").trim()) issues.push(`shockEvent_betaProvenance_${field}_missing:${index}:${key}`);
+        }
+      }
+    }
   }
 }
 
@@ -234,6 +273,24 @@ function validateSummary(summary, issues) {
     issues.push("summary_longestRecoveryMonths_invalid");
   }
   if (typeof summary.unrecovered !== "boolean") issues.push("summary_unrecovered_invalid");
+}
+
+function validateTopLevelSummaryAliases(result, issues) {
+  const summary = result.summary || {};
+  for (const field of [
+    "baselineTerminalValue",
+    "stressedTerminalValue",
+    "terminalDeltaValue",
+    "terminalDeltaRate",
+    "baselineMdd",
+    "stressedMdd",
+    "incrementalMdd",
+    "longestRecoveryMonths",
+  ]) {
+    if (result[field] !== summary[field]) issues.push(`topLevel_${field}_summary_mismatch`);
+  }
+  if ((result.recoveryMonths ?? null) !== (summary.recoveryMonths ?? null)) issues.push("topLevel_recoveryMonths_summary_mismatch");
+  if (result.unrecovered !== summary.unrecovered) issues.push("topLevel_unrecovered_summary_mismatch");
 }
 
 function validateAssetImpact(result, issues) {
@@ -263,8 +320,14 @@ function validateFixtureContext({ result, fixtureContext, fingerprint, expectedI
   }
   if (fixtureContext.fixtureOnly !== true || fixtureContext.reviewOnly !== true) issues.push("fixtureContext_not_review_only");
   if (fixtureContext.portfolioFingerprint !== fingerprint) issues.push("portfolioFingerprint_mismatch");
-  if (expectedInputHash && result.inputHash !== expectedInputHash) issues.push("expected_inputHash_mismatch");
-  if (expectedOutputHash && result.outputHash !== expectedOutputHash) issues.push("expected_outputHash_mismatch");
+  const resolvedExpectedInputHash = isPlainObject(expectedInputHash)
+    ? expectedInputHash[result.scenarioId]
+    : expectedInputHash;
+  const resolvedExpectedOutputHash = isPlainObject(expectedOutputHash)
+    ? expectedOutputHash[result.scenarioId]
+    : expectedOutputHash;
+  if (resolvedExpectedInputHash && result.inputHash !== resolvedExpectedInputHash) issues.push("expected_inputHash_mismatch");
+  if (resolvedExpectedOutputHash && result.outputHash !== resolvedExpectedOutputHash) issues.push("expected_outputHash_mismatch");
   if (fixtureContext.inputHash !== result.inputHash) issues.push("fixtureContext_inputHash_mismatch");
   if (fixtureContext.outputHash !== result.outputHash) issues.push("fixtureContext_outputHash_mismatch");
   const expectedSignature = checksumExternalShockFixturePayload(createExternalShockFixturePayloadForIntegrity(result));
@@ -282,7 +345,11 @@ function validateReadyResult(result, issues) {
   validateContributionSeries(result.contributionSeries, baselineIndexes, issues);
   validateShockEvents(result, issues);
   validateSummary(result.summary, issues);
+  validateTopLevelSummaryAliases(result, issues);
   validateAssetImpact(result, issues);
+  if (safeArray(result.rowSourceLineage).length !== baselineIndexes.length - 1) {
+    issues.push("rowSourceLineage_alignment_invalid");
+  }
 }
 
 function baselineIdentityMatches({ baselineResult, result, fingerprint }) {
@@ -352,22 +419,67 @@ function createSummaryCards(result) {
     { key: "terminal-delta-rate", label: "충격 영향률", value: formatPercent(summary.terminalDeltaRate) },
     { key: "baseline-mdd", label: "기준 risk NAV MDD", value: formatPercent(summary.baselineMdd) },
     { key: "stressed-mdd", label: "충격 risk NAV MDD", value: formatPercent(summary.stressedMdd) },
+    { key: "incremental-mdd", label: "증분 MDD", value: formatPercent(summary.incrementalMdd) },
+    { key: "recovery-months", label: "회복 기간", value: formatRecovery(summary.recoveryMonths, summary.unrecovered) },
+    { key: "longest-recovery", label: "최장 회복 기간", value: isFiniteNumber(summary.longestRecoveryMonths) ? `${Math.round(summary.longestRecoveryMonths)}개월` : "-" },
+    { key: "unrecovered", label: "미회복 여부", value: summary.unrecovered ? "예" : "아니오" },
   ];
 }
 
+function formatRecovery(value, unrecovered) {
+  if (unrecovered === true) return "미회복";
+  if (!isFiniteNumber(value)) return "-";
+  return `${Math.round(value)}개월`;
+}
+
+function createScenarioComparisonRows(results = []) {
+  return safeArray(results).map((result) => ({
+    scenarioId: result.scenarioId,
+    label: result.scenarioLabel || result.scenarioId,
+    mode: result.shockMode,
+    terminalDeltaRate: result.summary?.terminalDeltaRate,
+    terminalDeltaRateLabel: formatPercent(result.summary?.terminalDeltaRate),
+    stressedMdd: result.summary?.stressedMdd,
+    stressedMddLabel: formatPercent(result.summary?.stressedMdd),
+    incrementalMdd: result.summary?.incrementalMdd,
+    incrementalMddLabel: formatPercent(result.summary?.incrementalMdd),
+    recoveryMonths: result.summary?.recoveryMonths ?? null,
+    recoveryLabel: formatRecovery(result.summary?.recoveryMonths, result.summary?.unrecovered),
+    longestRecoveryMonths: result.summary?.longestRecoveryMonths,
+    unrecovered: result.summary?.unrecovered === true,
+  }));
+}
+
 function createMethodology(result = {}) {
+  const betaProvenanceCount = safeArray(result.shockEvents)
+    .flatMap((event) => Object.values(event.betaProvenance || {}))
+    .filter(Boolean).length;
   return [
+    { label: "scenarioId", value: result.scenarioId || "-" },
+    { label: "scenarioLabel", value: result.scenarioLabel || "-" },
     { label: "shockMode", value: result.shockMode || "-" },
     { label: "returnBasis", value: result.returnBasis || "-" },
     { label: "rebalanceFrequency", value: result.rebalanceFrequency || "-" },
+    { label: "inflationRate", value: result.inflationRate === null || result.inflationRate === undefined ? "-" : String(result.inflationRate) },
     { label: "currencyMode", value: result.currencyMode || "-" },
     { label: "dataStartDate", value: result.dataStartDate || "-" },
     { label: "dataEndDate", value: result.dataEndDate || "-" },
+    { label: "betaProvenanceCount", value: String(betaProvenanceCount) },
     { label: "scenarioVersion", value: result.scenarioVersion || "-" },
   ];
 }
 
-function createReadyViewModel({ result, selectedPortfolioName, assets, baselineResult, fingerprint, expectedInputHash, expectedOutputHash }) {
+function createReadyViewModel({
+  result,
+  selectedPortfolioName,
+  assets,
+  baselineResult,
+  fingerprint,
+  expectedInputHash,
+  expectedOutputHash,
+  validatedResults = null,
+}) {
+  const comparisonResults = validatedResults || [result];
   return {
     uiVersion: EXTERNAL_SHOCK_UI_VERSION,
     status: "ready",
@@ -381,7 +493,16 @@ function createReadyViewModel({ result, selectedPortfolioName, assets, baselineR
     fixtureContext: result.fixtureContext,
     scenarioVersion: result.scenarioVersion,
     method: result.method,
+    scenarioId: result.scenarioId,
+    scenarioLabel: result.scenarioLabel,
     shockMode: result.shockMode,
+    scenarioOptions: comparisonResults.map((item) => ({
+      scenarioId: item.scenarioId,
+      label: item.scenarioLabel || item.scenarioId,
+      mode: item.shockMode,
+      selected: item.scenarioId === result.scenarioId,
+    })),
+    scenarioComparisonRows: createScenarioComparisonRows(comparisonResults),
     chart: {
       ariaLabel: "외부충격분석 기준 경로와 충격 경로 차트",
       baselinePath: result.baselinePath,
@@ -392,6 +513,10 @@ function createReadyViewModel({ result, selectedPortfolioName, assets, baselineR
         monthIndex: event.monthIndex,
         label: event.label || "shock",
         shockMode: event.shockMode,
+        marketFactorShock: event.marketFactorShock ?? null,
+        assetShockReturns: event.assetShockReturns || {},
+        assetBetas: event.assetBetas || null,
+        betaProvenance: event.betaProvenance || null,
       })),
     },
     summaryCards: createSummaryCards(result),
@@ -413,6 +538,8 @@ function createReadyViewModel({ result, selectedPortfolioName, assets, baselineR
 
 export function buildExternalShockScenarioViewModel({
   result,
+  scenarioResults = null,
+  selectedScenarioId = null,
   activePortfolio,
   assets = [],
   settings = {},
@@ -427,8 +554,11 @@ export function buildExternalShockScenarioViewModel({
     settings,
     assets,
   });
+  const candidateResults = Array.isArray(scenarioResults) && scenarioResults.length > 0
+    ? scenarioResults
+    : (result ? [result] : []);
 
-  if (!enableFixtureReview || !result) {
+  if (!enableFixtureReview || candidateResults.length === 0) {
     return createStatusViewModel({
       status: "idle",
       selectedPortfolioName,
@@ -436,48 +566,67 @@ export function buildExternalShockScenarioViewModel({
     });
   }
 
-  const status = normalizeStatus(result.status);
   const issues = [];
-  validateContractHeader(result, issues);
-
-  if (status === "ready") {
+  const validatedResults = [];
+  const seenScenarioIds = new Set();
+  for (const candidate of candidateResults) {
+    const status = normalizeStatus(candidate.status);
+    validateContractHeader(candidate, issues);
+    if (seenScenarioIds.has(candidate.scenarioId)) issues.push(`duplicate_scenarioId:${candidate.scenarioId}`);
+    seenScenarioIds.add(candidate.scenarioId);
+    if (status !== "ready") {
+      if (candidateResults.length === 1) {
+        return {
+          ...createStatusViewModel({
+            status,
+            selectedPortfolioName,
+            reasons: safeArray(candidate?.dataQuality?.blockReasons),
+            fixtureContext: candidate.fixtureContext || null,
+          }),
+          scenarioVersion: candidate.scenarioVersion,
+          methodology: createMethodology(candidate),
+          fixtureOnly: true,
+          resultInputHash: candidate.inputHash,
+          resultOutputHash: candidate.outputHash,
+          audit: {
+            sourceHashCount: safeArray(candidate.sourceHashes).length,
+            outputHash: candidate.outputHash,
+          },
+        };
+      }
+      issues.push(`scenario_not_ready:${candidate.scenarioId || "unknown"}`);
+      continue;
+    }
     validateFixtureContext({
-      result,
-      fixtureContext: result.fixtureContext,
+      result: candidate,
+      fixtureContext: candidate.fixtureContext,
       fingerprint,
       expectedInputHash,
       expectedOutputHash,
       issues,
     });
-    validateReadyResult(result, issues);
+    validateReadyResult(candidate, issues);
+    validatedResults.push(candidate);
   }
 
   if (issues.includes("portfolioFingerprint_mismatch") ||
     issues.includes("expected_inputHash_mismatch") ||
     issues.includes("expected_outputHash_mismatch")) {
+    const previousResult = candidateResults[0];
     return {
       ...createStatusViewModel({
         status: "stale",
         selectedPortfolioName,
         reasons: issues,
-        fixtureContext: result.fixtureContext || null,
+        fixtureContext: previousResult.fixtureContext || null,
       }),
-      previousResult: result,
+      previousResult,
       portfolioFingerprint: fingerprint,
       expectedInputHash,
       expectedOutputHash,
-      resultInputHash: result.inputHash,
-      resultOutputHash: result.outputHash,
+      resultInputHash: previousResult.inputHash,
+      resultOutputHash: previousResult.outputHash,
     };
-  }
-
-  if (status === "ready" && issues.length > 0) {
-    return createStatusViewModel({
-      status: "blocked",
-      selectedPortfolioName,
-      reasons: issues,
-      fixtureContext: result.fixtureContext || null,
-    });
   }
 
   if (issues.length > 0) {
@@ -485,38 +634,21 @@ export function buildExternalShockScenarioViewModel({
       status: "blocked",
       selectedPortfolioName,
       reasons: issues,
-      fixtureContext: result.fixtureContext || null,
+      fixtureContext: candidateResults[0]?.fixtureContext || null,
     });
   }
 
-  if (status !== "ready") {
-    return {
-      ...createStatusViewModel({
-        status,
-        selectedPortfolioName,
-        reasons: safeArray(result?.dataQuality?.blockReasons),
-        fixtureContext: result.fixtureContext || null,
-      }),
-      scenarioVersion: result.scenarioVersion,
-      methodology: createMethodology(result),
-      fixtureOnly: true,
-      resultInputHash: result.inputHash,
-      resultOutputHash: result.outputHash,
-      audit: {
-        sourceHashCount: safeArray(result.sourceHashes).length,
-        outputHash: result.outputHash,
-      },
-    };
-  }
+  const selectedResult = validatedResults.find((candidate) => candidate.scenarioId === selectedScenarioId) || validatedResults[0];
 
   return createReadyViewModel({
-    result,
-    selectedPortfolioName: result.fixtureContext?.portfolioName || selectedPortfolioName,
+    result: selectedResult,
+    selectedPortfolioName: selectedResult.fixtureContext?.portfolioName || selectedPortfolioName,
     assets,
     baselineResult,
     fingerprint,
     expectedInputHash,
     expectedOutputHash,
+    validatedResults,
   });
 }
 

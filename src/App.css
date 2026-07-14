@@ -8563,6 +8563,8 @@ nav {
 .externalShockReadyNotice,
 .externalShockChartCard,
 .externalShockSummaryCard,
+.externalShockScenarioSelector,
+.externalShockComparisonPanel,
 .externalShockMethodologyPanel,
 .externalShockImpactPanel,
 .externalShockDisclaimer {
@@ -8619,6 +8621,44 @@ nav {
   background: #f0fdf4;
   border-color: rgba(22, 163, 74, 0.2);
   color: #14532d;
+}
+
+.externalShockScenarioSelector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.externalShockScenarioSelector button {
+  min-height: 72px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  padding: 12px 14px;
+}
+
+.externalShockScenarioSelector button.active {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.externalShockScenarioSelector span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.externalShockScenarioSelector strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
 }
 
 .externalShockChartCard {
@@ -8753,6 +8793,7 @@ nav {
 }
 
 .externalShockMethodologyPanel,
+.externalShockComparisonPanel,
 .externalShockImpactPanel,
 .externalShockDisclaimer {
   padding: 18px;
@@ -8794,12 +8835,15 @@ nav {
   gap: 10px;
 }
 
+.externalShockComparisonPanel table,
 .externalShockImpactPanel table,
 .externalShockMobileSummary {
   width: 100%;
   border-collapse: collapse;
 }
 
+.externalShockComparisonPanel th,
+.externalShockComparisonPanel td,
 .externalShockImpactPanel th,
 .externalShockImpactPanel td,
 .externalShockMobileSummary th,
@@ -8809,6 +8853,8 @@ nav {
   text-align: right;
 }
 
+.externalShockComparisonPanel th:first-child,
+.externalShockComparisonPanel td:first-child,
 .externalShockImpactPanel th:first-child,
 .externalShockImpactPanel td:first-child,
 .externalShockMobileSummary th:first-child,
@@ -8829,6 +8875,7 @@ nav {
 @media (max-width: 900px) {
   .externalShockPortfolioContext,
   .externalShockSummaryGrid,
+  .externalShockScenarioSelector,
   .externalShockMethodologyGrid,
   .externalShockAuditDetails dl {
     grid-template-columns: 1fr 1fr;

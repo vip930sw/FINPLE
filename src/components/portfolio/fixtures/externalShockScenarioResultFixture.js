@@ -2,12 +2,20 @@
 // data/fixtures/scenario-external-shock/kr_two_asset_external_shock_base.json.
 // This browser fixture is precomputed view data; do not import the Node engine here.
 
-export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH = "e1642c9a46d149770632dd0dc2508c82baa12fe62dbf3cff6ff69ce2528355bc";
-export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH = "fb048e34a50566b6e737b343d7a4048b3fabb70ee6d15f8e8e23b1e01cf271fa";
-export const STEP114_2H_FIXTURE_EXPECTED_BETA_INPUT_HASH = "dab804919b28c36c362a8dd7f674c2fe21f5fe486b2b03362f185c885dc0fbf1";
-export const STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH = "a7a9155f925e19262e34306adf3402b1ba515fb71c423290fbb50032b7e9bddd";
-export const STEP114_2H_FIXTURE_DIRECT_PAYLOAD_SIGNATURE = "f8e05259";
-export const STEP114_2H_FIXTURE_BETA_PAYLOAD_SIGNATURE = "776e346b";
+export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH = "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1";
+export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH = "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae";
+export const STEP114_2H_FIXTURE_EXPECTED_BETA_INPUT_HASH = "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc";
+export const STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH = "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974";
+export const STEP114_2H_FIXTURE_EXPECTED_INPUT_HASHES = Object.freeze({
+  "step114-2h-direct-asset-fixture": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
+  "step114-2h-market-beta-fixture": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc"
+});
+export const STEP114_2H_FIXTURE_EXPECTED_OUTPUT_HASHES = Object.freeze({
+  "step114-2h-direct-asset-fixture": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
+  "step114-2h-market-beta-fixture": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974"
+});
+export const STEP114_2H_FIXTURE_DIRECT_PAYLOAD_SIGNATURE = "db85b59d";
+export const STEP114_2H_FIXTURE_BETA_PAYLOAD_SIGNATURE = "1c55fd32";
 
 export const STEP114_2H_FIXTURE_REVIEW_PORTFOLIO = Object.freeze({
   "id": "step114-2h-fixture-portfolio",
@@ -19,7 +27,7 @@ export const STEP114_2H_FIXTURE_REVIEW_SETTINGS = Object.freeze({
   "monthlyCashFlow": 500000,
   "years": 1,
   "investmentMonths": 12,
-  "inflationRate": null,
+  "inflationRate": 0.025,
   "dividendReinvest": false
 });
 
@@ -38,9 +46,9 @@ export const STEP114_2H_FIXTURE_REVIEW_ASSETS = Object.freeze([
 
 export const STEP114_2H_PRECOMPUTED_BASELINE_FIXTURE = Object.freeze({
   "analysisIdentity": {
-    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":null,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
-    "inputHash": "e1642c9a46d149770632dd0dc2508c82baa12fe62dbf3cff6ff69ce2528355bc",
-    "outputHash": "fb048e34a50566b6e737b343d7a4048b3fabb70ee6d15f8e8e23b1e01cf271fa"
+    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
+    "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
+    "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae"
   },
   "monthlyBaselinePoints": [
     {
@@ -115,9 +123,12 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
   "status": "ready",
   "scenarioVersion": "external-shock-scenario-v1-step114-2h",
   "engineVersion": "external-shock-engine-v1-step114-2h",
+  "scenarioId": "step114-2h-direct-asset-fixture",
+  "scenarioLabel": "Direct asset shock fixture",
   "method": "deterministic_external_shock",
   "shockMode": "direct_asset",
   "rebalanceFrequency": "none",
+  "inflationRate": 0.025,
   "returnBasis": "price_return",
   "currencyMode": "KRW",
   "dataStartDate": "2024-01",
@@ -130,12 +141,14 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
   "normalizationVersion": "normalization-v1-step114-2b",
   "calculationPolicyVersion": "metrics-policy-v3-step114",
   "pipelineVersion": "scenario-external-shock-fixture-v1",
-  "inputHash": "e1642c9a46d149770632dd0dc2508c82baa12fe62dbf3cff6ff69ce2528355bc",
+  "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
   "dataQuality": {
     "status": "ready",
     "blockReasons": []
   },
   "betaApplied": false,
+  "bootstrapApplied": false,
+  "probabilityApplied": false,
   "cagrCalibrationApplied": false,
   "historicalMddApplied": false,
   "assets": [
@@ -144,14 +157,14 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
       "ticker": "005930",
       "key": "KR:005930",
       "targetWeight": 0.5,
-      "beta": 1.1
+      "beta": null
     },
     {
       "market": "KR",
       "ticker": "069500",
       "key": "KR:069500",
       "targetWeight": 0.5,
-      "beta": 0.8
+      "beta": null
     }
   ],
   "shockEvents": [
@@ -426,6 +439,16 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
     "longestRecoveryMonths": 1,
     "unrecovered": true
   },
+  "baselineTerminalValue": 18740411.638711415,
+  "stressedTerminalValue": 17309593.311605383,
+  "terminalDeltaValue": -1430818.3271060325,
+  "terminalDeltaRate": -0.0763493543,
+  "baselineMdd": -0.0552172624,
+  "stressedMdd": -0.1960952991,
+  "incrementalMdd": -0.1408780367,
+  "recoveryMonths": null,
+  "longestRecoveryMonths": 1,
+  "unrecovered": true,
   "assetImpactSummary": [
     {
       "market": "KR",
@@ -446,11 +469,113 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
       "deltaRate": -0.0488211926
     }
   ],
+  "rowSourceLineage": [
+    {
+      "month": "2024-01",
+      "monthIndex": 1,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-02",
+      "monthIndex": 2,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-03",
+      "monthIndex": 3,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-04",
+      "monthIndex": 4,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-05",
+      "monthIndex": 5,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-06",
+      "monthIndex": 6,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-07",
+      "monthIndex": 7,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-08",
+      "monthIndex": 8,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-09",
+      "monthIndex": 9,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-10",
+      "monthIndex": 10,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-11",
+      "monthIndex": 11,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-12",
+      "monthIndex": 12,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    }
+  ],
   "trace": [
     {
       "monthIndex": 1,
       "month": "2024-01",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.02,
         "KR:069500": 0.01
@@ -459,12 +584,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.02,
         "KR:069500": 0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 2,
       "month": "2024-02",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.015,
         "KR:069500": -0.005
@@ -473,12 +604,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.015,
         "KR:069500": -0.005
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 3,
       "month": "2024-03",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.03,
         "KR:069500": 0.012
@@ -487,12 +624,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.03,
         "KR:069500": 0.012
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 4,
       "month": "2024-04",
       "shockApplied": true,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.08,
         "KR:069500": -0.03
@@ -504,12 +647,27 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
       "assetShockReturns": {
         "KR:005930": -0.2,
         "KR:069500": -0.1
+      },
+      "betaProvenance": null,
+      "shockAssumptions": {
+        "shockMode": "direct_asset",
+        "marketFactorShock": null,
+        "assetShockReturns": {
+          "KR:005930": -0.2,
+          "KR:069500": -0.1
+        },
+        "assetBetas": null,
+        "betaProvenance": null
       }
     },
     {
       "monthIndex": 5,
       "month": "2024-05",
       "shockApplied": true,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.04,
         "KR:069500": 0.018
@@ -521,12 +679,27 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
       "assetShockReturns": {
         "KR:005930": 0.08,
         "KR:069500": 0.04
+      },
+      "betaProvenance": null,
+      "shockAssumptions": {
+        "shockMode": "direct_asset",
+        "marketFactorShock": null,
+        "assetShockReturns": {
+          "KR:005930": 0.08,
+          "KR:069500": 0.04
+        },
+        "assetBetas": null,
+        "betaProvenance": null
       }
     },
     {
       "monthIndex": 6,
       "month": "2024-06",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.025,
         "KR:069500": 0.014
@@ -535,12 +708,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.025,
         "KR:069500": 0.014
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 7,
       "month": "2024-07",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.01,
         "KR:069500": 0.006
@@ -549,12 +728,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.01,
         "KR:069500": 0.006
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 8,
       "month": "2024-08",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.02,
         "KR:069500": -0.01
@@ -563,12 +748,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.02,
         "KR:069500": -0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 9,
       "month": "2024-09",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.015,
         "KR:069500": 0.01
@@ -577,12 +768,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.015,
         "KR:069500": 0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 10,
       "month": "2024-10",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.022,
         "KR:069500": 0.011
@@ -591,12 +788,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.022,
         "KR:069500": 0.011
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 11,
       "month": "2024-11",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.01,
         "KR:069500": -0.004
@@ -605,12 +808,18 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.01,
         "KR:069500": -0.004
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 12,
       "month": "2024-12",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.018,
         "KR:069500": 0.009
@@ -619,19 +828,22 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.018,
         "KR:069500": 0.009
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     }
   ],
-  "outputHash": "fb048e34a50566b6e737b343d7a4048b3fabb70ee6d15f8e8e23b1e01cf271fa",
+  "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
   "fixtureContext": {
     "fixtureOnly": true,
     "reviewOnly": true,
     "portfolioId": "step114-2h-fixture-portfolio",
     "portfolioName": "Step 114-2H fixture review",
-    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":null,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
-    "inputHash": "e1642c9a46d149770632dd0dc2508c82baa12fe62dbf3cff6ff69ce2528355bc",
-    "outputHash": "fb048e34a50566b6e737b343d7a4048b3fabb70ee6d15f8e8e23b1e01cf271fa",
-    "payloadSignature": "f8e05259"
+    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
+    "scenarioId": "step114-2h-direct-asset-fixture",
+    "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
+    "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
+    "payloadSignature": "db85b59d"
   }
 });
 
@@ -639,9 +851,12 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
   "status": "ready",
   "scenarioVersion": "external-shock-scenario-v1-step114-2h",
   "engineVersion": "external-shock-engine-v1-step114-2h",
+  "scenarioId": "step114-2h-market-beta-fixture",
+  "scenarioLabel": "Market beta shock fixture",
   "method": "deterministic_external_shock",
   "shockMode": "market_beta",
   "rebalanceFrequency": "none",
+  "inflationRate": 0.025,
   "returnBasis": "price_return",
   "currencyMode": "KRW",
   "dataStartDate": "2024-01",
@@ -654,12 +869,14 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
   "normalizationVersion": "normalization-v1-step114-2b",
   "calculationPolicyVersion": "metrics-policy-v3-step114",
   "pipelineVersion": "scenario-external-shock-fixture-v1",
-  "inputHash": "dab804919b28c36c362a8dd7f674c2fe21f5fe486b2b03362f185c885dc0fbf1",
+  "inputHash": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc",
   "dataQuality": {
     "status": "ready",
     "blockReasons": []
   },
   "betaApplied": true,
+  "bootstrapApplied": false,
+  "probabilityApplied": false,
   "cagrCalibrationApplied": false,
   "historicalMddApplied": false,
   "assets": [
@@ -668,14 +885,14 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
       "ticker": "005930",
       "key": "KR:005930",
       "targetWeight": 0.5,
-      "beta": 1.1
+      "beta": null
     },
     {
       "market": "KR",
       "ticker": "069500",
       "key": "KR:069500",
       "targetWeight": 0.5,
-      "beta": 0.8
+      "beta": null
     }
   ],
   "shockEvents": [
@@ -687,6 +904,22 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
       "assetBetas": {
         "KR:005930": 1.1,
         "KR:069500": 0.8
+      },
+      "betaProvenance": {
+        "KR:005930": {
+          "sourceHash": "fixture-beta-source-005930",
+          "sourceName": "synthetic_beta_fixture",
+          "asOfDate": "2024-12-31",
+          "betaWindow": "36m-monthly",
+          "methodVersion": "beta-fixture-v1"
+        },
+        "KR:069500": {
+          "sourceHash": "fixture-beta-source-069500",
+          "sourceName": "synthetic_beta_fixture",
+          "asOfDate": "2024-12-31",
+          "betaWindow": "36m-monthly",
+          "methodVersion": "beta-fixture-v1"
+        }
       },
       "assetShockReturns": {
         "KR:005930": -0.132,
@@ -946,6 +1179,16 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
     "longestRecoveryMonths": 1,
     "unrecovered": true
   },
+  "baselineTerminalValue": 18740411.638711415,
+  "stressedTerminalValue": 17073465.29051509,
+  "terminalDeltaValue": -1666946.348196324,
+  "terminalDeltaRate": -0.0889492921,
+  "baselineMdd": -0.0552172624,
+  "stressedMdd": -0.1626203199,
+  "incrementalMdd": -0.1074030575,
+  "recoveryMonths": null,
+  "longestRecoveryMonths": 1,
+  "unrecovered": true,
   "assetImpactSummary": [
     {
       "market": "KR",
@@ -966,11 +1209,113 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
       "deltaRate": -0.074929116
     }
   ],
+  "rowSourceLineage": [
+    {
+      "month": "2024-01",
+      "monthIndex": 1,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-02",
+      "monthIndex": 2,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-03",
+      "monthIndex": 3,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-04",
+      "monthIndex": 4,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-05",
+      "monthIndex": 5,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-06",
+      "monthIndex": 6,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-07",
+      "monthIndex": 7,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-08",
+      "monthIndex": 8,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-09",
+      "monthIndex": 9,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-10",
+      "monthIndex": 10,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-11",
+      "monthIndex": 11,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    },
+    {
+      "month": "2024-12",
+      "monthIndex": 12,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      }
+    }
+  ],
   "trace": [
     {
       "monthIndex": 1,
       "month": "2024-01",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.02,
         "KR:069500": 0.01
@@ -979,12 +1324,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.02,
         "KR:069500": 0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 2,
       "month": "2024-02",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.015,
         "KR:069500": -0.005
@@ -993,12 +1344,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.015,
         "KR:069500": -0.005
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 3,
       "month": "2024-03",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.03,
         "KR:069500": 0.012
@@ -1007,12 +1364,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.03,
         "KR:069500": 0.012
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 4,
       "month": "2024-04",
       "shockApplied": true,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.08,
         "KR:069500": -0.03
@@ -1024,12 +1387,60 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
       "assetShockReturns": {
         "KR:005930": -0.132,
         "KR:069500": -0.096
+      },
+      "betaProvenance": {
+        "KR:005930": {
+          "sourceHash": "fixture-beta-source-005930",
+          "sourceName": "synthetic_beta_fixture",
+          "asOfDate": "2024-12-31",
+          "betaWindow": "36m-monthly",
+          "methodVersion": "beta-fixture-v1"
+        },
+        "KR:069500": {
+          "sourceHash": "fixture-beta-source-069500",
+          "sourceName": "synthetic_beta_fixture",
+          "asOfDate": "2024-12-31",
+          "betaWindow": "36m-monthly",
+          "methodVersion": "beta-fixture-v1"
+        }
+      },
+      "shockAssumptions": {
+        "shockMode": "market_beta",
+        "marketFactorShock": -0.12,
+        "assetShockReturns": {
+          "KR:005930": -0.132,
+          "KR:069500": -0.096
+        },
+        "assetBetas": {
+          "KR:005930": 1.1,
+          "KR:069500": 0.8
+        },
+        "betaProvenance": {
+          "KR:005930": {
+            "sourceHash": "fixture-beta-source-005930",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          },
+          "KR:069500": {
+            "sourceHash": "fixture-beta-source-069500",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          }
+        }
       }
     },
     {
       "monthIndex": 5,
       "month": "2024-05",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.04,
         "KR:069500": 0.018
@@ -1038,12 +1449,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.04,
         "KR:069500": 0.018
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 6,
       "month": "2024-06",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.025,
         "KR:069500": 0.014
@@ -1052,12 +1469,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.025,
         "KR:069500": 0.014
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 7,
       "month": "2024-07",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.01,
         "KR:069500": 0.006
@@ -1066,12 +1489,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.01,
         "KR:069500": 0.006
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 8,
       "month": "2024-08",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.02,
         "KR:069500": -0.01
@@ -1080,12 +1509,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.02,
         "KR:069500": -0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 9,
       "month": "2024-09",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.015,
         "KR:069500": 0.01
@@ -1094,12 +1529,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.015,
         "KR:069500": 0.01
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 10,
       "month": "2024-10",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.022,
         "KR:069500": 0.011
@@ -1108,12 +1549,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.022,
         "KR:069500": 0.011
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 11,
       "month": "2024-11",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": -0.01,
         "KR:069500": -0.004
@@ -1122,12 +1569,18 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": -0.01,
         "KR:069500": -0.004
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     },
     {
       "monthIndex": 12,
       "month": "2024-12",
       "shockApplied": false,
+      "rowSourceHashes": {
+        "KR:005930": "fixture-row-source-a",
+        "KR:069500": "fixture-row-source-b"
+      },
       "baselineReturns": {
         "KR:005930": 0.018,
         "KR:069500": 0.009
@@ -1136,18 +1589,26 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
         "KR:005930": 0.018,
         "KR:069500": 0.009
       },
-      "assetShockReturns": null
+      "assetShockReturns": null,
+      "betaProvenance": null,
+      "shockAssumptions": null
     }
   ],
-  "outputHash": "a7a9155f925e19262e34306adf3402b1ba515fb71c423290fbb50032b7e9bddd",
+  "outputHash": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974",
   "fixtureContext": {
     "fixtureOnly": true,
     "reviewOnly": true,
     "portfolioId": "step114-2h-fixture-portfolio",
     "portfolioName": "Step 114-2H fixture review",
-    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":null,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
-    "inputHash": "dab804919b28c36c362a8dd7f674c2fe21f5fe486b2b03362f185c885dc0fbf1",
-    "outputHash": "a7a9155f925e19262e34306adf3402b1ba515fb71c423290fbb50032b7e9bddd",
-    "payloadSignature": "776e346b"
+    "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
+    "scenarioId": "step114-2h-market-beta-fixture",
+    "inputHash": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc",
+    "outputHash": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974",
+    "payloadSignature": "1c55fd32"
   }
 });
+
+export const STEP114_2H_SCENARIO_FIXTURE_RESULTS = Object.freeze([
+  STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT,
+  STEP114_2H_MARKET_BETA_FIXTURE_RESULT
+]);

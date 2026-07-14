@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AlertTriangle, Activity, Info, ShieldCheck } from "lucide-react";
 
 import {
@@ -58,6 +59,66 @@ function SummaryCards({ cards = [] }) {
           <strong>{card.value}</strong>
         </article>
       ))}
+    </section>
+  );
+}
+
+function ScenarioSelector({ options = [], selectedScenarioId, onSelectScenario }) {
+  if (!Array.isArray(options) || options.length < 2) return null;
+  return (
+    <section className="externalShockScenarioSelector" aria-label="외부충격 시나리오 선택">
+      {options.map((option) => (
+        <button
+          key={option.scenarioId}
+          type="button"
+          className={option.scenarioId === selectedScenarioId ? "active" : ""}
+          onClick={() => onSelectScenario(option.scenarioId)}
+        >
+          <span>{option.mode}</span>
+          <strong>{option.label}</strong>
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function ScenarioComparisonTable({ rows = [] }) {
+  if (!Array.isArray(rows) || rows.length < 2) return null;
+  return (
+    <section className="externalShockComparisonPanel" aria-label="외부충격 시나리오 비교표">
+      <div className="externalShockSectionTitle">
+        <Activity size={18} aria-hidden="true" />
+        <div>
+          <p className="sectionLabel">Scenario Comparison</p>
+          <h4>시나리오별 비교</h4>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>시나리오</th>
+            <th>모드</th>
+            <th>최종 영향률</th>
+            <th>충격 MDD</th>
+            <th>증분 MDD</th>
+            <th>회복</th>
+            <th>미회복</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.scenarioId}>
+              <td>{row.label}</td>
+              <td>{row.mode}</td>
+              <td>{row.terminalDeltaRateLabel}</td>
+              <td>{row.stressedMddLabel}</td>
+              <td>{row.incrementalMddLabel}</td>
+              <td>{row.recoveryLabel}</td>
+              <td>{row.unrecovered ? "예" : "아니오"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }
@@ -142,14 +203,19 @@ export default function ExternalShockAnalysisPanel({
   result,
   isEmptyAssetRow,
   scenarioResult = null,
+  scenarioResults = null,
+  selectedScenarioId = null,
   expectedInputHash = null,
   expectedOutputHash = null,
   enableFixtureReview = false,
   fixtureBaselineResult = null,
 }) {
+  const [activeScenarioId, setActiveScenarioId] = useState(selectedScenarioId);
   const activeAssets = getActiveAssets(assets, isEmptyAssetRow);
   const viewModel = buildExternalShockScenarioViewModel({
     result: scenarioResult,
+    scenarioResults,
+    selectedScenarioId: activeScenarioId || selectedScenarioId,
     activePortfolio,
     assets: activeAssets,
     settings,
@@ -159,6 +225,7 @@ export default function ExternalShockAnalysisPanel({
     enableFixtureReview,
   });
   const isReady = isExternalShockViewModelReady(viewModel);
+  const selectedViewScenarioId = viewModel.scenarioId || activeScenarioId || selectedScenarioId;
 
   return (
     <div className="simulatorTabPanel externalShockAnalysisPanel">
@@ -211,6 +278,12 @@ export default function ExternalShockAnalysisPanel({
 
       {isReady ? (
         <>
+          <ScenarioSelector
+            options={viewModel.scenarioOptions}
+            selectedScenarioId={selectedViewScenarioId}
+            onSelectScenario={setActiveScenarioId}
+          />
+
           <section className="externalShockReadyNotice" aria-label="외부충격분석 검증 상태">
             <Activity size={20} aria-hidden="true" />
             <div>
@@ -224,6 +297,7 @@ export default function ExternalShockAnalysisPanel({
 
           <ExternalShockPathChart chart={viewModel.chart} />
           <SummaryCards cards={viewModel.summaryCards} />
+          <ScenarioComparisonTable rows={viewModel.scenarioComparisonRows} />
           <AssetImpactTable rows={viewModel.assetImpactSummary} />
         </>
       ) : null}
@@ -234,6 +308,7 @@ export default function ExternalShockAnalysisPanel({
         <strong>투자 유의사항</strong>
         <p>
           이 외부충격분석은 synthetic fixture 기반의 결정론적 비교입니다.
+          충격의 발생 확률이나 미래 수익률을 예측하지 않으며 투자 권유가 아닙니다.
           실제 시장 데이터 호출, 실시간 공급자 호출, 주문 또는 AI 해석을 수행하지 않습니다.
         </p>
       </section>

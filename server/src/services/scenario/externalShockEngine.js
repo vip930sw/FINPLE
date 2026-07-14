@@ -9,6 +9,7 @@ const MONTH_PATTERN = /^\d{4}-\d{2}(-\d{2})?$/;
 const SUPPORTED_SHOCK_MODES = new Set(["direct_asset", "market_beta"]);
 const SUPPORTED_REBALANCE_FREQUENCIES = new Set(["none", "annual"]);
 const SUPPORTED_RETURN_BASIS = new Set(["price_return", "total_return"]);
+const REQUIRED_BETA_PROVENANCE_FIELDS = ["sourceHash", "sourceName", "asOfDate", "betaWindow", "methodVersion"];
 
 function roundNumber(value, digits = 10) {
   if (value === null || value === undefined) return null;
@@ -101,6 +102,22 @@ function normalizeWeight(value, label) {
   return number > 1 ? number / 100 : number;
 }
 
+function normalizeInflationRate(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const number = toFiniteNumber(value, "settings.inflationRate");
+  if (number <= -1) throw new RangeError("settings.inflationRate:must_be_greater_than_minus_100_percent");
+  return roundNumber(number);
+}
+
+function normalizeBetaProvenance(value, label) {
+  if (!isPlainObject(value)) throw new TypeError(`${label}:provenance_required`);
+  return Object.fromEntries(REQUIRED_BETA_PROVENANCE_FIELDS.map((field) => {
+    const normalized = String(value[field] || "").trim();
+    if (!normalized) throw new TypeError(`${label}.${field}:required`);
+    return [field, normalized];
+  }));
+}
+
 function collectEffectiveSourceHashes(metadataSourceHashes = [], rows = []) {
   const rowSourceHashes = Array.isArray(rows)
     ? rows.map((row) => String(row?.sourceHash || "").trim()).filter(Boolean)
@@ -164,11 +181,13 @@ function normalizeSettings(settings = {}) {
   if (!SUPPORTED_REBALANCE_FREQUENCIES.has(rebalanceFrequency)) {
     throw new TypeError("settings.rebalanceFrequency:unsupported");
   }
+  const inflationRate = normalizeInflationRate(settings.inflationRateAnnual ?? settings.inflationRate);
   return {
     initialInvestment: roundNumber(initialInvestment),
     monthlyContribution: roundNumber(monthlyContribution),
     investmentMonths,
     rebalanceFrequency,
+    inflationRate,
   };
 }
 
@@ -223,9 +242,13 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
     const currencyMode = String(row.currencyMode || metadata.currencyMode).trim().toUpperCase();
     if (returnBasis !== metadata.returnBasis) throw new TypeError(`mixed_return_basis:${key}:${month}`);
     if (currencyMode !== metadata.currencyMode) throw new TypeError(`mixed_currency_mode:${key}:${month}`);
-    if (!String(row.sourceHash || "").trim()) throw new TypeError(`row_sourceHash_required:${key}:${month}`);
+    const sourceHash = String(row.sourceHash || "").trim();
+    if (!sourceHash) throw new TypeError(`row_sourceHash_required:${key}:${month}`);
     if (!byMonth.has(month)) byMonth.set(month, {});
-    byMonth.get(month)[key] = roundNumber(readBaselineReturn(row, `baselineReturnMatrix[${index}].baselineReturn`));
+    byMonth.get(month)[key] = {
+      baselineReturn: roundNumber(readBaselineReturn(row, `baselineReturnMatrix[${index}].baselineReturn`)),
+      sourceHash,
+    };
   }
 
   const months = Array.from(byMonth.keys()).sort((left, right) => monthOrdinal(left) - monthOrdinal(right));
@@ -252,7 +275,10 @@ function normalizeBaselineRows(rows, assets, settings, metadata) {
     month,
     monthIndex: index + 1,
     assetReturns: Object.fromEntries(
-      assets.map((asset) => [asset.key, byMonth.get(month)[asset.key]]),
+      assets.map((asset) => [asset.key, byMonth.get(month)[asset.key].baselineReturn]),
+    ),
+    rowSourceHashes: Object.fromEntries(
+      assets.map((asset) => [asset.key, byMonth.get(month)[asset.key].sourceHash]),
     ),
   }));
 }
@@ -263,6 +289,10 @@ function normalizeShockEvents({ scenario, assets, settings }) {
   if (method !== EXTERNAL_SHOCK_METHOD) throw new TypeError("scenario.method:unsupported");
   const shockMode = String(scenario.shockMode || "").trim();
   if (!SUPPORTED_SHOCK_MODES.has(shockMode)) throw new TypeError("scenario.shockMode:unsupported");
+  const scenarioId = String(scenario.scenarioId || `${shockMode}-scenario`).trim();
+  const scenarioLabel = String(scenario.scenarioLabel || scenario.label || scenarioId).trim();
+  if (!scenarioId) throw new TypeError("scenario.scenarioId:required");
+  if (!scenarioLabel) throw new TypeError("scenario.scenarioLabel:required");
   if (!Array.isArray(scenario.shockEvents) || scenario.shockEvents.length === 0) {
     throw new TypeError("scenario.shockEvents:must_be_non_empty_array");
   }
@@ -285,6 +315,9 @@ function normalizeShockEvents({ scenario, assets, settings }) {
       const shocksByKey = new Map();
       for (const [shockIndex, shock] of rawShocks.entries()) {
         const key = assetKey(shock);
+        if (shocksByKey.has(key)) {
+          throw new RangeError(`duplicate_asset_shock_identity:${key}:${monthIndex}`);
+        }
         const shockReturn = toFiniteNumber(shock.shockReturn, `scenario.shockEvents[${index}].assetShocks[${shockIndex}].shockReturn`);
         if (shockReturn <= -1) throw new RangeError(`direct_asset_shock_less_than_or_equal_minus_100:${key}:${monthIndex}`);
         shocksByKey.set(key, roundNumber(shockReturn));
@@ -306,14 +339,27 @@ function normalizeShockEvents({ scenario, assets, settings }) {
     if (marketFactorShock <= -1) throw new RangeError(`market_factor_shock_less_than_or_equal_minus_100:${monthIndex}`);
     const betaRows = Array.isArray(event.assetBetas) ? event.assetBetas : scenario.assetBetas;
     const betasByKey = new Map();
+    const betaProvenanceByKey = new Map();
     if (Array.isArray(betaRows)) {
       for (const [betaIndex, betaRow] of betaRows.entries()) {
         const key = assetKey(betaRow);
+        if (betasByKey.has(key)) {
+          throw new RangeError(`duplicate_beta_identity:${key}:${monthIndex}`);
+        }
         betasByKey.set(key, roundNumber(toFiniteNumber(betaRow.beta, `assetBetas[${betaIndex}].beta`)));
+        betaProvenanceByKey.set(
+          key,
+          normalizeBetaProvenance(betaRow.provenance, `assetBetas[${betaIndex}].provenance`),
+        );
       }
     }
     for (const asset of assets) {
-      if (!betasByKey.has(asset.key) && asset.beta !== null) betasByKey.set(asset.key, asset.beta);
+      if (betasByKey.has(asset.key) && asset.beta !== null) {
+        throw new RangeError(`market_beta_conflicting_asset_fallback:${asset.key}:${monthIndex}`);
+      }
+      if (!betasByKey.has(asset.key) && asset.beta !== null) {
+        throw new RangeError(`market_beta_asset_fallback_missing_provenance:${asset.key}:${monthIndex}`);
+      }
     }
     const missing = assets.filter((asset) => !betasByKey.has(asset.key));
     if (missing.length > 0 || betasByKey.size !== assets.length) {
@@ -331,6 +377,7 @@ function normalizeShockEvents({ scenario, assets, settings }) {
       shockMode,
       marketFactorShock: roundNumber(marketFactorShock),
       assetBetas: Object.fromEntries(assets.map((asset) => [asset.key, betasByKey.get(asset.key)])),
+      betaProvenance: Object.fromEntries(assets.map((asset) => [asset.key, betaProvenanceByKey.get(asset.key)])),
       assetShockReturns: shockReturns,
     };
   }).sort((left, right) => left.monthIndex - right.monthIndex);
@@ -340,7 +387,7 @@ function normalizeShockEvents({ scenario, assets, settings }) {
       throw new RangeError(`duplicate_shock_month:${events[index].monthIndex}`);
     }
   }
-  return { method, shockMode, events };
+  return { method, shockMode, scenarioId, scenarioLabel, events };
 }
 
 function shouldRebalance(monthIndex, rebalanceFrequency) {
@@ -480,9 +527,18 @@ function simulatePaths({ assets, settings, baselineRows, events }) {
       monthIndex: row.monthIndex,
       month: row.month,
       shockApplied: Boolean(event),
+      rowSourceHashes: row.rowSourceHashes,
       baselineReturns: row.assetReturns,
       stressedReturns,
       assetShockReturns: event?.assetShockReturns || null,
+      betaProvenance: event?.betaProvenance || null,
+      shockAssumptions: event ? {
+        shockMode: event.shockMode,
+        marketFactorShock: event.marketFactorShock ?? null,
+        assetShockReturns: event.assetShockReturns,
+        assetBetas: event.assetBetas ?? null,
+        betaProvenance: event.betaProvenance ?? null,
+      } : null,
     });
   }
 
@@ -535,6 +591,14 @@ function buildAssetImpactSummary({ assets, baselineTerminalSleeves, stressedTerm
   });
 }
 
+function buildRowSourceLineage(baselineRows) {
+  return baselineRows.map((row) => ({
+    month: row.month,
+    monthIndex: row.monthIndex,
+    rowSourceHashes: row.rowSourceHashes,
+  }));
+}
+
 function buildBlockedResult({ input = {}, status = "blocked", reasons = [], normalizedInput = null }) {
   const rows = input?.baselineReturnMatrix || input?.monthlyReturnMatrix || [];
   const sourceHashes = collectEffectiveSourceHashes(input?.metadata?.sourceHashes, rows);
@@ -551,6 +615,8 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
     status,
     scenarioVersion: EXTERNAL_SHOCK_SCENARIO_VERSION,
     engineVersion: EXTERNAL_SHOCK_ENGINE_VERSION,
+    scenarioId: input?.scenario?.scenarioId || null,
+    scenarioLabel: input?.scenario?.scenarioLabel || input?.scenario?.label || null,
     method: input?.scenario?.method || EXTERNAL_SHOCK_METHOD,
     shockMode: input?.scenario?.shockMode || null,
     rebalanceFrequency: input?.settings?.rebalanceFrequency || null,
@@ -568,14 +634,28 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
       blockReasons: reasons,
     },
     betaApplied: false,
+    bootstrapApplied: false,
+    probabilityApplied: false,
     cagrCalibrationApplied: false,
     historicalMddApplied: false,
+    inflationRate: input?.settings?.inflationRateAnnual ?? input?.settings?.inflationRate ?? null,
+    baselineTerminalValue: null,
+    stressedTerminalValue: null,
+    terminalDeltaValue: null,
+    terminalDeltaRate: null,
+    baselineMdd: null,
+    stressedMdd: null,
+    incrementalMdd: null,
+    recoveryMonths: null,
+    longestRecoveryMonths: null,
+    unrecovered: null,
     baselinePath: [],
     stressedPath: [],
     contributionSeries: [],
     shockEvents: [],
     summary: null,
     assetImpactSummary: [],
+    rowSourceLineage: [],
   };
   return {
     ...resultWithoutHash,
@@ -591,16 +671,20 @@ export function buildExternalShockScenario(input = {}) {
     const metadata = normalizeMetadata(input.metadata, rawRows);
     const baselineRows = normalizeBaselineRows(rawRows, assets, settings, metadata);
     const shock = normalizeShockEvents({ scenario: input.scenario, assets, settings });
+    const rowSourceLineage = buildRowSourceLineage(baselineRows);
     const normalizedInput = {
       portfolioId: String(input.portfolioId || ""),
       assets,
       settings,
       scenario: {
+        scenarioId: shock.scenarioId,
+        scenarioLabel: shock.scenarioLabel,
         method: shock.method,
         shockMode: shock.shockMode,
         shockEvents: shock.events,
       },
       baselineRows,
+      rowSourceLineage,
       metadata,
     };
     const inputHash = sha256ExternalShockValue(normalizedInput);
@@ -619,9 +703,12 @@ export function buildExternalShockScenario(input = {}) {
       status: "ready",
       scenarioVersion: EXTERNAL_SHOCK_SCENARIO_VERSION,
       engineVersion: EXTERNAL_SHOCK_ENGINE_VERSION,
+      scenarioId: shock.scenarioId,
+      scenarioLabel: shock.scenarioLabel,
       method: shock.method,
       shockMode: shock.shockMode,
       rebalanceFrequency: settings.rebalanceFrequency,
+      inflationRate: settings.inflationRate,
       returnBasis: metadata.returnBasis,
       currencyMode: metadata.currencyMode,
       dataStartDate: baselineRows[0].month,
@@ -636,6 +723,8 @@ export function buildExternalShockScenario(input = {}) {
         blockReasons: [],
       },
       betaApplied: shock.shockMode === "market_beta",
+      bootstrapApplied: false,
+      probabilityApplied: false,
       cagrCalibrationApplied: false,
       historicalMddApplied: false,
       assets: assets.map((asset) => ({
@@ -650,7 +739,18 @@ export function buildExternalShockScenario(input = {}) {
       stressedPath: simulation.stressedPath,
       contributionSeries: simulation.contributionSeries,
       summary: simulation.summary,
+      baselineTerminalValue: simulation.summary.baselineTerminalValue,
+      stressedTerminalValue: simulation.summary.stressedTerminalValue,
+      terminalDeltaValue: simulation.summary.terminalDeltaValue,
+      terminalDeltaRate: simulation.summary.terminalDeltaRate,
+      baselineMdd: simulation.summary.baselineMdd,
+      stressedMdd: simulation.summary.stressedMdd,
+      incrementalMdd: simulation.summary.incrementalMdd,
+      recoveryMonths: simulation.summary.recoveryMonths,
+      longestRecoveryMonths: simulation.summary.longestRecoveryMonths,
+      unrecovered: simulation.summary.unrecovered,
       assetImpactSummary,
+      rowSourceLineage,
       trace: simulation.trace,
     };
     return {

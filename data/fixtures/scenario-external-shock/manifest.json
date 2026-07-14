@@ -10,6 +10,8 @@
       "coverage": [
         "direct_asset shock",
         "market_beta shock",
+        "beta provenance",
+        "row-level source hash lineage",
         "multi-month drawdown and recovery",
         "KR leading-zero tickers 005930 and 069500",
         "source hash lineage"
@@ -20,7 +22,10 @@
       "file": "server/src/services/scenario/externalShockEngine.test.js",
       "coverage": [
         "missing beta",
+        "missing beta provenance",
         "missing asset shock coverage",
+        "duplicate asset shock identity",
+        "duplicate beta identity",
         "duplicate shock month",
         "mixed return basis",
         "missing source hash",

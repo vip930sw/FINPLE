@@ -53,8 +53,13 @@ test("same fixture input returns byte-deterministic output and hashes", () => {
   assert.equal(first.outputHash, second.outputHash);
   assert.equal(first.scenarioVersion, EXTERNAL_SHOCK_SCENARIO_VERSION);
   assert.equal(first.method, EXTERNAL_SHOCK_METHOD);
+  assert.equal(first.scenarioId, "step114-2h-direct-asset-fixture");
+  assert.equal(first.scenarioLabel, "Direct asset shock fixture");
+  assert.equal(first.bootstrapApplied, false);
+  assert.equal(first.probabilityApplied, false);
   assert.equal(first.cagrCalibrationApplied, false);
   assert.equal(first.historicalMddApplied, false);
+  assert.equal(first.inflationRate, 0.025);
 });
 
 test("direct_asset shock uses multiplicative baseline and shock return formula", () => {
@@ -76,6 +81,8 @@ test("market_beta shock derives asset shock return from beta and market factor",
   assertClose(shocked.assetShockReturns["KR:069500"], 0.8 * -0.12);
   assertClose(shocked.stressedReturns["KR:005930"], (1 - 0.08) * (1 + (1.1 * -0.12)) - 1);
   assert.equal(result.betaApplied, true);
+  assert.equal(result.shockEvents[0].betaProvenance["KR:005930"].sourceHash, "fixture-beta-source-005930");
+  assert.equal(result.trace.find((point) => point.monthIndex === 4).betaProvenance["KR:069500"].betaWindow, "36m-monthly");
 });
 
 test("month-start contribution affects valuation path but not risk NAV MDD", () => {
@@ -129,6 +136,36 @@ test("source hash changes propagate to input and output hashes", () => {
   const first = buildExternalShockScenario(baseInput());
   const changed = baseInput();
   changed.metadata.sourceHashes = ["fixture-external-shock-source-v2"];
+  const second = buildExternalShockScenario(changed);
+  assertReady(first);
+  assertReady(second);
+  assert.notEqual(first.inputHash, second.inputHash);
+  assert.notEqual(first.outputHash, second.outputHash);
+});
+
+test("row source hash reassignment changes deterministic input and output hashes", () => {
+  const first = buildExternalShockScenario(baseInput());
+  const swapped = baseInput();
+  const firstRowHash = swapped.baselineReturnMatrix[0].sourceHash;
+  swapped.baselineReturnMatrix[0].sourceHash = swapped.baselineReturnMatrix[1].sourceHash;
+  swapped.baselineReturnMatrix[1].sourceHash = firstRowHash;
+  const second = buildExternalShockScenario(swapped);
+  assertReady(first);
+  assertReady(second);
+  assert.deepEqual(first.sourceHashes, second.sourceHashes);
+  assert.notEqual(first.inputHash, second.inputHash);
+  assert.notEqual(first.outputHash, second.outputHash);
+  assert.notDeepEqual(first.rowSourceLineage[0].rowSourceHashes, second.rowSourceLineage[0].rowSourceHashes);
+});
+
+test("beta provenance is required and affects hashes", () => {
+  const missing = baseInput("marketBeta");
+  delete missing.scenario.assetBetas[0].provenance;
+  assertBlocked(buildExternalShockScenario(missing), /provenance_required/);
+
+  const first = buildExternalShockScenario(baseInput("marketBeta"));
+  const changed = baseInput("marketBeta");
+  changed.scenario.assetBetas[0].provenance.methodVersion = "beta-fixture-v2";
   const second = buildExternalShockScenario(changed);
   assertReady(first);
   assertReady(second);
@@ -194,7 +231,6 @@ test("missing direct shock coverage and duplicate shock months fail closed", () 
 test("missing beta, mixed shock payload and shock <= -100% fail closed", () => {
   const missingBeta = baseInput("marketBeta");
   missingBeta.scenario.assetBetas = missingBeta.scenario.assetBetas.slice(0, 1);
-  missingBeta.assets = missingBeta.assets.map((asset) => ({ ...asset, beta: null }));
   assertBlocked(buildExternalShockScenario(missingBeta), /market_beta_coverage_invalid/);
 
   const mixedPayload = baseInput("marketBeta");
@@ -204,6 +240,26 @@ test("missing beta, mixed shock payload and shock <= -100% fail closed", () => {
   const invalidDirect = baseInput();
   invalidDirect.scenario.shockEvents[0].assetShocks[0].shockReturn = -1;
   assertBlocked(buildExternalShockScenario(invalidDirect), /less_than_or_equal_minus_100/);
+});
+
+test("duplicate direct shock and beta identities fail closed deterministically", () => {
+  const duplicateShock = baseInput();
+  duplicateShock.scenario.shockEvents[0].assetShocks = [
+    ...duplicateShock.scenario.shockEvents[0].assetShocks,
+    { ...duplicateShock.scenario.shockEvents[0].assetShocks[0], shockReturn: -0.15 },
+  ].reverse();
+  assertBlocked(buildExternalShockScenario(duplicateShock), /duplicate_asset_shock_identity/);
+
+  const duplicateBeta = baseInput("marketBeta");
+  duplicateBeta.scenario.assetBetas = [
+    ...duplicateBeta.scenario.assetBetas,
+    { ...duplicateBeta.scenario.assetBetas[0], beta: 1.2 },
+  ].reverse();
+  assertBlocked(buildExternalShockScenario(duplicateBeta), /duplicate_beta_identity/);
+
+  const fallbackConflict = baseInput("marketBeta");
+  fallbackConflict.assets[0].beta = 1.1;
+  assertBlocked(buildExternalShockScenario(fallbackConflict), /market_beta_conflicting_asset_fallback/);
 });
 
 test("insufficient history returns explicit insufficient_data without fabricated paths", () => {

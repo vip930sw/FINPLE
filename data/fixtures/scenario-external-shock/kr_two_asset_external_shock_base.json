@@ -1,13 +1,14 @@
 {
   "portfolioId": "step114-2h-fixture-portfolio",
   "assets": [
-    { "market": "KR", "ticker": "005930", "targetWeight": 50, "beta": 1.1 },
-    { "market": "KR", "ticker": "069500", "targetWeight": 50, "beta": 0.8 }
+    { "market": "KR", "ticker": "005930", "targetWeight": 50 },
+    { "market": "KR", "ticker": "069500", "targetWeight": 50 }
   ],
   "settings": {
     "initialInvestment": 12000000,
     "monthlyContribution": 500000,
     "investmentMonths": 12,
+    "inflationRate": 0.025,
     "rebalanceFrequency": "none"
   },
   "metadata": {
@@ -46,6 +47,8 @@
   ],
   "scenarios": {
     "directAsset": {
+      "scenarioId": "step114-2h-direct-asset-fixture",
+      "scenarioLabel": "Direct asset shock fixture",
       "method": "deterministic_external_shock",
       "shockMode": "direct_asset",
       "shockEvents": [
@@ -68,11 +71,35 @@
       ]
     },
     "marketBeta": {
+      "scenarioId": "step114-2h-market-beta-fixture",
+      "scenarioLabel": "Market beta shock fixture",
       "method": "deterministic_external_shock",
       "shockMode": "market_beta",
       "assetBetas": [
-        { "market": "KR", "ticker": "005930", "beta": 1.1 },
-        { "market": "KR", "ticker": "069500", "beta": 0.8 }
+        {
+          "market": "KR",
+          "ticker": "005930",
+          "beta": 1.1,
+          "provenance": {
+            "sourceHash": "fixture-beta-source-005930",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          }
+        },
+        {
+          "market": "KR",
+          "ticker": "069500",
+          "beta": 0.8,
+          "provenance": {
+            "sourceHash": "fixture-beta-source-069500",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          }
+        }
       ],
       "shockEvents": [
         {

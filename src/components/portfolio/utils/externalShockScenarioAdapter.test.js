@@ -8,11 +8,14 @@ import {
   STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH,
   STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH,
   STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH,
+  STEP114_2H_FIXTURE_EXPECTED_INPUT_HASHES,
+  STEP114_2H_FIXTURE_EXPECTED_OUTPUT_HASHES,
   STEP114_2H_FIXTURE_REVIEW_ASSETS,
   STEP114_2H_FIXTURE_REVIEW_PORTFOLIO,
   STEP114_2H_FIXTURE_REVIEW_SETTINGS,
   STEP114_2H_MARKET_BETA_FIXTURE_RESULT,
   STEP114_2H_PRECOMPUTED_BASELINE_FIXTURE,
+  STEP114_2H_SCENARIO_FIXTURE_RESULTS,
 } from "../fixtures/externalShockScenarioResultFixture.js";
 import {
   EXTERNAL_SHOCK_UI_VERSION,
@@ -30,6 +33,8 @@ function readyView(overrides = {}) {
     result: Object.prototype.hasOwnProperty.call(overrides, "result")
       ? overrides.result
       : clone(STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT),
+    scenarioResults: overrides.scenarioResults,
+    selectedScenarioId: overrides.selectedScenarioId,
     activePortfolio: overrides.activePortfolio || STEP114_2H_FIXTURE_REVIEW_PORTFOLIO,
     assets: overrides.assets || STEP114_2H_FIXTURE_REVIEW_ASSETS,
     settings: overrides.settings || STEP114_2H_FIXTURE_REVIEW_SETTINGS,
@@ -66,6 +71,7 @@ test("ready direct shock fixture exposes deterministic comparison without probab
   const viewModel = readyView();
   assert.equal(viewModel.status, "ready");
   assert.equal(viewModel.uiVersion, EXTERNAL_SHOCK_UI_VERSION);
+  assert.equal(viewModel.scenarioId, "step114-2h-direct-asset-fixture");
   assert.equal(viewModel.shockMode, "direct_asset");
   assert.equal(viewModel.resultInputHash, STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH);
   assert.equal(viewModel.resultOutputHash, STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH);
@@ -81,6 +87,30 @@ test("ready direct shock fixture exposes deterministic comparison without probab
   assert.doesNotMatch(combinedSource, /P10|P25|P50|P75|P90|percentile/i);
 });
 
+test("review model accepts direct and market-beta scenarios with selector and comparison rows", () => {
+  const viewModel = readyView({
+    result: null,
+    scenarioResults: STEP114_2H_SCENARIO_FIXTURE_RESULTS.map(clone),
+    selectedScenarioId: "step114-2h-market-beta-fixture",
+    expectedInputHash: STEP114_2H_FIXTURE_EXPECTED_INPUT_HASHES,
+    expectedOutputHash: STEP114_2H_FIXTURE_EXPECTED_OUTPUT_HASHES,
+    baselineResult: null,
+  });
+  assert.equal(viewModel.status, "ready");
+  assert.equal(viewModel.scenarioId, "step114-2h-market-beta-fixture");
+  assert.equal(viewModel.shockMode, "market_beta");
+  assert.equal(viewModel.scenarioOptions.length, 2);
+  assert.equal(viewModel.scenarioComparisonRows.length, 2);
+  assert.deepEqual(viewModel.scenarioComparisonRows.map((row) => row.mode), ["direct_asset", "market_beta"]);
+  for (const row of viewModel.scenarioComparisonRows) {
+    assert.ok(Object.hasOwn(row, "terminalDeltaRate"));
+    assert.ok(Object.hasOwn(row, "stressedMdd"));
+    assert.ok(Object.hasOwn(row, "incrementalMdd"));
+    assert.ok(Object.hasOwn(row, "recoveryMonths"));
+    assert.ok(Object.hasOwn(row, "unrecovered"));
+  }
+});
+
 test("ready market beta fixture is accepted with betaApplied true", () => {
   const viewModel = readyView({
     result: clone(STEP114_2H_MARKET_BETA_FIXTURE_RESULT),
@@ -91,6 +121,8 @@ test("ready market beta fixture is accepted with betaApplied true", () => {
   assert.equal(viewModel.status, "ready");
   assert.equal(viewModel.shockMode, "market_beta");
   assert.equal(viewModel.audit.betaApplied, true);
+  assert.equal(viewModel.methodology.find((item) => item.label === "betaProvenanceCount").value, "2");
+  assert.equal(viewModel.chart.shockMarkers[0].betaProvenance["KR:005930"].sourceHash, "fixture-beta-source-005930");
 });
 
 test("actual portfolio settings or assets change marks the result stale", () => {
@@ -152,6 +184,9 @@ test("malformed path summary MDD recovery and impact payloads are blocked", () =
     (result) => { result.returnBasis = "mixed"; },
     (result) => { result.currencyMode = ""; },
     (result) => { result.dataQuality.status = "blocked"; },
+    (result) => { result.bootstrapApplied = true; },
+    (result) => { result.probabilityApplied = true; },
+    (result) => { result.baselineTerminalValue = result.summary.baselineTerminalValue + 1; },
   ];
   for (const mutate of cases) {
     const result = clone(STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT);
@@ -160,6 +195,15 @@ test("malformed path summary MDD recovery and impact payloads are blocked", () =
     assert.equal(viewModel.status, "blocked");
     assert.equal(isExternalShockViewModelReady(viewModel), false);
   }
+
+  const betaWithoutProvenance = clone(STEP114_2H_MARKET_BETA_FIXTURE_RESULT);
+  delete betaWithoutProvenance.shockEvents[0].betaProvenance["KR:005930"].sourceHash;
+  const betaViewModel = readyView({
+    result: betaWithoutProvenance,
+    expectedInputHash: STEP114_2H_FIXTURE_EXPECTED_BETA_INPUT_HASH,
+    expectedOutputHash: STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH,
+  });
+  assert.equal(betaViewModel.status, "blocked");
 });
 
 test("fixture payload tampering with the previous outputHash is blocked", () => {
@@ -232,6 +276,18 @@ test("navigation includes Step 5 between Step 4 and AI without removing existing
   assert.match(navSource, /key: "probability", step: "STEP 4"/);
   assert.match(navSource, /key: "shock", step: "STEP 5"/);
   assert.match(navSource, /key: "ai"/);
+});
+
+test("panel source includes review-only scenario selector, comparison table, and stress disclaimer", () => {
+  const panelSource = fs.readFileSync("src/components/portfolio/components/ExternalShockAnalysisPanel.jsx", "utf8");
+  const chartSource = fs.readFileSync("src/components/portfolio/components/ExternalShockPathChart.jsx", "utf8");
+  assert.match(panelSource, /ScenarioSelector/);
+  assert.match(panelSource, /ScenarioComparisonTable/);
+  assert.match(panelSource, /deterministic/);
+  assert.match(panelSource, /예측|보장|투자 권유|investment advice/i);
+  assert.match(chartSource, /formatShockAssumptions/);
+  assert.match(chartSource, /marketFactorShock/);
+  assert.match(chartSource, /betaProvenance/);
 });
 
 test("browser UI does not import Node engine, scenario API, provider, loader, or Step 4 probability fixture", () => {

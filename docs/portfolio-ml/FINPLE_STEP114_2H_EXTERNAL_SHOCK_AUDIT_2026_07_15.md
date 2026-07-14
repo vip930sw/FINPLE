@@ -33,6 +33,15 @@ Supported shock modes:
 - `direct_asset`
 - `market_beta`
 
+Required semantic fields:
+
+- `scenarioId`
+- `scenarioLabel`
+- `bootstrapApplied=false`
+- `probabilityApplied=false`
+- `betaApplied=false` for `direct_asset`
+- `betaApplied=true` for `market_beta`
+
 The engine is pure offline JavaScript. It does not call providers, APIs, databases, KIS, KRX, data.go.kr, or scenario runtime endpoints.
 
 ## Calculation Policy
@@ -50,6 +59,16 @@ assetShockReturn = beta * marketFactorShock
 stressedAssetReturn = (1 + baselineReturn) * (1 + assetShockReturn) - 1
 ```
 
+Every effective beta must include provenance:
+
+- `sourceHash`
+- `sourceName`
+- `asOfDate`
+- `betaWindow`
+- `methodVersion`
+
+The beta provenance is included in normalized input, `inputHash`, output events, fixture payload, UI methodology, and chart marker assumptions.
+
 The engine does not:
 
 - apply beta to bootstrap or baseline results
@@ -57,6 +76,11 @@ The engine does not:
 - apply historical MDD as a return input
 - mix price return and total return basis
 - replace missing returns, shocks, source hashes, or betas with zero
+
+Inflation:
+
+- `settings.inflationRate` or `settings.inflationRateAnnual` is normalized and included in the hash contract.
+- Step 114-2H does not fabricate real-value paths from inflation; it preserves inflation as audited input metadata only.
 
 ## Path Definitions
 
@@ -90,6 +114,12 @@ Contribution series:
 - increases by monthly contribution at each month start
 - must align exactly with path month indexes
 
+Row lineage:
+
+- each selected `(month, market, ticker)` baseline row preserves its own `sourceHash`
+- row lineage is exposed through `rowSourceLineage`
+- swapping row source hashes while keeping the same source-hash union changes `inputHash` and `outputHash`
+
 Rebalancing:
 
 - `none`
@@ -115,6 +145,10 @@ The engine fails closed when any of the following is invalid:
 - missing direct shock coverage for any selected asset
 - direct shock less than or equal to -100 percent
 - missing beta coverage in `market_beta`
+- missing beta provenance in `market_beta`
+- duplicate direct-asset shock identity in an event
+- duplicate beta identity in beta rows
+- conflict between beta rows and asset-level beta fallback
 - market beta shock less than or equal to -100 percent
 - duplicate shock month
 - mixed shock payload shape
@@ -152,6 +186,8 @@ src/components/portfolio/fixtures/externalShockScenarioResultFixture.js
 
 The browser fixture is generated offline from the server engine. It contains only precomputed review data and does not import the Node engine.
 
+The checked-in browser fixture includes both direct-asset and market-beta results for the same fixture review identity.
+
 ## UI Contract
 
 Step 5 component:
@@ -176,6 +212,9 @@ Fixture review:
 - validates payload signature
 - stale result preserves original fixture context
 - baseline reference appears only when analysis identity matches
+- direct-asset and market-beta scenarios are selected through review-only tabs
+- comparison rows are descriptive only: label, mode, terminal delta rate, stressed MDD, incremental MDD, recovery months, and unrecovered status
+- shock markers expose actual direct shock assumptions or market factor, beta, and beta provenance
 
 The Step 5 UI does not use probability band labels or semantics. Step 4 probability analysis remains separate.
 
@@ -190,6 +229,9 @@ Hashes include:
 - settings
 - shock events
 - baseline monthly returns
+- row-level baseline source hash lineage
+- beta provenance
+- normalized inflation rate
 - effective source hashes
 - normalization version
 - calculation policy version
@@ -212,6 +254,9 @@ Test coverage includes:
 - direct asset shock arithmetic
 - market beta shock arithmetic
 - source hash determinism
+- row-level source hash reassignment determinism
+- beta provenance required and hash-affecting
+- duplicate direct shock and beta identity fail-closed
 - month-start contribution
 - valuation path and risk NAV separation
 - annual rebalance difference
@@ -224,12 +269,17 @@ Test coverage includes:
 - insufficient data state
 - public default idle UI
 - fixture stale identity
+- direct/beta scenario selector and comparison table
 - baseline identity mismatch
 - null path/contribution values not rendered as zero
 - malformed ready payload blocked
 - fixture payload tamper blocked
 - no Node engine import in browser UI
 - no scenario API/provider/loader import in Step 5 UI
+
+## Disclaimer
+
+The Step 5 UI states that this is a hypothetical deterministic stress test. It does not predict occurrence probability, does not predict future returns, and is not investment advice.
 
 ## Protected Areas
 
