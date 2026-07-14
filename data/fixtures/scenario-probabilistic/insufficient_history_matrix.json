@@ -1,0 +1,457 @@
+{
+  "description": "Insufficient common history fixture.",
+  "assets": [
+    {
+      "market": "US",
+      "ticker": "AAA"
+    },
+    {
+      "market": "US",
+      "ticker": "BBB"
+    }
+  ],
+  "metadata": {
+    "returnBasis": "price_return",
+    "currencyMode": "USD",
+    "sourceHashes": [
+      "synthetic-scenario-probabilistic-fixture-sha"
+    ],
+    "normalizationVersion": "scenario-probabilistic-fixture-normalization-v1",
+    "calculationPolicyVersion": "scenario-probabilistic-policy-v1-step114-2f",
+    "pipelineVersion": "scenario-probabilistic-fixture-pipeline-v1-step114-2f"
+  },
+  "monthlyReturnMatrix": [
+    {
+      "month": "2018-01-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-01-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-02-28",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-02-28",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-03-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-03-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-04-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-04-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-05-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-05-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-06-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-06-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-07-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-07-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-08-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-08-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-09-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-09-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-10-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-10-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-11-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-11-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-12-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2018-12-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-01-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-01-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-02-28",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-02-28",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-03-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-03-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-04-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-04-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-05-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-05-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-06-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-06-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-07-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-07-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-08-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-08-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-09-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-09-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-10-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-10-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-11-30",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-11-30",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-12-31",
+      "market": "US",
+      "ticker": "AAA",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0.01,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    },
+    {
+      "month": "2019-12-31",
+      "market": "US",
+      "ticker": "BBB",
+      "currencyMode": "USD",
+      "returnBasis": "price_return",
+      "return": 0,
+      "sourceHash": "synthetic-scenario-probabilistic-fixture-sha"
+    }
+  ]
+}
