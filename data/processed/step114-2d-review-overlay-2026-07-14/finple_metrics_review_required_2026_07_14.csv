@@ -1,0 +1,3 @@
+ticker,nameKr,market,assetType,metricBaseDate,issueType,rawValue,selectedValue,reviewReason,recommendedAction
+123456,짧은상장 Fixture,KR,ETF,2026-06-30,review_required,,,Insufficient valid price history for selected CAGR.,Keep out of app export until manual review passes.
+BADBLK,정규화차단 Fixture,US,ETF,2026-06-30,missing_price_data,,,No normalized month-end rows found.,Keep out of app export until manual review passes.

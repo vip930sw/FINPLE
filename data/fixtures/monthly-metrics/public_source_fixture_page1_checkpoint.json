@@ -11,6 +11,6 @@
   "cumulativeAcceptedRecordCount": 2,
   "checkpointId": "public_source_fixture:synthetic-page-1",
   "mode": "public_source_fixture",
-  "rawSourceSha256": "f291b1ef641dcf98650739dd80e15cd58e4c6d50ba58a63ec83f10f13aa58db3",
+  "rawSourceSha256": "b0c6698627db06320655cdbadad33dae48b1405505fe5105f4ae193d67ce9074",
   "sourceFileName": "public_source_fixture_prices.csv"
 }

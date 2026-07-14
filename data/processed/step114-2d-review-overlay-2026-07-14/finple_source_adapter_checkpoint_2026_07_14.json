@@ -1,0 +1,21 @@
+{
+  "acceptedRecordIds": [],
+  "adapterId": "finple.raw_daily_fixture.v1",
+  "adapterVersion": "source-adapter-contract-v1-step114-2c",
+  "checkpointId": "fixture:raw_daily_prices:complete",
+  "completedPageNumbers": [],
+  "cumulativeAcceptedRecordCount": 669,
+  "duplicateAcceptedRecordCount": 0,
+  "lastStatus": "success",
+  "maxRetryCount": 0,
+  "mode": "fixture",
+  "newlyAcceptedRecordCount": 669,
+  "nextCursor": "",
+  "previousAcceptedRecordCount": 0,
+  "rawSourceSha256": "69ef8eefa5f3390a44f0812c38aa8dfb97f20b9bb24f1f1cc4902184cf643b90",
+  "rejectedRecordCount": 0,
+  "resumeSupported": false,
+  "retryCount": 0,
+  "skippedPreviouslyAcceptedCount": 0,
+  "sourceFileName": "raw_daily_prices.csv"
+}

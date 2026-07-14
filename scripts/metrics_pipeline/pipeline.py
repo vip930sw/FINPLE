@@ -28,15 +28,25 @@ from .schemas import (
     MONTHLY_RETURNS_COLUMNS,
     NORMALIZED_MONTH_END_COLUMNS,
     RAW_DAILY_PRICE_COLUMNS,
+    REVIEW_OVERLAY_COLUMNS,
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
 )
+from .rolling import PERCENTILE_METHOD, ROLLING_METRIC_VERSION, ROLLING_WINDOW_MONTHS, compute_rolling_price_metrics
 from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
 
 
 class PipelineCriticalError(RuntimeError):
     """Raised when Step 114-2A must stop before publish-ready outputs."""
+
+
+REVIEW_OVERLAY_DATE = "2026_07_14"
+HISTORICAL_OVERLAY_PATHS = [
+    Path("src/data/tickers/us_price_metrics_overlay_20260528_app_ready.csv"),
+    Path("src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv"),
+]
+LOADER_POINTER_PATH = Path("src/data/tickers/screenerCandidateOverlay.js")
 
 
 def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, Any]:
@@ -51,9 +61,9 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
 
     candidates_path = input_dir / pipeline_config.candidate_file
     benchmark_path = input_dir / pipeline_config.benchmark_map_file
-    prices_path = input_dir / pipeline_config.monthly_prices_file
+    historical_overlay_before = _historical_protection_hashes()
     source_adapter_result = run_source_adapter(pipeline_config)
-    source_paths = [candidates_path, benchmark_path, prices_path, source_adapter_result.sourcePath]
+    source_paths = [candidates_path, benchmark_path, source_adapter_result.sourcePath]
     for path in source_paths:
         if not path.exists():
             critical_errors.append(f"Required input file missing: {path.name}")
@@ -62,10 +72,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
 
     candidates = _read_csv(candidates_path)
     benchmark_map = _read_benchmark_map(benchmark_path)
-    price_rows = _read_csv(prices_path)
     raw_daily_rows = [dict(row) for row in source_adapter_result.rows]
     critical_errors.extend(_validate_candidates(candidates, pipeline_config))
-    critical_errors.extend(_validate_price_rows(price_rows))
     critical_errors.extend(validate_adapter_result(source_adapter_result))
     if critical_errors:
         raise PipelineCriticalError("; ".join(critical_errors))
@@ -74,8 +82,9 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows)
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
-    price_hash_by_ticker = _hash_price_rows(price_rows)
-    prices_by_ticker = _group_prices(price_rows)
+    normalized_metric_rows = _normalized_metric_rows(normalized_month_end_rows)
+    normalized_hash_by_ticker = _hash_price_rows(normalized_metric_rows)
+    prices_by_ticker = _group_prices(normalized_metric_rows)
 
     full_rows: list[dict[str, str]] = []
     review_rows: list[dict[str, str]] = []
@@ -88,18 +97,25 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             candidate=candidate,
             config=pipeline_config,
             prices=prices_by_ticker.get(candidate["ticker"], []),
+            benchmark_ticker=benchmark_map.get(candidate["benchmarkKey"], ""),
             benchmark_prices=prices_by_ticker.get(benchmark_map.get(candidate["benchmarkKey"], ""), []),
-            source_hash=price_hash_by_ticker.get(candidate["ticker"], ""),
+            source_hash=normalized_hash_by_ticker.get(candidate["ticker"], ""),
+            raw_source_sha256=source_adapter_result.rawSourceSha256,
         )
         full_rows.append(metrics_row)
         review_rows.extend(candidate_review_rows)
         monthly_return_rows.extend(candidate_returns)
+
+    critical_errors.extend(_validate_metric_output_rows(full_rows))
+    if critical_errors:
+        raise PipelineCriticalError("; ".join(critical_errors))
 
     selected_rows = [
         {column: row[column] for column in SELECTED_COLUMNS}
         for row in full_rows
         if row["dataStatus"] == "ready" and row["reviewFlag"] == "none"
     ]
+    review_overlay_rows = _build_review_overlay_rows(full_rows, pipeline_config)
 
     version = pipeline_config.output_version
     output_csv = output_dir / f"finple_metrics_output_{version}.csv"
@@ -113,6 +129,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     package_zip = output_dir / f"finple_monthly_metrics_{version}_package.zip"
     adapter_summary_json = output_dir / f"finple_source_adapter_summary_{version}.json"
     adapter_checkpoint_json = output_dir / f"finple_source_adapter_checkpoint_{version}.json"
+    us_review_overlay_csv = output_dir / f"finple_review_overlay_us_{REVIEW_OVERLAY_DATE}.csv"
+    kr_review_overlay_csv = output_dir / f"finple_review_overlay_kr_{REVIEW_OVERLAY_DATE}.csv"
 
     _write_csv(output_csv, FULL_METRICS_COLUMNS, full_rows)
     _write_csv(selected_csv, SELECTED_COLUMNS, selected_rows)
@@ -120,6 +138,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     _write_csv(returns_csv, MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
     _write_csv(normalized_csv, NORMALIZED_MONTH_END_COLUMNS, normalized_month_end_rows)
     _write_csv(timeseries_audit_csv, TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
+    _write_csv(us_review_overlay_csv, REVIEW_OVERLAY_COLUMNS, [row for row in review_overlay_rows if row["market"] == "US"])
+    _write_csv(kr_review_overlay_csv, REVIEW_OVERLAY_COLUMNS, [row for row in review_overlay_rows if row["market"] == "KR"])
 
     audit_summary = build_audit_summary(
         full_rows,
@@ -129,6 +149,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     )
     write_audit_report(audit_html, audit_summary, source_hashes)
     adapter_summary_json, adapter_checkpoint_json = write_adapter_artifacts(output_dir, version, source_adapter_result)
+    historical_overlay_protection = _historical_overlay_protection(historical_overlay_before)
 
     output_files = [
         output_csv,
@@ -141,6 +162,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         timeseries_audit_csv,
         adapter_summary_json,
         adapter_checkpoint_json,
+        us_review_overlay_csv,
+        kr_review_overlay_csv,
     ]
     manifest = _build_manifest(
         config=pipeline_config,
@@ -155,10 +178,20 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             timeseries_audit_csv,
             adapter_summary_json,
             adapter_checkpoint_json,
+            us_review_overlay_csv,
+            kr_review_overlay_csv,
         ],
         audit_summary=audit_summary,
         source_metadata=[raw_daily_normalization["sourceMetadata"]],
         source_adapter_summary=source_adapter_result.public_summary(),
+        historical_overlay_protection=historical_overlay_protection,
+        review_overlay_files=[us_review_overlay_csv, kr_review_overlay_csv],
+        rolling_window_counts=_rolling_window_count_summary(full_rows),
+        rolling_source_lineage=_rolling_source_lineage(
+            source_adapter_result=source_adapter_result,
+            normalized_csv=normalized_csv,
+            normalized_hash_by_ticker=normalized_hash_by_ticker,
+        ),
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -186,6 +219,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             "timeseriesAuditCsv": str(timeseries_audit_csv),
             "sourceAdapterSummaryJson": str(adapter_summary_json),
             "sourceAdapterCheckpointJson": str(adapter_checkpoint_json),
+            "usReviewOverlayCsv": str(us_review_overlay_csv),
+            "krReviewOverlayCsv": str(kr_review_overlay_csv),
             "zipPackage": str(package_zip),
         },
     }
@@ -233,6 +268,94 @@ def _write_csv(path: Path, columns: list[str], rows: Iterable[Mapping[str, str]]
         writer.writeheader()
         for row in rows:
             writer.writerow({column: row.get(column, "") for column in columns})
+
+
+def _build_review_overlay_rows(full_rows: list[dict[str, str]], config: PipelineConfig) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for row in sorted(full_rows, key=lambda item: (item["market"], item["ticker"])):
+        review_reason = _join_reasons(row["reviewReason"], "Step 114-2D overlay is review-only and not loader-approved.")
+        output.append(
+            {
+                "market": row["market"],
+                "ticker": row["ticker"],
+                "expectedCagr": row["selectedCagr"],
+                "priceCagr10y": row["rawPriceCagr10y"],
+                "mdd": row["selectedMdd"],
+                "beta": row["selectedBeta"],
+                "dataYears": row["dataYears"],
+                "benchmarkTicker": row["benchmarkTicker"],
+                "metricsStatus": "review_only",
+                "metricsSource": f"step114-2d_fixture:{PIPELINE_VERSION}:{ROLLING_METRIC_VERSION}",
+                "reviewReason": review_reason,
+                "metricBaseDate": config.metric_base_date,
+                "reviewOverlayDate": "2026-07-14",
+                "overlayStatus": "review_only",
+                "fixturePackageReady": "true",
+                "productionPublishReady": "false",
+                "appExportApproved": "false",
+                "selectedCagr": row["selectedCagr"],
+                "rawPriceCagr10y": row["rawPriceCagr10y"],
+                "rollingCagr10yMedian": row["rollingCagr10yMedian"],
+                "rollingCagr10yP25": row["rollingCagr10yP25"],
+                "rollingCagr10yP75": row["rollingCagr10yP75"],
+                "validRollingWindowCount10y": row["validRollingWindowCount10y"],
+                "rollingCagr5yMedian": row["rollingCagr5yMedian"],
+                "rollingCagr5yP25": row["rollingCagr5yP25"],
+                "rollingCagr5yP75": row["rollingCagr5yP75"],
+                "validRollingWindowCount5y": row["validRollingWindowCount5y"],
+                "selectedMdd": row["selectedMdd"],
+                "mddFullPeriod": row["mddFullPeriod"],
+                "selectedBeta": row["selectedBeta"],
+                "dividendYield": row["dividendYield"],
+                "dividendStatus": row["dividendStatus"],
+                "dataStatus": row["dataStatus"],
+                "reviewFlag": "review_required",
+                "cagrPolicy": row["cagrPolicy"],
+                "normalizationPolicy": row["normalizationPolicy"],
+                "sourcePolicy": row["sourcePolicy"],
+                "sourceHash": row["sourceHash"],
+                "rawSourceSha256": row["rawSourceSha256"],
+                "normalizationVersion": row["normalizationVersion"],
+                "normalizedSeriesHash": row["normalizedSeriesHash"],
+                "rollingMetricVersion": row["rollingMetricVersion"],
+                "notes": row["notes"],
+            }
+        )
+    return output
+
+
+def _normalized_metric_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for row in rows:
+        classification = row.get("priceSeriesClassification", "")
+        selected_price = row.get("close", "")
+        if classification == "split_adjusted":
+            selected_price = row.get("splitAdjustedClose") or row.get("close", "")
+        elif classification in {"split_and_dividend_adjusted", "total_return_adjusted"}:
+            selected_price = row.get("totalReturnAdjustedClose") or row.get("close", "")
+
+        cash_dividend = row.get("cashDividend", "")
+        dividend_status = "missing"
+        dividend_value = _safe_optional_float(cash_dividend)
+        if dividend_value is not None:
+            dividend_status = "confirmed_value" if dividend_value > 0 else "confirmed_zero"
+
+        output.append(
+            {
+                "market": row.get("market", ""),
+                "ticker": row.get("ticker", ""),
+                "month": row.get("month", ""),
+                "sourceDate": row.get("sourceDate", ""),
+                "currency": row.get("currency", ""),
+                "close": selected_price,
+                "cashDividend": cash_dividend,
+                "dividendStatus": dividend_status,
+                "priceAdjustmentBasis": classification,
+                "normalizationVersion": row.get("normalizationVersion", ""),
+                "sourceId": row.get("sourceId", ""),
+            }
+        )
+    return output
 
 
 def _read_benchmark_map(path: Path) -> dict[str, str]:
@@ -293,6 +416,31 @@ def _validate_price_rows(rows: list[dict[str, str]]) -> list[str]:
     return errors
 
 
+def _validate_metric_output_rows(rows: list[dict[str, str]]) -> list[str]:
+    errors: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        key = (row.get("market", ""), row.get("ticker", ""))
+        if key in seen:
+            errors.append(f"duplicate market/ticker output key: {key[0]} {key[1]}")
+        seen.add(key)
+        if row.get("market") == "KR" and not (len(row.get("ticker", "")) == 6 and row.get("ticker", "").isdigit()):
+            errors.append(f"Korean ticker lost leading-zero format: {row.get('ticker', '')}")
+        p25 = _safe_optional_float(row.get("rollingCagr10yP25"))
+        median = _safe_optional_float(row.get("rollingCagr10yMedian"))
+        p75 = _safe_optional_float(row.get("rollingCagr10yP75"))
+        if any(value is not None for value in [p25, median, p75]) and not (p25 is not None and median is not None and p75 is not None and p25 <= median <= p75):
+            errors.append(f"invalid 10Y rolling percentile ordering: {row.get('ticker', '')}")
+        p25_5 = _safe_optional_float(row.get("rollingCagr5yP25"))
+        median_5 = _safe_optional_float(row.get("rollingCagr5yMedian"))
+        p75_5 = _safe_optional_float(row.get("rollingCagr5yP75"))
+        if any(value is not None for value in [p25_5, median_5, p75_5]) and not (
+            p25_5 is not None and median_5 is not None and p75_5 is not None and p25_5 <= median_5 <= p75_5
+        ):
+            errors.append(f"invalid 5Y rolling percentile ordering: {row.get('ticker', '')}")
+    return errors
+
+
 def _validate_raw_daily_schema(rows: list[dict[str, str]]) -> list[str]:
     if not rows:
         return ["raw daily fixture input missing"]
@@ -338,14 +486,16 @@ def _build_candidate_outputs(
     candidate: Mapping[str, str],
     config: PipelineConfig,
     prices: list[dict[str, str]],
+    benchmark_ticker: str,
     benchmark_prices: list[dict[str, str]],
     source_hash: str,
+    raw_source_sha256: str,
 ) -> tuple[dict[str, str], list[dict[str, str]], list[dict[str, str]]]:
     ticker = candidate["ticker"]
     review_rows: list[dict[str, str]] = []
     if not prices:
-        row = _empty_metrics_row(candidate, config, source_hash, "source_missing")
-        review_rows.append(_review_row(candidate, config, "missing_price_data", "", "", "No fixture price rows found."))
+        row = _empty_metrics_row(candidate, config, benchmark_ticker, source_hash, raw_source_sha256, "normalized_source_missing")
+        review_rows.append(_review_row(candidate, config, "missing_price_data", "", "", "No normalized month-end rows found."))
         return row, review_rows, []
 
     data_start = prices[0]["month"]
@@ -355,17 +505,13 @@ def _build_candidate_outputs(
     returns = _period_returns(prices)
     monthly_return_rows = _monthly_return_rows(candidate, prices, returns)
 
-    price_cagr = _cagr(closes[0], closes[-1], data_years) if data_years > 0 else None
-    rolling_10y = _rolling_cagrs(prices, 120)
-    rolling_5y = _rolling_cagrs(prices, 60)
-    selected_cagr, cagr_policy, data_status, review_flag, review_reason = _select_cagr(
-        config,
-        data_years,
-        rolling_10y,
-        rolling_5y,
-        price_cagr,
-    )
-    mdd = _mdd(closes)
+    rolling_metrics = compute_rolling_price_metrics(prices, min_years_for_inception=config.min_years_for_inception)
+    selected_cagr = rolling_metrics.selectedCagr
+    cagr_policy = rolling_metrics.cagrPolicy
+    data_status = rolling_metrics.dataStatus
+    review_flag = rolling_metrics.reviewFlag
+    review_reason = rolling_metrics.reviewReason
+    mdd = rolling_metrics.mddFullPeriod
     volatility = _volatility(returns)
     beta = _beta(prices, benchmark_prices)
     dividend_yield, dividend_status, dividend_policy = _dividend_yield(prices)
@@ -377,7 +523,7 @@ def _build_candidate_outputs(
 
     if review_flag != "none":
         review_rows.append(
-            _review_row(candidate, config, review_flag, _format_percent(price_cagr), _format_percent(selected_cagr), review_reason)
+            _review_row(candidate, config, review_flag, _format_percent(rolling_metrics.rawPriceCagr10y), _format_percent(selected_cagr), review_reason)
         )
     if beta is None:
         review_rows.append(_review_row(candidate, config, "missing_benchmark", "", "", "Benchmark fixture rows were insufficient."))
@@ -388,21 +534,29 @@ def _build_candidate_outputs(
         "market": candidate["market"],
         "assetType": candidate["assetType"],
         "benchmarkKey": candidate["benchmarkKey"],
+        "benchmarkTicker": benchmark_ticker,
         "metricBaseDate": config.metric_base_date,
         "dataStartDate": data_start,
         "dataEndDate": data_end,
         "dataYears": _format_number(data_years),
-        "priceCagr10yRaw": _format_percent(price_cagr),
-        "rollingCagr10yMedian": _format_percent(_median(rolling_10y)),
-        "rollingCagr10yP25": _format_percent(_percentile(rolling_10y, 25)),
-        "rollingCagr10yP75": _format_percent(_percentile(rolling_10y, 75)),
-        "rollingCagr10yWindowCount": str(len(rolling_10y)),
-        "rollingCagr5yMedian": _format_percent(_median(rolling_5y)),
-        "rollingCagr5yWindowCount": str(len(rolling_5y)),
-        "sinceInceptionCagr": _format_percent(price_cagr),
+        "rawPriceCagr10y": _format_percent(rolling_metrics.rawPriceCagr10y),
+        "priceCagr10yRaw": _format_percent(rolling_metrics.rawPriceCagr10y),
+        "rollingCagr10yMedian": _format_percent(rolling_metrics.rollingCagr10yMedian),
+        "rollingCagr10yP25": _format_percent(rolling_metrics.rollingCagr10yP25),
+        "rollingCagr10yP75": _format_percent(rolling_metrics.rollingCagr10yP75),
+        "rollingCagr10yWindowCount": str(rolling_metrics.validRollingWindowCount10y),
+        "validRollingWindowCount10y": str(rolling_metrics.validRollingWindowCount10y),
+        "rollingCagr5yMedian": _format_percent(rolling_metrics.rollingCagr5yMedian),
+        "rollingCagr5yP25": _format_percent(rolling_metrics.rollingCagr5yP25),
+        "rollingCagr5yP75": _format_percent(rolling_metrics.rollingCagr5yP75),
+        "rollingCagr5yWindowCount": str(rolling_metrics.validRollingWindowCount5y),
+        "validRollingWindowCount5y": str(rolling_metrics.validRollingWindowCount5y),
+        "sinceInceptionCagr": _format_percent(rolling_metrics.sinceInceptionCagr),
         "selectedCagr": _format_percent(selected_cagr),
         "cagrPolicy": cagr_policy,
+        "normalizationPolicy": f"{rolling_metrics.priceBasisStatus}; total_return_reference_only",
         "mdd10yRaw": _format_percent(mdd),
+        "mddFullPeriod": _format_percent(mdd),
         "rollingMdd10yMedian": _format_percent(mdd),
         "selectedMdd": _format_percent(mdd if data_years >= config.min_years_for_inception else None),
         "mddPolicy": "worst_drawdown_available" if data_years >= config.min_years_for_inception else "blank_review_required",
@@ -420,12 +574,23 @@ def _build_candidate_outputs(
         "reviewReason": review_reason if beta is not None else "Benchmark fixture rows were insufficient.",
         "sourcePolicy": "fixture_only_approved_internal",
         "sourceHash": source_hash,
-        "notes": "Step 114-2A offline fixture; no external provider call.",
+        "rawSourceSha256": raw_source_sha256,
+        "normalizationVersion": NORMALIZATION_VERSION,
+        "normalizedSeriesHash": source_hash,
+        "rollingMetricVersion": ROLLING_METRIC_VERSION,
+        "notes": "Step 114-2D offline fixture; price CAGR uses split-adjusted price basis where available; total return remains reference-only.",
     }
     return row, review_rows, monthly_return_rows
 
 
-def _empty_metrics_row(candidate: Mapping[str, str], config: PipelineConfig, source_hash: str, reason: str) -> dict[str, str]:
+def _empty_metrics_row(
+    candidate: Mapping[str, str],
+    config: PipelineConfig,
+    benchmark_ticker: str,
+    source_hash: str,
+    raw_source_sha256: str,
+    reason: str,
+) -> dict[str, str]:
     row = {column: "" for column in FULL_METRICS_COLUMNS}
     row.update(
         {
@@ -434,12 +599,17 @@ def _empty_metrics_row(candidate: Mapping[str, str], config: PipelineConfig, sou
             "market": candidate["market"],
             "assetType": candidate["assetType"],
             "benchmarkKey": candidate["benchmarkKey"],
+            "benchmarkTicker": benchmark_ticker,
             "metricBaseDate": config.metric_base_date,
             "dataStatus": "review_required",
             "reviewFlag": "review_required",
             "reviewReason": reason,
             "sourcePolicy": "fixture_only_approved_internal",
             "sourceHash": source_hash,
+            "rawSourceSha256": raw_source_sha256,
+            "normalizationVersion": NORMALIZATION_VERSION,
+            "normalizedSeriesHash": source_hash,
+            "rollingMetricVersion": ROLLING_METRIC_VERSION,
         }
     )
     return row
@@ -532,11 +702,16 @@ def _build_manifest(
     audit_summary: Mapping[str, int],
     source_metadata: list[Mapping[str, Any]],
     source_adapter_summary: Mapping[str, Any],
+    historical_overlay_protection: Mapping[str, Any],
+    review_overlay_files: list[Path],
+    rolling_window_counts: Mapping[str, Any],
+    rolling_source_lineage: Mapping[str, Any],
 ) -> dict[str, Any]:
+    review_overlay_hashes = {path.name: _sha256(path) for path in review_overlay_files}
     return {
         "metricBaseDate": config.metric_base_date,
         "createdAt": config.created_at,
-        "createdBy": "FINPLE Step 114-2C fixture-safe source adapter pipeline",
+        "createdBy": "FINPLE Step 114-2D fixture-safe rolling metrics pipeline",
         "pipelineVersion": PIPELINE_VERSION,
         "schemaVersion": SCHEMA_VERSION,
         "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
@@ -556,10 +731,26 @@ def _build_manifest(
         "sourceAdapter": dict(source_adapter_summary),
         "outputs": [path.name for path in output_files],
         "outputHashes": {path.name: _sha256(path) for path in output_files},
+        "rollingMetricVersion": ROLLING_METRIC_VERSION,
+        "rollingWindowMonths": {
+            "10y": ROLLING_WINDOW_MONTHS["10y"],
+            "5y": ROLLING_WINDOW_MONTHS["5y"],
+        },
+        "percentileMethod": PERCENTILE_METHOD,
+        "selectedCagrPolicy": config.selected_cagr_policy,
+        "validRollingWindowCount10y": rolling_window_counts["validRollingWindowCount10y"],
+        "validRollingWindowCount5y": rolling_window_counts["validRollingWindowCount5y"],
+        "reviewOverlayFiles": [path.name for path in review_overlay_files],
+        "reviewOverlayHashes": review_overlay_hashes,
+        "reviewOverlayFileName": ",".join(path.name for path in review_overlay_files),
+        "reviewOverlaySha256": ",".join(review_overlay_hashes[path.name] for path in review_overlay_files),
+        "historicalOverlayProtectionStatus": historical_overlay_protection["status"],
+        "historicalOverlayProtection": dict(historical_overlay_protection),
+        "rollingSourceLineage": dict(rolling_source_lineage),
         "policy": {
             "selectedCagr": "rolling_median_required_for_all_markets",
             "selectedMdd": "conservative_worst_drawdown",
-            "selectedBeta": "fixture_aligned_monthly_returns",
+            "selectedBeta": "fixture_aligned_monthly_returns_review_only",
             "totalReturnCagr": "reference_only",
             "currentPriceDisplay": "disabled",
         },
@@ -570,6 +761,61 @@ def _build_manifest(
         "externalProviderCalls": False,
         "normalizationVersion": NORMALIZATION_VERSION,
     }
+
+
+def _rolling_window_count_summary(full_rows: list[dict[str, str]]) -> dict[str, int]:
+    return {
+        "validRollingWindowCount10y": sum(int(row.get("validRollingWindowCount10y") or "0") for row in full_rows),
+        "validRollingWindowCount5y": sum(int(row.get("validRollingWindowCount5y") or "0") for row in full_rows),
+    }
+
+
+def _historical_protection_hashes() -> dict[str, str]:
+    repo_root = Path(__file__).resolve().parents[2]
+    paths = [*HISTORICAL_OVERLAY_PATHS, LOADER_POINTER_PATH]
+    return {_repo_relative_posix(path): _sha256(repo_root / path) for path in paths}
+
+
+def _repo_relative_posix(path: Path) -> str:
+    return Path(*path.parts).as_posix()
+
+
+def _historical_overlay_protection(before: Mapping[str, str]) -> dict[str, Any]:
+    after = _historical_protection_hashes()
+    unchanged = all(before.get(path) == after.get(path) and after.get(path) for path in sorted(after))
+    return {
+        "status": "verified_unchanged" if unchanged else "changed_or_missing",
+        "protectedFiles": [
+            {
+                "path": path,
+                "beforeSha256": before.get(path, ""),
+                "afterSha256": after.get(path, ""),
+                "unchanged": before.get(path, "") == after.get(path, "") and bool(after.get(path, "")),
+            }
+            for path in sorted(after)
+        ],
+    }
+
+
+def _rolling_source_lineage(
+    *,
+    source_adapter_result: Any,
+    normalized_csv: Path,
+    normalized_hash_by_ticker: Mapping[str, str],
+) -> dict[str, Any]:
+    return {
+        "rawSourceFileName": source_adapter_result.sourceFileName,
+        "rawSourceSha256": source_adapter_result.rawSourceSha256,
+        "normalizationVersion": NORMALIZATION_VERSION,
+        "normalizedMonthEndFileName": normalized_csv.name,
+        "normalizedMonthEndSha256": _sha256(normalized_csv),
+        "rollingMetricVersion": ROLLING_METRIC_VERSION,
+        "normalizedSeriesHashes": dict(sorted(normalized_hash_by_ticker.items())),
+    }
+
+
+def _join_reasons(*reasons: str) -> str:
+    return "; ".join(reason for reason in reasons if reason)
 
 
 def _source_file_manifest_item(name: str, sha256: str, input_mode: str) -> dict[str, Any]:
@@ -594,6 +840,8 @@ def _source_file_manifest_item(name: str, sha256: str, input_mode: str) -> dict[
 
 
 def _sha256(path: Path) -> str:
+    if not path.exists():
+        return ""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -692,7 +940,7 @@ def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, st
         return None, "missing", "unconfirmed_blank"
     last_close = float(prices[-1]["close"])
     trailing_rows = prices[-12:]
-    statuses = {row.get("dividendStatus", "") for row in trailing_rows}
+    statuses = {_dividend_status(row) for row in trailing_rows}
     if "missing" in statuses:
         return None, "missing", "unconfirmed_blank"
     trailing_dividends = sum(_safe_float(row.get("cashDividend")) for row in trailing_rows)
@@ -701,11 +949,28 @@ def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, st
     return (trailing_dividends / last_close) * 100, "confirmed_value", "confirmed_ttm_cash_dividend"
 
 
+def _dividend_status(row: Mapping[str, str]) -> str:
+    explicit = row.get("dividendStatus", "")
+    if explicit in {"missing", "confirmed_zero", "confirmed_value"}:
+        return explicit
+    value = _safe_optional_float(row.get("cashDividend"))
+    if value is None:
+        return "missing"
+    return "confirmed_value" if value > 0 else "confirmed_zero"
+
+
 def _safe_float(value: str | None) -> float:
     try:
         return float(value or "0")
     except ValueError:
         return 0.0
+
+
+def _safe_optional_float(value: str | None) -> float | None:
+    try:
+        return float(value or "")
+    except ValueError:
+        return None
 
 
 def _median(values: list[float]) -> float | None:

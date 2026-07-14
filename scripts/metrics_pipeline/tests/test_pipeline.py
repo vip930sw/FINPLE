@@ -6,12 +6,19 @@ import json
 import shutil
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from zipfile import ZipFile
 
 from scripts.metrics_pipeline import PipelineCriticalError, run_finple_monthly_metrics_pipeline
 from scripts.metrics_pipeline.adapters import run_source_adapter, validate_adapter_result
 from scripts.metrics_pipeline.config import load_config
+from scripts.metrics_pipeline.pipeline import _repo_relative_posix
+from scripts.metrics_pipeline.rolling import (
+    ROLLING_METRIC_VERSION,
+    compute_rolling_price_metrics,
+    percentile,
+    rolling_cagrs_for_test,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -40,6 +47,32 @@ def build_config(output_dir: Path, **overrides):
 
 def fixture_sha256(file_name: str) -> str:
     return hashlib.sha256((FIXTURE_DIR / file_name).read_bytes()).hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def copy_fixture_dir(temp_dir: str) -> Path:
+    fixture_copy = Path(temp_dir) / "fixtures"
+    shutil.copytree(FIXTURE_DIR, fixture_copy)
+    return fixture_copy
+
+
+def mutate_csv_row(path: Path, predicate, updates: dict[str, str]) -> None:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+        fieldnames = list(rows[0].keys())
+    for row in rows:
+        if predicate(row):
+            row.update(updates)
+            break
+    else:
+        raise AssertionError(f"No matching row in {path}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def public_source_checkpoint_payload(**overrides):
@@ -75,12 +108,21 @@ class MetricsPipelineTests(unittest.TestCase):
 
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
-            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2c")
+            self.assertEqual(manifest["pipelineVersion"], "metrics-v3.0-step114-2d")
             self.assertEqual(manifest["schemaVersion"], "metrics-csv-schema-v3")
             self.assertFalse(manifest["externalProviderCalls"])
             self.assertTrue(manifest["fixturePackageReady"])
             self.assertFalse(manifest["productionPublishReady"])
             self.assertFalse(manifest["appExportApproved"])
+            self.assertEqual(manifest["rollingMetricVersion"], ROLLING_METRIC_VERSION)
+            self.assertEqual(manifest["rollingWindowMonths"], {"10y": 120, "5y": 60})
+            self.assertEqual(manifest["selectedCagrPolicy"], "rolling_median_all_markets")
+            self.assertEqual(manifest["historicalOverlayProtectionStatus"], "verified_unchanged")
+            self.assertEqual(
+                set(manifest["reviewOverlayFiles"]),
+                {"finple_review_overlay_us_2026_07_14.csv", "finple_review_overlay_kr_2026_07_14.csv"},
+            )
+            self.assertEqual(set(manifest["reviewOverlayHashes"]), set(manifest["reviewOverlayFiles"]))
             self.assertIn("sourceAdapter", manifest)
             self.assertEqual(manifest["sourceAdapter"]["adapterId"], "finple.raw_daily_fixture.v1")
             self.assertEqual(manifest["sourceAdapter"]["adapterVersion"], "source-adapter-contract-v1-step114-2c")
@@ -91,8 +133,12 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertFalse(manifest["sourceAdapter"]["redistributionAllowed"])
             self.assertEqual(
                 {item["name"] for item in manifest["sourceFiles"]},
-                {"benchmark_map.csv", "candidates.csv", "monthly_prices.csv", "raw_daily_prices.csv"},
+                {"benchmark_map.csv", "candidates.csv", "raw_daily_prices.csv"},
             )
+            self.assertEqual(manifest["rollingSourceLineage"]["rawSourceFileName"], "raw_daily_prices.csv")
+            self.assertEqual(manifest["rollingSourceLineage"]["normalizationVersion"], "timeseries-normalization-v1-step114-2b")
+            self.assertEqual(manifest["rollingSourceLineage"]["rollingMetricVersion"], ROLLING_METRIC_VERSION)
+            self.assertIn("SPY", manifest["rollingSourceLineage"]["normalizedSeriesHashes"])
             self.assertIn("sourceMetadata", manifest)
             self.assertEqual(manifest["sourceMetadata"][0]["sourceFileName"], "raw_daily_prices.csv")
             self.assertEqual(manifest["sourceMetadata"][0]["sourceId"], "mixed_or_review_required")
@@ -113,6 +159,8 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("finple_timeseries_audit_2026_06.csv", names)
             self.assertIn("finple_source_adapter_summary_2026_06.json", names)
             self.assertIn("finple_source_adapter_checkpoint_2026_06.json", names)
+            self.assertIn("finple_review_overlay_us_2026_07_14.csv", names)
+            self.assertIn("finple_review_overlay_kr_2026_07_14.csv", names)
 
     def test_output_schema_review_split_and_kr_ticker_preservation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -136,20 +184,35 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertIn("SPY", selected_tickers)
             self.assertIn("069500", selected_tickers)
             self.assertNotIn("123456", selected_tickers)
+            self.assertNotIn("BADBLK", selected_tickers)
             self.assertTrue(any(row["ticker"] == "123456" and row["issueType"] == "review_required" for row in review_rows))
+            self.assertEqual(full_by_ticker["BADBLK"]["dataStatus"], "review_required")
+            self.assertEqual(full_by_ticker["BADBLK"]["reviewFlag"], "review_required")
 
             required_columns = {
                 "ticker",
                 "metricBaseDate",
+                "benchmarkTicker",
+                "rawPriceCagr10y",
                 "selectedCagr",
                 "selectedMdd",
                 "selectedBeta",
                 "rollingCagr10yWindowCount",
+                "validRollingWindowCount10y",
+                "rollingCagr5yP25",
+                "rollingCagr5yP75",
                 "rollingCagr5yWindowCount",
+                "validRollingWindowCount5y",
                 "dividendStatus",
                 "dataStatus",
                 "reviewFlag",
+                "normalizationPolicy",
+                "mddFullPeriod",
                 "sourceHash",
+                "rawSourceSha256",
+                "normalizationVersion",
+                "normalizedSeriesHash",
+                "rollingMetricVersion",
             }
             self.assertTrue(required_columns.issubset(full_rows[0].keys()))
 
@@ -166,21 +229,205 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertEqual(full_by_ticker["123456"]["rollingCagr10yWindowCount"], "0")
             self.assertEqual(full_by_ticker["123456"]["rollingCagr5yWindowCount"], "0")
 
-            with (FIXTURE_DIR / "monthly_prices.csv").open("r", encoding="utf-8", newline="") as handle:
-                price_rows = list(csv.DictReader(handle))
-            spy_months = [row["month"] for row in price_rows if row["ticker"] == "SPY"]
-            short_months = [row["month"] for row in price_rows if row["ticker"] == "123456"]
+            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8", newline="") as handle:
+                normalized_rows = list(csv.DictReader(handle))
+            spy_months = [row["month"] for row in normalized_rows if row["ticker"] == "SPY"]
+            short_months = [row["month"] for row in normalized_rows if row["ticker"] == "123456"]
             self.assertEqual(len(spy_months), 121)
             self.assertEqual(spy_months[0], "2016-06-30")
             self.assertEqual(spy_months[-1], "2026-06-30")
             self.assertEqual(len(short_months), 36)
 
-            spy_prices = [float(row["close"]) for row in price_rows if row["ticker"] == "SPY"]
+            spy_prices = [float(row["splitAdjustedClose"]) for row in normalized_rows if row["ticker"] == "SPY"]
             pre_drop_peak = max(spy_prices[:42])
             trough = min(spy_prices[42:45])
             post_recovery = max(spy_prices[45:80])
             self.assertLess(trough, pre_drop_peak * 0.8)
             self.assertGreater(post_recovery, trough * 1.2)
+
+    def test_exact_rolling_cagr_interval_and_gap_rules(self):
+        rows = []
+        for index in range(0, 122):
+            year = 2016 + (5 + index) // 12
+            month = (5 + index) % 12 + 1
+            day = [31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]
+            rows.append(
+                {
+                    "month": f"{year:04d}-{month:02d}-{day:02d}",
+                    "close": f"{100 * (1.01 ** index):.6f}",
+                    "currency": "USD",
+                    "priceAdjustmentBasis": "split_adjusted_close",
+                }
+            )
+
+        ten_year = rolling_cagrs_for_test(rows, 120)
+        five_year = rolling_cagrs_for_test(rows, 60)
+        self.assertEqual(len(ten_year), 2)
+        self.assertEqual(len(five_year), 62)
+        self.assertAlmostEqual(ten_year[0], ((1.01 ** 120) ** (12 / 120) - 1) * 100, places=7)
+        self.assertEqual(rolling_cagrs_for_test(rows[:120], 120), [])
+
+        gap_rows = [row for row in rows if row["month"] != rows[24]["month"]]
+        self.assertLess(len(rolling_cagrs_for_test(gap_rows, 60)), len(five_year))
+
+    def test_rolling_metric_policy_price_basis_and_mdd_are_separate(self):
+        with (FIXTURE_DIR / "monthly_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+            price_rows = list(csv.DictReader(handle))
+        spy_rows = [row for row in price_rows if row["ticker"] == "SPY"]
+        spy_metrics = compute_rolling_price_metrics(spy_rows)
+        self.assertEqual(spy_metrics.validRollingWindowCount10y, 1)
+        self.assertEqual(spy_metrics.validRollingWindowCount5y, 61)
+        self.assertEqual(spy_metrics.cagrPolicy, "rolling_10y_median")
+        self.assertIsNotNone(spy_metrics.mddFullPeriod)
+        self.assertLess(spy_metrics.mddFullPeriod, 0)
+        self.assertEqual(percentile([3.0, 1.0, 5.0, 7.0], 25), 2.5)
+
+        total_return_rows = [dict(row, priceAdjustmentBasis="total_return_adjusted") for row in spy_rows]
+        blocked = compute_rolling_price_metrics(total_return_rows)
+        self.assertEqual(blocked.validRollingWindowCount10y, 0)
+        self.assertEqual(blocked.cagrPolicy, "blank_review_required")
+        self.assertIn("Price CAGR blocked", blocked.reviewReason)
+
+    def test_review_overlay_is_review_only_and_preserves_historical_loader_contract(self):
+        protected_paths = [
+            REPO_ROOT / "src" / "data" / "tickers" / "us_price_metrics_overlay_20260528_app_ready.csv",
+            REPO_ROOT / "src" / "data" / "tickers" / "kr_price_metrics_overlay_20260528_app_ready.csv",
+            REPO_ROOT / "src" / "data" / "tickers" / "screenerCandidateOverlay.js",
+        ]
+        before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_paths}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+            with outputs["usReviewOverlayCsv"].open("r", encoding="utf-8", newline="") as handle:
+                reader = csv.DictReader(handle)
+                self.assertEqual(
+                    reader.fieldnames[:11],
+                    [
+                        "market",
+                        "ticker",
+                        "expectedCagr",
+                        "priceCagr10y",
+                        "mdd",
+                        "beta",
+                        "dataYears",
+                        "benchmarkTicker",
+                        "metricsStatus",
+                        "metricsSource",
+                        "reviewReason",
+                    ],
+                )
+                us_rows = list(reader)
+            with outputs["krReviewOverlayCsv"].open("r", encoding="utf-8", newline="") as handle:
+                kr_rows = list(csv.DictReader(handle))
+            overlay_rows = us_rows + kr_rows
+
+            self.assertTrue(overlay_rows)
+            self.assertEqual({row["overlayStatus"] for row in overlay_rows}, {"review_only"})
+            self.assertEqual({row["fixturePackageReady"] for row in overlay_rows}, {"true"})
+            self.assertEqual({row["productionPublishReady"] for row in overlay_rows}, {"false"})
+            self.assertEqual({row["appExportApproved"] for row in overlay_rows}, {"false"})
+            self.assertEqual({row["metricsStatus"] for row in overlay_rows}, {"review_only"})
+            self.assertIn("005930", {row["ticker"] for row in kr_rows})
+            self.assertIn("069500", {row["ticker"] for row in kr_rows})
+            self.assertTrue(all(row["reviewFlag"] == "review_required" for row in overlay_rows))
+
+            manifest = json.loads(outputs["manifestJson"].read_text(encoding="utf-8"))
+            self.assertEqual(manifest["historicalOverlayProtectionStatus"], "verified_unchanged")
+            for item in manifest["historicalOverlayProtection"]["protectedFiles"]:
+                self.assertTrue(item["unchanged"], item)
+                self.assertNotIn("\\", item["path"])
+
+            self.assertEqual(
+                _repo_relative_posix(PureWindowsPath("src\\data\\tickers\\kr_price_metrics_overlay_20260528_app_ready.csv")),
+                "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv",
+            )
+            self.assertEqual(
+                _repo_relative_posix(PurePosixPath("src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv")),
+                "src/data/tickers/kr_price_metrics_overlay_20260528_app_ready.csv",
+            )
+
+        after = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_paths}
+        self.assertEqual(before, after)
+
+    def test_raw_daily_change_updates_normalized_rolling_and_overlay_hashes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_copy = copy_fixture_dir(temp_dir)
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "first", input_dir=str(fixture_copy))
+            )
+            first_outputs = {name: Path(path) for name, path in first["outputs"].items()}
+            first_manifest = json.loads(first_outputs["manifestJson"].read_text(encoding="utf-8"))
+            with first_outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+                first_spy = {row["ticker"]: row for row in csv.DictReader(handle)}["SPY"]
+
+            mutate_csv_row(
+                fixture_copy / "raw_daily_prices.csv",
+                lambda row: row["ticker"] == "SPY" and row["date"] == "2026-06-30",
+                {"close": "250.00", "splitAdjustedClose": "250.00", "totalReturnAdjustedClose": "250.00"},
+            )
+
+            second = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "second", input_dir=str(fixture_copy))
+            )
+            second_outputs = {name: Path(path) for name, path in second["outputs"].items()}
+            second_manifest = json.loads(second_outputs["manifestJson"].read_text(encoding="utf-8"))
+            with second_outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+                second_spy = {row["ticker"]: row for row in csv.DictReader(handle)}["SPY"]
+
+            self.assertNotEqual(
+                first_manifest["rollingSourceLineage"]["normalizedMonthEndSha256"],
+                second_manifest["rollingSourceLineage"]["normalizedMonthEndSha256"],
+            )
+            self.assertNotEqual(
+                first_manifest["rollingSourceLineage"]["normalizedSeriesHashes"]["SPY"],
+                second_manifest["rollingSourceLineage"]["normalizedSeriesHashes"]["SPY"],
+            )
+            self.assertNotEqual(first_spy["selectedCagr"], second_spy["selectedCagr"])
+            self.assertNotEqual(file_sha256(first_outputs["usReviewOverlayCsv"]), file_sha256(second_outputs["usReviewOverlayCsv"]))
+
+    def test_monthly_prices_change_does_not_affect_normalized_rolling_outputs(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_copy = copy_fixture_dir(temp_dir)
+            first = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "first", input_dir=str(fixture_copy))
+            )
+            mutate_csv_row(
+                fixture_copy / "monthly_prices.csv",
+                lambda row: row["ticker"] == "SPY" and row["month"] == "2026-06-30",
+                {"close": "999999.99", "cashDividend": "999.99"},
+            )
+            second = run_finple_monthly_metrics_pipeline(
+                build_config(Path(temp_dir) / "second", input_dir=str(fixture_copy))
+            )
+
+            for output_key in ["metricsOutputCsv", "selectedCsv", "monthlyReturnsCsv", "usReviewOverlayCsv", "krReviewOverlayCsv"]:
+                self.assertEqual(
+                    Path(first["outputs"][output_key]).read_bytes(),
+                    Path(second["outputs"][output_key]).read_bytes(),
+                    output_key,
+                )
+            first_manifest = json.loads(Path(first["outputs"]["manifestJson"]).read_text(encoding="utf-8"))
+            second_manifest = json.loads(Path(second["outputs"]["manifestJson"]).read_text(encoding="utf-8"))
+            self.assertEqual(first_manifest["rollingSourceLineage"], second_manifest["rollingSourceLineage"])
+            self.assertNotIn("monthly_prices.csv", {item["name"] for item in first_manifest["sourceFiles"]})
+
+    def test_normalization_blocked_candidate_cannot_be_selected_or_ready_overlay(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
+            outputs = {name: Path(path) for name, path in result["outputs"].items()}
+            with outputs["selectedCsv"].open("r", encoding="utf-8", newline="") as handle:
+                selected_tickers = {row["ticker"] for row in csv.DictReader(handle)}
+            with outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+                full_by_ticker = {row["ticker"]: row for row in csv.DictReader(handle)}
+            with outputs["usReviewOverlayCsv"].open("r", encoding="utf-8", newline="") as handle:
+                overlay_by_ticker = {row["ticker"]: row for row in csv.DictReader(handle)}
+
+            self.assertNotIn("BADBLK", selected_tickers)
+            self.assertEqual(full_by_ticker["BADBLK"]["dataStatus"], "review_required")
+            self.assertEqual(full_by_ticker["BADBLK"]["reviewReason"], "normalized_source_missing")
+            self.assertEqual(overlay_by_ticker["BADBLK"]["metricsStatus"], "review_only")
+            self.assertEqual(overlay_by_ticker["BADBLK"]["expectedCagr"], "")
 
     def test_same_fixture_and_config_are_reproducible(self):
         with tempfile.TemporaryDirectory() as first_dir, tempfile.TemporaryDirectory() as second_dir:
@@ -189,14 +436,23 @@ class MetricsPipelineTests(unittest.TestCase):
 
             first_outputs = {name: Path(path) for name, path in first["outputs"].items()}
             second_outputs = {name: Path(path) for name, path in second["outputs"].items()}
-            for key in ["metricsOutputCsv", "selectedCsv", "reviewRequiredCsv", "monthlyReturnsCsv", "manifestJson", "zipPackage"]:
+            for key in [
+                "metricsOutputCsv",
+                "selectedCsv",
+                "reviewRequiredCsv",
+                "monthlyReturnsCsv",
+                "manifestJson",
+                "zipPackage",
+                "usReviewOverlayCsv",
+                "krReviewOverlayCsv",
+            ]:
                 self.assertEqual(first_outputs[key].read_bytes(), second_outputs[key].read_bytes(), key)
 
     def test_critical_validation_blocks_publish_ready_outputs(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             with self.assertRaises(PipelineCriticalError):
                 run_finple_monthly_metrics_pipeline(
-                    build_config(Path(temp_dir), monthly_prices_file="monthly_prices_invalid.csv")
+                    build_config(Path(temp_dir), raw_daily_prices_file="missing_raw_daily_prices.csv")
                 )
 
             self.assertFalse((Path(temp_dir) / "finple_monthly_metrics_2026_06_package.zip").exists())
@@ -232,10 +488,10 @@ class MetricsPipelineTests(unittest.TestCase):
                 rows = list(csv.DictReader(handle))
 
             by_ticker_month = {(row["ticker"], row["month"]): row for row in rows}
-            self.assertEqual(by_ticker_month[("SPY", "2026-01-31")]["sourceDate"], "2026-01-30")
-            self.assertEqual(by_ticker_month[("SPY", "2026-02-28")]["sourceDate"], "2026-02-27")
+            self.assertEqual(by_ticker_month[("SPY", "2026-01-31")]["sourceDate"], "2026-01-31")
+            self.assertEqual(by_ticker_month[("SPY", "2026-02-28")]["sourceDate"], "2026-02-28")
             self.assertEqual(by_ticker_month[("005930", "2026-01-31")]["ticker"], "005930")
-            self.assertEqual(by_ticker_month[("069500", "2026-01-31")]["priceSeriesClassification"], "total_return_adjusted")
+            self.assertEqual(by_ticker_month[("069500", "2026-01-31")]["priceSeriesClassification"], "split_adjusted")
 
     def test_timeseries_audit_blocks_bad_rows_without_forward_fill_or_app_approval(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -289,7 +545,7 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertEqual(classifications["NOACT"], "raw_close")
             self.assertEqual(classifications["SPLT"], "split_adjusted")
             self.assertEqual(classifications["DIVD"], "split_adjusted")
-            self.assertEqual(classifications["069500"], "total_return_adjusted")
+            self.assertEqual(classifications["069500"], "split_adjusted")
             self.assertNotIn("AMBIG", classifications)
 
             with outputs["timeseriesAuditCsv"].open("r", encoding="utf-8", newline="") as handle:
