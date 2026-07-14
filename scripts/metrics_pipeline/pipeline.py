@@ -61,10 +61,9 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
 
     candidates_path = input_dir / pipeline_config.candidate_file
     benchmark_path = input_dir / pipeline_config.benchmark_map_file
-    prices_path = input_dir / pipeline_config.monthly_prices_file
     historical_overlay_before = _historical_protection_hashes()
     source_adapter_result = run_source_adapter(pipeline_config)
-    source_paths = [candidates_path, benchmark_path, prices_path, source_adapter_result.sourcePath]
+    source_paths = [candidates_path, benchmark_path, source_adapter_result.sourcePath]
     for path in source_paths:
         if not path.exists():
             critical_errors.append(f"Required input file missing: {path.name}")
@@ -73,10 +72,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
 
     candidates = _read_csv(candidates_path)
     benchmark_map = _read_benchmark_map(benchmark_path)
-    price_rows = _read_csv(prices_path)
     raw_daily_rows = [dict(row) for row in source_adapter_result.rows]
     critical_errors.extend(_validate_candidates(candidates, pipeline_config))
-    critical_errors.extend(_validate_price_rows(price_rows))
     critical_errors.extend(validate_adapter_result(source_adapter_result))
     if critical_errors:
         raise PipelineCriticalError("; ".join(critical_errors))
@@ -85,8 +82,9 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows)
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
-    price_hash_by_ticker = _hash_price_rows(price_rows)
-    prices_by_ticker = _group_prices(price_rows)
+    normalized_metric_rows = _normalized_metric_rows(normalized_month_end_rows)
+    normalized_hash_by_ticker = _hash_price_rows(normalized_metric_rows)
+    prices_by_ticker = _group_prices(normalized_metric_rows)
 
     full_rows: list[dict[str, str]] = []
     review_rows: list[dict[str, str]] = []
@@ -99,8 +97,10 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             candidate=candidate,
             config=pipeline_config,
             prices=prices_by_ticker.get(candidate["ticker"], []),
+            benchmark_ticker=benchmark_map.get(candidate["benchmarkKey"], ""),
             benchmark_prices=prices_by_ticker.get(benchmark_map.get(candidate["benchmarkKey"], ""), []),
-            source_hash=price_hash_by_ticker.get(candidate["ticker"], ""),
+            source_hash=normalized_hash_by_ticker.get(candidate["ticker"], ""),
+            raw_source_sha256=source_adapter_result.rawSourceSha256,
         )
         full_rows.append(metrics_row)
         review_rows.extend(candidate_review_rows)
@@ -187,6 +187,11 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         historical_overlay_protection=historical_overlay_protection,
         review_overlay_files=[us_review_overlay_csv, kr_review_overlay_csv],
         rolling_window_counts=_rolling_window_count_summary(full_rows),
+        rolling_source_lineage=_rolling_source_lineage(
+            source_adapter_result=source_adapter_result,
+            normalized_csv=normalized_csv,
+            normalized_hash_by_ticker=normalized_hash_by_ticker,
+        ),
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -268,10 +273,20 @@ def _write_csv(path: Path, columns: list[str], rows: Iterable[Mapping[str, str]]
 def _build_review_overlay_rows(full_rows: list[dict[str, str]], config: PipelineConfig) -> list[dict[str, str]]:
     output: list[dict[str, str]] = []
     for row in sorted(full_rows, key=lambda item: (item["market"], item["ticker"])):
+        review_reason = _join_reasons(row["reviewReason"], "Step 114-2D overlay is review-only and not loader-approved.")
         output.append(
             {
                 "market": row["market"],
                 "ticker": row["ticker"],
+                "expectedCagr": row["selectedCagr"],
+                "priceCagr10y": row["rawPriceCagr10y"],
+                "mdd": row["selectedMdd"],
+                "beta": row["selectedBeta"],
+                "dataYears": row["dataYears"],
+                "benchmarkTicker": row["benchmarkTicker"],
+                "metricsStatus": "review_only",
+                "metricsSource": f"step114-2d_fixture:{PIPELINE_VERSION}:{ROLLING_METRIC_VERSION}",
+                "reviewReason": review_reason,
                 "metricBaseDate": config.metric_base_date,
                 "reviewOverlayDate": "2026-07-14",
                 "overlayStatus": "review_only",
@@ -293,15 +308,51 @@ def _build_review_overlay_rows(full_rows: list[dict[str, str]], config: Pipeline
                 "selectedBeta": row["selectedBeta"],
                 "dividendYield": row["dividendYield"],
                 "dividendStatus": row["dividendStatus"],
-                "dataYears": row["dataYears"],
                 "dataStatus": row["dataStatus"],
                 "reviewFlag": "review_required",
-                "reviewReason": _join_reasons(row["reviewReason"], "Step 114-2D overlay is review-only and not loader-approved."),
                 "cagrPolicy": row["cagrPolicy"],
                 "normalizationPolicy": row["normalizationPolicy"],
                 "sourcePolicy": row["sourcePolicy"],
                 "sourceHash": row["sourceHash"],
+                "rawSourceSha256": row["rawSourceSha256"],
+                "normalizationVersion": row["normalizationVersion"],
+                "normalizedSeriesHash": row["normalizedSeriesHash"],
+                "rollingMetricVersion": row["rollingMetricVersion"],
                 "notes": row["notes"],
+            }
+        )
+    return output
+
+
+def _normalized_metric_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for row in rows:
+        classification = row.get("priceSeriesClassification", "")
+        selected_price = row.get("close", "")
+        if classification == "split_adjusted":
+            selected_price = row.get("splitAdjustedClose") or row.get("close", "")
+        elif classification in {"split_and_dividend_adjusted", "total_return_adjusted"}:
+            selected_price = row.get("totalReturnAdjustedClose") or row.get("close", "")
+
+        cash_dividend = row.get("cashDividend", "")
+        dividend_status = "missing"
+        dividend_value = _safe_optional_float(cash_dividend)
+        if dividend_value is not None:
+            dividend_status = "confirmed_value" if dividend_value > 0 else "confirmed_zero"
+
+        output.append(
+            {
+                "market": row.get("market", ""),
+                "ticker": row.get("ticker", ""),
+                "month": row.get("month", ""),
+                "sourceDate": row.get("sourceDate", ""),
+                "currency": row.get("currency", ""),
+                "close": selected_price,
+                "cashDividend": cash_dividend,
+                "dividendStatus": dividend_status,
+                "priceAdjustmentBasis": classification,
+                "normalizationVersion": row.get("normalizationVersion", ""),
+                "sourceId": row.get("sourceId", ""),
             }
         )
     return output
@@ -435,14 +486,16 @@ def _build_candidate_outputs(
     candidate: Mapping[str, str],
     config: PipelineConfig,
     prices: list[dict[str, str]],
+    benchmark_ticker: str,
     benchmark_prices: list[dict[str, str]],
     source_hash: str,
+    raw_source_sha256: str,
 ) -> tuple[dict[str, str], list[dict[str, str]], list[dict[str, str]]]:
     ticker = candidate["ticker"]
     review_rows: list[dict[str, str]] = []
     if not prices:
-        row = _empty_metrics_row(candidate, config, source_hash, "source_missing")
-        review_rows.append(_review_row(candidate, config, "missing_price_data", "", "", "No fixture price rows found."))
+        row = _empty_metrics_row(candidate, config, benchmark_ticker, source_hash, raw_source_sha256, "normalized_source_missing")
+        review_rows.append(_review_row(candidate, config, "missing_price_data", "", "", "No normalized month-end rows found."))
         return row, review_rows, []
 
     data_start = prices[0]["month"]
@@ -481,6 +534,7 @@ def _build_candidate_outputs(
         "market": candidate["market"],
         "assetType": candidate["assetType"],
         "benchmarkKey": candidate["benchmarkKey"],
+        "benchmarkTicker": benchmark_ticker,
         "metricBaseDate": config.metric_base_date,
         "dataStartDate": data_start,
         "dataEndDate": data_end,
@@ -520,12 +574,23 @@ def _build_candidate_outputs(
         "reviewReason": review_reason if beta is not None else "Benchmark fixture rows were insufficient.",
         "sourcePolicy": "fixture_only_approved_internal",
         "sourceHash": source_hash,
+        "rawSourceSha256": raw_source_sha256,
+        "normalizationVersion": NORMALIZATION_VERSION,
+        "normalizedSeriesHash": source_hash,
+        "rollingMetricVersion": ROLLING_METRIC_VERSION,
         "notes": "Step 114-2D offline fixture; price CAGR uses split-adjusted price basis where available; total return remains reference-only.",
     }
     return row, review_rows, monthly_return_rows
 
 
-def _empty_metrics_row(candidate: Mapping[str, str], config: PipelineConfig, source_hash: str, reason: str) -> dict[str, str]:
+def _empty_metrics_row(
+    candidate: Mapping[str, str],
+    config: PipelineConfig,
+    benchmark_ticker: str,
+    source_hash: str,
+    raw_source_sha256: str,
+    reason: str,
+) -> dict[str, str]:
     row = {column: "" for column in FULL_METRICS_COLUMNS}
     row.update(
         {
@@ -534,12 +599,17 @@ def _empty_metrics_row(candidate: Mapping[str, str], config: PipelineConfig, sou
             "market": candidate["market"],
             "assetType": candidate["assetType"],
             "benchmarkKey": candidate["benchmarkKey"],
+            "benchmarkTicker": benchmark_ticker,
             "metricBaseDate": config.metric_base_date,
             "dataStatus": "review_required",
             "reviewFlag": "review_required",
             "reviewReason": reason,
             "sourcePolicy": "fixture_only_approved_internal",
             "sourceHash": source_hash,
+            "rawSourceSha256": raw_source_sha256,
+            "normalizationVersion": NORMALIZATION_VERSION,
+            "normalizedSeriesHash": source_hash,
+            "rollingMetricVersion": ROLLING_METRIC_VERSION,
         }
     )
     return row
@@ -635,6 +705,7 @@ def _build_manifest(
     historical_overlay_protection: Mapping[str, Any],
     review_overlay_files: list[Path],
     rolling_window_counts: Mapping[str, Any],
+    rolling_source_lineage: Mapping[str, Any],
 ) -> dict[str, Any]:
     review_overlay_hashes = {path.name: _sha256(path) for path in review_overlay_files}
     return {
@@ -675,6 +746,7 @@ def _build_manifest(
         "reviewOverlaySha256": ",".join(review_overlay_hashes[path.name] for path in review_overlay_files),
         "historicalOverlayProtectionStatus": historical_overlay_protection["status"],
         "historicalOverlayProtection": dict(historical_overlay_protection),
+        "rollingSourceLineage": dict(rolling_source_lineage),
         "policy": {
             "selectedCagr": "rolling_median_required_for_all_markets",
             "selectedMdd": "conservative_worst_drawdown",
@@ -701,7 +773,11 @@ def _rolling_window_count_summary(full_rows: list[dict[str, str]]) -> dict[str, 
 def _historical_protection_hashes() -> dict[str, str]:
     repo_root = Path(__file__).resolve().parents[2]
     paths = [*HISTORICAL_OVERLAY_PATHS, LOADER_POINTER_PATH]
-    return {str(path): _sha256(repo_root / path) for path in paths}
+    return {_repo_relative_posix(path): _sha256(repo_root / path) for path in paths}
+
+
+def _repo_relative_posix(path: Path) -> str:
+    return Path(*path.parts).as_posix()
 
 
 def _historical_overlay_protection(before: Mapping[str, str]) -> dict[str, Any]:
@@ -718,6 +794,23 @@ def _historical_overlay_protection(before: Mapping[str, str]) -> dict[str, Any]:
             }
             for path in sorted(after)
         ],
+    }
+
+
+def _rolling_source_lineage(
+    *,
+    source_adapter_result: Any,
+    normalized_csv: Path,
+    normalized_hash_by_ticker: Mapping[str, str],
+) -> dict[str, Any]:
+    return {
+        "rawSourceFileName": source_adapter_result.sourceFileName,
+        "rawSourceSha256": source_adapter_result.rawSourceSha256,
+        "normalizationVersion": NORMALIZATION_VERSION,
+        "normalizedMonthEndFileName": normalized_csv.name,
+        "normalizedMonthEndSha256": _sha256(normalized_csv),
+        "rollingMetricVersion": ROLLING_METRIC_VERSION,
+        "normalizedSeriesHashes": dict(sorted(normalized_hash_by_ticker.items())),
     }
 
 
@@ -847,13 +940,23 @@ def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, st
         return None, "missing", "unconfirmed_blank"
     last_close = float(prices[-1]["close"])
     trailing_rows = prices[-12:]
-    statuses = {row.get("dividendStatus", "") for row in trailing_rows}
+    statuses = {_dividend_status(row) for row in trailing_rows}
     if "missing" in statuses:
         return None, "missing", "unconfirmed_blank"
     trailing_dividends = sum(_safe_float(row.get("cashDividend")) for row in trailing_rows)
     if trailing_dividends == 0:
         return 0.0, "confirmed_zero", "confirmed_no_dividend"
     return (trailing_dividends / last_close) * 100, "confirmed_value", "confirmed_ttm_cash_dividend"
+
+
+def _dividend_status(row: Mapping[str, str]) -> str:
+    explicit = row.get("dividendStatus", "")
+    if explicit in {"missing", "confirmed_zero", "confirmed_value"}:
+        return explicit
+    value = _safe_optional_float(row.get("cashDividend"))
+    if value is None:
+        return "missing"
+    return "confirmed_value" if value > 0 else "confirmed_zero"
 
 
 def _safe_float(value: str | None) -> float:

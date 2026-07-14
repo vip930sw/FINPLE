@@ -5,3 +5,4 @@ MSFT,마이크로소프트,Microsoft Corporation,US,stock,NASDAQ,technology,soft
 069500,KODEX 200,KODEX 200,KR,ETF,KRX,broad_market,index,core,medium,long_term,true,kr;etf;leading_zero,2002-10-14,KOSPI200,,false,true
 005930,삼성전자,Samsung Electronics,KR,stock,KRX,technology,semiconductor,core,high,long_term,false,kr;stock;leading_zero;dividend_fixture,1975-06-11,KOSPI200,,false,true
 123456,짧은상장 Fixture,Short History Fixture,KR,ETF,KRX,test,test,review,medium,review,false,kr;short_history;fixture,2024-01-02,KOSPI200,069500,false,true
+BADBLK,정규화차단 Fixture,Blocked Normalization Fixture,US,ETF,NYSE Arca,test,test,review,medium,review,false,us;blocked;fixture,2025-01-02,SP500,,false,true

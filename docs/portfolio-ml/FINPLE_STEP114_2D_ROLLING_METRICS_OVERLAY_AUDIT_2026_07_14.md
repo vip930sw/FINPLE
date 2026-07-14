@@ -6,7 +6,7 @@ Scope: fixture/offline rolling metrics and review-only overlay generation.
 
 ## Summary
 
-Step 114-2D adds deterministic rolling price-CAGR metrics to the offline monthly metrics pipeline and emits a new review-only overlay package. The generated overlay is not connected to the production loader and does not approve app export.
+Step 114-2D adds deterministic rolling price-CAGR metrics to the offline monthly metrics pipeline and emits a new review-only overlay package. Rolling metrics consume Step 114-2B normalized month-end rows, not `monthly_prices.csv`. The generated overlay is not connected to the production loader and does not approve app export.
 
 Readiness flags:
 
@@ -41,6 +41,17 @@ rolling_10y_median -> rolling_5y_median -> since_inception -> blank_review_requi
 - Total-return-adjusted series are blocked for price-CAGR selection and remain reference-only.
 - Dividend yield, price return, total return reference, MDD, and beta remain separate output fields.
 - Historical MDD is stored as `mddFullPeriod` and `selectedMdd`.
+- `monthly_prices.csv` remains a reference fixture only and is not part of rolling overlay source lineage.
+
+## Overlay Core Schema
+
+The review overlay keeps the existing loader-compatible core columns first:
+
+```text
+market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason
+```
+
+Rolling and provenance fields are appended after those core fields. `metricsStatus` is always `review_only`.
 
 ## Generated Review-Only Package
 
@@ -54,12 +65,25 @@ Review overlays:
 
 | File | SHA256 |
 | --- | --- |
-| `finple_review_overlay_us_2026_07_14.csv` | `136b2fb481d3f858d21e528844cb3a65438b0e3e6ddadd2046caa5783b8affe6` |
-| `finple_review_overlay_kr_2026_07_14.csv` | `1df4304c8a6b356d54368dcd4deed58fb270b50e548540526756df1c77fa153e` |
-| `finple_metrics_manifest_2026_07_14.json` | `6aeed90a37bc19695f90a0cf1a510e880e4038affe32d00f5d7415d7e956fdc3` |
-| `finple_monthly_metrics_2026_07_14_package.zip` | `5bb9a88c04cd9c9e61ffb057c731a3d815a57916d86588061473fca6c9306513` |
+| `finple_review_overlay_us_2026_07_14.csv` | `687ecc7d4a67e03dd8ab74606f0d4a874b6d70b20ab4d458d447e0ff7e071311` |
+| `finple_review_overlay_kr_2026_07_14.csv` | `9a5b2a1b14912428faf825671ea3cfa61bc9acf2ea7620be1bdc29cc80370b98` |
+| `finple_metrics_manifest_2026_07_14.json` | `1020218eace53a1fc4a128f5eec3389fa473a9de79b47979bcda15c155bff99d` |
+| `finple_monthly_metrics_2026_07_14_package.zip` | `5302afc0e46432d53b9eee0e96d4410e0d1360a530a6e2a55c2c7b79637a5a5e` |
 
 KR ticker formatting is preserved, including `005930` and `069500`.
+
+## Source Lineage
+
+The manifest links:
+
+- raw source SHA
+- `timeseries-normalization-v1-step114-2b`
+- normalized month-end CSV SHA
+- per-series normalized hashes
+- `rolling-price-cagr-v1-step114-2d`
+- review overlay hashes
+
+Repository-relative paths are serialized with `/` separators for Windows/Linux determinism.
 
 ## Protected Production Files
 

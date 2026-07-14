@@ -170,8 +170,9 @@ def _validate_daily_row(row: Mapping[str, str]) -> list[tuple[str, str]]:
     if split_factor is None or split_factor <= 0 or split_factor > 100:
         errors.append(("implausible_split_factor", "splitFactor must be positive and plausible."))
 
-    cash_dividend = _safe_float(row.get("cashDividend"))
-    if cash_dividend is None or cash_dividend < 0:
+    cash_dividend_raw = row.get("cashDividend", "")
+    cash_dividend = _safe_float(cash_dividend_raw)
+    if cash_dividend_raw != "" and (cash_dividend is None or cash_dividend < 0):
         errors.append(("corporate_action_inconsistency", "cashDividend must be zero or positive."))
 
     basis = classify_price_series(row)
