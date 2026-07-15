@@ -26,6 +26,7 @@ import {
   getExternalShockPortfolioFingerprint,
   isExternalShockViewModelReady,
 } from "./externalShockScenarioAdapter.js";
+import { SIMULATOR_TAB_ITEMS } from "./simulatorNavigation.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -342,13 +343,17 @@ test("fingerprint preserves KR leading-zero tickers and stable asset order", () 
 });
 
 test("navigation includes Step 5 between Step 4 and AI without removing existing steps", () => {
-  const navSource = fs.readFileSync("src/components/portfolio/components/SimulatorTabNav.jsx", "utf8");
-  assert.match(navSource, /key: "settings", step: "STEP 1"/);
-  assert.match(navSource, /key: "compare", step: "STEP 2"/);
-  assert.match(navSource, /key: "detail", step: "STEP 3"/);
-  assert.match(navSource, /key: "probability", step: "STEP 4"/);
-  assert.match(navSource, /key: "shock", step: "STEP 5"/);
-  assert.match(navSource, /key: "ai"/);
+  assert.deepEqual(
+    SIMULATOR_TAB_ITEMS.map((item) => [item.key, item.step]),
+    [
+      ["settings", "STEP 1"],
+      ["compare", "STEP 2"],
+      ["detail", "STEP 3"],
+      ["probability", "STEP 4"],
+      ["shock", "STEP 5"],
+      ["ai", "STEP 6"],
+    ]
+  );
 });
 
 test("panel source includes review-only scenario selector, comparison table, and stress disclaimer", () => {

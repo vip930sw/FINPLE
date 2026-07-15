@@ -58,6 +58,7 @@ import {
   getAssetDataProviderLabel,
   normalizeTicker,
 } from "../services/assetDataService";
+import { normalizeSimulatorTab } from "../utils/simulatorNavigation";
 
 import {
   consumeFreeApiLookup,
@@ -106,7 +107,7 @@ export default function usePortfolioSimulator() {
   const [settings, setSettings] = useState(initialPortfolioState.globalSettings || DEFAULT_SETTINGS);
   const [assets, setAssets] = useState(() => cloneAssets(initialPortfolioState.activePortfolio.assets));
   const [targetWeightDrafts, setTargetWeightDrafts] = useState({});
-  const [activeSimulatorTab, setActiveSimulatorTab] = useState("screener");
+  const [activeSimulatorTab, setActiveSimulatorTab] = useState("settings");
   const [isPortfolioDropdownOpen, setIsPortfolioDropdownOpen] = useState(false);
   const [isNewPortfolioMenuOpen, setIsNewPortfolioMenuOpen] = useState(false);
   const [assetLookupStatus, setAssetLookupStatus] = useState({});
@@ -177,7 +178,7 @@ export default function usePortfolioSimulator() {
   function deleteActivePortfolio() { if (portfolioList.length <= 1) return; const nextPortfolioList = portfolioList.filter((portfolio) => portfolio.id !== activePortfolioId); const nextActivePortfolio = nextPortfolioList[0]; setPortfolioList(nextPortfolioList); setActivePortfolioId(nextActivePortfolio.id); setAssets(cloneAssets(nextActivePortfolio.assets)); setTargetWeightDrafts({}); }
   function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS)); pendingTemplateAutoLookupRef.current = true; setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화했습니다. 자산 데이터를 자동 조회합니다."); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
-  function changeSimulatorTab(nextTab) { setActiveSimulatorTab(nextTab); }
+  function changeSimulatorTab(nextTab) { setActiveSimulatorTab(normalizeSimulatorTab(nextTab)); }
   function scrollToPortfolioTop() { document.getElementById("portfolio")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
   function selectPortfolioFromFloating(id) { selectPortfolio(id); }
   function downloadPortfolioBackup() { downloadJsonFile({ portfolioList, activePortfolioId, globalSettings: settings, appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, schemaVersion: FINPLE_BACKUP_SCHEMA_VERSION, exportedAt: new Date().toISOString() }, createBackupFileName(activePortfolio?.name)); }

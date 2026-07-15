@@ -405,9 +405,9 @@ export default function AiAnalysisPanel({
   return (
     <div className="simulatorTabPanel aiAnalysisPanel">
       <div className="tabSectionHeader aiAnalysisHeader">
-        <p className="sectionLabel">Portfolio AI Analysis</p>
+        <p className="sectionLabel">STEP 6. AI Analysis</p>
         <div>
-          <h3>포트폴리오 AI 분석</h3>
+          <h3>AI 분석</h3>
           <p>
             입력하신 자산 구성과 계산 결과를 바탕으로 포트폴리오 구조, 데이터 한계,
             주요 위험요인을 정리합니다.

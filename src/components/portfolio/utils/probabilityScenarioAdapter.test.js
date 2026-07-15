@@ -17,6 +17,7 @@ import {
   getProbabilityPortfolioFingerprint,
   isProbabilityViewModelReady,
 } from "./probabilityScenarioAdapter.js";
+import { SIMULATOR_TAB_ITEMS } from "./simulatorNavigation.js";
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -230,12 +231,17 @@ test("fingerprint preserves KR leading-zero tickers", () => {
 });
 
 test("Step 1 through Step 3 navigation remains and Step 4 probability does not remove AI", () => {
-  const navSource = fs.readFileSync("src/components/portfolio/components/SimulatorTabNav.jsx", "utf8");
-  assert.match(navSource, /key: "settings", step: "STEP 1"/);
-  assert.match(navSource, /key: "compare", step: "STEP 2"/);
-  assert.match(navSource, /key: "detail", step: "STEP 3"/);
-  assert.match(navSource, /key: "probability", step: "STEP 4"/);
-  assert.match(navSource, /key: "ai"/);
+  assert.deepEqual(
+    SIMULATOR_TAB_ITEMS.map((item) => [item.key, item.step]),
+    [
+      ["settings", "STEP 1"],
+      ["compare", "STEP 2"],
+      ["detail", "STEP 3"],
+      ["probability", "STEP 4"],
+      ["shock", "STEP 5"],
+      ["ai", "STEP 6"],
+    ]
+  );
 });
 
 test("browser UI does not import Node engine, crypto, scenario API, provider, or loader input", () => {

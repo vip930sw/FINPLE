@@ -5043,9 +5043,12 @@ nav {
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin: 0 0 28px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .simulatorTabButton {
+  min-width: 0;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #475569;
@@ -5055,6 +5058,7 @@ nav {
   font-weight: 900;
   transition: background-color 0.2s ease, border-color 0.2s ease,
     color 0.2s ease;
+  overflow-wrap: anywhere;
 }
 
 .simulatorTabButton:hover {
@@ -5066,6 +5070,11 @@ nav {
   border-color: #0f172a;
   background: #0f172a;
   color: #ffffff;
+}
+
+.simulatorTabButton:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 3px;
 }
 
 .simulatorTabPanel {
@@ -8116,17 +8125,23 @@ nav {
 .simulatorTabNav.fourStepNav {
   grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overscroll-behavior-inline: contain !important;
 }
 
 .simulatorTabNav.fourStepNav .simulatorTabButton {
   display: flex !important;
   min-height: 76px !important;
+  min-width: 0 !important;
   flex-direction: column !important;
   align-items: flex-start !important;
   justify-content: center !important;
   gap: 3px !important;
   padding: 14px 16px !important;
   text-align: left !important;
+  overflow-wrap: anywhere !important;
 }
 
 .simulatorTabNav.fourStepNav .simulatorTabButton span {
@@ -8140,6 +8155,7 @@ nav {
   font-size: 15px !important;
   font-weight: 950 !important;
   line-height: 1.15 !important;
+  overflow-wrap: anywhere !important;
 }
 
 .simulatorTabNav.fourStepNav .simulatorTabButton small {
