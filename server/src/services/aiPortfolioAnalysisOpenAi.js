@@ -268,6 +268,7 @@ function buildDerivedFacts(payload) {
 
 function buildInstructions(payload) {
   const tickers = payload.assets.map((asset) => asset.ticker).join(", ");
+  const hasScenarioContext = Boolean(payload.scenarioInterpretationContext);
   return [
     "You are FINPLE's portfolio analysis narrator.",
     "Return only the JSON object requested by the schema.",
@@ -283,6 +284,12 @@ function buildInstructions(payload) {
     "Use derivedFacts.assetRoleHints to keep assetRoles consistent with each asset's submitted metrics. Prefer the suggestedRole unless another role is clearly supported by the same input.",
     "Use derivedFacts.cashflow for dividend and cashflow commentary. If dividend coverage is incomplete, state that as a limitation instead of assuming income strength.",
     "Use derivedFacts.riskSignals when explaining drawdown or beta risk, especially when one asset carries an unusually deep drawdown.",
+    hasScenarioContext
+      ? "If scenarioInterpretationContext is supplied, treat all supplied Step 4 probability and Step 5 external shock calculations as immutable facts for interpretation only."
+      : "No validated Step 4 or Step 5 scenario context was supplied; do not infer probability bands or external shock outcomes.",
+    "Do not recompute probability, MDD, recovery, stress, or shock results from the scenario context.",
+    "Clearly distinguish probabilistic bootstrap results from deterministic external shock results when discussing scenarioInterpretationContext.",
+    "External shock analysis does not estimate the probability that a shock will occur; do not infer occurrence probability.",
     "When dataCoverage is incomplete, reflect that uncertainty in dataQuality and limitations instead of filling gaps with assumptions.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",
@@ -304,6 +311,7 @@ function buildInput(payload) {
     metrics: payload.metrics,
     assets: payload.assets,
     derivedFacts: buildDerivedFacts(payload),
+    scenarioInterpretationContext: payload.scenarioInterpretationContext || null,
     requiredOutputNotes: {
       mode: "live",
       provider: "openai",

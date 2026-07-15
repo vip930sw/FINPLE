@@ -10,6 +10,7 @@ import {
   buildAiAnalysisPayload,
   createAiAnalysisInputSignature,
 } from "../utils/buildAiAnalysisPayload";
+import { getProviderScenarioContext } from "../utils/aiScenarioInterpretationContext";
 
 function getActiveAssets(assets = [], isEmptyAssetRow) {
   return assets.filter((asset) => {
@@ -59,6 +60,65 @@ function getActionCopy(analysisStatus) {
   if (analysisStatus === "loading") return "분석 중";
   if (analysisStatus === "success" || analysisStatus === "stale" || analysisStatus === "error") return "새로 분석";
   return "분석 시작";
+}
+
+function formatScenarioValue(value, suffix = "") {
+  if (value === null || value === undefined || value === "") return "미확인";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "미확인";
+  return `${number.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}${suffix}`;
+}
+
+function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
+  const providerContext = getProviderScenarioContext(scenarioInterpretationContext);
+  const excludedSections = Array.isArray(scenarioInterpretationContext?.excludedSections)
+    ? scenarioInterpretationContext.excludedSections
+    : [];
+  const probability = providerContext?.sections?.probability || null;
+  const externalShock = providerContext?.sections?.externalShock || null;
+
+  return (
+    <section className={`aiScenarioContextPanel ${providerContext ? "ready" : "muted"}`}>
+      <div>
+        <strong>STEP 4·5 검증 결과</strong>
+        <p>
+          AI는 STEP 4·5에서 계산된 검증 결과를 해석하며 직접 확률·MDD·충격 결과를 계산하지 않습니다.
+          외부충격분석은 충격의 발생 확률을 의미하지 않습니다. 투자 권유가 아닙니다.
+        </p>
+      </div>
+      {providerContext ? (
+        <div className="aiScenarioContextGrid">
+          {probability && (
+            <div>
+              <span>확률분석</span>
+              <strong>P50 {formatScenarioValue(probability.terminalValue?.p50)}</strong>
+              <em>
+                P10 {formatScenarioValue(probability.terminalValue?.p10)}
+                {" · "}
+                P90 {formatScenarioValue(probability.terminalValue?.p90)}
+              </em>
+            </div>
+          )}
+          {externalShock && (
+            <div>
+              <span>외부충격분석</span>
+              <strong>{formatScenarioValue(externalShock.terminalValue?.deltaRate, "%")}</strong>
+              <em>{externalShock.scenarioLabel || externalShock.scenarioId} · 발생 확률 추정 아님</em>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="aiScenarioContextEmpty">
+          <strong>검증 scenario context 미포함</strong>
+          <span>
+            {excludedSections.length > 0
+              ? "review-only, fixture, stale 또는 승인 미완료 결과는 AI provider payload에서 제외됩니다."
+              : "기존 AI 요청과 동일하게 현재 포트폴리오 입력만 해석합니다."}
+          </span>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function getAccessRequiredPlanCopy(accessSummary) {
@@ -284,6 +344,7 @@ export default function AiAnalysisPanel({
   formatNumber,
   formatPercent,
   isEmptyAssetRow,
+  scenarioInterpretationContext = null,
 }) {
   const [analysisStatus, setAnalysisStatus] = useState("empty");
   const [analysis, setAnalysis] = useState(null);
@@ -298,8 +359,13 @@ export default function AiAnalysisPanel({
   );
   const topAssets = useMemo(() => getTopAssets(activeAssets), [activeAssets]);
   const inputSignature = useMemo(
-    () => createAiAnalysisInputSignature({ activePortfolio, activeAssets, result }),
-    [activePortfolio, activeAssets, result]
+    () => createAiAnalysisInputSignature({
+      activePortfolio,
+      activeAssets,
+      result,
+      scenarioInterpretationContext,
+    }),
+    [activePortfolio, activeAssets, result, scenarioInterpretationContext]
   );
   const analysisCachePortfolioId = activePortfolio?.id || "default";
   const readiness = getReadiness(activeAssets, result);
@@ -376,6 +442,7 @@ export default function AiAnalysisPanel({
         activeAssets,
         result,
         settings,
+        scenarioInterpretationContext,
       });
       const { analysis: nextAnalysis, usage } = await requestPortfolioAiAnalysisResult(payload);
 
@@ -452,6 +519,8 @@ export default function AiAnalysisPanel({
           </p>
         )}
       </div>
+
+      <ScenarioContextStatusPanel scenarioInterpretationContext={scenarioInterpretationContext} />
 
       {isAccessBlocked && (
         <AiAnalysisAccessPanel

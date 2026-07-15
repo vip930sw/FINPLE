@@ -147,8 +147,16 @@ test("AI request payload remains isolated from probability and external shock ou
     settings: { years: 10, inflationRate: 2, dividendReinvest: true },
   });
   const serialized = JSON.stringify(payload);
-  assert.equal(payload.analysisContext, "simulator-step4");
+  assert.equal(payload.analysisContext, "simulator-step6");
+  assert.equal(payload.scenarioInterpretationContext, undefined);
   assert.doesNotMatch(serialized, /probability|externalShock|stress|shockScenario|scenarioResult/);
+});
+
+test("production AI component does not import browser scenario fixtures", () => {
+  const panelSource = readSource("src/components/portfolio/components/AiAnalysisPanel.jsx");
+  const payloadSource = readSource("src/components/portfolio/utils/buildAiAnalysisPayload.js");
+  const combined = `${panelSource}\n${payloadSource}`;
+  assert.doesNotMatch(combined, /fixtures\/probabilityScenarioResultFixture|fixtures\/externalShockScenarioResultFixture/);
 });
 
 test("AI service endpoints stay on the existing provider and status routes", () => {
