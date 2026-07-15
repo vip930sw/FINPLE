@@ -27,6 +27,8 @@ The simulator still accepts the existing `ai` key and `ai-analysis` anchor. Hash
 
 Unknown or malformed tab values normalize to `settings`. The imperative `changeTab(nextTab)` path and `onActiveTabChange` callback use the same normalized key.
 
+Hash navigation is treated as an event input, not as continuously pinned state. The initial URL hash is consumed once on mount. Later URL changes are handled through the browser `hashchange` event. Ordinary button tab selection does not re-apply an old unchanged hash, so a user who entered through `#ai-analysis` can still select `settings`, `probability`, or `shock` without being forced back to the AI tab.
+
 ## AI Behavior Preservation
 
 `AiAnalysisPanel` keeps the existing prop contract:
@@ -47,13 +49,12 @@ The AI request payload builder was not changed. Probability and external shock o
 
 ## Accessibility
 
-The six-step tab navigation uses native buttons with:
+The six-step navigation uses the simpler native step-navigation pattern:
 
-- `role="tablist"` on the tab container
-- `role="tab"` on each tab button
-- `aria-controls` pointing to the panel anchor
-- `aria-selected` on each tab
-- `aria-current="step"` on the active tab
+- a labelled `nav` container
+- native `button` controls
+- `aria-current="step"` on the active step
+- no partial `tablist` / `tab` / `aria-selected` / dangling `aria-controls` pattern
 - existing keyboard activation through native buttons
 - visible `:focus-visible` outline
 
@@ -61,7 +62,7 @@ The AI panel header now displays `STEP 6. AI Analysis` and `AI 분석`, matching
 
 ## Mobile Containment
 
-The six-tab navigation is constrained to the simulator width with `max-width: 100%`, `min-width: 0`, wrapped text, and nav-contained horizontal overflow fallback. Existing Step 4 probability and Step 5 external-shock panels are not recalculated or rewired.
+The six-tab navigation is constrained to the simulator width with `max-width: 100%`, `min-width: 0`, wrapped text, and a deliberate layout contract: six columns with fixed minimum tab widths on wider screens, then two-column wrapping below the mobile breakpoint. Existing Step 4 probability and Step 5 external-shock panels are not recalculated or rewired.
 
 ## Out Of Scope And Protected Boundaries
 
@@ -76,11 +77,12 @@ This step does not implement Step 114-2J AI result integration. It does not send
 - Step 4 and Step 5 order and anchors
 - unknown tab fallback to `settings`
 - direct hash mapping for refresh/deep-link compatibility
+- initial `#ai-analysis` selection, stale-hash non-pinning after ordinary tab selection, real `hashchange` handling, and unknown-hash fail-safe behavior
 - unchanged `AiAnalysisPanel` prop contract
 - AI payload exclusion of probability, external shock, and stress results
 - unchanged AI service endpoint strings
-- active-tab accessibility attributes
-- mobile containment CSS
+- native step-navigation accessibility without partial ARIA tabs
+- mobile two-column containment CSS
 - no new `MutationObserver` or global DOM patching in Step 114-2I simulator sources
 
 Existing Step 4 probability and Step 5 external shock adapter tests now read the shared navigation metadata to guard their relative order.

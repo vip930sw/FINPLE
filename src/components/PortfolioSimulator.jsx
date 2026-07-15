@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -11,9 +11,9 @@ import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
 import {
+  createSimulatorHashNavigator,
   getSimulatorTabAnchorId,
   normalizeSimulatorTab,
-  resolveSimulatorTab,
 } from "./portfolio/utils/simulatorNavigation";
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
@@ -94,6 +94,11 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   } = usePortfolioSimulator();
 
   const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
+  const changeSimulatorTabRef = useRef(changeSimulatorTab);
+
+  useEffect(() => {
+    changeSimulatorTabRef.current = changeSimulatorTab;
+  }, [changeSimulatorTab]);
 
   useEffect(() => {
     onActiveTabChange?.(effectiveActiveSimulatorTab);
@@ -101,17 +106,24 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const hashTab = resolveSimulatorTab(window.location.hash);
-    if (!hashTab.isKnown || hashTab.key === effectiveActiveSimulatorTab) return;
+    const hashNavigator = createSimulatorHashNavigator({
+      getHash: () => window.location.hash,
+      onTabChange(nextTab) {
+        changeSimulatorTabRef.current(nextTab);
+        window.setTimeout(() => {
+          document.getElementById(getSimulatorTabAnchorId(nextTab))?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 80);
+      },
+    });
+    const handleHashChange = () => hashNavigator.applyCurrentHash();
 
-    changeSimulatorTab(hashTab.key);
-    window.setTimeout(() => {
-      document.getElementById(getSimulatorTabAnchorId(hashTab.key))?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
-  }, [changeSimulatorTab, effectiveActiveSimulatorTab]);
+    hashNavigator.applyCurrentHash();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   const scrollToSimulatorTop = useCallback(function scrollToSimulatorTop() {
     window.setTimeout(() => {

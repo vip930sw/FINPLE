@@ -48,3 +48,27 @@ export function getSimulatorTabAnchorId(value) {
   const key = normalizeSimulatorTab(value);
   return SIMULATOR_TAB_ANCHORS[key] || "settings";
 }
+
+export function createSimulatorHashNavigator({ getHash, onTabChange } = {}) {
+  let lastAppliedHash = null;
+
+  return {
+    applyCurrentHash() {
+      const rawHash = String(typeof getHash === "function" ? getHash() || "" : "").trim();
+      if (!rawHash) return { status: "empty", key: null, isKnown: false };
+      if (rawHash === lastAppliedHash) return { status: "unchanged", key: null, isKnown: false };
+
+      lastAppliedHash = rawHash;
+      const resolved = resolveSimulatorTab(rawHash);
+      if (typeof onTabChange === "function") {
+        onTabChange(resolved.key, { hash: rawHash, isKnown: resolved.isKnown });
+      }
+
+      return {
+        status: resolved.isKnown ? "applied" : "fallback",
+        key: resolved.key,
+        isKnown: resolved.isKnown,
+      };
+    },
+  };
+}
