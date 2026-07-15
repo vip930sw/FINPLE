@@ -1,0 +1,113 @@
+{
+  "portfolioId": "step114-2h-fixture-portfolio",
+  "assets": [
+    { "market": "KR", "ticker": "005930", "targetWeight": 50 },
+    { "market": "KR", "ticker": "069500", "targetWeight": 50 }
+  ],
+  "settings": {
+    "initialInvestment": 12000000,
+    "monthlyContribution": 500000,
+    "investmentMonths": 12,
+    "inflationRate": 0.025,
+    "rebalanceFrequency": "none"
+  },
+  "metadata": {
+    "returnBasis": "price_return",
+    "currencyMode": "KRW",
+    "sourceHashes": ["fixture-external-shock-source-v1"],
+    "normalizationVersion": "normalization-v1-step114-2b",
+    "calculationPolicyVersion": "metrics-policy-v3-step114",
+    "pipelineVersion": "scenario-external-shock-fixture-v1"
+  },
+  "baselineReturnMatrix": [
+    { "month": "2024-01-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.02, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-01-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.01, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-02-29", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.015, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-02-29", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.005, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-03-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.03, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-03-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.012, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-04-30", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.08, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-04-30", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.03, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-05-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.04, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-05-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.018, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-06-30", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.025, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-06-30", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.014, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-07-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.01, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-07-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.006, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-08-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.02, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-08-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.01, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-09-30", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.015, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-09-30", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.01, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-10-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.022, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-10-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.011, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-11-30", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.01, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-11-30", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": -0.004, "sourceHash": "fixture-row-source-b" },
+    { "month": "2024-12-31", "market": "KR", "ticker": "005930", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.018, "sourceHash": "fixture-row-source-a" },
+    { "month": "2024-12-31", "market": "KR", "ticker": "069500", "returnBasis": "price_return", "currencyMode": "KRW", "baselineReturn": 0.009, "sourceHash": "fixture-row-source-b" }
+  ],
+  "scenarios": {
+    "directAsset": {
+      "scenarioId": "step114-2h-direct-asset-fixture",
+      "scenarioLabel": "Direct asset shock fixture",
+      "method": "deterministic_external_shock",
+      "shockMode": "direct_asset",
+      "shockEvents": [
+        {
+          "monthIndex": 4,
+          "label": "Synthetic direct April drawdown",
+          "assetShocks": [
+            { "market": "KR", "ticker": "005930", "shockReturn": -0.2 },
+            { "market": "KR", "ticker": "069500", "shockReturn": -0.1 }
+          ]
+        },
+        {
+          "monthIndex": 5,
+          "label": "Synthetic partial recovery",
+          "assetShocks": [
+            { "market": "KR", "ticker": "005930", "shockReturn": 0.08 },
+            { "market": "KR", "ticker": "069500", "shockReturn": 0.04 }
+          ]
+        }
+      ]
+    },
+    "marketBeta": {
+      "scenarioId": "step114-2h-market-beta-fixture",
+      "scenarioLabel": "Market beta shock fixture",
+      "method": "deterministic_external_shock",
+      "shockMode": "market_beta",
+      "assetBetas": [
+        {
+          "market": "KR",
+          "ticker": "005930",
+          "beta": 1.1,
+          "provenance": {
+            "sourceHash": "fixture-beta-source-005930",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          }
+        },
+        {
+          "market": "KR",
+          "ticker": "069500",
+          "beta": 0.8,
+          "provenance": {
+            "sourceHash": "fixture-beta-source-069500",
+            "sourceName": "synthetic_beta_fixture",
+            "asOfDate": "2024-12-31",
+            "betaWindow": "36m-monthly",
+            "methodVersion": "beta-fixture-v1"
+          }
+        }
+      ],
+      "shockEvents": [
+        {
+          "monthIndex": 4,
+          "label": "Synthetic market factor shock",
+          "marketFactorShock": -0.12
+        }
+      ]
+    }
+  }
+}

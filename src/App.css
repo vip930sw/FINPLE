@@ -8114,7 +8114,7 @@ nav {
 ========================================================= */
 
 .simulatorTabNav.fourStepNav {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   gap: 10px !important;
 }
 
@@ -8545,6 +8545,378 @@ nav {
   .probabilityMethodologyGrid,
   .probabilityAuditDetails dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================
+   STEP 114-2H. External Shock UI Shell
+========================= */
+
+.externalShockAnalysisPanel {
+  display: grid;
+  gap: 18px;
+}
+
+.externalShockFixtureBadge,
+.externalShockStatusPanel,
+.externalShockPortfolioContext,
+.externalShockReadyNotice,
+.externalShockChartCard,
+.externalShockSummaryCard,
+.externalShockScenarioSelector,
+.externalShockComparisonPanel,
+.externalShockAssumptionPanel,
+.externalShockMethodologyPanel,
+.externalShockImpactPanel,
+.externalShockDisclaimer {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+}
+
+.externalShockFixtureBadge {
+  min-width: 190px;
+  padding: 14px 16px;
+}
+
+.externalShockFixtureBadge span,
+.externalShockSummaryCard span,
+.externalShockPortfolioContext span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.externalShockFixtureBadge strong,
+.externalShockPortfolioContext strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.externalShockPortfolioContext {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.externalShockStatusPanel,
+.externalShockReadyNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.externalShockStatusIcon {
+  color: #b45309;
+}
+
+.externalShockReadyNotice {
+  background: #f0fdf4;
+  border-color: rgba(22, 163, 74, 0.2);
+  color: #14532d;
+}
+
+.externalShockScenarioSelector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.externalShockScenarioSelector button {
+  min-height: 72px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  padding: 12px 14px;
+}
+
+.externalShockScenarioSelector button.active {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.externalShockScenarioSelector span {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.externalShockScenarioSelector strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
+}
+
+.externalShockChartCard {
+  margin: 0;
+  padding: 18px;
+}
+
+.externalShockChartHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.externalShockChartHeader p {
+  max-width: 520px;
+  color: #475569;
+  margin: 0;
+}
+
+.externalShockChartSvgWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.externalShockSvg {
+  display: block;
+  min-width: 760px;
+  width: 100%;
+  height: auto;
+}
+
+.externalShockBaselineLine,
+.externalShockStressedLine,
+.externalShockContributionLine,
+.externalShockReferenceLine {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.externalShockBaselineLine {
+  stroke: #2563eb;
+}
+
+.externalShockStressedLine {
+  stroke: #dc2626;
+}
+
+.externalShockContributionLine {
+  stroke: #0f766e;
+  stroke-dasharray: 8 8;
+}
+
+.externalShockReferenceLine {
+  stroke: #7c3aed;
+  stroke-dasharray: 4 8;
+}
+
+.externalShockMarker line {
+  stroke: #b45309;
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+}
+
+.externalShockMarker circle,
+.externalShockChartPoint circle {
+  fill: #fff7ed;
+  stroke: #b45309;
+  stroke-width: 2;
+}
+
+.externalShockChartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 12px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.externalShockChartLegend i {
+  display: inline-block;
+  width: 22px;
+  height: 4px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 999px;
+}
+
+.externalShockLegendBaseline {
+  background: #2563eb;
+}
+
+.externalShockLegendStressed {
+  background: #dc2626;
+}
+
+.externalShockLegendContribution {
+  background: repeating-linear-gradient(90deg, #0f766e 0 6px, transparent 6px 10px);
+}
+
+.externalShockLegendMarker {
+  background: #b45309;
+}
+
+.externalShockSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.externalShockSummaryCard {
+  padding: 16px;
+}
+
+.externalShockSummaryCard strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.externalShockSectionTitle {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.externalShockMethodologyPanel,
+.externalShockComparisonPanel,
+.externalShockAssumptionPanel,
+.externalShockImpactPanel,
+.externalShockDisclaimer {
+  padding: 18px;
+}
+
+.externalShockTableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.externalShockTableScroll table {
+  min-width: 720px;
+}
+
+.externalShockMethodologyGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.externalShockMethodologyGrid div,
+.externalShockAuditDetails div {
+  min-width: 0;
+}
+
+.externalShockMethodologyGrid dt,
+.externalShockAuditDetails dt {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.externalShockMethodologyGrid dd,
+.externalShockAuditDetails dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.externalShockAuditDetails {
+  margin-top: 14px;
+}
+
+.externalShockAuditDetails dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.externalShockComparisonPanel table,
+.externalShockAssumptionPanel table,
+.externalShockImpactPanel table,
+.externalShockMobileSummary {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.externalShockComparisonPanel th,
+.externalShockComparisonPanel td,
+.externalShockAssumptionPanel th,
+.externalShockAssumptionPanel td,
+.externalShockImpactPanel th,
+.externalShockImpactPanel td,
+.externalShockMobileSummary th,
+.externalShockMobileSummary td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  padding: 10px 8px;
+  text-align: right;
+}
+
+.externalShockComparisonPanel th:first-child,
+.externalShockComparisonPanel td:first-child,
+.externalShockAssumptionPanel th:first-child,
+.externalShockAssumptionPanel td:first-child,
+.externalShockImpactPanel th:first-child,
+.externalShockImpactPanel td:first-child,
+.externalShockMobileSummary th:first-child,
+.externalShockMobileSummary td:first-child {
+  text-align: left;
+}
+
+.externalShockMobileSummary {
+  display: none;
+  margin-top: 14px;
+}
+
+.externalShockDisclaimer {
+  background: #f8fafc;
+  color: #334155;
+}
+
+@media (max-width: 900px) {
+  .externalShockPortfolioContext,
+  .externalShockSummaryGrid,
+  .externalShockScenarioSelector,
+  .externalShockMethodologyGrid,
+  .externalShockAuditDetails dl {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .externalShockChartHeader {
+    display: block;
+  }
+}
+
+@media (max-width: 640px) {
+  .externalShockPortfolioContext,
+  .externalShockSummaryGrid,
+  .externalShockMethodologyGrid,
+  .externalShockAuditDetails dl {
+    grid-template-columns: 1fr;
+  }
+
+  .externalShockSvg {
+    min-width: 680px;
+  }
+
+  .externalShockMobileSummary {
+    display: table;
   }
 }
 

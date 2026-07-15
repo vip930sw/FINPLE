@@ -1,0 +1,40 @@
+{
+  "fixturePackage": "scenario-external-shock-step114-2h",
+  "fixtureOnly": true,
+  "productionPublishReady": false,
+  "appExportApproved": false,
+  "fixtures": [
+    {
+      "name": "kr_two_asset_external_shock_base",
+      "file": "kr_two_asset_external_shock_base.json",
+      "coverage": [
+        "direct_asset shock",
+        "market_beta shock",
+        "shared baselineIdentityHash across comparable scenarios",
+        "beta provenance",
+        "row-level source hash lineage",
+        "multi-month drawdown and recovery",
+        "KR leading-zero tickers 005930 and 069500",
+        "source hash lineage"
+      ]
+    },
+    {
+      "name": "derived_invalid_cases",
+      "file": "server/src/services/scenario/externalShockEngine.test.js",
+      "coverage": [
+        "missing beta",
+        "missing beta provenance",
+        "missing asset shock coverage",
+        "duplicate asset shock identity",
+        "duplicate beta identity",
+        "duplicate shock month",
+        "baseline identity mismatch",
+        "mixed return basis",
+        "missing source hash",
+        "invalid month",
+        "insufficient data",
+        "shock return <= -100%"
+      ]
+    }
+  ]
+}
