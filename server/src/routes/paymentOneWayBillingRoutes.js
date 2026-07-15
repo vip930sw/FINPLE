@@ -222,22 +222,6 @@ function sanitizeBillingKeyIssuePayload(payload) {
   return { ...safePayload, billingKeyStored: Boolean(billingKey) };
 }
 
-function getCardSummary(payload) {
-  const card = payload?.card || {};
-  const rawCardValue = String(card.last4 || card.cardLast4 || card.card_last4 || card.lastFourDigits || card.number || card.cardNumber || "").trim();
-  const digits = rawCardValue.replace(/\D/g, "");
-  const last4 = digits.length >= 4 ? digits.slice(-4) : "";
-  const company = String(card.company || card.issuerCode || payload?.method || "카드").trim();
-  const label = last4 ? `${company} · **** ${last4}` : (company === "카드" ? "등록된 카드" : company);
-  return {
-    method: payload?.method || "카드",
-    cardCompany: company,
-    cardLast4: last4 || null,
-    maskedCardNumber: null,
-    displayLabel: label,
-  };
-}
-
 function getBillingCardSummary(...sources) {
   const primary = sources[0] || {};
   return buildPaymentMethodSummary(...sources) || {
@@ -350,10 +334,11 @@ async function storeMethodAndActivateSubscription({ user, authOrderId, firstPaym
   }
 
   const periodEndIso = getPeriodEndIso();
-  const cardSummary = getBillingCardSummary(paymentPayload, issuePayload);
+  const cardSummary = getBillingCardSummary(issuePayload, paymentPayload);
   const safeIssuePayload = sanitizeBillingKeyIssuePayload(issuePayload);
   const paymentKey = paymentPayload?.paymentKey || firstPaymentOrderId;
   const receiptUrl = paymentPayload?.receipt?.url || paymentPayload?.checkout?.url || null;
+  const billingKeyIssuedEventId = `${authOrderId || firstPaymentOrderId}:billing-key-issued`;
 
   try {
     return await withTransaction(async (tx) => {
@@ -560,7 +545,7 @@ async function storeMethodAndActivateSubscription({ user, authOrderId, firstPaym
            processed_at = NOW()`,
         [
           randomUUID(),
-          issuePayload.billingKey || `${authOrderId}:billing-key-issued`,
+          billingKeyIssuedEventId,
           user.id,
           JSON.stringify({
             authOrderId,

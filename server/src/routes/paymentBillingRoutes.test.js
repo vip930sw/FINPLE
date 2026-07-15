@@ -31,3 +31,24 @@ test("billing method upserts preserve existing safe card tail when Toss issue pa
     assert.doesNotMatch(source, /masked_card_number = EXCLUDED\.masked_card_number/);
   });
 });
+
+test("one-way billing prefers the Billing issue card and never uses billingKey as an event id", async () => {
+  const source = await readFile(ONE_WAY_BILLING_ROUTE_SOURCE, "utf8");
+  const issuedEventInsert = source.match(/INSERT INTO payment_events[\s\S]*?'billing\.key\.issued'[\s\S]*?\);/)?.[0] || "";
+
+  assert.match(source, /getBillingCardSummary\(issuePayload, paymentPayload\)/);
+  assert.match(source, /const billingKeyIssuedEventId = `\$\{authOrderId \|\| firstPaymentOrderId\}:billing-key-issued`/);
+  assert.match(issuedEventInsert, /billingKeyIssuedEventId/);
+  assert.doesNotMatch(issuedEventInsert, /issuePayload\.billingKey/);
+  assert.match(source, /cardSummary\.maskedCardNumber/);
+});
+
+test("billing method update uses an internal order event id and keeps masked issue metadata primary", async () => {
+  const source = await readFile(BILLING_ROUTE_SOURCE, "utf8");
+  const issuedEventInsert = source.match(/INSERT INTO payment_events[\s\S]*?'billing\.key\.issued'[\s\S]*?\);/)?.[0] || "";
+
+  assert.match(source, /const billingKeyIssuedEventId = `\$\{orderId\}:billing-key-issued`/);
+  assert.match(source, /cardSummary\.cardLast4 \|\| cardSummary\.maskedCardNumber/);
+  assert.match(issuedEventInsert, /billingKeyIssuedEventId/);
+  assert.doesNotMatch(issuedEventInsert, /issuePayload\.billingKey/);
+});

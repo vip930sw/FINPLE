@@ -65,21 +65,30 @@ function getBillingMethodStatusCacheKey() {
   return `${getFinpleApiBaseUrl()}::${user?.id || user?.email || "current-user"}::billing-method`;
 }
 
-function getDigitsTail(value) {
-  const digits = String(value || "").replace(/\D/g, "");
-  return digits.length >= 4 ? digits.slice(-4) : "";
+function getMaskedTail(value) {
+  const compact = String(value || "").trim().replace(/[^0-9*]/g, "");
+  if (!compact) return "";
+  if (compact.includes("*")) {
+    const tail = compact.slice(-4);
+    return /[0-9]/.test(tail) ? tail : "";
+  }
+  return compact.length >= 4 ? compact.slice(-4) : "";
 }
 
-function getPaymentMethodLast4(method = {}) {
+function getPaymentMethodTail(method = {}) {
   return (
-    getDigitsTail(method.cardLast4) ||
-    getDigitsTail(method.card_last4) ||
-    getDigitsTail(method.last4) ||
-    getDigitsTail(method.maskedCardNumber) ||
-    getDigitsTail(method.masked_card_number) ||
-    getDigitsTail(method.displayLabel) ||
-    getDigitsTail(method.display_label)
+    getMaskedTail(method.cardLast4) ||
+    getMaskedTail(method.card_last4) ||
+    getMaskedTail(method.last4) ||
+    getMaskedTail(method.maskedCardNumber) ||
+    getMaskedTail(method.masked_card_number) ||
+    getMaskedTail(method.displayLabel) ||
+    getMaskedTail(method.display_label)
   );
+}
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function getPaymentMethodCompany(method = {}) {
@@ -98,7 +107,7 @@ function getCleanDisplayLabel(value, last4 = "") {
   if (!label) return "";
 
   if (last4) {
-    label = label.replace(new RegExp(`\\s*${last4}\\s*$`), "").trim();
+    label = label.replace(new RegExp(`\\s*${escapeRegExp(last4)}\\s*$`), "").trim();
   }
   label = label
     .replace(/^[0-9A-Z]{2,3}\s*/i, "")
@@ -126,7 +135,7 @@ function resolvePaymentMethodCompanyLabel(value) {
 export function getSafeBillingMethodDisplayLabel(method = {}) {
   if (!method || typeof method !== "object") return "";
 
-  const last4 = getPaymentMethodLast4(method);
+  const last4 = getPaymentMethodTail(method);
   const company =
     getCleanDisplayLabel(resolvePaymentMethodCompanyLabel(getPaymentMethodCompany(method)), last4) ||
     getCleanDisplayLabel(resolvePaymentMethodCompanyLabel(method.displayLabel || method.display_label), last4);
@@ -146,10 +155,10 @@ function normalizeBillingMethodStatusPayload(payload) {
 
   const method = { ...payload.method };
   const safeLabel = getSafeBillingMethodDisplayLabel(method);
-  const safeLast4 = getPaymentMethodLast4(method);
+  const safeLast4 = getPaymentMethodTail(method);
 
   method.displayLabel = safeLabel;
-  if (safeLast4) method.cardLast4 = safeLast4;
+  if (/^\d{4}$/.test(safeLast4)) method.cardLast4 = safeLast4;
 
   return {
     ...payload,

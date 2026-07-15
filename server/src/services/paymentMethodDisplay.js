@@ -56,11 +56,25 @@ export function getMaskedTail(value) {
 
   if (compact.includes("*")) {
     const tail = compact.slice(-4);
-    return /[0-9]/.test(tail) ? tail.replace(/\*/g, "") : "";
+    return /[0-9]/.test(tail) ? tail : "";
   }
 
   const digits = compact.replace(/\D/g, "");
   return digits.length >= 4 ? digits.slice(-4) : "";
+}
+
+function getVerifiedCardLast4(value) {
+  const tail = getMaskedTail(value);
+  return /^\d{4}$/.test(tail) ? tail : null;
+}
+
+function getSafeMaskedCardNumber(value) {
+  const compact = String(value || "").trim().replace(/[^0-9*]/g, "");
+  return compact.includes("*") && getMaskedTail(compact) ? compact : null;
+}
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function getNestedCard(payload = {}) {
@@ -174,7 +188,7 @@ function normalizeStoredDisplayLabel(value) {
 }
 
 function getStoredCardCompanyLast4Summary(row = {}, source) {
-  const cardLast4 = getMaskedTail(row.card_last4);
+  const cardLast4 = getVerifiedCardLast4(row.card_last4);
   if (!row.card_company || !cardLast4) return null;
 
   const company = resolveCardCompany(row.card_company);
@@ -195,7 +209,7 @@ function getSafeStoredDisplayLabelSummary(row = {}, storedLabel = "") {
 
   const leadingCode = label.match(/^\s*([0-9A-Z]{2,3})\b/i)?.[1] || "";
   const companyText = label
-    .replace(new RegExp(`${tail}\\s*$`), "")
+    .replace(new RegExp(`${escapeRegExp(tail)}\\s*$`), "")
     .replace(/[\s*.\-·ㆍ]+$/u, "")
     .trim();
   const company = resolveCardCompany(row.card_company, leadingCode, companyText);
@@ -203,7 +217,7 @@ function getSafeStoredDisplayLabelSummary(row = {}, storedLabel = "") {
   return {
     displayLabel: formatCardDisplayLabel(company, tail),
     cardCompany: company,
-    cardLast4: tail,
+    cardLast4: getVerifiedCardLast4(tail),
     maskedCardNumber: row.masked_card_number || null,
     cardBrandKey: normalizeCardCode(row.card_company || leadingCode),
     source: "stored_display_label",
@@ -226,7 +240,7 @@ export function buildStoredPaymentMethodSummary(row = {}, ...metadataSources) {
     return {
       displayLabel: formatCardDisplayLabel(company, maskedTail),
       cardCompany: company,
-      cardLast4: maskedTail,
+      cardLast4: getVerifiedCardLast4(maskedTail),
       maskedCardNumber: row.masked_card_number || null,
       cardBrandKey: normalizeCardCode(row.card_company),
       source: "stored_masked_card_number",
@@ -286,7 +300,8 @@ export function buildPaymentMethodSummary(...sources) {
     numberCandidates.push(...getCardNumberCandidates(payload, payload));
   });
 
-  const tail = numberCandidates.map(getMaskedTail).find(Boolean);
+  const numberCandidate = numberCandidates.find((value) => getMaskedTail(value));
+  const tail = getMaskedTail(numberCandidate);
   if (!tail) return null;
 
   const company = resolveCardCompany(...companyCandidates);
@@ -294,8 +309,8 @@ export function buildPaymentMethodSummary(...sources) {
   return {
     displayLabel: formatCardDisplayLabel(company, tail),
     cardCompany: company,
-    cardLast4: tail,
-    maskedCardNumber: null,
+    cardLast4: getVerifiedCardLast4(tail),
+    maskedCardNumber: getSafeMaskedCardNumber(numberCandidate),
     cardBrandKey: normalizeCardCode(brandCandidates.find(Boolean)),
   };
 }
