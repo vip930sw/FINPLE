@@ -9,7 +9,7 @@ from calendar import monthrange
 from pathlib import Path
 from zipfile import ZipFile
 
-from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package
+from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package, verify_candidate_package
 from scripts.metrics_pipeline.candidate_package import (
     SOURCE_DECLARATION_CONTRACT_VERSION,
     SUBMISSION_MANIFEST_CONTRACT_VERSION,
@@ -66,7 +66,7 @@ def candidate_rows() -> list[dict[str, str]]:
 
 
 def benchmark_rows() -> list[dict[str, str]]:
-    return [{"benchmarkKey": "KOSPI200", "benchmarkTicker": "069500"}]
+    return [{"benchmarkKey": "KOSPI200", "benchmarkMarket": "KR", "benchmarkTicker": "069500"}]
 
 
 def raw_daily_rows(**overrides) -> list[dict[str, str]]:
@@ -105,7 +105,7 @@ def build_candidate_input(root: Path, **overrides) -> Path:
     input_dir = root / "input"
     input_dir.mkdir()
     write_csv(input_dir / "candidate_asset_master.csv", CANDIDATE_COLUMNS, overrides.get("candidate_rows", candidate_rows()))
-    write_csv(input_dir / "benchmark_map.csv", ["benchmarkKey", "benchmarkTicker"], overrides.get("benchmark_rows", benchmark_rows()))
+    write_csv(input_dir / "benchmark_map.csv", ["benchmarkKey", "benchmarkMarket", "benchmarkTicker"], overrides.get("benchmark_rows", benchmark_rows()))
     write_csv(input_dir / "raw_daily_prices.csv", RAW_DAILY_PRICE_COLUMNS, overrides.get("raw_rows", raw_daily_rows()))
 
     source = {
@@ -168,16 +168,19 @@ def build_candidate_input(root: Path, **overrides) -> Path:
     return input_dir
 
 
-def run_candidate(input_dir: Path, output_dir: Path):
+def run_candidate(input_dir: Path, output_dir: Path, **overrides):
+    config = {
+        "input_mode": "manual_upload_candidate",
+        "input_dir": str(input_dir),
+        "output_dir": str(output_dir),
+        "metric_base_date": "2026-06-30",
+        "market_scope": ["KR"],
+        "output_version": "2026_06_candidate",
+        "validation_date": "2026-07-15",
+    }
+    config.update(overrides)
     return run_finple_production_candidate_package(
-        {
-            "input_mode": "manual_upload_candidate",
-            "input_dir": str(input_dir),
-            "output_dir": str(output_dir),
-            "metric_base_date": "2026-06-30",
-            "market_scope": ["KR"],
-            "output_version": "2026_06_candidate",
-        }
+        config
     )
 
 
@@ -203,6 +206,7 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertFalse(left["appExportApproved"])
             self.assertEqual(left["candidatePackageHash"], right["candidatePackageHash"])
             self.assertEqual(left["zipPackageSha256"], right["zipPackageSha256"])
+            self.assertTrue(verify_candidate_package(left["outputs"]["zipPackage"])["ok"])
 
             outputs = {name: Path(path) for name, path in left["outputs"].items()}
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
@@ -233,6 +237,7 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                 names = set(package.namelist())
             self.assertIn("finple_candidate_manifest_2026_06_candidate.json", names)
             self.assertIn("finple_candidate_hash_inventory_2026_06_candidate.csv", names)
+            self.assertIn("finple_candidate_package_index_2026_06_candidate.json", names)
 
     def test_candidate_fail_closed_validation_cases(self):
         cases = [
@@ -302,6 +307,215 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             for row in output_rows:
                 artifact = inventory_path.parent / row["path"]
                 self.assertEqual(row["sha256"], sha256(artifact))
+
+    def test_validation_date_injection_and_future_logic(self):
+        cases = [
+            ("2026-06-30", "2026-06-30", True),
+            ("2026-06-30", "2026-07-15", True),
+            ("2026-07-16", "2026-07-15", False),
+            ("2026-07-16", "2026-07-16", True),
+        ]
+        for as_of, validation_date, expected_ready in cases:
+            with self.subTest(as_of=as_of, validation_date=validation_date), tempfile.TemporaryDirectory() as temp_dir:
+                input_dir = build_candidate_input(
+                    Path(temp_dir),
+                    source_patch={"asOfDate": as_of},
+                    manifest_patch={"intendedMetricBaseDate": as_of},
+                )
+                result = run_candidate(input_dir, Path(temp_dir) / "out", metric_base_date=as_of, validation_date=validation_date)
+                self.assertEqual(result["candidatePackageReady"], expected_ready)
+                manifest = json.loads(Path(result["outputs"]["manifestJson"]).read_text(encoding="utf-8"))
+                self.assertEqual(manifest["validationDate"], validation_date)
+                self.assertFalse(result["productionPublishReady"])
+                self.assertFalse(result["appExportApproved"])
+
+    def test_malformed_inputs_return_blocked_without_exception_or_helper_crash(self):
+        cases = []
+        missing_benchmark_key = [dict(row) for row in candidate_rows()]
+        missing_benchmark_key[0].pop("benchmarkKey")
+        cases.append({"candidate_rows": missing_benchmark_key, "issue": "candidate_asset_master_invalid"})
+        cases.append({"benchmark_rows": [{"benchmarkKey": "KOSPI200", "benchmarkTicker": "069500"}], "issue": "benchmark_market_invalid"})
+        for case in cases:
+            with self.subTest(case=case["issue"]), tempfile.TemporaryDirectory() as temp_dir:
+                input_dir = build_candidate_input(Path(temp_dir), **{key: value for key, value in case.items() if key != "issue"})
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+                self.assertFalse(result["candidatePackageReady"])
+                self.assertIn(case["issue"], {issue["issueType"] for issue in result["issues"]})
+                self.assertTrue(Path(result["outputs"]["sourceAuditCsv"]).exists())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            (input_dir / "source_declaration.json").write_text("[1,2,3]\n", encoding="utf-8")
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("malformed_json_type", {issue["issueType"] for issue in result["issues"]})
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            with (input_dir / "benchmark_map.csv").open("a", encoding="utf-8", newline="") as handle:
+                handle.write("too,many,columns,here\n")
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("malformed_csv", {issue["issueType"] for issue in result["issues"]})
+
+    def test_market_ticker_identity_separates_same_ticker_in_us_and_kr(self):
+        candidates = candidate_rows() + [
+            {
+                **candidate_rows()[0],
+                "market": "US",
+                "ticker": "069500",
+                "nameKr": "US Numeric Ticker",
+                "nameEn": "US Numeric Ticker",
+                "exchange": "NYSE",
+                "benchmarkKey": "SPY_BENCH",
+            }
+        ]
+        benchmarks = [
+            {"benchmarkKey": "KOSPI200", "benchmarkMarket": "KR", "benchmarkTicker": "069500"},
+            {"benchmarkKey": "SPY_BENCH", "benchmarkMarket": "US", "benchmarkTicker": "069500"},
+        ]
+        rows = raw_daily_rows()
+        for index in range(37):
+            year, month = add_month(2023, 6, index)
+            close = 100 + index
+            rows.append(
+                {
+                    **raw_daily_rows()[0],
+                    "market": "US",
+                    "ticker": "069500",
+                    "date": month_end(year, month),
+                    "currency": "USD",
+                    "close": str(close),
+                    "splitAdjustedClose": str(close),
+                    "volume": str(1000 + index),
+                }
+            )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(
+                Path(temp_dir),
+                candidate_rows=candidates,
+                benchmark_rows=benchmarks,
+                raw_rows=rows,
+                source_patch={"marketScope": ["KR", "US"], "currencyMode": "mixed"},
+                manifest_patch={"expectedMarketScope": ["KR", "US"]},
+            )
+            result = run_candidate(input_dir, Path(temp_dir) / "out", market_scope=["KR", "US"])
+            self.assertTrue(result["candidatePackageReady"])
+            with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                metrics = list(csv.DictReader(handle))
+            hashes = {(row["market"], row["ticker"]): row["sourceHash"] for row in metrics}
+            self.assertIn(("KR", "005930"), hashes)
+            self.assertIn(("US", "069500"), hashes)
+            self.assertNotEqual(hashes[("KR", "005930")], hashes[("US", "069500")])
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertEqual({"KR", "US"}, {row["market"] for row in normalized if row["ticker"] == "069500"})
+
+    def test_scope_currency_timestamp_operator_and_legal_reconciliation(self):
+        cases = [
+            {"source_patch": {"marketScope": ["US"]}, "issue": "market_scope_mismatch"},
+            {"manifest_patch": {"expectedMarketScope": ["US"]}, "issue": "market_scope_mismatch"},
+            {"raw_rows": raw_daily_rows(market="US"), "issue": "raw_market_scope_mismatch"},
+            {"raw_rows": raw_daily_rows(currency="USD"), "issue": "currency_mismatch"},
+            {"source_patch": {"acquiredAt": "not-a-time"}, "issue": "acquired_at_invalid"},
+            {"manifest_patch": {"submittedAt": "not-a-time"}, "issue": "submitted_at_invalid"},
+            {"manifest_patch": {"submittedBy": "different-operator"}, "issue": "operator_identity_mismatch"},
+            {"raw_rows": raw_daily_rows(licenseStatus="pending"), "issue": "license_status_invalid"},
+            {"raw_rows": raw_daily_rows(internalUseAllowed="false"), "issue": "internal_use_not_allowed"},
+            {"raw_rows": raw_daily_rows(publicationAllowed="false"), "issue": "publication_not_allowed"},
+        ]
+        for case in cases:
+            with self.subTest(case=case["issue"]), tempfile.TemporaryDirectory() as temp_dir:
+                input_dir = build_candidate_input(Path(temp_dir), **{key: value for key, value in case.items() if key != "issue"})
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+                self.assertFalse(result["candidatePackageReady"])
+                self.assertIn(case["issue"], {issue["issueType"] for issue in result["issues"]})
+
+    def test_path_safety_and_input_set_blocks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            (input_dir / "extra.csv").write_text("x\n", encoding="utf-8")
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("extra_physical_input_file", {issue["issueType"] for issue in result["issues"]})
+
+        path_cases = [
+            {"candidate_asset_master_file": "../candidate_asset_master.csv", "issue": "unsafe_config_filename"},
+            {"candidate_asset_master_file": "bad\\candidate_asset_master.csv", "issue": "unsafe_config_filename"},
+            {"output_version": "../bad", "issue": "unsafe_output_version"},
+        ]
+        for case in path_cases:
+            with self.subTest(case=case["issue"]), tempfile.TemporaryDirectory() as temp_dir:
+                input_dir = build_candidate_input(Path(temp_dir))
+                result = run_candidate(input_dir, Path(temp_dir) / "out", **{key: value for key, value in case.items() if key != "issue"})
+                self.assertFalse(result["candidatePackageReady"])
+                self.assertIn(case["issue"], {issue["issueType"] for issue in result["issues"]})
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            result = run_candidate(input_dir, input_dir)
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("input_output_overlap", {issue["issueType"] for issue in result["issues"]})
+
+    def test_package_member_hash_verification_detects_missing_extra_and_mutation(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            zip_path = Path(result["outputs"]["zipPackage"])
+            self.assertTrue(verify_candidate_package(zip_path)["ok"])
+            with ZipFile(zip_path) as package:
+                names = package.namelist()
+                payloads = {name: package.read(name) for name in names}
+            mutated = Path(temp_dir) / "mutated.zip"
+            with ZipFile(mutated, "w") as package:
+                for name, data in payloads.items():
+                    if name.endswith(".csv"):
+                        data = data + b"# mutation\n"
+                    package.writestr(name, data)
+            self.assertFalse(verify_candidate_package(mutated)["ok"])
+            missing = Path(temp_dir) / "missing.zip"
+            with ZipFile(missing, "w") as package:
+                for name, data in payloads.items():
+                    if "monthly_returns" not in name:
+                        package.writestr(name, data)
+            self.assertFalse(verify_candidate_package(missing)["ok"])
+            extra = Path(temp_dir) / "extra.zip"
+            with ZipFile(extra, "w") as package:
+                for name, data in payloads.items():
+                    package.writestr(name, data)
+                package.writestr("extra.txt", b"extra")
+            self.assertFalse(verify_candidate_package(extra)["ok"])
+
+    def test_no_network_and_approval_false_for_ready_blocked_idle(self):
+        import socket
+        import urllib.request
+        from unittest import mock
+
+        def blocked_network(*_args, **_kwargs):
+            raise AssertionError("network should not be used")
+
+        with tempfile.TemporaryDirectory() as temp_dir, mock.patch.object(socket, "socket", side_effect=blocked_network), mock.patch.object(urllib.request, "urlopen", side_effect=blocked_network):
+            input_dir = build_candidate_input(Path(temp_dir))
+            ready = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertTrue(ready["candidatePackageReady"])
+        idle = run_finple_production_candidate_package()
+        self.assertFalse(idle["productionPublishReady"])
+        self.assertFalse(idle["appExportApproved"])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir), raw_rows=raw_daily_rows(close="0"))
+            blocked = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(blocked["productionPublishReady"])
+            self.assertFalse(blocked["appExportApproved"])
+
+    def test_candidate_outputs_not_connected_to_ai_or_production_loader(self):
+        repo_root = Path(__file__).resolve().parents[3]
+        forbidden_files = [
+            repo_root / "src" / "components" / "portfolio" / "services" / "aiAnalysisService.js",
+            repo_root / "src" / "data" / "tickerMetricsLoader.js",
+        ]
+        for path in forbidden_files:
+            if path.exists():
+                self.assertNotIn("run_finple_production_candidate_package", path.read_text(encoding="utf-8"))
 
     def test_committed_fixture_cannot_be_reclassified_as_candidate(self):
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -57,6 +57,8 @@ The source declaration contract is `source-declaration-v1-step114-2m` and requir
 
 The operator submission manifest contract is `operator-submission-manifest-v1-step114-2m`. Its file inventory validates exact SHA-256 and byte size for uploaded data files and the source declaration. The operator manifest itself is hashed in the generated candidate manifest as `submissionManifestHash`; it is not self-hashed inside its own file inventory.
 
+The candidate benchmark map uses the candidate-only columns `benchmarkKey`, `benchmarkMarket`, and `benchmarkTicker`. Candidate series identity is always canonical `(market, ticker)`, including benchmark lookup, normalized series hash, coverage, and row reconciliation. Ticker-only identity is not used in candidate package calculations.
+
 ## Validation
 
 The package fails closed on:
@@ -68,6 +70,9 @@ The package fails closed on:
 - source row-count mismatch
 - unknown or duplicate logical roles
 - path traversal or unsafe archive paths
+- extra physical files in the input directory
+- unsafe configured input filenames or unsafe `output_version`
+- overlapping input and output directories
 - malformed CSV/JSON
 - duplicate `market+ticker+date`
 - non-positive prices
@@ -78,6 +83,12 @@ The package fails closed on:
 - unsupported return basis, currency mode, timezone, or price-adjustment basis
 - pipeline, normalization, or calculation policy version mismatch
 - committed fixture files being reclassified as candidate inputs
+- market-scope mismatch across config, source declaration, submission manifest, candidate rows, and raw rows
+- currency, timestamp, operator identity, return-basis, and row-level legal/use policy mismatch
+
+Validation uses `date.today()` by default during operator execution. Tests may inject `validation_date` for deterministic past/equal/future checks. The chosen `validationDate` is recorded in the manifest, readiness JSON, and audit HTML.
+
+Rows with `redistributionAllowed=false` may remain candidate-reviewable only when the source and row-level publication/internal-use gates are otherwise approved. Such restrictions are recorded in manifest/audit as review-only limitations. They never make `productionPublishReady` or `appExportApproved` true.
 
 ## Output Contract
 
@@ -93,6 +104,7 @@ The deterministic candidate ZIP contains:
 - normalization/time-series audit CSV
 - human-readable audit HTML
 - input/output exact hash inventory CSV
+- final package index JSON
 
 The candidate manifest records:
 
@@ -104,13 +116,25 @@ The candidate manifest records:
 - all output hashes
 - input/output row reconciliation
 - market/ticker/date coverage
+- validation date
+- candidate review restrictions
 - blocking and warning issue counts
 - metric base date
 - pipeline, normalization, and calculation policy versions
 
-## Determinism
+## Package Hash And Determinism
 
-The ZIP writer uses deterministic file ordering and fixed archive timestamps. The candidate manifest stores a stable `candidatePackageHash` derived from canonical manifest content, and the result reports the deterministic ZIP SHA-256. Identical inputs produce identical manifest/package hashes.
+The package uses a self-reference-safe two-level hash contract:
+
+1. Payload artifacts are written first.
+2. The payload hash inventory is written.
+3. Manifest and readiness JSON are written.
+4. A final package index enumerates every ZIP member except the index itself.
+5. The index explicitly records JSON fields excluded from self-reference hashing (`candidatePackageHash` in manifest/readiness).
+6. The deterministic ZIP is written.
+7. `zipPackageSha256` is reported separately.
+
+`candidatePackageHash` is the canonical hash of the final package index with its own `candidatePackageHash` field excluded. The package verifier requires the exact ZIP member set, rejects missing or extra members, and rejects mutation of any member bound by the package index. Identical inputs produce identical `candidatePackageHash` and ZIP SHA-256.
 
 ## Colab / CLI Workflow
 
@@ -118,15 +142,18 @@ The one-click notebook keeps fixture mode as the default. Candidate mode require
 
 ```python
 RUN_CANDIDATE_MODE = True
+CANDIDATE_CONFIRMATION_TOKEN = "RUN_STEP114_2M_CANDIDATE_UPLOAD"
 ```
 
-and to provide the required offline files under the configured candidate input directory. The notebook lists required files before execution and then calls the pure Python candidate entrypoint:
+When candidate mode is true, the notebook prints the candidate contract, creates temporary upload and output directories outside the Git checkout, calls `google.colab.files.upload()`, and accepts exactly the five required files. Extra, missing, duplicate, unsafe, or path-like filenames block execution before the candidate pipeline is run.
+
+After successful validation the notebook calls the pure Python candidate entrypoint:
 
 ```python
 run_finple_production_candidate_package(CANDIDATE_CONFIG)
 ```
 
-The generated candidate ZIP can be downloaded from Colab. Raw uploads and generated candidate outputs are not automatically committed to Git.
+The generated candidate ZIP can be downloaded from Colab. A cleanup section is provided; after the operator confirms download by setting `CLEANUP_CANDIDATE_FILES=True`, the notebook deletes the raw upload and generated output directories and prints deletion verification. Raw uploads and generated candidate outputs are not automatically committed to Git.
 
 ## Rollback And Deletion
 
