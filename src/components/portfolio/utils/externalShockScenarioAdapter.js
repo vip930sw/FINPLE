@@ -27,6 +27,7 @@ function normalizeProviderApprovalEvidence(evidence, result, fingerprint) {
     fixtureOnly: evidence.fixtureOnly,
     productionPublishReady: evidence.productionPublishReady,
     appExportApproved: evidence.appExportApproved,
+    sourceKind: String(evidence.sourceKind || "").trim(),
     portfolioFingerprint: String(evidence.portfolioFingerprint || "").trim(),
     inputHash: String(evidence.inputHash || "").trim(),
     outputHash: String(evidence.outputHash || "").trim(),
@@ -36,15 +37,17 @@ function normalizeProviderApprovalEvidence(evidence, result, fingerprint) {
     pipelineVersion: String(evidence.pipelineVersion || "").trim(),
     approvalSource: String(evidence.approvalSource || "").trim(),
   };
+  if (result?.fixtureContext?.fixtureOnly === true || result?.fixtureContext?.reviewOnly === true) return null;
   const valid = candidate.evidenceVersion === APPROVAL_EVIDENCE_VERSION &&
     candidate.fixtureOnly === false &&
     candidate.productionPublishReady === true &&
     candidate.appExportApproved === true &&
+    candidate.sourceKind === "synthetic_non_fixture_contract" &&
     candidate.portfolioFingerprint === fingerprint &&
     candidate.inputHash === result?.inputHash &&
     candidate.outputHash === result?.outputHash &&
     candidate.sourceHashes.length > 0 &&
-    candidate.sourceHashes.every((hash) => safeArray(result?.sourceHashes).includes(hash)) &&
+    candidate.sourceHashes.join("|") === safeArray(result?.sourceHashes).map((hash) => String(hash || "").trim()).filter(Boolean).sort().join("|") &&
     candidate.normalizationVersion === result?.normalizationVersion &&
     candidate.calculationPolicyVersion === result?.calculationPolicyVersion &&
     candidate.pipelineVersion === result?.pipelineVersion &&

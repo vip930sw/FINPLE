@@ -8,111 +8,129 @@ const MIN_MAX_OUTPUT_TOKENS = 4200;
 const DEFAULT_MAX_OUTPUT_TOKENS = 4200;
 const DEFAULT_RETRY_COUNT = 1;
 
-const MODEL_OUTPUT_SCHEMA = {
+const BASE_REQUIRED_OUTPUT_FIELDS = [
+  "dataQuality",
+  "portfolioProfile",
+  "diversification",
+  "diagnosticSections",
+  "riskFactors",
+  "assetRoles",
+  "limitations",
+  "disclaimer",
+];
+
+const SCENARIO_INTERPRETATION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "dataQuality",
-    "portfolioProfile",
-    "diversification",
-    "diagnosticSections",
-    "riskFactors",
-    "assetRoles",
-    "limitations",
-    "disclaimer",
-  ],
+  required: ["contextUsed", "probabilityNarrative", "externalShockNarrative", "combinedLimitations"],
   properties: {
-    dataQuality: {
-      type: "object",
-      additionalProperties: false,
-      required: ["level", "summary", "warnings"],
-      properties: {
-        level: { type: "string", enum: ["good", "review", "limited"] },
-        summary: { type: "string" },
-        warnings: { type: "array", items: { type: "string" } },
-      },
+    contextUsed: { type: "boolean" },
+    probabilityNarrative: { type: "string" },
+    externalShockNarrative: { type: "string" },
+    combinedLimitations: { type: "array", items: { type: "string" } },
+  },
+};
+
+const BASE_MODEL_OUTPUT_PROPERTIES = {
+  dataQuality: {
+    type: "object",
+    additionalProperties: false,
+    required: ["level", "summary", "warnings"],
+    properties: {
+      level: { type: "string", enum: ["good", "review", "limited"] },
+      summary: { type: "string" },
+      warnings: { type: "array", items: { type: "string" } },
     },
-    portfolioProfile: {
+  },
+  portfolioProfile: {
+    type: "object",
+    additionalProperties: false,
+    required: ["title", "summary"],
+    properties: {
+      title: { type: "string" },
+      summary: { type: "string" },
+    },
+  },
+  diversification: {
+    type: "object",
+    additionalProperties: false,
+    required: ["nominalAssetCount", "effectiveDiversificationLevel", "summary"],
+    properties: {
+      nominalAssetCount: { type: "number" },
+      effectiveDiversificationLevel: { type: "string", enum: ["low", "medium", "high"] },
+      summary: { type: "string" },
+    },
+  },
+  diagnosticSections: {
+    type: "array",
+    minItems: 3,
+    maxItems: 3,
+    items: {
       type: "object",
       additionalProperties: false,
-      required: ["title", "summary"],
+      required: ["key", "title", "summary", "observations"],
       properties: {
+        key: {
+          type: "string",
+          enum: ["structure", "risk_balance", "cashflow", "data_context"],
+        },
         title: { type: "string" },
         summary: { type: "string" },
-      },
-    },
-    diversification: {
-      type: "object",
-      additionalProperties: false,
-      required: ["nominalAssetCount", "effectiveDiversificationLevel", "summary"],
-      properties: {
-        nominalAssetCount: { type: "number" },
-        effectiveDiversificationLevel: { type: "string", enum: ["low", "medium", "high"] },
-        summary: { type: "string" },
-      },
-    },
-    diagnosticSections: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["key", "title", "summary", "observations"],
-        properties: {
-          key: {
-            type: "string",
-            enum: ["structure", "risk_balance", "cashflow", "data_context"],
-          },
-          title: { type: "string" },
-          summary: { type: "string" },
-          observations: { type: "array", items: { type: "string" } },
-        },
-      },
-    },
-    riskFactors: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["code", "label", "severity", "evidence"],
-        properties: {
-          code: { type: "string" },
-          label: { type: "string" },
-          severity: { type: "string", enum: ["low", "medium", "high"] },
-          evidence: { type: "array", items: { type: "string" } },
-        },
-      },
-    },
-    assetRoles: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["ticker", "market", "weight", "role", "rationale"],
-        properties: {
-          ticker: { type: "string" },
-          market: { type: "string", enum: ["US", "KR"] },
-          weight: { type: "number" },
-          role: { type: "string", enum: ["core", "growth", "income", "stability"] },
-          rationale: { type: "string" },
-        },
-      },
-    },
-    limitations: { type: "array", items: { type: "string" } },
-    disclaimer: { type: "string" },
-    scenarioInterpretation: {
-      type: "object",
-      additionalProperties: false,
-      required: ["contextUsed", "probabilityNarrative", "externalShockNarrative", "combinedLimitations"],
-      properties: {
-        contextUsed: { type: "boolean" },
-        probabilityNarrative: { type: "string" },
-        externalShockNarrative: { type: "string" },
-        combinedLimitations: { type: "array", items: { type: "string" } },
+        observations: { type: "array", items: { type: "string" } },
       },
     },
   },
+  riskFactors: {
+    type: "array",
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["code", "label", "severity", "evidence"],
+      properties: {
+        code: { type: "string" },
+        label: { type: "string" },
+        severity: { type: "string", enum: ["low", "medium", "high"] },
+        evidence: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+  assetRoles: {
+    type: "array",
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["ticker", "market", "weight", "role", "rationale"],
+      properties: {
+        ticker: { type: "string" },
+        market: { type: "string", enum: ["US", "KR"] },
+        weight: { type: "number" },
+        role: { type: "string", enum: ["core", "growth", "income", "stability"] },
+        rationale: { type: "string" },
+      },
+    },
+  },
+  limitations: { type: "array", items: { type: "string" } },
+  disclaimer: { type: "string" },
+};
+
+export function getModelOutputSchema(hasScenarioContext = false) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: hasScenarioContext
+      ? [...BASE_REQUIRED_OUTPUT_FIELDS, "scenarioInterpretation"]
+      : [...BASE_REQUIRED_OUTPUT_FIELDS],
+    properties: hasScenarioContext
+      ? { ...BASE_MODEL_OUTPUT_PROPERTIES, scenarioInterpretation: SCENARIO_INTERPRETATION_SCHEMA }
+      : { ...BASE_MODEL_OUTPUT_PROPERTIES },
+  };
+}
+
+const MODEL_OUTPUT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [...BASE_REQUIRED_OUTPUT_FIELDS],
+  properties: { ...BASE_MODEL_OUTPUT_PROPERTIES },
 };
 
 function toPositiveInteger(value, fallback) {
@@ -406,6 +424,7 @@ function parseModelJson(responseBody) {
 }
 
 async function requestOpenAiPortfolioAnalysisOnce(payload, config) {
+  const hasScenarioContext = Boolean(payload.scenarioInterpretationContext);
   const response = await fetchWithTimeout(
     OPENAI_RESPONSES_URL,
     {
@@ -424,7 +443,7 @@ async function requestOpenAiPortfolioAnalysisOnce(payload, config) {
             type: "json_schema",
             name: "finple_portfolio_analysis",
             strict: true,
-            schema: MODEL_OUTPUT_SCHEMA,
+            schema: hasScenarioContext ? getModelOutputSchema(true) : MODEL_OUTPUT_SCHEMA,
           },
         },
       }),

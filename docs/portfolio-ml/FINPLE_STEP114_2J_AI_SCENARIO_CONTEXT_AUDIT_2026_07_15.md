@@ -27,12 +27,15 @@ Provider payload inclusion is fail-closed and requires all of the following:
 - `fixtureOnly=false`
 - `productionPublishReady=true`
 - `appExportApproved=true`
+- immutable `sourceKind=synthetic_non_fixture_contract`
 - current portfolio fingerprint match
 - existing Step 4/5 adapter validation has produced a ready view model
 - required lineage fields: input hash, output hash, source hashes, normalization version, calculation policy version, and pipeline version
 - adapter-level approval evidence that repeats the same flags, fingerprint, hashes, and versions
 
-Fixture and review-only results are excluded from live AI provider payloads even when their chart view is valid.
+Fixture and review-only results are excluded from live AI provider payloads even when their chart view is valid. Checked-in browser fixtures must not be reclassified as production data by attaching approval booleans or client-generated approval evidence.
+
+Approval source hashes are exact-set checked. A source approval that covers only a subset of the section source hashes is rejected.
 
 Runtime status values are exact:
 
@@ -89,6 +92,13 @@ Malformed context fails closed with a 400 request validation error. Omitted cont
 
 Because no production Step 4/5 source is connected in this step, the server live-provider scenario-context gate is disabled by default. Tests explicitly enable `FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED=true` only to verify the approved wrapper path.
 
+Before the gate can be enabled in production, approval authority must move to a server-verifiable signed receipt or server allowlist. Client-generated signatures and free-form approval-source labels are not sufficient production authority.
+
+Partial context uses two integrity scopes:
+
+- local UI wrapper: may retain excluded section reasons for `partial`, `blocked`, or `stale` display
+- provider-bound wrapper: recomputes signature and byte size over `providerContext`, sets `excludedSectionCount=0`, and sends only eligible sections
+
 ## Cache Signature
 
 The client AI cache signature includes scenario context version plus Step 4/5 method input/output hashes when provider-eligible context is included. Omitted context preserves the prior signature shape. A changed scenario input/output hash therefore marks cached AI interpretation stale.
@@ -105,6 +115,13 @@ The structured output schema includes an optional backward-compatible `scenarioI
 - `combinedLimitations`
 
 The section is rendered only when context was actually used. Validated numbers shown in the UI come directly from the context, not from model-generated narrative text.
+
+OpenAI strict structured-output requests use separate schemas:
+
+- baseline schema: excludes `scenarioInterpretation`
+- scenario schema: includes `scenarioInterpretation` in the top-level required list
+
+Every object property in each strict schema is listed in that object's `required` array.
 
 UI formatting separates money and ratio formatters. A ratio value of `-0.10` is displayed as `-10.0%`; missing or unavailable context values are displayed as unavailable text, not zero.
 

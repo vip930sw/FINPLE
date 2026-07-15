@@ -146,6 +146,7 @@ function validateApprovalEvidence(viewModel, result, currentPortfolioFingerprint
     "fixtureOnly",
     "productionPublishReady",
     "appExportApproved",
+    "sourceKind",
     "portfolioFingerprint",
     "inputHash",
     "outputHash",
@@ -160,6 +161,7 @@ function validateApprovalEvidence(viewModel, result, currentPortfolioFingerprint
   if (evidence.fixtureOnly !== false || viewModel?.fixtureOnly !== false) addIssue(issues, `${section}_fixtureOnly_not_provider_eligible`);
   if (evidence.productionPublishReady !== true || viewModel?.productionPublishReady !== true) addIssue(issues, `${section}_productionPublishReady_not_true`);
   if (evidence.appExportApproved !== true || viewModel?.appExportApproved !== true) addIssue(issues, `${section}_appExportApproved_not_true`);
+  if (cleanString(evidence.sourceKind) !== "synthetic_non_fixture_contract") addIssue(issues, `${section}_sourceKind_not_provider_contract`);
   if (cleanString(evidence.portfolioFingerprint) !== cleanString(currentPortfolioFingerprint)) addIssue(issues, `${section}_portfolioFingerprint_mismatch`);
   if (cleanString(evidence.portfolioFingerprint) !== cleanString(viewModel?.portfolioFingerprint)) addIssue(issues, `${section}_viewModelFingerprint_mismatch`);
   if (cleanString(evidence.inputHash) !== cleanString(result?.inputHash)) addIssue(issues, `${section}_approvalInputHash_mismatch`);
@@ -169,13 +171,15 @@ function validateApprovalEvidence(viewModel, result, currentPortfolioFingerprint
   if (cleanString(evidence.pipelineVersion) !== cleanString(result?.pipelineVersion)) addIssue(issues, `${section}_approvalPipelineVersion_mismatch`);
   const evidenceHashes = validateSourceHashes(evidence.sourceHashes, `${section}_approvalSourceHashes`, issues);
   const resultHashes = new Set(normalizeSourceHashes(result?.sourceHashes));
-  if (!evidenceHashes.every((hash) => resultHashes.has(hash))) addIssue(issues, `${section}_approvalSourceHashes_mismatch`);
+  const sortedResultHashes = Array.from(resultHashes).sort();
+  if (evidenceHashes.join("|") !== sortedResultHashes.join("|")) addIssue(issues, `${section}_approvalSourceHashes_mismatch`);
   validateShortString(evidence.approvalSource, `${section}_approvalSource`, issues);
   return {
     evidenceVersion: AI_SCENARIO_APPROVAL_EVIDENCE_VERSION,
     fixtureOnly: false,
     productionPublishReady: true,
     appExportApproved: true,
+    sourceKind: "synthetic_non_fixture_contract",
     portfolioFingerprint: cleanString(evidence.portfolioFingerprint),
     inputHash: cleanString(evidence.inputHash),
     outputHash: cleanString(evidence.outputHash),
@@ -280,6 +284,8 @@ function validateShockAssumptions(result, issues) {
     const assetBetas = isPlainObject(event?.assetBetas) ? event.assetBetas : null;
     const shockKeys = Object.keys(assetShockReturns || {}).sort();
     const betaKeys = Object.keys(assetBetas || {}).sort();
+    if (shockKeys.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) addIssue(issues, `externalShock_event_${index}_assetShockReturns_too_many`);
+    if (betaKeys.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) addIssue(issues, `externalShock_event_${index}_assetBetas_too_many`);
     if (shockMode === "direct_asset" && shockKeys.length === 0) addIssue(issues, `externalShock_event_${index}_assetShockReturns_missing`);
     if (shockMode === "market_beta") {
       validateFinite(event?.marketFactorShock, `externalShock_event_${index}_marketFactorShock`, issues, { min: -0.999999 });
@@ -332,17 +338,34 @@ function compactBetaProvenance(events = [], issues = []) {
 function compactAssetImpact(result, issues) {
   const impact = Array.isArray(result?.assetImpactSummary) ? result.assetImpactSummary : [];
   if (impact.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) addIssue(issues, "externalShock_assetImpact_too_many");
+  const seenAssetKeys = new Set();
+  let deltaSum = 0;
   return impact.map((asset, index) => {
     hasOnlyKeys(asset, ["market", "ticker", "key", "baselineTerminalValue", "stressedTerminalValue", "deltaValue", "deltaRate"], `externalShock_assetImpact_${index}`, issues);
     const market = validateShortString(asset?.market, `externalShock_assetImpact_${index}_market`, issues);
     const ticker = validateShortString(asset?.ticker, `externalShock_assetImpact_${index}_ticker`, issues, { pattern: TICKER_PATTERN });
-    if (asset?.key && cleanString(asset.key) !== `${market}:${ticker}`) addIssue(issues, `externalShock_assetImpact_${index}_identity_mismatch`);
+    const assetKey = `${market}:${ticker}`;
+    if (asset?.key && cleanString(asset.key) !== assetKey) addIssue(issues, `externalShock_assetImpact_${index}_identity_mismatch`);
+    if (seenAssetKeys.has(assetKey)) addIssue(issues, `externalShock_assetImpact_${index}_duplicate_identity`);
+    seenAssetKeys.add(assetKey);
+    const baselineTerminalValue = validateFinite(asset?.baselineTerminalValue, `externalShock_assetImpact_${index}_baselineTerminalValue`, issues, { min: 0 });
+    const stressedTerminalValue = validateFinite(asset?.stressedTerminalValue, `externalShock_assetImpact_${index}_stressedTerminalValue`, issues, { min: 0 });
+    const deltaValue = validateFinite(asset?.deltaValue, `externalShock_assetImpact_${index}_deltaValue`, issues);
+    if (baselineTerminalValue !== null && stressedTerminalValue !== null && deltaValue !== null &&
+      Math.abs((stressedTerminalValue - baselineTerminalValue) - deltaValue) > 1e-5) {
+      addIssue(issues, `externalShock_assetImpact_${index}_delta_reconciliation_invalid`);
+    }
+    deltaSum += deltaValue || 0;
+    if (index === impact.length - 1 && Number.isFinite(result?.terminalDeltaValue) &&
+      Math.abs(deltaSum - result.terminalDeltaValue) > 1e-5) {
+      addIssue(issues, "externalShock_assetImpact_total_delta_reconciliation_invalid");
+    }
     return {
       market,
       ticker,
-      baselineTerminalValue: validateFinite(asset?.baselineTerminalValue, `externalShock_assetImpact_${index}_baselineTerminalValue`, issues, { min: 0 }),
-      stressedTerminalValue: validateFinite(asset?.stressedTerminalValue, `externalShock_assetImpact_${index}_stressedTerminalValue`, issues, { min: 0 }),
-      deltaValue: validateFinite(asset?.deltaValue, `externalShock_assetImpact_${index}_deltaValue`, issues),
+      baselineTerminalValue,
+      stressedTerminalValue,
+      deltaValue,
       deltaRate: validateFinite(asset?.deltaRate, `externalShock_assetImpact_${index}_deltaRate`, issues, { min: -1, max: 10 }),
     };
   });
@@ -524,6 +547,64 @@ export function getProviderScenarioContext(scenarioInterpretationContext) {
   if (scenarioInterpretationContext.integrity.providerContextSignature !== expectedSignature) return null;
   if (serializedByteLength(providerContext) > AI_SCENARIO_CONTEXT_LIMITS.maxSerializedBytes) return null;
   return providerContext;
+}
+
+export function getProviderScenarioContextWrapper(scenarioInterpretationContext) {
+  const providerContext = getProviderScenarioContext(scenarioInterpretationContext);
+  if (!providerContext) return null;
+  return {
+    contextVersion: AI_SCENARIO_CONTEXT_VERSION,
+    status: providerContext.includedSections.length >= 2 ? "ready" : "partial",
+    providerEligible: true,
+    providerContext,
+    integrity: {
+      builderId: AI_SCENARIO_CONTEXT_BUILDER_ID,
+      contextVersion: AI_SCENARIO_CONTEXT_VERSION,
+      providerContextSignature: deterministicSignature(providerContext),
+      includedSectionCount: providerContext.includedSections.length,
+      excludedSectionCount: 0,
+      serializedBytes: serializedByteLength(providerContext),
+    },
+  };
+}
+
+function categorizeExclusionReasons(reasons = []) {
+  const text = (Array.isArray(reasons) ? reasons : []).join("|");
+  if (/portfolioFingerprint_mismatch|viewModelFingerprint_mismatch/.test(text)) return "stale_identity";
+  if (/fixtureOnly|fixture|review|sourceKind/.test(text)) return "review_only_or_fixture";
+  if (/productionPublishReady|appExportApproved|approval/.test(text)) return "approval_not_ready";
+  if (/hash|lineage|version|source/.test(text)) return "lineage_invalid";
+  if (/range|ordering|missing|invalid|mismatch/.test(text)) return "validation_failed";
+  return "excluded";
+}
+
+export function summarizeScenarioContextState(scenarioInterpretationContext) {
+  if (!isPlainObject(scenarioInterpretationContext)) {
+    return {
+      status: "omitted",
+      includedSections: [],
+      excludedSections: [],
+      reasonCategory: "not_supplied",
+      providerContext: null,
+    };
+  }
+  const status = ["omitted", "ready", "partial", "blocked", "stale"].includes(scenarioInterpretationContext.status)
+    ? scenarioInterpretationContext.status
+    : "blocked";
+  const providerContext = getProviderScenarioContext(scenarioInterpretationContext);
+  const excludedSections = Array.isArray(scenarioInterpretationContext.excludedSections)
+    ? scenarioInterpretationContext.excludedSections.map((entry) => ({
+      section: cleanString(entry?.section || "unknown"),
+      reasonCategory: categorizeExclusionReasons(entry?.reasons),
+    }))
+    : [];
+  return {
+    status,
+    includedSections: providerContext?.includedSections || [],
+    excludedSections,
+    reasonCategory: excludedSections[0]?.reasonCategory || (status === "omitted" ? "not_supplied" : "none"),
+    providerContext,
+  };
 }
 
 export function buildSimulatorAiScenarioContext(scenarioContextInputs = null) {

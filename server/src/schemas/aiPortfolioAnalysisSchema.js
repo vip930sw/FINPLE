@@ -182,6 +182,7 @@ function normalizeApprovalEvidence(evidence, path, section, errors) {
     "fixtureOnly",
     "productionPublishReady",
     "appExportApproved",
+    "sourceKind",
     "portfolioFingerprint",
     "inputHash",
     "outputHash",
@@ -198,11 +199,15 @@ function normalizeApprovalEvidence(evidence, path, section, errors) {
   if (evidence.fixtureOnly !== false) errors.push(`${path}.fixtureOnly must be false.`);
   if (evidence.productionPublishReady !== true) errors.push(`${path}.productionPublishReady must be true.`);
   if (evidence.appExportApproved !== true) errors.push(`${path}.appExportApproved must be true.`);
+  if (evidence.sourceKind !== "synthetic_non_fixture_contract") {
+    errors.push(`${path}.sourceKind must be synthetic_non_fixture_contract.`);
+  }
   const normalized = {
     evidenceVersion: AI_SCENARIO_APPROVAL_EVIDENCE_VERSION,
     fixtureOnly: false,
     productionPublishReady: true,
     appExportApproved: true,
+    sourceKind: "synthetic_non_fixture_contract",
     portfolioFingerprint: validateRequiredString(evidence.portfolioFingerprint, `${path}.portfolioFingerprint`, errors),
     inputHash: validateRequiredString(evidence.inputHash, `${path}.inputHash`, errors, { hash: true }),
     outputHash: validateRequiredString(evidence.outputHash, `${path}.outputHash`, errors, { hash: true }),
@@ -218,8 +223,9 @@ function normalizeApprovalEvidence(evidence, path, section, errors) {
   if (normalized.calculationPolicyVersion !== section.calculationPolicyVersion) errors.push(`${path}.calculationPolicyVersion must match section calculationPolicyVersion.`);
   if (normalized.pipelineVersion !== section.pipelineVersion) errors.push(`${path}.pipelineVersion must match section pipelineVersion.`);
   const sectionHashes = new Set(section.sourceHashes || []);
-  if (!normalized.sourceHashes.every((hash) => sectionHashes.has(hash))) {
-    errors.push(`${path}.sourceHashes must be contained in section sourceHashes.`);
+  const sortedSectionHashes = Array.from(sectionHashes).sort();
+  if (normalized.sourceHashes.join("|") !== sortedSectionHashes.join("|")) {
+    errors.push(`${path}.sourceHashes must exactly match section sourceHashes.`);
   }
   return normalized;
 }
@@ -343,6 +349,12 @@ function normalizeShockAssumptions(value, path, errors) {
     if (assetBetas !== null && assetBetas !== undefined) validateAllowedKeys(assetBetas, Object.keys(assetBetas), `${eventPath}.assetBetas`, errors);
     const shockKeys = isPlainObject(assetShockReturns) ? Object.keys(assetShockReturns).sort() : [];
     const betaKeys = isPlainObject(assetBetas) ? Object.keys(assetBetas).sort() : [];
+    if (shockKeys.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) {
+      errors.push(`${eventPath}.assetShockReturns cannot contain more than ${AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact} items.`);
+    }
+    if (betaKeys.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) {
+      errors.push(`${eventPath}.assetBetas cannot contain more than ${AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact} items.`);
+    }
     if (shockMode === "direct_asset" && shockKeys.length === 0) errors.push(`${eventPath}.assetShockReturns is required for direct_asset.`);
     if (shockMode === "market_beta") {
       validateContextNumber(event?.marketFactorShock, `${eventPath}.marketFactorShock`, errors, { min: -0.999999 });
@@ -378,6 +390,7 @@ function normalizeAssetImpact(value, path, errors) {
   if (value.length > AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact) {
     errors.push(`${path} cannot contain more than ${AI_SCENARIO_CONTEXT_LIMITS.maxAssetImpact} items.`);
   }
+  const seenAssetKeys = new Set();
   return value.map((asset, index) => {
     const assetPath = `${path}[${index}]`;
     validateAllowedKeys(asset, ["market", "ticker", "baselineTerminalValue", "stressedTerminalValue", "deltaValue", "deltaRate"], assetPath, errors);
@@ -385,12 +398,22 @@ function normalizeAssetImpact(value, path, errors) {
     if (!["US", "KR"].includes(market)) errors.push(`${assetPath}.market must be US or KR.`);
     const ticker = validateRequiredString(asset?.ticker, `${assetPath}.ticker`, errors);
     if (!TICKER_PATTERN.test(ticker)) errors.push(`${assetPath}.ticker is invalid.`);
+    const assetKey = `${market}:${ticker}`;
+    if (seenAssetKeys.has(assetKey)) errors.push(`${assetPath} identity must be unique.`);
+    seenAssetKeys.add(assetKey);
+    const baselineTerminalValue = validateContextNumber(asset?.baselineTerminalValue, `${assetPath}.baselineTerminalValue`, errors, { min: 0 });
+    const stressedTerminalValue = validateContextNumber(asset?.stressedTerminalValue, `${assetPath}.stressedTerminalValue`, errors, { min: 0 });
+    const deltaValue = validateContextNumber(asset?.deltaValue, `${assetPath}.deltaValue`, errors);
+    if (baselineTerminalValue !== null && stressedTerminalValue !== null && deltaValue !== null &&
+      Math.abs((stressedTerminalValue - baselineTerminalValue) - deltaValue) > 1e-5) {
+      errors.push(`${assetPath}.deltaValue must equal stressedTerminalValue - baselineTerminalValue.`);
+    }
     return {
       market,
       ticker,
-      baselineTerminalValue: validateContextNumber(asset?.baselineTerminalValue, `${assetPath}.baselineTerminalValue`, errors, { min: 0 }),
-      stressedTerminalValue: validateContextNumber(asset?.stressedTerminalValue, `${assetPath}.stressedTerminalValue`, errors, { min: 0 }),
-      deltaValue: validateContextNumber(asset?.deltaValue, `${assetPath}.deltaValue`, errors),
+      baselineTerminalValue,
+      stressedTerminalValue,
+      deltaValue,
       deltaRate: validateContextNumber(asset?.deltaRate, `${assetPath}.deltaRate`, errors, { min: -1, max: 10 }),
     };
   });
@@ -464,6 +487,7 @@ function normalizeExternalShockScenarioContext(section, errors) {
   if (typeof section.recovery?.unrecovered !== "boolean") {
     errors.push(`${path}.recovery.unrecovered must be a boolean.`);
   }
+  const assetImpact = normalizeAssetImpact(section.assetImpact, `${path}.assetImpact`, errors);
   const normalized = {
     sectionVersion: validateRequiredString(section.sectionVersion, `${path}.sectionVersion`, errors),
     scenarioVersion: validateRequiredString(section.scenarioVersion, `${path}.scenarioVersion`, errors),
@@ -495,9 +519,16 @@ function normalizeExternalShockScenarioContext(section, errors) {
       longestRecoveryMonths: validateContextNumber(section.recovery?.longestRecoveryMonths, `${path}.recovery.longestRecoveryMonths`, errors, { min: 0, nullable: true }),
       unrecovered: typeof section.recovery?.unrecovered === "boolean" ? section.recovery.unrecovered : null,
     },
-    assetImpact: normalizeAssetImpact(section.assetImpact, `${path}.assetImpact`, errors),
+    assetImpact,
     betaProvenanceSummary: normalizeBetaProvenanceSummary(section.betaProvenanceSummary, `${path}.betaProvenanceSummary`, errors),
   };
+  const assetImpactDeltaTotal = assetImpact.reduce((sum, asset) => (
+    sum + (Number.isFinite(asset.deltaValue) ? asset.deltaValue : 0)
+  ), 0);
+  if (Number.isFinite(normalized.terminalValue.deltaValue) &&
+    Math.abs(assetImpactDeltaTotal - normalized.terminalValue.deltaValue) > 1e-5) {
+    errors.push(`${path}.assetImpact deltaValue total must equal terminalValue.deltaValue.`);
+  }
   normalized.approvalEvidence = normalizeApprovalEvidence(section.approvalEvidence, `${path}.approvalEvidence`, normalized, errors);
   return normalized;
 }

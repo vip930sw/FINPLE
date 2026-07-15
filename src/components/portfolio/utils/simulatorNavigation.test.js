@@ -114,6 +114,9 @@ test("AI panel is labeled as Step 6 while preserving the existing prop contract"
   const simulatorSource = readSource("src/components/PortfolioSimulator.jsx");
   assert.match(panelSource, /STEP 6\. AI Analysis/);
   assert.match(panelSource, /<h3>AI 분석<\/h3>/);
+  assert.match(panelSource, /summarizeScenarioContextState/);
+  assert.match(panelSource, /aiScenarioContextState/);
+  assert.match(panelSource, /status-\$\{state\.status\}/);
   assert.match(simulatorSource, /buildSimulatorAiScenarioContext/);
   assert.match(simulatorSource, /const scenarioInterpretationContext = useMemo\(/);
   assert.match(simulatorSource, /scenarioInterpretationContext=\{scenarioInterpretationContext\}/);

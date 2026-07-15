@@ -1,4 +1,7 @@
-import { getProviderScenarioContext } from "./aiScenarioInterpretationContext.js";
+import {
+  getProviderScenarioContext,
+  getProviderScenarioContextWrapper,
+} from "./aiScenarioInterpretationContext.js";
 
 const MAX_AI_ANALYSIS_ASSET_COUNT = 20;
 
@@ -136,6 +139,7 @@ export function buildAiAnalysisPayload({
   const assets = getWeightedAssets(activeAssets).map(({ asset, weight }) => buildAssetPayload(asset, weight));
 
   const providerScenarioContext = getProviderScenarioContext(scenarioInterpretationContext);
+  const providerScenarioContextWrapper = getProviderScenarioContextWrapper(scenarioInterpretationContext);
   const payload = {
     portfolioId: String(activePortfolio?.id || "local-portfolio"),
     analysisContext: "simulator-step6",
@@ -148,14 +152,8 @@ export function buildAiAnalysisPayload({
     assets,
   };
 
-  if (providerScenarioContext) {
-    payload.scenarioInterpretationContext = {
-      contextVersion: scenarioInterpretationContext.contextVersion,
-      status: scenarioInterpretationContext.status,
-      providerEligible: true,
-      providerContext: providerScenarioContext,
-      integrity: scenarioInterpretationContext.integrity,
-    };
+  if (providerScenarioContext && providerScenarioContextWrapper) {
+    payload.scenarioInterpretationContext = providerScenarioContextWrapper;
   }
 
   return payload;

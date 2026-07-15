@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
 import { runPortfolioAnalysis } from "./aiPortfolioAnalysisService.js";
+import { getModelOutputSchema } from "./aiPortfolioAnalysisOpenAi.js";
 import {
   getAiPortfolioAnalysisOutputContract,
   validateAiPortfolioAnalysisOutput,
@@ -66,6 +67,21 @@ function deterministicSignature(value) {
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function assertStrictSchemaRequiresEveryObjectProperty(schema, path = "schema") {
+  if (!schema || typeof schema !== "object") return;
+  const type = Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (type.includes("object") && schema.properties) {
+    const required = new Set(schema.required || []);
+    for (const key of Object.keys(schema.properties)) {
+      assert.ok(required.has(key), `${path}.properties.${key} must be listed in required`);
+    }
+  }
+  for (const [key, child] of Object.entries(schema.properties || {})) {
+    assertStrictSchemaRequiresEveryObjectProperty(child, `${path}.properties.${key}`);
+  }
+  if (schema.items) assertStrictSchemaRequiresEveryObjectProperty(schema.items, `${path}.items`);
 }
 
 function validScenarioContext(overrides = {}) {
@@ -163,6 +179,7 @@ function approvalEvidenceFor(section, portfolioFingerprint = "portfolio-fingerpr
     fixtureOnly: false,
     productionPublishReady: true,
     appExportApproved: true,
+    sourceKind: "synthetic_non_fixture_contract",
     portfolioFingerprint,
     inputHash: section.inputHash,
     outputHash: section.outputHash,
@@ -177,11 +194,11 @@ function approvalEvidenceFor(section, portfolioFingerprint = "portfolio-fingerpr
 function validScenarioContextWrapper(overrides = {}) {
   const providerContext = validScenarioContext(overrides.providerContext || {});
   const portfolioFingerprint = providerContext.portfolioFingerprint;
-  providerContext.sections.probability.approvalEvidence = approvalEvidenceFor(
+  providerContext.sections.probability.approvalEvidence ||= approvalEvidenceFor(
     providerContext.sections.probability,
     portfolioFingerprint
   );
-  providerContext.sections.externalShock.approvalEvidence = approvalEvidenceFor(
+  providerContext.sections.externalShock.approvalEvidence ||= approvalEvidenceFor(
     providerContext.sections.externalShock,
     portfolioFingerprint
   );
@@ -455,6 +472,15 @@ test("scenario context is optional and simulator-step4 remains legacy compatible
   assert.equal(step6.scenarioInterpretationContext, undefined);
 });
 
+test("OpenAI strict output schemas require every declared object property", () => {
+  const baselineSchema = getModelOutputSchema(false);
+  const scenarioSchema = getModelOutputSchema(true);
+  assert.equal(Object.hasOwn(baselineSchema.properties, "scenarioInterpretation"), false);
+  assert.equal(Object.hasOwn(scenarioSchema.properties, "scenarioInterpretation"), true);
+  assertStrictSchemaRequiresEveryObjectProperty(baselineSchema, "baselineSchema");
+  assertStrictSchemaRequiresEveryObjectProperty(scenarioSchema, "scenarioSchema");
+});
+
 test("server validates compact probability and external shock scenario context", async () => {
   await withScenarioContextGateEnabled(async () => {
     const payload = normalizePortfolioAnalysisRequest({
@@ -552,6 +578,18 @@ test("server rejects raw provider object and strict context limit violations", a
         providerContext.sections.probability = {
           ...providerContext.sections.probability,
           sourceHashes: Array.from({ length: 21 }, (_, index) => `source-hash-${index}`),
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.probability = {
+          ...providerContext.sections.probability,
+          approvalEvidence: {
+            ...approvalEvidenceFor(providerContext.sections.probability),
+            sourceHashes: ["fixture-source-hash-v1"],
+          },
+          sourceHashes: ["fixture-source-hash-v1", "unapproved-extra-source"],
         };
         return validScenarioContextWrapper({ providerContext });
       })(),
@@ -683,6 +721,7 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     const requestBody = JSON.parse(options.body);
     assert.equal(requestBody.text.format.type, "json_schema");
     assert.equal(requestBody.text.format.strict, true);
+    assert.equal(Object.hasOwn(requestBody.text.format.schema.properties, "scenarioInterpretation"), false);
     assert.match(requestBody.instructions, /polite formal Korean honorific style/);
     assert.match(requestBody.instructions, /입니다/);
     assert.match(requestBody.instructions, /plain report-style endings/);
@@ -811,6 +850,8 @@ test("live OpenAI prompt receives validated scenario context as immutable interp
 
   globalThis.fetch = async (url, options) => {
     const requestBody = JSON.parse(options.body);
+    assert.equal(Object.hasOwn(requestBody.text.format.schema.properties, "scenarioInterpretation"), true);
+    assert.ok(requestBody.text.format.schema.required.includes("scenarioInterpretation"));
     assert.match(requestBody.instructions, /immutable facts/);
     assert.match(requestBody.instructions, /Do not recompute probability, MDD, recovery, stress, or shock results/);
     assert.match(requestBody.instructions, /External shock analysis does not estimate the probability/);

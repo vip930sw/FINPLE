@@ -14,6 +14,7 @@ import {
   formatScenarioMoney,
   formatScenarioRatio,
   getProviderScenarioContext,
+  summarizeScenarioContextState,
 } from "../utils/aiScenarioInterpretationContext";
 
 function getActiveAssets(assets = [], isEmptyAssetRow) {
@@ -67,16 +68,21 @@ function getActionCopy(analysisStatus) {
 }
 
 function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
-  const providerContext = getProviderScenarioContext(scenarioInterpretationContext);
-  const excludedSections = Array.isArray(scenarioInterpretationContext?.excludedSections)
-    ? scenarioInterpretationContext.excludedSections
-    : [];
+  const state = summarizeScenarioContextState(scenarioInterpretationContext);
+  const providerContext = state.providerContext || getProviderScenarioContext(scenarioInterpretationContext);
   const probability = providerContext?.sections?.probability || null;
   const externalShock = providerContext?.sections?.externalShock || null;
 
   return (
-    <section className={`aiScenarioContextPanel ${providerContext ? "ready" : "muted"}`}>
+    <section className={`aiScenarioContextPanel ${providerContext ? "ready" : "muted"} status-${state.status}`}>
       <div>
+        <span className="aiScenarioContextState">
+          state: {state.status}
+          {state.includedSections.length > 0 ? ` / included: ${state.includedSections.join(", ")}` : ""}
+          {state.excludedSections.length > 0
+            ? ` / excluded: ${state.excludedSections.map((entry) => `${entry.section}:${entry.reasonCategory}`).join(", ")}`
+            : ""}
+        </span>
         <strong>STEP 4·5 검증 결과</strong>
         <p>
           AI는 STEP 4·5에서 계산된 검증 결과를 해석하며 직접 확률·MDD·충격 결과를 계산하지 않습니다.
@@ -110,7 +116,11 @@ function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
         <div className="aiScenarioContextEmpty">
           <strong>검증 scenario context 미포함</strong>
           <span>
-            {excludedSections.length > 0
+            {state.status === "stale"
+              ? "stale identity context is excluded from the AI provider payload."
+              : state.status === "blocked"
+                ? `blocked context is excluded: ${state.reasonCategory}.`
+                : state.excludedSections.length > 0
               ? "review-only, fixture, stale 또는 승인 미완료 결과는 AI provider payload에서 제외됩니다."
               : "기존 AI 요청과 동일하게 현재 포트폴리오 입력만 해석합니다."}
           </span>
