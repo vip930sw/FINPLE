@@ -73,6 +73,7 @@ The package fails closed on:
 - extra physical files in the input directory
 - unsafe configured input filenames or unsafe `output_version`
 - overlapping input and output directories
+- missing required input files
 - malformed CSV/JSON
 - duplicate `market+ticker+date`
 - non-positive prices
@@ -90,6 +91,10 @@ Validation uses `date.today()` by default during operator execution. Tests may i
 
 Rows with `redistributionAllowed=false` may remain candidate-reviewable only when the source and row-level publication/internal-use gates are otherwise approved. Such restrictions are recorded in manifest/audit as review-only limitations. They never make `productionPublishReady` or `appExportApproved` true.
 
+Path validation runs before output directory creation or file writes. Unsafe filenames, absolute/path-like filenames, `..`, backslashes, unsafe output versions, and overlapping input/output directories return a fail-closed result without creating files in the unsafe destination.
+
+When required inputs are missing but paths are otherwise safe, the package writes a deterministic blocked review ZIP. Missing input inventory rows explicitly record `exists=false`, empty `sha256`, `byteSize=-1`, and `rowCount=0`; the writer does not hash nonexistent files.
+
 ## Output Contract
 
 The deterministic candidate ZIP contains:
@@ -105,6 +110,8 @@ The deterministic candidate ZIP contains:
 - human-readable audit HTML
 - input/output exact hash inventory CSV
 - final package index JSON
+
+Candidate-generated CSV files are written with `utf-8-sig` so Windows Excel can open Korean text without mojibake. This candidate-only writer applies to normalized month-end, monthly returns, metrics output, review-required, source audit, time-series audit, and hash inventory CSVs. The shared fixture `_write_csv` remains unchanged.
 
 The candidate manifest records:
 
@@ -134,7 +141,7 @@ The package uses a self-reference-safe two-level hash contract:
 6. The deterministic ZIP is written.
 7. `zipPackageSha256` is reported separately.
 
-`candidatePackageHash` is the canonical hash of the final package index with its own `candidatePackageHash` field excluded. The package verifier requires the exact ZIP member set, rejects missing or extra members, and rejects mutation of any member bound by the package index. Identical inputs produce identical `candidatePackageHash` and ZIP SHA-256.
+`candidatePackageHash` is the canonical hash of the final package index with its own `candidatePackageHash` field excluded. The package verifier hashes actual ZIP member bytes, including UTF-8 BOM bytes in candidate CSV outputs. It requires the exact ZIP member set, rejects missing or extra members, and rejects mutation of any member bound by the package index. Identical inputs produce identical `candidatePackageHash` and ZIP SHA-256.
 
 ## Colab / CLI Workflow
 

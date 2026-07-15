@@ -103,7 +103,7 @@ def raw_daily_rows(**overrides) -> list[dict[str, str]]:
 
 def build_candidate_input(root: Path, **overrides) -> Path:
     input_dir = root / "input"
-    input_dir.mkdir()
+    input_dir.mkdir(parents=True)
     write_csv(input_dir / "candidate_asset_master.csv", CANDIDATE_COLUMNS, overrides.get("candidate_rows", candidate_rows()))
     write_csv(input_dir / "benchmark_map.csv", ["benchmarkKey", "benchmarkMarket", "benchmarkTicker"], overrides.get("benchmark_rows", benchmark_rows()))
     write_csv(input_dir / "raw_daily_prices.csv", RAW_DAILY_PRICE_COLUMNS, overrides.get("raw_rows", raw_daily_rows()))
@@ -184,6 +184,18 @@ def run_candidate(input_dir: Path, output_dir: Path, **overrides):
     )
 
 
+def candidate_csv_output_keys() -> list[str]:
+    return [
+        "normalizedMonthEndCsv",
+        "monthlyReturnsCsv",
+        "metricsOutputCsv",
+        "reviewRequiredCsv",
+        "sourceAuditCsv",
+        "timeseriesAuditCsv",
+        "hashInventoryCsv",
+    ]
+
+
 class ProductionCandidatePackageTests(unittest.TestCase):
     def test_no_input_returns_idle_and_fixture_default_remains_unchanged(self):
         self.assertEqual(run_finple_production_candidate_package()["status"], "idle")
@@ -222,15 +234,18 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertEqual(manifest["calculationPolicyVersion"], CALCULATION_POLICY_VERSION)
             self.assertIn("KR:005930", manifest["marketTickerDateCoverage"])
             self.assertEqual(manifest["outputHashes"]["finple_candidate_metrics_output_2026_06_candidate.csv"], sha256(outputs["metricsOutputCsv"]))
-            with outputs["metricsOutputCsv"].open("r", encoding="utf-8", newline="") as handle:
+            with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 metrics = list(csv.DictReader(handle))
             self.assertEqual(metrics[0]["ticker"], "005930")
             self.assertEqual(metrics[0]["betaPolicy"], "candidate_aligned_monthly_returns")
-            with outputs["monthlyReturnsCsv"].open("r", encoding="utf-8", newline="") as handle:
+            with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
+                utf8_sig_metrics = list(csv.DictReader(handle))
+            self.assertEqual(utf8_sig_metrics[0]["nameKr"], "삼성전자")
+            with outputs["monthlyReturnsCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 monthly_returns = list(csv.DictReader(handle))
             self.assertTrue(monthly_returns)
             self.assertTrue(all("fixture" not in row["dataStatus"] for row in monthly_returns))
-            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8", newline="") as handle:
+            with outputs["normalizedMonthEndCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 normalized = list(csv.DictReader(handle))
             self.assertIn("069500", {row["ticker"] for row in normalized})
             with ZipFile(outputs["zipPackage"]) as package:
@@ -238,6 +253,39 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertIn("finple_candidate_manifest_2026_06_candidate.json", names)
             self.assertIn("finple_candidate_hash_inventory_2026_06_candidate.csv", names)
             self.assertIn("finple_candidate_package_index_2026_06_candidate.json", names)
+
+    def test_missing_required_inputs_return_deterministic_blocked_package(self):
+        cases = [
+            ["raw_daily_prices.csv"],
+            ["raw_daily_prices.csv", "benchmark_map.csv"],
+            ["source_declaration.json"],
+            ["operator_submission_manifest.json"],
+        ]
+        for missing_files in cases:
+            with self.subTest(missing_files=missing_files), tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+                left_input = build_candidate_input(Path(left_dir))
+                right_input = build_candidate_input(Path(right_dir))
+                for root in [left_input, right_input]:
+                    for file_name in missing_files:
+                        (root / file_name).unlink()
+                left = run_candidate(left_input, Path(left_dir) / "out")
+                right = run_candidate(right_input, Path(right_dir) / "out")
+                self.assertEqual(left["status"], "blocked")
+                self.assertFalse(left["candidatePackageReady"])
+                self.assertFalse(left["productionPublishReady"])
+                self.assertFalse(left["appExportApproved"])
+                self.assertEqual(left["candidatePackageHash"], right["candidatePackageHash"])
+                self.assertEqual(left["zipPackageSha256"], right["zipPackageSha256"])
+                self.assertTrue(verify_candidate_package(left["outputs"]["zipPackage"])["ok"])
+                with Path(left["outputs"]["hashInventoryCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    inventory = list(csv.DictReader(handle))
+                missing_rows = [row for row in inventory if row["artifactType"] == "input" and row["path"] in missing_files]
+                self.assertEqual(len(missing_rows), len(missing_files))
+                for row in missing_rows:
+                    self.assertEqual(row["exists"], "false")
+                    self.assertEqual(row["sha256"], "")
+                    self.assertEqual(row["byteSize"], "-1")
+                    self.assertEqual(row["rowCount"], "0")
 
     def test_candidate_fail_closed_validation_cases(self):
         cases = [
@@ -300,7 +348,7 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             input_dir = build_candidate_input(Path(temp_dir))
             result = run_candidate(input_dir, Path(temp_dir) / "out")
             inventory_path = Path(result["outputs"]["hashInventoryCsv"])
-            with inventory_path.open("r", encoding="utf-8", newline="") as handle:
+            with inventory_path.open("r", encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
             output_rows = [row for row in rows if row["artifactType"] == "output"]
             self.assertTrue(output_rows)
@@ -401,13 +449,13 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             )
             result = run_candidate(input_dir, Path(temp_dir) / "out", market_scope=["KR", "US"])
             self.assertTrue(result["candidatePackageReady"])
-            with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8", newline="") as handle:
+            with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
                 metrics = list(csv.DictReader(handle))
             hashes = {(row["market"], row["ticker"]): row["sourceHash"] for row in metrics}
             self.assertIn(("KR", "005930"), hashes)
             self.assertIn(("US", "069500"), hashes)
             self.assertNotEqual(hashes[("KR", "005930")], hashes[("US", "069500")])
-            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8", newline="") as handle:
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
                 normalized = list(csv.DictReader(handle))
             self.assertEqual({"KR", "US"}, {row["market"] for row in normalized if row["ticker"] == "069500"})
 
@@ -442,20 +490,70 @@ class ProductionCandidatePackageTests(unittest.TestCase):
         path_cases = [
             {"candidate_asset_master_file": "../candidate_asset_master.csv", "issue": "unsafe_config_filename"},
             {"candidate_asset_master_file": "bad\\candidate_asset_master.csv", "issue": "unsafe_config_filename"},
+            {"candidate_asset_master_file": "C:\\candidate_asset_master.csv", "issue": "unsafe_config_filename"},
             {"output_version": "../bad", "issue": "unsafe_output_version"},
         ]
         for case in path_cases:
             with self.subTest(case=case["issue"]), tempfile.TemporaryDirectory() as temp_dir:
                 input_dir = build_candidate_input(Path(temp_dir))
-                result = run_candidate(input_dir, Path(temp_dir) / "out", **{key: value for key, value in case.items() if key != "issue"})
+                output_dir = Path(temp_dir) / "out"
+                result = run_candidate(input_dir, output_dir, **{key: value for key, value in case.items() if key != "issue"})
                 self.assertFalse(result["candidatePackageReady"])
                 self.assertIn(case["issue"], {issue["issueType"] for issue in result["issues"]})
+                self.assertFalse(output_dir.exists())
 
         with tempfile.TemporaryDirectory() as temp_dir:
             input_dir = build_candidate_input(Path(temp_dir))
+            before = sorted(path.name for path in input_dir.iterdir())
             result = run_candidate(input_dir, input_dir)
             self.assertFalse(result["candidatePackageReady"])
             self.assertIn("input_output_overlap", {issue["issueType"] for issue in result["issues"]})
+            after = sorted(path.name for path in input_dir.iterdir())
+            self.assertEqual(before, after)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            output_dir = input_dir / "out"
+            result = run_candidate(input_dir, output_dir)
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("input_output_overlap", {issue["issueType"] for issue in result["issues"]})
+            self.assertFalse(output_dir.exists())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "out"
+            input_dir = build_candidate_input(output_dir)
+            before = sorted(str(path.relative_to(output_dir)) for path in output_dir.rglob("*"))
+            result = run_candidate(input_dir, output_dir)
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("input_output_overlap", {issue["issueType"] for issue in result["issues"]})
+            after = sorted(str(path.relative_to(output_dir)) for path in output_dir.rglob("*"))
+            self.assertEqual(before, after)
+
+    def test_candidate_csv_outputs_use_utf8_bom_and_preserve_korean_and_leading_zero(self):
+        with tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+            left_input = build_candidate_input(Path(left_dir))
+            right_input = build_candidate_input(Path(right_dir))
+            left = run_candidate(left_input, Path(left_dir) / "out")
+            right = run_candidate(right_input, Path(right_dir) / "out")
+            self.assertEqual(left["candidatePackageHash"], right["candidatePackageHash"])
+            self.assertEqual(left["zipPackageSha256"], right["zipPackageSha256"])
+            for key in candidate_csv_output_keys():
+                path = Path(left["outputs"][key])
+                self.assertEqual(path.read_bytes()[:3], b"\xef\xbb\xbf", key)
+                path.read_text(encoding="utf-8-sig")
+            with Path(left["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                metrics = list(csv.DictReader(handle))
+            self.assertEqual(metrics[0]["nameKr"], "삼성전자")
+            self.assertEqual(metrics[0]["ticker"], "005930")
+            with Path(left["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertIn("069500", {row["ticker"] for row in normalized})
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_left = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir) / "left"))
+            fixture_right = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir) / "right"))
+            self.assertTrue(fixture_left["fixturePackageReady"])
+            self.assertEqual(sha256(Path(fixture_left["outputs"]["zipPackage"])), sha256(Path(fixture_right["outputs"]["zipPackage"])))
 
     def test_package_member_hash_verification_detects_missing_extra_and_mutation(self):
         with tempfile.TemporaryDirectory() as temp_dir:

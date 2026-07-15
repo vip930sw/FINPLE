@@ -20,7 +20,6 @@ from .pipeline import (
     _sha256,
     _validate_candidates,
     _validate_metric_output_rows,
-    _write_csv,
 )
 from .schemas import (
     CANDIDATE_COLUMNS,
@@ -67,6 +66,7 @@ HASH_INVENTORY_COLUMNS = [
     "artifactType",
     "logicalRole",
     "path",
+    "exists",
     "sha256",
     "byteSize",
     "rowCount",
@@ -124,10 +124,13 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
 
     issues: list[dict[str, str]] = []
     _validate_config_paths(package_config, issues)
-    package_config.output_dir.mkdir(parents=True, exist_ok=True)
     paths = _input_paths(package_config)
     output_paths = _output_paths(package_config)
     _validate_output_paths(package_config, output_paths, issues)
+    if _has_blocking_issues(issues):
+        return _blocked_no_write_result(package_config, output_paths, issues)
+
+    package_config.output_dir.mkdir(parents=True, exist_ok=True)
     _validate_actual_input_file_set(package_config, paths, issues)
     missing_roles = [role for role, path in paths.items() if not path.exists()]
     for role in missing_roles:
@@ -339,6 +342,29 @@ def _blocked_result(config: CandidatePackageConfig, paths: Mapping[str, Path], i
         "issues": issues,
         "outputs": {role: str(path) for role, path in sorted(paths.items())},
         "metricBaseDate": config.metric_base_date,
+    }
+
+
+def _blocked_no_write_result(
+    config: CandidatePackageConfig,
+    output_paths: Mapping[str, Path],
+    issues: list[dict[str, str]],
+) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "status": "blocked",
+        "fixturePackageReady": False,
+        "candidatePackageReady": False,
+        "productionPublishReady": False,
+        "appExportApproved": False,
+        "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
+        "candidatePackageHash": "",
+        "zipPackageSha256": "",
+        "candidatePackageId": "",
+        "validationDate": config.validation_date.isoformat(),
+        "outputs": {key: str(path) for key, path in output_paths.items()},
+        "issues": issues,
     }
 
 
@@ -800,23 +826,16 @@ def _write_candidate_outputs(
     timeseries_audit_rows: list[dict[str, str]],
     candidate_package_ready: bool,
 ) -> None:
-    _write_csv(output_paths["normalizedMonthEndCsv"], NORMALIZED_MONTH_END_COLUMNS, normalized_rows)
-    _write_csv(output_paths["monthlyReturnsCsv"], MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
-    _write_csv(output_paths["metricsOutputCsv"], FULL_METRICS_COLUMNS, full_rows)
-    _write_csv(output_paths["reviewRequiredCsv"], REVIEW_REQUIRED_COLUMNS, review_rows)
-    _write_csv(output_paths["sourceAuditCsv"], SOURCE_AUDIT_COLUMNS, source_audit_rows)
-    _write_csv(output_paths["timeseriesAuditCsv"], TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
+    _write_candidate_csv(output_paths["normalizedMonthEndCsv"], NORMALIZED_MONTH_END_COLUMNS, normalized_rows)
+    _write_candidate_csv(output_paths["monthlyReturnsCsv"], MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
+    _write_candidate_csv(output_paths["metricsOutputCsv"], FULL_METRICS_COLUMNS, full_rows)
+    _write_candidate_csv(output_paths["reviewRequiredCsv"], REVIEW_REQUIRED_COLUMNS, review_rows)
+    _write_candidate_csv(output_paths["sourceAuditCsv"], SOURCE_AUDIT_COLUMNS, source_audit_rows)
+    _write_candidate_csv(output_paths["timeseriesAuditCsv"], TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
     _write_audit_html(output_paths["auditHtml"], source_audit_rows, candidate_package_ready, package_config.validation_date)
 
     input_inventory = [
-        {
-            "artifactType": "input",
-            "logicalRole": role,
-            "path": path.name,
-            "sha256": _sha256(path),
-            "byteSize": str(_byte_size(path)),
-            "rowCount": str(_row_count_for_role(role, path)),
-        }
+        _input_inventory_item(role, path)
         for role, path in sorted(input_paths.items())
     ]
     output_inventory_paths = [
@@ -833,13 +852,14 @@ def _write_candidate_outputs(
             "artifactType": "output",
             "logicalRole": path.stem,
             "path": path.name,
+            "exists": "true",
             "sha256": _sha256(path),
             "byteSize": str(_byte_size(path)),
             "rowCount": str(_row_count_csv(path) if path.suffix == ".csv" else ""),
         }
         for path in output_inventory_paths
     ]
-    _write_csv(output_paths["hashInventoryCsv"], HASH_INVENTORY_COLUMNS, input_inventory + output_inventory)
+    _write_candidate_csv(output_paths["hashInventoryCsv"], HASH_INVENTORY_COLUMNS, input_inventory + output_inventory)
 
     blocking_count = len([issue for issue in source_audit_rows if issue["blocksCandidate"] == "true"])
     warning_count = len(source_audit_rows) - blocking_count
@@ -853,8 +873,8 @@ def _write_candidate_outputs(
         "pipelineVersion": PIPELINE_VERSION,
         "normalizationVersion": NORMALIZATION_VERSION,
         "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
-        "sourceDeclarationHash": _sha256(input_paths["source_declaration"]),
-        "submissionManifestHash": _sha256(input_paths["operator_submission_manifest"]),
+        "sourceDeclarationHash": _sha256_if_exists(input_paths["source_declaration"]),
+        "submissionManifestHash": _sha256_if_exists(input_paths["operator_submission_manifest"]),
         "inputHashes": {item["logicalRole"]: item["sha256"] for item in input_inventory},
         "outputHashes": {item["path"]: item["sha256"] for item in output_inventory},
         "inputRowReconciliation": {
@@ -957,6 +977,31 @@ def _write_audit_html(path: Path, issues: list[dict[str, str]], candidate_ready:
         f"<tbody>{rows}</tbody></table></body></html>\n"
     )
     path.write_text(content, encoding="utf-8")
+
+
+def _write_candidate_csv(path: Path, columns: list[str], rows: Iterable[Mapping[str, str]]) -> None:
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({column: row.get(column, "") for column in columns})
+
+
+def _input_inventory_item(role: str, path: Path) -> dict[str, str]:
+    exists = path.exists()
+    return {
+        "artifactType": "input",
+        "logicalRole": role,
+        "path": path.name,
+        "exists": "true" if exists else "false",
+        "sha256": _sha256(path) if exists else "",
+        "byteSize": str(_byte_size(path) if exists else -1),
+        "rowCount": str(_row_count_for_role(role, path) if exists else 0),
+    }
+
+
+def _sha256_if_exists(path: Path) -> str:
+    return _sha256(path) if path.exists() else ""
 
 
 def _build_package_index(output_paths: Mapping[str, Path]) -> dict[str, Any]:
