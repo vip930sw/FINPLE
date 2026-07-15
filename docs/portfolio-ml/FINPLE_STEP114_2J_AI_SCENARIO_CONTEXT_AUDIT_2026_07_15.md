@@ -20,6 +20,8 @@ If no eligible context is present, the public AI request remains a normal portfo
 
 Review-valid scenario results may exist in the browser for fixture review, stale inspection, or blocked-state messaging. They are not automatically eligible for AI provider payloads.
 
+`PortfolioSimulator` is the single runtime owner for building `scenarioInterpretationContext`; it passes exactly one `scenarioInterpretationContext` prop to `AiAnalysisPanel`. The public default remains `null` or omitted. Production components must not import browser fixture modules.
+
 Provider payload inclusion is fail-closed and requires all of the following:
 
 - `fixtureOnly=false`
@@ -28,8 +30,17 @@ Provider payload inclusion is fail-closed and requires all of the following:
 - current portfolio fingerprint match
 - existing Step 4/5 adapter validation has produced a ready view model
 - required lineage fields: input hash, output hash, source hashes, normalization version, calculation policy version, and pipeline version
+- adapter-level approval evidence that repeats the same flags, fingerprint, hashes, and versions
 
 Fixture and review-only results are excluded from live AI provider payloads even when their chart view is valid.
+
+Runtime status values are exact:
+
+- `omitted`: no scenario context inputs
+- `ready`: all included sections are provider eligible
+- `partial`: only one section is included, or a non-fingerprint section exclusion exists
+- `blocked`: malformed or approval-failed context without an eligible section
+- `stale`: current portfolio fingerprint does not match the validated scenario identity
 
 ## Compact Payload
 
@@ -59,16 +70,24 @@ The context must not include full monthly paths, simulation traces, raw return m
 
 The server treats optional scenario context as untrusted input. It validates:
 
+- canonical wrapper only: `status=ready|partial`, `providerEligible=true`, `providerContext`, and integrity metadata
 - supported version and target
 - interpretation-only and immutable-calculation flags
 - required sections and hashes
+- section-level approval evidence with `fixtureOnly=false`, `productionPublishReady=true`, and `appExportApproved=true`
 - quantile ordering
 - probability ranges
 - MDD and recovery ranges
 - external shock occurrence probability is false
 - compact payload only
+- maximum serialized byte size
+- maximum source-hash, shock-event, asset-impact, and beta-provenance counts
+- maximum string length and exact allowed keys
+- strict shock month ordering, finite shock/beta values, asset identity consistency, and KR leading-zero ticker preservation
 
 Malformed context fails closed with a 400 request validation error. Omitted context remains allowed for legacy/public requests. `analysisContext=simulator-step4` remains accepted for legacy compatibility; Step 6 client requests use `simulator-step6`.
+
+Because no production Step 4/5 source is connected in this step, the server live-provider scenario-context gate is disabled by default. Tests explicitly enable `FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED=true` only to verify the approved wrapper path.
 
 ## Cache Signature
 
@@ -77,6 +96,17 @@ The client AI cache signature includes scenario context version plus Step 4/5 me
 ## Prompt Rules
 
 The live-provider prompt states that supplied scenario calculations are immutable facts, and the model must not recompute probability, MDD, recovery, stress, or shock results. It also distinguishes probabilistic bootstrap output from deterministic external shock output and forbids occurrence-probability inference for external shocks.
+
+The structured output schema includes an optional backward-compatible `scenarioInterpretation` section:
+
+- `contextUsed`
+- `probabilityNarrative`
+- `externalShockNarrative`
+- `combinedLimitations`
+
+The section is rendered only when context was actually used. Validated numbers shown in the UI come directly from the context, not from model-generated narrative text.
+
+UI formatting separates money and ratio formatters. A ratio value of `-0.10` is displayed as `-10.0%`; missing or unavailable context values are displayed as unavailable text, not zero.
 
 ## Known Limits
 

@@ -114,7 +114,10 @@ test("AI panel is labeled as Step 6 while preserving the existing prop contract"
   const simulatorSource = readSource("src/components/PortfolioSimulator.jsx");
   assert.match(panelSource, /STEP 6\. AI Analysis/);
   assert.match(panelSource, /<h3>AI 분석<\/h3>/);
-  assert.match(simulatorSource, /<AiAnalysisPanel\s+activePortfolio=\{activePortfolio\}\s+assets=\{assets\}\s+result=\{result\}\s+settings=\{settings\}\s+formatNumber=\{formatNumber\}\s+formatPercent=\{formatPercent\}\s+isEmptyAssetRow=\{isEmptyAssetRow\}\s+\/>/s);
+  assert.match(simulatorSource, /buildSimulatorAiScenarioContext/);
+  assert.match(simulatorSource, /const scenarioInterpretationContext = useMemo\(/);
+  assert.match(simulatorSource, /scenarioInterpretationContext=\{scenarioInterpretationContext\}/);
+  assert.match(simulatorSource, /<AiAnalysisPanel\s+activePortfolio=\{activePortfolio\}\s+assets=\{assets\}\s+result=\{result\}\s+settings=\{settings\}\s+scenarioInterpretationContext=\{scenarioInterpretationContext\}\s+formatNumber=\{formatNumber\}\s+formatPercent=\{formatPercent\}\s+isEmptyAssetRow=\{isEmptyAssetRow\}\s+\/>/s);
 });
 
 test("AI request payload remains isolated from probability and external shock outputs", () => {
@@ -155,7 +158,8 @@ test("AI request payload remains isolated from probability and external shock ou
 test("production AI component does not import browser scenario fixtures", () => {
   const panelSource = readSource("src/components/portfolio/components/AiAnalysisPanel.jsx");
   const payloadSource = readSource("src/components/portfolio/utils/buildAiAnalysisPayload.js");
-  const combined = `${panelSource}\n${payloadSource}`;
+  const simulatorSource = readSource("src/components/PortfolioSimulator.jsx");
+  const combined = `${panelSource}\n${payloadSource}\n${simulatorSource}`;
   assert.doesNotMatch(combined, /fixtures\/probabilityScenarioResultFixture|fixtures\/externalShockScenarioResultFixture/);
 });
 

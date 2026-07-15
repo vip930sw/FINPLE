@@ -101,6 +101,17 @@ const MODEL_OUTPUT_SCHEMA = {
     },
     limitations: { type: "array", items: { type: "string" } },
     disclaimer: { type: "string" },
+    scenarioInterpretation: {
+      type: "object",
+      additionalProperties: false,
+      required: ["contextUsed", "probabilityNarrative", "externalShockNarrative", "combinedLimitations"],
+      properties: {
+        contextUsed: { type: "boolean" },
+        probabilityNarrative: { type: "string" },
+        externalShockNarrative: { type: "string" },
+        combinedLimitations: { type: "array", items: { type: "string" } },
+      },
+    },
   },
 };
 
@@ -288,6 +299,9 @@ function buildInstructions(payload) {
       ? "If scenarioInterpretationContext is supplied, treat all supplied Step 4 probability and Step 5 external shock calculations as immutable facts for interpretation only."
       : "No validated Step 4 or Step 5 scenario context was supplied; do not infer probability bands or external shock outcomes.",
     "Do not recompute probability, MDD, recovery, stress, or shock results from the scenario context.",
+    hasScenarioContext
+      ? "When scenarioInterpretationContext is supplied, include scenarioInterpretation.contextUsed=true and text-only narratives. Do not put recalculated or replacement numbers in those narratives."
+      : "When scenarioInterpretationContext is not supplied, omit scenarioInterpretation or set contextUsed=false.",
     "Clearly distinguish probabilistic bootstrap results from deterministic external shock results when discussing scenarioInterpretationContext.",
     "External shock analysis does not estimate the probability that a shock will occur; do not infer occurrence probability.",
     "When dataCoverage is incomplete, reflect that uncertainty in dataQuality and limitations instead of filling gaps with assumptions.",

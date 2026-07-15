@@ -10,7 +10,11 @@ import {
   buildAiAnalysisPayload,
   createAiAnalysisInputSignature,
 } from "../utils/buildAiAnalysisPayload";
-import { getProviderScenarioContext } from "../utils/aiScenarioInterpretationContext";
+import {
+  formatScenarioMoney,
+  formatScenarioRatio,
+  getProviderScenarioContext,
+} from "../utils/aiScenarioInterpretationContext";
 
 function getActiveAssets(assets = [], isEmptyAssetRow) {
   return assets.filter((asset) => {
@@ -62,13 +66,6 @@ function getActionCopy(analysisStatus) {
   return "분석 시작";
 }
 
-function formatScenarioValue(value, suffix = "") {
-  if (value === null || value === undefined || value === "") return "미확인";
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "미확인";
-  return `${number.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}${suffix}`;
-}
-
 function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
   const providerContext = getProviderScenarioContext(scenarioInterpretationContext);
   const excludedSections = Array.isArray(scenarioInterpretationContext?.excludedSections)
@@ -91,18 +88,20 @@ function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
           {probability && (
             <div>
               <span>확률분석</span>
-              <strong>P50 {formatScenarioValue(probability.terminalValue?.p50)}</strong>
+              <strong>P50 {formatScenarioMoney(probability.terminalValue?.p50)}</strong>
               <em>
-                P10 {formatScenarioValue(probability.terminalValue?.p10)}
+                P10 {formatScenarioMoney(probability.terminalValue?.p10)}
                 {" · "}
-                P90 {formatScenarioValue(probability.terminalValue?.p90)}
+                P90 {formatScenarioMoney(probability.terminalValue?.p90)}
+                {" · "}
+                MDD {formatScenarioRatio(probability.scenarioMdd?.p50)}
               </em>
             </div>
           )}
           {externalShock && (
             <div>
               <span>외부충격분석</span>
-              <strong>{formatScenarioValue(externalShock.terminalValue?.deltaRate, "%")}</strong>
+              <strong>{formatScenarioRatio(externalShock.terminalValue?.deltaRate)}</strong>
               <em>{externalShock.scenarioLabel || externalShock.scenarioId} · 발생 확률 추정 아님</em>
             </div>
           )}
@@ -117,6 +116,30 @@ function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
           </span>
         </div>
       )}
+    </section>
+  );
+}
+
+function ScenarioInterpretationNarrative({ analysis }) {
+  const interpretation = analysis?.scenarioInterpretation;
+  if (!interpretation?.contextUsed) return null;
+  return (
+    <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
+      <div className="aiAnalysisSectionHeader">
+        <BrainCircuit size={18} aria-hidden="true" />
+        <strong>STEP 4·5 해석</strong>
+      </div>
+      {interpretation.probabilityNarrative ? (
+        <p className="aiAnalysisResultLead">{interpretation.probabilityNarrative}</p>
+      ) : null}
+      {interpretation.externalShockNarrative ? (
+        <p className="aiAnalysisResultLead">{interpretation.externalShockNarrative}</p>
+      ) : null}
+      {Array.isArray(interpretation.combinedLimitations) && interpretation.combinedLimitations.length > 0 ? (
+        <ul className="aiAnalysisList">
+          {interpretation.combinedLimitations.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      ) : null}
     </section>
   );
 }
@@ -278,6 +301,8 @@ function AnalysisResult({ analysis }) {
           </div>
         </section>
       )}
+
+      <ScenarioInterpretationNarrative analysis={analysis} />
 
       <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
         <div className="aiAnalysisSectionHeader">

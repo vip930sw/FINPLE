@@ -16,6 +16,7 @@ const REQUIRED_TOP_LEVEL_FIELDS = [
   "limitations",
   "disclaimer",
 ];
+const OPTIONAL_TOP_LEVEL_FIELDS = ["scenarioInterpretation"];
 
 const FORBIDDEN_PATTERNS = [
   /매수\s*추천/i,
@@ -222,7 +223,7 @@ function validateTopLevelShape(output, errors) {
   }
 
   for (const field of Object.keys(output)) {
-    if (!REQUIRED_TOP_LEVEL_FIELDS.includes(field)) {
+    if (!REQUIRED_TOP_LEVEL_FIELDS.includes(field) && !OPTIONAL_TOP_LEVEL_FIELDS.includes(field)) {
       errors.push(`output.${field} is not allowed by the response contract.`);
     }
   }
@@ -237,6 +238,34 @@ function validateTopLevelShape(output, errors) {
   if (output.generatedAt && Number.isNaN(Date.parse(output.generatedAt))) {
     errors.push("output.generatedAt must be a valid ISO date string.");
   }
+}
+
+function validateScenarioInterpretation(output, inputPayload, errors) {
+  const interpretation = output?.scenarioInterpretation;
+  const hasScenarioContext = Boolean(inputPayload?.scenarioInterpretationContext);
+  if (interpretation === undefined || interpretation === null) {
+    if (hasScenarioContext) errors.push("output.scenarioInterpretation is required when scenario context is supplied.");
+    return;
+  }
+  if (!isPlainObject(interpretation)) {
+    errors.push("output.scenarioInterpretation must be an object.");
+    return;
+  }
+  const allowedKeys = ["contextUsed", "probabilityNarrative", "externalShockNarrative", "combinedLimitations"];
+  for (const key of Object.keys(interpretation)) {
+    if (!allowedKeys.includes(key)) errors.push(`output.scenarioInterpretation.${key} is not allowed.`);
+  }
+  if (interpretation.contextUsed !== hasScenarioContext) {
+    errors.push("output.scenarioInterpretation.contextUsed must match scenario context usage.");
+  }
+  validateString(interpretation.probabilityNarrative, "output.scenarioInterpretation.probabilityNarrative", errors, { required: false });
+  validateString(interpretation.externalShockNarrative, "output.scenarioInterpretation.externalShockNarrative", errors, { required: false });
+  validateStringArray(
+    interpretation.combinedLimitations,
+    "output.scenarioInterpretation.combinedLimitations",
+    errors,
+    OUTPUT_CONTRACT.maxArrayItems.limitations
+  );
 }
 
 function validateForbiddenLanguage(output, errors) {
@@ -461,6 +490,7 @@ function validateSchemaContract(output, inputPayload, errors) {
   validateRiskFactors(output, errors);
   validateAssetRoles(output, inputPayload, errors);
   validateLimitations(output, errors);
+  validateScenarioInterpretation(output, inputPayload, errors);
 }
 
 export function validateAiPortfolioAnalysisOutput(output, inputPayload) {

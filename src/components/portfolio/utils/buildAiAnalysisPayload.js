@@ -149,7 +149,13 @@ export function buildAiAnalysisPayload({
   };
 
   if (providerScenarioContext) {
-    payload.scenarioInterpretationContext = providerScenarioContext;
+    payload.scenarioInterpretationContext = {
+      contextVersion: scenarioInterpretationContext.contextVersion,
+      status: scenarioInterpretationContext.status,
+      providerEligible: true,
+      providerContext: providerScenarioContext,
+      integrity: scenarioInterpretationContext.integrity,
+    };
   }
 
   return payload;

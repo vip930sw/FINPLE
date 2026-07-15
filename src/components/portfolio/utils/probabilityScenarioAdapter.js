@@ -22,6 +22,7 @@ const BAND_KEY_SETS = {
   nominal: ["p10Nominal", "p25Nominal", "p50Nominal", "p75Nominal", "p90Nominal"],
   real: ["p10Real", "p25Real", "p50Real", "p75Real", "p90Real"],
 };
+const APPROVAL_EVIDENCE_VERSION = "scenario-provider-approval-evidence-v1-step114-2j";
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -33,6 +34,38 @@ function isFiniteNumber(value) {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function normalizeProviderApprovalEvidence(evidence, result, fingerprint) {
+  if (!isPlainObject(evidence)) return null;
+  const candidate = {
+    evidenceVersion: String(evidence.evidenceVersion || "").trim(),
+    fixtureOnly: evidence.fixtureOnly,
+    productionPublishReady: evidence.productionPublishReady,
+    appExportApproved: evidence.appExportApproved,
+    portfolioFingerprint: String(evidence.portfolioFingerprint || "").trim(),
+    inputHash: String(evidence.inputHash || "").trim(),
+    outputHash: String(evidence.outputHash || "").trim(),
+    sourceHashes: safeArray(evidence.sourceHashes).map((item) => String(item || "").trim()).filter(Boolean).sort(),
+    normalizationVersion: String(evidence.normalizationVersion || "").trim(),
+    calculationPolicyVersion: String(evidence.calculationPolicyVersion || "").trim(),
+    pipelineVersion: String(evidence.pipelineVersion || "").trim(),
+    approvalSource: String(evidence.approvalSource || "").trim(),
+  };
+  const valid = candidate.evidenceVersion === APPROVAL_EVIDENCE_VERSION &&
+    candidate.fixtureOnly === false &&
+    candidate.productionPublishReady === true &&
+    candidate.appExportApproved === true &&
+    candidate.portfolioFingerprint === fingerprint &&
+    candidate.inputHash === result?.inputHash &&
+    candidate.outputHash === result?.outputHash &&
+    candidate.sourceHashes.length > 0 &&
+    candidate.sourceHashes.every((hash) => safeArray(result?.sourceHashes).includes(hash)) &&
+    candidate.normalizationVersion === result?.normalizationVersion &&
+    candidate.calculationPolicyVersion === result?.calculationPolicyVersion &&
+    candidate.pipelineVersion === result?.pipelineVersion &&
+    candidate.approvalSource.length > 0;
+  return valid ? candidate : null;
 }
 
 function safeArray(value) {
@@ -421,7 +454,17 @@ function createMethodology(result = {}) {
   ];
 }
 
-function createReadyViewModel({ result, selectedPortfolioName, assets, baselineResult, fingerprint, expectedInputHash, expectedOutputHash }) {
+function createReadyViewModel({
+  result,
+  selectedPortfolioName,
+  assets,
+  baselineResult,
+  fingerprint,
+  expectedInputHash,
+  expectedOutputHash,
+  providerApprovalEvidence = null,
+}) {
+  const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   return {
     uiVersion: PROBABILITY_UI_VERSION,
     status: "ready",
@@ -431,7 +474,10 @@ function createReadyViewModel({ result, selectedPortfolioName, assets, baselineR
     expectedOutputHash: expectedOutputHash || result.outputHash,
     resultInputHash: result.inputHash,
     resultOutputHash: result.outputHash,
-    fixtureOnly: true,
+    fixtureOnly: approvalEvidence ? false : true,
+    productionPublishReady: Boolean(approvalEvidence?.productionPublishReady),
+    appExportApproved: Boolean(approvalEvidence?.appExportApproved),
+    providerApprovalEvidence: approvalEvidence,
     fixtureContext: result.fixtureContext,
     scenarioVersion: result.scenarioVersion,
     method: result.method,
@@ -487,6 +533,7 @@ export function buildProbabilityScenarioViewModel({
   expectedInputHash = null,
   expectedOutputHash = null,
   enableFixtureReview = false,
+  providerApprovalEvidence = null,
 } = {}) {
   const selectedPortfolioName = activePortfolio?.name || "선택 포트폴리오";
   const fingerprint = getProbabilityPortfolioFingerprint({
@@ -567,6 +614,9 @@ export function buildProbabilityScenarioViewModel({
       scenarioVersion: result.scenarioVersion,
       methodology: createMethodology(result),
       fixtureOnly: true,
+      productionPublishReady: false,
+      appExportApproved: false,
+      providerApprovalEvidence: null,
       resultInputHash: result.inputHash,
       resultOutputHash: result.outputHash,
       audit: {
@@ -584,6 +634,7 @@ export function buildProbabilityScenarioViewModel({
     fingerprint,
     expectedInputHash,
     expectedOutputHash,
+    providerApprovalEvidence,
   });
 }
 

@@ -246,7 +246,7 @@ function getLimitations(payload) {
 }
 
 export function buildMockPortfolioAnalysis(payload) {
-  return {
+  const output = {
     analysisVersion: ANALYSIS_VERSION,
     portfolioId: payload.portfolioId,
     generatedAt: MOCK_GENERATED_AT,
@@ -261,4 +261,13 @@ export function buildMockPortfolioAnalysis(payload) {
     limitations: getLimitations(payload),
     disclaimer: "본 분석은 투자 권유가 아닌 참고자료입니다. 최종 판단은 사용자가 확인해야 합니다.",
   };
+  if (payload.scenarioInterpretationContext) {
+    output.scenarioInterpretation = {
+      contextUsed: true,
+      probabilityNarrative: "Scenario context is interpreted without recalculation.",
+      externalShockNarrative: "External shock context is deterministic and not an occurrence probability.",
+      combinedLimitations: ["Scenario context is interpretation-only."],
+    };
+  }
+  return output;
 }

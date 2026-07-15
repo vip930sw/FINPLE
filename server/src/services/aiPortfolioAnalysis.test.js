@@ -52,6 +52,22 @@ function validRequest() {
   };
 }
 
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+}
+
+function deterministicSignature(value) {
+  const text = JSON.stringify(stableValue(value));
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 function validScenarioContext(overrides = {}) {
   return {
     contextVersion: "ai-scenario-context-v1-step114-2j",
@@ -139,6 +155,71 @@ function validScenarioContext(overrides = {}) {
     ],
     ...overrides,
   };
+}
+
+function approvalEvidenceFor(section, portfolioFingerprint = "portfolio-fingerprint-test") {
+  return {
+    evidenceVersion: "scenario-provider-approval-evidence-v1-step114-2j",
+    fixtureOnly: false,
+    productionPublishReady: true,
+    appExportApproved: true,
+    portfolioFingerprint,
+    inputHash: section.inputHash,
+    outputHash: section.outputHash,
+    sourceHashes: section.sourceHashes,
+    normalizationVersion: section.normalizationVersion,
+    calculationPolicyVersion: section.calculationPolicyVersion,
+    pipelineVersion: section.pipelineVersion,
+    approvalSource: "server-unit-test-explicit-approval",
+  };
+}
+
+function validScenarioContextWrapper(overrides = {}) {
+  const providerContext = validScenarioContext(overrides.providerContext || {});
+  const portfolioFingerprint = providerContext.portfolioFingerprint;
+  providerContext.sections.probability.approvalEvidence = approvalEvidenceFor(
+    providerContext.sections.probability,
+    portfolioFingerprint
+  );
+  providerContext.sections.externalShock.approvalEvidence = approvalEvidenceFor(
+    providerContext.sections.externalShock,
+    portfolioFingerprint
+  );
+  return {
+    contextVersion: "ai-scenario-context-v1-step114-2j",
+    status: overrides.status || "ready",
+    providerEligible: overrides.providerEligible ?? true,
+    providerContext,
+    integrity: {
+      builderId: "finple-ai-scenario-context-builder-v1-step114-2j",
+      contextVersion: "ai-scenario-context-v1-step114-2j",
+      providerContextSignature: overrides.providerContextSignature || deterministicSignature(providerContext),
+      includedSectionCount: providerContext.includedSections.length,
+      excludedSectionCount: 0,
+      serializedBytes: Buffer.byteLength(JSON.stringify(providerContext), "utf8"),
+      ...(overrides.integrity || {}),
+    },
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([key]) => ![
+        "providerContext",
+        "status",
+        "providerEligible",
+        "providerContextSignature",
+        "integrity",
+      ].includes(key))
+    ),
+  };
+}
+
+async function withScenarioContextGateEnabled(callback) {
+  const previous = process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+  process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = "true";
+  try {
+    return await callback();
+  } finally {
+    if (previous === undefined) delete process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+    else process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = previous;
+  }
 }
 
 function validProviderAnalysis() {
@@ -375,50 +456,129 @@ test("scenario context is optional and simulator-step4 remains legacy compatible
 });
 
 test("server validates compact probability and external shock scenario context", async () => {
-  const payload = normalizePortfolioAnalysisRequest({
-    ...validRequest(),
-    analysisContext: "simulator-step6",
-    scenarioInterpretationContext: validScenarioContext(),
+  await withScenarioContextGateEnabled(async () => {
+    const payload = normalizePortfolioAnalysisRequest({
+      ...validRequest(),
+      analysisContext: "simulator-step6",
+      scenarioInterpretationContext: validScenarioContextWrapper(),
+    });
+
+    assert.equal(payload.scenarioInterpretationContext.contextVersion, "ai-scenario-context-v1-step114-2j");
+    assert.equal(payload.scenarioInterpretationContext.sections.probability.principalShortfallProbability.month12, null);
+    assert.equal(payload.scenarioInterpretationContext.sections.externalShock.occurrenceProbabilityEstimated, false);
+    assert.equal(payload.scenarioInterpretationContext.sections.externalShock.assetImpact[1].ticker, "069500");
+
+    process.env.FINPLE_AI_ANALYSIS_MODE = "mock";
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = "none";
+    const output = await runPortfolioAnalysis(payload);
+    assert.equal(output.provider, "none");
+    assert.equal(output.scenarioInterpretation.contextUsed, true);
   });
-
-  assert.equal(payload.scenarioInterpretationContext.contextVersion, "ai-scenario-context-v1-step114-2j");
-  assert.equal(payload.scenarioInterpretationContext.sections.probability.principalShortfallProbability.month12, null);
-  assert.equal(payload.scenarioInterpretationContext.sections.externalShock.occurrenceProbabilityEstimated, false);
-  assert.equal(payload.scenarioInterpretationContext.sections.externalShock.assetImpact[1].ticker, "069500");
-
-  process.env.FINPLE_AI_ANALYSIS_MODE = "mock";
-  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "none";
-  const output = await runPortfolioAnalysis(payload);
-  assert.equal(output.provider, "none");
 });
 
-test("server rejects malformed scenario context fail-closed", () => {
+test("server scenario-context live provider gate is disabled by default", () => {
+  assert.throws(
+    () => normalizePortfolioAnalysisRequest({
+      ...validRequest(),
+      analysisContext: "simulator-step6",
+      scenarioInterpretationContext: validScenarioContextWrapper(),
+    }),
+    /provider gate is disabled/
+  );
+});
+
+test("server rejects malformed scenario context fail-closed", async () => {
   const cases = [
     { contextVersion: "old-version" },
-    { sections: { probability: { ...validScenarioContext().sections.probability, terminalValue: { p10: 100, p50: 90, p90: 120 } } } },
-    { sections: { probability: { ...validScenarioContext().sections.probability, principalShortfallProbability: { month12: 2, month36: 0.1, month60: 0.1 } } } },
-    { sections: { probability: { ...validScenarioContext().sections.probability, scenarioMdd: { p10: -0.2, p50: 0.1, p90: -0.05 } } } },
-    { sections: { externalShock: { ...validScenarioContext().sections.externalShock, occurrenceProbabilityEstimated: true } } },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, terminalValue: { p10: 100, p50: 90, p90: 120 } } } } },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, principalShortfallProbability: { month12: 2, month36: 0.1, month60: 0.1 } } } } },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, scenarioMdd: { p10: -0.2, p50: 0.1, p90: -0.05 } } } } },
+    { providerContext: { sections: { externalShock: { ...validScenarioContext().sections.externalShock, occurrenceProbabilityEstimated: true } } } },
     { monthlyBands: [{ monthIndex: 1 }] },
   ];
 
-  for (const patch of cases) {
-    const context = {
-      ...validScenarioContext(),
-      ...patch,
-      sections: patch.sections
-        ? { ...validScenarioContext().sections, ...patch.sections }
-        : validScenarioContext().sections,
-    };
+  await withScenarioContextGateEnabled(async () => {
+    for (const patch of cases) {
+      const providerPatch = patch.providerContext || {};
+      const baseProvider = validScenarioContext();
+      const providerContext = {
+        ...baseProvider,
+        ...providerPatch,
+        sections: providerPatch.sections
+          ? { ...baseProvider.sections, ...providerPatch.sections }
+          : baseProvider.sections,
+      };
+      if (providerContext.sections.probability && !providerContext.sections.probability.approvalEvidence) {
+        providerContext.sections.probability.approvalEvidence = approvalEvidenceFor(providerContext.sections.probability);
+      }
+      if (providerContext.sections.externalShock && !providerContext.sections.externalShock.approvalEvidence) {
+        providerContext.sections.externalShock.approvalEvidence = approvalEvidenceFor(providerContext.sections.externalShock);
+      }
+      const context = patch.providerContext
+        ? validScenarioContextWrapper({ providerContext })
+        : { ...validScenarioContextWrapper(), ...patch };
+      assert.throws(
+        () => normalizePortfolioAnalysisRequest({
+          ...validRequest(),
+          analysisContext: "simulator-step6",
+          scenarioInterpretationContext: context,
+        }),
+        /AI/
+      );
+    }
+  });
+});
+
+test("server rejects raw provider object and strict context limit violations", async () => {
+  await withScenarioContextGateEnabled(async () => {
     assert.throws(
       () => normalizePortfolioAnalysisRequest({
         ...validRequest(),
         analysisContext: "simulator-step6",
-        scenarioInterpretationContext: context,
+        scenarioInterpretationContext: validScenarioContext(),
       }),
       /AI/
     );
-  }
+
+    for (const context of [
+      { ...validScenarioContextWrapper(), unknownTopLevel: true },
+      validScenarioContextWrapper({
+        providerContext: {
+          disclaimers: ["x".repeat(13000)],
+        },
+      }),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.probability = {
+          ...providerContext.sections.probability,
+          sourceHashes: Array.from({ length: 21 }, (_, index) => `source-hash-${index}`),
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.externalShock = {
+          ...providerContext.sections.externalShock,
+          assetImpact: [
+            {
+              ...providerContext.sections.externalShock.assetImpact[0],
+              unexpectedNestedKey: true,
+            },
+          ],
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+    ]) {
+      assert.throws(
+        () => normalizePortfolioAnalysisRequest({
+          ...validRequest(),
+          analysisContext: "simulator-step6",
+          scenarioInterpretationContext: context,
+        }),
+        /AI/
+      );
+    }
+  });
 });
 
 test("AI analysis regression fixtures pass request and mock output validation", async () => {
@@ -641,11 +801,13 @@ test("live OpenAI prompt receives validated scenario context as immutable interp
   const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
   const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
   const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousScenarioContextGate = process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
   const previousFetch = globalThis.fetch;
 
   process.env.FINPLE_AI_ANALYSIS_MODE = "live";
   process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
   process.env.OPENAI_API_KEY = "test-key";
+  process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = "true";
 
   globalThis.fetch = async (url, options) => {
     const requestBody = JSON.parse(options.body);
@@ -664,7 +826,17 @@ test("live OpenAI prompt receives validated scenario context as immutable interp
     return {
       ok: true,
       status: 200,
-      json: async () => ({ output_text: JSON.stringify(validProviderAnalysis()) }),
+      json: async () => ({
+        output_text: JSON.stringify({
+          ...validProviderAnalysis(),
+          scenarioInterpretation: {
+            contextUsed: true,
+            probabilityNarrative: "Scenario context is interpreted without recalculation.",
+            externalShockNarrative: "External shock context is deterministic and not an occurrence probability.",
+            combinedLimitations: ["Scenario context is interpretation-only."],
+          },
+        }),
+      }),
     };
   };
 
@@ -672,16 +844,19 @@ test("live OpenAI prompt receives validated scenario context as immutable interp
     const payload = normalizePortfolioAnalysisRequest({
       ...validRequest(),
       analysisContext: "simulator-step6",
-      scenarioInterpretationContext: validScenarioContext(),
+      scenarioInterpretationContext: validScenarioContextWrapper(),
     });
     const output = await runPortfolioAnalysis(payload);
     assert.equal(output.analysisVersion, "ai-analysis-openai-v1");
     assert.equal(output.provider, "openai");
+    assert.equal(output.scenarioInterpretation.contextUsed, true);
   } finally {
     process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
     process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
     if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousApiKey;
+    if (previousScenarioContextGate === undefined) delete process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+    else process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = previousScenarioContextGate;
     globalThis.fetch = previousFetch;
   }
 });

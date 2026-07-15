@@ -20,8 +20,12 @@ import {
   buildProbabilityScenarioViewModel,
 } from "./probabilityScenarioAdapter.js";
 import {
+  AI_SCENARIO_APPROVAL_EVIDENCE_VERSION,
+  AI_SCENARIO_CONTEXT_LIMITS,
   AI_SCENARIO_CONTEXT_VERSION,
   buildAiScenarioInterpretationContext,
+  buildSimulatorAiScenarioContext,
+  formatScenarioRatio,
   getProviderScenarioContext,
 } from "./aiScenarioInterpretationContext.js";
 import {
@@ -33,52 +37,72 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function markProviderApproved(result) {
+function makeApprovalEvidence(result, portfolioFingerprint) {
   return {
-    ...clone(result),
+    evidenceVersion: AI_SCENARIO_APPROVAL_EVIDENCE_VERSION,
     fixtureOnly: false,
     productionPublishReady: true,
     appExportApproved: true,
-    occurrenceProbabilityEstimated: result.occurrenceProbabilityEstimated ?? false,
+    portfolioFingerprint,
+    inputHash: result.inputHash,
+    outputHash: result.outputHash,
+    sourceHashes: result.sourceHashes,
+    normalizationVersion: result.normalizationVersion,
+    calculationPolicyVersion: result.calculationPolicyVersion,
+    pipelineVersion: result.pipelineVersion,
+    approvalSource: "step114-2j-unit-test-approval",
   };
 }
 
-function approveViewModel(viewModel) {
-  return {
-    ...viewModel,
-    fixtureOnly: false,
-    productionPublishReady: true,
-    appExportApproved: true,
-  };
-}
-
-function probabilityReadyPair(resultPatch = {}) {
-  const result = markProviderApproved({
+function probabilityReadyPair(resultPatch = {}, evidencePatch = {}) {
+  const result = {
     ...clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT),
     ...resultPatch,
-  });
-  const viewModel = approveViewModel(buildProbabilityScenarioViewModel({
+  };
+  const draftViewModel = buildProbabilityScenarioViewModel({
     result,
     activePortfolio: STEP114_2G_FIXTURE_REVIEW_PORTFOLIO,
     assets: STEP114_2G_FIXTURE_REVIEW_ASSETS,
     settings: STEP114_2G_FIXTURE_REVIEW_SETTINGS,
     enableFixtureReview: true,
-  }));
+  });
+  const viewModel = buildProbabilityScenarioViewModel({
+    result,
+    activePortfolio: STEP114_2G_FIXTURE_REVIEW_PORTFOLIO,
+    assets: STEP114_2G_FIXTURE_REVIEW_ASSETS,
+    settings: STEP114_2G_FIXTURE_REVIEW_SETTINGS,
+    enableFixtureReview: true,
+    providerApprovalEvidence: {
+      ...makeApprovalEvidence(result, draftViewModel.portfolioFingerprint),
+      ...evidencePatch,
+    },
+  });
   return { result, viewModel };
 }
 
-function shockReadyPair(resultPatch = {}) {
-  const result = markProviderApproved({
+function shockReadyPair(resultPatch = {}, evidencePatch = {}) {
+  const result = {
     ...clone(STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT),
     ...resultPatch,
-  });
-  const viewModel = approveViewModel(buildExternalShockScenarioViewModel({
+  };
+  const draftViewModel = buildExternalShockScenarioViewModel({
     result,
     activePortfolio: STEP114_2H_FIXTURE_REVIEW_PORTFOLIO,
     assets: STEP114_2H_FIXTURE_REVIEW_ASSETS,
     settings: STEP114_2H_FIXTURE_REVIEW_SETTINGS,
     enableFixtureReview: true,
-  }));
+  });
+  const viewModel = buildExternalShockScenarioViewModel({
+    result,
+    activePortfolio: STEP114_2H_FIXTURE_REVIEW_PORTFOLIO,
+    assets: STEP114_2H_FIXTURE_REVIEW_ASSETS,
+    settings: STEP114_2H_FIXTURE_REVIEW_SETTINGS,
+    enableFixtureReview: true,
+    providerApprovalEvidence: {
+      ...makeApprovalEvidence(result, draftViewModel.portfolioFingerprint),
+      ...evidencePatch,
+    },
+  });
   return { result, viewModel };
 }
 
@@ -131,6 +155,7 @@ test("approved probability-only context is compact and provider eligible", () =>
   });
   const providerContext = getProviderScenarioContext(context);
   assert.equal(providerContext.contextVersion, AI_SCENARIO_CONTEXT_VERSION);
+  assert.equal(context.status, "partial");
   assert.deepEqual(providerContext.includedSections, ["probability"]);
   assert.equal(providerContext.sections.probability.terminalValue.p50, result.terminalValue.p50);
   assert.equal(providerContext.sections.probability.principalShortfallProbability.month12, result.principalShortfallProbability.month12);
@@ -145,40 +170,29 @@ test("approved shock-only context preserves KR leading zero and occurrence proba
     externalShockViewModel: viewModel,
   });
   const shock = getProviderScenarioContext(context).sections.externalShock;
+  assert.equal(context.status, "partial");
   assert.equal(shock.occurrenceProbabilityEstimated, false);
   assert.equal(shock.assetImpact[0].ticker, "005930");
   assert.equal(shock.assetImpact[1].ticker, "069500");
   assert.equal(shock.terminalValue.deltaValue, result.terminalDeltaValue);
 });
 
-test("combined context enters payload and cache signature without full paths", () => {
+test("eligible adapter context enters payload and cache signature without full paths", () => {
   const probability = probabilityReadyPair();
-  const shock = shockReadyPair();
   const context = buildAiScenarioInterpretationContext({
     currentPortfolioFingerprint: probability.viewModel.portfolioFingerprint,
     probabilityResult: probability.result,
     probabilityViewModel: probability.viewModel,
-    externalShockResult: {
-      ...shock.result,
-      fixtureContext: {
-        ...shock.result.fixtureContext,
-        portfolioFingerprint: probability.viewModel.portfolioFingerprint,
-      },
-    },
-    externalShockViewModel: {
-      ...shock.viewModel,
-      portfolioFingerprint: probability.viewModel.portfolioFingerprint,
-    },
   });
   const payload = buildAiAnalysisPayload(baselineAiInput(context));
   const serialized = JSON.stringify(payload);
-  assert.equal(payload.scenarioInterpretationContext.includedSections.length, 2);
+  assert.equal(payload.scenarioInterpretationContext.status, "partial");
+  assert.equal(payload.scenarioInterpretationContext.providerContext.includedSections.length, 1);
   assert.doesNotMatch(serialized, /monthlyBands|simulationTrace|rawReturnMatrix|baselinePath|stressedPath|rowSourceLineage|contributionSeries/);
 
   const signature = createAiAnalysisInputSignature(baselineAiInput(context));
   assert.match(signature, /scenarioInterpretationContext/);
   assert.match(signature, new RegExp(probability.result.inputHash));
-  assert.match(signature, new RegExp(shock.result.outputHash));
 });
 
 test("fixture and review-only scenario results are excluded from provider payload", () => {
@@ -201,19 +215,19 @@ test("fixture and review-only scenario results are excluded from provider payloa
 });
 
 test("publish and app export gates fail closed independently", () => {
-  const { result, viewModel } = probabilityReadyPair({ productionPublishReady: false });
+  const { result, viewModel } = probabilityReadyPair({}, { productionPublishReady: false });
   let context = buildAiScenarioInterpretationContext({
     currentPortfolioFingerprint: viewModel.portfolioFingerprint,
     probabilityResult: result,
-    probabilityViewModel: { ...viewModel, productionPublishReady: false },
+    probabilityViewModel: viewModel,
   });
   assert.equal(getProviderScenarioContext(context), null);
 
-  const second = probabilityReadyPair({ appExportApproved: false });
+  const second = probabilityReadyPair({}, { appExportApproved: false });
   context = buildAiScenarioInterpretationContext({
     currentPortfolioFingerprint: second.viewModel.portfolioFingerprint,
     probabilityResult: second.result,
-    probabilityViewModel: { ...second.viewModel, appExportApproved: false },
+    probabilityViewModel: second.viewModel,
   });
   assert.equal(getProviderScenarioContext(context), null);
 });
@@ -283,4 +297,149 @@ test("scenario context changes AI cache signature", () => {
     createAiAnalysisInputSignature(baselineAiInput(firstContext)),
     createAiAnalysisInputSignature(baselineAiInput(secondContext))
   );
+});
+
+test("PortfolioSimulator runtime helper owns exactly one provider-eligible context path", () => {
+  const probability = probabilityReadyPair();
+  const runtimeContext = buildSimulatorAiScenarioContext({
+    probabilityResult: probability.result,
+    probabilityViewModel: probability.viewModel,
+  });
+  assert.equal(runtimeContext.status, "partial");
+  assert.deepEqual(runtimeContext.includedSections, ["probability"]);
+  assert.equal(getProviderScenarioContext(runtimeContext).sections.probability.inputHash, probability.result.inputHash);
+});
+
+test("raw provider object bypass is rejected by provider context getter", () => {
+  const probability = probabilityReadyPair();
+  const context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: probability.viewModel.portfolioFingerprint,
+    probabilityResult: probability.result,
+    probabilityViewModel: probability.viewModel,
+  });
+  const providerContext = getProviderScenarioContext(context);
+  assert.ok(providerContext);
+  assert.equal(getProviderScenarioContext(providerContext), null);
+});
+
+test("context status contract distinguishes partial stale blocked and mixed-fingerprint exclusion", () => {
+  const probability = probabilityReadyPair();
+  const shock = shockReadyPair();
+  const mixedFingerprints = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: probability.viewModel.portfolioFingerprint,
+    probabilityResult: probability.result,
+    probabilityViewModel: probability.viewModel,
+    externalShockResult: shock.result,
+    externalShockViewModel: shock.viewModel,
+  });
+  assert.equal(mixedFingerprints.status, "stale");
+  assert.deepEqual(mixedFingerprints.includedSections, ["probability"]);
+  assert.equal(mixedFingerprints.excludedSections[0].section, "externalShock");
+  assert.equal(getProviderScenarioContext(mixedFingerprints), null);
+
+  const partial = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: probability.viewModel.portfolioFingerprint,
+    probabilityResult: probability.result,
+    probabilityViewModel: probability.viewModel,
+  });
+  assert.equal(partial.status, "partial");
+
+  const stale = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: "different-fingerprint",
+    probabilityResult: probability.result,
+    probabilityViewModel: probability.viewModel,
+  });
+  assert.equal(stale.status, "stale");
+
+  const blockedPair = probabilityReadyPair({}, { evidenceVersion: "wrong" });
+  const blocked = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: blockedPair.viewModel.portfolioFingerprint,
+    probabilityResult: blockedPair.result,
+    probabilityViewModel: blockedPair.viewModel,
+  });
+  assert.equal(blocked.status, "blocked");
+  assert.equal(getProviderScenarioContext(blocked), null);
+});
+
+test("strict client limits and nested validation block provider context without truncation", () => {
+  const tooManyHashes = probabilityReadyPair({
+    sourceHashes: Array.from(
+      { length: AI_SCENARIO_CONTEXT_LIMITS.maxSourceHashes + 1 },
+      (_, index) => `fixture-source-${index}`
+    ),
+  });
+  let context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: tooManyHashes.viewModel.portfolioFingerprint,
+    probabilityResult: tooManyHashes.result,
+    probabilityViewModel: tooManyHashes.viewModel,
+  });
+  assert.equal(getProviderScenarioContext(context), null);
+
+  const firstEvent = clone(STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT.shockEvents[0]);
+  const duplicateMonth = shockReadyPair({ shockEvents: [firstEvent, { ...firstEvent }] });
+  context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: duplicateMonth.viewModel.portfolioFingerprint,
+    externalShockResult: duplicateMonth.result,
+    externalShockViewModel: duplicateMonth.viewModel,
+  });
+  assert.equal(getProviderScenarioContext(context), null);
+
+  const malformedReturnEvent = clone(firstEvent);
+  malformedReturnEvent.assetShockReturns = { ...malformedReturnEvent.assetShockReturns, "KR:005930": -1 };
+  const malformedReturn = shockReadyPair({ shockEvents: [malformedReturnEvent] });
+  context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: malformedReturn.viewModel.portfolioFingerprint,
+    externalShockResult: malformedReturn.result,
+    externalShockViewModel: malformedReturn.viewModel,
+  });
+  assert.equal(getProviderScenarioContext(context), null);
+
+  const malformedImpact = shockReadyPair({
+    assetImpactSummary: [
+      { ...STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT.assetImpactSummary[0], unexpectedNestedKey: true },
+    ],
+  });
+  context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: malformedImpact.viewModel.portfolioFingerprint,
+    externalShockResult: malformedImpact.result,
+    externalShockViewModel: malformedImpact.viewModel,
+  });
+  assert.equal(getProviderScenarioContext(context), null);
+});
+
+test("market beta shock identity and beta provenance are fail-closed", () => {
+  const event = {
+    monthIndex: 4,
+    label: "Market beta malformed",
+    shockMode: "market_beta",
+    marketFactorShock: -0.2,
+    assetShockReturns: null,
+    assetBetas: { "KR:005930": 1.1, "KR:069500": 0.8 },
+    betaProvenance: {
+      "KR:005930": {
+        sourceName: "Synthetic beta",
+        asOfDate: "2026-07",
+        betaWindow: "36m",
+        methodVersion: "fixture-beta-v1",
+        sourceHash: "fixture-beta-source-1",
+      },
+    },
+  };
+  const malformed = shockReadyPair({
+    shockMode: "market_beta",
+    scenarioId: "market-beta-malformed",
+    shockEvents: [event],
+  });
+  const context = buildAiScenarioInterpretationContext({
+    currentPortfolioFingerprint: malformed.viewModel.portfolioFingerprint,
+    externalShockResult: malformed.result,
+    externalShockViewModel: malformed.viewModel,
+  });
+  assert.equal(getProviderScenarioContext(context), null);
+});
+
+test("scenario ratio formatter keeps ratio and money units separate", () => {
+  assert.equal(formatScenarioRatio(-0.10), "-10.0%");
+  assert.equal(formatScenarioRatio(0), "0.0%");
+  assert.notEqual(formatScenarioRatio(-0.10), "-0.1%");
 });
