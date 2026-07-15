@@ -108,6 +108,12 @@ function getSiteFooterHtml() {
         <strong>FINPLE Portfolio Lab</strong>
         <span>© 2026 FINPLE.</span>
       </div>
+      <div class="siteFooterBusinessInfo" data-site-business-info>
+        <p><strong>상호명:</strong> 핀플Finple <span aria-hidden="true">|</span> <strong>대표자명:</strong> 이상원</p>
+        <p><strong>사업자등록번호:</strong> 550-21-02319 <span aria-hidden="true">|</span> <strong>통신판매업 신고번호:</strong> 제2025-서울강남-02127호</p>
+        <p><strong>사업장 주소:</strong> 서울특별시 강남구 테헤란로70길 12, 4층 402-343A호(대치동, H타워)</p>
+        <p><strong>전화번호:</strong> <a href="tel:010-3354-1028">010-3354-1028</a> <span aria-hidden="true">|</span> <strong>이메일:</strong> <a href="mailto:finple_lab@naver.com">finple_lab@naver.com</a></p>
+      </div>
       <p class="siteFooterNotice">
         FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,<span class="siteFooterNoticeMobileSpace"> </span><br class="siteFooterNoticeBreak" />
         특정 금융상품의 매수·매도 추천이나 수익 보장을 의미하지 않습니다.
