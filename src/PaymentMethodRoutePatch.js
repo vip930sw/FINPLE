@@ -11,6 +11,7 @@ import {
   prepareBillingMethodUpdate,
   requestTossBillingAuth,
 } from "./components/paymentMethodClient";
+import { getFrontendPaymentMode } from "./components/paymentModeClient";
 
 const PAYMENT_METHOD_PATHS = new Set([
   "/payment-method/setup",
@@ -68,6 +69,42 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function getPolicyLinksHtml() {
+  return `
+    <nav class="paymentMethodPolicyLinks" aria-label="결제 관련 정책">
+      <a href="/terms">이용약관</a>
+      <a href="/privacy">개인정보처리방침</a>
+      <a href="/refund">환불정책</a>
+    </nav>
+  `;
+}
+
+function getPaymentTestNoticeHtml() {
+  if (getFrontendPaymentMode() !== "test") return "";
+  return `
+    <div class="billingResultMessageBox paymentMethodTestNotice" data-payment-test-notice>
+      <strong>테스트 결제 안내</strong>
+      <p>현재 화면은 토스페이먼츠 테스트 환경입니다. 실제 카드 청구는 발생하지 않습니다.</p>
+    </div>
+  `;
+}
+
+function formatServerDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "long", day: "numeric" }).format(date);
+}
+
+function getSafeReceiptUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function setText(node, value) {
   if (!node) return;
   const nextValue = String(value ?? "");
@@ -80,6 +117,12 @@ function getSiteFooterHtml() {
       <div class="siteFooterBrandBlock">
         <strong>FINPLE Portfolio Lab</strong>
         <span>© 2026 FINPLE.</span>
+      </div>
+      <div class="siteFooterBusinessInfo" data-site-business-info>
+        <p><strong>상호명:</strong> 핀플Finple <span aria-hidden="true">|</span> <strong>대표자명:</strong> 이상원</p>
+        <p><strong>사업자등록번호:</strong> 550-21-02319 <span aria-hidden="true">|</span> <strong>통신판매업 신고번호:</strong> 제2025-서울강남-02127호</p>
+        <p><strong>사업장 주소:</strong> 서울특별시 강남구 테헤란로70길 12, 4층 402-343A호(대치동, H타워)</p>
+        <p><strong>전화번호:</strong> <a href="tel:010-3354-1028">010-3354-1028</a> <span aria-hidden="true">|</span> <strong>이메일:</strong> <a href="mailto:finple_lab@naver.com">finple_lab@naver.com</a></p>
       </div>
       <p class="siteFooterNotice">
         FINPLE의 시뮬레이션, 차트, 리포트, 위험 지표는 투자 판단을 돕는 참고 자료이며,<span class="siteFooterNoticeMobileSpace"> </span><br class="siteFooterNoticeBreak" />
@@ -274,6 +317,9 @@ function getSetupCardHtml() {
       <label><input type="checkbox" data-payment-method-check /> FINPLE은 카드번호 원문을 서버에 직접 저장하지 않고, 토스페이먼츠 자동결제용 식별값을 사용한다는 점을 확인했습니다.</label>
     </div>
 
+    ${getPolicyLinksHtml()}
+    ${getPaymentTestNoticeHtml()}
+
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
       <strong>결제수단 등록/변경 안내</strong>
       <p data-payment-method-status>필수 확인 항목을 체크하면 결제수단 등록/변경을 진행할 수 있습니다.</p>
@@ -288,37 +334,50 @@ function getSetupCardHtml() {
   return `
     <div class="paymentMethodNoticeGrid paymentMethodNoticeGrid--compact">
       <div>
-        <span>월 구독 금액</span>
-        <strong>월 9,900원</strong>
-        <em>매월 자동결제 예정</em>
+        <span>상품명</span>
+        <strong>FINPLE Personal</strong>
+        <em>디지털 구독 서비스</em>
       </div>
       <div>
-        <span>구독 시작 방식</span>
-        <strong>카드 인증 후 첫 결제</strong>
-        <em>빌링키 등록 + 첫 달 결제</em>
+        <span>결제금액</span>
+        <strong>월 9,900원</strong>
+        <em>부가세 포함</em>
+      </div>
+      <div>
+        <span>자동결제 주기</span>
+        <strong>매월 자동결제</strong>
+        <em>해지 시 다음 결제일부터 중단</em>
+      </div>
+      <div>
+        <span>서비스 제공기간</span>
+        <strong>결제일로부터 1개월</strong>
+        <em>결제 완료 즉시 Personal 활성화</em>
       </div>
     </div>
 
     <div class="paymentMethodChecklist">
-      <label><input type="checkbox" data-payment-method-check /> 카드 인증 후 첫 달 9,900원이 결제되고, 이후 매월 자동결제되는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> FINPLE Personal은 월 9,900원이며, 결제일로부터 1개월 동안 제공되고 이후 매월 자동결제되는 점을 확인했습니다.</label>
       <label><input type="checkbox" data-payment-method-check /> FINPLE은 카드번호 원문을 서버에 직접 저장하지 않고, 토스페이먼츠 자동결제용 식별값을 사용한다는 점을 확인했습니다.</label>
       <label><input type="checkbox" data-payment-method-check /> 구독 해지 예약 시 이용기간 종료일까지 Personal 기능을 사용할 수 있고, 다음 결제부터 자동 갱신이 중단되는 점을 확인했습니다.</label>
-      <label><input type="checkbox" data-payment-method-check /> 구독 시작 후 즉시 기능이 제공되는 웹앱 특성상 결제 완료 후 단순 변심, 미사용, 부분 사용에 따른 금액 환불은 제한될 수 있다는 점을 확인했습니다.</label>
+      <label><input type="checkbox" data-payment-method-check /> 결제 후 7일 이내이고 Personal 유료 기능 이용내역이 없으면 환불을 요청할 수 있다는 점을 확인했습니다.</label>
     </div>
+
+    ${getPolicyLinksHtml()}
 
     <div class="billingResultMessageBox billingResultMessageBox--success paymentMethodMessageBox" data-payment-method-status-box>
       <strong>구독 시작 및 환불 안내</strong>
       <p data-payment-method-status>Personal 구독은 결제 완료 후 즉시 활성화됩니다.</p>
-      <p>구독 취소는 다음 갱신 중단을 의미하며, 이미 결제된 이용기간은 종료일까지 제공됩니다. 디지털 기능 제공이 시작된 뒤에는 결제 금액 환불이 어려울 수 있습니다.</p>
-      <p>중복 결제 또는 시스템 오류가 의심되면 결제 문의를 통해 운영 확인 후 환불 또는 취소 가능 여부를 안내받을 수 있습니다.</p>
+      <p>결제 후 7일 이내이고 Personal 유료 기능 이용내역이 없는 경우 환불을 요청할 수 있습니다. 그 밖의 환불 기준은 환불정책에서 확인할 수 있습니다.</p>
+      <p>구독 해지는 다음 결제일부터 자동결제를 중단하며, 이미 결제된 이용기간은 종료일까지 제공됩니다.</p>
     </div>
 
     <ul class="billingResultBulletList paymentMethodUserNoticeList">
       <li>카드 인증 성공 후 결제수단 등록과 첫 달 결제가 이어서 처리됩니다.</li>
       <li>Personal 기능 활성화 여부와 다음 결제 예정일은 MY PAGE에서 확인할 수 있습니다.</li>
       <li>서비스 장애나 중복 결제 등 회사 귀책 사유가 있는 경우에는 결제 문의를 통해 별도로 확인합니다.</li>
-      <li>토스페이먼츠 테스트 환경에서는 실제 카드 청구가 발생하지 않습니다.</li>
     </ul>
+
+    ${getPaymentTestNoticeHtml()}
 
     <div class="billingResultActions">
       <button type="button" class="primaryButton" data-payment-method-start disabled>Personal 구독 시작하기</button>
@@ -338,7 +397,7 @@ function getSuccessMessage() {
   if (billingIssueResult?.subscriptionActivated) return { title: "Personal 구독 시작 완료", message: "결제수단 등록과 첫 달 결제가 완료되어 Personal 기능이 활성화되었습니다." };
   if (billingIssueResult?.stored) return { title: "결제수단 등록 완료", message: "결제수단은 등록되었지만 구독 활성화 상태를 다시 확인해 주세요." };
   if (billingIssueError) return { title: "구독 시작 확인 필요", message: billingIssueError };
-  return { title: "결제수단 인증 완료", message: "구독 시작 처리를 준비하고 있습니다." };
+  return { title: "서버 승인 확인 중", message: "서버의 첫 결제 승인과 Personal 활성화 결과를 확인하고 있습니다." };
 }
 
 function updateSuccessUi() {
@@ -352,6 +411,12 @@ function updateSuccessUi() {
   const statusLabel = root.querySelector("[data-payment-method-result-status]");
   const methodLabel = root.querySelector("[data-payment-method-display-label]");
   const nextStep = root.querySelector("[data-payment-method-next-step]");
+  const nextPaymentRow = root.querySelector("[data-payment-method-next-payment-row]");
+  const nextPaymentDate = root.querySelector("[data-payment-method-next-payment-date]");
+  const paymentDateRow = root.querySelector("[data-payment-method-payment-date-row]");
+  const paymentDate = root.querySelector("[data-payment-method-payment-date]");
+  const receiptRow = root.querySelector("[data-payment-method-receipt-row]");
+  const receiptLink = root.querySelector("[data-payment-method-receipt-link]");
 
   const stateLabel = getSuccessStateLabel();
   const copy = getSuccessMessage();
@@ -361,6 +426,19 @@ function updateSuccessUi() {
   setText(statusLabel, stateLabel);
   setText(methodLabel, billingIssueResult?.storage?.displayLabel || billingIssueResult?.method?.displayLabel || "확인 중");
   setText(nextStep, billingIssueResult?.subscriptionActivated ? "MY PAGE 확인" : billingIssueError ? "다시 시도" : "처리 중");
+
+  const serverNextPaymentDate = billingIssueResult?.nextPaymentDate || billingIssueResult?.storage?.validUntil || "";
+  const serverPaymentDate = billingIssueResult?.paymentDate || billingIssueResult?.firstPayment?.approvedAt || "";
+  const safeReceiptUrl = getSafeReceiptUrl(billingIssueResult?.receiptUrl || billingIssueResult?.firstPayment?.receiptUrl);
+  setText(nextPaymentDate, formatServerDate(serverNextPaymentDate));
+  setText(paymentDate, formatServerDate(serverPaymentDate));
+  if (nextPaymentRow) nextPaymentRow.hidden = !serverNextPaymentDate;
+  if (paymentDateRow) paymentDateRow.hidden = !serverPaymentDate;
+  if (receiptRow) receiptRow.hidden = !safeReceiptUrl;
+  if (receiptLink) {
+    if (safeReceiptUrl) receiptLink.href = safeReceiptUrl;
+    else receiptLink.removeAttribute("href");
+  }
 
   statusBox?.classList.toggle("billingResultMessageBox--success", !billingIssueError);
   statusBox?.classList.toggle("billingResultMessageBox--danger", Boolean(billingIssueError));
@@ -407,14 +485,19 @@ function getResultCardHtml(path) {
     return `
       <div class="billingResultGrid">
         <div><span>상품</span><strong>FINPLE Personal</strong></div>
-        <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
+        <div><span>결제금액</span><strong>9,900원</strong></div>
+        <div><span>서비스 제공기간</span><strong>1개월</strong></div>
+        <div><span>결제주기</span><strong>월 자동결제</strong></div>
         <div><span>구독 상태</span><strong data-payment-method-result-status>처리 중</strong></div>
         <div><span>결제수단</span><strong data-payment-method-display-label>확인 중</strong></div>
+        <div data-payment-method-payment-date-row hidden><span>결제일</span><strong data-payment-method-payment-date></strong></div>
+        <div data-payment-method-next-payment-row hidden><span>다음 결제 예정일</span><strong data-payment-method-next-payment-date></strong></div>
+        <div data-payment-method-receipt-row hidden><span>영수증</span><strong><a data-payment-method-receipt-link target="_blank" rel="noopener noreferrer">영수증 보기</a></strong></div>
       </div>
 
       <div class="billingResultMessageBox billingResultMessageBox--success" data-payment-method-success-box>
-        <strong data-payment-method-success-title>결제수단 인증 완료</strong>
-        <p data-payment-method-success-message>구독 시작 처리를 준비하고 있습니다.</p>
+        <strong data-payment-method-success-title>서버 승인 확인 중</strong>
+        <p data-payment-method-success-message>서버의 첫 결제 승인과 Personal 활성화 결과를 확인하고 있습니다.</p>
       </div>
 
       <ul class="billingResultBulletList">
@@ -432,27 +515,27 @@ function getResultCardHtml(path) {
   }
 
   return `
-    <div class="billingResultGrid">
-      <div><span>상품</span><strong>FINPLE Personal</strong></div>
-      <div><span>결제방식</span><strong>월 구독 자동결제</strong></div>
-      <div><span>상태</span><strong>실패</strong></div>
-      <div><span>다음 단계</span><strong>다시 시도</strong></div>
+      <div class="billingResultGrid">
+        <div><span>상품</span><strong>FINPLE Personal</strong></div>
+        <div><span>결제금액</span><strong>9,900원 · 월 자동결제</strong></div>
+        <div><span>상태</span><strong>실패</strong></div>
+        <div><span>구독 상태</span><strong>미활성</strong></div>
     </div>
 
     <div class="billingResultMessageBox billingResultMessageBox--danger">
       <strong>${escapeHtml(code || "구독 시작 실패")}</strong>
-      <p>${escapeHtml(message || "Personal 구독 시작을 완료하지 못했습니다. 다시 시도하거나 문의해 주세요.")}</p>
+      <p>${escapeHtml(message || "결제가 승인되지 않았으며 Personal 구독도 활성화되지 않았습니다. 다시 시도하거나 문의해 주세요.")}</p>
     </div>
 
     <ul class="billingResultBulletList">
-      <li>카드 인증을 취소했거나 인증에 실패한 경우에는 결제가 발생하지 않습니다.</li>
+      <li>사용자가 결제수단 인증을 취소했거나 인증에 실패한 경우 결제는 승인되지 않고 구독도 활성화되지 않습니다.</li>
       <li>결제수단을 다시 확인한 뒤 Personal 구독 시작을 재시도할 수 있습니다.</li>
       <li>오류가 반복되면 결제 문의를 남겨 주세요.</li>
     </ul>
 
     <div class="billingResultActions">
       <button type="button" class="primaryButton" data-payment-method-nav="/payment-method/setup">다시 시도</button>
-      <button type="button" class="secondaryButton" data-payment-method-nav="/mypage">MY PAGE 확인</button>
+      <button type="button" class="secondaryButton" data-payment-method-nav="/pricing">요금제로 돌아가기</button>
       <button type="button" class="secondaryButton" data-payment-method-nav="/support">결제 문의</button>
     </div>
   `;
@@ -490,6 +573,7 @@ export function renderPaymentMethodPage() {
         </div>
         ${isSetup ? getSetupCardHtml() : getResultCardHtml(path)}
       </section>
+      ${isSetup ? "" : getPaymentTestNoticeHtml()}
       ${getSiteFooterHtml()}
     </main>
   `;

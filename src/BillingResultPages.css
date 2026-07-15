@@ -192,6 +192,41 @@
   margin-top: 4px;
 }
 
+.paymentMethodPolicyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 22px;
+}
+
+.paymentMethodPolicyLinks a,
+.billingResultGrid a {
+  color: #1d4ed8;
+  font-weight: 900;
+  text-underline-offset: 3px;
+}
+
+.paymentMethodTestNotice {
+  max-width: 980px;
+  margin: -54px auto 80px;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.paymentMethodCard .paymentMethodTestNotice {
+  margin: 0 0 22px;
+}
+
+.paymentMethodTestNotice strong {
+  color: #1d4ed8;
+}
+
+[data-payment-method-payment-date-row][hidden],
+[data-payment-method-next-payment-row][hidden],
+[data-payment-method-receipt-row][hidden] {
+  display: none !important;
+}
+
 .billingResultActions {
   display: flex;
   flex-wrap: wrap;
@@ -229,5 +264,13 @@
 
   .billingResultActions button {
     width: 100%;
+  }
+
+  .paymentMethodTestNotice {
+    margin: -46px 16px 56px;
+  }
+
+  .paymentMethodCard .paymentMethodTestNotice {
+    margin: 0 0 22px;
   }
 }

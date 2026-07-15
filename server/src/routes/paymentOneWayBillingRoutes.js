@@ -731,6 +731,9 @@ router.post("/toss/billing/issue", async (request, response, next) => {
       customerKey,
       orderId: authOrderId,
       firstPaymentOrderId,
+      paymentDate: firstPayment?.approvedAt || null,
+      nextPaymentDate: storage.subscriptionActivated ? storage.validUntil : null,
+      receiptUrl: firstPayment?.receipt?.url || null,
       stored: Boolean(storage.stored),
       subscriptionActivated: Boolean(storage.subscriptionActivated),
       storage,
@@ -748,6 +751,7 @@ router.post("/toss/billing/issue", async (request, response, next) => {
         orderId: firstPayment?.orderId || firstPaymentOrderId,
         status: firstPayment?.status || null,
         totalAmount: firstPayment?.totalAmount || amount,
+        approvedAt: firstPayment?.approvedAt || null,
         receiptUrl: firstPayment?.receipt?.url || null,
       },
       message: storage.stored

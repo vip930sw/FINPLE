@@ -308,7 +308,7 @@ export function PricingPage({ onNavigate }) {
   const [statusMessage, setStatusMessage] = useState(() => (
     isEducationAuthUser(getStoredFinpleAuthUser())
       ? "교육용 계정에는 Personal 권한이 적용되어 있습니다. 실제 결제나 구독 변경 없이 수업 기간 동안 사용할 수 있습니다."
-      : "요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다."
+      : "FINPLE Personal은 월 9,900원이며, 결제수단 등록과 첫 결제 승인 완료 후 1개월 이용기간이 시작됩니다."
   ));
   const plans = Object.values(FINPLE_PLAN_CONFIGS);
   const isEducationAccount = isEducationAuthUser(authUser);
@@ -328,7 +328,7 @@ export function PricingPage({ onNavigate }) {
       const nextPlanKey = getStoredFinplePlan();
       setSelectedPlan(nextPlanKey);
       setVisiblePlanKey(nextPlanKey);
-      setStatusMessage("요금제를 선택하면 현재 브라우저에 선택 상태가 저장됩니다. 실제 결제 기능은 준비 중입니다.");
+      setStatusMessage("FINPLE Personal은 월 9,900원이며, 결제수단 등록과 첫 결제 승인 완료 후 1개월 이용기간이 시작됩니다.");
     }
 
     window.addEventListener("finple-auth-updated", handleAuthUpdate);
@@ -433,8 +433,20 @@ export function PricingPage({ onNavigate }) {
       </section>
 
       <section className="pricingNoticeBox">
-        <strong>결제 기능 안내</strong>
-        <p>현재는 플랜 선택과 제한값을 먼저 제공합니다. 카드 결제, 구독 갱신, 영수증 처리는 이후 결제 기능 도입 단계에서 추가합니다.</p>
+        <strong>FINPLE Personal 결제·이용 안내</strong>
+        <div className="pricingReviewSummary" aria-label="FINPLE Personal 상품 및 결제 조건">
+          <div><span>상품명</span><b>FINPLE Personal</b></div>
+          <div><span>결제금액</span><b>월 9,900원</b></div>
+          <div><span>결제주기</span><b>매월 자동결제</b></div>
+          <div><span>서비스 제공기간</span><b>결제일로부터 1개월</b></div>
+          <div><span>이용 시작</span><b>결제 완료 즉시 Personal 활성화</b></div>
+          <div><span>구독 해지</span><b>해지 시 다음 결제일부터 자동결제 중단</b></div>
+        </div>
+        <nav className="pricingPolicyLinks" aria-label="결제 관련 정책">
+          <a href="/terms" onClick={(event) => { event.preventDefault(); onNavigate("terms"); }}>이용약관</a>
+          <a href="/privacy" onClick={(event) => { event.preventDefault(); onNavigate("privacy"); }}>개인정보처리방침</a>
+          <a href="/refund" onClick={(event) => { event.preventDefault(); onNavigate("refund"); }}>환불정책</a>
+        </nav>
         <p>본 서비스는 투자 판단을 돕는 분석 도구이며, 특정 금융상품의 매수·매도 추천이나 수익을 보장하지 않습니다.</p>
       </section>
     </AccountShell>
@@ -474,14 +486,14 @@ export function PrivacyPage({ onNavigate }) {
     <LegalDocumentPage
       eyebrow="Privacy"
       title="개인정보처리방침"
-      description="FINPLE Portfolio Lab이 수집·이용하는 개인정보와 보관 기준을 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      description="FINPLE Portfolio Lab의 회원 인증, 서비스 이용, 문의, 결제·정기구독 과정에서 처리되는 개인정보와 이용 목적을 안내합니다."
       onNavigate={onNavigate}
       sections={[
         {
           title: "1. 수집하는 정보",
           paragraphs: [
             "서비스 이용 과정에서 이메일, 문의 내용과 선택적으로 첨부한 사진, 브라우저에 저장된 사용자 식별 정보, 포트폴리오 저장 데이터, 접속 환경 정보가 수집될 수 있습니다.",
-            "현재 로그인과 결제 기능은 체험 운영 단계이며, 실제 소셜 로그인·결제 기능 도입 시 수집 항목은 별도로 고지합니다.",
+            "이메일 인증과 Google·네이버·카카오 소셜 로그인, 결제·정기구독 과정에서 필요한 계정 및 결제 상태 정보가 처리될 수 있으며 카드번호 원문은 FINPLE 서버에 직접 저장하지 않습니다.",
           ],
           items: ["이메일 및 문의 답변 연락처", "문의 제목·내용·처리 상태", "문의자가 선택적으로 첨부한 오류 화면 등의 사진", "포트폴리오 구성 및 저장 데이터", "서비스 오류 확인을 위한 접속 환경 정보"],
         },
@@ -501,7 +513,7 @@ export function PrivacyPage({ onNavigate }) {
         {
           title: "4. 제3자 제공 및 위탁",
           paragraphs: [
-            "현재 서비스 운영을 위해 데이터베이스, 호스팅, 배포, API 제공 서비스가 사용될 수 있습니다. 실제 상용 운영 전 이용 중인 외부 서비스와 위탁 범위를 명확히 고지합니다.",
+            "서비스 운영을 위해 데이터베이스, 호스팅, 배포, 이메일 발송, 소셜 로그인 및 토스페이먼츠 결제대행 서비스가 사용됩니다.",
           ],
         },
         {
@@ -520,7 +532,7 @@ export function TermsPage({ onNavigate }) {
     <LegalDocumentPage
       eyebrow="Terms"
       title="이용약관"
-      description="FINPLE Portfolio Lab 이용 조건과 서비스 범위를 안내합니다. 실제 서비스 공개 전 법률 검토를 거쳐 확정하는 초안입니다."
+      description="FINPLE Portfolio Lab의 회원 인증, 분석 기능, 유료 구독과 서비스 이용 조건을 안내합니다."
       onNavigate={onNavigate}
       sections={[
         {
@@ -532,7 +544,7 @@ export function TermsPage({ onNavigate }) {
         {
           title: "2. 계정 및 저장 데이터",
           paragraphs: [
-            "현재 계정 기능은 체험 운영 단계이며, 브라우저 저장과 서버 저장 기능을 먼저 제공합니다. 실제 회원가입, 소셜 로그인, 결제 기능은 추후 별도 연동됩니다.",
+            "이메일 회원가입은 이메일 인증 완료 후 이용할 수 있으며, Google·네이버·카카오 소셜 로그인과 FINPLE Personal 월 자동결제를 지원합니다.",
           ],
         },
         {

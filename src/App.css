@@ -12451,6 +12451,53 @@ body {
   line-height: 1.65;
 }
 
+.pricingReviewSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.pricingReviewSummary > div {
+  padding: 14px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.pricingReviewSummary span,
+.pricingReviewSummary b {
+  display: block;
+}
+
+.pricingReviewSummary span {
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pricingReviewSummary b {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.55;
+}
+
+.pricingPolicyLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 16px;
+}
+
+.pricingPolicyLinks a {
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 900;
+  text-underline-offset: 3px;
+}
+
 @media screen and (max-width: 900px) {
   .planUsageGrid,
   .pricingStatusPanel {
@@ -12487,6 +12534,10 @@ body {
 
   .accountPlanGrid > .accountPlanCard.mobilePlanHidden {
     display: none;
+  }
+
+  .pricingReviewSummary {
+    grid-template-columns: 1fr;
   }
 }
 
