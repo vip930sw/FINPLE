@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -15,9 +15,10 @@ import {
   getSimulatorTabAnchorId,
   normalizeSimulatorTab,
 } from "./portfolio/utils/simulatorNavigation";
+import { buildSimulatorAiScenarioContext } from "./portfolio/utils/aiScenarioInterpretationContext";
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
-  const { onActiveTabChange } = props || {};
+  const { onActiveTabChange, scenarioContextInputs = null } = props || {};
   const {
     portfolioList,
     activePortfolioId,
@@ -94,6 +95,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   } = usePortfolioSimulator();
 
   const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
+  const scenarioInterpretationContext = useMemo(
+    () => buildSimulatorAiScenarioContext(scenarioContextInputs),
+    [scenarioContextInputs]
+  );
   const changeSimulatorTabRef = useRef(changeSimulatorTab);
 
   useEffect(() => {
@@ -305,6 +310,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             assets={assets}
             result={result}
             settings={settings}
+            scenarioInterpretationContext={scenarioInterpretationContext}
             formatNumber={formatNumber}
             formatPercent={formatPercent}
             isEmptyAssetRow={isEmptyAssetRow}

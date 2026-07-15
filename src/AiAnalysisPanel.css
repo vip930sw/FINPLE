@@ -540,6 +540,59 @@
   grid-column: 1 / -1;
 }
 
+.aiScenarioContextPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+  padding: 18px;
+  border: 1px solid #d7e2ef;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.aiScenarioContextPanel.ready {
+  border-color: #9bc8ad;
+  background: #f5fbf7;
+}
+
+.aiScenarioContextPanel strong {
+  color: #10243f;
+}
+
+.aiScenarioContextPanel p,
+.aiScenarioContextPanel span,
+.aiScenarioContextPanel em {
+  margin: 6px 0 0;
+  color: #53657d;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.55;
+}
+
+.aiScenarioContextGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aiScenarioContextGrid div,
+.aiScenarioContextEmpty {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.aiScenarioContextGrid span,
+.aiScenarioContextGrid strong,
+.aiScenarioContextGrid em,
+.aiScenarioContextEmpty strong,
+.aiScenarioContextEmpty span {
+  display: block;
+}
+
 .aiAnalysisResultLead {
   margin: 0;
   color: #475569;
@@ -772,6 +825,7 @@
   .aiAnalysisContentGrid,
   .aiAnalysisResultGrid,
   .aiAnalysisContextStrip,
+  .aiScenarioContextPanel,
   .aiAnalysisDiagnosticList,
   .aiAnalysisResultSectionWide .aiAnalysisRiskList {
     grid-template-columns: 1fr;
@@ -815,6 +869,10 @@
 
 @media (max-width: 560px) {
   .aiAnalysisMetricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .aiScenarioContextGrid {
     grid-template-columns: 1fr;
   }
 

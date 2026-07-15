@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { normalizePortfolioAnalysisRequest } from "../schemas/aiPortfolioAnalysisSchema.js";
 import { runPortfolioAnalysis } from "./aiPortfolioAnalysisService.js";
+import { getModelOutputSchema } from "./aiPortfolioAnalysisOpenAi.js";
 import {
   getAiPortfolioAnalysisOutputContract,
   validateAiPortfolioAnalysisOutput,
@@ -50,6 +51,192 @@ function validRequest() {
       },
     ],
   };
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+}
+
+function deterministicSignature(value) {
+  const text = JSON.stringify(stableValue(value));
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function assertStrictSchemaRequiresEveryObjectProperty(schema, path = "schema") {
+  if (!schema || typeof schema !== "object") return;
+  const type = Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (type.includes("object") && schema.properties) {
+    const required = new Set(schema.required || []);
+    for (const key of Object.keys(schema.properties)) {
+      assert.ok(required.has(key), `${path}.properties.${key} must be listed in required`);
+    }
+  }
+  for (const [key, child] of Object.entries(schema.properties || {})) {
+    assertStrictSchemaRequiresEveryObjectProperty(child, `${path}.properties.${key}`);
+  }
+  if (schema.items) assertStrictSchemaRequiresEveryObjectProperty(schema.items, `${path}.items`);
+}
+
+function validScenarioContext(overrides = {}) {
+  return {
+    contextVersion: "ai-scenario-context-v1-step114-2j",
+    target: "simulator-step6",
+    interpretationOnly: true,
+    calculationsImmutable: true,
+    portfolioFingerprint: "portfolio-fingerprint-test",
+    includedSections: ["probability", "externalShock"],
+    sections: {
+      probability: {
+        sectionVersion: "probability-ai-context-v1-step114-2j",
+        scenarioVersion: "probabilistic-bootstrap-v1-step114-2f",
+        method: "joint_monthly_block_bootstrap",
+        prngAlgorithm: "mulberry32-v1",
+        randomSeed: 1142,
+        simulationCount: 1200,
+        blockMonths: 6,
+        returnBasis: "total_return",
+        currencyMode: "KRW",
+        dataStartDate: "2020-01",
+        dataEndDate: "2025-12",
+        inputHash: "1111111111111111111111111111111111111111111111111111111111111111",
+        outputHash: "2222222222222222222222222222222222222222222222222222222222222222",
+        sourceHashes: ["fixture-source-hash-v1"],
+        normalizationVersion: "normalization-v1-step114-2b",
+        calculationPolicyVersion: "metrics-policy-v3-step114",
+        pipelineVersion: "scenario-probabilistic-fixture-v1",
+        terminalValue: { p10: 100, p50: 150, p90: 220 },
+        principalShortfallProbability: { month12: null, month36: 0.2, month60: 0.1 },
+        scenarioMdd: { p10: -0.4, p50: -0.25, p90: -0.1 },
+        recovery: {
+          medianRecoveryMonths: 12,
+          longestRecoveryMonths: 36,
+          unrecoveredScenarioRatio: 0.1,
+        },
+      },
+      externalShock: {
+        sectionVersion: "external-shock-ai-context-v1-step114-2j",
+        scenarioVersion: "external-shock-scenario-v1-step114-2h",
+        scenarioId: "direct-asset-test",
+        scenarioLabel: "Direct asset test",
+        mode: "direct_asset",
+        method: "deterministic_external_shock",
+        occurrenceProbabilityEstimated: false,
+        returnBasis: "price_return",
+        currencyMode: "KRW",
+        dataStartDate: "2024-01",
+        dataEndDate: "2024-12",
+        inputHash: "3333333333333333333333333333333333333333333333333333333333333333",
+        outputHash: "4444444444444444444444444444444444444444444444444444444444444444",
+        baselineIdentityHash: "5555555555555555555555555555555555555555555555555555555555555555",
+        sourceHashes: ["fixture-row-source-a", "fixture-row-source-b"],
+        normalizationVersion: "normalization-v1-step114-2b",
+        calculationPolicyVersion: "metrics-policy-v3-step114",
+        pipelineVersion: "scenario-external-shock-fixture-v1",
+        shockAssumptions: [
+          {
+            monthIndex: 4,
+            label: "Synthetic shock",
+            shockMode: "direct_asset",
+            marketFactorShock: null,
+            assetShockReturns: { "KR:005930": -0.2, "KR:069500": -0.1 },
+            assetBetas: null,
+          },
+        ],
+        terminalValue: {
+          baseline: 200,
+          stressed: 180,
+          deltaValue: -20,
+          deltaRate: -0.1,
+        },
+        mdd: { baseline: -0.05, stressed: -0.2, incremental: -0.15 },
+        recovery: { recoveryMonths: null, longestRecoveryMonths: 2, unrecovered: true },
+        assetImpact: [
+          { market: "KR", ticker: "005930", baselineTerminalValue: 100, stressedTerminalValue: 88, deltaValue: -12, deltaRate: -0.12 },
+          { market: "KR", ticker: "069500", baselineTerminalValue: 100, stressedTerminalValue: 92, deltaValue: -8, deltaRate: -0.08 },
+        ],
+        betaProvenanceSummary: [],
+      },
+    },
+    disclaimers: [
+      "AI는 STEP 4·5에서 계산된 검증 결과를 해석하며 직접 확률·MDD·충격 결과를 계산하지 않습니다.",
+      "외부충격분석은 충격의 발생 확률을 의미하지 않습니다.",
+      "투자 권유가 아닙니다.",
+    ],
+    ...overrides,
+  };
+}
+
+function approvalEvidenceFor(section, portfolioFingerprint = "portfolio-fingerprint-test") {
+  return {
+    evidenceVersion: "scenario-provider-approval-evidence-v1-step114-2j",
+    fixtureOnly: false,
+    productionPublishReady: true,
+    appExportApproved: true,
+    sourceKind: "synthetic_non_fixture_contract",
+    portfolioFingerprint,
+    inputHash: section.inputHash,
+    outputHash: section.outputHash,
+    sourceHashes: section.sourceHashes,
+    normalizationVersion: section.normalizationVersion,
+    calculationPolicyVersion: section.calculationPolicyVersion,
+    pipelineVersion: section.pipelineVersion,
+    approvalSource: "server-unit-test-explicit-approval",
+  };
+}
+
+function validScenarioContextWrapper(overrides = {}) {
+  const providerContext = validScenarioContext(overrides.providerContext || {});
+  const portfolioFingerprint = providerContext.portfolioFingerprint;
+  providerContext.sections.probability.approvalEvidence ||= approvalEvidenceFor(
+    providerContext.sections.probability,
+    portfolioFingerprint
+  );
+  providerContext.sections.externalShock.approvalEvidence ||= approvalEvidenceFor(
+    providerContext.sections.externalShock,
+    portfolioFingerprint
+  );
+  return {
+    contextVersion: "ai-scenario-context-v1-step114-2j",
+    status: overrides.status || "ready",
+    providerEligible: overrides.providerEligible ?? true,
+    providerContext,
+    integrity: {
+      builderId: "finple-ai-scenario-context-builder-v1-step114-2j",
+      contextVersion: "ai-scenario-context-v1-step114-2j",
+      providerContextSignature: overrides.providerContextSignature || deterministicSignature(providerContext),
+      includedSectionCount: providerContext.includedSections.length,
+      excludedSectionCount: 0,
+      serializedBytes: Buffer.byteLength(JSON.stringify(providerContext), "utf8"),
+      ...(overrides.integrity || {}),
+    },
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([key]) => ![
+        "providerContext",
+        "status",
+        "providerEligible",
+        "providerContextSignature",
+        "integrity",
+      ].includes(key))
+    ),
+  };
+}
+
+async function withScenarioContextGateEnabled(callback) {
+  const previous = process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+  process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = "true";
+  try {
+    return await callback();
+  } finally {
+    if (previous === undefined) delete process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+    else process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = previous;
+  }
 }
 
 function validProviderAnalysis() {
@@ -269,6 +456,169 @@ test("runPortfolioAnalysis returns deterministic mock output", async () => {
   assert.deepEqual(first, second);
 });
 
+test("scenario context is optional and simulator-step4 remains legacy compatible", async () => {
+  const legacy = normalizePortfolioAnalysisRequest({
+    ...validRequest(),
+    analysisContext: "simulator-step4",
+  });
+  assert.equal(legacy.analysisContext, "simulator-step4");
+  assert.equal(legacy.scenarioInterpretationContext, undefined);
+
+  const step6 = normalizePortfolioAnalysisRequest({
+    ...validRequest(),
+    analysisContext: "simulator-step6",
+  });
+  assert.equal(step6.analysisContext, "simulator-step6");
+  assert.equal(step6.scenarioInterpretationContext, undefined);
+});
+
+test("OpenAI strict output schemas require every declared object property", () => {
+  const baselineSchema = getModelOutputSchema(false);
+  const scenarioSchema = getModelOutputSchema(true);
+  assert.equal(Object.hasOwn(baselineSchema.properties, "scenarioInterpretation"), false);
+  assert.equal(Object.hasOwn(scenarioSchema.properties, "scenarioInterpretation"), true);
+  assertStrictSchemaRequiresEveryObjectProperty(baselineSchema, "baselineSchema");
+  assertStrictSchemaRequiresEveryObjectProperty(scenarioSchema, "scenarioSchema");
+});
+
+test("server validates compact probability and external shock scenario context", async () => {
+  await withScenarioContextGateEnabled(async () => {
+    const payload = normalizePortfolioAnalysisRequest({
+      ...validRequest(),
+      analysisContext: "simulator-step6",
+      scenarioInterpretationContext: validScenarioContextWrapper(),
+    });
+
+    assert.equal(payload.scenarioInterpretationContext.contextVersion, "ai-scenario-context-v1-step114-2j");
+    assert.equal(payload.scenarioInterpretationContext.sections.probability.principalShortfallProbability.month12, null);
+    assert.equal(payload.scenarioInterpretationContext.sections.externalShock.occurrenceProbabilityEstimated, false);
+    assert.equal(payload.scenarioInterpretationContext.sections.externalShock.assetImpact[1].ticker, "069500");
+
+    process.env.FINPLE_AI_ANALYSIS_MODE = "mock";
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = "none";
+    const output = await runPortfolioAnalysis(payload);
+    assert.equal(output.provider, "none");
+    assert.equal(output.scenarioInterpretation.contextUsed, true);
+  });
+});
+
+test("server scenario-context live provider gate is disabled by default", () => {
+  assert.throws(
+    () => normalizePortfolioAnalysisRequest({
+      ...validRequest(),
+      analysisContext: "simulator-step6",
+      scenarioInterpretationContext: validScenarioContextWrapper(),
+    }),
+    /provider gate is disabled/
+  );
+});
+
+test("server rejects malformed scenario context fail-closed", async () => {
+  const cases = [
+    { contextVersion: "old-version" },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, terminalValue: { p10: 100, p50: 90, p90: 120 } } } } },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, principalShortfallProbability: { month12: 2, month36: 0.1, month60: 0.1 } } } } },
+    { providerContext: { sections: { probability: { ...validScenarioContext().sections.probability, scenarioMdd: { p10: -0.2, p50: 0.1, p90: -0.05 } } } } },
+    { providerContext: { sections: { externalShock: { ...validScenarioContext().sections.externalShock, occurrenceProbabilityEstimated: true } } } },
+    { monthlyBands: [{ monthIndex: 1 }] },
+  ];
+
+  await withScenarioContextGateEnabled(async () => {
+    for (const patch of cases) {
+      const providerPatch = patch.providerContext || {};
+      const baseProvider = validScenarioContext();
+      const providerContext = {
+        ...baseProvider,
+        ...providerPatch,
+        sections: providerPatch.sections
+          ? { ...baseProvider.sections, ...providerPatch.sections }
+          : baseProvider.sections,
+      };
+      if (providerContext.sections.probability && !providerContext.sections.probability.approvalEvidence) {
+        providerContext.sections.probability.approvalEvidence = approvalEvidenceFor(providerContext.sections.probability);
+      }
+      if (providerContext.sections.externalShock && !providerContext.sections.externalShock.approvalEvidence) {
+        providerContext.sections.externalShock.approvalEvidence = approvalEvidenceFor(providerContext.sections.externalShock);
+      }
+      const context = patch.providerContext
+        ? validScenarioContextWrapper({ providerContext })
+        : { ...validScenarioContextWrapper(), ...patch };
+      assert.throws(
+        () => normalizePortfolioAnalysisRequest({
+          ...validRequest(),
+          analysisContext: "simulator-step6",
+          scenarioInterpretationContext: context,
+        }),
+        /AI/
+      );
+    }
+  });
+});
+
+test("server rejects raw provider object and strict context limit violations", async () => {
+  await withScenarioContextGateEnabled(async () => {
+    assert.throws(
+      () => normalizePortfolioAnalysisRequest({
+        ...validRequest(),
+        analysisContext: "simulator-step6",
+        scenarioInterpretationContext: validScenarioContext(),
+      }),
+      /AI/
+    );
+
+    for (const context of [
+      { ...validScenarioContextWrapper(), unknownTopLevel: true },
+      validScenarioContextWrapper({
+        providerContext: {
+          disclaimers: ["x".repeat(13000)],
+        },
+      }),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.probability = {
+          ...providerContext.sections.probability,
+          sourceHashes: Array.from({ length: 21 }, (_, index) => `source-hash-${index}`),
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.probability = {
+          ...providerContext.sections.probability,
+          approvalEvidence: {
+            ...approvalEvidenceFor(providerContext.sections.probability),
+            sourceHashes: ["fixture-source-hash-v1"],
+          },
+          sourceHashes: ["fixture-source-hash-v1", "unapproved-extra-source"],
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+      (() => {
+        const providerContext = validScenarioContext();
+        providerContext.sections.externalShock = {
+          ...providerContext.sections.externalShock,
+          assetImpact: [
+            {
+              ...providerContext.sections.externalShock.assetImpact[0],
+              unexpectedNestedKey: true,
+            },
+          ],
+        };
+        return validScenarioContextWrapper({ providerContext });
+      })(),
+    ]) {
+      assert.throws(
+        () => normalizePortfolioAnalysisRequest({
+          ...validRequest(),
+          analysisContext: "simulator-step6",
+          scenarioInterpretationContext: context,
+        }),
+        /AI/
+      );
+    }
+  });
+});
+
 test("AI analysis regression fixtures pass request and mock output validation", async () => {
   assert.equal(AI_ANALYSIS_REGRESSION_FIXTURE_VERSION, "ai-analysis-regression-fixtures-v3");
 
@@ -371,6 +721,7 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     const requestBody = JSON.parse(options.body);
     assert.equal(requestBody.text.format.type, "json_schema");
     assert.equal(requestBody.text.format.strict, true);
+    assert.equal(Object.hasOwn(requestBody.text.format.schema.properties, "scenarioInterpretation"), false);
     assert.match(requestBody.instructions, /polite formal Korean honorific style/);
     assert.match(requestBody.instructions, /입니다/);
     assert.match(requestBody.instructions, /plain report-style endings/);
@@ -481,6 +832,72 @@ test("runPortfolioAnalysis validates a live OpenAI provider response", async () 
     process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
     if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousApiKey;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("live OpenAI prompt receives validated scenario context as immutable interpretation input", async () => {
+  const previousMode = process.env.FINPLE_AI_ANALYSIS_MODE;
+  const previousProvider = process.env.FINPLE_AI_ANALYSIS_PROVIDER;
+  const previousApiKey = process.env.OPENAI_API_KEY;
+  const previousScenarioContextGate = process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+  const previousFetch = globalThis.fetch;
+
+  process.env.FINPLE_AI_ANALYSIS_MODE = "live";
+  process.env.FINPLE_AI_ANALYSIS_PROVIDER = "openai";
+  process.env.OPENAI_API_KEY = "test-key";
+  process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = "true";
+
+  globalThis.fetch = async (url, options) => {
+    const requestBody = JSON.parse(options.body);
+    assert.equal(Object.hasOwn(requestBody.text.format.schema.properties, "scenarioInterpretation"), true);
+    assert.ok(requestBody.text.format.schema.required.includes("scenarioInterpretation"));
+    assert.match(requestBody.instructions, /immutable facts/);
+    assert.match(requestBody.instructions, /Do not recompute probability, MDD, recovery, stress, or shock results/);
+    assert.match(requestBody.instructions, /External shock analysis does not estimate the probability/);
+
+    const requestInput = JSON.parse(requestBody.input);
+    assert.equal(requestInput.analysisContext, "simulator-step6");
+    assert.equal(requestInput.scenarioInterpretationContext.contextVersion, "ai-scenario-context-v1-step114-2j");
+    assert.equal(requestInput.scenarioInterpretationContext.sections.probability.principalShortfallProbability.month12, null);
+    assert.equal(requestInput.scenarioInterpretationContext.sections.externalShock.occurrenceProbabilityEstimated, false);
+    assert.equal(JSON.stringify(requestInput).includes("monthlyBands"), false);
+    assert.equal(JSON.stringify(requestInput).includes("rawReturnMatrix"), false);
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        output_text: JSON.stringify({
+          ...validProviderAnalysis(),
+          scenarioInterpretation: {
+            contextUsed: true,
+            probabilityNarrative: "Scenario context is interpreted without recalculation.",
+            externalShockNarrative: "External shock context is deterministic and not an occurrence probability.",
+            combinedLimitations: ["Scenario context is interpretation-only."],
+          },
+        }),
+      }),
+    };
+  };
+
+  try {
+    const payload = normalizePortfolioAnalysisRequest({
+      ...validRequest(),
+      analysisContext: "simulator-step6",
+      scenarioInterpretationContext: validScenarioContextWrapper(),
+    });
+    const output = await runPortfolioAnalysis(payload);
+    assert.equal(output.analysisVersion, "ai-analysis-openai-v1");
+    assert.equal(output.provider, "openai");
+    assert.equal(output.scenarioInterpretation.contextUsed, true);
+  } finally {
+    process.env.FINPLE_AI_ANALYSIS_MODE = previousMode;
+    process.env.FINPLE_AI_ANALYSIS_PROVIDER = previousProvider;
+    if (previousApiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousApiKey;
+    if (previousScenarioContextGate === undefined) delete process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED;
+    else process.env.FINPLE_AI_SCENARIO_CONTEXT_PROVIDER_ENABLED = previousScenarioContextGate;
     globalThis.fetch = previousFetch;
   }
 });

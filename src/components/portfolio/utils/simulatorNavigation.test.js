@@ -114,7 +114,13 @@ test("AI panel is labeled as Step 6 while preserving the existing prop contract"
   const simulatorSource = readSource("src/components/PortfolioSimulator.jsx");
   assert.match(panelSource, /STEP 6\. AI Analysis/);
   assert.match(panelSource, /<h3>AI 분석<\/h3>/);
-  assert.match(simulatorSource, /<AiAnalysisPanel\s+activePortfolio=\{activePortfolio\}\s+assets=\{assets\}\s+result=\{result\}\s+settings=\{settings\}\s+formatNumber=\{formatNumber\}\s+formatPercent=\{formatPercent\}\s+isEmptyAssetRow=\{isEmptyAssetRow\}\s+\/>/s);
+  assert.match(panelSource, /summarizeScenarioContextState/);
+  assert.match(panelSource, /aiScenarioContextState/);
+  assert.match(panelSource, /status-\$\{state\.status\}/);
+  assert.match(simulatorSource, /buildSimulatorAiScenarioContext/);
+  assert.match(simulatorSource, /const scenarioInterpretationContext = useMemo\(/);
+  assert.match(simulatorSource, /scenarioInterpretationContext=\{scenarioInterpretationContext\}/);
+  assert.match(simulatorSource, /<AiAnalysisPanel\s+activePortfolio=\{activePortfolio\}\s+assets=\{assets\}\s+result=\{result\}\s+settings=\{settings\}\s+scenarioInterpretationContext=\{scenarioInterpretationContext\}\s+formatNumber=\{formatNumber\}\s+formatPercent=\{formatPercent\}\s+isEmptyAssetRow=\{isEmptyAssetRow\}\s+\/>/s);
 });
 
 test("AI request payload remains isolated from probability and external shock outputs", () => {
@@ -147,8 +153,17 @@ test("AI request payload remains isolated from probability and external shock ou
     settings: { years: 10, inflationRate: 2, dividendReinvest: true },
   });
   const serialized = JSON.stringify(payload);
-  assert.equal(payload.analysisContext, "simulator-step4");
+  assert.equal(payload.analysisContext, "simulator-step6");
+  assert.equal(payload.scenarioInterpretationContext, undefined);
   assert.doesNotMatch(serialized, /probability|externalShock|stress|shockScenario|scenarioResult/);
+});
+
+test("production AI component does not import browser scenario fixtures", () => {
+  const panelSource = readSource("src/components/portfolio/components/AiAnalysisPanel.jsx");
+  const payloadSource = readSource("src/components/portfolio/utils/buildAiAnalysisPayload.js");
+  const simulatorSource = readSource("src/components/PortfolioSimulator.jsx");
+  const combined = `${panelSource}\n${payloadSource}\n${simulatorSource}`;
+  assert.doesNotMatch(combined, /fixtures\/probabilityScenarioResultFixture|fixtures\/externalShockScenarioResultFixture/);
 });
 
 test("AI service endpoints stay on the existing provider and status routes", () => {

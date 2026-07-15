@@ -10,6 +10,12 @@ import {
   buildAiAnalysisPayload,
   createAiAnalysisInputSignature,
 } from "../utils/buildAiAnalysisPayload";
+import {
+  formatScenarioMoney,
+  formatScenarioRatio,
+  getProviderScenarioContext,
+  summarizeScenarioContextState,
+} from "../utils/aiScenarioInterpretationContext";
 
 function getActiveAssets(assets = [], isEmptyAssetRow) {
   return assets.filter((asset) => {
@@ -59,6 +65,93 @@ function getActionCopy(analysisStatus) {
   if (analysisStatus === "loading") return "분석 중";
   if (analysisStatus === "success" || analysisStatus === "stale" || analysisStatus === "error") return "새로 분석";
   return "분석 시작";
+}
+
+function ScenarioContextStatusPanel({ scenarioInterpretationContext }) {
+  const state = summarizeScenarioContextState(scenarioInterpretationContext);
+  const providerContext = state.providerContext || getProviderScenarioContext(scenarioInterpretationContext);
+  const probability = providerContext?.sections?.probability || null;
+  const externalShock = providerContext?.sections?.externalShock || null;
+
+  return (
+    <section className={`aiScenarioContextPanel ${providerContext ? "ready" : "muted"} status-${state.status}`}>
+      <div>
+        <span className="aiScenarioContextState">
+          state: {state.status}
+          {state.includedSections.length > 0 ? ` / included: ${state.includedSections.join(", ")}` : ""}
+          {state.excludedSections.length > 0
+            ? ` / excluded: ${state.excludedSections.map((entry) => `${entry.section}:${entry.reasonCategory}`).join(", ")}`
+            : ""}
+        </span>
+        <strong>STEP 4·5 검증 결과</strong>
+        <p>
+          AI는 STEP 4·5에서 계산된 검증 결과를 해석하며 직접 확률·MDD·충격 결과를 계산하지 않습니다.
+          외부충격분석은 충격의 발생 확률을 의미하지 않습니다. 투자 권유가 아닙니다.
+        </p>
+      </div>
+      {providerContext ? (
+        <div className="aiScenarioContextGrid">
+          {probability && (
+            <div>
+              <span>확률분석</span>
+              <strong>P50 {formatScenarioMoney(probability.terminalValue?.p50)}</strong>
+              <em>
+                P10 {formatScenarioMoney(probability.terminalValue?.p10)}
+                {" · "}
+                P90 {formatScenarioMoney(probability.terminalValue?.p90)}
+                {" · "}
+                MDD {formatScenarioRatio(probability.scenarioMdd?.p50)}
+              </em>
+            </div>
+          )}
+          {externalShock && (
+            <div>
+              <span>외부충격분석</span>
+              <strong>{formatScenarioRatio(externalShock.terminalValue?.deltaRate)}</strong>
+              <em>{externalShock.scenarioLabel || externalShock.scenarioId} · 발생 확률 추정 아님</em>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="aiScenarioContextEmpty">
+          <strong>검증 scenario context 미포함</strong>
+          <span>
+            {state.status === "stale"
+              ? "stale identity context is excluded from the AI provider payload."
+              : state.status === "blocked"
+                ? `blocked context is excluded: ${state.reasonCategory}.`
+                : state.excludedSections.length > 0
+              ? "review-only, fixture, stale 또는 승인 미완료 결과는 AI provider payload에서 제외됩니다."
+              : "기존 AI 요청과 동일하게 현재 포트폴리오 입력만 해석합니다."}
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ScenarioInterpretationNarrative({ analysis }) {
+  const interpretation = analysis?.scenarioInterpretation;
+  if (!interpretation?.contextUsed) return null;
+  return (
+    <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
+      <div className="aiAnalysisSectionHeader">
+        <BrainCircuit size={18} aria-hidden="true" />
+        <strong>STEP 4·5 해석</strong>
+      </div>
+      {interpretation.probabilityNarrative ? (
+        <p className="aiAnalysisResultLead">{interpretation.probabilityNarrative}</p>
+      ) : null}
+      {interpretation.externalShockNarrative ? (
+        <p className="aiAnalysisResultLead">{interpretation.externalShockNarrative}</p>
+      ) : null}
+      {Array.isArray(interpretation.combinedLimitations) && interpretation.combinedLimitations.length > 0 ? (
+        <ul className="aiAnalysisList">
+          {interpretation.combinedLimitations.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      ) : null}
+    </section>
+  );
 }
 
 function getAccessRequiredPlanCopy(accessSummary) {
@@ -219,6 +312,8 @@ function AnalysisResult({ analysis }) {
         </section>
       )}
 
+      <ScenarioInterpretationNarrative analysis={analysis} />
+
       <section className="aiAnalysisResultSection aiAnalysisResultSectionWide">
         <div className="aiAnalysisSectionHeader">
           <AlertTriangle size={18} aria-hidden="true" />
@@ -284,6 +379,7 @@ export default function AiAnalysisPanel({
   formatNumber,
   formatPercent,
   isEmptyAssetRow,
+  scenarioInterpretationContext = null,
 }) {
   const [analysisStatus, setAnalysisStatus] = useState("empty");
   const [analysis, setAnalysis] = useState(null);
@@ -298,8 +394,13 @@ export default function AiAnalysisPanel({
   );
   const topAssets = useMemo(() => getTopAssets(activeAssets), [activeAssets]);
   const inputSignature = useMemo(
-    () => createAiAnalysisInputSignature({ activePortfolio, activeAssets, result }),
-    [activePortfolio, activeAssets, result]
+    () => createAiAnalysisInputSignature({
+      activePortfolio,
+      activeAssets,
+      result,
+      scenarioInterpretationContext,
+    }),
+    [activePortfolio, activeAssets, result, scenarioInterpretationContext]
   );
   const analysisCachePortfolioId = activePortfolio?.id || "default";
   const readiness = getReadiness(activeAssets, result);
@@ -376,6 +477,7 @@ export default function AiAnalysisPanel({
         activeAssets,
         result,
         settings,
+        scenarioInterpretationContext,
       });
       const { analysis: nextAnalysis, usage } = await requestPortfolioAiAnalysisResult(payload);
 
@@ -452,6 +554,8 @@ export default function AiAnalysisPanel({
           </p>
         )}
       </div>
+
+      <ScenarioContextStatusPanel scenarioInterpretationContext={scenarioInterpretationContext} />
 
       {isAccessBlocked && (
         <AiAnalysisAccessPanel

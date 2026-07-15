@@ -1,3 +1,8 @@
+import {
+  getProviderScenarioContext,
+  getProviderScenarioContextWrapper,
+} from "./aiScenarioInterpretationContext.js";
+
 const MAX_AI_ANALYSIS_ASSET_COUNT = 20;
 
 function toFiniteNumber(value) {
@@ -121,6 +126,7 @@ export function buildAiAnalysisPayload({
   activeAssets = [],
   result = {},
   settings = {},
+  scenarioInterpretationContext = null,
 } = {}) {
   if (!Array.isArray(activeAssets) || activeAssets.length === 0) {
     throw new Error("포트폴리오 AI 분석을 생성하려면 STEP 1에서 자산을 1개 이상 입력해주세요.");
@@ -132,9 +138,11 @@ export function buildAiAnalysisPayload({
 
   const assets = getWeightedAssets(activeAssets).map(({ asset, weight }) => buildAssetPayload(asset, weight));
 
-  return {
+  const providerScenarioContext = getProviderScenarioContext(scenarioInterpretationContext);
+  const providerScenarioContextWrapper = getProviderScenarioContextWrapper(scenarioInterpretationContext);
+  const payload = {
     portfolioId: String(activePortfolio?.id || "local-portfolio"),
-    analysisContext: "simulator-step4",
+    analysisContext: "simulator-step6",
     settings: {
       years: toFiniteNumber(settings?.years),
       inflationRate: toFiniteNumber(settings?.inflationRate),
@@ -143,9 +151,50 @@ export function buildAiAnalysisPayload({
     metrics: buildMetricsPayload(result),
     assets,
   };
+
+  if (providerScenarioContext && providerScenarioContextWrapper) {
+    payload.scenarioInterpretationContext = providerScenarioContextWrapper;
+  }
+
+  return payload;
 }
 
-export function createAiAnalysisInputSignature({ activePortfolio, activeAssets = [], result = {} } = {}) {
+function buildScenarioSignatureContext(scenarioInterpretationContext) {
+  const providerScenarioContext = getProviderScenarioContext(scenarioInterpretationContext);
+  if (!providerScenarioContext) return null;
+  const sections = providerScenarioContext.sections || {};
+  const signature = {
+    contextVersion: providerScenarioContext.contextVersion,
+    target: providerScenarioContext.target,
+    includedSections: providerScenarioContext.includedSections,
+  };
+  if (sections.probability) {
+    signature.probability = {
+      method: sections.probability.method,
+      inputHash: sections.probability.inputHash,
+      outputHash: sections.probability.outputHash,
+      scenarioVersion: sections.probability.scenarioVersion,
+    };
+  }
+  if (sections.externalShock) {
+    signature.externalShock = {
+      scenarioId: sections.externalShock.scenarioId,
+      mode: sections.externalShock.mode,
+      inputHash: sections.externalShock.inputHash,
+      outputHash: sections.externalShock.outputHash,
+      baselineIdentityHash: sections.externalShock.baselineIdentityHash,
+      scenarioVersion: sections.externalShock.scenarioVersion,
+    };
+  }
+  return signature;
+}
+
+export function createAiAnalysisInputSignature({
+  activePortfolio,
+  activeAssets = [],
+  result = {},
+  scenarioInterpretationContext = null,
+} = {}) {
   const signatureAssets = activeAssets.map((asset) => ({
     ticker: normalizeTicker(asset?.ticker),
     market: normalizeMarket(asset?.market),
@@ -158,7 +207,7 @@ export function createAiAnalysisInputSignature({ activePortfolio, activeAssets =
     dividendYield: toFiniteNumber(asset?.dividendYield),
   }));
 
-  return JSON.stringify({
+  const signature = {
     portfolioId: activePortfolio?.id || "local-portfolio",
     assets: signatureAssets,
     metrics: {
@@ -169,5 +218,10 @@ export function createAiAnalysisInputSignature({ activePortfolio, activeAssets =
       futureValue: toFiniteNumber(result?.futureValue),
       inflationAdjustedFutureValue: toFiniteNumber(result?.inflationAdjustedFutureValue),
     },
-  });
+  };
+
+  const scenarioSignatureContext = buildScenarioSignatureContext(scenarioInterpretationContext);
+  if (scenarioSignatureContext) signature.scenarioInterpretationContext = scenarioSignatureContext;
+
+  return JSON.stringify(signature);
 }

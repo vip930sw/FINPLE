@@ -6,6 +6,7 @@ const SUPPORTED_STATUSES = new Set(["idle", "ready", "insufficient_data", "block
 const SUPPORTED_SHOCK_MODES = new Set(["direct_asset", "market_beta"]);
 const SUPPORTED_RETURN_BASIS = new Set(["price_return", "total_return"]);
 const HASH_PATTERN = /^[a-f0-9]{64}$/i;
+const APPROVAL_EVIDENCE_VERSION = "scenario-provider-approval-evidence-v1-step114-2j";
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -17,6 +18,41 @@ function isFiniteNumber(value) {
 
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function normalizeProviderApprovalEvidence(evidence, result, fingerprint) {
+  if (!isPlainObject(evidence)) return null;
+  const candidate = {
+    evidenceVersion: String(evidence.evidenceVersion || "").trim(),
+    fixtureOnly: evidence.fixtureOnly,
+    productionPublishReady: evidence.productionPublishReady,
+    appExportApproved: evidence.appExportApproved,
+    sourceKind: String(evidence.sourceKind || "").trim(),
+    portfolioFingerprint: String(evidence.portfolioFingerprint || "").trim(),
+    inputHash: String(evidence.inputHash || "").trim(),
+    outputHash: String(evidence.outputHash || "").trim(),
+    sourceHashes: safeArray(evidence.sourceHashes).map((item) => String(item || "").trim()).filter(Boolean).sort(),
+    normalizationVersion: String(evidence.normalizationVersion || "").trim(),
+    calculationPolicyVersion: String(evidence.calculationPolicyVersion || "").trim(),
+    pipelineVersion: String(evidence.pipelineVersion || "").trim(),
+    approvalSource: String(evidence.approvalSource || "").trim(),
+  };
+  if (result?.fixtureContext?.fixtureOnly === true || result?.fixtureContext?.reviewOnly === true) return null;
+  const valid = candidate.evidenceVersion === APPROVAL_EVIDENCE_VERSION &&
+    candidate.fixtureOnly === false &&
+    candidate.productionPublishReady === true &&
+    candidate.appExportApproved === true &&
+    candidate.sourceKind === "synthetic_non_fixture_contract" &&
+    candidate.portfolioFingerprint === fingerprint &&
+    candidate.inputHash === result?.inputHash &&
+    candidate.outputHash === result?.outputHash &&
+    candidate.sourceHashes.length > 0 &&
+    candidate.sourceHashes.join("|") === safeArray(result?.sourceHashes).map((hash) => String(hash || "").trim()).filter(Boolean).sort().join("|") &&
+    candidate.normalizationVersion === result?.normalizationVersion &&
+    candidate.calculationPolicyVersion === result?.calculationPolicyVersion &&
+    candidate.pipelineVersion === result?.pipelineVersion &&
+    candidate.approvalSource.length > 0;
+  return valid ? candidate : null;
 }
 
 function normalizeStatus(value) {
@@ -572,8 +608,10 @@ function createReadyViewModel({
   expectedInputHash,
   expectedOutputHash,
   validatedResults = null,
+  providerApprovalEvidence = null,
 }) {
   const comparisonResults = validatedResults || [result];
+  const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   return {
     uiVersion: EXTERNAL_SHOCK_UI_VERSION,
     status: "ready",
@@ -584,10 +622,14 @@ function createReadyViewModel({
     resultInputHash: result.inputHash,
     baselineIdentityHash: result.baselineIdentityHash,
     resultOutputHash: result.outputHash,
-    fixtureOnly: true,
+    fixtureOnly: approvalEvidence ? false : true,
+    productionPublishReady: Boolean(approvalEvidence?.productionPublishReady),
+    appExportApproved: Boolean(approvalEvidence?.appExportApproved),
+    providerApprovalEvidence: approvalEvidence,
     fixtureContext: result.fixtureContext,
     scenarioVersion: result.scenarioVersion,
     method: result.method,
+    occurrenceProbabilityEstimated: false,
     scenarioId: result.scenarioId,
     scenarioLabel: result.scenarioLabel,
     shockMode: result.shockMode,
@@ -644,6 +686,7 @@ export function buildExternalShockScenarioViewModel({
   expectedInputHash = null,
   expectedOutputHash = null,
   enableFixtureReview = false,
+  providerApprovalEvidence = null,
 } = {}) {
   const selectedPortfolioName = activePortfolio?.name || "선택 포트폴리오";
   const fingerprint = getExternalShockPortfolioFingerprint({
@@ -655,11 +698,11 @@ export function buildExternalShockScenarioViewModel({
     ? scenarioResults
     : (result ? [result] : []);
 
-  if (!enableFixtureReview || candidateResults.length === 0) {
+  if (candidateResults.length === 0) {
     return createStatusViewModel({
       status: "idle",
       selectedPortfolioName,
-      reasons: enableFixtureReview ? ["precomputed_result_missing"] : ["fixture_review_gate_disabled"],
+      reasons: ["precomputed_result_missing"],
     });
   }
 
@@ -668,10 +711,20 @@ export function buildExternalShockScenarioViewModel({
   const seenScenarioIds = new Set();
   for (const candidate of candidateResults) {
     const status = normalizeStatus(candidate.status);
+    const hasFixtureContext = isPlainObject(candidate.fixtureContext);
+    const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, candidate, fingerprint);
     validateContractHeader(candidate, issues);
     if (seenScenarioIds.has(candidate.scenarioId)) issues.push(`duplicate_scenarioId:${candidate.scenarioId}`);
     seenScenarioIds.add(candidate.scenarioId);
     if (status !== "ready") {
+      if (!hasFixtureContext || !enableFixtureReview) {
+        return createStatusViewModel({
+          status: "blocked",
+          selectedPortfolioName,
+          reasons: ["providerApprovalEvidence_invalid"],
+          fixtureContext: candidate.fixtureContext || null,
+        });
+      }
       if (candidateResults.length === 1) {
         return {
           ...createStatusViewModel({
@@ -683,6 +736,10 @@ export function buildExternalShockScenarioViewModel({
           scenarioVersion: candidate.scenarioVersion,
           methodology: createMethodology(candidate),
           fixtureOnly: true,
+          productionPublishReady: false,
+          appExportApproved: false,
+          providerApprovalEvidence: null,
+          occurrenceProbabilityEstimated: false,
           resultInputHash: candidate.inputHash,
           baselineIdentityHash: candidate.baselineIdentityHash,
           resultOutputHash: candidate.outputHash,
@@ -695,14 +752,26 @@ export function buildExternalShockScenarioViewModel({
       issues.push(`scenario_not_ready:${candidate.scenarioId || "unknown"}`);
       continue;
     }
-    validateFixtureContext({
-      result: candidate,
-      fixtureContext: candidate.fixtureContext,
-      fingerprint,
-      expectedInputHash,
-      expectedOutputHash,
-      issues,
-    });
+    if (hasFixtureContext) {
+      if (!enableFixtureReview) {
+        return createStatusViewModel({
+          status: "idle",
+          selectedPortfolioName,
+          reasons: ["fixture_review_gate_disabled"],
+          fixtureContext: candidate.fixtureContext || null,
+        });
+      }
+      validateFixtureContext({
+        result: candidate,
+        fixtureContext: candidate.fixtureContext,
+        fingerprint,
+        expectedInputHash,
+        expectedOutputHash,
+        issues,
+      });
+    } else if (!approvalEvidence) {
+      issues.push("providerApprovalEvidence_invalid");
+    }
     validateReadyResult(candidate, issues);
     validatedResults.push(candidate);
   }
@@ -758,6 +827,7 @@ export function buildExternalShockScenarioViewModel({
     expectedInputHash,
     expectedOutputHash,
     validatedResults,
+    providerApprovalEvidence: selectedResult.fixtureContext ? null : providerApprovalEvidence,
   });
 }
 

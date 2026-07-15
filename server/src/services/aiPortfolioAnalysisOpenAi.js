@@ -8,100 +8,129 @@ const MIN_MAX_OUTPUT_TOKENS = 4200;
 const DEFAULT_MAX_OUTPUT_TOKENS = 4200;
 const DEFAULT_RETRY_COUNT = 1;
 
+const BASE_REQUIRED_OUTPUT_FIELDS = [
+  "dataQuality",
+  "portfolioProfile",
+  "diversification",
+  "diagnosticSections",
+  "riskFactors",
+  "assetRoles",
+  "limitations",
+  "disclaimer",
+];
+
+const SCENARIO_INTERPRETATION_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contextUsed", "probabilityNarrative", "externalShockNarrative", "combinedLimitations"],
+  properties: {
+    contextUsed: { type: "boolean" },
+    probabilityNarrative: { type: "string" },
+    externalShockNarrative: { type: "string" },
+    combinedLimitations: { type: "array", items: { type: "string" } },
+  },
+};
+
+const BASE_MODEL_OUTPUT_PROPERTIES = {
+  dataQuality: {
+    type: "object",
+    additionalProperties: false,
+    required: ["level", "summary", "warnings"],
+    properties: {
+      level: { type: "string", enum: ["good", "review", "limited"] },
+      summary: { type: "string" },
+      warnings: { type: "array", items: { type: "string" } },
+    },
+  },
+  portfolioProfile: {
+    type: "object",
+    additionalProperties: false,
+    required: ["title", "summary"],
+    properties: {
+      title: { type: "string" },
+      summary: { type: "string" },
+    },
+  },
+  diversification: {
+    type: "object",
+    additionalProperties: false,
+    required: ["nominalAssetCount", "effectiveDiversificationLevel", "summary"],
+    properties: {
+      nominalAssetCount: { type: "number" },
+      effectiveDiversificationLevel: { type: "string", enum: ["low", "medium", "high"] },
+      summary: { type: "string" },
+    },
+  },
+  diagnosticSections: {
+    type: "array",
+    minItems: 3,
+    maxItems: 3,
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["key", "title", "summary", "observations"],
+      properties: {
+        key: {
+          type: "string",
+          enum: ["structure", "risk_balance", "cashflow", "data_context"],
+        },
+        title: { type: "string" },
+        summary: { type: "string" },
+        observations: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+  riskFactors: {
+    type: "array",
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["code", "label", "severity", "evidence"],
+      properties: {
+        code: { type: "string" },
+        label: { type: "string" },
+        severity: { type: "string", enum: ["low", "medium", "high"] },
+        evidence: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+  assetRoles: {
+    type: "array",
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["ticker", "market", "weight", "role", "rationale"],
+      properties: {
+        ticker: { type: "string" },
+        market: { type: "string", enum: ["US", "KR"] },
+        weight: { type: "number" },
+        role: { type: "string", enum: ["core", "growth", "income", "stability"] },
+        rationale: { type: "string" },
+      },
+    },
+  },
+  limitations: { type: "array", items: { type: "string" } },
+  disclaimer: { type: "string" },
+};
+
+export function getModelOutputSchema(hasScenarioContext = false) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: hasScenarioContext
+      ? [...BASE_REQUIRED_OUTPUT_FIELDS, "scenarioInterpretation"]
+      : [...BASE_REQUIRED_OUTPUT_FIELDS],
+    properties: hasScenarioContext
+      ? { ...BASE_MODEL_OUTPUT_PROPERTIES, scenarioInterpretation: SCENARIO_INTERPRETATION_SCHEMA }
+      : { ...BASE_MODEL_OUTPUT_PROPERTIES },
+  };
+}
+
 const MODEL_OUTPUT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "dataQuality",
-    "portfolioProfile",
-    "diversification",
-    "diagnosticSections",
-    "riskFactors",
-    "assetRoles",
-    "limitations",
-    "disclaimer",
-  ],
-  properties: {
-    dataQuality: {
-      type: "object",
-      additionalProperties: false,
-      required: ["level", "summary", "warnings"],
-      properties: {
-        level: { type: "string", enum: ["good", "review", "limited"] },
-        summary: { type: "string" },
-        warnings: { type: "array", items: { type: "string" } },
-      },
-    },
-    portfolioProfile: {
-      type: "object",
-      additionalProperties: false,
-      required: ["title", "summary"],
-      properties: {
-        title: { type: "string" },
-        summary: { type: "string" },
-      },
-    },
-    diversification: {
-      type: "object",
-      additionalProperties: false,
-      required: ["nominalAssetCount", "effectiveDiversificationLevel", "summary"],
-      properties: {
-        nominalAssetCount: { type: "number" },
-        effectiveDiversificationLevel: { type: "string", enum: ["low", "medium", "high"] },
-        summary: { type: "string" },
-      },
-    },
-    diagnosticSections: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["key", "title", "summary", "observations"],
-        properties: {
-          key: {
-            type: "string",
-            enum: ["structure", "risk_balance", "cashflow", "data_context"],
-          },
-          title: { type: "string" },
-          summary: { type: "string" },
-          observations: { type: "array", items: { type: "string" } },
-        },
-      },
-    },
-    riskFactors: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["code", "label", "severity", "evidence"],
-        properties: {
-          code: { type: "string" },
-          label: { type: "string" },
-          severity: { type: "string", enum: ["low", "medium", "high"] },
-          evidence: { type: "array", items: { type: "string" } },
-        },
-      },
-    },
-    assetRoles: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["ticker", "market", "weight", "role", "rationale"],
-        properties: {
-          ticker: { type: "string" },
-          market: { type: "string", enum: ["US", "KR"] },
-          weight: { type: "number" },
-          role: { type: "string", enum: ["core", "growth", "income", "stability"] },
-          rationale: { type: "string" },
-        },
-      },
-    },
-    limitations: { type: "array", items: { type: "string" } },
-    disclaimer: { type: "string" },
-  },
+  required: [...BASE_REQUIRED_OUTPUT_FIELDS],
+  properties: { ...BASE_MODEL_OUTPUT_PROPERTIES },
 };
 
 function toPositiveInteger(value, fallback) {
@@ -268,6 +297,7 @@ function buildDerivedFacts(payload) {
 
 function buildInstructions(payload) {
   const tickers = payload.assets.map((asset) => asset.ticker).join(", ");
+  const hasScenarioContext = Boolean(payload.scenarioInterpretationContext);
   return [
     "You are FINPLE's portfolio analysis narrator.",
     "Return only the JSON object requested by the schema.",
@@ -283,6 +313,15 @@ function buildInstructions(payload) {
     "Use derivedFacts.assetRoleHints to keep assetRoles consistent with each asset's submitted metrics. Prefer the suggestedRole unless another role is clearly supported by the same input.",
     "Use derivedFacts.cashflow for dividend and cashflow commentary. If dividend coverage is incomplete, state that as a limitation instead of assuming income strength.",
     "Use derivedFacts.riskSignals when explaining drawdown or beta risk, especially when one asset carries an unusually deep drawdown.",
+    hasScenarioContext
+      ? "If scenarioInterpretationContext is supplied, treat all supplied Step 4 probability and Step 5 external shock calculations as immutable facts for interpretation only."
+      : "No validated Step 4 or Step 5 scenario context was supplied; do not infer probability bands or external shock outcomes.",
+    "Do not recompute probability, MDD, recovery, stress, or shock results from the scenario context.",
+    hasScenarioContext
+      ? "When scenarioInterpretationContext is supplied, include scenarioInterpretation.contextUsed=true and text-only narratives. Do not put recalculated or replacement numbers in those narratives."
+      : "When scenarioInterpretationContext is not supplied, omit scenarioInterpretation or set contextUsed=false.",
+    "Clearly distinguish probabilistic bootstrap results from deterministic external shock results when discussing scenarioInterpretationContext.",
+    "External shock analysis does not estimate the probability that a shock will occur; do not infer occurrence probability.",
     "When dataCoverage is incomplete, reflect that uncertainty in dataQuality and limitations instead of filling gaps with assumptions.",
     "Avoid vague coined labels. Prefer familiar portfolio language such as 성장 자산, 현금흐름 자산, 안정 자산, 장기채, 금, or 리츠 when supported by the input.",
     "Explain risk as observations and checks, not as predictions or instructions.",
@@ -304,6 +343,7 @@ function buildInput(payload) {
     metrics: payload.metrics,
     assets: payload.assets,
     derivedFacts: buildDerivedFacts(payload),
+    scenarioInterpretationContext: payload.scenarioInterpretationContext || null,
     requiredOutputNotes: {
       mode: "live",
       provider: "openai",
@@ -384,6 +424,7 @@ function parseModelJson(responseBody) {
 }
 
 async function requestOpenAiPortfolioAnalysisOnce(payload, config) {
+  const hasScenarioContext = Boolean(payload.scenarioInterpretationContext);
   const response = await fetchWithTimeout(
     OPENAI_RESPONSES_URL,
     {
@@ -402,7 +443,7 @@ async function requestOpenAiPortfolioAnalysisOnce(payload, config) {
             type: "json_schema",
             name: "finple_portfolio_analysis",
             strict: true,
-            schema: MODEL_OUTPUT_SCHEMA,
+            schema: hasScenarioContext ? getModelOutputSchema(true) : MODEL_OUTPUT_SCHEMA,
           },
         },
       }),
