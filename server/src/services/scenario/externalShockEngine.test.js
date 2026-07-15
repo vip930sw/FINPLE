@@ -38,6 +38,7 @@ function assertBlocked(result, pattern) {
   assert.notEqual(result.status, "ready");
   assert.match(result.dataQuality.blockReasons.join("|"), pattern);
   assert.match(result.inputHash, /^[a-f0-9]{64}$/);
+  assert.ok(result.baselineIdentityHash === null || /^[a-f0-9]{64}$/.test(result.baselineIdentityHash));
   assert.match(result.outputHash, /^[a-f0-9]{64}$/);
 }
 
@@ -51,6 +52,7 @@ test("same fixture input returns byte-deterministic output and hashes", () => {
   assertReady(first);
   assert.equal(stableSerializeExternalShockValue(first), stableSerializeExternalShockValue(second));
   assert.equal(first.outputHash, second.outputHash);
+  assert.equal(first.baselineIdentityHash, second.baselineIdentityHash);
   assert.equal(first.scenarioVersion, EXTERNAL_SHOCK_SCENARIO_VERSION);
   assert.equal(first.method, EXTERNAL_SHOCK_METHOD);
   assert.equal(first.scenarioId, "step114-2h-direct-asset-fixture");
@@ -83,6 +85,16 @@ test("market_beta shock derives asset shock return from beta and market factor",
   assert.equal(result.betaApplied, true);
   assert.equal(result.shockEvents[0].betaProvenance["KR:005930"].sourceHash, "fixture-beta-source-005930");
   assert.equal(result.trace.find((point) => point.monthIndex === 4).betaProvenance["KR:069500"].betaWindow, "36m-monthly");
+});
+
+test("direct_asset and market_beta share baseline identity for the same baseline input", () => {
+  const direct = buildExternalShockScenario(baseInput("directAsset"));
+  const beta = buildExternalShockScenario(baseInput("marketBeta"));
+  assertReady(direct);
+  assertReady(beta);
+  assert.notEqual(direct.inputHash, beta.inputHash);
+  assert.notEqual(direct.outputHash, beta.outputHash);
+  assert.equal(direct.baselineIdentityHash, beta.baselineIdentityHash);
 });
 
 test("month-start contribution affects valuation path but not risk NAV MDD", () => {
@@ -140,7 +152,30 @@ test("source hash changes propagate to input and output hashes", () => {
   assertReady(first);
   assertReady(second);
   assert.notEqual(first.inputHash, second.inputHash);
+  assert.notEqual(first.baselineIdentityHash, second.baselineIdentityHash);
   assert.notEqual(first.outputHash, second.outputHash);
+});
+
+test("baseline return assets weights settings and policy changes affect baseline identity", () => {
+  const first = buildExternalShockScenario(baseInput());
+  const changedReturn = baseInput();
+  changedReturn.baselineReturnMatrix[0].baselineReturn += 0.001;
+  const changedWeight = baseInput();
+  changedWeight.assets[0].targetWeight = 60;
+  changedWeight.assets[1].targetWeight = 40;
+  const changedSettings = baseInput();
+  changedSettings.settings.monthlyContribution = 600000;
+  const changedCurrency = baseInput();
+  changedCurrency.metadata.currencyMode = "USD";
+  changedCurrency.baselineReturnMatrix = changedCurrency.baselineReturnMatrix.map((row) => ({ ...row, currencyMode: "USD" }));
+  const changedPolicy = baseInput();
+  changedPolicy.metadata.pipelineVersion = "scenario-external-shock-fixture-v2";
+
+  for (const input of [changedReturn, changedWeight, changedSettings, changedCurrency, changedPolicy]) {
+    const result = buildExternalShockScenario(input);
+    assertReady(result);
+    assert.notEqual(first.baselineIdentityHash, result.baselineIdentityHash);
+  }
 });
 
 test("row source hash reassignment changes deterministic input and output hashes", () => {
@@ -154,6 +189,7 @@ test("row source hash reassignment changes deterministic input and output hashes
   assertReady(second);
   assert.deepEqual(first.sourceHashes, second.sourceHashes);
   assert.notEqual(first.inputHash, second.inputHash);
+  assert.notEqual(first.baselineIdentityHash, second.baselineIdentityHash);
   assert.notEqual(first.outputHash, second.outputHash);
   assert.notDeepEqual(first.rowSourceLineage[0].rowSourceHashes, second.rowSourceLineage[0].rowSourceHashes);
 });
@@ -170,6 +206,7 @@ test("beta provenance is required and affects hashes", () => {
   assertReady(first);
   assertReady(second);
   assert.notEqual(first.inputHash, second.inputHash);
+  assert.equal(first.baselineIdentityHash, second.baselineIdentityHash);
   assert.notEqual(first.outputHash, second.outputHash);
 });
 

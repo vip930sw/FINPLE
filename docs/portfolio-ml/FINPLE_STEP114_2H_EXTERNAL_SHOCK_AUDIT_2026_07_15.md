@@ -37,6 +37,7 @@ Required semantic fields:
 
 - `scenarioId`
 - `scenarioLabel`
+- `baselineIdentityHash`
 - `bootstrapApplied=false`
 - `probabilityApplied=false`
 - `betaApplied=false` for `direct_asset`
@@ -68,6 +69,13 @@ Every effective beta must include provenance:
 - `methodVersion`
 
 The beta provenance is included in normalized input, `inputHash`, output events, fixture payload, UI methodology, and chart marker assumptions.
+
+Baseline identity:
+
+- `inputHash` is scenario-specific and includes the selected shock mode, shock events, beta values, and beta provenance.
+- `baselineIdentityHash` is baseline-only and excludes shock scenarios, beta values, and shock events.
+- `baselineIdentityHash` includes `portfolioId`, canonical assets and target weights, normalized settings, baseline monthly returns, row-level source hash lineage, return basis, currency mode, data dates, source hashes, normalization version, calculation policy version, and pipeline version.
+- Direct-asset and market-beta results may have different `inputHash` and `outputHash`, but they must share the same `baselineIdentityHash` before the UI may compare them.
 
 The engine does not:
 
@@ -118,7 +126,7 @@ Row lineage:
 
 - each selected `(month, market, ticker)` baseline row preserves its own `sourceHash`
 - row lineage is exposed through `rowSourceLineage`
-- swapping row source hashes while keeping the same source-hash union changes `inputHash` and `outputHash`
+- swapping row source hashes while keeping the same source-hash union changes `baselineIdentityHash`, `inputHash`, and `outputHash`
 
 Rebalancing:
 
@@ -188,6 +196,8 @@ The browser fixture is generated offline from the server engine. It contains onl
 
 The checked-in browser fixture includes both direct-asset and market-beta results for the same fixture review identity.
 
+Both checked-in scenario results share the same `baselineIdentityHash`. The browser fixture context and payload signature include this field, so fixture payload tampering or stale baseline identity is blocked before display.
+
 ## UI Contract
 
 Step 5 component:
@@ -208,13 +218,18 @@ Fixture review:
 
 - requires explicit `enableFixtureReview=true`
 - requires exact portfolio fingerprint match
+- requires a valid `baselineIdentityHash`
 - requires expected input hash and output hash match
 - validates payload signature
 - stale result preserves original fixture context
 - baseline reference appears only when analysis identity matches
 - direct-asset and market-beta scenarios are selected through review-only tabs
+- multi-scenario comparison requires every result to have the same portfolio fingerprint, `baselineIdentityHash`, baseline path, contribution series, baseline terminal value, baseline MDD, return basis, currency mode, dates, and policy versions
+- baseline identity mismatch blocks the whole comparison as `scenario_baseline_identity_mismatch`; no partial comparison rows or shock numbers are displayed
 - comparison rows are descriptive only: label, mode, terminal delta rate, stressed MDD, incremental MDD, recovery months, and unrecovered status
 - shock markers expose actual direct shock assumptions or market factor, beta, and beta provenance
+- selected-scenario assumptions are also visible in a normal table with shock month, direct asset shock rates or market factor shock, asset beta, `sourceName`, `asOfDate`, `betaWindow`, `methodVersion`, and shortened/available source hash status
+- scenario comparison, asset impact, and shock assumption tables are wrapped in contained horizontal-scroll regions to prevent page-level mobile overflow
 
 The Step 5 UI does not use probability band labels or semantics. Step 4 probability analysis remains separate.
 
@@ -237,7 +252,9 @@ Hashes include:
 - calculation policy version
 - pipeline version
 
-Changing only source hash lineage changes both inputHash and outputHash.
+Changing only shock assumptions or beta provenance changes scenario-specific `inputHash` and `outputHash`, while preserving `baselineIdentityHash`.
+
+Changing baseline returns, row-level source hashes, assets, weights, settings, return basis, currency mode, source hashes, normalization version, calculation policy version, or pipeline version changes `baselineIdentityHash`.
 
 Browser fixture validation uses a deterministic non-cryptographic payload signature to detect checked-in fixture tampering before display.
 
@@ -270,7 +287,13 @@ Test coverage includes:
 - public default idle UI
 - fixture stale identity
 - direct/beta scenario selector and comparison table
+- shared baselineIdentityHash for direct/beta fixture scenarios
+- shock/beta-only changes preserve baselineIdentityHash while changing scenario hashes
+- baseline return, row source hash, asset/weight/settings, return basis, currency mode, and policy changes alter baselineIdentityHash
 - baseline identity mismatch
+- baseline path and baseline MDD mismatch blocked
+- visible shock assumption table
+- contained mobile table wrappers
 - null path/contribution values not rendered as zero
 - malformed ready payload blocked
 - fixture payload tamper blocked

@@ -10,6 +10,7 @@
       "coverage": [
         "direct_asset shock",
         "market_beta shock",
+        "shared baselineIdentityHash across comparable scenarios",
         "beta provenance",
         "row-level source hash lineage",
         "multi-month drawdown and recovery",
@@ -27,6 +28,7 @@
         "duplicate asset shock identity",
         "duplicate beta identity",
         "duplicate shock month",
+        "baseline identity mismatch",
         "mixed return basis",
         "missing source hash",
         "invalid month",

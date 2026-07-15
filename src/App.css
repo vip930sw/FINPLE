@@ -8565,6 +8565,7 @@ nav {
 .externalShockSummaryCard,
 .externalShockScenarioSelector,
 .externalShockComparisonPanel,
+.externalShockAssumptionPanel,
 .externalShockMethodologyPanel,
 .externalShockImpactPanel,
 .externalShockDisclaimer {
@@ -8794,9 +8795,20 @@ nav {
 
 .externalShockMethodologyPanel,
 .externalShockComparisonPanel,
+.externalShockAssumptionPanel,
 .externalShockImpactPanel,
 .externalShockDisclaimer {
   padding: 18px;
+}
+
+.externalShockTableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.externalShockTableScroll table {
+  min-width: 720px;
 }
 
 .externalShockMethodologyGrid {
@@ -8836,6 +8848,7 @@ nav {
 }
 
 .externalShockComparisonPanel table,
+.externalShockAssumptionPanel table,
 .externalShockImpactPanel table,
 .externalShockMobileSummary {
   width: 100%;
@@ -8844,6 +8857,8 @@ nav {
 
 .externalShockComparisonPanel th,
 .externalShockComparisonPanel td,
+.externalShockAssumptionPanel th,
+.externalShockAssumptionPanel td,
 .externalShockImpactPanel th,
 .externalShockImpactPanel td,
 .externalShockMobileSummary th,
@@ -8855,6 +8870,8 @@ nav {
 
 .externalShockComparisonPanel th:first-child,
 .externalShockComparisonPanel td:first-child,
+.externalShockAssumptionPanel th:first-child,
+.externalShockAssumptionPanel td:first-child,
 .externalShockImpactPanel th:first-child,
 .externalShockImpactPanel td:first-child,
 .externalShockMobileSummary th:first-child,

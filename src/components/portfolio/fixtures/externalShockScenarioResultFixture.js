@@ -2,20 +2,21 @@
 // data/fixtures/scenario-external-shock/kr_two_asset_external_shock_base.json.
 // This browser fixture is precomputed view data; do not import the Node engine here.
 
-export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH = "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1";
-export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH = "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae";
-export const STEP114_2H_FIXTURE_EXPECTED_BETA_INPUT_HASH = "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc";
-export const STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH = "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974";
+export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_INPUT_HASH = "27accc219099d834d89bb34036b2e153ebf9d4142800f1951dc89784c65cd4db";
+export const STEP114_2H_FIXTURE_EXPECTED_DIRECT_OUTPUT_HASH = "e6672dde1bda298bc1d466a8ed4551bb4e96b06f82a5ec3a72060d9def2f9d6b";
+export const STEP114_2H_FIXTURE_EXPECTED_BETA_INPUT_HASH = "42a81b137afd38369d91182abfd32d8128bf09e66047ece7685444953ad21782";
+export const STEP114_2H_FIXTURE_EXPECTED_BETA_OUTPUT_HASH = "c7d2950e2af527d71cc61fcf38eba01112a2c8b37a0f12378a253d9f4f3c9595";
+export const STEP114_2H_FIXTURE_EXPECTED_BASELINE_IDENTITY_HASH = "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7";
 export const STEP114_2H_FIXTURE_EXPECTED_INPUT_HASHES = Object.freeze({
-  "step114-2h-direct-asset-fixture": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
-  "step114-2h-market-beta-fixture": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc"
+  "step114-2h-direct-asset-fixture": "27accc219099d834d89bb34036b2e153ebf9d4142800f1951dc89784c65cd4db",
+  "step114-2h-market-beta-fixture": "42a81b137afd38369d91182abfd32d8128bf09e66047ece7685444953ad21782"
 });
 export const STEP114_2H_FIXTURE_EXPECTED_OUTPUT_HASHES = Object.freeze({
-  "step114-2h-direct-asset-fixture": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
-  "step114-2h-market-beta-fixture": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974"
+  "step114-2h-direct-asset-fixture": "e6672dde1bda298bc1d466a8ed4551bb4e96b06f82a5ec3a72060d9def2f9d6b",
+  "step114-2h-market-beta-fixture": "c7d2950e2af527d71cc61fcf38eba01112a2c8b37a0f12378a253d9f4f3c9595"
 });
-export const STEP114_2H_FIXTURE_DIRECT_PAYLOAD_SIGNATURE = "db85b59d";
-export const STEP114_2H_FIXTURE_BETA_PAYLOAD_SIGNATURE = "1c55fd32";
+export const STEP114_2H_FIXTURE_DIRECT_PAYLOAD_SIGNATURE = "6bc5f6ee";
+export const STEP114_2H_FIXTURE_BETA_PAYLOAD_SIGNATURE = "bef0f12e";
 
 export const STEP114_2H_FIXTURE_REVIEW_PORTFOLIO = Object.freeze({
   "id": "step114-2h-fixture-portfolio",
@@ -47,8 +48,9 @@ export const STEP114_2H_FIXTURE_REVIEW_ASSETS = Object.freeze([
 export const STEP114_2H_PRECOMPUTED_BASELINE_FIXTURE = Object.freeze({
   "analysisIdentity": {
     "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
-    "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
-    "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae"
+    "baselineIdentityHash": "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7",
+    "inputHash": "27accc219099d834d89bb34036b2e153ebf9d4142800f1951dc89784c65cd4db",
+    "outputHash": "e6672dde1bda298bc1d466a8ed4551bb4e96b06f82a5ec3a72060d9def2f9d6b"
   },
   "monthlyBaselinePoints": [
     {
@@ -141,7 +143,8 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
   "normalizationVersion": "normalization-v1-step114-2b",
   "calculationPolicyVersion": "metrics-policy-v3-step114",
   "pipelineVersion": "scenario-external-shock-fixture-v1",
-  "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
+  "inputHash": "27accc219099d834d89bb34036b2e153ebf9d4142800f1951dc89784c65cd4db",
+  "baselineIdentityHash": "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7",
   "dataQuality": {
     "status": "ready",
     "blockReasons": []
@@ -833,7 +836,7 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
       "shockAssumptions": null
     }
   ],
-  "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
+  "outputHash": "e6672dde1bda298bc1d466a8ed4551bb4e96b06f82a5ec3a72060d9def2f9d6b",
   "fixtureContext": {
     "fixtureOnly": true,
     "reviewOnly": true,
@@ -841,9 +844,10 @@ export const STEP114_2H_DIRECT_SHOCK_FIXTURE_RESULT = Object.freeze({
     "portfolioName": "Step 114-2H fixture review",
     "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
     "scenarioId": "step114-2h-direct-asset-fixture",
-    "inputHash": "8c0bd97e62ed6abf5c7e817fbe403923a9a57271bdd50c89eeed04da847935b1",
-    "outputHash": "1a1276ea178685c53f0b19d535aa7c63f92308ed326beab17b4ff49a6d2e09ae",
-    "payloadSignature": "db85b59d"
+    "inputHash": "27accc219099d834d89bb34036b2e153ebf9d4142800f1951dc89784c65cd4db",
+    "baselineIdentityHash": "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7",
+    "outputHash": "e6672dde1bda298bc1d466a8ed4551bb4e96b06f82a5ec3a72060d9def2f9d6b",
+    "payloadSignature": "6bc5f6ee"
   }
 });
 
@@ -869,7 +873,8 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
   "normalizationVersion": "normalization-v1-step114-2b",
   "calculationPolicyVersion": "metrics-policy-v3-step114",
   "pipelineVersion": "scenario-external-shock-fixture-v1",
-  "inputHash": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc",
+  "inputHash": "42a81b137afd38369d91182abfd32d8128bf09e66047ece7685444953ad21782",
+  "baselineIdentityHash": "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7",
   "dataQuality": {
     "status": "ready",
     "blockReasons": []
@@ -1594,7 +1599,7 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
       "shockAssumptions": null
     }
   ],
-  "outputHash": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974",
+  "outputHash": "c7d2950e2af527d71cc61fcf38eba01112a2c8b37a0f12378a253d9f4f3c9595",
   "fixtureContext": {
     "fixtureOnly": true,
     "reviewOnly": true,
@@ -1602,9 +1607,10 @@ export const STEP114_2H_MARKET_BETA_FIXTURE_RESULT = Object.freeze({
     "portfolioName": "Step 114-2H fixture review",
     "portfolioFingerprint": "{\"assets\":[{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"005930\"},{\"market\":\"KR\",\"targetEvaluationAmount\":null,\"targetWeight\":50,\"ticker\":\"069500\"}],\"portfolioId\":\"step114-2h-fixture-portfolio\",\"settings\":{\"dividendReinvest\":false,\"inflationRate\":0.025,\"initialInvestment\":null,\"investmentMonths\":12,\"monthlyCashFlow\":500000,\"monthlyContribution\":null,\"startValue\":12000000,\"years\":1}}",
     "scenarioId": "step114-2h-market-beta-fixture",
-    "inputHash": "a20785b85b00c7732aa7083eda19ee4b79de7b9a9381d408c9c21087af747ddc",
-    "outputHash": "ec4a82d3dfcdeae6eb12541ef27fdafd77d9d974dd91954c2b0a546e0a34b974",
-    "payloadSignature": "1c55fd32"
+    "inputHash": "42a81b137afd38369d91182abfd32d8128bf09e66047ece7685444953ad21782",
+    "baselineIdentityHash": "06ee7cc6d0a41ae7b1d7991b07cee5649c0bf14f54447c08ca2ff744aaa4b7f7",
+    "outputHash": "c7d2950e2af527d71cc61fcf38eba01112a2c8b37a0f12378a253d9f4f3c9595",
+    "payloadSignature": "bef0f12e"
   }
 });
 

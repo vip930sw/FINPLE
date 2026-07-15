@@ -93,6 +93,7 @@ function ScenarioComparisonTable({ rows = [] }) {
           <h4>시나리오별 비교</h4>
         </div>
       </div>
+      <div className="externalShockTableScroll">
       <table>
         <thead>
           <tr>
@@ -119,6 +120,60 @@ function ScenarioComparisonTable({ rows = [] }) {
           ))}
         </tbody>
       </table>
+      </div>
+    </section>
+  );
+}
+
+function ShockAssumptionsTable({ rows = [] }) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return (
+    <section className="externalShockAssumptionPanel" aria-label="External shock assumptions">
+      <div className="externalShockSectionTitle">
+        <Info size={18} aria-hidden="true" />
+        <div>
+          <p className="sectionLabel">Shock Assumptions</p>
+          <h4>Selected scenario assumptions</h4>
+        </div>
+      </div>
+      <div className="externalShockTableScroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Shock month</th>
+              <th>Label</th>
+              <th>Asset</th>
+              <th>Mode</th>
+              <th>Asset shock</th>
+              <th>Market factor</th>
+              <th>Beta</th>
+              <th>sourceName</th>
+              <th>asOfDate</th>
+              <th>betaWindow</th>
+              <th>methodVersion</th>
+              <th>sourceHash</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.rowKey}>
+                <td>{row.month}</td>
+                <td>{row.label}</td>
+                <td>{row.asset}</td>
+                <td>{row.mode}</td>
+                <td>{row.directShockLabel}</td>
+                <td>{row.marketFactorShockLabel}</td>
+                <td>{row.betaLabel}</td>
+                <td>{row.sourceName}</td>
+                <td>{row.asOfDate}</td>
+                <td>{row.betaWindow}</td>
+                <td>{row.methodVersion}</td>
+                <td>{row.sourceHashStatus}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -134,6 +189,7 @@ function AssetImpactTable({ rows = [] }) {
           <h4>자산별 최종 영향</h4>
         </div>
       </div>
+      <div className="externalShockTableScroll">
       <table>
         <thead>
           <tr>
@@ -156,6 +212,7 @@ function AssetImpactTable({ rows = [] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }
@@ -298,6 +355,7 @@ export default function ExternalShockAnalysisPanel({
           <ExternalShockPathChart chart={viewModel.chart} />
           <SummaryCards cards={viewModel.summaryCards} />
           <ScenarioComparisonTable rows={viewModel.scenarioComparisonRows} />
+          <ShockAssumptionsTable rows={viewModel.shockAssumptionRows} />
           <AssetImpactTable rows={viewModel.assetImpactSummary} />
         </>
       ) : null}

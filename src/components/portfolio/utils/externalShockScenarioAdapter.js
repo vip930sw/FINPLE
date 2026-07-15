@@ -99,6 +99,7 @@ export function createExternalShockFixturePayloadForIntegrity(result) {
     calculationPolicyVersion: result?.calculationPolicyVersion,
     pipelineVersion: result?.pipelineVersion,
     inputHash: result?.inputHash,
+    baselineIdentityHash: result?.baselineIdentityHash,
     outputHash: result?.outputHash,
     betaApplied: result?.betaApplied,
     bootstrapApplied: result?.bootstrapApplied,
@@ -161,6 +162,7 @@ function validateContractHeader(result, issues) {
   if (result.cagrCalibrationApplied !== false) issues.push("cagrCalibrationApplied_must_be_false");
   if (result.historicalMddApplied !== false) issues.push("historicalMddApplied_must_be_false");
   validateHash(result.inputHash, "inputHash", issues);
+  validateHash(result.baselineIdentityHash, "baselineIdentityHash", issues);
   validateHash(result.outputHash, "outputHash", issues);
   if (safeArray(result.sourceHashes).length === 0) issues.push("sourceHashes_missing");
   for (const field of ["normalizationVersion", "calculationPolicyVersion", "pipelineVersion"]) {
@@ -329,6 +331,7 @@ function validateFixtureContext({ result, fixtureContext, fingerprint, expectedI
   if (resolvedExpectedInputHash && result.inputHash !== resolvedExpectedInputHash) issues.push("expected_inputHash_mismatch");
   if (resolvedExpectedOutputHash && result.outputHash !== resolvedExpectedOutputHash) issues.push("expected_outputHash_mismatch");
   if (fixtureContext.inputHash !== result.inputHash) issues.push("fixtureContext_inputHash_mismatch");
+  if (fixtureContext.baselineIdentityHash !== result.baselineIdentityHash) issues.push("fixtureContext_baselineIdentityHash_mismatch");
   if (fixtureContext.outputHash !== result.outputHash) issues.push("fixtureContext_outputHash_mismatch");
   const expectedSignature = checksumExternalShockFixturePayload(createExternalShockFixturePayloadForIntegrity(result));
   if (fixtureContext.payloadSignature !== expectedSignature) issues.push("fixture_payload_signature_mismatch");
@@ -356,8 +359,7 @@ function baselineIdentityMatches({ baselineResult, result, fingerprint }) {
   const identity = baselineResult?.analysisIdentity;
   if (!isPlainObject(identity)) return false;
   return identity.portfolioFingerprint === fingerprint &&
-    identity.inputHash === result.inputHash &&
-    identity.outputHash === result.outputHash;
+    identity.baselineIdentityHash === result.baselineIdentityHash;
 }
 
 function normalizeBaselineReference({ baselineResult, result, fingerprint }) {
@@ -450,6 +452,97 @@ function createScenarioComparisonRows(results = []) {
   }));
 }
 
+function compactSourceHash(value) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  return text.length > 16 ? `${text.slice(0, 8)}...${text.slice(-6)}` : text;
+}
+
+function createShockAssumptionRows(result = {}) {
+  return safeArray(result.shockEvents).flatMap((event) => {
+    const monthLabel = `M${event.monthIndex}`;
+    if (result.shockMode === "market_beta") {
+      return Object.entries(event.assetBetas || {}).map(([key, beta]) => {
+        const provenance = event.betaProvenance?.[key] || {};
+        return {
+          rowKey: `${event.monthIndex}:${key}:market_beta`,
+          month: monthLabel,
+          label: event.label || result.scenarioLabel || result.scenarioId,
+          asset: key,
+          mode: "market_beta",
+          directShockLabel: "-",
+          marketFactorShockLabel: formatPercent(event.marketFactorShock),
+          betaLabel: isFiniteNumber(beta) ? beta.toFixed(3) : "-",
+          sourceName: provenance.sourceName || "-",
+          asOfDate: provenance.asOfDate || "-",
+          betaWindow: provenance.betaWindow || "-",
+          methodVersion: provenance.methodVersion || "-",
+          sourceHashStatus: provenance.sourceHash ? compactSourceHash(provenance.sourceHash) : "-",
+        };
+      });
+    }
+    return Object.entries(event.assetShockReturns || {}).map(([key, shockReturn]) => ({
+      rowKey: `${event.monthIndex}:${key}:direct_asset`,
+      month: monthLabel,
+      label: event.label || result.scenarioLabel || result.scenarioId,
+      asset: key,
+      mode: "direct_asset",
+      directShockLabel: formatPercent(shockReturn),
+      marketFactorShockLabel: "-",
+      betaLabel: "-",
+      sourceName: "-",
+      asOfDate: "-",
+      betaWindow: "-",
+      methodVersion: "-",
+      sourceHashStatus: "-",
+    }));
+  });
+}
+
+function sameStableValue(left, right) {
+  return stableSerializeExternalShockFixtureValue(left) === stableSerializeExternalShockFixtureValue(right);
+}
+
+function validateScenarioComparisonBaselineIdentity(results, issues) {
+  if (results.length < 2) return;
+  const [first] = results;
+  for (const result of results.slice(1)) {
+    const firstContext = first.fixtureContext || {};
+    const resultContext = result.fixtureContext || {};
+    if (firstContext.portfolioFingerprint !== resultContext.portfolioFingerprint) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    if (first.baselineIdentityHash !== result.baselineIdentityHash) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    if (!sameStableValue(first.baselinePath, result.baselinePath)) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    if (!sameStableValue(first.contributionSeries, result.contributionSeries)) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    if (first.summary?.baselineTerminalValue !== result.summary?.baselineTerminalValue ||
+      first.baselineTerminalValue !== result.baselineTerminalValue) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    if (first.summary?.baselineMdd !== result.summary?.baselineMdd ||
+      first.baselineMdd !== result.baselineMdd) {
+      issues.push("scenario_baseline_identity_mismatch");
+    }
+    for (const field of [
+      "returnBasis",
+      "currencyMode",
+      "dataStartDate",
+      "dataEndDate",
+      "normalizationVersion",
+      "calculationPolicyVersion",
+      "pipelineVersion",
+    ]) {
+      if (first[field] !== result[field]) issues.push("scenario_baseline_identity_mismatch");
+    }
+  }
+}
+
 function createMethodology(result = {}) {
   const betaProvenanceCount = safeArray(result.shockEvents)
     .flatMap((event) => Object.values(event.betaProvenance || {}))
@@ -457,6 +550,7 @@ function createMethodology(result = {}) {
   return [
     { label: "scenarioId", value: result.scenarioId || "-" },
     { label: "scenarioLabel", value: result.scenarioLabel || "-" },
+    { label: "baselineIdentityHash", value: result.baselineIdentityHash ? "available" : "-" },
     { label: "shockMode", value: result.shockMode || "-" },
     { label: "returnBasis", value: result.returnBasis || "-" },
     { label: "rebalanceFrequency", value: result.rebalanceFrequency || "-" },
@@ -488,6 +582,7 @@ function createReadyViewModel({
     expectedInputHash: expectedInputHash || result.inputHash,
     expectedOutputHash: expectedOutputHash || result.outputHash,
     resultInputHash: result.inputHash,
+    baselineIdentityHash: result.baselineIdentityHash,
     resultOutputHash: result.outputHash,
     fixtureOnly: true,
     fixtureContext: result.fixtureContext,
@@ -503,6 +598,7 @@ function createReadyViewModel({
       selected: item.scenarioId === result.scenarioId,
     })),
     scenarioComparisonRows: createScenarioComparisonRows(comparisonResults),
+    shockAssumptionRows: createShockAssumptionRows(result),
     chart: {
       ariaLabel: "외부충격분석 기준 경로와 충격 경로 차트",
       baselinePath: result.baselinePath,
@@ -529,6 +625,7 @@ function createReadyViewModel({
     audit: {
       sourceHashCount: safeArray(result.sourceHashes).length,
       outputHash: result.outputHash,
+      baselineIdentityHash: result.baselineIdentityHash,
       betaApplied: result.betaApplied,
       cagrCalibrationApplied: result.cagrCalibrationApplied,
       historicalMddApplied: result.historicalMddApplied,
@@ -587,6 +684,7 @@ export function buildExternalShockScenarioViewModel({
           methodology: createMethodology(candidate),
           fixtureOnly: true,
           resultInputHash: candidate.inputHash,
+          baselineIdentityHash: candidate.baselineIdentityHash,
           resultOutputHash: candidate.outputHash,
           audit: {
             sourceHashCount: safeArray(candidate.sourceHashes).length,
@@ -634,6 +732,17 @@ export function buildExternalShockScenarioViewModel({
       status: "blocked",
       selectedPortfolioName,
       reasons: issues,
+      fixtureContext: candidateResults[0]?.fixtureContext || null,
+    });
+  }
+
+  validateScenarioComparisonBaselineIdentity(validatedResults, issues);
+
+  if (issues.includes("scenario_baseline_identity_mismatch")) {
+    return createStatusViewModel({
+      status: "blocked",
+      selectedPortfolioName,
+      reasons: Array.from(new Set(issues)),
       fixtureContext: candidateResults[0]?.fixtureContext || null,
     });
   }

@@ -599,6 +599,29 @@ function buildRowSourceLineage(baselineRows) {
   }));
 }
 
+function buildBaselineIdentityPayload({ portfolioId, assets, settings, baselineRows, metadata }) {
+  return {
+    portfolioId: String(portfolioId || ""),
+    assets: assets.map((asset) => ({
+      market: asset.market,
+      ticker: asset.ticker,
+      key: asset.key,
+      targetWeight: asset.targetWeight,
+    })),
+    settings,
+    baselineRows,
+    rowSourceLineage: buildRowSourceLineage(baselineRows),
+    returnBasis: metadata.returnBasis,
+    currencyMode: metadata.currencyMode,
+    sourceHashes: metadata.sourceHashes,
+    dataStartDate: baselineRows[0]?.month || null,
+    dataEndDate: baselineRows.at(-1)?.month || null,
+    normalizationVersion: metadata.normalizationVersion,
+    calculationPolicyVersion: metadata.calculationPolicyVersion,
+    pipelineVersion: metadata.pipelineVersion,
+  };
+}
+
 function buildBlockedResult({ input = {}, status = "blocked", reasons = [], normalizedInput = null }) {
   const rows = input?.baselineReturnMatrix || input?.monthlyReturnMatrix || [];
   const sourceHashes = collectEffectiveSourceHashes(input?.metadata?.sourceHashes, rows);
@@ -611,6 +634,7 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
     assets: input?.assets || null,
     sourceHashes,
   });
+  const baselineIdentityHash = normalizedInput?.baselineIdentityHash || null;
   const resultWithoutHash = {
     status,
     scenarioVersion: EXTERNAL_SHOCK_SCENARIO_VERSION,
@@ -629,6 +653,7 @@ function buildBlockedResult({ input = {}, status = "blocked", reasons = [], norm
     calculationPolicyVersion: input?.metadata?.calculationPolicyVersion || null,
     pipelineVersion: input?.metadata?.pipelineVersion || null,
     inputHash,
+    baselineIdentityHash,
     dataQuality: {
       status,
       blockReasons: reasons,
@@ -672,10 +697,20 @@ export function buildExternalShockScenario(input = {}) {
     const baselineRows = normalizeBaselineRows(rawRows, assets, settings, metadata);
     const shock = normalizeShockEvents({ scenario: input.scenario, assets, settings });
     const rowSourceLineage = buildRowSourceLineage(baselineRows);
+    const baselineIdentityPayload = buildBaselineIdentityPayload({
+      portfolioId: input.portfolioId,
+      assets,
+      settings,
+      baselineRows,
+      metadata,
+    });
+    const baselineIdentityHash = sha256ExternalShockValue(baselineIdentityPayload);
     const normalizedInput = {
       portfolioId: String(input.portfolioId || ""),
       assets,
       settings,
+      baselineIdentityHash,
+      baselineIdentityPayload,
       scenario: {
         scenarioId: shock.scenarioId,
         scenarioLabel: shock.scenarioLabel,
@@ -718,6 +753,7 @@ export function buildExternalShockScenario(input = {}) {
       calculationPolicyVersion: metadata.calculationPolicyVersion,
       pipelineVersion: metadata.pipelineVersion,
       inputHash,
+      baselineIdentityHash,
       dataQuality: {
         status: "ready",
         blockReasons: [],
