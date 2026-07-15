@@ -18,7 +18,16 @@ test("billing method display route is mounted before legacy route and returns on
   );
   assert.match(displaySource, /"33": "우리카드"/);
   assert.match(displaySource, /W1: "우리카드"/);
-  assert.match(displaySource, /CASE\s+WHEN[\s\S]*recurringPaymentMethodId[\s\S]*ELSE 1/);
+  assert.match(displaySource, /p\.metadata->>'recurringPaymentMethodId' = rpm\.id::text/);
+  assert.match(displaySource, /pe\.payload->>'recurringPaymentMethodId' = rpm\.id::text/);
+  assert.match(displaySource, /pe\.payload->>'orderId' = rpm\.metadata->>'orderId'/);
+  assert.match(displaySource, /pe\.event_type IN \('billing\.key\.issued', 'billing\.first_payment\.confirmed'\)/);
+  assert.match(displaySource, /const providerSummary = buildPaymentMethodSummary\([\s\S]*\.\.\.paymentEventCandidates,[\s\S]*row\.payment_metadata/);
+  assert.ok(
+    displaySource.indexOf("providerSummary ||") < displaySource.indexOf("buildStoredPaymentMethodSummary(row)"),
+    "related provider metadata must be considered before the stored row fallback"
+  );
+  assert.doesNotMatch(displaySource, /relation_rank|ELSE 1/);
   assert.match(displaySource, /payment_metadata_candidates/);
   assert.match(displaySource, /payment_event_candidates/);
   assert.match(displaySource, /jsonb_agg\(candidate\.metadata/);

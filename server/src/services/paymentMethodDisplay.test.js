@@ -143,8 +143,70 @@ test("payment method display reads Toss card aliases from provider response meta
 
 test("payment method display extracts safe tails from stored masked values", () => {
   assert.equal(getMaskedTail("****-****-****-9121"), "9121");
+  assert.equal(getMaskedTail("53872082****912*"), "912*");
   assert.equal(getMaskedTail("9121"), "9121");
   assert.equal(getMaskedTail("****"), "");
+});
+
+test("payment method display preserves an incomplete Toss masked tail without inventing a digit", () => {
+  const summary = buildPaymentMethodSummary({
+    card: {
+      issuerCode: "33",
+      acquirerCode: "31",
+      number: "53872082****912*",
+    },
+  });
+
+  assert.equal(summary.displayLabel, "우리카드 · **** 912*");
+  assert.equal(summary.cardCompany, "우리카드");
+  assert.equal(summary.cardLast4, null);
+  assert.equal(summary.maskedCardNumber, "53872082****912*");
+  assert.doesNotMatch(summary.displayLabel, /2912/);
+});
+
+test("Billing issue metadata wins when it is passed before first payment metadata", () => {
+  const summary = buildPaymentMethodSummary(
+    { card: { issuerCode: "33", acquirerCode: "31", number: "53872082****912*" } },
+    { card: { issuerCode: "33", number: "12345678****1234" } }
+  );
+
+  assert.equal(summary.displayLabel, "우리카드 · **** 912*");
+  assert.equal(summary.cardLast4, null);
+  assert.equal(summary.maskedCardNumber, "53872082****912*");
+});
+
+test("payment method display stores last4 only when the masked tail is four digits", () => {
+  const summary = buildPaymentMethodSummary({
+    card: {
+      issuerCode: "33",
+      number: "12345678****1234",
+    },
+  });
+
+  assert.equal(summary.displayLabel, "우리카드 · **** 1234");
+  assert.equal(summary.cardLast4, "1234");
+  assert.equal(summary.maskedCardNumber, "12345678****1234");
+});
+
+test("stored payment method keeps masked tail semantics and safe metadata-free fallback", () => {
+  const masked = buildStoredPaymentMethodSummary({
+    display_label: "우리카드 · **** 912*",
+    card_company: "우리카드",
+    card_last4: null,
+    masked_card_number: "53872082****912*",
+  });
+  const fallback = buildStoredPaymentMethodSummary({
+    display_label: "우리카드",
+    card_company: "우리카드",
+    card_last4: null,
+    masked_card_number: null,
+  });
+
+  assert.equal(masked.displayLabel, "우리카드 · **** 912*");
+  assert.equal(masked.cardLast4, null);
+  assert.equal(masked.maskedCardNumber, "53872082****912*");
+  assert.equal(fallback.displayLabel, "우리카드");
+  assert.equal(fallback.cardLast4, null);
 });
 
 test("payment method display extracts Toss last4 aliases without exposing front digits", () => {

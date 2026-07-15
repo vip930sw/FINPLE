@@ -145,22 +145,6 @@ function assertBillingKeyIssueResponse(payload, expectedCustomerKey) {
   }
 }
 
-function getCardSummary(payload) {
-  const card = payload?.card || {};
-  const maskedNumber = String(card.number || card.cardNumber || "").trim();
-  const digits = maskedNumber.replace(/\D/g, "");
-  const last4 = digits.length >= 4 ? digits.slice(-4) : "";
-  const company = String(card.company || card.issuerCode || payload?.method || "카드").trim();
-  const label = last4 ? `${company} **** ${last4}` : company;
-  return {
-    method: payload?.method || "카드",
-    cardCompany: company,
-    cardLast4: last4 || null,
-    maskedCardNumber: maskedNumber || null,
-    displayLabel: label,
-  };
-}
-
 function getBillingCardSummary(...sources) {
   const primary = sources[0] || {};
   return buildPaymentMethodSummary(...sources) || {
@@ -336,11 +320,12 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
 
   const cardSummary = getBillingCardSummary(issuePayload);
   const safeIssuePayload = sanitizeBillingKeyIssuePayload(issuePayload);
+  const billingKeyIssuedEventId = `${orderId}:billing-key-issued`;
 
   try {
     return await withTransaction(async (tx) => {
       await ensureRecurringPaymentMethodSchema(tx);
-      const recentPaymentCardSummary = cardSummary.cardLast4
+      const recentPaymentCardSummary = cardSummary.cardLast4 || cardSummary.maskedCardNumber
         ? null
         : await getRecentConfirmedPaymentCardSummary(user.id, tx);
       const storedCardSummary = canUseRecentPaymentCardSummary(cardSummary, recentPaymentCardSummary)
@@ -412,7 +397,7 @@ async function storeBillingKeyIssue({ user, orderId, authKey, customerKey, issue
            processed_at = NOW()`,
         [
           randomUUID(),
-          issuePayload.billingKey || `${orderId}:billing-key-issued`,
+          billingKeyIssuedEventId,
           user.id,
           JSON.stringify({
             orderId,

@@ -168,14 +168,16 @@ function summarizeCardFromPayload(payload, row = {}) {
     payload.acquirerCode,
     row.card_company
   );
-  const tail = getCardNumberCandidates(card, payload, row).map(getMaskedTail).find(Boolean);
+  const numberCandidate = getCardNumberCandidates(card, payload, row).find((value) => getMaskedTail(value));
+  const tail = getMaskedTail(numberCandidate);
 
   if (!tail) return null;
 
   return {
     displayLabel: formatCardDisplayLabel(company, tail),
     cardCompany: company,
-    cardLast4: tail,
+    cardLast4: /^\d{4}$/.test(tail) ? tail : null,
+    maskedCardNumber: String(numberCandidate || "").includes("*") ? String(numberCandidate).replace(/[^0-9*]/g, "") : null,
     cardBrandKey: normalizeCardCode(card.issuerCode || card.acquirerCode || row.card_company),
     source: "payment_metadata",
   };
@@ -191,7 +193,8 @@ function summarizeCardFromRow(row) {
     return {
       displayLabel: formatCardDisplayLabel(company, tail),
       cardCompany: company,
-      cardLast4: tail,
+      cardLast4: /^\d{4}$/.test(tail) ? tail : null,
+      maskedCardNumber: row.masked_card_number || null,
       cardBrandKey: normalizeCardCode(row.card_company),
       source: "stored_method",
     };
@@ -226,8 +229,15 @@ function serializePaymentMethod(row) {
   const paymentEventCandidates = Array.isArray(row.payment_event_candidates)
     ? row.payment_event_candidates.filter((metadata) => metadata && typeof metadata === "object")
     : [];
+  const providerSummary = buildPaymentMethodSummary(
+    ...paymentEventCandidates,
+    row.payment_metadata,
+    ...paymentMetadataCandidates,
+    row.metadata
+  );
   const paymentSummary =
-    buildStoredPaymentMethodSummary(row, row.payment_metadata, ...paymentMetadataCandidates, ...paymentEventCandidates, row.metadata) ||
+    providerSummary ||
+    buildStoredPaymentMethodSummary(row) ||
     summarizeCardFromPayload(row.payment_metadata, row) ||
     paymentEventCandidates.map((metadata) => summarizeCardFromPayload(metadata, row)).find(Boolean) ||
     paymentMetadataCandidates.map((metadata) => summarizeCardFromPayload(metadata, row)).find(Boolean);
@@ -298,38 +308,37 @@ router.get("/toss/billing/method", async (request, response, next) => {
          WHERE p.provider = 'toss-payments'
            AND p.user_id = rpm.user_id
            AND p.status = 'confirmed'
-         ORDER BY
-           CASE
-             WHEN p.metadata->>'recurringPaymentMethodId' = rpm.id::text
-               OR p.metadata->>'customerKey' = rpm.customer_key
-               OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
-             THEN 0
-             ELSE 1
-           END,
-           COALESCE(p.paid_at, p.requested_at, p.created_at) DESC NULLS LAST
+           AND (
+             p.metadata->>'recurringPaymentMethodId' = rpm.id::text
+             OR (rpm.customer_key IS NOT NULL AND p.metadata->>'customerKey' = rpm.customer_key)
+             OR (rpm.metadata->>'authOrderId' IS NOT NULL AND p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId')
+             OR (rpm.metadata->>'firstPaymentOrderId' IS NOT NULL AND p.metadata->>'firstPaymentOrderId' = rpm.metadata->>'firstPaymentOrderId')
+             OR (rpm.metadata->>'orderId' IS NOT NULL AND p.metadata->>'orderId' = rpm.metadata->>'orderId')
+           )
+         ORDER BY COALESCE(p.paid_at, p.requested_at, p.created_at) DESC NULLS LAST
          LIMIT 1
        ) latest_payment ON TRUE
        LEFT JOIN LATERAL (
          SELECT COALESCE(
-           jsonb_agg(candidate.metadata ORDER BY candidate.relation_rank, candidate.payment_at DESC NULLS LAST),
+           jsonb_agg(candidate.metadata ORDER BY candidate.payment_at DESC NULLS LAST),
            '[]'::jsonb
          ) AS metadata_list
          FROM (
            SELECT p.metadata,
-                  COALESCE(p.paid_at, p.requested_at, p.created_at) AS payment_at,
-                  CASE
-                    WHEN p.metadata->>'recurringPaymentMethodId' = rpm.id::text
-                      OR p.metadata->>'customerKey' = rpm.customer_key
-                      OR p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId'
-                    THEN 0
-                    ELSE 1
-                  END AS relation_rank
+                  COALESCE(p.paid_at, p.requested_at, p.created_at) AS payment_at
              FROM payments p
             WHERE p.provider = 'toss-payments'
               AND p.user_id = rpm.user_id
               AND p.status = 'confirmed'
               AND p.metadata IS NOT NULL
-            ORDER BY relation_rank, payment_at DESC NULLS LAST
+              AND (
+                p.metadata->>'recurringPaymentMethodId' = rpm.id::text
+                OR (rpm.customer_key IS NOT NULL AND p.metadata->>'customerKey' = rpm.customer_key)
+                OR (rpm.metadata->>'authOrderId' IS NOT NULL AND p.metadata->>'authOrderId' = rpm.metadata->>'authOrderId')
+                OR (rpm.metadata->>'firstPaymentOrderId' IS NOT NULL AND p.metadata->>'firstPaymentOrderId' = rpm.metadata->>'firstPaymentOrderId')
+                OR (rpm.metadata->>'orderId' IS NOT NULL AND p.metadata->>'orderId' = rpm.metadata->>'orderId')
+              )
+            ORDER BY payment_at DESC NULLS LAST
             LIMIT 5
          ) candidate
        ) payment_candidates ON TRUE
@@ -343,8 +352,16 @@ router.get("/toss/billing/method", async (request, response, next) => {
              FROM payment_events pe
             WHERE pe.provider = 'toss-payments'
               AND pe.user_id = rpm.user_id
+              AND pe.event_type IN ('billing.key.issued', 'billing.first_payment.confirmed')
               AND pe.processing_status IN ('confirmed', 'processed')
               AND pe.payload IS NOT NULL
+              AND (
+                pe.payload->>'recurringPaymentMethodId' = rpm.id::text
+                OR (rpm.customer_key IS NOT NULL AND pe.payload->>'customerKey' = rpm.customer_key)
+                OR (rpm.metadata->>'authOrderId' IS NOT NULL AND pe.payload->>'authOrderId' = rpm.metadata->>'authOrderId')
+                OR (rpm.metadata->>'firstPaymentOrderId' IS NOT NULL AND pe.payload->>'firstPaymentOrderId' = rpm.metadata->>'firstPaymentOrderId')
+                OR (rpm.metadata->>'orderId' IS NOT NULL AND pe.payload->>'orderId' = rpm.metadata->>'orderId')
+              )
             ORDER BY pe.processed_at DESC NULLS LAST
             LIMIT 10
          ) event_candidate

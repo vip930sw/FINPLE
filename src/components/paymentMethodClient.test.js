@@ -11,7 +11,10 @@ test("payment method client includes safe bank and last4 display normalization",
   assert.match(source, /getSafeBillingMethodDisplayLabel/);
   assert.match(source, /33: "우리카드"/);
   assert.match(source, /W1: "우리카드"/);
-  assert.match(source, /getPaymentMethodLast4\(method\)/);
+  assert.match(source, /getPaymentMethodTail\(method\)/);
+  assert.match(source, /return \/\[0-9\]\/\.test\(tail\) \? tail : ""/);
+  assert.match(source, /getMaskedTail\(method\.maskedCardNumber\)/);
+  assert.match(source, /if \(\/\^\\d\{4\}\$\/\.test\(safeLast4\)\) method\.cardLast4 = safeLast4/);
   assert.match(source, /getCleanDisplayLabel\(resolvePaymentMethodCompanyLabel\(getPaymentMethodCompany\(method\)\), last4\)/);
   assert.match(safeDisplayBody, /`등록 카드 · \*\*\*\* \$\{last4\}`/);
   assert.match(safeDisplayBody, /return labelCompany/);
