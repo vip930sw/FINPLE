@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 
 import PortfolioManagerPanel from "./portfolio/components/PortfolioManagerPanel";
 import SimulatorTabNav from "./portfolio/components/SimulatorTabNav";
@@ -10,8 +10,11 @@ import ExternalShockAnalysisPanel from "./portfolio/components/ExternalShockAnal
 import AiAnalysisPanel from "./portfolio/components/AiAnalysisPanel";
 import FloatingPortfolioDropdown from "./portfolio/components/FloatingPortfolioDropdown";
 import usePortfolioSimulator from "./portfolio/hooks/usePortfolioSimulator";
-
-const PORTFOLIO_SIMULATOR_TABS = ["settings", "compare", "detail", "probability", "shock", "ai"];
+import {
+  createSimulatorHashNavigator,
+  getSimulatorTabAnchorId,
+  normalizeSimulatorTab,
+} from "./portfolio/utils/simulatorNavigation";
 
 const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   const { onActiveTabChange } = props || {};
@@ -90,13 +93,37 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     isEmptyAssetRow
   } = usePortfolioSimulator();
 
-  const effectiveActiveSimulatorTab = PORTFOLIO_SIMULATOR_TABS.includes(activeSimulatorTab)
-    ? activeSimulatorTab
-    : "settings";
+  const effectiveActiveSimulatorTab = normalizeSimulatorTab(activeSimulatorTab);
+  const changeSimulatorTabRef = useRef(changeSimulatorTab);
+
+  useEffect(() => {
+    changeSimulatorTabRef.current = changeSimulatorTab;
+  }, [changeSimulatorTab]);
 
   useEffect(() => {
     onActiveTabChange?.(effectiveActiveSimulatorTab);
   }, [effectiveActiveSimulatorTab, onActiveTabChange]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hashNavigator = createSimulatorHashNavigator({
+      getHash: () => window.location.hash,
+      onTabChange(nextTab) {
+        changeSimulatorTabRef.current(nextTab);
+        window.setTimeout(() => {
+          document.getElementById(getSimulatorTabAnchorId(nextTab))?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 80);
+      },
+    });
+    const handleHashChange = () => hashNavigator.applyCurrentHash();
+
+    hashNavigator.applyCurrentHash();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   const scrollToSimulatorTop = useCallback(function scrollToSimulatorTop() {
     window.setTimeout(() => {
@@ -108,16 +135,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   }, []);
 
   const scrollToSimulatorTab = useCallback(function scrollToSimulatorTab(nextTab) {
-    const anchorMap = {
-      settings: "settings",
-      compare: "compare",
-      detail: "detail",
-      probability: "probability-analysis",
-      shock: "external-shock-analysis",
-      ai: "ai-analysis",
-    };
-
-    const anchorId = anchorMap[nextTab] || "simulator";
+    const anchorId = getSimulatorTabAnchorId(nextTab);
 
     window.setTimeout(() => {
       document.getElementById(anchorId)?.scrollIntoView({
@@ -128,10 +146,11 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
   }, []);
 
   const handleSimulatorTabChange = useCallback(function handleSimulatorTabChange(nextTab, options = {}) {
-    changeSimulatorTab(nextTab);
+    const normalizedTab = normalizeSimulatorTab(nextTab);
+    changeSimulatorTab(normalizedTab);
 
     if (options.scroll !== false) {
-      scrollToSimulatorTab(nextTab);
+      scrollToSimulatorTab(normalizedTab);
     }
   }, [changeSimulatorTab, scrollToSimulatorTab]);
 
