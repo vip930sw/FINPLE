@@ -15,9 +15,11 @@ import {
 } from "../fixtures/externalShockScenarioResultFixture.js";
 import {
   buildExternalShockScenarioViewModel,
+  getExternalShockPortfolioFingerprint,
 } from "./externalShockScenarioAdapter.js";
 import {
   buildProbabilityScenarioViewModel,
+  getProbabilityPortfolioFingerprint,
 } from "./probabilityScenarioAdapter.js";
 import {
   AI_SCENARIO_APPROVAL_EVIDENCE_VERSION,
@@ -58,8 +60,42 @@ function makeApprovalEvidence(result, portfolioFingerprint) {
   };
 }
 
+const SYNTHETIC_PROBABILITY_PORTFOLIO = { id: "synthetic-provider-probability", name: "Synthetic probability" };
+const SYNTHETIC_PROBABILITY_SETTINGS = {
+  startValue: 1000000,
+  monthlyCashFlow: 100000,
+  years: 1,
+  investmentMonths: 12,
+  inflationRate: 0.02,
+  dividendReinvest: true,
+};
+const SYNTHETIC_PROBABILITY_ASSETS = [
+  { market: "KR", ticker: "005930", targetWeight: 0.5, targetEvaluationAmount: 500000 },
+  { market: "KR", ticker: "069500", targetWeight: 0.5, targetEvaluationAmount: 500000 },
+];
+
+const SYNTHETIC_SHOCK_PORTFOLIO = { id: "synthetic-provider-shock", name: "Synthetic shock" };
+const SYNTHETIC_SHOCK_SETTINGS = {
+  startValue: 1000000,
+  initialInvestment: 1000000,
+  monthlyCashFlow: 100000,
+  monthlyContribution: 100000,
+  years: 1,
+  investmentMonths: 12,
+  inflationRate: 0.02,
+  dividendReinvest: true,
+};
+const SYNTHETIC_SHOCK_ASSETS = [
+  { market: "KR", ticker: "005930", targetWeight: 0.5, weight: 0.5, targetEvaluationAmount: 500000 },
+  { market: "KR", ticker: "069500", targetWeight: 0.5, weight: 0.5, targetEvaluationAmount: 500000 },
+];
+
 function probabilityReadyPair(resultPatch = {}, evidencePatch = {}) {
-  const portfolioFingerprint = "synthetic-provider-probability-fingerprint";
+  const portfolioFingerprint = getProbabilityPortfolioFingerprint({
+    portfolioId: SYNTHETIC_PROBABILITY_PORTFOLIO.id,
+    settings: SYNTHETIC_PROBABILITY_SETTINGS,
+    assets: SYNTHETIC_PROBABILITY_ASSETS,
+  });
   const result = {
     status: "ready",
     scenarioVersion: "probabilistic-scenario-v1-step114-2f",
@@ -81,6 +117,39 @@ function probabilityReadyPair(resultPatch = {}, evidencePatch = {}) {
     betaApplied: false,
     cagrCalibrationApplied: false,
     historicalMddApplied: false,
+    percentiles: [0.1, 0.25, 0.5, 0.75, 0.9],
+    monthlyBands: [
+      {
+        monthIndex: 0,
+        p10Nominal: 100,
+        p25Nominal: 100,
+        p50Nominal: 100,
+        p75Nominal: 100,
+        p90Nominal: 100,
+        p10Real: 100,
+        p25Real: 100,
+        p50Real: 100,
+        p75Real: 100,
+        p90Real: 100,
+      },
+      {
+        monthIndex: 1,
+        p10Nominal: 101,
+        p25Nominal: 103,
+        p50Nominal: 105,
+        p75Nominal: 107,
+        p90Nominal: 109,
+        p10Real: 100,
+        p25Real: 102,
+        p50Real: 104,
+        p75Real: 106,
+        p90Real: 108,
+      },
+    ],
+    contributionSeries: [
+      { monthIndex: 0, cumulativeContributions: 1000000 },
+      { monthIndex: 1, cumulativeContributions: 1100000 },
+    ],
     terminalValue: { p10: 100, p25: 125, p50: 150, p75: 185, p90: 220 },
     principalShortfallProbability: { month12: null, month36: 0.2, month60: 0.1 },
     scenarioMdd: { p10: -0.4, p25: -0.32, p50: -0.25, p75: -0.17, p90: -0.1 },
@@ -89,28 +158,27 @@ function probabilityReadyPair(resultPatch = {}, evidencePatch = {}) {
       longestRecoveryMonths: 36,
       unrecoveredScenarioRatio: 0.1,
     },
+    dataQuality: { status: "ready", blockReasons: [] },
+    assets: SYNTHETIC_PROBABILITY_ASSETS,
     ...resultPatch,
   };
-  const approvalEvidence = { ...makeApprovalEvidence(result, portfolioFingerprint), ...evidencePatch };
-  const evidenceValid = approvalEvidence.evidenceVersion === AI_SCENARIO_APPROVAL_EVIDENCE_VERSION &&
-    approvalEvidence.fixtureOnly === false &&
-    approvalEvidence.productionPublishReady === true &&
-    approvalEvidence.appExportApproved === true &&
-    approvalEvidence.sourceKind === "synthetic_non_fixture_contract" &&
-    approvalEvidence.sourceHashes.join("|") === [...result.sourceHashes].sort().join("|");
-  const viewModel = {
-    status: "ready",
-    portfolioFingerprint,
-    fixtureOnly: !evidenceValid,
-    productionPublishReady: evidenceValid,
-    appExportApproved: evidenceValid,
-    providerApprovalEvidence: evidenceValid ? approvalEvidence : null,
-  };
+  const approvalEvidence = evidencePatch === null ? null : { ...makeApprovalEvidence(result, portfolioFingerprint), ...evidencePatch };
+  const viewModel = buildProbabilityScenarioViewModel({
+    result,
+    activePortfolio: SYNTHETIC_PROBABILITY_PORTFOLIO,
+    assets: SYNTHETIC_PROBABILITY_ASSETS,
+    settings: SYNTHETIC_PROBABILITY_SETTINGS,
+    providerApprovalEvidence: approvalEvidence,
+  });
   return { result, viewModel };
 }
 
 function shockReadyPair(resultPatch = {}, evidencePatch = {}) {
-  const portfolioFingerprint = "synthetic-provider-shock-fingerprint";
+  const portfolioFingerprint = getExternalShockPortfolioFingerprint({
+    portfolioId: SYNTHETIC_SHOCK_PORTFOLIO.id,
+    settings: SYNTHETIC_SHOCK_SETTINGS,
+    assets: SYNTHETIC_SHOCK_ASSETS,
+  });
   const result = {
     status: "ready",
     scenarioVersion: "external-shock-scenario-v1-step114-2h",
@@ -140,6 +208,28 @@ function shockReadyPair(resultPatch = {}, evidencePatch = {}) {
     recoveryMonths: null,
     longestRecoveryMonths: 2,
     unrecovered: true,
+    rebalanceFrequency: "none",
+    inflationRate: 0.02,
+    betaApplied: false,
+    bootstrapApplied: false,
+    probabilityApplied: false,
+    cagrCalibrationApplied: false,
+    historicalMddApplied: false,
+    baselinePath: [
+      { monthIndex: 0, portfolioValue: 100, riskNav: 100, cumulativeContributions: 100 },
+      { monthIndex: 1, portfolioValue: 150, riskNav: 110, cumulativeContributions: 140 },
+      { monthIndex: 2, portfolioValue: 200, riskNav: 120, cumulativeContributions: 180 },
+    ],
+    stressedPath: [
+      { monthIndex: 0, portfolioValue: 100, riskNav: 100, cumulativeContributions: 100 },
+      { monthIndex: 1, portfolioValue: 135, riskNav: 95, cumulativeContributions: 140 },
+      { monthIndex: 2, portfolioValue: 180, riskNav: 96, cumulativeContributions: 180 },
+    ],
+    contributionSeries: [
+      { monthIndex: 0, cumulativeContributions: 100 },
+      { monthIndex: 1, cumulativeContributions: 140 },
+      { monthIndex: 2, cumulativeContributions: 180 },
+    ],
     shockEvents: [
       {
         monthIndex: 4,
@@ -154,23 +244,34 @@ function shockReadyPair(resultPatch = {}, evidencePatch = {}) {
       { market: "KR", ticker: "005930", key: "KR:005930", baselineTerminalValue: 100, stressedTerminalValue: 88, deltaValue: -12, deltaRate: -0.12 },
       { market: "KR", ticker: "069500", key: "KR:069500", baselineTerminalValue: 100, stressedTerminalValue: 92, deltaValue: -8, deltaRate: -0.08 },
     ],
+    rowSourceLineage: [
+      { monthIndex: 1, sourceHash: "synthetic-shock-source-a" },
+      { monthIndex: 2, sourceHash: "synthetic-shock-source-b" },
+    ],
+    summary: {
+      baselineTerminalValue: 200,
+      stressedTerminalValue: 180,
+      terminalDeltaValue: -20,
+      terminalDeltaRate: -0.1,
+      baselineMdd: -0.05,
+      stressedMdd: -0.2,
+      incrementalMdd: -0.15,
+      recoveryMonths: null,
+      longestRecoveryMonths: 2,
+      unrecovered: true,
+    },
+    dataQuality: { status: "ready", blockReasons: [] },
+    assets: SYNTHETIC_SHOCK_ASSETS,
     ...resultPatch,
   };
-  const approvalEvidence = { ...makeApprovalEvidence(result, portfolioFingerprint), ...evidencePatch };
-  const evidenceValid = approvalEvidence.evidenceVersion === AI_SCENARIO_APPROVAL_EVIDENCE_VERSION &&
-    approvalEvidence.fixtureOnly === false &&
-    approvalEvidence.productionPublishReady === true &&
-    approvalEvidence.appExportApproved === true &&
-    approvalEvidence.sourceKind === "synthetic_non_fixture_contract" &&
-    approvalEvidence.sourceHashes.join("|") === [...result.sourceHashes].sort().join("|");
-  const viewModel = {
-    status: "ready",
-    portfolioFingerprint,
-    fixtureOnly: !evidenceValid,
-    productionPublishReady: evidenceValid,
-    appExportApproved: evidenceValid,
-    providerApprovalEvidence: evidenceValid ? approvalEvidence : null,
-  };
+  const approvalEvidence = evidencePatch === null ? null : { ...makeApprovalEvidence(result, portfolioFingerprint), ...evidencePatch };
+  const viewModel = buildExternalShockScenarioViewModel({
+    result,
+    activePortfolio: SYNTHETIC_SHOCK_PORTFOLIO,
+    assets: SYNTHETIC_SHOCK_ASSETS,
+    settings: SYNTHETIC_SHOCK_SETTINGS,
+    providerApprovalEvidence: approvalEvidence,
+  });
   return { result, viewModel };
 }
 
@@ -243,6 +344,54 @@ test("approved shock-only context preserves KR leading zero and occurrence proba
   assert.equal(shock.assetImpact[0].ticker, "005930");
   assert.equal(shock.assetImpact[1].ticker, "069500");
   assert.equal(shock.terminalValue.deltaValue, result.terminalDeltaValue);
+});
+
+test("actual adapters produce approved non-fixture provider-eligible view models", () => {
+  const probability = probabilityReadyPair();
+  assert.equal(probability.viewModel.status, "ready");
+  assert.equal(probability.viewModel.fixtureOnly, false);
+  assert.equal(probability.viewModel.productionPublishReady, true);
+  assert.equal(probability.viewModel.appExportApproved, true);
+  assert.ok(probability.viewModel.providerApprovalEvidence);
+
+  const shock = shockReadyPair();
+  assert.equal(shock.viewModel.status, "ready");
+  assert.equal(shock.viewModel.fixtureOnly, false);
+  assert.equal(shock.viewModel.productionPublishReady, true);
+  assert.equal(shock.viewModel.appExportApproved, true);
+  assert.ok(shock.viewModel.providerApprovalEvidence);
+});
+
+test("actual adapters block non-fixture results with missing or invalid evidence and keep absent result idle", () => {
+  const missingProbability = probabilityReadyPair({}, null);
+  assert.equal(missingProbability.viewModel.status, "blocked");
+  assert.ok(missingProbability.viewModel.auditReasons.includes("providerApprovalEvidence_invalid"));
+
+  const invalidProbability = probabilityReadyPair({}, { sourceHashes: ["synthetic-source-a"] });
+  assert.equal(invalidProbability.viewModel.status, "blocked");
+  assert.ok(invalidProbability.viewModel.auditReasons.includes("providerApprovalEvidence_invalid"));
+
+  const missingShock = shockReadyPair({}, null);
+  assert.equal(missingShock.viewModel.status, "blocked");
+  assert.ok(missingShock.viewModel.auditReasons.includes("providerApprovalEvidence_invalid"));
+
+  const invalidShock = shockReadyPair({}, { evidenceVersion: "wrong" });
+  assert.equal(invalidShock.viewModel.status, "blocked");
+  assert.ok(invalidShock.viewModel.auditReasons.includes("providerApprovalEvidence_invalid"));
+
+  const idleProbability = buildProbabilityScenarioViewModel({
+    activePortfolio: SYNTHETIC_PROBABILITY_PORTFOLIO,
+    assets: SYNTHETIC_PROBABILITY_ASSETS,
+    settings: SYNTHETIC_PROBABILITY_SETTINGS,
+  });
+  assert.equal(idleProbability.status, "idle");
+
+  const idleShock = buildExternalShockScenarioViewModel({
+    activePortfolio: SYNTHETIC_SHOCK_PORTFOLIO,
+    assets: SYNTHETIC_SHOCK_ASSETS,
+    settings: SYNTHETIC_SHOCK_SETTINGS,
+  });
+  assert.equal(idleShock.status, "idle");
 });
 
 test("eligible adapter context enters payload and cache signature without full paths", () => {

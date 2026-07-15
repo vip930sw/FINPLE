@@ -10,6 +10,7 @@ export const AI_SCENARIO_CONTEXT_LIMITS = Object.freeze({
   maxAssetImpact: 20,
   maxBetaProvenance: 20,
   maxStringLength: 180,
+  maxPortfolioFingerprintLength: 1024,
 });
 
 const HASH_PATTERN = /^[a-f0-9]{64}$/i;
@@ -77,6 +78,16 @@ function validateShortString(value, path, issues, { required = true, pattern = n
   }
   if (text.length > AI_SCENARIO_CONTEXT_LIMITS.maxStringLength) addIssue(issues, `${path}_too_long`);
   if (pattern && !pattern.test(text)) addIssue(issues, `${path}_invalid`);
+  return text;
+}
+
+function validatePortfolioFingerprint(value, path, issues) {
+  const text = cleanString(value);
+  if (!text) {
+    addIssue(issues, `${path}_missing`);
+    return "";
+  }
+  if (text.length > AI_SCENARIO_CONTEXT_LIMITS.maxPortfolioFingerprintLength) addIssue(issues, `${path}_too_long`);
   return text;
 }
 
@@ -162,8 +173,11 @@ function validateApprovalEvidence(viewModel, result, currentPortfolioFingerprint
   if (evidence.productionPublishReady !== true || viewModel?.productionPublishReady !== true) addIssue(issues, `${section}_productionPublishReady_not_true`);
   if (evidence.appExportApproved !== true || viewModel?.appExportApproved !== true) addIssue(issues, `${section}_appExportApproved_not_true`);
   if (cleanString(evidence.sourceKind) !== "synthetic_non_fixture_contract") addIssue(issues, `${section}_sourceKind_not_provider_contract`);
-  if (cleanString(evidence.portfolioFingerprint) !== cleanString(currentPortfolioFingerprint)) addIssue(issues, `${section}_portfolioFingerprint_mismatch`);
-  if (cleanString(evidence.portfolioFingerprint) !== cleanString(viewModel?.portfolioFingerprint)) addIssue(issues, `${section}_viewModelFingerprint_mismatch`);
+  const evidenceFingerprint = validatePortfolioFingerprint(evidence.portfolioFingerprint, `${section}_approvalPortfolioFingerprint`, issues);
+  const currentFingerprint = validatePortfolioFingerprint(currentPortfolioFingerprint, `${section}_currentPortfolioFingerprint`, issues);
+  const viewModelFingerprint = validatePortfolioFingerprint(viewModel?.portfolioFingerprint, `${section}_viewModelPortfolioFingerprint`, issues);
+  if (evidenceFingerprint !== currentFingerprint) addIssue(issues, `${section}_portfolioFingerprint_mismatch`);
+  if (evidenceFingerprint !== viewModelFingerprint) addIssue(issues, `${section}_viewModelFingerprint_mismatch`);
   if (cleanString(evidence.inputHash) !== cleanString(result?.inputHash)) addIssue(issues, `${section}_approvalInputHash_mismatch`);
   if (cleanString(evidence.outputHash) !== cleanString(result?.outputHash)) addIssue(issues, `${section}_approvalOutputHash_mismatch`);
   if (cleanString(evidence.normalizationVersion) !== cleanString(result?.normalizationVersion)) addIssue(issues, `${section}_approvalNormalizationVersion_mismatch`);
@@ -180,7 +194,7 @@ function validateApprovalEvidence(viewModel, result, currentPortfolioFingerprint
     productionPublishReady: true,
     appExportApproved: true,
     sourceKind: "synthetic_non_fixture_contract",
-    portfolioFingerprint: cleanString(evidence.portfolioFingerprint),
+    portfolioFingerprint: evidenceFingerprint,
     inputHash: cleanString(evidence.inputHash),
     outputHash: cleanString(evidence.outputHash),
     sourceHashes: evidenceHashes,

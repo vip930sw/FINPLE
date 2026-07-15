@@ -545,27 +545,41 @@ export function buildProbabilityScenarioViewModel({
     assets,
   });
 
-  if (!enableFixtureReview || !result) {
+  if (!result) {
     return createStatusViewModel({
       status: "idle",
       selectedPortfolioName,
-      reasons: enableFixtureReview ? ["precomputed_result_missing"] : ["fixture_review_gate_disabled"],
+      reasons: ["precomputed_result_missing"],
     });
   }
 
   const status = normalizeStatus(result.status);
   const issues = [];
+  const hasFixtureContext = isPlainObject(result.fixtureContext);
+  const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   validateContractHeader(result, issues);
 
   if (status === "ready") {
-    validateFixtureContext({
-      result,
-      fixtureContext: result.fixtureContext,
-      fingerprint,
-      expectedInputHash,
-      expectedOutputHash,
-      issues,
-    });
+    if (hasFixtureContext) {
+      if (!enableFixtureReview) {
+        return createStatusViewModel({
+          status: "idle",
+          selectedPortfolioName,
+          reasons: ["fixture_review_gate_disabled"],
+          fixtureContext: result.fixtureContext || null,
+        });
+      }
+      validateFixtureContext({
+        result,
+        fixtureContext: result.fixtureContext,
+        fingerprint,
+        expectedInputHash,
+        expectedOutputHash,
+        issues,
+      });
+    } else if (!approvalEvidence) {
+      issues.push("providerApprovalEvidence_invalid");
+    }
     validateReadyResult(result, issues);
   }
 
@@ -607,6 +621,14 @@ export function buildProbabilityScenarioViewModel({
   }
 
   if (status !== "ready") {
+    if (!hasFixtureContext || !enableFixtureReview) {
+      return createStatusViewModel({
+        status: "blocked",
+        selectedPortfolioName,
+        reasons: ["providerApprovalEvidence_invalid"],
+        fixtureContext: result.fixtureContext || null,
+      });
+    }
     return {
       ...createStatusViewModel({
         status,
@@ -637,7 +659,7 @@ export function buildProbabilityScenarioViewModel({
     fingerprint,
     expectedInputHash,
     expectedOutputHash,
-    providerApprovalEvidence,
+    providerApprovalEvidence: hasFixtureContext ? null : approvalEvidence,
   });
 }
 

@@ -698,11 +698,11 @@ export function buildExternalShockScenarioViewModel({
     ? scenarioResults
     : (result ? [result] : []);
 
-  if (!enableFixtureReview || candidateResults.length === 0) {
+  if (candidateResults.length === 0) {
     return createStatusViewModel({
       status: "idle",
       selectedPortfolioName,
-      reasons: enableFixtureReview ? ["precomputed_result_missing"] : ["fixture_review_gate_disabled"],
+      reasons: ["precomputed_result_missing"],
     });
   }
 
@@ -711,10 +711,20 @@ export function buildExternalShockScenarioViewModel({
   const seenScenarioIds = new Set();
   for (const candidate of candidateResults) {
     const status = normalizeStatus(candidate.status);
+    const hasFixtureContext = isPlainObject(candidate.fixtureContext);
+    const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, candidate, fingerprint);
     validateContractHeader(candidate, issues);
     if (seenScenarioIds.has(candidate.scenarioId)) issues.push(`duplicate_scenarioId:${candidate.scenarioId}`);
     seenScenarioIds.add(candidate.scenarioId);
     if (status !== "ready") {
+      if (!hasFixtureContext || !enableFixtureReview) {
+        return createStatusViewModel({
+          status: "blocked",
+          selectedPortfolioName,
+          reasons: ["providerApprovalEvidence_invalid"],
+          fixtureContext: candidate.fixtureContext || null,
+        });
+      }
       if (candidateResults.length === 1) {
         return {
           ...createStatusViewModel({
@@ -742,14 +752,26 @@ export function buildExternalShockScenarioViewModel({
       issues.push(`scenario_not_ready:${candidate.scenarioId || "unknown"}`);
       continue;
     }
-    validateFixtureContext({
-      result: candidate,
-      fixtureContext: candidate.fixtureContext,
-      fingerprint,
-      expectedInputHash,
-      expectedOutputHash,
-      issues,
-    });
+    if (hasFixtureContext) {
+      if (!enableFixtureReview) {
+        return createStatusViewModel({
+          status: "idle",
+          selectedPortfolioName,
+          reasons: ["fixture_review_gate_disabled"],
+          fixtureContext: candidate.fixtureContext || null,
+        });
+      }
+      validateFixtureContext({
+        result: candidate,
+        fixtureContext: candidate.fixtureContext,
+        fingerprint,
+        expectedInputHash,
+        expectedOutputHash,
+        issues,
+      });
+    } else if (!approvalEvidence) {
+      issues.push("providerApprovalEvidence_invalid");
+    }
     validateReadyResult(candidate, issues);
     validatedResults.push(candidate);
   }
@@ -805,7 +827,7 @@ export function buildExternalShockScenarioViewModel({
     expectedInputHash,
     expectedOutputHash,
     validatedResults,
-    providerApprovalEvidence,
+    providerApprovalEvidence: selectedResult.fixtureContext ? null : providerApprovalEvidence,
   });
 }
 

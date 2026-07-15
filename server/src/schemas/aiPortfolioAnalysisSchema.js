@@ -16,6 +16,7 @@ const AI_SCENARIO_CONTEXT_LIMITS = {
   maxAssetImpact: 20,
   maxBetaProvenance: 20,
   maxStringLength: 180,
+  maxPortfolioFingerprintLength: 1024,
 };
 
 const NUMERIC_LIMITS = {
@@ -101,7 +102,7 @@ function normalizeNumericField(source, field, path, errors) {
   return validateNumberRange(value, field, `${path}.${field}`, errors);
 }
 
-function validateRequiredString(value, path, errors, { hash = false, sourceHash = false } = {}) {
+function validateRequiredString(value, path, errors, { hash = false, sourceHash = false, maxLength = AI_SCENARIO_CONTEXT_LIMITS.maxStringLength } = {}) {
   const text = clean(value);
   if (!text) {
     errors.push(`${path} is required.`);
@@ -109,7 +110,7 @@ function validateRequiredString(value, path, errors, { hash = false, sourceHash 
   }
   if (hash && !HASH_PATTERN.test(text)) errors.push(`${path} must be a sha256 hash.`);
   if (sourceHash && !SOURCE_HASH_PATTERN.test(text)) errors.push(`${path} is invalid.`);
-  if (text.length > AI_SCENARIO_CONTEXT_LIMITS.maxStringLength) errors.push(`${path} exceeds ${AI_SCENARIO_CONTEXT_LIMITS.maxStringLength} characters.`);
+  if (text.length > maxLength) errors.push(`${path} exceeds ${maxLength} characters.`);
   return text;
 }
 
@@ -208,7 +209,9 @@ function normalizeApprovalEvidence(evidence, path, section, errors) {
     productionPublishReady: true,
     appExportApproved: true,
     sourceKind: "synthetic_non_fixture_contract",
-    portfolioFingerprint: validateRequiredString(evidence.portfolioFingerprint, `${path}.portfolioFingerprint`, errors),
+    portfolioFingerprint: validateRequiredString(evidence.portfolioFingerprint, `${path}.portfolioFingerprint`, errors, {
+      maxLength: AI_SCENARIO_CONTEXT_LIMITS.maxPortfolioFingerprintLength,
+    }),
     inputHash: validateRequiredString(evidence.inputHash, `${path}.inputHash`, errors, { hash: true }),
     outputHash: validateRequiredString(evidence.outputHash, `${path}.outputHash`, errors, { hash: true }),
     sourceHashes: normalizeSourceHashes(evidence.sourceHashes, `${path}.sourceHashes`, errors),
@@ -598,7 +601,9 @@ function normalizeScenarioInterpretationContext(context, errors) {
     target: providerContext.target,
     interpretationOnly: true,
     calculationsImmutable: true,
-    portfolioFingerprint: validateRequiredString(providerContext.portfolioFingerprint, `${path}.portfolioFingerprint`, errors),
+    portfolioFingerprint: validateRequiredString(providerContext.portfolioFingerprint, `${path}.portfolioFingerprint`, errors, {
+      maxLength: AI_SCENARIO_CONTEXT_LIMITS.maxPortfolioFingerprintLength,
+    }),
     includedSections: Array.isArray(providerContext.includedSections) ? [...new Set(providerContext.includedSections)].sort() : [],
     sections: {},
     disclaimers: Array.isArray(providerContext.disclaimers) ? providerContext.disclaimers.map(clean).filter(Boolean) : [],
