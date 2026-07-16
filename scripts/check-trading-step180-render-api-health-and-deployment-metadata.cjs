@@ -90,7 +90,12 @@ function assertHealthRoutesRemainSplit() {
   if (!indexText.includes("deployment: getDeploymentInfo()")) fail("/api/health must report deployment metadata");
   if (!indexText.includes('app.use("/api/db", dbRoutes);')) fail("/api/db router mount missing");
   if (!dbRoutesText.includes('router.get("/health"')) fail("/api/db/health route missing");
-  if (!dbRoutesText.includes("checkDatabaseConnection()")) fail("/api/db/health must check DB independently");
+  if (!/checkDatabaseConnection\(\{\s*timeoutMs:/.test(dbRoutesText)) {
+    fail("/api/db/health must check DB independently with an explicit timeout");
+  }
+  if (!/FINPLE_READINESS_DB_TIMEOUT_MS\s*\|\|\s*4500/.test(dbRoutesText)) {
+    fail("/api/db/health must retain the readiness DB timeout environment fallback");
+  }
 }
 
 function assertDeploymentMetadataPrefersRenderPlatform() {
@@ -126,7 +131,7 @@ function assertProductionCheckStillUsesHealthMetadata() {
   for (const snippet of [
     "https://finple-api.onrender.com/api",
     "requestJson(`${apiBaseUrl}/health`)",
-    "deployment?.branch === \"main\"",
+    'deployment?.branch === "main"',
     "deployment?.commitShortSha",
   ]) {
     if (!productionCheckText.includes(snippet)) fail(`production health check missing: ${snippet}`);

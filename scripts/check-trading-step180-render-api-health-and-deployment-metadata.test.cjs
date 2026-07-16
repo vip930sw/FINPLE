@@ -35,7 +35,8 @@ test("Step180 audits Render API health metadata without adding trading surfaces"
   assert.match(indexText, /app\.get\("\/api\/health"/);
   assert.match(indexText, /deployment: getDeploymentInfo\(\)/);
   assert.match(dbRoutesText, /router\.get\("\/health"/);
-  assert.match(dbRoutesText, /checkDatabaseConnection\(\)/);
+  assert.match(dbRoutesText, /checkDatabaseConnection\(\{\s*timeoutMs:/);
+  assert.match(dbRoutesText, /FINPLE_READINESS_DB_TIMEOUT_MS\s*\|\|\s*4500/);
 
   assert.match(
     packageJson.scripts["check:trading-step180-render-api-health-and-deployment-metadata"],
