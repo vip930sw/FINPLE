@@ -21,6 +21,12 @@ export const METRICS_APP_EXPORT_APPROVAL_CONTRACT_VERSION =
   "metrics-app-export-approval-v1-step114-2p";
 export const METRICS_POINTER_SNAPSHOT_CONTRACT_VERSION =
   "metrics-pointer-snapshot-v1-step114-2p";
+export const METRICS_TARGET_EXPORT_VERIFICATION_EVIDENCE_CONTRACT_VERSION =
+  "metrics-target-export-verification-evidence-v1-step114-2p";
+export const METRICS_TARGET_EXPORT_POLICY_VERSION =
+  "metrics-target-export-policy-v1-step114-2p";
+export const METRICS_TARGET_EXPORT_SCHEMA_VERSION =
+  "metrics-price-overlay-csv-schema-v1-step114-2p";
 
 export const METRICS_PRODUCTION_PUBLISH_APPROVAL_SCOPE =
   "metrics_production_publish_approval";
@@ -77,6 +83,19 @@ const REQUIRED_COMPONENTS = Object.freeze([
 ]);
 
 const TARGET_COMPONENT_ROLES = new Set(["us_price_metrics", "kr_price_metrics"]);
+const TARGET_EXPORT_HEADERS = Object.freeze([
+  "market",
+  "ticker",
+  "expectedCagr",
+  "priceCagr10y",
+  "mdd",
+  "beta",
+  "dataYears",
+  "benchmarkTicker",
+  "metricsStatus",
+  "metricsSource",
+  "reviewReason",
+]);
 const STABLE_COMPONENT_ROLES = new Set(
   REQUIRED_COMPONENTS.map((component) => component.role).filter(
     (role) => !TARGET_COMPONENT_ROLES.has(role),
@@ -333,6 +352,8 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
     appExportApprovalVerified: fields.appExportApprovalVerified === true,
     approvalPolicySatisfied: fields.approvalPolicySatisfied === true,
     currentPointerSnapshotVerified: fields.currentPointerSnapshotVerified === true,
+    targetExportVerificationEvidenceVerified:
+      fields.targetExportVerificationEvidenceVerified === true,
     targetPointerSnapshotVerified: fields.targetPointerSnapshotVerified === true,
     rollbackSnapshotVerified: fields.rollbackSnapshotVerified === true,
     cutoverPlanReady: fields.cutoverPlanReady === true,
@@ -393,6 +414,7 @@ function isIdleInput(input) {
     !isPlainObject(input.currentPointerSnapshot) &&
     !isPlainObject(input.targetPointerSnapshot) &&
     !isPlainObject(input.rollbackPointerSnapshot) &&
+    !isPlainObject(input.targetExportVerificationEvidence) &&
     !input.eligibilityEvidenceHash &&
     !input.eligibilityEvaluatedAt &&
     !Object.hasOwn(input, "activationDryRunEligible")
@@ -449,6 +471,8 @@ function parseFinalApprovalAllowlist(value, issues) {
   if (entries.length === 0) issues.push("final_approval_allowlist_empty");
   const seenKeyIds = new Set();
   const seenIdentityPairs = new Set();
+  const fingerprintOwners = new Map();
+  const normalizedEntries = [];
   for (const entry of entries) {
     if (!isPlainObject(entry)) {
       issues.push("final_approval_allowlist_entry_not_object");
@@ -482,8 +506,41 @@ function parseFinalApprovalAllowlist(value, issues) {
     if (entry.revoked !== false) {
       issues.push("final_approval_allowlist_entry_revoked_not_false");
     }
+    let publicKey = null;
+    let publicKeyFingerprint = "";
+    if (isNonBlankString(entry.publicKeyPem)) {
+      try {
+        publicKey = createPublicKey(entry.publicKeyPem);
+        if (publicKey.asymmetricKeyType !== "ed25519") {
+          issues.push("final_approval_allowlist_entry_public_key_not_ed25519");
+          publicKey = null;
+        } else {
+          const canonicalSpkiDer = publicKey.export({
+            type: "spki",
+            format: "der",
+          });
+          publicKeyFingerprint = sha256Hex(canonicalSpkiDer);
+          const existingKeyId = fingerprintOwners.get(publicKeyFingerprint);
+          if (existingKeyId && existingKeyId !== entry.signerKeyId) {
+            issues.push(
+              "final_approval_allowlist_duplicate_public_key_fingerprint",
+            );
+          } else if (!existingKeyId) {
+            fingerprintOwners.set(publicKeyFingerprint, entry.signerKeyId);
+          }
+        }
+      } catch {
+        issues.push("final_approval_allowlist_entry_public_key_invalid");
+        publicKey = null;
+      }
+    }
+    normalizedEntries.push({
+      ...entry,
+      __publicKey: publicKey,
+      __publicKeyFingerprint: publicKeyFingerprint,
+    });
   }
-  return entries;
+  return normalizedEntries;
 }
 
 function parseInstant(value) {
@@ -510,20 +567,6 @@ function decodeCanonicalSignature(value, issuePrefix, issues) {
   }
 }
 
-function parseEd25519PublicKey(entry, issuePrefix, issues) {
-  try {
-    const publicKey = createPublicKey(entry.publicKeyPem);
-    if (publicKey.asymmetricKeyType !== "ed25519") {
-      issues.push(`${issuePrefix}_public_key_not_ed25519`);
-      return null;
-    }
-    return publicKey;
-  } catch {
-    issues.push(`${issuePrefix}_public_key_invalid`);
-    return null;
-  }
-}
-
 function findAllowedFinalSigner(receipt, allowlistEntries, expectedScope, expectedRole, issuePrefix, issues) {
   const entry = allowlistEntries.find(
     (candidate) =>
@@ -545,10 +588,15 @@ function findAllowedFinalSigner(receipt, allowlistEntries, expectedScope, expect
   if (!Array.isArray(entry.roles) || !entry.roles.includes(expectedRole)) {
     issues.push(`${issuePrefix}_role_not_allowed`);
   }
-  const publicKey = isNonBlankString(entry.publicKeyPem)
-    ? parseEd25519PublicKey(entry, issuePrefix, issues)
-    : null;
-  return { entry, publicKey };
+  const publicKey = entry.__publicKey || null;
+  if (!publicKey) {
+    issues.push(`${issuePrefix}_public_key_invalid`);
+  }
+  return {
+    entry,
+    publicKey,
+    publicKeyFingerprint: entry.__publicKeyFingerprint || "",
+  };
 }
 
 function verifyFinalReceiptSignature(receipt, signer, issuePrefix, issues) {
@@ -570,15 +618,29 @@ function verifyFinalReceiptSignature(receipt, signer, issuePrefix, issues) {
   }
 }
 
-function validateReceiptTimestamps(receipt, policy, now, clockSkewMs, issuePrefix, issues) {
+function validateReceiptTimestamps(
+  receipt,
+  policy,
+  now,
+  eligibilityEvaluatedAtMs,
+  clockSkewMs,
+  issuePrefix,
+  issues,
+) {
   const issuedAt = parseInstant(receipt.issuedAt);
   const expiresAt = parseInstant(receipt.expiresAt);
   const nowMs = now.getTime();
   if (issuedAt === null) {
     issues.push(`${issuePrefix}_issued_at_invalid`);
   } else {
-    if (issuedAt > nowMs + clockSkewMs) {
+    if (issuedAt > nowMs) {
       issues.push(`${issuePrefix}_issued_at_in_future`);
+    }
+    if (
+      Number.isFinite(eligibilityEvaluatedAtMs) &&
+      issuedAt < eligibilityEvaluatedAtMs - clockSkewMs
+    ) {
+      issues.push(`${issuePrefix}_issued_before_eligibility_evaluation`);
     }
     if (
       Number.isInteger(policy.maxApprovalAgeHours) &&
@@ -664,7 +726,15 @@ function verifyFinalApprovalReceipt(
     }
   }
   validateReceiptBinding(receipt, context, issuePrefix, issues);
-  validateReceiptTimestamps(receipt, policy, now, clockSkewMs, issuePrefix, issues);
+  validateReceiptTimestamps(
+    receipt,
+    policy,
+    now,
+    context.eligibilityEvaluatedAtMs,
+    clockSkewMs,
+    issuePrefix,
+    issues,
+  );
   const signer = findAllowedFinalSigner(
     receipt,
     allowlistEntries,
@@ -677,6 +747,287 @@ function verifyFinalApprovalReceipt(
     ? verifyFinalReceiptSignature(receipt, signer, issuePrefix, issues)
     : false;
   return issues.length === beforeCount && signatureVerified;
+}
+
+function decodeCanonicalTargetExportBytes(value, issuePrefix, issues) {
+  if (!isNonEmptyString(value) || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    issues.push(`${issuePrefix}_content_base64_invalid`);
+    return null;
+  }
+  try {
+    const bytes = Buffer.from(value, "base64");
+    if (bytes.length === 0 || bytes.toString("base64") !== value) {
+      issues.push(`${issuePrefix}_content_base64_invalid`);
+      return null;
+    }
+    return bytes;
+  } catch {
+    issues.push(`${issuePrefix}_content_base64_invalid`);
+    return null;
+  }
+}
+
+function parseTargetCsvLine(line, issuePrefix, issues) {
+  const cells = [];
+  let current = "";
+  let insideQuotes = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    const nextCharacter = line[index + 1];
+    if (character === '"' && insideQuotes && nextCharacter === '"') {
+      current += '"';
+      index += 1;
+      continue;
+    }
+    if (character === '"') {
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+    if (character === "," && !insideQuotes) {
+      cells.push(current);
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+  if (insideQuotes) {
+    issues.push(`${issuePrefix}_csv_unclosed_quote`);
+    return null;
+  }
+  cells.push(current);
+  return cells;
+}
+
+function validateTargetCsvBytes(bytes, expectedMarket, declaredRowCount, issuePrefix, issues) {
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    issues.push(`${issuePrefix}_csv_utf8_invalid`);
+    return false;
+  }
+  const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+  while (lines.length > 0 && lines.at(-1) === "") lines.pop();
+  if (lines.length < 2) {
+    issues.push(`${issuePrefix}_csv_rows_missing`);
+    return false;
+  }
+  if (lines.some((line) => line.length === 0)) {
+    issues.push(`${issuePrefix}_csv_blank_row`);
+  }
+  const headerCells = parseTargetCsvLine(lines[0], issuePrefix, issues);
+  if (!headerCells) return false;
+  headerCells[0] = headerCells[0].replace(/^\uFEFF/, "");
+  if (stableJsonValue(headerCells) !== stableJsonValue(TARGET_EXPORT_HEADERS)) {
+    issues.push(`${issuePrefix}_csv_schema_mismatch`);
+  }
+  const marketIndex = headerCells.indexOf("market");
+  const tickerIndex = headerCells.indexOf("ticker");
+  const numericFields = [
+    "expectedCagr",
+    "priceCagr10y",
+    "mdd",
+    "beta",
+    "dataYears",
+  ];
+  const numericIndexes = numericFields.map((field) => headerCells.indexOf(field));
+  const seenIdentities = new Set();
+  let parsedRowCount = 0;
+  for (let index = 1; index < lines.length; index += 1) {
+    const cells = parseTargetCsvLine(lines[index], issuePrefix, issues);
+    if (!cells) continue;
+    parsedRowCount += 1;
+    if (cells.length !== TARGET_EXPORT_HEADERS.length) {
+      issues.push(`${issuePrefix}_csv_row_column_count_invalid:${index}`);
+      continue;
+    }
+    const market = cells[marketIndex]?.trim().toUpperCase() || "";
+    const ticker = cells[tickerIndex]?.trim().toUpperCase() || "";
+    if (market !== expectedMarket) {
+      issues.push(`${issuePrefix}_csv_market_mismatch:${index}`);
+    }
+    if (!ticker) {
+      issues.push(`${issuePrefix}_csv_ticker_missing:${index}`);
+    } else {
+      const identity = `${market}:${ticker}`;
+      if (seenIdentities.has(identity)) {
+        issues.push(`${issuePrefix}_csv_duplicate_market_ticker:${identity}`);
+      } else {
+        seenIdentities.add(identity);
+      }
+    }
+    for (const numericIndex of numericIndexes) {
+      const value = cells[numericIndex]?.trim() || "";
+      if (value && !Number.isFinite(Number(value))) {
+        issues.push(`${issuePrefix}_csv_numeric_value_invalid:${index}`);
+        break;
+      }
+    }
+  }
+  if (!Number.isInteger(declaredRowCount) || declaredRowCount <= 0) {
+    issues.push(`${issuePrefix}_row_count_invalid`);
+  } else if (declaredRowCount !== parsedRowCount) {
+    issues.push(`${issuePrefix}_row_count_mismatch`);
+  }
+  return parsedRowCount > 0;
+}
+
+function metricsOutputSourceMember(packageIndex, issues) {
+  if (!isPlainObject(packageIndex) || !Array.isArray(packageIndex.members)) {
+    issues.push("target_export_source_package_index_invalid");
+    return null;
+  }
+  const matches = packageIndex.members.filter(
+    (member) =>
+      isPlainObject(member) &&
+      /^finple_candidate_metrics_output_[A-Za-z0-9_-]+\.csv$/.test(member.path),
+  );
+  if (matches.length !== 1) {
+    issues.push("target_export_source_metrics_output_member_missing_or_duplicate");
+    return null;
+  }
+  return matches[0];
+}
+
+function validateTargetExport(
+  target,
+  {
+    expectedRole,
+    expectedImportName,
+    expectedMarket,
+    issuePrefix,
+  },
+  issues,
+) {
+  const beforeCount = issues.length;
+  if (!isPlainObject(target)) {
+    issues.push(`${issuePrefix}_not_object`);
+    return { verified: false, sha256: "", path: "", importName: "" };
+  }
+  if (target.role !== expectedRole) {
+    issues.push(`${issuePrefix}_role_mismatch`);
+  }
+  if (target.importName !== expectedImportName) {
+    issues.push(`${issuePrefix}_import_name_mismatch`);
+  }
+  if (
+    !isSafeRepositoryPath(target.path) ||
+    !target.path.startsWith("src/data/tickers/") ||
+    !target.path.endsWith(".csv")
+  ) {
+    issues.push(`${issuePrefix}_path_invalid`);
+  }
+  if (target.market !== expectedMarket) {
+    issues.push(`${issuePrefix}_market_mismatch`);
+  }
+  if (target.schemaVersion !== METRICS_TARGET_EXPORT_SCHEMA_VERSION) {
+    issues.push(`${issuePrefix}_schema_version_mismatch`);
+  }
+  const bytes = decodeCanonicalTargetExportBytes(
+    target.contentBase64,
+    issuePrefix,
+    issues,
+  );
+  const recomputedSha256 = bytes ? sha256Hex(bytes) : "";
+  if (!isSha256(target.sha256)) {
+    issues.push(`${issuePrefix}_sha256_invalid`);
+  } else if (target.sha256 !== recomputedSha256) {
+    issues.push(`${issuePrefix}_sha256_mismatch`);
+  }
+  if (!Number.isInteger(target.byteSize) || target.byteSize <= 0) {
+    issues.push(`${issuePrefix}_byte_size_invalid`);
+  } else if (bytes && target.byteSize !== bytes.length) {
+    issues.push(`${issuePrefix}_byte_size_mismatch`);
+  }
+  if (bytes) {
+    validateTargetCsvBytes(
+      bytes,
+      expectedMarket,
+      target.rowCount,
+      issuePrefix,
+      issues,
+    );
+  }
+  return {
+    verified: issues.length === beforeCount,
+    sha256: recomputedSha256,
+    path: target.path || "",
+    importName: target.importName || "",
+  };
+}
+
+function validateTargetExportVerificationEvidence(
+  evidence,
+  context,
+  packageIndex,
+  issues,
+) {
+  const beforeCount = issues.length;
+  if (!isPlainObject(evidence)) {
+    issues.push("target_export_verification_evidence_not_object");
+    return { verified: false, targetsByRole: new Map() };
+  }
+  if (
+    evidence.contractVersion !==
+    METRICS_TARGET_EXPORT_VERIFICATION_EVIDENCE_CONTRACT_VERSION
+  ) {
+    issues.push("target_export_verification_evidence_contract_version_mismatch");
+  }
+  for (const [field, expected] of Object.entries({
+    candidatePackageId: context.candidatePackageId,
+    candidatePackageHash: context.candidatePackageHash,
+    zipPackageSha256: context.zipPackageSha256,
+    packageIndexFile: context.packageIndexFile,
+  })) {
+    if (evidence[field] !== expected) {
+      issues.push(`target_export_verification_evidence_${field}_mismatch`);
+    }
+  }
+  if (evidence.exportPolicyVersion !== METRICS_TARGET_EXPORT_POLICY_VERSION) {
+    issues.push("target_export_verification_evidence_export_policy_version_mismatch");
+  }
+  const sourceMember = metricsOutputSourceMember(packageIndex, issues);
+  if (!isPlainObject(evidence.sourceMetricsOutputMember)) {
+    issues.push("target_export_source_metrics_output_evidence_not_object");
+  } else if (sourceMember) {
+    if (evidence.sourceMetricsOutputMember.path !== sourceMember.path) {
+      issues.push("target_export_source_metrics_output_path_mismatch");
+    }
+    if (
+      evidence.sourceMetricsOutputMember.sha256 !== sourceMember.sha256 ||
+      !isSha256(evidence.sourceMetricsOutputMember.sha256)
+    ) {
+      issues.push("target_export_source_metrics_output_hash_mismatch");
+    }
+  }
+  const usResult = validateTargetExport(
+    evidence.usTarget,
+    {
+      expectedRole: "us_price_metrics",
+      expectedImportName: "usPriceMetricsOverlayCsv",
+      expectedMarket: "US",
+      issuePrefix: "target_export_us",
+    },
+    issues,
+  );
+  const krResult = validateTargetExport(
+    evidence.krTarget,
+    {
+      expectedRole: "kr_price_metrics",
+      expectedImportName: "krPriceMetricsOverlayCsv",
+      expectedMarket: "KR",
+      issuePrefix: "target_export_kr",
+    },
+    issues,
+  );
+  return {
+    verified:
+      issues.length === beforeCount && usResult.verified && krResult.verified,
+    targetsByRole: new Map([
+      ["us_price_metrics", usResult],
+      ["kr_price_metrics", krResult],
+    ]),
+  };
 }
 
 function validateSnapshotShape(snapshot, expectedKind, issuePrefix, issues) {
@@ -779,10 +1130,18 @@ function validateCurrentPointerSnapshot(snapshot, issues) {
   return issues.length === beforeCount;
 }
 
-function validateTargetPointerSnapshot(snapshot, context, issues) {
+function validateTargetPointerSnapshot(
+  snapshot,
+  context,
+  targetExportVerification,
+  issues,
+) {
   const beforeCount = issues.length;
   validateSnapshotShape(snapshot, "target", "target_pointer_snapshot", issues);
   if (!isPlainObject(snapshot)) return false;
+  if (targetExportVerification?.verified !== true) {
+    issues.push("target_pointer_snapshot_export_evidence_not_verified");
+  }
   if (snapshot.selector?.path !== CURRENT_POINTER_SNAPSHOT.selector.path) {
     issues.push("target_pointer_snapshot_selector_path_mismatch");
   }
@@ -822,6 +1181,7 @@ function validateTargetPointerSnapshot(snapshot, context, issues) {
   for (const role of TARGET_COMPONENT_ROLES) {
     const currentComponent = componentByRole(CURRENT_POINTER_SNAPSHOT, role);
     const targetComponent = componentByRole(snapshot, role);
+    const verifiedTarget = targetExportVerification?.targetsByRole?.get(role);
     if (!targetComponent) continue;
     if (
       targetComponent.path === currentComponent.path ||
@@ -840,6 +1200,14 @@ function validateTargetPointerSnapshot(snapshot, context, issues) {
       containsBlockedReviewMarker(targetComponent.importName)
     ) {
       issues.push(`target_pointer_snapshot_component_review_marker_blocked:${role}`);
+    }
+    if (
+      !verifiedTarget ||
+      targetComponent.path !== verifiedTarget.path ||
+      targetComponent.importName !== verifiedTarget.importName ||
+      targetComponent.sha256 !== verifiedTarget.sha256
+    ) {
+      issues.push(`target_pointer_snapshot_component_export_bytes_mismatch:${role}`);
     }
     for (const [field, expected] of Object.entries({
       candidatePackageId: context.candidatePackageId,
@@ -984,11 +1352,43 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
   );
   blockingIssues.push(...policyIssues);
 
+  const eligibilityEvaluatedAtMs = parseInstant(input.eligibilityEvaluatedAt);
+  const eligibilityEvaluationDate =
+    eligibilityEvaluatedAtMs === null
+      ? new Date(Number.NaN)
+      : new Date(eligibilityEvaluatedAtMs);
+  const suppliedEligibilityOptions =
+    options.eligibilityOptions === undefined
+      ? {}
+      : options.eligibilityOptions;
+  let eligibilityOptionsNowMatches = true;
+  if (!isPlainObject(suppliedEligibilityOptions)) {
+    blockingIssues.push("eligibility_options_not_object");
+    eligibilityOptionsNowMatches = false;
+  } else if (Object.hasOwn(suppliedEligibilityOptions, "now")) {
+    const suppliedEligibilityNow =
+      suppliedEligibilityOptions.now instanceof Date &&
+      Number.isFinite(suppliedEligibilityOptions.now.getTime())
+        ? suppliedEligibilityOptions.now.getTime()
+        : null;
+    if (
+      eligibilityEvaluatedAtMs === null ||
+      suppliedEligibilityNow !== eligibilityEvaluatedAtMs
+    ) {
+      blockingIssues.push("eligibility_options_now_mismatch");
+      eligibilityOptionsNowMatches = false;
+    }
+  }
+  const forcedEligibilityOptions = {
+    ...(isPlainObject(suppliedEligibilityOptions)
+      ? suppliedEligibilityOptions
+      : {}),
+    now: eligibilityEvaluationDate,
+  };
   const eligibilityResult = evaluateMetricsLoaderActivationEligibility(
     input.eligibilityInput ?? {},
-    options.eligibilityOptions ?? {},
+    forcedEligibilityOptions,
   );
-  const eligibilityReverified = true;
   const eligibilityEvidenceHash = hashMetricsEligibilityEvidence(eligibilityResult);
   const candidateManifest = input.eligibilityInput?.candidateManifest;
   const candidatePackageId =
@@ -1003,19 +1403,20 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
   const packageIndexFile =
     input.eligibilityInput?.packageIndex?.selfExcludedIndexFile || "";
 
-  if (
+  const step1142OEligibilityInvalid =
     eligibilityResult.status !== "eligible" ||
     eligibilityResult.ok !== true ||
-    eligibilityResult.activationDryRunEligible !== true
-  ) {
+    eligibilityResult.activationDryRunEligible !== true;
+  if (step1142OEligibilityInvalid) {
     blockingIssues.push("step114_2o_eligibility_not_eligible");
   }
-  if (
+  const eligibilityContractInvalid =
     eligibilityResult.contractVersion !==
-    METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION
-  ) {
+    METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION;
+  if (eligibilityContractInvalid) {
     blockingIssues.push("step114_2o_contract_version_mismatch");
   }
+  let eligibilityFixedOutputsValid = true;
   for (const [field, expected] of Object.entries({
     productionPublishReady: false,
     appExportApproved: false,
@@ -1024,8 +1425,15 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
   })) {
     if (eligibilityResult[field] !== expected) {
       blockingIssues.push(`step114_2o_fixed_output_invalid:${field}`);
+      eligibilityFixedOutputsValid = false;
     }
   }
+  const eligibilityReverified =
+    !step1142OEligibilityInvalid &&
+    !eligibilityContractInvalid &&
+    eligibilityFixedOutputsValid &&
+    eligibilityEvaluatedAtMs !== null &&
+    eligibilityOptionsNowMatches;
   if (!isSha256(input.eligibilityEvidenceHash)) {
     blockingIssues.push("eligibility_evidence_hash_invalid");
   } else if (input.eligibilityEvidenceHash !== eligibilityEvidenceHash) {
@@ -1056,9 +1464,19 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
     zipPackageSha256,
     packageIndexFile,
   };
+  const targetExportVerification =
+    validateTargetExportVerificationEvidence(
+      input.targetExportVerificationEvidence,
+      snapshotContext,
+      input.eligibilityInput?.packageIndex,
+      blockingIssues,
+    );
+  const targetExportVerificationEvidenceVerified =
+    targetExportVerification.verified === true;
   const targetPointerSnapshotVerified = validateTargetPointerSnapshot(
     input.targetPointerSnapshot,
     snapshotContext,
+    targetExportVerification,
     blockingIssues,
   );
   const rollbackSnapshotVerified = validateRollbackPointerSnapshot(
@@ -1082,6 +1500,7 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
       METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION,
     eligibilityEvidenceHash,
     eligibilityEvaluatedAt: input.eligibilityEvaluatedAt || "",
+    eligibilityEvaluatedAtMs,
     packageIndexFile,
     currentPointerIdentityHash,
     targetPointerIdentityHash,
@@ -1138,6 +1557,16 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
   let separationSatisfied = approvalPolicySatisfied;
   const productionReceipt = input.productionApprovalReceipt;
   const appReceipt = input.appExportApprovalReceipt;
+  const productionSignerEntry = allowlistEntries.find(
+    (entry) =>
+      isPlainObject(entry) &&
+      entry.signerKeyId === productionReceipt?.signerKeyId,
+  );
+  const appSignerEntry = allowlistEntries.find(
+    (entry) =>
+      isPlainObject(entry) &&
+      entry.signerKeyId === appReceipt?.signerKeyId,
+  );
   if (isPlainObject(productionReceipt) && isPlainObject(appReceipt)) {
     if (productionReceipt.receiptId === appReceipt.receiptId) {
       blockingIssues.push("final_approval_receipt_ids_not_distinct");
@@ -1157,6 +1586,17 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
       blockingIssues.push("final_approval_signer_key_ids_not_distinct");
       separationSatisfied = false;
     }
+    if (
+      input.approvalPolicy?.requireDistinctSignerKeyIds === true &&
+      isSha256(productionSignerEntry?.__publicKeyFingerprint) &&
+      productionSignerEntry.__publicKeyFingerprint ===
+        appSignerEntry?.__publicKeyFingerprint
+    ) {
+      blockingIssues.push(
+        "final_approval_public_key_fingerprints_not_distinct",
+      );
+      separationSatisfied = false;
+    }
   }
 
   const approvalPolicyFullySatisfied =
@@ -1169,6 +1609,7 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
     appExportApprovalVerified &&
     approvalPolicyFullySatisfied &&
     currentPointerSnapshotVerified &&
+    targetExportVerificationEvidenceVerified &&
     targetPointerSnapshotVerified &&
     rollbackSnapshotVerified;
 
@@ -1187,6 +1628,7 @@ export function evaluateMetricsFinalApprovalCutoverRehearsal(input = {}, options
       appExportApprovalVerified,
       approvalPolicySatisfied: approvalPolicyFullySatisfied,
       currentPointerSnapshotVerified,
+      targetExportVerificationEvidenceVerified,
       targetPointerSnapshotVerified,
       rollbackSnapshotVerified,
       cutoverPlanReady: ready,

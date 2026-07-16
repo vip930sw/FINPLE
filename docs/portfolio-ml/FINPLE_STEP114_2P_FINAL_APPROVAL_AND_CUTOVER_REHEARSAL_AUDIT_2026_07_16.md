@@ -31,6 +31,9 @@ metrics-final-approval-policy-v1-step114-2p
 metrics-production-publish-approval-v1-step114-2p
 metrics-app-export-approval-v1-step114-2p
 metrics-pointer-snapshot-v1-step114-2p
+metrics-target-export-verification-evidence-v1-step114-2p
+metrics-target-export-policy-v1-step114-2p
+metrics-price-overlay-csv-schema-v1-step114-2p
 ```
 
 The implementation directly reuses:
@@ -40,6 +43,10 @@ metrics-loader-activation-eligibility-v1-step114-2o
 ```
 
 ## Step 114-2O Direct Reuse
+
+The service parses `eligibilityEvaluatedAt` before the Step 114-2O call. A valid parsed timestamp is forced into the trusted Step 114-2O options as `now`; all other trusted options, including the production allowlist and replay registry, are preserved.
+
+If a supplied `eligibilityOptions.now` exists, it must be a valid `Date` with the exact same instant. A different or malformed value blocks. The caller cannot use a recent `eligibilityEvaluatedAt` while Step 114-2O was evaluated at another time.
 
 The service accepts the complete raw Step 114-2O input as `eligibilityInput` and calls:
 
@@ -68,6 +75,17 @@ eligibilityEvidenceHash
 ```
 
 The caller-provided evidence hash and both independently signed final approval receipts must equal the computed hash. Both receipts also sign `eligibilityEvaluatedAt`; the explicit final approval policy limits evidence age.
+
+`eligibilityReverified=true` is returned only when:
+
+- the forced-time Step 114-2O result is `eligible`;
+- `ok=true` and `activationDryRunEligible=true`;
+- the eligibility contract version is exact;
+- all Step 114-2O fixed publication/app/pointer/loader outputs remain false;
+- the eligibility timestamp is valid;
+- no supplied `eligibilityOptions.now` mismatch exists.
+
+Both final approval receipt `issuedAt` values must be at or after `eligibilityEvaluatedAt`, with only the explicit trusted clock-skew allowance. They must also be at or before the final Step 114-2P evaluation time. Future approval issuance is not accepted through clock skew.
 
 ## Separate Final Approval Receipts
 
@@ -171,6 +189,16 @@ revoked=false
 
 Duplicate key identities, malformed entries, missing scopes/roles, revoked or unspecified revocation state, unknown signers, signer mismatch, disallowed scope/role, invalid public keys, and non-Ed25519 keys block.
 
+Allowlist normalization parses every public key before receipt verification. Each Ed25519 key is exported to canonical SPKI DER and hashed with SHA-256 as an internal public-key fingerprint.
+
+- the same fingerprint cannot be registered under different `signerKeyId` aliases;
+- `requireDistinctSignerKeyIds=true` requires both different key IDs and different actual fingerprints;
+- two aliases for one key are never treated as independent keys;
+- an explicitly shared signer may use genuinely different keys when signer separation is disabled but key separation remains required;
+- shared key material is allowed only when the policy explicitly disables key separation.
+
+Full public keys and fingerprints are internal verification data. They are never returned in user-facing results, warning lists, blocking issue values, logs, or rehearsal plans.
+
 No private key, real public-key allowlist, real final receipt, secret, credential, or account identifier is committed or logged.
 
 ## Actual Current Loader Selection Inventory
@@ -199,6 +227,69 @@ The trusted inventory is bound to source commit:
 ```
 
 The service contains the verified repository SHA-256 identities for the selector and all six current files. It does not read or modify those files at runtime.
+
+## Target Export Verification Evidence
+
+Target pointer component hashes are not accepted as standalone 64-character declarations. The required evidence contract is:
+
+```text
+metrics-target-export-verification-evidence-v1-step114-2p
+```
+
+It binds:
+
+```text
+candidatePackageId
+candidatePackageHash
+zipPackageSha256
+packageIndexFile
+sourceMetricsOutputMember.path
+sourceMetricsOutputMember.sha256
+exportPolicyVersion
+usTarget
+krTarget
+```
+
+The source member must be the single Step 114-2M:
+
+```text
+finple_candidate_metrics_output_<version>.csv
+```
+
+Its path and SHA-256 must exactly match the already re-verified package index.
+
+The export policy and schema are:
+
+```text
+metrics-target-export-policy-v1-step114-2p
+metrics-price-overlay-csv-schema-v1-step114-2p
+```
+
+Each US/KR target contains:
+
+```text
+role
+importName
+path
+contentBase64
+sha256
+byteSize
+rowCount
+market
+schemaVersion
+```
+
+The service decodes canonical base64 entirely in memory, recomputes byte size and SHA-256 from the actual bytes, parses UTF-8 CSV, and requires the exact existing price-overlay schema:
+
+```text
+market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason
+```
+
+US evidence must use `role=us_price_metrics`, `importName=usPriceMetricsOverlayCsv`, and contain only `market=US` rows. KR evidence must use `role=kr_price_metrics`, `importName=krPriceMetricsOverlayCsv`, and contain only `market=KR` rows.
+
+Blank/malformed rows, incorrect column counts, invalid numeric values, empty tickers, duplicate normalized market/ticker identities, wrong declared row counts, wrong schema versions, wrong byte sizes, wrong hashes, mixed markets, import aliases, and invalid repository paths block.
+
+The target pointer snapshot US/KR component paths, import identities, and hashes must equal the verified evidence values. No target CSV is written to disk or committed.
 
 ## Pointer Snapshot Contract
 
@@ -282,6 +373,7 @@ productionApprovalVerified
 appExportApprovalVerified
 approvalPolicySatisfied
 currentPointerSnapshotVerified
+targetExportVerificationEvidenceVerified
 targetPointerSnapshotVerified
 rollbackSnapshotVerified
 cutoverPlanReady
@@ -330,6 +422,13 @@ Focused synthetic tests cover:
 - malformed policy;
 - current operating selection mismatch;
 - target candidate, ZIP, and package-index mismatch;
+- mismatched eligibility option time, fabricated recent eligibility time, approval-before-eligibility, and future approval ordering;
+- public-key aliases, duplicate canonical fingerprints, genuine distinct keys, and explicit same-signer key policies;
+- missing target export evidence and arbitrary hashes without bytes;
+- target byte/hash/size/row-count/schema mismatch;
+- US/KR mixed-market, malformed, duplicate, and partial export rows;
+- metrics-output source-member mismatch and US/KR import aliases;
+- target snapshot hash mismatch against recomputed export bytes;
 - rollback mismatch;
 - no-op target;
 - fixture, test, review-only, and partial targets;

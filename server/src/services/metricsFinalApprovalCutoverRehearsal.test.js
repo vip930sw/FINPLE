@@ -31,6 +31,9 @@ import {
   METRICS_PRODUCTION_PUBLISH_APPROVAL_CONTRACT_VERSION,
   METRICS_PRODUCTION_PUBLISH_APPROVAL_SCOPE,
   METRICS_PRODUCTION_PUBLISH_APPROVER_ROLE,
+  METRICS_TARGET_EXPORT_POLICY_VERSION,
+  METRICS_TARGET_EXPORT_SCHEMA_VERSION,
+  METRICS_TARGET_EXPORT_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
   canonicalizeMetricsFinalApprovalReceiptPayload,
   evaluateMetricsFinalApprovalCutoverRehearsal,
   getMetricsCurrentPointerSnapshot,
@@ -297,7 +300,9 @@ function freshnessPolicy() {
   };
 }
 
-function buildEligibilityFixture() {
+function buildEligibilityFixture(
+  eligibilityNow = new Date(ELIGIBILITY_EVALUATED_AT),
+) {
   const keyContext = buildPreflightKeyContext();
   const candidateManifest = baseManifest();
   const packageContract = buildPackage(candidateManifest);
@@ -324,7 +329,7 @@ function buildEligibilityFixture() {
       freshnessPolicy: freshnessPolicy(),
     },
     options: {
-      now: NOW,
+      now: eligibilityNow,
       productionAllowlistJson: JSON.stringify([keyContext.allowlistEntry]),
     },
   };
@@ -364,15 +369,89 @@ function approvalPolicy(overrides = {}) {
   };
 }
 
-function buildTargetSnapshot(context) {
+function targetExportCsv(market, ticker) {
+  return [
+    "market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason",
+    `${market},${ticker},10.5,9.5,-20.0,1.0,10.0,${market === "US" ? "SPY" : "^KS11"},ready,synthetic_in_memory,`,
+    "",
+  ].join("\n");
+}
+
+function buildTargetExport({
+  role,
+  importName,
+  path,
+  market,
+  ticker,
+}) {
+  const bytes = Buffer.from(targetExportCsv(market, ticker), "utf8");
+  return {
+    role,
+    importName,
+    path,
+    contentBase64: bytes.toString("base64"),
+    sha256: sha256(bytes),
+    byteSize: bytes.length,
+    rowCount: 1,
+    market,
+    schemaVersion: METRICS_TARGET_EXPORT_SCHEMA_VERSION,
+  };
+}
+
+function replaceTargetExportCsv(
+  target,
+  csv,
+  { rowCount, preserveSha256 = false, preserveByteSize = false } = {},
+) {
+  const bytes = Buffer.from(csv, "utf8");
+  target.contentBase64 = bytes.toString("base64");
+  if (!preserveSha256) target.sha256 = sha256(bytes);
+  if (!preserveByteSize) target.byteSize = bytes.length;
+  if (rowCount !== undefined) target.rowCount = rowCount;
+}
+
+function buildTargetExportEvidence(context, packageIndex) {
+  const sourceMember = packageIndex.members.find((member) =>
+    member.path.startsWith("finple_candidate_metrics_output_"),
+  );
+  return {
+    contractVersion:
+      METRICS_TARGET_EXPORT_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
+    candidatePackageId: context.candidatePackageId,
+    candidatePackageHash: context.candidatePackageHash,
+    zipPackageSha256: context.zipPackageSha256,
+    packageIndexFile: context.packageIndexFile,
+    sourceMetricsOutputMember: {
+      path: sourceMember.path,
+      sha256: sourceMember.sha256,
+    },
+    exportPolicyVersion: METRICS_TARGET_EXPORT_POLICY_VERSION,
+    usTarget: buildTargetExport({
+      role: "us_price_metrics",
+      importName: "usPriceMetricsOverlayCsv",
+      path: "src/data/tickers/us_price_metrics_overlay_step114_2p_candidate.csv",
+      market: "US",
+      ticker: "AAPL",
+    }),
+    krTarget: buildTargetExport({
+      role: "kr_price_metrics",
+      importName: "krPriceMetricsOverlayCsv",
+      path: "src/data/tickers/kr_price_metrics_overlay_step114_2p_candidate.csv",
+      market: "KR",
+      ticker: "005930",
+    }),
+  };
+}
+
+function buildTargetSnapshot(context, targetExportEvidence) {
   const current = getMetricsCurrentPointerSnapshot();
   const components = current.components.map((component) => {
     if (component.role === "us_price_metrics") {
       return {
         role: component.role,
-        importName: component.importName,
-        path: "src/data/tickers/us_price_metrics_overlay_step114_2p_candidate.csv",
-        sha256: "2".repeat(64),
+        importName: targetExportEvidence.usTarget.importName,
+        path: targetExportEvidence.usTarget.path,
+        sha256: targetExportEvidence.usTarget.sha256,
         candidatePackageId: context.candidatePackageId,
         candidatePackageHash: context.candidatePackageHash,
         zipPackageSha256: context.zipPackageSha256,
@@ -382,9 +461,9 @@ function buildTargetSnapshot(context) {
     if (component.role === "kr_price_metrics") {
       return {
         role: component.role,
-        importName: component.importName,
-        path: "src/data/tickers/kr_price_metrics_overlay_step114_2p_candidate.csv",
-        sha256: "3".repeat(64),
+        importName: targetExportEvidence.krTarget.importName,
+        path: targetExportEvidence.krTarget.path,
+        sha256: targetExportEvidence.krTarget.sha256,
         candidatePackageId: context.candidatePackageId,
         candidatePackageHash: context.candidatePackageHash,
         zipPackageSha256: context.zipPackageSha256,
@@ -451,7 +530,7 @@ function signFinalReceipt(
     eligibilityContractVersion:
       METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION,
     eligibilityEvidenceHash: context.eligibilityEvidenceHash,
-    eligibilityEvaluatedAt: ELIGIBILITY_EVALUATED_AT,
+    eligibilityEvaluatedAt: context.eligibilityEvaluatedAt,
     packageIndexFile: context.packageIndexFile,
     currentPointerIdentityHash: context.currentPointerIdentityHash,
     targetPointerIdentityHash: context.targetPointerIdentityHash,
@@ -498,6 +577,7 @@ function recalculateSnapshot(snapshot) {
 function buildFixture({
   eligibilityMutator,
   currentMutator,
+  targetEvidenceMutator,
   targetMutator,
   rollbackMutator,
   policyOverrides = {},
@@ -505,10 +585,17 @@ function buildFixture({
   appReceiptOverrides = {},
   allowlistMutator,
   sameSigner = false,
+  sameSignerId = false,
+  keyAlias = false,
+  eligibilityEvaluatedAt = ELIGIBILITY_EVALUATED_AT,
+  eligibilityOptionsNow,
+  clockSkewMs,
   eligibilityEvidenceHashOverride,
   afterBuild,
 } = {}) {
-  const eligibility = buildEligibilityFixture();
+  const eligibility = buildEligibilityFixture(
+    eligibilityOptionsNow || new Date(eligibilityEvaluatedAt),
+  );
   if (eligibilityMutator) eligibilityMutator(eligibility);
   const eligibilityResult = evaluateMetricsLoaderActivationEligibility(
     eligibility.input,
@@ -524,12 +611,27 @@ function buildFixture({
     zipPackageSha256: eligibility.input.zipPackageSha256,
     packageIndexFile,
     eligibilityEvidenceHash: computedEvidenceHash,
+    eligibilityEvaluatedAt,
   };
 
   const current = getMetricsCurrentPointerSnapshot();
   if (currentMutator) currentMutator(current, baseContext);
   recalculateSnapshot(current);
-  const target = buildTargetSnapshot(baseContext);
+  const targetExportVerificationEvidence = buildTargetExportEvidence(
+    baseContext,
+    eligibility.input.packageIndex,
+  );
+  if (targetEvidenceMutator) {
+    targetEvidenceMutator(
+      targetExportVerificationEvidence,
+      baseContext,
+      eligibility,
+    );
+  }
+  const target = buildTargetSnapshot(
+    baseContext,
+    targetExportVerificationEvidence,
+  );
   if (targetMutator) targetMutator(target, baseContext, current);
   recalculateSnapshot(target);
   const rollback = buildRollbackSnapshot(current);
@@ -565,7 +667,7 @@ function buildFixture({
       scopes: [METRICS_PRODUCTION_PUBLISH_APPROVAL_SCOPE],
       roles: [METRICS_PRODUCTION_PUBLISH_APPROVER_ROLE],
     });
-  const appSigner =
+  let appSigner =
     sharedSigner ||
     buildFinalSigner({
       signerKeyId: "finple-step114-2p-app-key",
@@ -573,6 +675,19 @@ function buildFixture({
       scopes: [METRICS_APP_EXPORT_APPROVAL_SCOPE],
       roles: [METRICS_APP_EXPORT_APPROVER_ROLE],
     });
+  if (!sharedSigner && sameSignerId) {
+    appSigner.allowlistEntry.signerId =
+      productionSigner.allowlistEntry.signerId;
+  }
+  if (!sharedSigner && keyAlias) {
+    appSigner = {
+      privateKey: productionSigner.privateKey,
+      allowlistEntry: {
+        ...appSigner.allowlistEntry,
+        publicKeyPem: productionSigner.allowlistEntry.publicKeyPem,
+      },
+    };
+  }
 
   const productionApprovalReceipt = signFinalReceipt(
     productionSigner.privateKey,
@@ -604,11 +719,12 @@ function buildFixture({
       eligibilityInput: eligibility.input,
       eligibilityEvidenceHash:
         eligibilityEvidenceHashOverride || computedEvidenceHash,
-      eligibilityEvaluatedAt: ELIGIBILITY_EVALUATED_AT,
+      eligibilityEvaluatedAt,
       productionApprovalReceipt,
       appExportApprovalReceipt,
       approvalPolicy: approvalPolicy(policyOverrides),
       currentPointerSnapshot: current,
+      targetExportVerificationEvidence,
       targetPointerSnapshot: target,
       rollbackPointerSnapshot: rollback,
     },
@@ -616,6 +732,7 @@ function buildFixture({
       now: NOW,
       eligibilityOptions: eligibility.options,
       finalApprovalAllowlistJson: JSON.stringify(allowlistEntries),
+      ...(clockSkewMs === undefined ? {} : { clockSkewMs }),
     },
   };
   if (afterBuild) afterBuild(fixture, receiptContext);
@@ -658,6 +775,7 @@ test("valid synthetic final approvals and snapshots return ready rehearsal only"
   assert.equal(result.appExportApprovalVerified, true);
   assert.equal(result.approvalPolicySatisfied, true);
   assert.equal(result.currentPointerSnapshotVerified, true);
+  assert.equal(result.targetExportVerificationEvidenceVerified, true);
   assert.equal(result.targetPointerSnapshotVerified, true);
   assert.equal(result.rollbackSnapshotVerified, true);
   assert.equal(result.cutoverPlanReady, true);
@@ -698,6 +816,7 @@ test("idle result includes every required field with safe defaults", () => {
     "appExportApprovalVerified",
     "approvalPolicySatisfied",
     "currentPointerSnapshotVerified",
+    "targetExportVerificationEvidenceVerified",
     "targetPointerSnapshotVerified",
     "rollbackSnapshotVerified",
     "cutoverPlanReady",
@@ -741,6 +860,73 @@ test("eligibility evidence hash mismatch blocks", () => {
   );
   assert.equal(result.status, "blocked");
   assert.match(result.blockingIssues.join("\n"), /eligibility_evidence_hash_mismatch/);
+  assertFixedSafetyOutputs(result);
+});
+
+test("eligibilityOptions.now must equal the signed eligibility evaluation time", () => {
+  const fixture = buildFixture();
+  fixture.options.eligibilityOptions.now = NOW;
+  const result = evaluate(fixture);
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.eligibilityReverified, false);
+  assert.match(result.blockingIssues.join("\n"), /eligibility_options_now_mismatch/);
+  assertFixedSafetyOutputs(result);
+});
+
+test("a fabricated recent eligibilityEvaluatedAt cannot replace the actual 2O time", () => {
+  const result = evaluate(
+    buildFixture({
+      eligibilityEvaluatedAt: "2026-07-16T00:55:00.000Z",
+      eligibilityOptionsNow: new Date("2026-07-16T00:05:00.000Z"),
+      productionReceiptOverrides: {
+        issuedAt: "2026-07-16T00:56:00.000Z",
+      },
+      appReceiptOverrides: {
+        issuedAt: "2026-07-16T00:56:00.000Z",
+      },
+    }),
+  );
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.eligibilityReverified, false);
+  assert.match(result.blockingIssues.join("\n"), /eligibility_options_now_mismatch/);
+  assertFixedSafetyOutputs(result);
+});
+
+test("final approval receipt issued before eligibility evaluation blocks beyond clock skew", () => {
+  const result = evaluate(
+    buildFixture({
+      productionReceiptOverrides: {
+        issuedAt: "2026-07-15T23:58:00.000Z",
+      },
+    }),
+  );
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    result.blockingIssues.join("\n"),
+    /production_approval_receipt_issued_before_eligibility_evaluation/,
+  );
+  assertFixedSafetyOutputs(result);
+});
+
+test("valid eligibility, receipt, and final evaluation time ordering is ready", () => {
+  const result = evaluate(
+    buildFixture({
+      eligibilityEvaluatedAt: "2026-07-16T00:05:00.000Z",
+      eligibilityOptionsNow: new Date("2026-07-16T00:05:00.000Z"),
+      productionReceiptOverrides: {
+        issuedAt: "2026-07-16T00:10:00.000Z",
+      },
+      appReceiptOverrides: {
+        issuedAt: "2026-07-16T00:11:00.000Z",
+      },
+    }),
+  );
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.eligibilityReverified, true);
   assertFixedSafetyOutputs(result);
 });
 
@@ -898,6 +1084,67 @@ test("distinct signer and key policy blocks shared signer", () => {
   assert.match(result.blockingIssues.join("\n"), /signer_key_ids_not_distinct/);
 });
 
+test("different key IDs using the same Ed25519 public key are aliases and block", () => {
+  const result = evaluate(buildFixture({ keyAlias: true }));
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    result.blockingIssues.join("\n"),
+    /duplicate_public_key_fingerprint|public_key_fingerprints_not_distinct/,
+  );
+  assert.equal(Object.hasOwn(result, "publicKeyPem"), false);
+  assert.equal(Object.hasOwn(result, "publicKeyFingerprint"), false);
+  const serializedResult = JSON.stringify(result);
+  assert.equal(serializedResult.includes("BEGIN PUBLIC KEY"), false);
+  assert.equal(serializedResult.includes("__publicKeyFingerprint"), false);
+  assert.equal(serializedResult.includes("publicKeyPem"), false);
+  assertFixedSafetyOutputs(result);
+});
+
+test("genuinely different signer key material satisfies distinct-key policy", () => {
+  const result = evaluate(buildFixture());
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.approvalPolicySatisfied, true);
+  assertFixedSafetyOutputs(result);
+});
+
+test("same signer policy permits distinct key material when explicitly configured", () => {
+  const result = evaluate(
+    buildFixture({
+      sameSignerId: true,
+      policyOverrides: {
+        requireDistinctSignerIds: false,
+        requireDistinctSignerKeyIds: true,
+      },
+    }),
+  );
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.approvalPolicySatisfied, true);
+  assertFixedSafetyOutputs(result);
+});
+
+test("same signer policy still rejects shared key material under aliased key IDs", () => {
+  const result = evaluate(
+    buildFixture({
+      sameSignerId: true,
+      keyAlias: true,
+      policyOverrides: {
+        requireDistinctSignerIds: false,
+        requireDistinctSignerKeyIds: true,
+      },
+    }),
+  );
+
+  assert.equal(result.status, "blocked");
+  assert.match(
+    result.blockingIssues.join("\n"),
+    /duplicate_public_key_fingerprint|public_key_fingerprints_not_distinct/,
+  );
+  assertFixedSafetyOutputs(result);
+});
+
 test("same signer and key are allowed only by explicit policy", () => {
   const result = evaluate(
     buildFixture({
@@ -957,6 +1204,231 @@ test("candidate, ZIP, package index, and target binding mismatches block", async
       assert.match(result.blockingIssues.join("\n"), new RegExp(`${field}_mismatch`));
     });
   }
+});
+
+test("target export evidence binds snapshot hashes to actual in-memory bytes", async (t) => {
+  await t.test("missing evidence", () => {
+    const fixture = buildFixture();
+    delete fixture.input.targetExportVerificationEvidence;
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_export_verification_evidence_not_object|export_evidence_not_verified/,
+    );
+  });
+  await t.test("arbitrary hash without bytes", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.usTarget.contentBase64 = "";
+          evidence.usTarget.sha256 = "a".repeat(64);
+          evidence.usTarget.byteSize = 64;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /content_base64_invalid/);
+  });
+  await t.test("declared hash mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.usTarget.sha256 = "a".repeat(64);
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_us_sha256_mismatch/);
+  });
+  await t.test("declared byte size mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.krTarget.byteSize += 1;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_kr_byte_size_mismatch/);
+  });
+  await t.test("declared row count mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.usTarget.rowCount = 2;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_us_row_count_mismatch/);
+  });
+  await t.test("schema version mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.krTarget.schemaVersion = "wrong-schema";
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_kr_schema_version_mismatch/);
+  });
+  await t.test("snapshot component hash mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetMutator: (target) => {
+          const component = target.components.find(
+            (item) => item.role === "us_price_metrics",
+          );
+          component.sha256 = "b".repeat(64);
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_pointer_snapshot_component_export_bytes_mismatch/,
+    );
+  });
+});
+
+test("target export CSV market, schema, row, and identity validation fails closed", async (t) => {
+  await t.test("US target containing KR row", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          replaceTargetExportCsv(
+            evidence.usTarget,
+            targetExportCsv("KR", "005930"),
+            { rowCount: 1 },
+          );
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_us_csv_market_mismatch/);
+  });
+  await t.test("KR target containing US row", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          replaceTargetExportCsv(
+            evidence.krTarget,
+            targetExportCsv("US", "AAPL"),
+            { rowCount: 1 },
+          );
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_kr_csv_market_mismatch/);
+  });
+  await t.test("missing required header", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          replaceTargetExportCsv(
+            evidence.usTarget,
+            [
+              "market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource",
+              "US,AAPL,10.5,9.5,-20,1,10,SPY,ready,memory",
+              "",
+            ].join("\n"),
+            { rowCount: 1 },
+          );
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /csv_schema_mismatch/);
+  });
+  await t.test("duplicate market ticker row", () => {
+    const csv = [
+      "market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason",
+      "US,AAPL,10.5,9.5,-20,1,10,SPY,ready,memory,",
+      "US,AAPL,11.0,10.0,-19,1,10,SPY,ready,memory,",
+      "",
+    ].join("\n");
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          replaceTargetExportCsv(evidence.usTarget, csv, { rowCount: 2 });
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /csv_duplicate_market_ticker/);
+  });
+  await t.test("malformed row", () => {
+    const csv = [
+      "market,ticker,expectedCagr,priceCagr10y,mdd,beta,dataYears,benchmarkTicker,metricsStatus,metricsSource,reviewReason",
+      "US,AAPL,10.5",
+      "",
+    ].join("\n");
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          replaceTargetExportCsv(evidence.usTarget, csv, { rowCount: 1 });
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /csv_row_column_count_invalid/);
+  });
+});
+
+test("target export evidence binds source member and exact import identities", async (t) => {
+  await t.test("candidate binding mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.candidatePackageHash = "d".repeat(64);
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_export_verification_evidence_candidatePackageHash_mismatch/,
+    );
+  });
+  await t.test("source metrics-output hash mismatch", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.sourceMetricsOutputMember.sha256 = "c".repeat(64);
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_export_source_metrics_output_hash_mismatch/,
+    );
+  });
+  await t.test("US import alias", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.usTarget.importName = "aliasedUsPriceMetricsOverlayCsv";
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_us_import_name_mismatch/);
+  });
+  await t.test("KR import alias", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.krTarget.importName = "aliasedKrPriceMetricsOverlayCsv";
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_export_kr_import_name_mismatch/);
+  });
 });
 
 test("rollback snapshot mismatch blocks", () => {
