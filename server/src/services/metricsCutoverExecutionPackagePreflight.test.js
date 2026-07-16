@@ -40,13 +40,13 @@ import {
 import {
   METRICS_CUTOVER_EXECUTION_PACKAGE_CONTRACT_VERSION,
   METRICS_CUTOVER_EXECUTION_POLICY_CONTRACT_VERSION,
-  METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT,
-  METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME,
   METRICS_CUTOVER_ROLLBACK_BUNDLE_CONTRACT_VERSION,
   METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
+  METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
   METRICS_SELECTOR_EXACT_DIFF_CONTRACT_VERSION,
   evaluateMetricsCutoverExecutionPackagePreflight,
   hashMetricsCutoverExecutionPackage,
+  hashMetricsTrackedPaths,
 } from "./metricsCutoverExecutionPackagePreflight.js";
 
 const NOW = new Date("2026-07-16T01:00:00.000Z");
@@ -57,6 +57,13 @@ const OLD_US_SOURCE =
   "./us_price_metrics_overlay_20260528_app_ready.csv?raw";
 const OLD_KR_SOURCE =
   "./kr_price_metrics_overlay_20260528_app_ready.csv?raw";
+const OLD_MAIN_BRANCH_POINT =
+  "56d1f75f9b71b8694abb0c4e7dcc7a2535b69017";
+const FEATURE_HEAD_SHA =
+  "3aafc8ad9a2700202bd53d3adc9b40fe2a0d0b28";
+const FEATURE_TREE_SHA = "7".repeat(40);
+const FEATURE_BRANCH_NAME =
+  "codex/step114-2q-exact-cutover-execution-package-preflight";
 const SELF_EXCLUSION_REASON =
   "candidatePackageHash and package index identity are self-referential; index hash excludes candidatePackageHash and ZIP member set excludes the index hash from itself.";
 
@@ -660,12 +667,20 @@ function buildExpectedPostimage(preimageBytes, targetEvidence) {
   );
 }
 
-function executionPolicy() {
+function executionPolicy({
+  repositoryHeadSha,
+  repositoryTreeSha,
+  trackedPathsSha256,
+  branchName,
+}) {
   return {
     policyVersion: METRICS_CUTOVER_EXECUTION_POLICY_CONTRACT_VERSION,
-    expectedBaseCommitSha:
-      METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT,
-    requiredBranchName: METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME,
+    expectedSelectorProvenanceCommitSha:
+      METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
+    expectedRepositoryHeadSha: repositoryHeadSha,
+    expectedRepositoryTreeSha: repositoryTreeSha,
+    expectedTrackedPathsSha256: trackedPathsSha256,
+    requiredBranchName: branchName,
     requireCleanWorktree: true,
     requireCreateOnlyTargets: true,
     requireExactTwoSelectorReplacements: true,
@@ -679,6 +694,11 @@ function buildFixture() {
   const current = getMetricsCurrentPointerSnapshot();
   const targetEvidence =
     finalApproval.input.targetExportVerificationEvidence;
+  const trackedPaths = [
+    current.selector.path,
+    ...current.components.map((component) => component.path),
+  ];
+  const trackedPathsSha256 = hashMetricsTrackedPaths(trackedPaths);
   const postimageBytes = buildExpectedPostimage(
     preimageBytes,
     targetEvidence,
@@ -688,18 +708,24 @@ function buildFixture() {
       finalApprovalInput: finalApproval.input,
       repositoryPreimage: {
         contractVersion: METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
-        baseCommitSha: METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT,
+        selectorProvenanceCommitSha:
+          METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
+        repositoryHeadSha: FEATURE_HEAD_SHA,
+        repositoryTreeSha: FEATURE_TREE_SHA,
         selectorPath: SELECTOR_PATH,
         selectorContentBase64: preimageBytes.toString("base64"),
         selectorSha256: sha256(preimageBytes),
-        trackedPaths: [
-          current.selector.path,
-          ...current.components.map((component) => component.path),
-        ],
+        trackedPaths,
+        trackedPathsSha256,
         worktreeClean: true,
-        branchName: METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME,
+        branchName: FEATURE_BRANCH_NAME,
       },
-      executionPolicy: executionPolicy(),
+      executionPolicy: executionPolicy({
+        repositoryHeadSha: FEATURE_HEAD_SHA,
+        repositoryTreeSha: FEATURE_TREE_SHA,
+        trackedPathsSha256,
+        branchName: FEATURE_BRANCH_NAME,
+      }),
       proposedSelector: {
         contractVersion: METRICS_SELECTOR_EXACT_DIFF_CONTRACT_VERSION,
         selectorPath: SELECTOR_PATH,
@@ -708,12 +734,41 @@ function buildFixture() {
       },
     },
     options: {
-      expectedBaseCommitSha:
-        METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT,
-      requiredBranchName: METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME,
+      expectedRepositoryHeadSha: FEATURE_HEAD_SHA,
+      expectedRepositoryTreeSha: FEATURE_TREE_SHA,
+      expectedTrackedPathsSha256: trackedPathsSha256,
+      requiredBranchName: FEATURE_BRANCH_NAME,
       finalApprovalOptions: finalApproval.options,
     },
   };
+}
+
+function synchronizeRepositoryState(
+  fixture,
+  {
+    repositoryHeadSha,
+    repositoryTreeSha,
+    branchName,
+    trackedPaths = fixture.input.repositoryPreimage.trackedPaths,
+  },
+) {
+  const trackedPathsSha256 = hashMetricsTrackedPaths(trackedPaths);
+  fixture.input.repositoryPreimage.repositoryHeadSha = repositoryHeadSha;
+  fixture.input.repositoryPreimage.repositoryTreeSha = repositoryTreeSha;
+  fixture.input.repositoryPreimage.branchName = branchName;
+  fixture.input.repositoryPreimage.trackedPaths = [...trackedPaths];
+  fixture.input.repositoryPreimage.trackedPathsSha256 = trackedPathsSha256;
+  fixture.input.executionPolicy.expectedRepositoryHeadSha =
+    repositoryHeadSha;
+  fixture.input.executionPolicy.expectedRepositoryTreeSha =
+    repositoryTreeSha;
+  fixture.input.executionPolicy.expectedTrackedPathsSha256 =
+    trackedPathsSha256;
+  fixture.input.executionPolicy.requiredBranchName = branchName;
+  fixture.options.expectedRepositoryHeadSha = repositoryHeadSha;
+  fixture.options.expectedRepositoryTreeSha = repositoryTreeSha;
+  fixture.options.expectedTrackedPathsSha256 = trackedPathsSha256;
+  fixture.options.requiredBranchName = branchName;
 }
 
 function evaluate(fixture) {
@@ -754,6 +809,17 @@ function assertFixedOutputs(result) {
   assert.equal(result.loaderActivated, false);
 }
 
+function assertNoPackageExposure(result) {
+  assert.equal(result.executionPackageHash, "");
+  assert.deepEqual(result.executionPackage, {});
+  assert.deepEqual(result.targetFiles, []);
+  assert.deepEqual(result.exactDiff, {});
+  assert.deepEqual(result.rollbackBundle, {});
+  assert.equal(result.targetFileCount, 0);
+  assert.equal(result.plannedWriteCount, 0);
+  assert.equal(result.plannedDeleteCount, 0);
+}
+
 test("valid exact execution package returns package_ready only", () => {
   const result = evaluate(buildFixture());
 
@@ -764,7 +830,10 @@ test("valid exact execution package returns package_ready only", () => {
     METRICS_CUTOVER_EXECUTION_PACKAGE_CONTRACT_VERSION,
   );
   assert.equal(result.cutoverRehearsalReverified, true);
-  assert.equal(result.sourceMainShaVerified, true);
+  assert.equal(result.selectorProvenanceVerified, true);
+  assert.equal(result.repositoryHeadVerified, true);
+  assert.equal(result.repositoryTreeVerified, true);
+  assert.equal(result.trackedPathsVerified, true);
   assert.equal(result.repositoryPreimageVerified, true);
   assert.equal(result.currentSelectorPreimageVerified, true);
   assert.equal(result.targetFilesVerified, true);
@@ -775,8 +844,12 @@ test("valid exact execution package returns package_ready only", () => {
   assert.match(result.executionPackageHash, /^[a-f0-9]{64}$/);
   assert.equal(result.executionPackage.repositoryPreimage.worktreeClean, true);
   assert.equal(
-    result.executionPackage.repositoryPreimage.baseCommitSha,
-    METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT,
+    result.executionPackage.repositoryPreimage.repositoryHeadSha,
+    FEATURE_HEAD_SHA,
+  );
+  assert.notEqual(
+    result.executionPackage.repositoryPreimage.repositoryHeadSha,
+    OLD_MAIN_BRANCH_POINT,
   );
   assert.deepEqual(result.blockingIssues, []);
   assertFixedOutputs(result);
@@ -802,7 +875,10 @@ test("idle result is complete and fail-closed", () => {
     "candidatePackageHash",
     "zipPackageSha256",
     "cutoverRehearsalReverified",
-    "sourceMainShaVerified",
+    "selectorProvenanceVerified",
+    "repositoryHeadVerified",
+    "repositoryTreeVerified",
+    "trackedPathsVerified",
     "repositoryPreimageVerified",
     "currentSelectorPreimageVerified",
     "targetFilesVerified",
@@ -823,6 +899,7 @@ test("idle result is complete and fail-closed", () => {
   }
   assert.equal(result.status, "idle");
   assert.equal(result.executionPackageReady, false);
+  assertNoPackageExposure(result);
   assertFixedOutputs(result);
 });
 
@@ -835,6 +912,7 @@ test("Step 114-2P blocked result propagates", () => {
   assert.equal(result.status, "blocked");
   assert.match(result.blockingIssues.join("\n"), /step114_2p_result_invalid/);
   assert.equal(result.cutoverRehearsalReverified, false);
+  assertNoPackageExposure(result);
   assertFixedOutputs(result);
 });
 
@@ -851,13 +929,83 @@ test("caller readiness shortcuts block", async (t) => {
   }
 });
 
-test("wrong base commit and dirty worktree evidence block", async (t) => {
-  await t.test("wrong base commit", () => {
+test("repository HEAD and branch are dynamically bound and separate from selector provenance", async (t) => {
+  await t.test("branch head differs from old main branch-point", () => {
     const fixture = buildFixture();
-    fixture.input.repositoryPreimage.baseCommitSha = "a".repeat(40);
+    assert.notEqual(
+      fixture.input.repositoryPreimage.repositoryHeadSha,
+      OLD_MAIN_BRANCH_POINT,
+    );
+    assert.equal(evaluate(fixture).status, "package_ready");
+  });
+  await t.test("repository head mismatch", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.repositoryHeadSha = "a".repeat(40);
     const result = evaluate(fixture);
     assert.equal(result.status, "blocked");
-    assert.match(result.blockingIssues.join("\n"), /base_commit_mismatch/);
+    assert.match(result.blockingIssues.join("\n"), /repository_head_mismatch/);
+    assertNoPackageExposure(result);
+  });
+  await t.test("policy head mismatch", () => {
+    const fixture = buildFixture();
+    fixture.input.executionPolicy.expectedRepositoryHeadSha =
+      "b".repeat(40);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /execution_policy_expected_repository_head_mismatch/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("trusted head mismatch", () => {
+    const fixture = buildFixture();
+    fixture.options.expectedRepositoryHeadSha = "c".repeat(40);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /execution_policy_expected_repository_head_mismatch|repository_head_mismatch/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("valid dynamic head and branch", () => {
+    const fixture = buildFixture();
+    synchronizeRepositoryState(fixture, {
+      repositoryHeadSha: "d".repeat(40),
+      repositoryTreeSha: "e".repeat(40),
+      branchName: "release/metrics-cutover-review",
+    });
+    assert.equal(evaluate(fixture).status, "package_ready");
+  });
+  await t.test("service remains usable after its own PR is merged", () => {
+    const fixture = buildFixture();
+    synchronizeRepositoryState(fixture, {
+      repositoryHeadSha: "f".repeat(40),
+      repositoryTreeSha: "1".repeat(40),
+      branchName: "main",
+    });
+    const result = evaluate(fixture);
+    assert.equal(result.status, "package_ready");
+    assert.equal(
+      result.executionPackage.repositoryPreimage.branchName,
+      "main",
+    );
+  });
+});
+
+test("wrong selector provenance and dirty worktree evidence block", async (t) => {
+  await t.test("wrong selector provenance", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.selectorProvenanceCommitSha =
+      "a".repeat(40);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /selector_provenance_commit_mismatch/,
+    );
+    assertNoPackageExposure(result);
   });
   await t.test("dirty worktree", () => {
     const fixture = buildFixture();
@@ -865,6 +1013,7 @@ test("wrong base commit and dirty worktree evidence block", async (t) => {
     const result = evaluate(fixture);
     assert.equal(result.status, "blocked");
     assert.match(result.blockingIssues.join("\n"), /worktree_dirty/);
+    assertNoPackageExposure(result);
   });
 });
 
@@ -963,16 +1112,85 @@ test("missing or duplicate current price-metrics imports block", async (t) => {
   });
 });
 
-test("target path already tracked blocks", () => {
-  const fixture = buildFixture();
-  fixture.input.repositoryPreimage.trackedPaths.push(
-    fixture.input.finalApprovalInput.targetExportVerificationEvidence.usTarget
-      .path,
-  );
-  const result = evaluate(fixture);
-
-  assert.equal(result.status, "blocked");
-  assert.match(result.blockingIssues.join("\n"), /target_path_already_tracked/);
+test("tracked paths are bound to trusted repository tree evidence", async (t) => {
+  await t.test("target exists in trusted inventory but caller omits it", () => {
+    const fixture = buildFixture();
+    const targetPath =
+      fixture.input.finalApprovalInput.targetExportVerificationEvidence
+        .usTarget.path;
+    const trustedInventoryHash = hashMetricsTrackedPaths([
+      ...fixture.input.repositoryPreimage.trackedPaths,
+      targetPath,
+    ]);
+    fixture.input.executionPolicy.expectedTrackedPathsSha256 =
+      trustedInventoryHash;
+    fixture.options.expectedTrackedPathsSha256 = trustedInventoryHash;
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /tracked_paths_not_trusted_inventory/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("tracked paths hash mismatch", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.trackedPathsSha256 = "a".repeat(64);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /tracked_paths_sha256_mismatch/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("tree SHA mismatch", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.repositoryTreeSha = "a".repeat(40);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /repository_tree_mismatch/);
+    assertNoPackageExposure(result);
+  });
+  await t.test("duplicate path", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.trackedPaths.push(
+      fixture.input.repositoryPreimage.trackedPaths[0],
+    );
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /tracked_path_duplicate/);
+  });
+  await t.test("malformed path", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.trackedPaths.push("../outside.csv");
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /tracked_path_invalid/);
+  });
+  await t.test("reordered equivalent inventory", () => {
+    const fixture = buildFixture();
+    fixture.input.repositoryPreimage.trackedPaths.reverse();
+    assert.equal(evaluate(fixture).status, "package_ready");
+  });
+  await t.test("valid target absence", () => {
+    const fixture = buildFixture();
+    const targets =
+      fixture.input.finalApprovalInput.targetExportVerificationEvidence;
+    assert.equal(
+      fixture.input.repositoryPreimage.trackedPaths.includes(
+        targets.usTarget.path,
+      ),
+      false,
+    );
+    assert.equal(
+      fixture.input.repositoryPreimage.trackedPaths.includes(
+        targets.krTarget.path,
+      ),
+      false,
+    );
+    assert.equal(evaluate(fixture).status, "package_ready");
+  });
 });
 
 test("package contains exactly two create-only target files from Step 114-2P evidence", () => {
@@ -1073,6 +1291,7 @@ test("caller-proposed selector cannot rename, reformat, append, or add a third r
         result.blockingIssues.join("\n"),
         /not_exact_internal_postimage/,
       );
+      assertNoPackageExposure(result);
       assertFixedOutputs(result);
     });
   }
@@ -1085,6 +1304,7 @@ test("selector postimage declared hash mismatch blocks", () => {
 
   assert.equal(result.status, "blocked");
   assert.match(result.blockingIssues.join("\n"), /proposed_selector_sha256_mismatch/);
+  assertNoPackageExposure(result);
 });
 
 test("rollback bundle restores the exact selector preimage without deleting targets", () => {
@@ -1186,4 +1406,6 @@ test("fixed false authorization outputs hold in package_ready, blocked, and idle
   assertFixedOutputs(ready);
   assertFixedOutputs(blocked);
   assertFixedOutputs(idle);
+  assertNoPackageExposure(blocked);
+  assertNoPackageExposure(idle);
 });

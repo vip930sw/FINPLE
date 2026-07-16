@@ -17,12 +17,11 @@ export const METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION =
   "metrics-repository-preimage-v1-step114-2q";
 export const METRICS_CUTOVER_ROLLBACK_BUNDLE_CONTRACT_VERSION =
   "metrics-cutover-rollback-bundle-v1-step114-2q";
-export const METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT =
-  "56d1f75f9b71b8694abb0c4e7dcc7a2535b69017";
-export const METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME =
-  "codex/step114-2q-exact-cutover-execution-package-preflight";
 
 const SELECTOR_PATH = "src/data/tickers/screenerCandidateOverlay.js";
+const TRUSTED_CURRENT_POINTER_SNAPSHOT = getMetricsCurrentPointerSnapshot();
+export const METRICS_SELECTOR_PROVENANCE_COMMIT_SHA =
+  TRUSTED_CURRENT_POINTER_SNAPSHOT.sourceCommit;
 const OLD_IMPORTS = Object.freeze([
   {
     role: "us_price_metrics",
@@ -72,6 +71,7 @@ function isCommitSha(value) {
 function isSafeRepositoryPath(value) {
   return (
     isNonEmptyString(value) &&
+    !/[\0\r\n]/.test(value) &&
     !value.includes("\\") &&
     !value.startsWith("/") &&
     !value.split("/").includes("..")
@@ -129,6 +129,19 @@ export function hashMetricsCutoverExecutionPackage(value = {}) {
   );
 }
 
+export function canonicalizeMetricsTrackedPaths(paths = []) {
+  if (!Array.isArray(paths)) {
+    throw new TypeError("tracked_paths_must_be_array");
+  }
+  return [...new Set(paths)].sort().join("\0");
+}
+
+export function hashMetricsTrackedPaths(paths = []) {
+  return sha256Hex(
+    Buffer.from(canonicalizeMetricsTrackedPaths(paths), "utf8"),
+  );
+}
+
 function decodeCanonicalBase64(value, issuePrefix, issues) {
   if (
     !isNonEmptyString(value) ||
@@ -179,8 +192,9 @@ function sourceLine(importName, source) {
 }
 
 function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
+  const packageReady = status === "package_ready";
   return {
-    ok: status === "package_ready",
+    ok: packageReady,
     status,
     contractVersion: METRICS_CUTOVER_EXECUTION_PACKAGE_CONTRACT_VERSION,
     candidatePackageId: fields.candidatePackageId || "",
@@ -190,7 +204,11 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
       fields.cutoverRehearsalEvidenceHash || "",
     cutoverRehearsalReverified:
       fields.cutoverRehearsalReverified === true,
-    sourceMainShaVerified: fields.sourceMainShaVerified === true,
+    selectorProvenanceVerified:
+      fields.selectorProvenanceVerified === true,
+    repositoryHeadVerified: fields.repositoryHeadVerified === true,
+    repositoryTreeVerified: fields.repositoryTreeVerified === true,
+    trackedPathsVerified: fields.trackedPathsVerified === true,
     repositoryPreimageVerified:
       fields.repositoryPreimageVerified === true,
     currentSelectorPreimageVerified:
@@ -199,30 +217,33 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
     proposedSelectorVerified: fields.proposedSelectorVerified === true,
     exactDiffVerified: fields.exactDiffVerified === true,
     rollbackBundleReady: fields.rollbackBundleReady === true,
-    executionPackageReady: status === "package_ready",
-    executionPackageHash: fields.executionPackageHash || "",
+    executionPackageReady: packageReady,
+    executionPackageHash:
+      packageReady ? fields.executionPackageHash || "" : "",
     selectorPreimageSha256: fields.selectorPreimageSha256 || "",
     selectorPostimageSha256: fields.selectorPostimageSha256 || "",
     targetFileCount:
-      Number.isInteger(fields.targetFileCount) ? fields.targetFileCount : 0,
+      packageReady && Number.isInteger(fields.targetFileCount)
+        ? fields.targetFileCount
+        : 0,
     plannedWriteCount:
-      Number.isInteger(fields.plannedWriteCount)
+      packageReady && Number.isInteger(fields.plannedWriteCount)
         ? fields.plannedWriteCount
         : 0,
     plannedDeleteCount:
-      Number.isInteger(fields.plannedDeleteCount)
+      packageReady && Number.isInteger(fields.plannedDeleteCount)
         ? fields.plannedDeleteCount
         : 0,
-    targetFiles: Array.isArray(fields.targetFiles)
+    targetFiles: packageReady && Array.isArray(fields.targetFiles)
       ? cloneJson(fields.targetFiles)
       : [],
-    exactDiff: isPlainObject(fields.exactDiff)
+    exactDiff: packageReady && isPlainObject(fields.exactDiff)
       ? cloneJson(fields.exactDiff)
       : {},
-    rollbackBundle: isPlainObject(fields.rollbackBundle)
+    rollbackBundle: packageReady && isPlainObject(fields.rollbackBundle)
       ? cloneJson(fields.rollbackBundle)
       : {},
-    executionPackage: isPlainObject(fields.executionPackage)
+    executionPackage: packageReady && isPlainObject(fields.executionPackage)
       ? cloneJson(fields.executionPackage)
       : {},
     fileWriteAuthorized: false,
@@ -274,7 +295,41 @@ function isIdleInput(input) {
   );
 }
 
-function validateExecutionPolicy(policy, options, issues) {
+function validateTrustedRepositoryOptions(options, issues) {
+  const trusted = {
+    selectorProvenanceCommitSha:
+      options.expectedSelectorProvenanceCommitSha ??
+      METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
+    repositoryHeadSha: options.expectedRepositoryHeadSha,
+    repositoryTreeSha: options.expectedRepositoryTreeSha,
+    trackedPathsSha256: options.expectedTrackedPathsSha256,
+    branchName: options.requiredBranchName,
+  };
+  if (!isCommitSha(trusted.selectorProvenanceCommitSha)) {
+    issues.push("trusted_selector_provenance_commit_invalid");
+  }
+  if (
+    trusted.selectorProvenanceCommitSha !==
+    METRICS_SELECTOR_PROVENANCE_COMMIT_SHA
+  ) {
+    issues.push("trusted_selector_provenance_commit_mismatch");
+  }
+  if (!isCommitSha(trusted.repositoryHeadSha)) {
+    issues.push("trusted_repository_head_sha_invalid");
+  }
+  if (!isCommitSha(trusted.repositoryTreeSha)) {
+    issues.push("trusted_repository_tree_sha_invalid");
+  }
+  if (!isSha256(trusted.trackedPathsSha256)) {
+    issues.push("trusted_tracked_paths_sha256_invalid");
+  }
+  if (!isNonEmptyString(trusted.branchName)) {
+    issues.push("trusted_required_branch_name_invalid");
+  }
+  return trusted;
+}
+
+function validateExecutionPolicy(policy, trusted, issues) {
   const beforeCount = issues.length;
   if (!isPlainObject(policy)) {
     issues.push("execution_policy_not_object");
@@ -286,30 +341,34 @@ function validateExecutionPolicy(policy, options, issues) {
   ) {
     issues.push("execution_policy_version_mismatch");
   }
-  const trustedBaseCommit =
-    options.expectedBaseCommitSha ??
-    METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT;
-  if (!isCommitSha(trustedBaseCommit)) {
-    issues.push("trusted_base_commit_invalid");
+  if (
+    policy.expectedSelectorProvenanceCommitSha !==
+      trusted.selectorProvenanceCommitSha ||
+    !isCommitSha(policy.expectedSelectorProvenanceCommitSha)
+  ) {
+    issues.push(
+      "execution_policy_expected_selector_provenance_commit_mismatch",
+    );
   }
   if (
-    trustedBaseCommit !== METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT
+    policy.expectedRepositoryHeadSha !== trusted.repositoryHeadSha ||
+    !isCommitSha(policy.expectedRepositoryHeadSha)
   ) {
-    issues.push("trusted_base_commit_mismatch");
+    issues.push("execution_policy_expected_repository_head_mismatch");
   }
   if (
-    policy.expectedBaseCommitSha !== trustedBaseCommit ||
-    !isCommitSha(policy.expectedBaseCommitSha)
+    policy.expectedRepositoryTreeSha !== trusted.repositoryTreeSha ||
+    !isCommitSha(policy.expectedRepositoryTreeSha)
   ) {
-    issues.push("execution_policy_expected_base_commit_mismatch");
+    issues.push("execution_policy_expected_repository_tree_mismatch");
   }
-  const trustedBranch =
-    options.requiredBranchName ??
-    METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME;
-  if (trustedBranch !== METRICS_CUTOVER_EXECUTION_REQUIRED_BRANCH_NAME) {
-    issues.push("trusted_branch_name_mismatch");
+  if (
+    policy.expectedTrackedPathsSha256 !== trusted.trackedPathsSha256 ||
+    !isSha256(policy.expectedTrackedPathsSha256)
+  ) {
+    issues.push("execution_policy_expected_tracked_paths_hash_mismatch");
   }
-  if (policy.requiredBranchName !== trustedBranch) {
+  if (policy.requiredBranchName !== trusted.branchName) {
     issues.push("execution_policy_required_branch_mismatch");
   }
   for (const field of [
@@ -332,6 +391,7 @@ function validateExecutionPolicy(policy, options, issues) {
 function validateRepositoryPreimage(
   preimage,
   policy,
+  trusted,
   targetPaths,
   issues,
 ) {
@@ -345,6 +405,11 @@ function validateRepositoryPreimage(
       bytes: null,
       text: "",
       trackedPaths: new Set(),
+      trackedPathsSha256: "",
+      selectorProvenanceVerified: false,
+      repositoryHeadVerified: false,
+      repositoryTreeVerified: false,
+      trackedPathsVerified: false,
     };
   }
   if (
@@ -353,17 +418,36 @@ function validateRepositoryPreimage(
   ) {
     issues.push("repository_preimage_contract_version_mismatch");
   }
-  if (
-    preimage.baseCommitSha !== policy?.expectedBaseCommitSha ||
-    preimage.baseCommitSha !==
-      METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT
-  ) {
-    issues.push("repository_preimage_base_commit_mismatch");
+  const selectorProvenanceVerified =
+    preimage.selectorProvenanceCommitSha ===
+      policy?.expectedSelectorProvenanceCommitSha &&
+    preimage.selectorProvenanceCommitSha ===
+      trusted.selectorProvenanceCommitSha &&
+    isCommitSha(preimage.selectorProvenanceCommitSha);
+  if (!selectorProvenanceVerified) {
+    issues.push("repository_preimage_selector_provenance_commit_mismatch");
+  }
+  const repositoryHeadVerified =
+    preimage.repositoryHeadSha === policy?.expectedRepositoryHeadSha &&
+    preimage.repositoryHeadSha === trusted.repositoryHeadSha &&
+    isCommitSha(preimage.repositoryHeadSha);
+  if (!repositoryHeadVerified) {
+    issues.push("repository_preimage_repository_head_mismatch");
+  }
+  const repositoryTreeVerified =
+    preimage.repositoryTreeSha === policy?.expectedRepositoryTreeSha &&
+    preimage.repositoryTreeSha === trusted.repositoryTreeSha &&
+    isCommitSha(preimage.repositoryTreeSha);
+  if (!repositoryTreeVerified) {
+    issues.push("repository_preimage_repository_tree_mismatch");
   }
   if (preimage.selectorPath !== SELECTOR_PATH) {
     issues.push("repository_preimage_selector_path_mismatch");
   }
-  if (preimage.branchName !== policy?.requiredBranchName) {
+  if (
+    preimage.branchName !== policy?.requiredBranchName ||
+    preimage.branchName !== trusted.branchName
+  ) {
     issues.push("repository_preimage_branch_name_mismatch");
   }
   if (preimage.worktreeClean !== true) {
@@ -387,6 +471,27 @@ function validateRepositoryPreimage(
         trackedPaths.add(path);
       }
     }
+  }
+  const computedTrackedPathsSha256 = hashMetricsTrackedPaths([
+    ...trackedPaths,
+  ]);
+  const trackedPathsVerified =
+    isSha256(preimage.trackedPathsSha256) &&
+    preimage.trackedPathsSha256 === computedTrackedPathsSha256 &&
+    preimage.trackedPathsSha256 ===
+      policy?.expectedTrackedPathsSha256 &&
+    preimage.trackedPathsSha256 === trusted.trackedPathsSha256;
+  if (!isSha256(preimage.trackedPathsSha256)) {
+    issues.push("repository_preimage_tracked_paths_sha256_invalid");
+  } else if (preimage.trackedPathsSha256 !== computedTrackedPathsSha256) {
+    issues.push("repository_preimage_tracked_paths_sha256_mismatch");
+  }
+  if (
+    preimage.trackedPathsSha256 !==
+      policy?.expectedTrackedPathsSha256 ||
+    preimage.trackedPathsSha256 !== trusted.trackedPathsSha256
+  ) {
+    issues.push("repository_preimage_tracked_paths_not_trusted_inventory");
   }
   for (const path of [
     trustedCurrent.selector.path,
@@ -452,6 +557,11 @@ function validateRepositoryPreimage(
     bytes,
     text,
     trackedPaths,
+    trackedPathsSha256: computedTrackedPathsSha256,
+    selectorProvenanceVerified,
+    repositoryHeadVerified,
+    repositoryTreeVerified,
+    trackedPathsVerified,
     sha256: recomputedSha256,
   };
 }
@@ -735,10 +845,16 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
     ]);
   }
 
+  const trustedRepositoryIssues = [];
+  const trustedRepository = validateTrustedRepositoryOptions(
+    isPlainObject(options) ? options : {},
+    trustedRepositoryIssues,
+  );
+  blockingIssues.push(...trustedRepositoryIssues);
   const policyIssues = [];
   const executionPolicyVerified = validateExecutionPolicy(
     input.executionPolicy,
-    options,
+    trustedRepository,
     policyIssues,
   );
   blockingIssues.push(...policyIssues);
@@ -777,6 +893,7 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
   const repositoryVerification = validateRepositoryPreimage(
     input.repositoryPreimage,
     isPlainObject(input.executionPolicy) ? input.executionPolicy : {},
+    trustedRepository,
     targetPaths,
     blockingIssues,
   );
@@ -828,15 +945,22 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
     blockingIssues.push("rollback_bundle_not_exact_preimage");
   }
 
-  const sourceMainShaVerified =
+  const nonPackageGatesPass =
+    uniqueSorted(blockingIssues).length === 0 &&
+    cutoverRehearsalReverified &&
     executionPolicyVerified &&
-    input.repositoryPreimage?.baseCommitSha ===
-      METRICS_CUTOVER_EXECUTION_REQUIRED_BASE_COMMIT;
-  const packagePayload =
-    transformation &&
+    repositoryVerification.verified &&
+    repositoryVerification.selectorVerified &&
+    repositoryVerification.selectorProvenanceVerified &&
+    repositoryVerification.repositoryHeadVerified &&
+    repositoryVerification.repositoryTreeVerified &&
+    repositoryVerification.trackedPathsVerified &&
     targetFilesVerified &&
-    rollbackBundleReady
-      ? {
+    proposedSelectorVerified &&
+    exactDiffVerified &&
+    rollbackBundleReady;
+  const packagePayload = nonPackageGatesPass
+    ? {
           contractVersion:
             METRICS_CUTOVER_EXECUTION_PACKAGE_CONTRACT_VERSION,
           cutoverRehearsalEvidenceHash,
@@ -847,18 +971,31 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
           packageIndexFile:
             input.finalApprovalInput?.eligibilityInput?.packageIndex
               ?.selfExcludedIndexFile || "",
-          baseCommitSha: input.repositoryPreimage?.baseCommitSha || "",
+          selectorProvenanceCommitSha:
+            input.repositoryPreimage?.selectorProvenanceCommitSha || "",
+          repositoryHeadSha:
+            input.repositoryPreimage?.repositoryHeadSha || "",
+          repositoryTreeSha:
+            input.repositoryPreimage?.repositoryTreeSha || "",
+          trackedPathsSha256:
+            repositoryVerification.trackedPathsSha256,
           branchName: input.repositoryPreimage?.branchName || "",
           repositoryPreimage: {
             contractVersion:
               METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
-            baseCommitSha:
-              input.repositoryPreimage?.baseCommitSha || "",
+            selectorProvenanceCommitSha:
+              input.repositoryPreimage?.selectorProvenanceCommitSha || "",
+            repositoryHeadSha:
+              input.repositoryPreimage?.repositoryHeadSha || "",
+            repositoryTreeSha:
+              input.repositoryPreimage?.repositoryTreeSha || "",
             selectorPath: SELECTOR_PATH,
             selectorContentBase64:
               input.repositoryPreimage?.selectorContentBase64 || "",
             selectorSha256: repositoryVerification.sha256,
             trackedPaths: [...repositoryVerification.trackedPaths].sort(),
+            trackedPathsSha256:
+              repositoryVerification.trackedPathsSha256,
             worktreeClean: input.repositoryPreimage?.worktreeClean,
             branchName: input.repositoryPreimage?.branchName || "",
           },
@@ -887,7 +1024,7 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
           plannedWriteCount: 2,
           plannedDeleteCount: 0,
         }
-      : null;
+    : null;
   const executionPackage = packagePayload
     ? {
         ...packagePayload,
@@ -898,17 +1035,7 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
   const executionPackageHash =
     executionPackage.executionPackageHash || "";
 
-  const ready =
-    uniqueSorted(blockingIssues).length === 0 &&
-    cutoverRehearsalReverified &&
-    sourceMainShaVerified &&
-    repositoryVerification.verified &&
-    repositoryVerification.selectorVerified &&
-    targetFilesVerified &&
-    proposedSelectorVerified &&
-    exactDiffVerified &&
-    rollbackBundleReady &&
-    isSha256(executionPackageHash);
+  const ready = nonPackageGatesPass && isSha256(executionPackageHash);
 
   return result(
     ready ? "package_ready" : "blocked",
@@ -918,7 +1045,14 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
       zipPackageSha256: finalApprovalResult.zipPackageSha256,
       cutoverRehearsalEvidenceHash,
       cutoverRehearsalReverified,
-      sourceMainShaVerified,
+      selectorProvenanceVerified:
+        repositoryVerification.selectorProvenanceVerified,
+      repositoryHeadVerified:
+        repositoryVerification.repositoryHeadVerified,
+      repositoryTreeVerified:
+        repositoryVerification.repositoryTreeVerified,
+      trackedPathsVerified:
+        repositoryVerification.trackedPathsVerified,
       repositoryPreimageVerified: repositoryVerification.verified,
       currentSelectorPreimageVerified:
         repositoryVerification.selectorVerified,

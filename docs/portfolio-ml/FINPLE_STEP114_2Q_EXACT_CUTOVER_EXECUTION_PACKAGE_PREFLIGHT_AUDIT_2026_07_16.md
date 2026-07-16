@@ -40,23 +40,24 @@ metrics-final-approval-bundle-v1-step114-2p
 metrics-target-export-verification-evidence-v1-step114-2p
 ```
 
-## Trusted Baseline And Branch
+## Dynamic Repository State And Selector Provenance
 
-The explicit trusted main baseline is:
-
-```text
-56d1f75f9b71b8694abb0c4e7dcc7a2535b69017
-```
-
-The package-preparation branch policy is:
+Step 114-2Q separates two different identities:
 
 ```text
-codex/step114-2q-exact-cutover-execution-package-preflight
+selectorProvenanceCommitSha
+repositoryHeadSha
 ```
 
-The execution policy, repository preimage, and trusted service configuration must all agree with these values. A caller cannot substitute another base commit or branch name.
+`selectorProvenanceCommitSha` explains which trusted source commit introduced the selector bytes represented by the merged Step 114-2P current pointer snapshot.
 
-The two recorded `__never__` create/delete commits remain part of main history. This step does not reset, rewrite, rebase, or remove them.
+`repositoryHeadSha` is the actual repository HEAD inspected for the execution package. It is not the old main branch-point SHA and is not permanently hardcoded. A later read-only adapter is expected to supply it from:
+
+```text
+git rev-parse HEAD
+```
+
+The branch name is also dynamic. Repository preimage, execution policy, and trusted options must agree exactly, but the service does not permanently restrict use to the Step 114-2Q feature branch. A post-merge read-only adapter may supply `main` and the merged HEAD.
 
 ## Step 114-2P Direct Reuse
 
@@ -102,11 +103,14 @@ The untrusted repository evidence contract contains:
 
 ```text
 contractVersion
-baseCommitSha
+selectorProvenanceCommitSha
+repositoryHeadSha
+repositoryTreeSha
 selectorPath
 selectorContentBase64
 selectorSha256
 trackedPaths[]
+trackedPathsSha256
 worktreeClean
 branchName
 ```
@@ -114,10 +118,15 @@ branchName
 The pure service requires:
 
 - exact repository preimage contract version;
-- exact trusted main baseline;
-- exact branch required by the execution policy;
+- exact selector provenance agreement with the trusted Step 114-2P current snapshot;
+- exact repository HEAD agreement across preimage, policy, and trusted options;
+- exact repository tree agreement across preimage, policy, and trusted options;
+- exact dynamic branch agreement across preimage, policy, and trusted options;
 - `worktreeClean=true` as a real boolean;
 - safe, unique repository-relative tracked paths;
+- tracked paths canonicalized as a sorted unique list joined with a NUL delimiter;
+- declared tracked-path SHA-256 equal to the recomputed inventory hash;
+- recomputed inventory hash equal to the trusted repository-state hash;
 - all current trusted selector/component paths represented in the tracked inventory;
 - both target paths absent from the tracked inventory;
 - canonical nonempty base64 selector bytes;
@@ -152,15 +161,27 @@ The required explicit policy is:
 
 ```text
 policyVersion=metrics-cutover-execution-policy-v1-step114-2q
-expectedBaseCommitSha=56d1f75f9b71b8694abb0c4e7dcc7a2535b69017
-requiredBranchName=codex/step114-2q-exact-cutover-execution-package-preflight
+expectedSelectorProvenanceCommitSha
+expectedRepositoryHeadSha
+expectedRepositoryTreeSha
+expectedTrackedPathsSha256
+requiredBranchName
 requireCleanWorktree=true
 requireCreateOnlyTargets=true
 requireExactTwoSelectorReplacements=true
 allowTargetDeletionOnRollback=false
 ```
 
-Missing, malformed, stale, or permissive values block. There is no hidden default that authorizes overwrite, dirty-worktree execution, extra replacements, or rollback deletion.
+Trusted repository-state options require:
+
+```text
+expectedRepositoryHeadSha
+expectedRepositoryTreeSha
+expectedTrackedPathsSha256
+requiredBranchName
+```
+
+Missing, malformed, stale, mismatched, or permissive values block. A caller-supplied `trackedPaths` array alone cannot prove target absence.
 
 ## Target File Package
 
@@ -291,7 +312,7 @@ The hash binds:
 - candidate package ID and hash;
 - ZIP SHA;
 - package-index filename;
-- complete verified repository preimage evidence, including trusted base commit, branch, clean-worktree state, tracked-path inventory, selector bytes, and selector hash;
+- complete verified repository preimage evidence, including selector provenance, actual repository HEAD, tree SHA, dynamic branch, clean-worktree state, canonical tracked-path inventory/hash, selector bytes, and selector hash;
 - exact selector preimage bytes and hash;
 - both create-only target file bytes, hashes, sizes, row counts, markets, schemas, paths, and import identities;
 - exact selector postimage bytes and hash;
@@ -317,7 +338,10 @@ candidatePackageHash
 zipPackageSha256
 cutoverRehearsalEvidenceHash
 cutoverRehearsalReverified
-sourceMainShaVerified
+selectorProvenanceVerified
+repositoryHeadVerified
+repositoryTreeVerified
+trackedPathsVerified
 repositoryPreimageVerified
 currentSelectorPreimageVerified
 targetFilesVerified
@@ -356,6 +380,23 @@ loaderActivated=false
 
 Caller attempts to set these outputs true or to malformed truthy representations block.
 
+Execution artifacts are emitted only for `package_ready`.
+
+Every `blocked` and `idle` result forces:
+
+```text
+executionPackageHash=""
+executionPackage={}
+targetFiles=[]
+exactDiff={}
+rollbackBundle={}
+targetFileCount=0
+plannedWriteCount=0
+plannedDeleteCount=0
+```
+
+The canonical execution-package payload and hash are calculated only after every non-package gate passes. Target base64 bytes, selector diff evidence, and rollback selector bytes are therefore not exposed by a blocked result.
+
 ## Fail-Closed Test Coverage
 
 Focused synthetic tests cover:
@@ -365,9 +406,17 @@ Focused synthetic tests cover:
 - complete idle result;
 - Step 114-2P blocked propagation;
 - caller readiness shortcuts;
-- wrong base commit;
+- repository HEAD different from the old main branch-point;
+- repository, policy, and trusted HEAD mismatches;
+- valid dynamic HEAD and branch;
+- post-merge `main` and merged HEAD usability;
+- selector provenance mismatch;
 - dirty or malformed worktree state;
 - missing, malformed, stale, or permissive execution policy;
+- repository tree mismatch;
+- tracked inventory hash mismatch;
+- target present in trusted inventory but omitted by caller evidence;
+- duplicate, malformed, reordered-equivalent, and valid absent-target inventories;
 - selector preimage hash mismatch;
 - missing or duplicate current imports;
 - target path already tracked;
@@ -381,6 +430,7 @@ Focused synthetic tests cover:
 - rollback restoration of exact preimage with no target deletion;
 - deterministic and mutation-sensitive execution-package hash;
 - caller execution-authorization attempts;
+- suppression of package hash, package object, target bytes, diff, rollback bundle, and counts for every blocked/idle result;
 - no filesystem, Git, network, DB, deployment, publication, pointer, or rollback mutation;
 - fixed false outputs in `package_ready`, `blocked`, and `idle`.
 
