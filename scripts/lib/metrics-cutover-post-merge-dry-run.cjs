@@ -58,6 +58,18 @@ function uniqueSorted(values) {
   return [...new Set(values)].sort();
 }
 
+function observeStage(adapters, stage, result) {
+  if (typeof adapters.observeStage === "function") {
+    adapters.observeStage(
+      Object.freeze({
+        stage,
+        status:
+          typeof result?.status === "string" ? result.status : "invalid",
+      }),
+    );
+  }
+}
+
 function isSafeTargetPath(value) {
   return (
     typeof value === "string" &&
@@ -351,6 +363,32 @@ async function runMetricsCutoverPostMergeDryRun(
       "operator_bundle_evaluation_now_invalid",
     ]);
   }
+  const eligibilityEvaluatedAt = parseInstant(
+    bundle.finalApprovalInput?.eligibilityEvaluatedAt,
+  );
+  const serializedEligibilityOptions =
+    bundle.finalApprovalOptions?.eligibilityOptions;
+  const hasEligibilityOptionsNow =
+    isPlainObject(serializedEligibilityOptions) &&
+    Object.hasOwn(serializedEligibilityOptions, "now");
+  let eligibilityOptionsInstant = null;
+  if (hasEligibilityOptionsNow) {
+    eligibilityOptionsInstant = parseInstant(serializedEligibilityOptions.now);
+    if (!eligibilityOptionsInstant) {
+      return safeResult("blocked", {}, [
+        "operator_bundle_eligibility_options_now_invalid",
+      ]);
+    }
+    if (
+      !eligibilityEvaluatedAt ||
+      eligibilityOptionsInstant.getTime() !==
+        eligibilityEvaluatedAt.getTime()
+    ) {
+      return safeResult("blocked", {}, [
+        "operator_bundle_eligibility_options_now_conflict",
+      ]);
+    }
+  }
   const targetEvidence =
     bundle.finalApprovalInput?.targetExportVerificationEvidence;
   const usTarget = targetEvidence?.usTarget?.path;
@@ -378,6 +416,7 @@ async function runMetricsCutoverPostMergeDryRun(
     usTarget,
     krTarget,
   });
+  observeStage(adapters, "snapshot_a", snapshotA);
   if (!validateSnapshot(snapshotA, "snapshot_a", bundle, issues)) {
     issues.push(...(snapshotA?.blockingIssues || []));
     return safeResult("blocked", {
@@ -408,10 +447,6 @@ async function runMetricsCutoverPostMergeDryRun(
         snapshotA.targetPathAbsenceEvidence.evidenceHash,
     }, issues);
   }
-  const finalApprovalOptions = {
-    ...bundle.finalApprovalOptions,
-    now: new Date(evaluationInstant.getTime()),
-  };
   const makePackageInput = (snapshot, proposedSelector) => ({
     finalApprovalInput: bundle.finalApprovalInput,
     targetPathAbsenceEvidence:
@@ -420,17 +455,27 @@ async function runMetricsCutoverPostMergeDryRun(
     executionPolicy: snapshot.executionPolicy,
     proposedSelector,
   });
-  const makePackageOptions = (snapshot) => ({
-    ...snapshot.trustedOptions,
-    finalApprovalOptions: {
-      ...finalApprovalOptions,
+  const makePackageOptions = (snapshot) => {
+    const finalApprovalOptions = {
+      ...bundle.finalApprovalOptions,
       now: new Date(evaluationInstant.getTime()),
-    },
-  });
+    };
+    if (hasEligibilityOptionsNow) {
+      finalApprovalOptions.eligibilityOptions = {
+        ...serializedEligibilityOptions,
+        now: new Date(eligibilityOptionsInstant.getTime()),
+      };
+    }
+    return {
+      ...snapshot.trustedOptions,
+      finalApprovalOptions,
+    };
+  };
   const packageA = await evaluatePackage(
     makePackageInput(snapshotA, proposedA),
     makePackageOptions(snapshotA),
   );
+  observeStage(adapters, "package_a", packageA);
   if (!validatePackage(packageA, "package_a", issues)) {
     issues.push(...(packageA?.blockingIssues || []));
     return safeResult("blocked", {
@@ -448,6 +493,7 @@ async function runMetricsCutoverPostMergeDryRun(
     usTarget,
     krTarget,
   });
+  observeStage(adapters, "snapshot_b", snapshotB);
   validateSnapshot(snapshotB, "snapshot_b", bundle, issues);
   if (issues.length === 0) compareSnapshots(snapshotA, snapshotB, issues);
   if (issues.length > 0) {
@@ -484,6 +530,7 @@ async function runMetricsCutoverPostMergeDryRun(
     makePackageInput(snapshotB, proposedB),
     makePackageOptions(snapshotB),
   );
+  observeStage(adapters, "package_b", packageB);
   validatePackage(packageB, "package_b", issues);
   if (issues.length === 0) comparePackages(packageA, packageB, issues);
   if (issues.length > 0) {

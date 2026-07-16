@@ -8,6 +8,7 @@ const {
   rmSync,
   writeFileSync,
 } = require("node:fs");
+const { spawnSync } = require("node:child_process");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
@@ -24,6 +25,10 @@ const {
   runMetricsCutoverPostMergeDryRun,
 } = require("./lib/metrics-cutover-post-merge-dry-run.cjs");
 const { runCli } = require("./run-metrics-cutover-post-merge-dry-run.cjs");
+const {
+  buildRealSyntheticOperatorBundle,
+  createIsolatedMetricsRepository,
+} = require("./test-support/metrics-cutover-post-merge-real-fixture.cjs");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const HEAD = "a".repeat(40);
@@ -325,6 +330,90 @@ test("valid signed synthetic bundle returns dry_run_ready with identical package
   assertFixedFalse(result);
 });
 
+test("real signed synthetic bundle passes production snapshots, packages, and CLI", async (t) => {
+  const root = tempDirectory(t);
+  const repositoryRoot = path.join(root, "repository");
+  const bundlePath = path.join(root, "operator-bundle.json");
+  const repository = await createIsolatedMetricsRepository(
+    REPO_ROOT,
+    repositoryRoot,
+  );
+  const bundle = await buildRealSyntheticOperatorBundle(
+    REPO_ROOT,
+    repository,
+  );
+  writeFileSync(bundlePath, JSON.stringify(bundle), "utf8");
+
+  const observedStages = [];
+  const result = await runMetricsCutoverPostMergeDryRun(
+    { repo: repositoryRoot, inputPath: bundlePath },
+    {
+      observeStage(stage) {
+        observedStages.push(stage);
+      },
+    },
+  );
+  assert.equal(result.status, "dry_run_ready");
+  assert.equal(result.ok, true);
+  assert.deepEqual(observedStages, [
+    { stage: "snapshot_a", status: "ready" },
+    { stage: "package_a", status: "package_ready" },
+    { stage: "snapshot_b", status: "ready" },
+    { stage: "package_b", status: "package_ready" },
+  ]);
+  assert.match(result.executionPackageHash, /^[a-f0-9]{64}$/);
+  assert.equal(result.repositoryStateStableAcrossDryRun, true);
+  assert.equal(result.targetFileCount, 2);
+  assert.equal(result.plannedWriteCount, 2);
+  assert.equal(result.plannedDeleteCount, 0);
+  assertFixedFalse(result);
+
+  const cli = spawnSync(
+    process.execPath,
+    [
+      path.join(REPO_ROOT, "scripts/run-metrics-cutover-post-merge-dry-run.cjs"),
+      "--repo",
+      repositoryRoot,
+      "--input",
+      bundlePath,
+    ],
+    {
+      cwd: REPO_ROOT,
+      shell: false,
+      encoding: "utf8",
+      windowsHide: true,
+    },
+  );
+  assert.equal(cli.status, 0, cli.stderr || cli.stdout);
+  assert.equal(cli.stderr, "");
+  const stdoutLines = cli.stdout.trim().split(/\r?\n/);
+  assert.equal(stdoutLines.length, 1);
+  const cliResult = JSON.parse(stdoutLines[0]);
+  assert.equal(cliResult.status, "dry_run_ready");
+  assert.equal(cliResult.ok, true);
+  assert.equal(cliResult.executionPackageHash, result.executionPackageHash);
+  assert.equal(cliResult.targetFileCount, 2);
+  assert.equal(cliResult.plannedWriteCount, 2);
+  assert.equal(cliResult.plannedDeleteCount, 0);
+  assertFixedFalse(cliResult);
+  assert.equal(Object.hasOwn(cliResult, "executionPackage"), false);
+
+  const serialized = JSON.stringify(cliResult);
+  for (const forbidden of [
+    "contentBase64",
+    "selectorContentBase64",
+    "rollbackBundle",
+    "receiptId",
+    "signatureBase64",
+    "publicKeyPem",
+    "finalApprovalAllowlistJson",
+    "productionAllowlistJson",
+    "PRIVATE KEY",
+  ]) {
+    assert.equal(serialized.includes(forbidden), false, forbidden);
+  }
+});
+
 test("result is deterministic and bundle input remains immutable", async () => {
   const bundle = syntheticBundle();
   const before = structuredClone(bundle);
@@ -493,14 +582,106 @@ test("operator bundle exact contract validation fails closed", async (t) => {
   }
 });
 
+test("nested eligibility clock is normalized and bound before snapshot A", async (t) => {
+  await t.test("matching nested ISO now succeeds", async () => {
+    const bundle = syntheticBundle();
+    bundle.finalApprovalInput.eligibilityEvaluatedAt =
+      "2026-07-16T00:05:00.000Z";
+    bundle.finalApprovalOptions.eligibilityOptions = {
+      now: "2026-07-16T09:05:00.000+09:00",
+      productionAllowlistJson: "[]",
+    };
+    const parsed = parseMetricsCutoverPostMergeBundleBytes(
+      Buffer.from(JSON.stringify(bundle)),
+    );
+    assert.equal(parsed.ok, true);
+    assert.equal(
+      parsed.bundle.finalApprovalOptions.eligibilityOptions.now,
+      "2026-07-16T00:05:00.000Z",
+    );
+
+    const setup = makeAdapters({ bundle: parsed.bundle });
+    const result = await runMetricsCutoverPostMergeDryRun(
+      { repo: "repo", inputPath: "bundle" },
+      setup.adapters,
+    );
+    assert.equal(result.status, "dry_run_ready");
+    const firstNow =
+      setup.calls.packages[0].options.finalApprovalOptions
+        .eligibilityOptions.now;
+    const secondNow =
+      setup.calls.packages[1].options.finalApprovalOptions
+        .eligibilityOptions.now;
+    assert.ok(firstNow instanceof Date);
+    assert.ok(secondNow instanceof Date);
+    assert.notEqual(firstNow, secondNow);
+    assert.equal(firstNow.getTime(), secondNow.getTime());
+    assert.equal(firstNow.toISOString(), "2026-07-16T00:05:00.000Z");
+  });
+
+  for (const [name, now, expectedIssue] of [
+    [
+      "malformed nested now",
+      "not-an-instant",
+      /eligibility_options_now_invalid/,
+    ],
+    [
+      "mismatched nested now",
+      "2026-07-16T00:05:00.001Z",
+      /eligibility_options_now_conflict/,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const bundle = syntheticBundle();
+      bundle.finalApprovalInput.eligibilityEvaluatedAt =
+        "2026-07-16T00:05:00.000Z";
+      bundle.finalApprovalOptions.eligibilityOptions = { now };
+      const setup = makeAdapters({ bundle });
+      const result = await runMetricsCutoverPostMergeDryRun(
+        { repo: "repo", inputPath: "bundle" },
+        setup.adapters,
+      );
+      assert.equal(result.status, "blocked");
+      assert.equal(setup.calls.snapshots.length, 0);
+      assert.match(result.blockingIssues.join("\n"), expectedIssue);
+    });
+  }
+
+  await t.test("omitted nested now remains supported", async () => {
+    const bundle = syntheticBundle();
+    bundle.finalApprovalInput.eligibilityEvaluatedAt =
+      "2026-07-16T00:05:00.000Z";
+    bundle.finalApprovalOptions.eligibilityOptions = {
+      productionAllowlistJson: "[]",
+    };
+    const setup = makeAdapters({ bundle });
+    const result = await runMetricsCutoverPostMergeDryRun(
+      { repo: "repo", inputPath: "bundle" },
+      setup.adapters,
+    );
+    assert.equal(result.status, "dry_run_ready");
+    for (const call of setup.calls.packages) {
+      assert.equal(
+        Object.hasOwn(
+          call.options.finalApprovalOptions.eligibilityOptions,
+          "now",
+        ),
+        false,
+      );
+    }
+  });
+});
+
 test("sensitive fields reject while public verification fields remain allowed", async (t) => {
   for (const field of [
-    "privateKey",
-    "privateKeyPem",
-    "clientSecret",
-    "accessToken",
-    "password",
-    "command",
+    "private_key",
+    "private-key",
+    "client_secret",
+    "access_token",
+    "refresh-token",
+    "api_key",
+    "token",
+    "secret",
   ]) {
     await t.test(field, () => {
       const bundle = syntheticBundle();

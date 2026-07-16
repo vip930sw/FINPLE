@@ -81,11 +81,27 @@ If `finalApprovalOptions.now` is present, it must describe the exact same
 instant. Both Step 114-2Q evaluations receive fresh `Date` instances for that
 one normalized instant.
 
+If `finalApprovalOptions.eligibilityOptions.now` is present, the JSON string
+must be a valid ISO-8601 instant and must equal
+`finalApprovalInput.eligibilityEvaluatedAt` at exact millisecond precision.
+The parser normalizes the serialized value, and the coordinator supplies
+separate fresh `Date` instances with equal milliseconds to package A and
+package B. A malformed or mismatched nested clock blocks before snapshot A.
+If the nested clock is omitted, it remains omitted so the existing Step
+114-2P forced eligibility evaluation time remains authoritative.
+
 ## 4. Sensitive-field handling
 
-The parser recursively applies an explicit field-name denylist. It rejects
-private keys, client/API secrets, access and refresh tokens, passwords,
-credentials, shell or command fields, and executable-command fields.
+The parser recursively applies an explicit normalized field-name denylist.
+Each key is normalized with Unicode NFC, lowercased, and stripped of
+underscores, hyphens, periods, and spaces before exact set membership is
+checked. No broad substring match is used.
+
+The explicit set rejects private keys, client/API/app secrets, API keys,
+access and refresh tokens, generic `token` and `secret` fields, passwords,
+credentials, shell or command fields, and executable-command fields. This
+blocks separator variants such as `private_key`, `private-key`,
+`client_secret`, `access_token`, `refresh-token`, and `api_key`.
 
 JSON-encoded object and array strings, including allowlist JSON, are also
 inspected recursively. Legitimate public verification fields remain allowed,
@@ -99,7 +115,9 @@ including:
 - `allowedScopes`
 
 Public verification material may be consumed by Step 114-2P but is never
-copied into the public Step 114-2S result.
+copied into the public Step 114-2S result. The real integration test exercises
+these allowed verification fields and confirms that the CLI output remains
+redacted.
 
 ## 5. Target derivation
 
@@ -278,7 +296,9 @@ loaderActivated=false
 
 Tests can inject the bundle reader, Step 114-2R collector, proposed-selector
 builder, Step 114-2Q evaluator, and instant parser. Production defaults remain
-read-only.
+read-only. A status-only stage observer is available for integration
+assertions; it receives only the stage label and status, never repository
+bytes, package content, approvals, or keys.
 
 Production Step 114-2S code contains no file-write API, Git mutation command,
 network call, database access, provider access, deployment/publication API,
@@ -288,9 +308,21 @@ pointer mutation, or rollback execution.
 
 The implementation passed:
 
-- Step 114-2S focused suite: 59 tests
-- Step 114-2Q, 2R, and 2S combined suite: 200 tests
-- Step 114-2N through 2S combined suite: 404 tests
+- Step 114-2S focused suite: 67 tests
+- real Step 114-2S end-to-end integration:
+  - isolated temporary Git repository with a clean named `main` branch
+  - exact current selector and all six trusted current component files
+  - one committed synthetic repository HEAD
+  - runtime-generated real Ed25519 candidate and final-approval key pairs
+  - real signed receipts and verified candidate package/index/member evidence
+  - valid in-memory US/KR target CSV bytes and pointer snapshots
+  - serialized nested eligibility clock hydrated back to `Date`
+  - two real Step 114-2R `ready` snapshots
+  - two real Step 114-2Q `package_ready` evaluations
+  - identical execution-package hash and two create-only planned writes
+  - actual CLI exit code `0` with one sanitized JSON line
+- Step 114-2Q, 2R, and 2S combined suite: 208 tests
+- Step 114-2N through 2S combined suite: 412 tests
 - Step 114-2M Python candidate-package suite: 16 tests
 - Python metrics discovery suite: 48 tests
 - `npm.cmd run check:scenario-metrics`: 80 tests

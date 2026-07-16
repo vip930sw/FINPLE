@@ -22,8 +22,12 @@ const SENSITIVE_FIELDS = new Set([
   "privatekeypem",
   "clientsecret",
   "apisecret",
+  "appsecret",
+  "apikey",
   "accesstoken",
   "refreshtoken",
+  "token",
+  "secret",
   "password",
   "credentials",
   "credential",
@@ -55,6 +59,15 @@ function isPlainObject(value) {
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
+}
+
+function normalizeFieldName(value) {
+  return typeof value === "string"
+    ? value
+        .normalize("NFC")
+        .toLocaleLowerCase("en-US")
+        .replace(/[_\-.\u0020]/g, "")
+    : "";
 }
 
 function parseIsoInstant(value) {
@@ -184,7 +197,7 @@ function collectForbiddenFields(value, issues) {
     }
     if (!isPlainObject(current)) return;
     for (const [key, nested] of Object.entries(current)) {
-      const normalized = key.toLocaleLowerCase("en-US");
+      const normalized = normalizeFieldName(key);
       if (SENSITIVE_FIELDS.has(normalized)) {
         issues.push(`operator_bundle_sensitive_field_forbidden:${key}`);
       }
@@ -254,6 +267,24 @@ function validateBundle(bundle, topLevelKeys) {
       issues.push("operator_bundle_final_approval_now_conflict");
     }
   }
+  const eligibilityEvaluatedAt = parseIsoInstant(
+    bundle.finalApprovalInput?.eligibilityEvaluatedAt,
+  );
+  const eligibilityOptions = bundle.finalApprovalOptions?.eligibilityOptions;
+  if (
+    isPlainObject(eligibilityOptions) &&
+    Object.hasOwn(eligibilityOptions, "now")
+  ) {
+    const eligibilityOptionInstant = parseIsoInstant(eligibilityOptions.now);
+    if (!eligibilityOptionInstant) {
+      issues.push("operator_bundle_eligibility_options_now_invalid");
+    } else if (
+      !eligibilityEvaluatedAt ||
+      eligibilityOptionInstant.getTime() !== eligibilityEvaluatedAt.getTime()
+    ) {
+      issues.push("operator_bundle_eligibility_options_now_conflict");
+    }
+  }
   collectForbiddenFields(bundle, issues);
   return uniqueSorted(issues);
 }
@@ -285,6 +316,15 @@ function parseMetricsCutoverPostMergeBundleBytes(bytes) {
     return { ok: false, bundle: null, blockingIssues: issues };
   }
   const evaluationInstant = parseIsoInstant(bundle.evaluationNow);
+  const eligibilityOptions = bundle.finalApprovalOptions.eligibilityOptions;
+  const normalizedEligibilityOptions =
+    isPlainObject(eligibilityOptions) &&
+    Object.hasOwn(eligibilityOptions, "now")
+      ? {
+          ...eligibilityOptions,
+          now: parseIsoInstant(eligibilityOptions.now).toISOString(),
+        }
+      : eligibilityOptions;
   return {
     ok: true,
     bundle: {
@@ -293,6 +333,9 @@ function parseMetricsCutoverPostMergeBundleBytes(bytes) {
       finalApprovalOptions: {
         ...bundle.finalApprovalOptions,
         now: evaluationInstant.toISOString(),
+        ...(eligibilityOptions === undefined
+          ? {}
+          : { eligibilityOptions: normalizedEligibilityOptions }),
       },
     },
     blockingIssues: [],
@@ -382,6 +425,7 @@ module.exports = {
   INPUT_CONTRACT_VERSION,
   MAX_INPUT_BYTES,
   TOP_LEVEL_FIELDS,
+  normalizeFieldName,
   parseIsoInstant,
   parseMetricsCutoverPostMergeBundleBytes,
   readMetricsCutoverPostMergeBundle,
