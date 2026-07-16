@@ -8,6 +8,10 @@ const {
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { TextDecoder } = require("node:util");
+const {
+  areMetricsTargetPathsDistinct,
+  getMetricsTargetPathIdentity,
+} = require("./metrics-target-path-identity.cjs");
 
 const CONTRACT_VERSION =
   "metrics-cutover-repository-state-adapter-v1-step114-2r";
@@ -61,6 +65,10 @@ function safeResult(status, fields = {}, issues = [], warnings = []) {
     targetPathCount:
       Number.isInteger(fields.targetPathCount) ? fields.targetPathCount : 0,
     targetPathsAbsent: fields.targetPathsAbsent === true,
+    targetPathAbsenceEvidence:
+      ready && fields.targetPathAbsenceEvidence
+        ? fields.targetPathAbsenceEvidence
+        : {},
     trackedPaths: ready && Array.isArray(fields.trackedPaths)
       ? [...fields.trackedPaths]
       : [],
@@ -283,14 +291,34 @@ function inspectTargetAbsence(root, relativePath, fs) {
   if (!insideRoot(root, absolute)) {
     return { absent: false, issue: "target_path_escape" };
   }
+  const filesystemPath = path.join(
+    parent.canonical,
+    path.posix.basename(relativePath),
+  );
+  const identity = getMetricsTargetPathIdentity(relativePath, {
+    filesystemPath,
+  });
+  const observation = {
+    absent: false,
+    symlink: false,
+    directory: false,
+    filesystemPath,
+    filesystemCollisionKey: identity.filesystemCollisionKey,
+  };
   try {
     const stat = fs.lstatSync(absolute);
-    if (stat.isSymbolicLink()) return { absent: false, issue: "target_symlink" };
-    if (stat.isDirectory()) return { absent: false, issue: "target_directory" };
-    return { absent: false, issue: "target_exists" };
+    if (stat.isSymbolicLink()) {
+      return { ...observation, symlink: true, issue: "target_symlink" };
+    }
+    if (stat.isDirectory()) {
+      return { ...observation, directory: true, issue: "target_directory" };
+    }
+    return { ...observation, issue: "target_exists" };
   } catch (error) {
-    if (error?.code === "ENOENT") return { absent: true };
-    return { absent: false, issue: "target_inspection_failed" };
+    if (error?.code === "ENOENT") {
+      return { ...observation, absent: true };
+    }
+    return { ...observation, issue: "target_inspection_failed" };
   }
 }
 
@@ -319,6 +347,10 @@ async function loadContracts() {
       preflight.METRICS_CUTOVER_EXECUTION_POLICY_CONTRACT_VERSION,
     repositoryPreimageVersion:
       preflight.METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
+    targetPathAbsenceEvidenceVersion:
+      preflight.METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION,
+    hashTargetPathAbsenceEvidence:
+      preflight.hashMetricsTargetPathAbsenceEvidence,
     currentPointerSnapshot: rehearsal.getMetricsCurrentPointerSnapshot(),
   };
 }
@@ -442,7 +474,7 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
   if (
     typeof input.usTarget !== "string" ||
     typeof input.krTarget !== "string" ||
-    input.usTarget === input.krTarget ||
+    !areMetricsTargetPathsDistinct(input.usTarget, input.krTarget) ||
     !isSafeTargetPath(input.usTarget) ||
     !isSafeTargetPath(input.krTarget)
   ) {
@@ -509,19 +541,15 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
   for (const target of targetStart) {
     if (!target.absent) issues.push(target.issue);
   }
-  for (const targetPath of [input.usTarget, input.krTarget]) {
-    if (start.trackedPaths.includes(targetPath)) {
+  const targetPaths = [input.usTarget, input.krTarget];
+  const targetTrackedAtStart = targetPaths.map((targetPath) =>
+    start.trackedPaths.includes(targetPath),
+  );
+  for (const tracked of targetTrackedAtStart) {
+    if (tracked) {
       issues.push("target_path_tracked");
     }
   }
-
-  const end = collectGitState(
-    runGit,
-    gitExecutable,
-    suppliedRoot,
-    contracts,
-    issues,
-  );
   const selectorEndInspection = inspectFile(
     suppliedRoot,
     SELECTOR_PATH,
@@ -544,9 +572,46 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
   for (const target of targetEnd) {
     if (!target.absent) issues.push(target.issue);
   }
+  const end = collectGitState(
+    runGit,
+    gitExecutable,
+    suppliedRoot,
+    contracts,
+    issues,
+  );
+  let endGitRoot = "";
+  try {
+    endGitRoot = end.root ? fs.realpathSync(end.root) : "";
+  } catch {
+    issues.push("git_repository_root_second_invalid");
+  }
+  const targetTrackedAtEnd = targetPaths.map((targetPath) =>
+    end.trackedPaths.includes(targetPath),
+  );
+  for (const tracked of targetTrackedAtEnd) {
+    if (tracked) {
+      issues.push("target_path_tracked");
+    }
+  }
+  if (
+    !areMetricsTargetPathsDistinct(input.usTarget, input.krTarget, {
+      leftFilesystemPath: targetStart[0]?.filesystemPath,
+      rightFilesystemPath: targetStart[1]?.filesystemPath,
+    }) ||
+    !areMetricsTargetPathsDistinct(input.usTarget, input.krTarget, {
+      leftFilesystemPath: targetEnd[0]?.filesystemPath,
+      rightFilesystemPath: targetEnd[1]?.filesystemPath,
+    })
+  ) {
+    issues.push("target_paths_filesystem_identity_collision");
+  }
 
   const stabilityChecks = [
     ["repository_root_changed", start.root === end.root],
+    [
+      "canonical_repository_root_changed",
+      Boolean(gitRoot) && gitRoot === endGitRoot,
+    ],
     ["repository_head_changed", start.head === end.head],
     ["repository_tree_changed", start.tree === end.tree],
     ["repository_branch_changed", start.branch === end.branch],
@@ -567,7 +632,12 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
       targetStart.every(
         (value, index) =>
           value.absent === targetEnd[index].absent &&
-          value.issue === targetEnd[index].issue,
+          value.issue === targetEnd[index].issue &&
+          value.symlink === targetEnd[index].symlink &&
+          value.directory === targetEnd[index].directory &&
+          value.filesystemCollisionKey ===
+            targetEnd[index].filesystemCollisionKey &&
+          targetTrackedAtStart[index] === targetTrackedAtEnd[index],
       ),
     ],
   ];
@@ -595,7 +665,56 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
     selectorInspection.canonical === selectorEndInspection.canonical;
   const targetPathsAbsent =
     targetStart.every((item) => item.absent) &&
-    targetEnd.every((item) => item.absent);
+    targetEnd.every((item) => item.absent) &&
+    targetTrackedAtStart.every((tracked) => tracked === false) &&
+    targetTrackedAtEnd.every((tracked) => tracked === false);
+  let targetPathAbsenceEvidence = {};
+  try {
+    const evidencePayload = {
+      contractVersion: contracts.targetPathAbsenceEvidenceVersion,
+      repositoryHeadSha: start.head,
+      repositoryTreeSha: start.tree,
+      trackedPathsSha256: start.trackedPathsSha256,
+      branchName: start.branch,
+      targets: [
+        {
+          role: "us_price_metrics",
+          path: input.usTarget,
+          tracked:
+            targetTrackedAtStart[0] || targetTrackedAtEnd[0],
+          absentAtStart: targetStart[0]?.absent === true,
+          absentAtEnd: targetEnd[0]?.absent === true,
+          symlink:
+            targetStart[0]?.symlink === true ||
+            targetEnd[0]?.symlink === true,
+          directory:
+            targetStart[0]?.directory === true ||
+            targetEnd[0]?.directory === true,
+        },
+        {
+          role: "kr_price_metrics",
+          path: input.krTarget,
+          tracked:
+            targetTrackedAtStart[1] || targetTrackedAtEnd[1],
+          absentAtStart: targetStart[1]?.absent === true,
+          absentAtEnd: targetEnd[1]?.absent === true,
+          symlink:
+            targetStart[1]?.symlink === true ||
+            targetEnd[1]?.symlink === true,
+          directory:
+            targetStart[1]?.directory === true ||
+            targetEnd[1]?.directory === true,
+        },
+      ],
+    };
+    targetPathAbsenceEvidence = {
+      ...evidencePayload,
+      evidenceHash:
+        contracts.hashTargetPathAbsenceEvidence(evidencePayload),
+    };
+  } catch {
+    issues.push("target_path_absence_evidence_hash_failed");
+  }
   const ready =
     issues.length === 0 &&
     repositoryRootVerified &&
@@ -619,6 +738,7 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
     selectorVerified,
     targetPathCount: 2,
     targetPathsAbsent,
+    targetPathAbsenceEvidence,
   };
   if (!ready) return safeResult("blocked", commonFields, issues);
 
@@ -632,6 +752,8 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
     selectorSha256: selectorStartSha,
     trackedPaths: [...start.trackedPaths].sort(),
     trackedPathsSha256: start.trackedPathsSha256,
+    targetPathAbsenceEvidenceHash:
+      targetPathAbsenceEvidence.evidenceHash,
     worktreeClean: true,
     branchName: start.branch,
   };
@@ -641,6 +763,8 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
     expectedRepositoryHeadSha: start.head,
     expectedRepositoryTreeSha: start.tree,
     expectedTrackedPathsSha256: start.trackedPathsSha256,
+    expectedTargetPathAbsenceEvidenceHash:
+      targetPathAbsenceEvidence.evidenceHash,
     requiredBranchName: start.branch,
   };
   const executionPolicy = {
@@ -654,6 +778,7 @@ async function collectMetricsCutoverRepositoryState(input = {}, adapters = {}) {
   return safeResult("ready", {
     ...commonFields,
     trackedPaths: repositoryPreimage.trackedPaths,
+    targetPathAbsenceEvidence,
     selectorContentBase64: repositoryPreimage.selectorContentBase64,
     repositoryPreimage,
     trustedOptions,

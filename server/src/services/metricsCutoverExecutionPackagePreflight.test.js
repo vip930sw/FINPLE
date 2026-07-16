@@ -44,8 +44,10 @@ import {
   METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
   METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
   METRICS_SELECTOR_EXACT_DIFF_CONTRACT_VERSION,
+  METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION,
   evaluateMetricsCutoverExecutionPackagePreflight,
   hashMetricsCutoverExecutionPackage,
+  hashMetricsTargetPathAbsenceEvidence,
   hashMetricsTrackedPaths,
 } from "./metricsCutoverExecutionPackagePreflight.js";
 
@@ -671,6 +673,7 @@ function executionPolicy({
   repositoryHeadSha,
   repositoryTreeSha,
   trackedPathsSha256,
+  targetPathAbsenceEvidenceHash,
   branchName,
 }) {
   return {
@@ -680,11 +683,55 @@ function executionPolicy({
     expectedRepositoryHeadSha: repositoryHeadSha,
     expectedRepositoryTreeSha: repositoryTreeSha,
     expectedTrackedPathsSha256: trackedPathsSha256,
+    expectedTargetPathAbsenceEvidenceHash:
+      targetPathAbsenceEvidenceHash,
     requiredBranchName: branchName,
     requireCleanWorktree: true,
     requireCreateOnlyTargets: true,
     requireExactTwoSelectorReplacements: true,
     allowTargetDeletionOnRollback: false,
+  };
+}
+
+function buildTargetPathAbsenceEvidence({
+  repositoryHeadSha,
+  repositoryTreeSha,
+  trackedPathsSha256,
+  branchName,
+  usPath,
+  krPath,
+}) {
+  const payload = {
+    contractVersion:
+      METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION,
+    repositoryHeadSha,
+    repositoryTreeSha,
+    trackedPathsSha256,
+    branchName,
+    targets: [
+      {
+        role: "us_price_metrics",
+        path: usPath,
+        tracked: false,
+        absentAtStart: true,
+        absentAtEnd: true,
+        symlink: false,
+        directory: false,
+      },
+      {
+        role: "kr_price_metrics",
+        path: krPath,
+        tracked: false,
+        absentAtStart: true,
+        absentAtEnd: true,
+        symlink: false,
+        directory: false,
+      },
+    ],
+  };
+  return {
+    ...payload,
+    evidenceHash: hashMetricsTargetPathAbsenceEvidence(payload),
   };
 }
 
@@ -699,6 +746,14 @@ function buildFixture() {
     ...current.components.map((component) => component.path),
   ];
   const trackedPathsSha256 = hashMetricsTrackedPaths(trackedPaths);
+  const targetPathAbsenceEvidence = buildTargetPathAbsenceEvidence({
+    repositoryHeadSha: FEATURE_HEAD_SHA,
+    repositoryTreeSha: FEATURE_TREE_SHA,
+    trackedPathsSha256,
+    branchName: FEATURE_BRANCH_NAME,
+    usPath: targetEvidence.usTarget.path,
+    krPath: targetEvidence.krTarget.path,
+  });
   const postimageBytes = buildExpectedPostimage(
     preimageBytes,
     targetEvidence,
@@ -706,6 +761,7 @@ function buildFixture() {
   return {
     input: {
       finalApprovalInput: finalApproval.input,
+      targetPathAbsenceEvidence,
       repositoryPreimage: {
         contractVersion: METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
         selectorProvenanceCommitSha:
@@ -717,6 +773,8 @@ function buildFixture() {
         selectorSha256: sha256(preimageBytes),
         trackedPaths,
         trackedPathsSha256,
+        targetPathAbsenceEvidenceHash:
+          targetPathAbsenceEvidence.evidenceHash,
         worktreeClean: true,
         branchName: FEATURE_BRANCH_NAME,
       },
@@ -724,6 +782,8 @@ function buildFixture() {
         repositoryHeadSha: FEATURE_HEAD_SHA,
         repositoryTreeSha: FEATURE_TREE_SHA,
         trackedPathsSha256,
+        targetPathAbsenceEvidenceHash:
+          targetPathAbsenceEvidence.evidenceHash,
         branchName: FEATURE_BRANCH_NAME,
       }),
       proposedSelector: {
@@ -737,10 +797,45 @@ function buildFixture() {
       expectedRepositoryHeadSha: FEATURE_HEAD_SHA,
       expectedRepositoryTreeSha: FEATURE_TREE_SHA,
       expectedTrackedPathsSha256: trackedPathsSha256,
+      expectedTargetPathAbsenceEvidenceHash:
+        targetPathAbsenceEvidence.evidenceHash,
       requiredBranchName: FEATURE_BRANCH_NAME,
       finalApprovalOptions: finalApproval.options,
     },
   };
+}
+
+function synchronizeTargetPathAbsenceEvidence(fixture) {
+  const targetEvidence =
+    fixture.input.finalApprovalInput.targetExportVerificationEvidence;
+  const evidence = buildTargetPathAbsenceEvidence({
+    repositoryHeadSha:
+      fixture.input.repositoryPreimage.repositoryHeadSha,
+    repositoryTreeSha:
+      fixture.input.repositoryPreimage.repositoryTreeSha,
+    trackedPathsSha256:
+      fixture.input.repositoryPreimage.trackedPathsSha256,
+    branchName: fixture.input.repositoryPreimage.branchName,
+    usPath: targetEvidence.usTarget.path,
+    krPath: targetEvidence.krTarget.path,
+  });
+  fixture.input.targetPathAbsenceEvidence = evidence;
+  fixture.input.repositoryPreimage.targetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
+  fixture.input.executionPolicy.expectedTargetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
+  fixture.options.expectedTargetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
+}
+
+function setTrustedTargetPathAbsenceEvidence(fixture, evidence) {
+  fixture.input.targetPathAbsenceEvidence = evidence;
+  fixture.input.repositoryPreimage.targetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
+  fixture.input.executionPolicy.expectedTargetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
+  fixture.options.expectedTargetPathAbsenceEvidenceHash =
+    evidence.evidenceHash;
 }
 
 function synchronizeRepositoryState(
@@ -769,6 +864,7 @@ function synchronizeRepositoryState(
   fixture.options.expectedRepositoryTreeSha = repositoryTreeSha;
   fixture.options.expectedTrackedPathsSha256 = trackedPathsSha256;
   fixture.options.requiredBranchName = branchName;
+  synchronizeTargetPathAbsenceEvidence(fixture);
 }
 
 function evaluate(fixture) {
@@ -821,7 +917,8 @@ function assertNoPackageExposure(result) {
 }
 
 test("valid exact execution package returns package_ready only", () => {
-  const result = evaluate(buildFixture());
+  const fixture = buildFixture();
+  const result = evaluate(fixture);
 
   assert.equal(result.status, "package_ready");
   assert.equal(result.ok, true);
@@ -835,6 +932,7 @@ test("valid exact execution package returns package_ready only", () => {
   assert.equal(result.repositoryTreeVerified, true);
   assert.equal(result.trackedPathsVerified, true);
   assert.equal(result.repositoryPreimageVerified, true);
+  assert.equal(result.targetPathAbsenceEvidenceVerified, true);
   assert.equal(result.currentSelectorPreimageVerified, true);
   assert.equal(result.targetFilesVerified, true);
   assert.equal(result.proposedSelectorVerified, true);
@@ -843,6 +941,15 @@ test("valid exact execution package returns package_ready only", () => {
   assert.equal(result.executionPackageReady, true);
   assert.match(result.executionPackageHash, /^[a-f0-9]{64}$/);
   assert.equal(result.executionPackage.repositoryPreimage.worktreeClean, true);
+  assert.equal(
+    result.executionPackage.targetPathAbsenceEvidenceHash,
+    fixture.input.targetPathAbsenceEvidence.evidenceHash,
+  );
+  assert.equal(
+    result.executionPackage.repositoryPreimage
+      .targetPathAbsenceEvidenceHash,
+    fixture.input.targetPathAbsenceEvidence.evidenceHash,
+  );
   assert.equal(
     result.executionPackage.repositoryPreimage.repositoryHeadSha,
     FEATURE_HEAD_SHA,
@@ -1215,6 +1322,183 @@ test("package contains exactly two create-only target files from Step 114-2P evi
   assert.equal(Object.hasOwn(fixture.input, "targetFiles"), false);
 });
 
+test("target-path absence evidence is exact, trusted, and target-bound", async (t) => {
+  await t.test("missing evidence", () => {
+    const fixture = buildFixture();
+    delete fixture.input.targetPathAbsenceEvidence;
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_path_absence_evidence_not_object/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("wrong evidence hash", () => {
+    const fixture = buildFixture();
+    fixture.input.targetPathAbsenceEvidence.evidenceHash =
+      "a".repeat(64);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_path_absence_evidence_hash_mismatch/,
+    );
+    assertNoPackageExposure(result);
+  });
+  for (const [name, field, value] of [
+    ["repository HEAD", "repositoryHeadSha", "a".repeat(40)],
+    ["repository tree", "repositoryTreeSha", "b".repeat(40)],
+    ["tracked inventory", "trackedPathsSha256", "c".repeat(64)],
+    ["branch", "branchName", "review/other-branch"],
+  ]) {
+    await t.test(`${name} mismatch`, () => {
+      const fixture = buildFixture();
+      const payload = {
+        ...fixture.input.targetPathAbsenceEvidence,
+        [field]: value,
+      };
+      payload.evidenceHash =
+        hashMetricsTargetPathAbsenceEvidence(payload);
+      setTrustedTargetPathAbsenceEvidence(fixture, payload);
+      const result = evaluate(fixture);
+      assert.equal(result.status, "blocked");
+      assert.match(
+        result.blockingIssues.join("\n"),
+        new RegExp(`target_path_absence_evidence_${field}_mismatch`),
+      );
+      assertNoPackageExposure(result);
+    });
+  }
+  await t.test("evidence for different target paths is not reusable", () => {
+    const fixture = buildFixture();
+    const payload = buildTargetPathAbsenceEvidence({
+      repositoryHeadSha:
+        fixture.input.repositoryPreimage.repositoryHeadSha,
+      repositoryTreeSha:
+        fixture.input.repositoryPreimage.repositoryTreeSha,
+      trackedPathsSha256:
+        fixture.input.repositoryPreimage.trackedPathsSha256,
+      branchName: fixture.input.repositoryPreimage.branchName,
+      usPath: "src/data/tickers/different_us_target.csv",
+      krPath: "src/data/tickers/different_kr_target.csv",
+    });
+    setTrustedTargetPathAbsenceEvidence(fixture, payload);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_path_absence_evidence_path_mismatch/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("tracked or non-absent observations block", () => {
+    const fixture = buildFixture();
+    const payload = structuredClone(
+      fixture.input.targetPathAbsenceEvidence,
+    );
+    payload.targets[0].tracked = true;
+    payload.targets[1].absentAtEnd = false;
+    payload.evidenceHash =
+      hashMetricsTargetPathAbsenceEvidence(payload);
+    setTrustedTargetPathAbsenceEvidence(fixture, payload);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_path_absence_evidence_(tracked|absentAtEnd)_invalid/,
+    );
+    assertNoPackageExposure(result);
+  });
+  await t.test("target list must contain exactly two contract targets", () => {
+    const fixture = buildFixture();
+    const payload = structuredClone(
+      fixture.input.targetPathAbsenceEvidence,
+    );
+    payload.targets.pop();
+    payload.evidenceHash =
+      hashMetricsTargetPathAbsenceEvidence(payload);
+    setTrustedTargetPathAbsenceEvidence(fixture, payload);
+    const result = evaluate(fixture);
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_path_absence_evidence_target_count_invalid/,
+    );
+    assertNoPackageExposure(result);
+  });
+  for (const [name, mutate] of [
+    [
+      "repository preimage hash",
+      (fixture) => {
+        fixture.input.repositoryPreimage
+          .targetPathAbsenceEvidenceHash = "a".repeat(64);
+      },
+    ],
+    [
+      "execution policy hash",
+      (fixture) => {
+        fixture.input.executionPolicy
+          .expectedTargetPathAbsenceEvidenceHash = "a".repeat(64);
+      },
+    ],
+    [
+      "trusted option hash",
+      (fixture) => {
+        fixture.options.expectedTargetPathAbsenceEvidenceHash =
+          "a".repeat(64);
+      },
+    ],
+  ]) {
+    await t.test(`${name} mismatch blocks`, () => {
+      const fixture = buildFixture();
+      mutate(fixture);
+      const result = evaluate(fixture);
+      assert.equal(result.status, "blocked");
+      assert.match(
+        result.blockingIssues.join("\n"),
+        /target_path_absence_evidence|target_path_absence_evidence_hash/,
+      );
+      assertNoPackageExposure(result);
+    });
+  }
+});
+
+test("target path identities reject case and Unicode aliases", async (t) => {
+  for (const [name, usPath, krPath] of [
+    [
+      "case-only variants",
+      "src/data/tickers/Future_Target.csv",
+      "src/data/tickers/future_target.csv",
+    ],
+    [
+      "Unicode normalization variants",
+      "src/data/tickers/métrics_target.csv",
+      "src/data/tickers/me\u0301trics_target.csv",
+    ],
+  ]) {
+    await t.test(name, () => {
+      const fixture = buildFixture();
+      const targetEvidence =
+        fixture.input.finalApprovalInput
+          .targetExportVerificationEvidence;
+      targetEvidence.usTarget.path = usPath;
+      targetEvidence.krTarget.path = krPath;
+      synchronizeTargetPathAbsenceEvidence(fixture);
+      const result = evaluate(fixture);
+      assert.equal(result.status, "blocked");
+      assert.match(
+        result.blockingIssues.join("\n"),
+        /target_(file|path_absence_evidence)_paths_not_distinct/,
+      );
+      assertNoPackageExposure(result);
+    });
+  }
+  await t.test("clearly distinct paths remain package-ready", () => {
+    assert.equal(evaluate(buildFixture()).status, "package_ready");
+  });
+});
+
 test("target byte, hash, and size mismatches block", async (t) => {
   await t.test("bytes", () => {
     const fixture = buildFixture();
@@ -1351,6 +1635,9 @@ test("execution-package hash is deterministic and mutation-sensitive", () => {
       value.repositoryPreimage.trackedPaths.push(
         "src/data/tickers/unexpected.csv",
       );
+    },
+    (value) => {
+      value.targetPathAbsenceEvidenceHash = "a".repeat(64);
     },
     (value) => {
       value.rollbackBundle.rollbackSelectorContentBase64 += "A";

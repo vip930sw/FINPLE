@@ -61,6 +61,10 @@ async function loadContracts() {
     selectorProvenanceCommitSha: q.METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
     policyVersion: q.METRICS_CUTOVER_EXECUTION_POLICY_CONTRACT_VERSION,
     repositoryPreimageVersion: q.METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION,
+    targetPathAbsenceEvidenceVersion:
+      q.METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION,
+    hashTargetPathAbsenceEvidence:
+      q.hashMetricsTargetPathAbsenceEvidence,
     currentPointerSnapshot: p.getMetricsCurrentPointerSnapshot(),
     evaluate2Q: q.evaluateMetricsCutoverExecutionPackagePreflight,
   };
@@ -200,6 +204,7 @@ function assertSuppressed(result) {
   assert.deepEqual(result.repositoryPreimage, {});
   assert.deepEqual(result.trustedOptions, {});
   assert.deepEqual(result.executionPolicy, {});
+  assert.deepEqual(result.targetPathAbsenceEvidence, {});
   assert.equal(result.selectorContentBase64, "");
   assert.deepEqual(result.trackedPaths, []);
 }
@@ -238,6 +243,47 @@ test("stable clean isolated Git repository returns ready", async (t) => {
   assert.equal(result.repositoryStateStable, true);
   assert.equal(result.worktreeClean, true);
   assert.equal(result.targetPathsAbsent, true);
+  assert.equal(
+    result.targetPathAbsenceEvidence.contractVersion,
+    contracts.targetPathAbsenceEvidenceVersion,
+  );
+  assert.equal(
+    result.targetPathAbsenceEvidence.evidenceHash,
+    contracts.hashTargetPathAbsenceEvidence(
+      result.targetPathAbsenceEvidence,
+    ),
+  );
+  assert.deepEqual(
+    result.targetPathAbsenceEvidence.targets.map((target) => ({
+      role: target.role,
+      path: target.path,
+      tracked: target.tracked,
+      absentAtStart: target.absentAtStart,
+      absentAtEnd: target.absentAtEnd,
+      symlink: target.symlink,
+      directory: target.directory,
+    })),
+    [
+      {
+        role: "us_price_metrics",
+        path: US_TARGET,
+        tracked: false,
+        absentAtStart: true,
+        absentAtEnd: true,
+        symlink: false,
+        directory: false,
+      },
+      {
+        role: "kr_price_metrics",
+        path: KR_TARGET,
+        tracked: false,
+        absentAtStart: true,
+        absentAtEnd: true,
+        symlink: false,
+        directory: false,
+      },
+    ],
+  );
   assert.equal(
     result.trackedPathsSha256,
     contracts.hashMetricsTrackedPaths(result.trackedPaths),
@@ -439,6 +485,53 @@ test("detached or changing HEAD, tree, and branch block", async (t) => {
     assert.equal(result.status, "blocked");
     assert.match(result.blockingIssues.join("\n"), /branch_invalid/);
   });
+});
+
+test("final Git state is collected after second filesystem observations", async (t) => {
+  for (const [name, mutateState, pattern] of [
+    [
+      "HEAD changes during second selector observation",
+      (state) => {
+        state.head = "c".repeat(40);
+      },
+      /repository_head_changed/,
+    ],
+    [
+      "worktree changes during second selector observation",
+      (state) => {
+        state.status = Buffer.from("?? changed-during-observation\0");
+      },
+      /worktree_status_changed|worktree_not_clean/,
+    ],
+  ]) {
+    await t.test(name, async () => {
+      const contracts = await loadContracts();
+      const root = createWorkspace(t, contracts);
+      const state = fakeState(root, contracts);
+      let selectorStats = 0;
+      const fs = {
+        readFileSync,
+        realpathSync,
+        lstatSync(value) {
+          if (
+            path.resolve(value) ===
+            path.resolve(path.join(root, SELECTOR_PATH))
+          ) {
+            selectorStats += 1;
+            if (selectorStats === 2) mutateState(state);
+          }
+          return lstatSync(value);
+        },
+      };
+      const result = await collectMetricsCutoverRepositoryState(
+        { repo: root, usTarget: US_TARGET, krTarget: KR_TARGET },
+        { contracts, runGit: makeRunGit(state), fs },
+      );
+      assert.equal(result.status, "blocked");
+      assert.match(result.blockingIssues.join("\n"), pattern);
+      assertSuppressed(result);
+    });
+  }
 });
 
 test("dirty tracked, staged, untracked, rename, conflict, and deletion block", async (t) => {
@@ -708,6 +801,36 @@ test("target tracked, existing file, directory, duplicate, malformed, and appear
     assert.equal(result.status, "blocked");
     assert.match(result.blockingIssues.join("\n"), /target_paths_invalid/);
   });
+  await t.test("case-only identity collision", async () => {
+    const { result } = await evaluateFake(
+      t,
+      {},
+      {
+        usTarget: "src/data/tickers/Future_Target.csv",
+        krTarget: "src/data/tickers/future_target.csv",
+      },
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_paths_invalid/);
+    assertSuppressed(result);
+  });
+  await t.test("Unicode normalization identity collision", async () => {
+    const { result } = await evaluateFake(
+      t,
+      {},
+      {
+        usTarget: "src/data/tickers/métrics_target.csv",
+        krTarget: "src/data/tickers/me\u0301trics_target.csv",
+      },
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(result.blockingIssues.join("\n"), /target_paths_invalid/);
+    assertSuppressed(result);
+  });
+  await t.test("clearly distinct target identities remain ready", async () => {
+    const { result } = await evaluateFake(t);
+    assert.equal(result.status, "ready");
+  });
   await t.test("malformed", async () => {
     const { result } = await evaluateFake(t, {}, { usTarget: "../bad.csv" });
     assert.equal(result.status, "blocked");
@@ -766,9 +889,23 @@ test("ready compatibility objects match Step 114-2Q repository contract", async 
     result.repositoryPreimage.trackedPathsSha256,
     result.executionPolicy.expectedTrackedPathsSha256,
   );
+  assert.equal(
+    result.targetPathAbsenceEvidence.evidenceHash,
+    result.repositoryPreimage.targetPathAbsenceEvidenceHash,
+  );
+  assert.equal(
+    result.targetPathAbsenceEvidence.evidenceHash,
+    result.trustedOptions.expectedTargetPathAbsenceEvidenceHash,
+  );
+  assert.equal(
+    result.targetPathAbsenceEvidence.evidenceHash,
+    result.executionPolicy.expectedTargetPathAbsenceEvidenceHash,
+  );
   const qResult = contracts.evaluate2Q(
     {
       finalApprovalInput: {},
+      targetPathAbsenceEvidence:
+        result.targetPathAbsenceEvidence,
       repositoryPreimage: result.repositoryPreimage,
       executionPolicy: result.executionPolicy,
       proposedSelector: {},
@@ -857,10 +994,14 @@ test("CLI emits one JSON document and uses documented exit codes", async (t) => 
 });
 
 test("production adapter contains no write, Git mutation, network, DB, or provider calls", () => {
-  const source = readFileSync(
-    path.join(__dirname, "lib/metrics-cutover-repository-state-adapter.cjs"),
-    "utf8",
-  );
+  const source = [
+    "metrics-cutover-repository-state-adapter.cjs",
+    "metrics-target-path-identity.cjs",
+  ]
+    .map((file) =>
+      readFileSync(path.join(__dirname, "lib", file), "utf8"),
+    )
+    .join("\n");
   for (const forbidden of [
     "writeFile",
     "appendFile",

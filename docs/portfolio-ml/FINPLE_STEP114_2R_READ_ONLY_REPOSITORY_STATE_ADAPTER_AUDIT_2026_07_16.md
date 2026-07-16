@@ -1,8 +1,11 @@
 # FINPLE Step 114-2R Read-Only Repository-State Adapter Audit
 
 Date: 2026-07-16
+Review update: 2026-07-17
 Issue: #263
 Contract: `metrics-cutover-repository-state-adapter-v1-step114-2r`
+Target absence evidence:
+`metrics-cutover-target-path-absence-evidence-v1-step114-2r`
 
 ## 1. Scope
 
@@ -31,7 +34,10 @@ Fixed outputs remain false in every state:
 
 - `scripts/collect-metrics-cutover-repository-state.cjs`
 - `scripts/lib/metrics-cutover-repository-state-adapter.cjs`
+- `scripts/lib/metrics-target-path-identity.cjs`
 - `scripts/collect-metrics-cutover-repository-state.test.cjs`
+- `server/src/services/metricsCutoverExecutionPackagePreflight.js`
+- `server/src/services/metricsCutoverExecutionPackagePreflight.test.js`
 - this audit document
 
 No selector or CSV file is changed.
@@ -63,7 +69,16 @@ The production adapter contains no Git mutation command.
 The adapter performs one explicit start/end collection attempt and never
 retries a concurrent change.
 
-The start snapshot collects:
+The exact ordering is:
+
+```text
+start Git state
+first selector and target observations
+second selector and target observations
+end Git state
+```
+
+The start Git state collects:
 
 - Git top-level path
 - repository HEAD
@@ -71,13 +86,17 @@ The start snapshot collects:
 - named branch
 - exact porcelain status bytes
 - NUL-delimited tracked-path inventory
-- exact selector bytes and SHA-256
-- both target-path absence states
 
-The end snapshot repeats the same critical observations. Ready requires exact
-start/end equality for:
+The first and second filesystem observations collect:
 
-- Git root
+- exact selector bytes, canonical path, and SHA-256
+- both target-path absence, symlink, directory, and canonical filesystem
+  identity states
+
+The end Git state is collected only after every second filesystem read.
+Ready requires exact start/end equality for:
+
+- raw and canonical Git root
 - HEAD
 - tree
 - branch
@@ -87,6 +106,8 @@ start/end equality for:
 - each target absence state
 
 Any concurrent mutation returns `blocked`.
+A HEAD or worktree mutation triggered during the second filesystem
+observation is therefore visible to the final Git snapshot and blocks.
 
 ## 5. Repository and branch boundary
 
@@ -176,6 +197,12 @@ Both must be distinct repository-relative `.csv` paths under
 `src/data/tickers/`. Each target parent is canonicalized and must remain inside
 the repository.
 
+One shared target identity helper normalizes paths to Unicode NFC and
+forward-slash form, then applies conservative case folding. The adapter checks
+both the normalized repository identity and the canonical parent-based
+filesystem identity. Exact duplicates, case-only aliases, composed/decomposed
+Unicode aliases, and equivalent filesystem identities block.
+
 Each target is checked before and after the other state reads. Ready requires
 that each target:
 
@@ -188,7 +215,48 @@ that each target:
 
 The adapter never creates either target.
 
-## 10. Step 114-2Q compatibility output
+## 10. Target-path absence evidence
+
+A ready result includes:
+
+```text
+targetPathAbsenceEvidence
+```
+
+Its contract is:
+
+```text
+metrics-cutover-target-path-absence-evidence-v1-step114-2r
+```
+
+It binds:
+
+- actual repository HEAD
+- actual repository tree
+- Step 114-2Q tracked inventory digest
+- actual named branch
+- exactly two ordered targets
+- a canonical SHA-256 evidence hash excluding only `evidenceHash`
+
+The two roles are exactly `us_price_metrics` and `kr_price_metrics`. Each
+target records its exact repository-relative path and requires:
+
+```text
+tracked=false
+absentAtStart=true
+absentAtEnd=true
+symlink=false
+directory=false
+```
+
+The evidence hash is repeated in `repositoryPreimage`, `trustedOptions`, and
+`executionPolicy`. Blocked and idle results force:
+
+```text
+targetPathAbsenceEvidence={}
+```
+
+## 11. Step 114-2Q compatibility output
 
 Only a `ready` result emits reusable Step 114-2Q inputs.
 
@@ -199,11 +267,13 @@ Only a `ready` result emits reusable Step 114-2Q inputs.
 - actual repository HEAD and tree SHAs
 - exact selector path, bytes, and SHA-256
 - sorted tracked paths and Step 114-2Q inventory hash
+- target-path absence evidence hash
 - `worktreeClean=true`
 - actual named branch
 
 `trustedOptions` binds the expected selector provenance, actual HEAD, actual
-tree, tracked inventory digest, and actual named branch.
+tree, tracked inventory digest, target-path absence evidence hash, and actual
+named branch.
 
 `executionPolicy` uses
 `metrics-cutover-execution-policy-v1-step114-2q`, repeats those exact trusted
@@ -217,7 +287,22 @@ bindings, and preserves:
 The compatibility test passes these three objects to the merged Step 114-2Q
 preflight and verifies that its repository-state portion is accepted.
 
-## 11. Blocked and idle suppression
+The merged Step 114-2Q preflight also receives the full
+`targetPathAbsenceEvidence` and verifies:
+
+- US and KR evidence paths exactly match the Step 114-2P target export paths
+- HEAD, tree, tracked inventory digest, and branch match the repository
+  preimage
+- the canonical evidence hash is correct and equals all trusted bindings
+- both targets were untracked and absent at both observations
+- target identities remain distinct after NFC normalization and case folding
+
+The evidence hash is included in the final execution-package payload and its
+repository-preimage member, so it contributes to the final package hash. An
+adapter result collected for different target paths cannot be reused with
+another target export package.
+
+## 12. Blocked and idle suppression
 
 For both `blocked` and `idle`, the adapter forces:
 
@@ -225,6 +310,7 @@ For both `blocked` and `idle`, the adapter forces:
 repositoryPreimage={}
 trustedOptions={}
 executionPolicy={}
+targetPathAbsenceEvidence={}
 selectorContentBase64=""
 trackedPaths=[]
 ```
@@ -233,7 +319,7 @@ No reusable Step 114-2Q repository input is exposed on failure. The result
 does not contain target CSV bytes, approval receipts, keys, allowlists, ZIP
 bytes, credentials, or secrets.
 
-## 12. CLI behavior
+## 13. CLI behavior
 
 Example:
 
@@ -250,7 +336,7 @@ Exit codes:
 - `1`: blocked validation result
 - `2`: invocation or runtime error
 
-## 13. Test evidence
+## 14. Test evidence
 
 Focused tests cover:
 
@@ -262,18 +348,42 @@ Focused tests cover:
 - invalid UTF-8, non-repository, root mismatch, root symlink, and path escape
 - detached HEAD and changing or malformed branch
 - changing HEAD and tree
+- HEAD and worktree mutation during the second filesystem observation
 - staged, unstaged, untracked, rename, conflict, and deletion states
 - malformed and changing worktree status
 - malformed, duplicate, traversal, reordered, and changing tracked inventory
 - selector missing, symlink, directory, escape, hash mismatch, and replacement
 - tracked, existing, ignored, untracked, symlink, directory, duplicate,
   malformed, escaping, and appearing targets
+- case-only, Unicode-normalization, and canonical filesystem identity
+  collisions
+- exact target-path absence evidence structure, hash, repository binding,
+  target binding, and non-reuse
 - Step 114-2Q repository-state compatibility
 - blocked-output suppression
 - CLI JSON/exit-code behavior
 - production-source no-side-effect guard
 
-## 14. Protected scope
+## 15. Review validation
+
+The 2026-07-17 review update passed:
+
+- updated Step 114-2R focused suite: 67 tests
+- updated Step 114-2Q plus 2R suite: 140 tests
+- Step 114-2N through 2R combined suite: 344 tests
+- Step 114-2M Python candidate-package suite: 16 tests
+- Python metrics discovery suite: 48 tests
+- `npm.cmd run check:scenario-metrics`: 80 tests
+- `npm.cmd run build`
+- `npm.cmd run check:ai-production`
+- `git diff --check`
+- `git diff --cached --check`
+
+The repository-wide `node --test` run was attempted for 120 seconds. It
+continued producing passing results until the command timeout; no failure was
+present in the captured output.
+
+## 16. Protected scope
 
 Step 114-2R does not modify:
 

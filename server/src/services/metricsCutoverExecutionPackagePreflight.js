@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import metricsTargetPathIdentity from "../../../scripts/lib/metrics-target-path-identity.cjs";
 import {
   METRICS_TARGET_EXPORT_SCHEMA_VERSION,
   METRICS_TARGET_EXPORT_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
@@ -17,6 +18,10 @@ export const METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION =
   "metrics-repository-preimage-v1-step114-2q";
 export const METRICS_CUTOVER_ROLLBACK_BUNDLE_CONTRACT_VERSION =
   "metrics-cutover-rollback-bundle-v1-step114-2q";
+export const METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION =
+  "metrics-cutover-target-path-absence-evidence-v1-step114-2r";
+
+const { areMetricsTargetPathsDistinct } = metricsTargetPathIdentity;
 
 const SELECTOR_PATH = "src/data/tickers/screenerCandidateOverlay.js";
 const TRUSTED_CURRENT_POINTER_SNAPSHOT = getMetricsCurrentPointerSnapshot();
@@ -114,6 +119,16 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function hasExactKeys(value, expectedKeys) {
+  if (!isPlainObject(value)) return false;
+  const actual = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  );
+}
+
 export function canonicalizeMetricsCutoverExecutionPackage(value = {}) {
   if (!isPlainObject(value)) {
     throw new TypeError("execution_package_must_be_object");
@@ -126,6 +141,24 @@ export function canonicalizeMetricsCutoverExecutionPackage(value = {}) {
 export function hashMetricsCutoverExecutionPackage(value = {}) {
   return sha256Hex(
     Buffer.from(canonicalizeMetricsCutoverExecutionPackage(value), "utf8"),
+  );
+}
+
+export function canonicalizeMetricsTargetPathAbsenceEvidence(value = {}) {
+  if (!isPlainObject(value)) {
+    throw new TypeError("target_path_absence_evidence_must_be_object");
+  }
+  const payload = cloneJson(value);
+  delete payload.evidenceHash;
+  return stableJsonValue(payload);
+}
+
+export function hashMetricsTargetPathAbsenceEvidence(value = {}) {
+  return sha256Hex(
+    Buffer.from(
+      canonicalizeMetricsTargetPathAbsenceEvidence(value),
+      "utf8",
+    ),
   );
 }
 
@@ -211,6 +244,8 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
     trackedPathsVerified: fields.trackedPathsVerified === true,
     repositoryPreimageVerified:
       fields.repositoryPreimageVerified === true,
+    targetPathAbsenceEvidenceVerified:
+      fields.targetPathAbsenceEvidenceVerified === true,
     currentSelectorPreimageVerified:
       fields.currentSelectorPreimageVerified === true,
     targetFilesVerified: fields.targetFilesVerified === true,
@@ -288,6 +323,7 @@ function isIdleInput(input) {
   return (
     !isPlainObject(input.finalApprovalInput) &&
     !isPlainObject(input.repositoryPreimage) &&
+    !isPlainObject(input.targetPathAbsenceEvidence) &&
     !isPlainObject(input.executionPolicy) &&
     !isPlainObject(input.proposedSelector) &&
     !Object.hasOwn(input, "cutoverRehearsalReady") &&
@@ -303,6 +339,8 @@ function validateTrustedRepositoryOptions(options, issues) {
     repositoryHeadSha: options.expectedRepositoryHeadSha,
     repositoryTreeSha: options.expectedRepositoryTreeSha,
     trackedPathsSha256: options.expectedTrackedPathsSha256,
+    targetPathAbsenceEvidenceHash:
+      options.expectedTargetPathAbsenceEvidenceHash,
     branchName: options.requiredBranchName,
   };
   if (!isCommitSha(trusted.selectorProvenanceCommitSha)) {
@@ -322,6 +360,9 @@ function validateTrustedRepositoryOptions(options, issues) {
   }
   if (!isSha256(trusted.trackedPathsSha256)) {
     issues.push("trusted_tracked_paths_sha256_invalid");
+  }
+  if (!isSha256(trusted.targetPathAbsenceEvidenceHash)) {
+    issues.push("trusted_target_path_absence_evidence_hash_invalid");
   }
   if (!isNonEmptyString(trusted.branchName)) {
     issues.push("trusted_required_branch_name_invalid");
@@ -368,6 +409,15 @@ function validateExecutionPolicy(policy, trusted, issues) {
   ) {
     issues.push("execution_policy_expected_tracked_paths_hash_mismatch");
   }
+  if (
+    policy.expectedTargetPathAbsenceEvidenceHash !==
+      trusted.targetPathAbsenceEvidenceHash ||
+    !isSha256(policy.expectedTargetPathAbsenceEvidenceHash)
+  ) {
+    issues.push(
+      "execution_policy_expected_target_path_absence_evidence_hash_mismatch",
+    );
+  }
   if (policy.requiredBranchName !== trusted.branchName) {
     issues.push("execution_policy_required_branch_mismatch");
   }
@@ -410,6 +460,7 @@ function validateRepositoryPreimage(
       repositoryHeadVerified: false,
       repositoryTreeVerified: false,
       trackedPathsVerified: false,
+      targetPathAbsenceEvidenceHash: "",
     };
   }
   if (
@@ -493,6 +544,20 @@ function validateRepositoryPreimage(
   ) {
     issues.push("repository_preimage_tracked_paths_not_trusted_inventory");
   }
+  if (!isSha256(preimage.targetPathAbsenceEvidenceHash)) {
+    issues.push(
+      "repository_preimage_target_path_absence_evidence_hash_invalid",
+    );
+  } else if (
+    preimage.targetPathAbsenceEvidenceHash !==
+      policy?.expectedTargetPathAbsenceEvidenceHash ||
+    preimage.targetPathAbsenceEvidenceHash !==
+      trusted.targetPathAbsenceEvidenceHash
+  ) {
+    issues.push(
+      "repository_preimage_target_path_absence_evidence_hash_mismatch",
+    );
+  }
   for (const path of [
     trustedCurrent.selector.path,
     ...trustedCurrent.components.map((component) => component.path),
@@ -562,7 +627,142 @@ function validateRepositoryPreimage(
     repositoryHeadVerified,
     repositoryTreeVerified,
     trackedPathsVerified,
+    targetPathAbsenceEvidenceHash:
+      preimage.targetPathAbsenceEvidenceHash || "",
     sha256: recomputedSha256,
+  };
+}
+
+function validateTargetPathAbsenceEvidence(
+  evidence,
+  repositoryPreimage,
+  executionPolicy,
+  trusted,
+  targetExportEvidence,
+  issues,
+) {
+  const beforeCount = issues.length;
+  if (!isPlainObject(evidence)) {
+    issues.push("target_path_absence_evidence_not_object");
+    return { verified: false, evidenceHash: "" };
+  }
+  if (
+    !hasExactKeys(evidence, [
+      "contractVersion",
+      "repositoryHeadSha",
+      "repositoryTreeSha",
+      "trackedPathsSha256",
+      "branchName",
+      "targets",
+      "evidenceHash",
+    ])
+  ) {
+    issues.push("target_path_absence_evidence_fields_invalid");
+  }
+  if (
+    evidence.contractVersion !==
+    METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION
+  ) {
+    issues.push("target_path_absence_evidence_contract_version_mismatch");
+  }
+  let computedHash = "";
+  try {
+    computedHash = hashMetricsTargetPathAbsenceEvidence(evidence);
+  } catch {
+    issues.push("target_path_absence_evidence_canonicalization_failed");
+  }
+  if (!isSha256(evidence.evidenceHash)) {
+    issues.push("target_path_absence_evidence_hash_invalid");
+  } else if (evidence.evidenceHash !== computedHash) {
+    issues.push("target_path_absence_evidence_hash_mismatch");
+  }
+  for (const [field, expected] of [
+    ["repositoryHeadSha", repositoryPreimage?.repositoryHeadSha],
+    ["repositoryTreeSha", repositoryPreimage?.repositoryTreeSha],
+    ["trackedPathsSha256", repositoryPreimage?.trackedPathsSha256],
+    ["branchName", repositoryPreimage?.branchName],
+  ]) {
+    if (evidence[field] !== expected) {
+      issues.push(`target_path_absence_evidence_${field}_mismatch`);
+    }
+  }
+  if (
+    evidence.evidenceHash !==
+      repositoryPreimage?.targetPathAbsenceEvidenceHash ||
+    evidence.evidenceHash !==
+      executionPolicy?.expectedTargetPathAbsenceEvidenceHash ||
+    evidence.evidenceHash !== trusted.targetPathAbsenceEvidenceHash
+  ) {
+    issues.push("target_path_absence_evidence_not_trusted");
+  }
+
+  const expectedTargets = [
+    {
+      role: "us_price_metrics",
+      path: targetExportEvidence?.usTarget?.path,
+    },
+    {
+      role: "kr_price_metrics",
+      path: targetExportEvidence?.krTarget?.path,
+    },
+  ];
+  if (!Array.isArray(evidence.targets) || evidence.targets.length !== 2) {
+    issues.push("target_path_absence_evidence_target_count_invalid");
+  } else {
+    evidence.targets.forEach((target, index) => {
+      const expected = expectedTargets[index];
+      if (
+        !hasExactKeys(target, [
+          "role",
+          "path",
+          "tracked",
+          "absentAtStart",
+          "absentAtEnd",
+          "symlink",
+          "directory",
+        ])
+      ) {
+        issues.push(
+          `target_path_absence_evidence_target_fields_invalid:${expected.role}`,
+        );
+        return;
+      }
+      if (target.role !== expected.role) {
+        issues.push(
+          `target_path_absence_evidence_role_mismatch:${expected.role}`,
+        );
+      }
+      if (target.path !== expected.path) {
+        issues.push(
+          `target_path_absence_evidence_path_mismatch:${expected.role}`,
+        );
+      }
+      for (const [field, expectedValue] of [
+        ["tracked", false],
+        ["absentAtStart", true],
+        ["absentAtEnd", true],
+        ["symlink", false],
+        ["directory", false],
+      ]) {
+        if (target[field] !== expectedValue) {
+          issues.push(
+            `target_path_absence_evidence_${field}_invalid:${expected.role}`,
+          );
+        }
+      }
+    });
+    if (
+      !areMetricsTargetPathsDistinct(
+        evidence.targets[0]?.path,
+        evidence.targets[1]?.path,
+      )
+    ) {
+      issues.push("target_path_absence_evidence_paths_not_distinct");
+    }
+  }
+  return {
+    verified: issues.length === beforeCount,
+    evidenceHash: computedHash,
   };
 }
 
@@ -657,6 +857,14 @@ function buildTargetFiles(finalApprovalInput, trackedPaths, issues) {
   ) {
     issues.push("target_export_verification_evidence_contract_mismatch");
   }
+  if (
+    !areMetricsTargetPathsDistinct(
+      evidence.usTarget?.path,
+      evidence.krTarget?.path,
+    )
+  ) {
+    issues.push("target_file_paths_not_distinct");
+  }
   const targetSnapshot = finalApprovalInput?.targetPointerSnapshot;
   const targets = [
     validateTargetFile(
@@ -674,9 +882,6 @@ function buildTargetFiles(finalApprovalInput, trackedPaths, issues) {
       issues,
     ),
   ].filter(Boolean);
-  if (targets.length === 2 && targets[0].path === targets[1].path) {
-    issues.push("target_file_paths_not_distinct");
-  }
   if (targets.length !== 2) {
     issues.push("target_file_count_not_exactly_two");
   }
@@ -897,6 +1102,15 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
     targetPaths,
     blockingIssues,
   );
+  const targetPathAbsenceVerification =
+    validateTargetPathAbsenceEvidence(
+      input.targetPathAbsenceEvidence,
+      input.repositoryPreimage,
+      input.executionPolicy,
+      trustedRepository,
+      targetEvidence,
+      blockingIssues,
+    );
   const targetFiles = buildTargetFiles(
     input.finalApprovalInput,
     repositoryVerification.trackedPaths,
@@ -955,6 +1169,7 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
     repositoryVerification.repositoryHeadVerified &&
     repositoryVerification.repositoryTreeVerified &&
     repositoryVerification.trackedPathsVerified &&
+    targetPathAbsenceVerification.verified &&
     targetFilesVerified &&
     proposedSelectorVerified &&
     exactDiffVerified &&
@@ -979,6 +1194,8 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
             input.repositoryPreimage?.repositoryTreeSha || "",
           trackedPathsSha256:
             repositoryVerification.trackedPathsSha256,
+          targetPathAbsenceEvidenceHash:
+            targetPathAbsenceVerification.evidenceHash,
           branchName: input.repositoryPreimage?.branchName || "",
           repositoryPreimage: {
             contractVersion:
@@ -996,6 +1213,8 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
             trackedPaths: [...repositoryVerification.trackedPaths].sort(),
             trackedPathsSha256:
               repositoryVerification.trackedPathsSha256,
+            targetPathAbsenceEvidenceHash:
+              targetPathAbsenceVerification.evidenceHash,
             worktreeClean: input.repositoryPreimage?.worktreeClean,
             branchName: input.repositoryPreimage?.branchName || "",
           },
@@ -1054,6 +1273,8 @@ export function evaluateMetricsCutoverExecutionPackagePreflight(
       trackedPathsVerified:
         repositoryVerification.trackedPathsVerified,
       repositoryPreimageVerified: repositoryVerification.verified,
+      targetPathAbsenceEvidenceVerified:
+        targetPathAbsenceVerification.verified,
       currentSelectorPreimageVerified:
         repositoryVerification.selectorVerified,
       targetFilesVerified,
