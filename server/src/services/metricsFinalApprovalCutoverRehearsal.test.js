@@ -1185,6 +1185,40 @@ test("current pointer mismatch blocks", () => {
   assert.match(result.blockingIssues.join("\n"), /operating_selection_mismatch/);
 });
 
+test("snapshot component paths and import names must be unique", async (t) => {
+  await t.test("duplicate component path with different hashes", () => {
+    const result = evaluate(
+      buildFixture({
+        currentMutator: (current) => {
+          current.components[1].path = current.components[0].path;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /current_pointer_snapshot_component_path_duplicate/,
+    );
+    assertFixedSafetyOutputs(result);
+  });
+
+  await t.test("duplicate component importName", () => {
+    const result = evaluate(
+      buildFixture({
+        currentMutator: (current) => {
+          current.components[1].importName = current.components[0].importName;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /current_pointer_snapshot_component_import_name_duplicate/,
+    );
+    assertFixedSafetyOutputs(result);
+  });
+});
+
 test("candidate, ZIP, package index, and target binding mismatches block", async (t) => {
   const cases = [
     ["candidate", "candidatePackageId", "wrong-candidate"],
@@ -1428,6 +1462,85 @@ test("target export evidence binds source member and exact import identities", a
     );
     assert.equal(result.status, "blocked");
     assert.match(result.blockingIssues.join("\n"), /target_export_kr_import_name_mismatch/);
+  });
+});
+
+test("target export paths must be new and distinct from trusted current inventory", async (t) => {
+  const current = getMetricsCurrentPointerSnapshot();
+  const currentPath = (role) =>
+    current.components.find((component) => component.role === role).path;
+
+  await t.test("US and KR targets use the same path", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.krTarget.path = evidence.usTarget.path;
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_export_paths_not_distinct|price_metric_paths_not_distinct/,
+    );
+    assertFixedSafetyOutputs(result);
+  });
+
+  await t.test("US target collides with a stable current component path", () => {
+    const result = evaluate(
+      buildFixture({
+        targetEvidenceMutator: (evidence) => {
+          evidence.usTarget.path = currentPath("base_candidates");
+        },
+      }),
+    );
+    assert.equal(result.status, "blocked");
+    assert.match(
+      result.blockingIssues.join("\n"),
+      /target_export_path_overwrites_current_inventory:us_price_metrics|component_overwrites_current_path:us_price_metrics/,
+    );
+    assertFixedSafetyOutputs(result);
+  });
+
+  for (const role of ["us_price_metrics", "kr_price_metrics"]) {
+    await t.test(`KR target collides with current ${role} path`, () => {
+      const result = evaluate(
+        buildFixture({
+          targetEvidenceMutator: (evidence) => {
+            evidence.krTarget.path = currentPath(role);
+          },
+        }),
+      );
+      assert.equal(result.status, "blocked");
+      assert.match(
+        result.blockingIssues.join("\n"),
+        /target_export_path_overwrites_current_inventory:kr_price_metrics|component_overwrites_current_path:kr_price_metrics/,
+      );
+      assertFixedSafetyOutputs(result);
+    });
+  }
+
+  await t.test("valid new and distinct US/KR paths remain ready", () => {
+    const fixture = buildFixture();
+    const usPath =
+      fixture.input.targetExportVerificationEvidence.usTarget.path;
+    const krPath =
+      fixture.input.targetExportVerificationEvidence.krTarget.path;
+
+    assert.notEqual(usPath, krPath);
+    assert.equal(
+      current.components.some((component) => component.path === usPath),
+      false,
+    );
+    assert.equal(
+      current.components.some((component) => component.path === krPath),
+      false,
+    );
+
+    const result = evaluate(fixture);
+    assert.equal(result.status, "ready");
+    assert.equal(result.cutoverRehearsalReady, true);
+    assertFixedSafetyOutputs(result);
   });
 });
 

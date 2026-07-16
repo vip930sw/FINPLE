@@ -289,6 +289,8 @@ US evidence must use `role=us_price_metrics`, `importName=usPriceMetricsOverlayC
 
 Blank/malformed rows, incorrect column counts, invalid numeric values, empty tickers, duplicate normalized market/ticker identities, wrong declared row counts, wrong schema versions, wrong byte sizes, wrong hashes, mixed markets, import aliases, and invalid repository paths block.
 
+The US and KR export paths must be different from each other. Each path must also be new: neither target may reuse any path from the six-component trusted current inventory, including stable candidate/dividend inputs or either currently selected price-metrics overlay. In-place overwrite is not a valid rehearsal target.
+
 The target pointer snapshot US/KR component paths, import identities, and hashes must equal the verified evidence values. No target CSV is written to disk or committed.
 
 ## Pointer Snapshot Contract
@@ -314,6 +316,12 @@ pointerIdentityHash
 
 Each component contains its actual loader role, JavaScript import identity, repository-relative path, and SHA-256. Candidate-target price-metrics components also bind the candidate ID, candidate hash, ZIP SHA, and package-index filename.
 
+Within every current, target, and rollback snapshot:
+
+- every component path must be unique;
+- every component `importName` must be unique;
+- declaring the same path under two roles blocks even if the roles declare different hashes.
+
 `pointerIdentityHash` is the canonical SHA-256 of the selector, source commit, normalized role-sorted components, candidate bindings, and safety flags. `snapshotKind` is excluded from this identity so the rollback snapshot can represent the exact same operating selection as current.
 
 ## Current, Target, And Rollback Rules
@@ -327,6 +335,9 @@ The target snapshot must:
 - retain all four non-price-metrics imports unchanged;
 - replace both US and KR price-metrics components;
 - include all six loader roles with unique identities;
+- use two different repository-relative CSV paths for the US and KR target exports;
+- use target paths that differ from every path in the trusted current inventory;
+- never overwrite a currently selected file in place;
 - bind both new price-metrics components to the approved candidate, ZIP, and package index;
 - differ from current in actual selected paths/hashes, not only candidate metadata;
 - keep fixture, test, and review-only flags false.
@@ -429,6 +440,10 @@ Focused synthetic tests cover:
 - US/KR mixed-market, malformed, duplicate, and partial export rows;
 - metrics-output source-member mismatch and US/KR import aliases;
 - target snapshot hash mismatch against recomputed export bytes;
+- duplicate component paths or import identities within current, target, or rollback snapshots;
+- same-path US/KR targets and same-path/different-hash component declarations;
+- US/KR target collisions with stable or price-metrics paths in the trusted current inventory;
+- valid new and distinct US/KR repository-relative CSV paths;
 - rollback mismatch;
 - no-op target;
 - fixture, test, review-only, and partial targets;

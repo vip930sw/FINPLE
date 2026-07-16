@@ -83,6 +83,9 @@ const REQUIRED_COMPONENTS = Object.freeze([
 ]);
 
 const TARGET_COMPONENT_ROLES = new Set(["us_price_metrics", "kr_price_metrics"]);
+const TRUSTED_CURRENT_COMPONENT_PATHS = new Set(
+  REQUIRED_COMPONENTS.map((component) => component.path),
+);
 const TARGET_EXPORT_HEADERS = Object.freeze([
   "market",
   "ticker",
@@ -1020,6 +1023,23 @@ function validateTargetExportVerificationEvidence(
     },
     issues,
   );
+  if (
+    isNonEmptyString(evidence.usTarget?.path) &&
+    evidence.usTarget.path === evidence.krTarget?.path
+  ) {
+    issues.push("target_export_paths_not_distinct");
+  }
+  for (const [role, target] of [
+    ["us_price_metrics", evidence.usTarget],
+    ["kr_price_metrics", evidence.krTarget],
+  ]) {
+    if (
+      isNonEmptyString(target?.path) &&
+      TRUSTED_CURRENT_COMPONENT_PATHS.has(target.path)
+    ) {
+      issues.push(`target_export_path_overwrites_current_inventory:${role}`);
+    }
+  }
   return {
     verified:
       issues.length === beforeCount && usResult.verified && krResult.verified,
@@ -1058,7 +1078,9 @@ function validateSnapshotShape(snapshot, expectedKind, issuePrefix, issues) {
   if (!Array.isArray(snapshot.components)) {
     issues.push(`${issuePrefix}_components_not_array`);
   } else {
-    const seen = new Set();
+    const seenRoles = new Set();
+    const seenImportNames = new Set();
+    const seenPaths = new Set();
     for (const component of snapshot.components) {
       if (!isPlainObject(component)) {
         issues.push(`${issuePrefix}_component_not_object`);
@@ -1066,16 +1088,26 @@ function validateSnapshotShape(snapshot, expectedKind, issuePrefix, issues) {
       }
       if (!isNonEmptyString(component.role)) {
         issues.push(`${issuePrefix}_component_role_invalid`);
-      } else if (seen.has(component.role)) {
+      } else if (seenRoles.has(component.role)) {
         issues.push(`${issuePrefix}_component_role_duplicate:${component.role}`);
       } else {
-        seen.add(component.role);
+        seenRoles.add(component.role);
       }
       if (!isNonEmptyString(component.importName)) {
         issues.push(`${issuePrefix}_component_import_name_invalid:${component.role || ""}`);
+      } else if (seenImportNames.has(component.importName)) {
+        issues.push(
+          `${issuePrefix}_component_import_name_duplicate:${component.importName}`,
+        );
+      } else {
+        seenImportNames.add(component.importName);
       }
       if (!isSafeRepositoryPath(component.path)) {
         issues.push(`${issuePrefix}_component_path_invalid:${component.role || ""}`);
+      } else if (seenPaths.has(component.path)) {
+        issues.push(`${issuePrefix}_component_path_duplicate:${component.path}`);
+      } else {
+        seenPaths.add(component.path);
       }
       if (!isSha256(component.sha256)) {
         issues.push(`${issuePrefix}_component_sha256_invalid:${component.role || ""}`);
@@ -1089,7 +1121,7 @@ function validateSnapshotShape(snapshot, expectedKind, issuePrefix, issues) {
       }
     }
     const expectedRoles = REQUIRED_COMPONENTS.map((component) => component.role).sort();
-    const actualRoles = [...seen].sort();
+    const actualRoles = [...seenRoles].sort();
     if (stableJsonValue(actualRoles) !== stableJsonValue(expectedRoles)) {
       issues.push(`${issuePrefix}_component_roles_incomplete`);
     }
@@ -1178,11 +1210,24 @@ function validateTargetPointerSnapshot(
       issues.push(`target_pointer_snapshot_stable_component_mismatch:${role}`);
     }
   }
+  const usTargetComponent = componentByRole(snapshot, "us_price_metrics");
+  const krTargetComponent = componentByRole(snapshot, "kr_price_metrics");
+  if (
+    isNonEmptyString(usTargetComponent?.path) &&
+    usTargetComponent.path === krTargetComponent?.path
+  ) {
+    issues.push("target_pointer_snapshot_price_metric_paths_not_distinct");
+  }
   for (const role of TARGET_COMPONENT_ROLES) {
     const currentComponent = componentByRole(CURRENT_POINTER_SNAPSHOT, role);
     const targetComponent = componentByRole(snapshot, role);
     const verifiedTarget = targetExportVerification?.targetsByRole?.get(role);
     if (!targetComponent) continue;
+    if (TRUSTED_CURRENT_COMPONENT_PATHS.has(targetComponent.path)) {
+      issues.push(
+        `target_pointer_snapshot_component_overwrites_current_path:${role}`,
+      );
+    }
     if (
       targetComponent.path === currentComponent.path ||
       targetComponent.sha256 === currentComponent.sha256
