@@ -3,6 +3,7 @@ const {
   readFileSync,
   realpathSync,
 } = require("node:fs");
+const { createHash } = require("node:crypto");
 const path = require("node:path");
 const { TextDecoder } = require("node:util");
 
@@ -59,6 +60,25 @@ function isPlainObject(value) {
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function stableFileIdentity(stat) {
+  if (
+    Number.isInteger(stat?.dev) &&
+    stat.dev >= 0 &&
+    Number.isInteger(stat?.ino) &&
+    stat.ino > 0
+  ) {
+    return {
+      supported: true,
+      value: `${stat.dev}:${stat.ino}`,
+    };
+  }
+  return { supported: false, value: "" };
 }
 
 function normalizeFieldName(value) {
@@ -342,7 +362,7 @@ function parseMetricsCutoverPostMergeBundleBytes(bytes) {
   };
 }
 
-function readMetricsCutoverPostMergeBundle(
+function readMetricsCutoverPostMergeBundleObservation(
   inputPath,
   {
     fs = { lstatSync, readFileSync, realpathSync },
@@ -415,9 +435,42 @@ function readMetricsCutoverPostMergeBundle(
       blockingIssues: ["operator_bundle_input_changed_during_read"],
     };
   }
+  const parsed = parseMetricsCutoverPostMergeBundleBytes(bytes);
+  if (!parsed.ok) {
+    return {
+      ...parsed,
+      canonicalInputPath: canonicalPath,
+      bytes: Buffer.alloc(0),
+      byteSize: 0,
+      sha256: "",
+      fileIdentity: "",
+      fileIdentitySupported: false,
+    };
+  }
+  const identity = stableFileIdentity(stat);
   return {
-    ...parseMetricsCutoverPostMergeBundleBytes(bytes),
+    ...parsed,
     canonicalInputPath: canonicalPath,
+    bytes,
+    byteSize: bytes.length,
+    sha256: sha256(bytes),
+    fileIdentity: identity.value,
+    fileIdentitySupported: identity.supported,
+  };
+}
+
+function readMetricsCutoverPostMergeBundle(inputPath, options = {}) {
+  const observation = readMetricsCutoverPostMergeBundleObservation(
+    inputPath,
+    options,
+  );
+  return {
+    ok: observation.ok,
+    bundle: observation.bundle,
+    blockingIssues: observation.blockingIssues,
+    ...(observation.canonicalInputPath
+      ? { canonicalInputPath: observation.canonicalInputPath }
+      : {}),
   };
 }
 
@@ -429,4 +482,6 @@ module.exports = {
   parseIsoInstant,
   parseMetricsCutoverPostMergeBundleBytes,
   readMetricsCutoverPostMergeBundle,
+  readMetricsCutoverPostMergeBundleObservation,
+  stableFileIdentity,
 };
