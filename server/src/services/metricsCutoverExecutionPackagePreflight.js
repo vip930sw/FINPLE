@@ -963,6 +963,95 @@ function buildExactSelectorTransformation(preimageText, targetFiles, issues) {
     : null;
 }
 
+export function buildMetricsCutoverProposedSelectorEvidence(
+  repositoryPreimage = {},
+  targetExportVerificationEvidence = {},
+) {
+  const issues = [];
+  let preimageText = "";
+  if (!isPlainObject(repositoryPreimage)) {
+    issues.push("proposed_selector_builder_repository_preimage_not_object");
+  } else {
+    if (
+      repositoryPreimage.contractVersion !==
+      METRICS_REPOSITORY_PREIMAGE_CONTRACT_VERSION
+    ) {
+      issues.push(
+        "proposed_selector_builder_repository_preimage_contract_mismatch",
+      );
+    }
+    if (repositoryPreimage.selectorPath !== SELECTOR_PATH) {
+      issues.push("proposed_selector_builder_selector_path_mismatch");
+    }
+    const bytes = decodeCanonicalBase64(
+      repositoryPreimage.selectorContentBase64,
+      "proposed_selector_builder_selector",
+      issues,
+    );
+    const recomputedSha256 = bytes ? sha256Hex(bytes) : "";
+    if (
+      !isSha256(repositoryPreimage.selectorSha256) ||
+      repositoryPreimage.selectorSha256 !== recomputedSha256
+    ) {
+      issues.push("proposed_selector_builder_selector_sha256_mismatch");
+    }
+    if (
+      recomputedSha256 !== TRUSTED_CURRENT_POINTER_SNAPSHOT.selector.sha256
+    ) {
+      issues.push("proposed_selector_builder_selector_not_trusted");
+    }
+    if (bytes) {
+      preimageText = bytes.toString("utf8");
+      if (!Buffer.from(preimageText, "utf8").equals(bytes)) {
+        issues.push("proposed_selector_builder_selector_utf8_invalid");
+      }
+    }
+  }
+
+  const usPath = targetExportVerificationEvidence?.usTarget?.path;
+  const krPath = targetExportVerificationEvidence?.krTarget?.path;
+  for (const [role, targetPath] of [
+    ["us_price_metrics", usPath],
+    ["kr_price_metrics", krPath],
+  ]) {
+    if (
+      !isSafeRepositoryPath(targetPath) ||
+      !targetPath.startsWith("src/data/tickers/") ||
+      !targetPath.endsWith(".csv")
+    ) {
+      issues.push(`proposed_selector_builder_target_path_invalid:${role}`);
+    }
+  }
+  if (!areMetricsTargetPathsDistinct(usPath, krPath)) {
+    issues.push("proposed_selector_builder_target_paths_not_distinct");
+  }
+
+  const transformation =
+    issues.length === 0
+      ? buildExactSelectorTransformation(
+          preimageText,
+          [
+            { role: "us_price_metrics", path: usPath },
+            { role: "kr_price_metrics", path: krPath },
+          ],
+          issues,
+        )
+      : null;
+  const ready = issues.length === 0 && transformation;
+  return {
+    ok: Boolean(ready),
+    status: ready ? "ready" : "blocked",
+    contractVersion: METRICS_SELECTOR_EXACT_DIFF_CONTRACT_VERSION,
+    selectorPath: SELECTOR_PATH,
+    selectorContentBase64: ready
+      ? transformation.bytes.toString("base64")
+      : "",
+    selectorSha256: ready ? transformation.sha256 : "",
+    blockingIssues: uniqueSorted(issues),
+    warningIssues: [],
+  };
+}
+
 function validateProposedSelector(
   proposedSelector,
   expectedTransformation,
