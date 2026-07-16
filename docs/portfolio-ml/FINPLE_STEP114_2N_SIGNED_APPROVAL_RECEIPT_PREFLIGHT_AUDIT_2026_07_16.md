@@ -96,6 +96,8 @@ The required scope is `candidate_review_to_loader_preflight`.
 The required role is `metrics_candidate_approval_signer`.
 
 Missing, malformed, empty, duplicate, unknown, revoked, scope-mismatched, role-mismatched, signer-mismatched, or invalid public-key allowlists block fail-closed.
+`revoked` must be explicitly boolean `false`; omitted, null, string, numeric, or other non-boolean states block with `approval_allowlist_entry_invalid_revocation_state`.
+Parsed public keys must have `asymmetricKeyType="ed25519"`; parse failures block with `approval_public_key_invalid`, while parseable RSA/EC/non-Ed25519 keys block with `approval_public_key_not_ed25519`.
 
 ## Candidate Identity Binding
 
@@ -123,6 +125,10 @@ The candidate manifest must also keep:
 - `blockingIssueCount=0`
 
 Any fixture, blocked, review-only, provider-enabled, production-enabled, app-enabled, or externally fetched candidate remains blocked.
+
+The verifier result exposes `candidatePackageReady` separately from `candidateIdentityBound`.
+`candidatePackageReady=true` means the candidate manifest is an object and the candidate readiness flags above are exactly satisfied.
+`candidateIdentityBound=true` additionally requires receipt identity fields and the separately supplied ZIP SHA-256 to match.
 
 ## Replay And Expiry
 

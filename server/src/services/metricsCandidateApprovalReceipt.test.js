@@ -119,6 +119,7 @@ test("valid ephemeral Ed25519 receipt passes and keeps loader activation false",
 
   assert.equal(result.ok, true);
   assert.equal(result.status, "ready");
+  assert.equal(result.candidatePackageReady, true);
   assert.equal(result.approvalReceiptVerified, true);
   assert.equal(result.signerAllowed, true);
   assert.equal(result.candidateIdentityBound, true);
@@ -227,6 +228,62 @@ test("wrong signer scope, role, signer id, revoked key, or public key blocks", (
   }
 });
 
+test("allowlist revocation state must be explicitly revoked false", () => {
+  const input = buildValidInputs();
+  const base = input.allowlistEntries[0];
+  const cases = [
+    [{ ...base, revoked: undefined }, "approval_allowlist_entry_invalid_revocation_state"],
+    [{ ...base, revoked: null }, "approval_allowlist_entry_invalid_revocation_state"],
+    [{ ...base, revoked: "false" }, "approval_allowlist_entry_invalid_revocation_state"],
+    [{ ...base, revoked: true }, "approval_signer_key_revoked"],
+  ];
+
+  for (const [entry, expectedIssue] of cases) {
+    const result = verifyMetricsCandidateApprovalReceipt(
+      { ...input, allowlistEntries: [entry] },
+      { now: NOW },
+    );
+    assert.equal(result.status, "blocked");
+    assert.equal(result.signerAllowed, false);
+    assert.match(result.blockingIssues.join(","), new RegExp(expectedIssue));
+  }
+
+  const ready = verifyMetricsCandidateApprovalReceipt(
+    { ...input, allowlistEntries: [{ ...base, revoked: false }] },
+    { now: NOW },
+  );
+  assert.equal(ready.status, "ready");
+  assert.equal(ready.signerAllowed, true);
+  assert.equal(ready.candidatePackageReady, true);
+});
+
+test("allowlist public key must parse as Ed25519", () => {
+  const input = buildValidInputs();
+  const base = input.allowlistEntries[0];
+  const { publicKey: rsaPublicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const { publicKey: ecPublicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const cases = [rsaPublicKey, ecPublicKey];
+
+  for (const publicKey of cases) {
+    const result = verifyMetricsCandidateApprovalReceipt(
+      {
+        ...input,
+        allowlistEntries: [
+          {
+            ...base,
+            publicKeyPem: publicKey.export({ type: "spki", format: "pem" }),
+          },
+        ],
+      },
+      { now: NOW },
+    );
+
+    assert.equal(result.status, "blocked");
+    assert.equal(result.signerAllowed, false);
+    assert.match(result.blockingIssues.join(","), /approval_public_key_not_ed25519/);
+  }
+});
+
 test("missing or false attestation blocks", () => {
   const result = verify({
     receipt: {
@@ -302,8 +359,36 @@ test("fixture, blocked, or production/app-enabled candidate manifests block", ()
   for (const candidateManifest of cases) {
     const result = verify({ candidateManifest });
     assert.equal(result.status, "blocked");
+    assert.equal(result.candidatePackageReady, false);
+    assert.equal(result.candidateIdentityBound, false);
     assertFlagsFalse(result);
   }
+});
+
+test("candidatePackageReady tracks candidate flags separately from identity and zip binding", () => {
+  const wrongZip = buildValidInputs();
+  wrongZip.zipPackageSha256 = "0".repeat(64);
+  const wrongZipResult = verifyMetricsCandidateApprovalReceipt(wrongZip, { now: NOW });
+  const missingManifest = verifyMetricsCandidateApprovalReceipt(
+    { ...buildValidInputs(), candidateManifest: null },
+    { now: NOW },
+  );
+  const idle = verifyMetricsCandidateApprovalReceipt({}, { now: NOW });
+
+  assert.equal(wrongZipResult.status, "blocked");
+  assert.equal(wrongZipResult.candidatePackageReady, true);
+  assert.equal(wrongZipResult.candidateIdentityBound, false);
+  assert.equal(Object.hasOwn(wrongZipResult, "candidatePackageReady"), true);
+
+  assert.equal(missingManifest.status, "blocked");
+  assert.equal(missingManifest.candidatePackageReady, false);
+  assert.equal(missingManifest.candidateIdentityBound, false);
+  assert.equal(Object.hasOwn(missingManifest, "candidatePackageReady"), true);
+
+  assert.equal(idle.status, "idle");
+  assert.equal(idle.candidatePackageReady, false);
+  assert.equal(idle.candidateIdentityBound, false);
+  assert.equal(Object.hasOwn(idle, "candidatePackageReady"), true);
 });
 
 test("replay registry blocks duplicate receipt IDs without persistent storage", () => {

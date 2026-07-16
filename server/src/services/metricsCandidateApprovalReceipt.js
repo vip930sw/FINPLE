@@ -123,6 +123,7 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
     receiptId: fields.receiptId || "",
     candidatePackageId: fields.candidatePackageId || "",
     candidatePackageHash: fields.candidatePackageHash || "",
+    candidatePackageReady: fields.candidatePackageReady === true,
     approvalReceiptVerified: fields.approvalReceiptVerified === true,
     signerAllowed: fields.signerAllowed === true,
     candidateIdentityBound: fields.candidateIdentityBound === true,
@@ -130,8 +131,8 @@ function result(status, fields = {}, blockingIssues = [], warningIssues = []) {
     productionPublishReady: false,
     appExportApproved: false,
     loaderActivated: false,
-    blockingIssues: blockingIssues.slice().sort(),
-    warningIssues: warningIssues.slice().sort(),
+    blockingIssues: [...new Set(blockingIssues)].sort(),
+    warningIssues: [...new Set(warningIssues)].sort(),
   };
 }
 
@@ -172,6 +173,9 @@ function normalizeAllowlist(input = {}) {
     if (!isNonBlankString(entry.publicKeyPem)) issues.push("approval_allowlist_entry_missing_public_key");
     if (!Array.isArray(entry.allowedScopes)) issues.push("approval_allowlist_entry_missing_allowed_scopes");
     if (!Array.isArray(entry.roles)) issues.push("approval_allowlist_entry_missing_roles");
+    if (entry.revoked !== false && entry.revoked !== true) {
+      issues.push("approval_allowlist_entry_invalid_revocation_state");
+    }
   }
 
   return { entries, issues };
@@ -231,11 +235,23 @@ function validateTimestamps(receipt, options, issues) {
   }
 }
 
-function validateCandidateBinding(candidateManifest, receipt, zipPackageSha256, issues) {
+function validateCandidatePackageReady(candidateManifest, issues) {
   if (!isPlainObject(candidateManifest)) {
     issues.push("candidate_manifest_not_object");
     return false;
   }
+  let candidatePackageReady = true;
+  for (const [field, expected] of Object.entries(REQUIRED_CANDIDATE_FLAGS)) {
+    if (candidateManifest[field] !== expected) {
+      issues.push(`candidate_manifest_${field}_invalid`);
+      candidatePackageReady = false;
+    }
+  }
+  return candidatePackageReady;
+}
+
+function validateCandidateBinding(candidateManifest, receipt, zipPackageSha256, issues) {
+  if (!isPlainObject(candidateManifest)) return false;
   let bound = true;
   for (const field of REQUIRED_BINDING_FIELDS) {
     if (!isNonEmptyString(candidateManifest[field])) {
@@ -252,12 +268,6 @@ function validateCandidateBinding(candidateManifest, receipt, zipPackageSha256, 
   } else if (zipPackageSha256 !== receipt.zipPackageSha256) {
     issues.push("zip_package_sha256_mismatch");
     bound = false;
-  }
-  for (const [field, expected] of Object.entries(REQUIRED_CANDIDATE_FLAGS)) {
-    if (candidateManifest[field] !== expected) {
-      issues.push(`candidate_manifest_${field}_invalid`);
-      bound = false;
-    }
   }
   return bound;
 }
@@ -281,6 +291,20 @@ function decodeSignature(signatureBase64, issues) {
   }
 }
 
+function parseAllowedPublicKey(entry, issues) {
+  try {
+    const publicKey = createPublicKey(entry.publicKeyPem);
+    if (publicKey.asymmetricKeyType !== "ed25519") {
+      issues.push("approval_public_key_not_ed25519");
+      return null;
+    }
+    return publicKey;
+  } catch {
+    issues.push("approval_public_key_invalid");
+    return null;
+  }
+}
+
 function findAllowedSigner(receipt, allowlistEntries, issues) {
   const entry = allowlistEntries.find((item) => isPlainObject(item) && item.signerKeyId === receipt.signerKeyId);
   if (!entry) {
@@ -289,23 +313,22 @@ function findAllowedSigner(receipt, allowlistEntries, issues) {
   }
   if (entry.signerId !== receipt.signerId) issues.push("approval_signer_id_mismatch");
   if (entry.revoked === true) issues.push("approval_signer_key_revoked");
+  if (entry.revoked !== false && entry.revoked !== true) {
+    issues.push("approval_allowlist_entry_invalid_revocation_state");
+  }
   if (!Array.isArray(entry.allowedScopes) || !entry.allowedScopes.includes(receipt.approvalScope)) {
     issues.push("approval_signer_scope_not_allowed");
   }
   if (!Array.isArray(entry.roles) || !entry.roles.includes(METRICS_CANDIDATE_APPROVAL_REQUIRED_ROLE)) {
     issues.push("approval_signer_role_not_allowed");
   }
-  try {
-    createPublicKey(entry.publicKeyPem);
-  } catch {
-    issues.push("approval_public_key_invalid");
-  }
-  return entry;
+  const publicKey = isNonBlankString(entry.publicKeyPem) ? parseAllowedPublicKey(entry, issues) : null;
+  return { entry, publicKey };
 }
 
-function verifyReceiptSignature(receipt, signerEntry, issues) {
+function verifyReceiptSignature(receipt, signer, issues) {
   const signature = decodeSignature(receipt.signatureBase64, issues);
-  if (!signature || !signerEntry || issues.some((issue) => issue === "approval_public_key_invalid")) {
+  if (!signature || !signer?.publicKey) {
     return false;
   }
   try {
@@ -313,7 +336,7 @@ function verifyReceiptSignature(receipt, signerEntry, issues) {
     const verified = verifySignature(
       null,
       Buffer.from(canonicalPayload, "utf8"),
-      createPublicKey(signerEntry.publicKeyPem),
+      signer.publicKey,
       signature,
     );
     if (!verified) issues.push("receipt_signature_invalid");
@@ -354,8 +377,10 @@ export function verifyMetricsCandidateApprovalReceipt(input = {}, options = {}) 
   const allowlist = normalizeAllowlist(input);
   blockingIssues.push(...allowlist.issues);
 
+  const candidatePackageReady = validateCandidatePackageReady(candidateManifest, blockingIssues);
   const candidateIdentityBound =
     isPlainObject(receipt) &&
+    candidatePackageReady &&
     validateCandidateBinding(candidateManifest, receipt, zipPackageSha256, blockingIssues);
 
   let signerAllowed = false;
@@ -388,6 +413,7 @@ export function verifyMetricsCandidateApprovalReceipt(input = {}, options = {}) 
     ready ? "ready" : "blocked",
     {
       ...fields,
+      candidatePackageReady,
       approvalReceiptVerified,
       signerAllowed,
       candidateIdentityBound,
