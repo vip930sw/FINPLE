@@ -45,6 +45,7 @@ import {
   METRICS_SELECTOR_PROVENANCE_COMMIT_SHA,
   METRICS_SELECTOR_EXACT_DIFF_CONTRACT_VERSION,
   METRICS_TARGET_PATH_ABSENCE_EVIDENCE_CONTRACT_VERSION,
+  buildMetricsCutoverProposedSelectorEvidence,
   evaluateMetricsCutoverExecutionPackagePreflight,
   hashMetricsCutoverExecutionPackage,
   hashMetricsTargetPathAbsenceEvidence,
@@ -1537,6 +1538,37 @@ test("exact selector diff changes only two import sources", () => {
     result.exactDiff.replacements.map((item) => item.importName),
     ["usPriceMetricsOverlayCsv", "krPriceMetricsOverlayCsv"],
   );
+});
+
+test("pure proposed-selector builder reuses exact transformation and suppresses failure bytes", () => {
+  const fixture = buildFixture();
+  const success = buildMetricsCutoverProposedSelectorEvidence(
+    fixture.input.repositoryPreimage,
+    fixture.input.finalApprovalInput
+      .targetExportVerificationEvidence,
+  );
+  assert.equal(success.status, "ready");
+  assert.equal(success.ok, true);
+  assert.equal(
+    success.selectorContentBase64,
+    fixture.input.proposedSelector.selectorContentBase64,
+  );
+  assert.equal(
+    success.selectorSha256,
+    fixture.input.proposedSelector.selectorSha256,
+  );
+
+  const blocked = buildMetricsCutoverProposedSelectorEvidence(
+    {
+      ...fixture.input.repositoryPreimage,
+      selectorSha256: "0".repeat(64),
+    },
+    fixture.input.finalApprovalInput
+      .targetExportVerificationEvidence,
+  );
+  assert.equal(blocked.status, "blocked");
+  assert.equal(blocked.selectorContentBase64, "");
+  assert.equal(blocked.selectorSha256, "");
 });
 
 test("caller-proposed selector cannot rename, reformat, append, or add a third replacement", async (t) => {
