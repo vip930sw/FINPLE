@@ -11,6 +11,7 @@ from zipfile import ZipFile
 
 from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package, verify_candidate_package
 from scripts.metrics_pipeline.candidate_package import (
+    CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
     SOURCE_DECLARATION_CONTRACT_VERSION,
     SUBMISSION_MANIFEST_CONTRACT_VERSION,
 )
@@ -22,6 +23,28 @@ from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def assert_verification_evidence(
+    test_case: unittest.TestCase,
+    evidence: dict,
+    zip_path: Path,
+    *,
+    expected_ok: bool,
+    expected_candidate_hash: str = "",
+    expected_index_file: str = "",
+) -> None:
+    test_case.assertEqual(
+        evidence["contractVersion"],
+        CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
+    )
+    test_case.assertIs(evidence["ok"], expected_ok)
+    test_case.assertIsInstance(evidence["issues"], list)
+    test_case.assertEqual(evidence["zipPackageSha256"], sha256(zip_path))
+    if expected_ok:
+        test_case.assertEqual(evidence["issues"], [])
+        test_case.assertEqual(evidence["candidatePackageHash"], expected_candidate_hash)
+        test_case.assertEqual(evidence["packageIndexFile"], expected_index_file)
 
 
 def write_csv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> None:
@@ -218,7 +241,15 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertFalse(left["appExportApproved"])
             self.assertEqual(left["candidatePackageHash"], right["candidatePackageHash"])
             self.assertEqual(left["zipPackageSha256"], right["zipPackageSha256"])
-            self.assertTrue(verify_candidate_package(left["outputs"]["zipPackage"])["ok"])
+            verification = verify_candidate_package(left["outputs"]["zipPackage"])
+            assert_verification_evidence(
+                self,
+                verification,
+                Path(left["outputs"]["zipPackage"]),
+                expected_ok=True,
+                expected_candidate_hash=left["candidatePackageHash"],
+                expected_index_file=Path(left["outputs"]["packageIndexJson"]).name,
+            )
 
             outputs = {name: Path(path) for name, path in left["outputs"].items()}
             with outputs["manifestJson"].open("r", encoding="utf-8") as handle:
@@ -560,7 +591,15 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             input_dir = build_candidate_input(Path(temp_dir))
             result = run_candidate(input_dir, Path(temp_dir) / "out")
             zip_path = Path(result["outputs"]["zipPackage"])
-            self.assertTrue(verify_candidate_package(zip_path)["ok"])
+            verification = verify_candidate_package(zip_path)
+            assert_verification_evidence(
+                self,
+                verification,
+                zip_path,
+                expected_ok=True,
+                expected_candidate_hash=result["candidatePackageHash"],
+                expected_index_file=Path(result["outputs"]["packageIndexJson"]).name,
+            )
             with ZipFile(zip_path) as package:
                 names = package.namelist()
                 payloads = {name: package.read(name) for name in names}
@@ -570,19 +609,22 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                     if name.endswith(".csv"):
                         data = data + b"# mutation\n"
                     package.writestr(name, data)
-            self.assertFalse(verify_candidate_package(mutated)["ok"])
+            mutated_evidence = verify_candidate_package(mutated)
+            assert_verification_evidence(self, mutated_evidence, mutated, expected_ok=False)
             missing = Path(temp_dir) / "missing.zip"
             with ZipFile(missing, "w") as package:
                 for name, data in payloads.items():
                     if "monthly_returns" not in name:
                         package.writestr(name, data)
-            self.assertFalse(verify_candidate_package(missing)["ok"])
+            missing_evidence = verify_candidate_package(missing)
+            assert_verification_evidence(self, missing_evidence, missing, expected_ok=False)
             extra = Path(temp_dir) / "extra.zip"
             with ZipFile(extra, "w") as package:
                 for name, data in payloads.items():
                     package.writestr(name, data)
                 package.writestr("extra.txt", b"extra")
-            self.assertFalse(verify_candidate_package(extra)["ok"])
+            extra_evidence = verify_candidate_package(extra)
+            assert_verification_evidence(self, extra_evidence, extra, expected_ok=False)
 
     def test_no_network_and_approval_false_for_ready_blocked_idle(self):
         import socket

@@ -6,6 +6,8 @@ export const METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION =
   "metrics-loader-activation-eligibility-v1-step114-2o";
 export const METRICS_LOADER_ACTIVATION_FRESHNESS_POLICY_VERSION =
   "metrics-loader-activation-freshness-policy-v1-step114-2o";
+export const CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION =
+  "candidate-package-verification-evidence-v1-step114-2o";
 
 const CANDIDATE_PACKAGE_CONTRACT_VERSION = "production-candidate-package-v1-step114-2m";
 const CANDIDATE_PACKAGE_VERSION = "candidate-package-v1-step114-2m";
@@ -15,6 +17,7 @@ const PACKAGE_MEMBER_HASH_ALGORITHM =
   "sha256-file-or-json-with-explicit-field-exclusion";
 const PACKAGE_INDEX_SELF_EXCLUSION_REASON =
   "candidatePackageHash and package index identity are self-referential; index hash excludes candidatePackageHash and ZIP member set excludes the index hash from itself.";
+const APPROVED_SOURCE_REVIEW_STATUSES = new Set(["approved", "allowed", "reviewed_approved"]);
 
 const REQUIRED_POLICY_STRING_FIELDS = Object.freeze([
   "requiredPipelineVersion",
@@ -146,10 +149,24 @@ function expectedPackageMemberPaths(version) {
   ];
 }
 
-function validatePythonPackageVerification(packageVerification, issues) {
+function validatePythonPackageVerification(
+  packageVerification,
+  packageIndex,
+  candidateManifest,
+  receipt,
+  zipPackageSha256,
+  issues,
+) {
+  const beforeCount = issues.length;
   if (!isPlainObject(packageVerification)) {
     issues.push("candidate_package_verification_result_not_object");
     return false;
+  }
+  if (
+    packageVerification.contractVersion !==
+    CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION
+  ) {
+    issues.push("candidate_package_verification_contract_version_mismatch");
   }
   if (packageVerification.ok !== true) {
     issues.push("candidate_package_verification_not_ok");
@@ -159,7 +176,30 @@ function validatePythonPackageVerification(packageVerification, issues) {
   } else if (packageVerification.issues.length > 0) {
     issues.push("candidate_package_verification_issues_present");
   }
-  return packageVerification.ok === true && Array.isArray(packageVerification.issues) && packageVerification.issues.length === 0;
+  if (!isSha256(packageVerification.zipPackageSha256)) {
+    issues.push("candidate_package_verification_zip_sha256_invalid");
+  } else if (packageVerification.zipPackageSha256 !== zipPackageSha256) {
+    issues.push("candidate_package_verification_zip_sha256_mismatch");
+  }
+  if (!isSha256(packageVerification.candidatePackageHash)) {
+    issues.push("candidate_package_verification_candidate_hash_invalid");
+  } else {
+    if (packageVerification.candidatePackageHash !== packageIndex?.candidatePackageHash) {
+      issues.push("candidate_package_verification_index_hash_mismatch");
+    }
+    if (packageVerification.candidatePackageHash !== candidateManifest?.candidatePackageHash) {
+      issues.push("candidate_package_verification_manifest_hash_mismatch");
+    }
+    if (packageVerification.candidatePackageHash !== receipt?.candidatePackageHash) {
+      issues.push("candidate_package_verification_receipt_hash_mismatch");
+    }
+  }
+  if (!isSafeMemberPath(packageVerification.packageIndexFile)) {
+    issues.push("candidate_package_verification_index_file_invalid");
+  } else if (packageVerification.packageIndexFile !== packageIndex?.selfExcludedIndexFile) {
+    issues.push("candidate_package_verification_index_file_mismatch");
+  }
+  return issues.length === beforeCount;
 }
 
 function parseJsonMember(bytes, path, issues) {
@@ -189,6 +229,7 @@ function validateManifestMember(candidateManifest, parsedManifest, issues) {
 
 function validateReadinessMember(candidateManifest, readiness, issues) {
   if (!readiness || !isPlainObject(candidateManifest)) return;
+  validateFinalApprovalFields(readiness, "candidate_readiness", issues);
   const expected = {
     candidatePackageId: candidateManifest.candidatePackageId,
     candidatePackageHash: candidateManifest.candidatePackageHash,
@@ -208,14 +249,31 @@ export function verifyMetricsCandidatePackageIndex(input = {}) {
   const packageIndex = input.packageIndex;
   const packageMembers = input.packageMembers;
   const candidateManifest = input.candidateManifest;
+  const receipt = input.receipt ?? input.approvalReceipt;
+  const zipPackageSha256 = input.zipPackageSha256;
   const packageVerification = input.packageVerification;
   const issues = [];
 
-  validatePythonPackageVerification(packageVerification, issues);
-
   if (!isPlainObject(packageIndex)) {
-    return { ok: false, candidatePackageHash: "", issues: ["package_index_not_object", ...issues].sort() };
+    validatePythonPackageVerification(
+      packageVerification,
+      packageIndex,
+      candidateManifest,
+      receipt,
+      zipPackageSha256,
+      issues,
+    );
+    return { ok: false, candidatePackageHash: "", issues: uniqueSorted(["package_index_not_object", ...issues]) };
   }
+
+  validatePythonPackageVerification(
+    packageVerification,
+    packageIndex,
+    candidateManifest,
+    receipt,
+    zipPackageSha256,
+    issues,
+  );
 
   if (packageIndex.contractVersion !== PACKAGE_INDEX_CONTRACT_VERSION) {
     issues.push("package_index_contract_version_mismatch");
@@ -399,6 +457,29 @@ function validateCandidateManifest(candidateManifest, issues) {
   for (const [field, expected] of Object.entries(requiredFlags)) {
     if (candidateManifest[field] !== expected) issues.push(`candidate_manifest_${field}_invalid`);
   }
+  if (candidateManifest.sourceKind !== "manual_operator_upload") {
+    issues.push("candidate_manifest_source_kind_invalid");
+  }
+  if (!isPlainObject(candidateManifest.sourceDeclaration)) {
+    issues.push("candidate_manifest_source_declaration_not_object");
+  } else {
+    if (candidateManifest.sourceDeclaration.fixtureOnly !== false) {
+      issues.push("candidate_manifest_source_fixture_only_invalid");
+    }
+    if (candidateManifest.sourceDeclaration.testOnly !== false) {
+      issues.push("candidate_manifest_source_test_only_invalid");
+    }
+    if (!APPROVED_SOURCE_REVIEW_STATUSES.has(candidateManifest.sourceDeclaration.appUseReviewStatus)) {
+      issues.push("candidate_manifest_source_app_use_review_not_approved");
+    }
+    if (
+      !APPROVED_SOURCE_REVIEW_STATUSES.has(
+        candidateManifest.sourceDeclaration.redistributionReviewStatus,
+      )
+    ) {
+      issues.push("candidate_manifest_source_redistribution_review_not_approved");
+    }
+  }
   return issues.length === 0;
 }
 
@@ -468,11 +549,29 @@ function validateFreshnessAndVersions(candidateManifest, receipt, policy, now, i
   return issues.length === beforeCount;
 }
 
-function hasFinalApprovalAttempt(input, receipt, issues) {
+function validateFinalApprovalFields(source, sourceName, issues) {
+  if (!isPlainObject(source)) return false;
   let attempted = false;
   for (const field of FINAL_APPROVAL_FIELDS) {
-    if (input[field] === true || (isPlainObject(receipt) && receipt[field] === true)) {
-      issues.push(`final_approval_flag_forbidden:${field}`);
+    if (!Object.hasOwn(source, field) || source[field] === false) continue;
+    if (source[field] === true) {
+      issues.push(`final_approval_flag_forbidden:${sourceName}:${field}`);
+    } else {
+      issues.push(`final_approval_flag_malformed:${sourceName}:${field}`);
+    }
+    attempted = true;
+  }
+  return attempted;
+}
+
+function hasFinalApprovalAttempt(input, candidateManifest, receipt, issues) {
+  let attempted = false;
+  for (const [sourceName, source] of [
+    ["input", input],
+    ["candidate_manifest", candidateManifest],
+    ["approval_receipt", receipt],
+  ]) {
+    if (validateFinalApprovalFields(source, sourceName, issues)) {
       attempted = true;
     }
   }
@@ -512,14 +611,19 @@ export function evaluateMetricsLoaderActivationEligibility(input = {}, options =
   if (!isPlainObject(input)) {
     return result("blocked", {}, ["eligibility_input_not_object"]);
   }
+  const candidateManifest = input.candidateManifest ?? null;
+  const receipt = input.receipt ?? input.approvalReceipt ?? null;
+  const preflightBlockingIssues = [];
+  hasFinalApprovalAttempt(input, candidateManifest, receipt, preflightBlockingIssues);
   if (isIdleInput(input)) {
+    if (preflightBlockingIssues.length > 0) {
+      return result("blocked", {}, preflightBlockingIssues);
+    }
     return result("idle", {}, ["loader_activation_eligibility_input_missing"]);
   }
 
-  const candidateManifest = input.candidateManifest ?? null;
-  const receipt = input.receipt ?? input.approvalReceipt ?? null;
   const zipPackageSha256 = input.zipPackageSha256 ?? "";
-  const blockingIssues = [];
+  const blockingIssues = [...preflightBlockingIssues];
   const candidateIssues = [];
   const policyIssues = [];
   const freshnessIssues = [];
@@ -539,8 +643,6 @@ export function evaluateMetricsLoaderActivationEligibility(input = {}, options =
     options.productionAllowlistJson ?? process.env.FINPLE_METRICS_APPROVAL_PUBLIC_KEYS_JSON;
   const productionAllowlistConfigured = validProductionAllowlistJson(productionAllowlistJson);
   if (!productionAllowlistConfigured) blockingIssues.push("production_allowlist_not_configured");
-
-  hasFinalApprovalAttempt(input, receipt, blockingIssues);
 
   const approvalResult = verifyMetricsCandidateApprovalReceipt(
     {
@@ -562,6 +664,8 @@ export function evaluateMetricsLoaderActivationEligibility(input = {}, options =
     packageIndex: input.packageIndex,
     packageMembers: input.packageMembers,
     packageVerification: input.packageVerification,
+    receipt,
+    zipPackageSha256,
   });
   blockingIssues.push(...packageIndexResult.issues);
 

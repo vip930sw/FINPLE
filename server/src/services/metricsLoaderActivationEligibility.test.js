@@ -10,6 +10,7 @@ import {
   createInMemoryApprovalReceiptReplayRegistry,
 } from "./metricsCandidateApprovalReceipt.js";
 import {
+  CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
   METRICS_LOADER_ACTIVATION_ELIGIBILITY_CONTRACT_VERSION,
   METRICS_LOADER_ACTIVATION_FRESHNESS_POLICY_VERSION,
   evaluateMetricsLoaderActivationEligibility,
@@ -130,8 +131,9 @@ function packagePayloads(manifest, readiness) {
   ]);
 }
 
-function buildPackage(manifest) {
-  let readiness = baseReadiness(manifest);
+function buildPackage(manifest, readinessOverrides = {}) {
+  const makeReadiness = () => ({ ...baseReadiness(manifest), ...readinessOverrides });
+  let readiness = makeReadiness();
   let payloads = packagePayloads(manifest, readiness);
 
   const buildMembers = () =>
@@ -163,7 +165,7 @@ function buildPackage(manifest) {
   manifest.candidatePackageHash = stableHash(
     Object.fromEntries(Object.entries(packageIndex).filter(([key]) => key !== "candidatePackageHash")),
   );
-  readiness = baseReadiness(manifest);
+  readiness = makeReadiness();
   payloads = packagePayloads(manifest, readiness);
   packageIndex = { ...packageIndex, members: buildMembers() };
   packageIndex.candidatePackageHash = stableHash(
@@ -230,10 +232,15 @@ function freshnessPolicy(overrides = {}) {
   };
 }
 
-function buildFixture({ manifestOverrides = {}, receiptOverrides = {}, policyOverrides = {} } = {}) {
+function buildFixture({
+  manifestOverrides = {},
+  receiptOverrides = {},
+  policyOverrides = {},
+  readinessOverrides = {},
+} = {}) {
   const keyContext = buildKeyContext();
   const candidateManifest = baseManifest(manifestOverrides);
-  const packageContract = buildPackage(candidateManifest);
+  const packageContract = buildPackage(candidateManifest, readinessOverrides);
   const receipt = buildReceipt(keyContext.privateKey, candidateManifest, receiptOverrides);
   return {
     keyContext,
@@ -243,7 +250,14 @@ function buildFixture({ manifestOverrides = {}, receiptOverrides = {}, policyOve
       zipPackageSha256: receipt.zipPackageSha256,
       packageIndex: packageContract.packageIndex,
       packageMembers: packageContract.packageMembers,
-      packageVerification: { ok: true, issues: [] },
+      packageVerification: {
+        contractVersion: CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
+        ok: true,
+        issues: [],
+        zipPackageSha256: receipt.zipPackageSha256,
+        candidatePackageHash: candidateManifest.candidatePackageHash,
+        packageIndexFile: packageContract.packageIndex.selfExcludedIndexFile,
+      },
       freshnessPolicy: freshnessPolicy(policyOverrides),
     },
     options: {
@@ -282,6 +296,22 @@ test("valid synthetic package, index, signed receipt, and policy are eligible", 
   assert.equal(result.sourceApprovalCurrent, true);
   assert.equal(result.productionAllowlistConfigured, true);
   assert.equal(result.activationDryRunEligible, true);
+  assert.equal(
+    fixture.input.packageVerification.contractVersion,
+    CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
+  );
+  assert.equal(
+    fixture.input.packageVerification.zipPackageSha256,
+    fixture.input.zipPackageSha256,
+  );
+  assert.equal(
+    fixture.input.packageVerification.candidatePackageHash,
+    fixture.input.packageIndex.candidatePackageHash,
+  );
+  assert.equal(
+    fixture.input.packageVerification.packageIndexFile,
+    fixture.input.packageIndex.selfExcludedIndexFile,
+  );
   assert.deepEqual(result.blockingIssues, []);
   assertFixedSafetyOutputs(result);
 });
@@ -472,9 +502,63 @@ test("replay registry blocks a duplicate receipt ID", () => {
   assert.match(second.blockingIssues.join(","), /receipt_id_replayed/);
 });
 
-test("Python verifier result is validated together with the actual 2M index contract", () => {
+test("Python verifier evidence is bound to the exact ZIP, candidate, and package index", async (t) => {
+  const cases = [
+    [
+      "evidence from another ZIP",
+      (fixture) => { fixture.input.packageVerification.zipPackageSha256 = "a".repeat(64); },
+      /candidate_package_verification_zip_sha256_mismatch/,
+    ],
+    [
+      "wrong ZIP SHA input",
+      (fixture) => { fixture.input.zipPackageSha256 = "a".repeat(64); },
+      /candidate_package_verification_zip_sha256_mismatch/,
+    ],
+    [
+      "wrong candidate package hash",
+      (fixture) => { fixture.input.packageVerification.candidatePackageHash = "a".repeat(64); },
+      /candidate_package_verification_(index|manifest|receipt)_hash_mismatch/,
+    ],
+    [
+      "wrong package index file",
+      (fixture) => { fixture.input.packageVerification.packageIndexFile = "finple_candidate_package_index_other.json"; },
+      /candidate_package_verification_index_file_mismatch/,
+    ],
+    [
+      "missing contract version",
+      (fixture) => { delete fixture.input.packageVerification.contractVersion; },
+      /candidate_package_verification_contract_version_mismatch/,
+    ],
+    [
+      "malformed issues",
+      (fixture) => { fixture.input.packageVerification.issues = "none"; },
+      /candidate_package_verification_issues_not_array/,
+    ],
+    [
+      "bare ok and issues object",
+      (fixture) => { fixture.input.packageVerification = { ok: true, issues: [] }; },
+      /candidate_package_verification_contract_version_mismatch/,
+    ],
+  ];
+
+  for (const [name, mutate, expectedIssue] of cases) {
+    await t.test(name, () => {
+      const fixture = buildFixture();
+      mutate(fixture);
+      const indexResult = verifyMetricsCandidatePackageIndex(fixture.input);
+      const result = evaluate(fixture);
+      assert.equal(indexResult.ok, false);
+      assert.match(indexResult.issues.join(","), expectedIssue);
+      assert.equal(result.packageIndexVerified, false);
+      assert.equal(result.status, "blocked");
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("Python verifier evidence issues still block", () => {
   const fixture = buildFixture();
-  fixture.input.packageVerification = { ok: true, issues: ["zip_member_set_mismatch"] };
+  fixture.input.packageVerification.issues = ["zip_member_set_mismatch"];
   const indexResult = verifyMetricsCandidatePackageIndex(fixture.input);
   const result = evaluate(fixture);
 
@@ -484,8 +568,103 @@ test("Python verifier result is validated together with the actual 2M index cont
   assert.equal(result.status, "blocked");
 });
 
+test("final-approval-only top-level inputs are blocked before idle classification", async (t) => {
+  for (const field of [
+    "productionApprovalGranted",
+    "productionActivationAuthorized",
+    "productionPublishReady",
+    "appExportApproved",
+    "loaderPointerMutationPlanned",
+    "loaderActivated",
+  ]) {
+    await t.test(field, () => {
+      const result = evaluateMetricsLoaderActivationEligibility({ [field]: true }, { now: NOW });
+      assert.equal(result.status, "blocked");
+      assert.notEqual(result.status, "idle");
+      assert.match(result.blockingIssues.join(","), new RegExp(`final_approval_flag_forbidden:input:${field}`));
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("malformed truthy final-approval values block fail-closed", async (t) => {
+  for (const value of ["true", 1]) {
+    await t.test(JSON.stringify(value), () => {
+      const result = evaluateMetricsLoaderActivationEligibility(
+        { loaderActivated: value },
+        { now: NOW },
+      );
+      assert.equal(result.status, "blocked");
+      assert.match(result.blockingIssues.join(","), /final_approval_flag_malformed:input:loaderActivated/);
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("candidate manifest final-approval fields block", async (t) => {
+  for (const field of [
+    "productionApprovalGranted",
+    "productionActivationAuthorized",
+    "productionPublishReady",
+    "appExportApproved",
+    "loaderPointerMutationPlanned",
+    "loaderActivated",
+  ]) {
+    await t.test(field, () => {
+      const fixture = buildFixture({ manifestOverrides: { [field]: true } });
+      const result = evaluate(fixture);
+      assert.equal(result.status, "blocked");
+      assert.match(
+        result.blockingIssues.join(","),
+        new RegExp(`final_approval_flag_forbidden:candidate_manifest:${field}`),
+      );
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("parsed candidate readiness final-approval fields block", async (t) => {
+  for (const field of [
+    "productionApprovalGranted",
+    "productionActivationAuthorized",
+    "productionPublishReady",
+    "appExportApproved",
+    "loaderPointerMutationPlanned",
+    "loaderActivated",
+  ]) {
+    await t.test(field, () => {
+      const fixture = buildFixture({ readinessOverrides: { [field]: true } });
+      const result = evaluate(fixture);
+      assert.equal(result.status, "blocked");
+      assert.equal(result.packageIndexVerified, false);
+      assert.match(
+        result.blockingIssues.join(","),
+        new RegExp(`final_approval_flag_forbidden:candidate_readiness:${field}`),
+      );
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("malformed final-approval fields in manifest, receipt, and readiness block", async (t) => {
+  const cases = [
+    ["manifest", { manifestOverrides: { loaderActivated: "true" } }, /candidate_manifest:loaderActivated/],
+    ["receipt", { receiptOverrides: { loaderActivated: 1 } }, /approval_receipt:loaderActivated/],
+    ["readiness", { readinessOverrides: { loaderActivated: "true" } }, /candidate_readiness:loaderActivated/],
+  ];
+  for (const [name, overrides, issue] of cases) {
+    await t.test(name, () => {
+      const result = evaluate(buildFixture(overrides));
+      assert.equal(result.status, "blocked");
+      assert.match(result.blockingIssues.join(","), issue);
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
 test("Step 114-2N receipt cannot encode final production, app, pointer, or activation approval", async (t) => {
   for (const field of [
+    "productionApprovalGranted",
     "productionActivationAuthorized",
     "productionPublishReady",
     "appExportApproved",
@@ -496,10 +675,51 @@ test("Step 114-2N receipt cannot encode final production, app, pointer, or activ
       const fixture = buildFixture({ receiptOverrides: { [field]: true } });
       const result = evaluate(fixture);
       assert.equal(result.status, "blocked");
-      assert.match(result.blockingIssues.join(","), new RegExp(`final_approval_flag_forbidden:${field}`));
+      assert.match(
+        result.blockingIssues.join(","),
+        new RegExp(`final_approval_flag_forbidden:approval_receipt:${field}`),
+      );
       assertFixedSafetyOutputs(result);
     });
   }
+});
+
+test("Step 114-2M non-fixture source boundary is rechecked", async (t) => {
+  const approvedSource = baseManifest().sourceDeclaration;
+  const cases = [
+    ["source declaration object", { sourceDeclaration: null }, /source_declaration_not_object/],
+    ["fixtureOnly", { sourceDeclaration: { ...approvedSource, fixtureOnly: true } }, /source_fixture_only_invalid/],
+    ["testOnly", { sourceDeclaration: { ...approvedSource, testOnly: true } }, /source_test_only_invalid/],
+    ["fixture source kind", { sourceKind: "fixture" }, /source_kind_invalid/],
+    ["synthetic source kind", { sourceKind: "synthetic" }, /source_kind_invalid/],
+    ["app use pending", { sourceDeclaration: { ...approvedSource, appUseReviewStatus: "pending" } }, /source_app_use_review_not_approved/],
+    ["redistribution rejected", { sourceDeclaration: { ...approvedSource, redistributionReviewStatus: "rejected" } }, /source_redistribution_review_not_approved/],
+  ];
+  for (const [name, manifestOverrides, issue] of cases) {
+    await t.test(name, () => {
+      const result = evaluate(buildFixture({ manifestOverrides }));
+      assert.equal(result.status, "blocked");
+      assert.equal(result.candidatePackageReady, false);
+      assert.match(result.blockingIssues.join(","), issue);
+      assertFixedSafetyOutputs(result);
+    });
+  }
+});
+
+test("Step 114-2M alternate approved source-review values remain eligible", () => {
+  const approvedSource = baseManifest().sourceDeclaration;
+  const result = evaluate(buildFixture({
+    manifestOverrides: {
+      sourceDeclaration: {
+        ...approvedSource,
+        appUseReviewStatus: "allowed",
+        redistributionReviewStatus: "reviewed_approved",
+      },
+    },
+  }));
+  assert.equal(result.status, "eligible");
+  assert.equal(result.activationDryRunEligible, true);
+  assertFixedSafetyOutputs(result);
 });
 
 test("service performs no network call and keeps blocked outputs false", () => {

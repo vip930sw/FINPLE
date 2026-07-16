@@ -38,6 +38,7 @@ CANDIDATE_PACKAGE_VERSION = "candidate-package-v1-step114-2m"
 SOURCE_DECLARATION_CONTRACT_VERSION = "source-declaration-v1-step114-2m"
 SUBMISSION_MANIFEST_CONTRACT_VERSION = "operator-submission-manifest-v1-step114-2m"
 FINAL_PACKAGE_INDEX_CONTRACT_VERSION = "candidate-final-package-index-v1-step114-2m"
+CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION = "candidate-package-verification-evidence-v1-step114-2o"
 REQUIRED_INPUT_ROLES = {
     "candidate_asset_master",
     "benchmark_map",
@@ -1053,20 +1054,48 @@ def _artifact_hash_for_index(path: Path, excluded_fields: list[str]) -> str:
     return _stable_hash(payload)
 
 
+def _candidate_package_verification_evidence(
+    *,
+    ok: bool,
+    issues: list[str],
+    zip_package_sha256: str = "",
+    candidate_package_hash: str = "",
+    package_index_file: str = "",
+) -> dict[str, Any]:
+    return {
+        "contractVersion": CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
+        "ok": ok,
+        "issues": issues,
+        "zipPackageSha256": zip_package_sha256,
+        "candidatePackageHash": candidate_package_hash,
+        "packageIndexFile": package_index_file,
+    }
+
+
 def verify_candidate_package(zip_path: str | Path) -> dict[str, Any]:
     """Verify exact ZIP member set and final package index hashes."""
     package_path = Path(zip_path)
     issues: list[str] = []
+    zip_package_sha256 = ""
+    candidate_package_hash = ""
+    package_index_file = ""
     try:
+        zip_package_sha256 = _sha256(package_path)
         with zipfile.ZipFile(package_path) as archive:
             names = sorted(archive.namelist())
             index_names = [name for name in names if name.startswith("finple_candidate_package_index_") and name.endswith(".json")]
             if len(index_names) != 1:
-                return {"ok": False, "issues": ["package_index_missing_or_duplicate"]}
+                return _candidate_package_verification_evidence(
+                    ok=False,
+                    issues=["package_index_missing_or_duplicate"],
+                    zip_package_sha256=zip_package_sha256,
+                )
             index_name = index_names[0]
+            package_index_file = index_name
             package_index = json.loads(archive.read(index_name).decode("utf-8"))
             index_for_hash = dict(package_index)
             expected_hash = index_for_hash.pop("candidatePackageHash", "")
+            candidate_package_hash = expected_hash
             actual_hash = _stable_hash(index_for_hash)
             if expected_hash != actual_hash:
                 issues.append("candidate_package_hash_mismatch")
@@ -1091,8 +1120,18 @@ def verify_candidate_package(zip_path: str | Path) -> dict[str, Any]:
                 if digest != member.get("sha256"):
                     issues.append(f"zip_member_hash_mismatch:{member_name}")
     except Exception as exc:  # noqa: BLE001 - verifier reports deterministic failure.
-        return {"ok": False, "issues": [f"package_verification_failed:{exc}"]}
-    return {"ok": not issues, "issues": issues}
+        return _candidate_package_verification_evidence(
+            ok=False,
+            issues=[f"package_verification_failed:{exc}"],
+            zip_package_sha256=zip_package_sha256,
+        )
+    return _candidate_package_verification_evidence(
+        ok=not issues,
+        issues=issues,
+        zip_package_sha256=zip_package_sha256,
+        candidate_package_hash=candidate_package_hash,
+        package_index_file=package_index_file,
+    )
 
 
 def _candidate_package_id(source: Mapping[str, Any], submission: Mapping[str, Any], config: CandidatePackageConfig) -> str:

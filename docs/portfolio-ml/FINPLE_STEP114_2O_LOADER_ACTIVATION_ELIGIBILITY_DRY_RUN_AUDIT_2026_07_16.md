@@ -77,6 +77,7 @@ The reused Step 114-2M contracts are:
 production-candidate-package-v1-step114-2m
 candidate-package-v1-step114-2m
 candidate-final-package-index-v1-step114-2m
+candidate-package-verification-evidence-v1-step114-2o
 ```
 
 The Node service validates the actual package-index schema from `scripts/metrics_pipeline/candidate_package.py`:
@@ -93,7 +94,9 @@ The Node service validates the actual package-index schema from `scripts/metrics
 - candidate manifest and readiness identity/flag binding;
 - source declaration and submission manifest hashes carried by the signed candidate manifest.
 
-The evaluator consumes in-memory base64 member bytes and recomputes the same per-member hash rules. It also requires the existing Python verifier result shape `{ok, issues}` to be ready and issue-free. It does not parse or reinterpret ZIP container bytes and does not claim to replace Python `verify_candidate_package()`. The Python verifier remains authoritative for the exact ZIP member set and actual archive member bytes. `zipIdentityBound` is a separate Step 114-2N signed ZIP SHA-256 binding.
+The evaluator consumes in-memory base64 member bytes and recomputes the same per-member hash rules. Python `verify_candidate_package()` now returns versioned evidence containing `contractVersion`, `ok`, `issues`, `zipPackageSha256`, `candidatePackageHash`, and `packageIndexFile`. The ZIP SHA-256 is computed from the actual ZIP bytes, the candidate hash comes from the verified package index, and the index filename is the exact verified archive member.
+
+Node requires the evidence ZIP SHA to equal the explicit evaluator ZIP SHA, and requires the evidence candidate hash to equal the package index, candidate manifest, and signed receipt candidate hashes. The evidence index filename must equal `packageIndex.selfExcludedIndexFile`. A bare `{ok: true, issues: []}` object is insufficient. The service does not parse or reinterpret ZIP container bytes and does not claim to replace Python `verify_candidate_package()`. Python remains authoritative for the exact ZIP member set and actual archive member bytes. `zipIdentityBound` remains a separate Step 114-2N signed ZIP SHA-256 binding.
 
 This boundary avoids inventing a second ZIP format or silently trusting a caller-supplied `loaderPreflightReady` or package-ready boolean.
 
@@ -114,6 +117,31 @@ metrics-candidate-approval-receipt-v1-step114-2n
 The call rechecks the receipt contract, Ed25519 signature, explicit `revoked=false`, signer identity, role, scope, candidate manifest fields, ZIP SHA-256, timestamps, expiry, and an injected replay registry. The service never trusts a supplied `loaderPreflightReady` value.
 
 Receipt fields attempting to grant production activation, publication, app export, pointer mutation, or loader activation block the dry-run. The Step 114-2N `productionActivationNotAuthorized=true` attestation remains a negative boundary, not production approval.
+
+Final-approval-only fields are inspected before idle classification. The same six fields are checked at the top-level evaluator input, candidate manifest, approval receipt, and parsed candidate readiness member:
+
+```text
+productionApprovalGranted
+productionActivationAuthorized
+productionPublishReady
+appExportApproved
+loaderPointerMutationPlanned
+loaderActivated
+```
+
+Only explicit `false` or absence is safe. `true`, string `"true"`, numeric `1`, null, and other malformed representations block fail-closed. A final-flag-only request therefore returns `blocked`, never `idle`.
+
+## Step 114-2M Source Boundary
+
+Candidate readiness is rechecked against the merged non-fixture source contract. The candidate manifest must keep:
+
+```text
+sourceKind=manual_operator_upload
+sourceDeclaration.fixtureOnly=false
+sourceDeclaration.testOnly=false
+```
+
+`sourceDeclaration` must be an object. Both `appUseReviewStatus` and `redistributionReviewStatus` must use one of the Step 114-2M approved values: `approved`, `allowed`, or `reviewed_approved`. Fixture/test markers, fixture or synthetic source kinds, and unapproved source-use states block.
 
 ## Freshness And Version Policy
 
@@ -171,7 +199,7 @@ Returned when no candidate, receipt, package index, member payload, Python verif
 
 The implementation is a pure service under `server/src/services/` and imports only Node cryptography plus the Step 114-2N verifier. It contains no filesystem, HTTP, provider, KRX, KIS, data.go.kr, database, loader, pointer, app-export, or publication operation.
 
-Focused tests cover eligible/blocked/idle results, determinism, input immutability, Ed25519 failure propagation, candidate/ZIP/index/member/source/version tampering, missing/extra/duplicate members, candidate safety flags, allowlist absence, policy errors, stale timestamps, expiry, replay, final-approval attempts, and fixed false output invariants.
+Focused tests cover eligible/blocked/idle results, determinism, input immutability, Ed25519 failure propagation, exact Python ZIP evidence binding, bare/fabricated evidence rejection, candidate/ZIP/index/member/source/version tampering, missing/extra/duplicate members, non-fixture source metadata, candidate safety flags, allowlist absence, policy errors, stale timestamps, expiry, replay, final-approval-only inputs across all four input surfaces, malformed truthy approval values, and fixed false output invariants.
 
 No `/admin/trading`, `/mypage`, homepage, public route, or other UI/API surface is added.
 
