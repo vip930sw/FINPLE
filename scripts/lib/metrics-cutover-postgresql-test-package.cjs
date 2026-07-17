@@ -37,8 +37,13 @@ const TEST_DATABASE_GATE_CONTRACT_VERSION =
   "metrics-cutover-postgresql-test-database-gate-v1-step114-2x-e";
 const FUTURE_EVIDENCE_SPEC_CONTRACT_VERSION =
   "metrics-cutover-postgresql-test-evidence-spec-v1-step114-2x-e";
+const SCENARIO_EVIDENCE_CONTRACT_VERSION =
+  "metrics-cutover-postgresql-test-scenario-evidence-v1-step114-2x-e";
+const RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION =
+  "metrics-cutover-postgresql-test-run-evidence-summary-v1-step114-2x-e";
 const PACKAGE_SUMMARY_CONTRACT_VERSION =
   "metrics-cutover-postgresql-package-summary-v1-step114-2x-e";
+const ZERO_HASH = "0".repeat(64);
 
 const FIXED_FALSE_FIELDS = Object.freeze([
   "executionAuthorized", "fileWriteAuthorized", "productionClaimEligible",
@@ -97,6 +102,27 @@ const FUTURE_SCENARIOS = Object.freeze([
   "backup_restore_rehearsal",
   "evidence_retention_after_test_completion",
 ]);
+const FUTURE_SCENARIO_EXPECTATIONS = Object.freeze([
+  { expectedResultCategory: "migration_applied", expectedAffectedRows: "schema_package_created", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "repeat_migration_deterministic", expectedAffectedRows: "zero_additional_schema_mutations", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "schema_introspection_matches", expectedAffectedRows: "read_only", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "claim_acquisition_single_winner", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "lock_acquisition_single_winner", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "terminal_transition_single_winner", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "release_after_terminal_persistence", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "duplicate_replay_blocked", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "commit_ambiguity_manual_review", expectedAffectedRows: "unknown", winnerCount: 0, mutationObserved: false, manualReviewRequired: true },
+  { expectedResultCategory: "retry_before_proven_mutation_only", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "held_lock_persists_after_session_loss", expectedAffectedRows: "read_only", winnerCount: 0, mutationObserved: false, manualReviewRequired: true },
+  { expectedResultCategory: "runtime_privilege_denied", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "migration_runtime_roles_separated", expectedAffectedRows: "read_only", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+  { expectedResultCategory: "backup_restore_verified", expectedAffectedRows: "disposable_restore_only", winnerCount: 0, mutationObserved: true, manualReviewRequired: false },
+  { expectedResultCategory: "evidence_retained", expectedAffectedRows: "read_only", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
+].map((expectation, index) => Object.freeze({
+  scenarioSequence: index + 1,
+  scenarioClass: FUTURE_SCENARIOS[index],
+  ...expectation,
+})));
 
 const DOMAINS = Object.freeze({
   migrationId: "FINPLE_STEP114_2X_E_MIGRATION_ID\0",
@@ -110,13 +136,33 @@ const DOMAINS = Object.freeze({
   gateHash: "FINPLE_STEP114_2X_E_GATE_HASH\0",
   evidenceId: "FINPLE_STEP114_2X_E_EVIDENCE_ID\0",
   evidenceHash: "FINPLE_STEP114_2X_E_EVIDENCE_HASH\0",
+  scenarioEvidenceId: "FINPLE_STEP114_2X_E_SCENARIO_EVIDENCE_ID\0",
+  scenarioEvidenceHash: "FINPLE_STEP114_2X_E_SCENARIO_EVIDENCE_HASH\0",
+  runEvidenceSummaryId: "FINPLE_STEP114_2X_E_RUN_EVIDENCE_SUMMARY_ID\0",
+  runEvidenceSummaryHash: "FINPLE_STEP114_2X_E_RUN_EVIDENCE_SUMMARY_HASH\0",
   summaryId: "FINPLE_STEP114_2X_E_SUMMARY_ID\0",
   summaryHash: "FINPLE_STEP114_2X_E_SUMMARY_HASH\0",
 });
 
+const UPSTREAM_BINDING_FIELDS = Object.freeze([
+  "preparationSummaryId", "preparationSummaryHash",
+  "claimStoreProtocolHash", "repositoryLockProtocolHash",
+  "decisionId", "decisionHash", "schemaPlanId", "schemaPlanHash",
+  "transactionPlanId", "transactionPlanHash", "credentialPlanId",
+  "credentialPlanHash", "runbookId", "runbookHash", "preflightId",
+  "preflightSummaryHash",
+]);
+const PACKAGE_BINDING_FIELDS = Object.freeze([
+  "upstreamBindings", "migrationSpecId", "migrationSpecHash",
+  "querySpecId", "querySpecHash", "introspectionSpecId",
+  "introspectionSpecHash",
+]);
+const FUTURE_PACKAGE_BINDING_FIELDS = Object.freeze([
+  ...PACKAGE_BINDING_FIELDS, "testDatabaseGateId", "testDatabaseGateHash",
+]);
+
 const MIGRATION_FIELDS = Object.freeze([
-  "contractVersion", "migrationSpecId", "upstreamPreflightSummaryHash",
-  "upstreamDecisionHash", "upstreamSchemaPlanHash", "logicalResources",
+  "contractVersion", "migrationSpecId", "upstreamBindings", "logicalResources",
   "resourceDefinitions", "orderedOperations", "destructiveOperationVocabulary",
   "destructiveOperationsAllowed", "downMigrationAllowed", "extensionInstallAllowed",
   "superuserOperationAllowed", "advisoryLockOnlyAllowed", "sqlPreviews",
@@ -127,21 +173,25 @@ const RESOURCE_FIELDS = Object.freeze([
   "supportIndexes", "forbiddenBehaviors",
 ]);
 const QUERY_FIELDS = Object.freeze([
-  "contractVersion", "querySpecId", "upstreamPreflightSummaryHash",
-  "upstreamTransactionPlanHash", "claimStoreProtocolHash",
-  "repositoryLockProtocolHash", "operationOrder", "operations", "callableMethods",
+  "contractVersion", "querySpecId", "upstreamBindings", "operationOrder",
+  "operations", "callableMethods",
   "executableSqlIncluded", "structuredManifestOnly", "querySpecHash",
 ]);
 const OPERATION_FIELDS = Object.freeze([
-  "operation", "parameters", "transactionBoundary", "affectedRows",
-  "resultCategories", "stateVersionHashPredicates", "immutableBindingPredicates",
-  "durableCommitAcknowledgement", "ambiguousOutcomePolicy",
-  "retryClassification", "querySpecHash",
+  "operation", "adapterInputFields", "storageParameters",
+  "inputToParameterMapping", "derivedParameterRules", "transactionBoundary",
+  "affectedRows", "resultCategories", "stateVersionHashPredicates",
+  "immutableBindingPredicates", "durableCommitAcknowledgement",
+  "ambiguousOutcomePolicy", "retryClassification", "operationSpecHash",
 ]);
+const MAPPING_FIELDS = Object.freeze(["source", "destination"]);
 const INTROSPECTION_FIELDS = Object.freeze([
-  "contractVersion", "introspectionSpecId", "migrationSpecId",
-  "migrationSpecHash", "upstreamSchemaPlanHash", "schemaPackageEvidence",
-  "resourceEvidence", "runtimeDeniedPrivileges", "runtimeSchemaOwner",
+  "contractVersion", "introspectionSpecId", "upstreamBindings",
+  "expectedMigrationSpecId", "expectedMigrationSpecHash",
+  "expectedSchemaPackageVersion", "expectedLogicalResources",
+  "expectedStateConstraints", "expectedUniqueConstraints",
+  "expectedImmutableFieldSets", "expectedSupportIndexes",
+  "runtimeDeniedPrivileges", "runtimeSchemaOwner",
   "runtimeSuperuser", "migrationRuntimeRolesDistinct", "utcTimezoneRequired",
   "transactionIsolationRequirement", "backupRestoreCapabilityDeclarationRequired",
   "deleteResetReuseAbsent", "ttlEvictionAbsent", "advisoryLockOnlyAbsent",
@@ -159,14 +209,81 @@ const GATE_FIELDS = Object.freeze([
 ]);
 const EVIDENCE_FIELDS = Object.freeze([
   "contractVersion", "futureEvidenceSpecId", "packageBindings", "scenarioClasses",
-  "exactScenarioCount", "evidenceProduced", "executionOccurred",
-  "databaseConnected", "futureEvidenceOnly", "rawMaterialAllowed",
+  "exactScenarioCount", "scenarioExpectations", "scenarioEvidenceContract",
+  "runEvidenceSummaryContract",
+  "evidenceProduced", "executionOccurred", "databaseConnected",
+  "futureEvidenceOnly", "rawMaterialAllowed",
   "futureEvidenceSpecHash",
 ]);
+const EVIDENCE_CONTRACT_DEFINITION_FIELDS = Object.freeze([
+  "contractVersion", "exactFields", "exactOrderRequired", "exactKeyValidationRequired",
+  "canonicalHashValidationRequired", "rawMaterialForbidden", "hashChainGenesis",
+  "fieldRules",
+]);
+const SCENARIO_EXPECTATION_FIELDS = Object.freeze([
+  "scenarioSequence", "scenarioClass", "expectedResultCategory",
+  "expectedAffectedRows", "winnerCount", "mutationObserved",
+  "manualReviewRequired",
+]);
+const SCENARIO_EVIDENCE_FIELDS = Object.freeze([
+  "contractVersion", "scenarioEvidenceId", "scenarioSequence", "scenarioClass",
+  "packageSummaryId", "packageSummaryHash", "testDatabaseGateId",
+  "testDatabaseGateHash", "sanitizedDatabaseFingerprintHash",
+  "expectedResultCategory", "observedResultCategory", "expectedAffectedRows",
+  "observedAffectedRows", "winnerCount", "mutationObserved", "priorStateHash",
+  "resultingStateHash", "manualReviewRequired", "previousEvidenceHash",
+  "evidenceHash",
+]);
+const RUN_EVIDENCE_SUMMARY_FIELDS = Object.freeze([
+  "contractVersion", "runEvidenceSummaryId", "packageSummaryId",
+  "packageSummaryHash", "testDatabaseGateId", "testDatabaseGateHash",
+  "exactScenarioCount", "scenarioOrder", "firstEvidenceHash",
+  "lastEvidenceHash", "hashChainValidationRequired", "allEvidenceComplete",
+  "rawMaterialForbidden", "executionOccurred", "databaseConnected",
+  ...FIXED_FALSE_FIELDS, "runEvidenceSummaryHash",
+]);
+const SCENARIO_EVIDENCE_FIELD_RULES = Object.freeze({
+  scenarioEvidenceId: "domain_separated_identity_from_exact_canonical_fields",
+  scenarioSequence: "one_based_exact_future_scenario_order",
+  scenarioClass: "exact_future_scenario_class_at_sequence",
+  packageSummaryId: "safe_identity_exact_run_package_binding",
+  packageSummaryHash: "sha256_exact_run_package_binding",
+  testDatabaseGateId: "safe_identity_exact_run_gate_binding",
+  testDatabaseGateHash: "sha256_exact_run_gate_binding",
+  sanitizedDatabaseFingerprintHash: "sha256_sanitized_fingerprint_only",
+  expectedResultCategory: "exact_scenario_expectation",
+  observedResultCategory: "safe_identity_observation_or_manual_review_category",
+  expectedAffectedRows: "exact_scenario_expectation",
+  observedAffectedRows: "non_negative_integer_or_approved_symbolic_observation",
+  winnerCount: "non_negative_integer_exact_scenario_expectation",
+  mutationObserved: "boolean_exact_scenario_expectation",
+  priorStateHash: "sha256_or_zero_hash_when_no_prior_state",
+  resultingStateHash: "sha256_or_zero_hash_when_no_resulting_state",
+  manualReviewRequired: "boolean_exact_scenario_expectation",
+  previousEvidenceHash: "zero_hash_for_first_else_previous_scenario_evidence_hash",
+  evidenceHash: "domain_separated_canonical_sha256_excluding_evidence_hash",
+});
+const RUN_EVIDENCE_SUMMARY_FIELD_RULES = Object.freeze({
+  runEvidenceSummaryId: "domain_separated_identity_from_exact_canonical_fields",
+  packageSummaryId: "safe_identity_exact_package_binding",
+  packageSummaryHash: "sha256_exact_package_binding",
+  testDatabaseGateId: "safe_identity_exact_gate_binding",
+  testDatabaseGateHash: "sha256_exact_gate_binding",
+  exactScenarioCount: "exact_future_scenario_count",
+  scenarioOrder: "exact_future_scenario_order",
+  firstEvidenceHash: "sha256_exact_first_scenario_evidence_hash",
+  lastEvidenceHash: "sha256_exact_last_scenario_evidence_hash",
+  hashChainValidationRequired: "exact_true",
+  allEvidenceComplete: "exact_true_before_summary_acceptance",
+  rawMaterialForbidden: "exact_true",
+  executionOccurred: "future_observation_boolean_not_authority",
+  databaseConnected: "future_observation_boolean_not_authority",
+  authorityFields: "all_fixed_false",
+  runEvidenceSummaryHash: "domain_separated_canonical_sha256_excluding_summary_hash",
+});
 const SUMMARY_FIELDS = Object.freeze([
-  "contractVersion", "packageSummaryId", "upstreamPreparationSummaryHash",
-  "upstreamClaimStoreProtocolHash", "upstreamRepositoryLockProtocolHash",
-  "upstreamPreflightSummaryHash", "migrationSpecId", "migrationSpecHash",
+  "contractVersion", "packageSummaryId", "upstreamBindings",
+  "migrationSpecId", "migrationSpecHash",
   "querySpecId", "querySpecHash", "introspectionSpecId", "introspectionSpecHash",
   "testDatabaseGateId", "testDatabaseGateHash", "futureEvidenceSpecId",
   "futureEvidenceSpecHash", "logicalResourceCount", "queryOperationCount",
@@ -196,6 +313,18 @@ const SPECS = Object.freeze({
     hashField: "futureEvidenceSpecHash",
     prefix: "metrics-cutover-postgresql-test-evidence-spec",
     idDomain: DOMAINS.evidenceId, hashDomain: DOMAINS.evidenceHash },
+  scenarioEvidence: { version: SCENARIO_EVIDENCE_CONTRACT_VERSION,
+    fields: SCENARIO_EVIDENCE_FIELDS, idField: "scenarioEvidenceId",
+    hashField: "evidenceHash",
+    prefix: "metrics-cutover-postgresql-test-scenario-evidence",
+    idDomain: DOMAINS.scenarioEvidenceId,
+    hashDomain: DOMAINS.scenarioEvidenceHash },
+  runEvidenceSummary: { version: RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+    fields: RUN_EVIDENCE_SUMMARY_FIELDS, idField: "runEvidenceSummaryId",
+    hashField: "runEvidenceSummaryHash",
+    prefix: "metrics-cutover-postgresql-test-run-evidence-summary",
+    idDomain: DOMAINS.runEvidenceSummaryId,
+    hashDomain: DOMAINS.runEvidenceSummaryHash },
   summary: { version: PACKAGE_SUMMARY_CONTRACT_VERSION, fields: SUMMARY_FIELDS,
     idField: "packageSummaryId", hashField: "packageSummaryHash",
     prefix: "metrics-cutover-postgresql-package-summary",
@@ -211,6 +340,54 @@ function without(value, field) {
 function exactArray(value, expected) {
   return Array.isArray(value) && value.length === expected.length &&
     value.every((entry, index) => entry === expected[index]);
+}
+
+function canonicalEqual(value, expected) {
+  try {
+    return canonicalJson(value) === canonicalJson(expected);
+  } catch {
+    return false;
+  }
+}
+
+function buildEvidenceContractDefinition(contractVersion, exactFields, fieldRules) {
+  return {
+    contractVersion,
+    exactFields: [...exactFields],
+    exactOrderRequired: true,
+    exactKeyValidationRequired: true,
+    canonicalHashValidationRequired: true,
+    rawMaterialForbidden: true,
+    hashChainGenesis: ZERO_HASH,
+    fieldRules: structuredClone(fieldRules),
+  };
+}
+
+function validateEvidenceContractDefinition(
+  value, version, fields, fieldRules, label,
+) {
+  const expected = buildEvidenceContractDefinition(version, fields, fieldRules);
+  return isRecord(value) &&
+    hasExactKeys(value, EVIDENCE_CONTRACT_DEFINITION_FIELDS) &&
+    canonicalEqual(value, expected)
+    ? []
+    : [`${label}_contract_definition_invalid`];
+}
+
+function validateScenarioExpectations(value) {
+  if (!Array.isArray(value) ||
+      value.length !== FUTURE_SCENARIO_EXPECTATIONS.length) {
+    return ["future_evidence_scenario_expectations_invalid"];
+  }
+  const issues = [];
+  value.forEach((entry, index) => {
+    if (!isRecord(entry) || !hasExactKeys(entry, SCENARIO_EXPECTATION_FIELDS)) {
+      issues.push(`future_evidence_scenario_expectation_fields_invalid:${index + 1}`);
+    } else if (!canonicalEqual(entry, FUTURE_SCENARIO_EXPECTATIONS[index])) {
+      issues.push(`future_evidence_scenario_expectation_mismatch:${index + 1}`);
+    }
+  });
+  return uniqueSorted(issues);
 }
 
 function sealContract(value, spec) {
@@ -245,6 +422,53 @@ function buildUpstreamArtifacts() {
     ...packet,
     preflightSummary: buildStep114_2x_dSummary(packet),
   };
+}
+
+function buildUpstreamBindings(upstream) {
+  return {
+    preparationSummaryId: upstream.preparationSummary.preparationId,
+    preparationSummaryHash: upstream.preparationSummary.summaryHash,
+    claimStoreProtocolHash: upstream.claimStoreProtocol.protocolHash,
+    repositoryLockProtocolHash: upstream.repositoryLockProtocol.protocolHash,
+    decisionId: upstream.persistenceDecision.decisionId,
+    decisionHash: upstream.persistenceDecision.decisionHash,
+    schemaPlanId: upstream.schemaPlan.schemaPlanId,
+    schemaPlanHash: upstream.schemaPlan.schemaPlanHash,
+    transactionPlanId: upstream.transactionPlan.transactionPlanId,
+    transactionPlanHash: upstream.transactionPlan.transactionPlanHash,
+    credentialPlanId: upstream.credentialPlan.credentialPlanId,
+    credentialPlanHash: upstream.credentialPlan.credentialPlanHash,
+    runbookId: upstream.migrationRunbook.runbookId,
+    runbookHash: upstream.migrationRunbook.runbookHash,
+    preflightId: upstream.preflightSummary.preflightId,
+    preflightSummaryHash: upstream.preflightSummary.summaryHash,
+  };
+}
+
+function validateUpstreamBindings(value, upstream, label) {
+  if (!isRecord(value) || !hasExactKeys(value, UPSTREAM_BINDING_FIELDS)) {
+    return [`${label}_upstream_binding_fields_invalid`];
+  }
+  const issues = [];
+  for (const field of UPSTREAM_BINDING_FIELDS) {
+    if (field.endsWith("Id") && !isSafeIdentity(value[field])) {
+      issues.push(`${label}_upstream_id_invalid:${field}`);
+    }
+    if (field.endsWith("Hash") && !isSha256(value[field])) {
+      issues.push(`${label}_upstream_hash_invalid:${field}`);
+    }
+  }
+  try {
+    const expected = buildUpstreamBindings(upstream);
+    for (const field of UPSTREAM_BINDING_FIELDS) {
+      if (value[field] !== expected[field]) {
+        issues.push(`${label}_upstream_binding_mismatch:${field}`);
+      }
+    }
+  } catch {
+    issues.push(`${label}_upstream_binding_construction_failed`);
+  }
+  return uniqueSorted(issues);
 }
 
 function validateUpstreamArtifacts(upstream) {
@@ -318,9 +542,7 @@ function lockDefinition() {
 function buildMigrationSpec(upstream) {
   return sealContract({
     contractVersion: MIGRATION_SPEC_CONTRACT_VERSION,
-    upstreamPreflightSummaryHash: upstream.preflightSummary.summaryHash,
-    upstreamDecisionHash: upstream.persistenceDecision.decisionHash,
-    upstreamSchemaPlanHash: upstream.schemaPlan.schemaPlanHash,
+    upstreamBindings: buildUpstreamBindings(upstream),
     logicalResources: [...LOGICAL_RESOURCES],
     resourceDefinitions: [claimDefinition(), lockDefinition()],
     orderedOperations: [...MIGRATION_OPERATIONS],
@@ -334,7 +556,22 @@ function buildMigrationSpec(upstream) {
 
 const QUERY_DEFINITIONS = Object.freeze({
   acquireClaim: {
-    parameters: ["receiptIdentityHash", "receiptBindingHash", "claimId", "createdAt", "recordHash"],
+    adapterInputFields: ["receiptIdentityHash", "receiptBindingHash", "testClockInstant"],
+    storageParameters: [
+      "receiptIdentityHash", "receiptBindingHash", "claimId", "state", "version",
+      "createdAt", "terminalAt", "terminalEvidenceHash", "claimHash",
+    ],
+    inputToParameterMapping: [
+      { source: "receiptIdentityHash", destination: "receiptIdentityHash" },
+      { source: "receiptBindingHash", destination: "receiptBindingHash" },
+      { source: "testClockInstant", destination: "createdAt" },
+    ],
+    derivedParameterRules: [
+      "claimId_from_validated_immutable_receipt_identity_and_binding",
+      "state_exact_claim_in_progress", "version_exact_one",
+      "terminalAt_exact_empty", "terminalEvidenceHash_exact_zero_hash",
+      "claimHash_from_validated_immutable_fields_state_version_and_createdAt",
+    ],
     transactionBoundary: "single_atomic_insert_unique_conflict_transaction",
     affectedRows: "exactly_one_winner_or_zero_conflict",
     resultCategories: ["claim_acquired", "already_claimed_read_only"],
@@ -342,13 +579,41 @@ const QUERY_DEFINITIONS = Object.freeze({
     immutableBindingPredicates: ["receipt_identity_hash", "receipt_binding_hash", "claim_id", "created_at"],
   },
   readClaim: {
-    parameters: ["receiptIdentityHash"], transactionBoundary: "strong_read_after_write_read_only",
+    adapterInputFields: ["receiptIdentityHash"],
+    storageParameters: ["receiptIdentityHash"],
+    inputToParameterMapping: [
+      { source: "receiptIdentityHash", destination: "receiptIdentityHash" },
+    ],
+    derivedParameterRules: [],
+    transactionBoundary: "strong_read_after_write_read_only",
     affectedRows: "zero_or_one_read_only", resultCategories: ["claim_found", "claim_not_found"],
     stateVersionHashPredicates: ["record_hash_returned_for_validation"],
     immutableBindingPredicates: ["receipt_identity_hash"],
   },
   transitionClaimTerminal: {
-    parameters: ["receiptIdentityHash", "expectedState", "expectedVersion", "expectedRecordHash", "terminalState", "terminalAt", "terminalEvidenceHash", "nextRecordHash"],
+    adapterInputFields: [
+      "receiptIdentityHash", "expectedState", "expectedVersion",
+      "expectedClaimHash", "terminalState", "terminalEvidenceHash",
+      "testClockInstant",
+    ],
+    storageParameters: [
+      "receiptIdentityHash", "expectedState", "expectedVersion",
+      "expectedClaimHash", "terminalState", "terminalEvidenceHash",
+      "terminalAt", "nextVersion", "nextClaimHash",
+    ],
+    inputToParameterMapping: [
+      { source: "receiptIdentityHash", destination: "receiptIdentityHash" },
+      { source: "expectedState", destination: "expectedState" },
+      { source: "expectedVersion", destination: "expectedVersion" },
+      { source: "expectedClaimHash", destination: "expectedClaimHash" },
+      { source: "terminalState", destination: "terminalState" },
+      { source: "terminalEvidenceHash", destination: "terminalEvidenceHash" },
+      { source: "testClockInstant", destination: "terminalAt" },
+    ],
+    derivedParameterRules: [
+      "nextVersion_exact_expectedVersion_plus_one",
+      "nextClaimHash_from_validated_immutable_fields_terminalState_nextVersion_terminalAt_and_terminalEvidenceHash",
+    ],
     transactionBoundary: "single_conditional_terminal_update_transaction",
     affectedRows: "exactly_one_or_zero_stale_conflict_replay",
     resultCategories: ["terminal_transition_persisted", "stale_conflict_or_replay"],
@@ -356,7 +621,34 @@ const QUERY_DEFINITIONS = Object.freeze({
     immutableBindingPredicates: ["receipt_identity_hash", "receipt_binding_hash", "claim_id", "created_at"],
   },
   acquireLock: {
-    parameters: ["repositoryIdentityHash", "headHash", "treeHash", "branchHash", "trackedPathsHash", "receiptIdentityHash", "receiptBindingHash", "ownerLivenessHash", "lockId", "acquiredAt", "recordHash"],
+    adapterInputFields: [
+      "repositoryIdentityHash", "repositoryHeadSha", "repositoryTreeSha",
+      "repositoryBranchName", "trackedPathsSha256", "ownerLivenessHash",
+      "receiptIdentityHash", "receiptBindingHash", "testClockInstant",
+    ],
+    storageParameters: [
+      "repositoryIdentityHash", "repositoryHeadSha", "repositoryTreeSha",
+      "repositoryBranchName", "trackedPathsSha256", "ownerLivenessHash",
+      "receiptIdentityHash", "receiptBindingHash", "lockId", "state", "version",
+      "acquiredAt", "releasedAt", "terminalClaimEvidenceHash", "lockHash",
+    ],
+    inputToParameterMapping: [
+      { source: "repositoryIdentityHash", destination: "repositoryIdentityHash" },
+      { source: "repositoryHeadSha", destination: "repositoryHeadSha" },
+      { source: "repositoryTreeSha", destination: "repositoryTreeSha" },
+      { source: "repositoryBranchName", destination: "repositoryBranchName" },
+      { source: "trackedPathsSha256", destination: "trackedPathsSha256" },
+      { source: "ownerLivenessHash", destination: "ownerLivenessHash" },
+      { source: "receiptIdentityHash", destination: "receiptIdentityHash" },
+      { source: "receiptBindingHash", destination: "receiptBindingHash" },
+      { source: "testClockInstant", destination: "acquiredAt" },
+    ],
+    derivedParameterRules: [
+      "lockId_from_validated_immutable_repository_receipt_and_owner_bindings",
+      "state_exact_lock_held", "version_exact_one", "releasedAt_exact_empty",
+      "terminalClaimEvidenceHash_exact_zero_hash",
+      "lockHash_from_validated_immutable_fields_state_version_and_acquiredAt",
+    ],
     transactionBoundary: "single_atomic_insert_unique_repository_transaction",
     affectedRows: "exactly_one_winner_or_zero_conflict",
     resultCategories: ["lock_acquired", "existing_lock_manual_review"],
@@ -364,13 +656,52 @@ const QUERY_DEFINITIONS = Object.freeze({
     immutableBindingPredicates: ["repository_identity_hash", "head_hash", "tree_hash", "branch_hash", "tracked_paths_hash", "receipt_identity_hash", "receipt_binding_hash", "owner_liveness_hash", "lock_id", "acquired_at"],
   },
   readLock: {
-    parameters: ["repositoryIdentityHash"], transactionBoundary: "strong_read_after_write_read_only",
+    adapterInputFields: ["repositoryIdentityHash"],
+    storageParameters: ["repositoryIdentityHash"],
+    inputToParameterMapping: [
+      { source: "repositoryIdentityHash", destination: "repositoryIdentityHash" },
+    ],
+    derivedParameterRules: [],
+    transactionBoundary: "strong_read_after_write_read_only",
     affectedRows: "zero_or_one_read_only", resultCategories: ["lock_found", "lock_not_found"],
     stateVersionHashPredicates: ["record_hash_returned_for_validation"],
     immutableBindingPredicates: ["repository_identity_hash"],
   },
   releaseLock: {
-    parameters: ["repositoryIdentityHash", "expectedState", "expectedVersion", "expectedLockHash", "receiptIdentityHash", "receiptBindingHash", "terminalClaimHash", "terminalClaimAt", "releasedAt", "nextLockHash"],
+    adapterInputFields: [
+      "repositoryIdentityHash", "expectedState", "expectedVersion",
+      "expectedLockHash", "expectedTerminalClaimHash",
+      "expectedReceiptIdentityHash", "expectedReceiptBindingHash",
+      "terminalClaim", "testClockInstant",
+    ],
+    storageParameters: [
+      "repositoryIdentityHash", "expectedState", "expectedVersion",
+      "expectedLockHash", "terminalClaimHash", "receiptIdentityHash",
+      "receiptBindingHash", "terminalClaimAt", "releasedAt", "nextState",
+      "nextVersion", "nextLockHash",
+    ],
+    inputToParameterMapping: [
+      { source: "repositoryIdentityHash", destination: "repositoryIdentityHash" },
+      { source: "expectedState", destination: "expectedState" },
+      { source: "expectedVersion", destination: "expectedVersion" },
+      { source: "expectedLockHash", destination: "expectedLockHash" },
+      { source: "expectedTerminalClaimHash", destination: "terminalClaimHash" },
+      { source: "expectedReceiptIdentityHash", destination: "receiptIdentityHash" },
+      { source: "expectedReceiptBindingHash", destination: "receiptBindingHash" },
+      { source: "terminalClaim.claimHash", destination: "terminalClaimHash" },
+      { source: "terminalClaim.receiptIdentityHash", destination: "receiptIdentityHash" },
+      { source: "terminalClaim.receiptBindingHash", destination: "receiptBindingHash" },
+      { source: "terminalClaim.terminalAt", destination: "terminalClaimAt" },
+      { source: "testClockInstant", destination: "releasedAt" },
+    ],
+    derivedParameterRules: [
+      "expected_and_terminal_claim_hashes_must_match",
+      "expected_and_terminal_claim_receipt_identity_hashes_must_match",
+      "expected_and_terminal_claim_receipt_binding_hashes_must_match",
+      "nextState_exact_lock_released",
+      "nextVersion_exact_expectedVersion_plus_one",
+      "nextLockHash_from_validated_immutable_fields_nextState_nextVersion_releasedAt_and_terminalClaimHash",
+    ],
     transactionBoundary: "single_conditional_release_after_terminal_persistence_transaction",
     affectedRows: "exactly_one_or_zero_stale_conflict_replay",
     resultCategories: ["lock_release_persisted", "repeated_release_read_only", "manual_review_required"],
@@ -387,17 +718,14 @@ function buildQueryOperation(operation) {
     ambiguousOutcomePolicy: operation.startsWith("read") ? "fail_closed_without_mutation" : "manual_review_no_automatic_retry",
     retryClassification: operation.startsWith("read") ? "read_only_retry_after_identity_revalidation" : "retry_only_when_no_commit_and_no_mutation_proven",
   };
-  value.querySpecHash = hashWithDomain(DOMAINS.operationHash, value);
+  value.operationSpecHash = hashWithDomain(DOMAINS.operationHash, value);
   return value;
 }
 
 function buildQuerySpec(upstream) {
   return sealContract({
     contractVersion: QUERY_SPEC_CONTRACT_VERSION,
-    upstreamPreflightSummaryHash: upstream.preflightSummary.summaryHash,
-    upstreamTransactionPlanHash: upstream.transactionPlan.transactionPlanHash,
-    claimStoreProtocolHash: upstream.claimStoreProtocol.protocolHash,
-    repositoryLockProtocolHash: upstream.repositoryLockProtocol.protocolHash,
+    upstreamBindings: buildUpstreamBindings(upstream),
     operationOrder: [...QUERY_OPERATIONS],
     operations: QUERY_OPERATIONS.map(buildQueryOperation),
     callableMethods: [], executableSqlIncluded: false, structuredManifestOnly: true,
@@ -407,11 +735,27 @@ function buildQuerySpec(upstream) {
 function buildIntrospectionSpec(upstream, migrationSpec) {
   return sealContract({
     contractVersion: INTROSPECTION_SPEC_CONTRACT_VERSION,
-    migrationSpecId: migrationSpec.migrationSpecId,
-    migrationSpecHash: migrationSpec.migrationSpecHash,
-    upstreamSchemaPlanHash: upstream.schemaPlan.schemaPlanHash,
-    schemaPackageEvidence: ["schema_package_version", "schema_package_hash"],
-    resourceEvidence: [claimDefinition(), lockDefinition()],
+    upstreamBindings: buildUpstreamBindings(upstream),
+    expectedMigrationSpecId: migrationSpec.migrationSpecId,
+    expectedMigrationSpecHash: migrationSpec.migrationSpecHash,
+    expectedSchemaPackageVersion: MIGRATION_SPEC_CONTRACT_VERSION,
+    expectedLogicalResources: [...LOGICAL_RESOURCES],
+    expectedStateConstraints: [
+      { logicalName: "claim_record", states: [...CLAIM_STATES] },
+      { logicalName: "repository_lock_record", states: [...LOCK_STATES] },
+    ],
+    expectedUniqueConstraints: [
+      { logicalName: "claim_record", uniqueConstraints: [...claimDefinition().uniqueConstraints] },
+      { logicalName: "repository_lock_record", uniqueConstraints: [...lockDefinition().uniqueConstraints] },
+    ],
+    expectedImmutableFieldSets: [
+      { logicalName: "claim_record", immutableFields: [...claimDefinition().immutableFields] },
+      { logicalName: "repository_lock_record", immutableFields: [...lockDefinition().immutableFields] },
+    ],
+    expectedSupportIndexes: [
+      { logicalName: "claim_record", supportIndexes: [...claimDefinition().supportIndexes] },
+      { logicalName: "repository_lock_record", supportIndexes: [...lockDefinition().supportIndexes] },
+    ],
     runtimeDeniedPrivileges: ["ALTER", "DELETE", "DROP", "TRUNCATE", "SCHEMA_OWNER", "SUPERUSER"],
     runtimeSchemaOwner: false, runtimeSuperuser: false,
     migrationRuntimeRolesDistinct: true, utcTimezoneRequired: true,
@@ -423,13 +767,24 @@ function buildIntrospectionSpec(upstream, migrationSpec) {
   }, SPECS.introspection);
 }
 
-function packageBindings(upstream, migrationSpec, querySpec, introspectionSpec = null) {
-  return {
-    upstreamPreflightSummaryHash: upstream.preflightSummary.summaryHash,
+function packageBindings(
+  upstream, migrationSpec, querySpec, introspectionSpec,
+  testDatabaseGate = null,
+) {
+  const bindings = {
+    upstreamBindings: buildUpstreamBindings(upstream),
+    migrationSpecId: migrationSpec.migrationSpecId,
     migrationSpecHash: migrationSpec.migrationSpecHash,
+    querySpecId: querySpec.querySpecId,
     querySpecHash: querySpec.querySpecHash,
-    introspectionSpecHash: introspectionSpec?.introspectionSpecHash || "0".repeat(64),
+    introspectionSpecId: introspectionSpec.introspectionSpecId,
+    introspectionSpecHash: introspectionSpec.introspectionSpecHash,
   };
+  if (testDatabaseGate) {
+    bindings.testDatabaseGateId = testDatabaseGate.testDatabaseGateId;
+    bindings.testDatabaseGateHash = testDatabaseGate.testDatabaseGateHash;
+  }
+  return bindings;
 }
 
 function buildTestDatabaseGate(upstream, migrationSpec, querySpec, introspectionSpec) {
@@ -452,11 +807,24 @@ function buildTestDatabaseGate(upstream, migrationSpec, querySpec, introspection
   }, SPECS.gate);
 }
 
-function buildFutureEvidenceSpec(upstream, migrationSpec, querySpec, introspectionSpec) {
+function buildFutureEvidenceSpec(
+  upstream, migrationSpec, querySpec, introspectionSpec, testDatabaseGate,
+) {
   return sealContract({
     contractVersion: FUTURE_EVIDENCE_SPEC_CONTRACT_VERSION,
-    packageBindings: packageBindings(upstream, migrationSpec, querySpec, introspectionSpec),
+    packageBindings: packageBindings(
+      upstream, migrationSpec, querySpec, introspectionSpec, testDatabaseGate,
+    ),
     scenarioClasses: [...FUTURE_SCENARIOS], exactScenarioCount: FUTURE_SCENARIOS.length,
+    scenarioExpectations: structuredClone(FUTURE_SCENARIO_EXPECTATIONS),
+    scenarioEvidenceContract: buildEvidenceContractDefinition(
+      SCENARIO_EVIDENCE_CONTRACT_VERSION, SCENARIO_EVIDENCE_FIELDS,
+      SCENARIO_EVIDENCE_FIELD_RULES,
+    ),
+    runEvidenceSummaryContract: buildEvidenceContractDefinition(
+      RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION, RUN_EVIDENCE_SUMMARY_FIELDS,
+      RUN_EVIDENCE_SUMMARY_FIELD_RULES,
+    ),
     evidenceProduced: false, executionOccurred: false, databaseConnected: false,
     futureEvidenceOnly: true, rawMaterialAllowed: false,
   }, SPECS.evidence);
@@ -472,6 +840,7 @@ function buildValidPostgresqlTestPackage() {
   );
   const futureEvidenceSpec = buildFutureEvidenceSpec(
     upstreamArtifacts, migrationSpec, querySpec, introspectionSpec,
+    testDatabaseGate,
   );
   return { upstreamArtifacts, migrationSpec, querySpec, introspectionSpec, testDatabaseGate, futureEvidenceSpec };
 }
@@ -490,9 +859,7 @@ function validateResourceDefinition(value, expected, label) {
 function validateMigrationSpec(value, upstream) {
   const issues = validateEnvelope(value, SPECS.migration, "migration_spec");
   if (!isRecord(value)) return issues;
-  if (value.upstreamPreflightSummaryHash !== upstream?.preflightSummary?.summaryHash ||
-      value.upstreamDecisionHash !== upstream?.persistenceDecision?.decisionHash ||
-      value.upstreamSchemaPlanHash !== upstream?.schemaPlan?.schemaPlanHash) issues.push("migration_upstream_binding_mismatch");
+  issues.push(...validateUpstreamBindings(value.upstreamBindings, upstream, "migration"));
   if (!exactArray(value.logicalResources, LOGICAL_RESOURCES)) issues.push("migration_logical_resources_invalid");
   if (!Array.isArray(value.resourceDefinitions) || value.resourceDefinitions.length !== 2) issues.push("migration_resource_definitions_invalid");
   else {
@@ -506,30 +873,72 @@ function validateMigrationSpec(value, upstream) {
   return uniqueSorted(issues);
 }
 
-function validateQueryOperation(value, operation) {
+function validateQueryMapping(value, expected, operation) {
+  const issues = [];
+  if (!Array.isArray(value)) return [`query_operation_mapping_invalid:${operation}`];
+  const seen = new Map();
+  const allowedSources = new Set(expected.map((entry) => entry.source));
+  const allowedDestinations = new Set(
+    QUERY_DEFINITIONS[operation].storageParameters,
+  );
+  for (const entry of value) {
+    if (!isRecord(entry) || !hasExactKeys(entry, MAPPING_FIELDS) ||
+        !isSafeIdentity(entry.source.replaceAll(".", "_")) ||
+        !isSafeIdentity(entry.destination)) {
+      issues.push(`query_operation_mapping_entry_invalid:${operation}`);
+      continue;
+    }
+    if (!allowedSources.has(entry.source)) {
+      issues.push(`query_operation_mapping_unknown_source:${operation}`);
+    }
+    if (!allowedDestinations.has(entry.destination)) {
+      issues.push(`query_operation_mapping_unknown_destination:${operation}`);
+    }
+    if (seen.has(entry.source)) {
+      issues.push(
+        seen.get(entry.source) === entry.destination
+          ? `query_operation_mapping_duplicate_source:${operation}`
+          : `query_operation_mapping_conflicting_source:${operation}`,
+      );
+    }
+    seen.set(entry.source, entry.destination);
+  }
+  if (!canonicalEqual(value, expected)) {
+    issues.push(`query_operation_mapping_exactness_invalid:${operation}`);
+  }
+  return uniqueSorted(issues);
+}
+
+function validateQueryOperation(value, operation, upstream) {
   const issues = [];
   if (!isRecord(value) || !hasExactKeys(value, OPERATION_FIELDS)) return [`query_operation_fields_invalid:${operation}`];
   const expected = buildQueryOperation(operation);
   for (const field of OPERATION_FIELDS) {
-    if (field === "querySpecHash") continue;
+    if (field === "operationSpecHash" || field === "inputToParameterMapping") continue;
     if (Array.isArray(expected[field])) {
       if (!exactArray(value[field], expected[field])) issues.push(`query_operation_${field}_invalid:${operation}`);
     } else if (value[field] !== expected[field]) issues.push(`query_operation_${field}_invalid:${operation}`);
   }
-  if (!isSha256(value.querySpecHash) || value.querySpecHash !== hashWithDomain(DOMAINS.operationHash, without(value, "querySpecHash"))) issues.push(`query_operation_hash_mismatch:${operation}`);
+  issues.push(...validateQueryMapping(
+    value.inputToParameterMapping,
+    expected.inputToParameterMapping,
+    operation,
+  ));
+  if (operation === "releaseLock" && !exactArray(
+    value.adapterInputFields,
+    upstream?.repositoryLockProtocol?.releaseInputFields || [],
+  )) issues.push("query_release_input_fields_protocol_mismatch");
+  if (!isSha256(value.operationSpecHash) || value.operationSpecHash !== hashWithDomain(DOMAINS.operationHash, without(value, "operationSpecHash"))) issues.push(`query_operation_hash_mismatch:${operation}`);
   return issues;
 }
 
 function validateQuerySpec(value, upstream) {
   const issues = validateEnvelope(value, SPECS.query, "query_spec");
   if (!isRecord(value)) return issues;
-  if (value.upstreamPreflightSummaryHash !== upstream?.preflightSummary?.summaryHash ||
-      value.upstreamTransactionPlanHash !== upstream?.transactionPlan?.transactionPlanHash ||
-      value.claimStoreProtocolHash !== upstream?.claimStoreProtocol?.protocolHash ||
-      value.repositoryLockProtocolHash !== upstream?.repositoryLockProtocol?.protocolHash) issues.push("query_upstream_binding_mismatch");
+  issues.push(...validateUpstreamBindings(value.upstreamBindings, upstream, "query"));
   if (!exactArray(value.operationOrder, QUERY_OPERATIONS)) issues.push("query_operation_order_invalid");
   if (!Array.isArray(value.operations) || value.operations.length !== QUERY_OPERATIONS.length) issues.push("query_operations_invalid");
-  else value.operations.forEach((operation, index) => issues.push(...validateQueryOperation(operation, QUERY_OPERATIONS[index])));
+  else value.operations.forEach((operation, index) => issues.push(...validateQueryOperation(operation, QUERY_OPERATIONS[index], upstream)));
   if (!exactArray(value.callableMethods, []) || value.executableSqlIncluded !== false || value.structuredManifestOnly !== true) issues.push("query_inert_boundary_invalid");
   return uniqueSorted(issues);
 }
@@ -537,12 +946,17 @@ function validateQuerySpec(value, upstream) {
 function validateIntrospectionSpec(value, upstream, migrationSpec) {
   const issues = validateEnvelope(value, SPECS.introspection, "introspection_spec");
   if (!isRecord(value)) return issues;
-  if (value.migrationSpecId !== migrationSpec?.migrationSpecId || value.migrationSpecHash !== migrationSpec?.migrationSpecHash || value.upstreamSchemaPlanHash !== upstream?.schemaPlan?.schemaPlanHash) issues.push("introspection_binding_mismatch");
-  if (!exactArray(value.schemaPackageEvidence, ["schema_package_version", "schema_package_hash"])) issues.push("introspection_package_evidence_invalid");
-  if (!Array.isArray(value.resourceEvidence) || value.resourceEvidence.length !== 2) issues.push("introspection_resources_invalid");
-  else {
-    issues.push(...validateResourceDefinition(value.resourceEvidence[0], claimDefinition(), "introspection_claim"));
-    issues.push(...validateResourceDefinition(value.resourceEvidence[1], lockDefinition(), "introspection_lock"));
+  issues.push(...validateUpstreamBindings(value.upstreamBindings, upstream, "introspection"));
+  const expected = buildIntrospectionSpec(upstream, migrationSpec);
+  for (const field of [
+    "expectedMigrationSpecId", "expectedMigrationSpecHash",
+    "expectedSchemaPackageVersion", "expectedLogicalResources",
+    "expectedStateConstraints", "expectedUniqueConstraints",
+    "expectedImmutableFieldSets", "expectedSupportIndexes",
+  ]) {
+    if (!canonicalEqual(value[field], expected[field])) {
+      issues.push(`introspection_expected_value_invalid:${field}`);
+    }
   }
   if (!exactArray(value.runtimeDeniedPrivileges, ["ALTER", "DELETE", "DROP", "TRUNCATE", "SCHEMA_OWNER", "SUPERUSER"])) issues.push("introspection_runtime_privileges_invalid");
   for (const field of ["runtimeSchemaOwner", "runtimeSuperuser", "catalogQueryExecutionAllowed"]) if (value[field] !== false) issues.push(`introspection_forbidden_state:${field}`);
@@ -551,12 +965,20 @@ function validateIntrospectionSpec(value, upstream, migrationSpec) {
   return uniqueSorted(issues);
 }
 
-function validateBindings(value, upstream, migrationSpec, querySpec, introspectionSpec) {
-  return isRecord(value) && hasExactKeys(value, ["upstreamPreflightSummaryHash", "migrationSpecHash", "querySpecHash", "introspectionSpecHash"]) &&
-    value.upstreamPreflightSummaryHash === upstream?.preflightSummary?.summaryHash &&
-    value.migrationSpecHash === migrationSpec?.migrationSpecHash &&
-    value.querySpecHash === querySpec?.querySpecHash &&
-    value.introspectionSpecHash === introspectionSpec?.introspectionSpecHash;
+function validateBindings(
+  value, upstream, migrationSpec, querySpec, introspectionSpec,
+  testDatabaseGate = null,
+) {
+  const fields = testDatabaseGate
+    ? FUTURE_PACKAGE_BINDING_FIELDS
+    : PACKAGE_BINDING_FIELDS;
+  if (!isRecord(value) || !hasExactKeys(value, fields)) return false;
+  return canonicalEqual(
+    value,
+    packageBindings(
+      upstream, migrationSpec, querySpec, introspectionSpec, testDatabaseGate,
+    ),
+  );
 }
 
 function validateTestDatabaseGate(value, upstream, migrationSpec, querySpec, introspectionSpec) {
@@ -572,11 +994,32 @@ function validateTestDatabaseGate(value, upstream, migrationSpec, querySpec, int
   return uniqueSorted(issues);
 }
 
-function validateFutureEvidenceSpec(value, upstream, migrationSpec, querySpec, introspectionSpec) {
+function validateFutureEvidenceSpec(
+  value, upstream, migrationSpec, querySpec, introspectionSpec,
+  testDatabaseGate,
+) {
   const issues = validateEnvelope(value, SPECS.evidence, "future_evidence_spec");
   if (!isRecord(value)) return issues;
-  if (!validateBindings(value.packageBindings, upstream, migrationSpec, querySpec, introspectionSpec)) issues.push("future_evidence_binding_mismatch");
+  if (!validateBindings(
+    value.packageBindings, upstream, migrationSpec, querySpec,
+    introspectionSpec, testDatabaseGate,
+  )) issues.push("future_evidence_binding_mismatch");
   if (!exactArray(value.scenarioClasses, FUTURE_SCENARIOS) || value.exactScenarioCount !== FUTURE_SCENARIOS.length) issues.push("future_evidence_scenarios_invalid");
+  issues.push(...validateScenarioExpectations(value.scenarioExpectations));
+  issues.push(...validateEvidenceContractDefinition(
+    value.scenarioEvidenceContract,
+    SCENARIO_EVIDENCE_CONTRACT_VERSION,
+    SCENARIO_EVIDENCE_FIELDS,
+    SCENARIO_EVIDENCE_FIELD_RULES,
+    "scenario_evidence",
+  ));
+  issues.push(...validateEvidenceContractDefinition(
+    value.runEvidenceSummaryContract,
+    RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+    RUN_EVIDENCE_SUMMARY_FIELDS,
+    RUN_EVIDENCE_SUMMARY_FIELD_RULES,
+    "run_evidence_summary",
+  ));
   for (const field of ["evidenceProduced", "executionOccurred", "databaseConnected", "rawMaterialAllowed"]) if (value[field] !== false) issues.push(`future_evidence_forbidden_state:${field}`);
   if (value.futureEvidenceOnly !== true) issues.push("future_evidence_boundary_invalid");
   return uniqueSorted(issues);
@@ -585,10 +1028,7 @@ function validateFutureEvidenceSpec(value, upstream, migrationSpec, querySpec, i
 function buildPackageSummary(packet) {
   return sealContract({
     contractVersion: PACKAGE_SUMMARY_CONTRACT_VERSION,
-    upstreamPreparationSummaryHash: packet.upstreamArtifacts.preparationSummary.summaryHash,
-    upstreamClaimStoreProtocolHash: packet.upstreamArtifacts.claimStoreProtocol.protocolHash,
-    upstreamRepositoryLockProtocolHash: packet.upstreamArtifacts.repositoryLockProtocol.protocolHash,
-    upstreamPreflightSummaryHash: packet.upstreamArtifacts.preflightSummary.summaryHash,
+    upstreamBindings: buildUpstreamBindings(packet.upstreamArtifacts),
     migrationSpecId: packet.migrationSpec.migrationSpecId,
     migrationSpecHash: packet.migrationSpec.migrationSpecHash,
     querySpecId: packet.querySpec.querySpecId, querySpecHash: packet.querySpec.querySpecHash,
@@ -611,7 +1051,7 @@ function validatePackageSummary(value, packet) {
   const expected = buildPackageSummary(packet);
   for (const field of SUMMARY_FIELDS) {
     if (field === "packageSummaryId" || field === "packageSummaryHash") continue;
-    if (value[field] !== expected[field]) issues.push(`package_summary_binding_invalid:${field}`);
+    if (!canonicalEqual(value[field], expected[field])) issues.push(`package_summary_binding_invalid:${field}`);
   }
   for (const field of FIXED_FALSE_FIELDS) if (value[field] !== false) issues.push(`package_summary_fixed_false_invalid:${field}`);
   return uniqueSorted(issues);
@@ -644,7 +1084,10 @@ function evaluateMetricsCutoverPostgresqlTestPackage(packet) {
     ...validateQuerySpec(packet.querySpec, packet.upstreamArtifacts),
     ...validateIntrospectionSpec(packet.introspectionSpec, packet.upstreamArtifacts, packet.migrationSpec),
     ...validateTestDatabaseGate(packet.testDatabaseGate, packet.upstreamArtifacts, packet.migrationSpec, packet.querySpec, packet.introspectionSpec),
-    ...validateFutureEvidenceSpec(packet.futureEvidenceSpec, packet.upstreamArtifacts, packet.migrationSpec, packet.querySpec, packet.introspectionSpec),
+    ...validateFutureEvidenceSpec(
+      packet.futureEvidenceSpec, packet.upstreamArtifacts, packet.migrationSpec,
+      packet.querySpec, packet.introspectionSpec, packet.testDatabaseGate,
+    ),
   ];
   if (issues.length > 0) return safeResult("blocked", {}, issues);
   try {
@@ -664,6 +1107,7 @@ module.exports = {
   FIXED_FALSE_FIELDS,
   FORBIDDEN_CALLABLE_METHODS,
   FUTURE_EVIDENCE_SPEC_CONTRACT_VERSION,
+  FUTURE_SCENARIO_EXPECTATIONS,
   FUTURE_SCENARIOS,
   INTROSPECTION_SPEC_CONTRACT_VERSION,
   LOGICAL_RESOURCES,
@@ -672,8 +1116,13 @@ module.exports = {
   PACKAGE_SUMMARY_CONTRACT_VERSION,
   QUERY_OPERATIONS,
   QUERY_SPEC_CONTRACT_VERSION,
+  RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+  RUN_EVIDENCE_SUMMARY_FIELDS,
+  SCENARIO_EVIDENCE_CONTRACT_VERSION,
+  SCENARIO_EVIDENCE_FIELDS,
   SPECS,
   TEST_DATABASE_GATE_CONTRACT_VERSION,
+  ZERO_HASH,
   buildFutureEvidenceSpec,
   buildIntrospectionSpec,
   buildMigrationSpec,

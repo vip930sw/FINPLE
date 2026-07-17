@@ -12,9 +12,11 @@ The package is sealed under these versioned contracts:
 - `metrics-cutover-postgresql-introspection-spec-v1-step114-2x-e`
 - `metrics-cutover-postgresql-test-database-gate-v1-step114-2x-e`
 - `metrics-cutover-postgresql-test-evidence-spec-v1-step114-2x-e`
+- `metrics-cutover-postgresql-test-scenario-evidence-v1-step114-2x-e`
+- `metrics-cutover-postgresql-test-run-evidence-summary-v1-step114-2x-e`
 - `metrics-cutover-postgresql-package-summary-v1-step114-2x-e`
 
-Each object has exact fields, a domain-separated canonical identity and hash, and exact hash bindings to the validated Step 114-2X-B, 2X-C, and 2X-D artifacts. A ready result exposes only a sanitized summary. Blocked and idle results suppress it.
+Each object has exact fields, a domain-separated canonical identity and hash, and complete ID/hash pair bindings to the validated Step 114-2X-B and 2X-D artifacts. The Step 114-2X-C protocols are bound by their canonical hashes. The migration, query, introspection, gate, future-evidence, and package-summary layers retain the complete applicable ID/hash pairs. A ready result exposes only a sanitized summary. Blocked and idle results suppress it.
 
 ## Logical migration manifest
 
@@ -45,13 +47,13 @@ The operation order is exactly:
 5. `readLock`
 6. `releaseLock`
 
-Every operation seals its ordered parameters, transaction boundary, affected-row cardinality, result categories, state/version/hash predicates, immutable binding predicates, durable-commit rule, ambiguous-outcome policy, and retry classification. Mutating success requires durable commit acknowledgement. An ambiguous mutation enters manual review, and retry is allowed only when no commit and no mutation have been proven. Lock release remains bound to the exact receipt identity, receipt binding, and durably observed terminal-claim hash.
+Every operation seals its exact adapter input fields, storage parameters, input-to-parameter mapping, derived-parameter rules, transaction boundary, affected-row cardinality, result categories, state/version/hash predicates, immutable binding predicates, durable-commit rule, ambiguous-outcome policy, and retry classification. The six mappings bind terminal-claim evidence, receipt identity/binding, clock-derived timestamps, version increments, and next-state hashes. `releaseLock` adapter inputs exactly match the merged Step 114-2X-C protocol. Mutating success requires durable commit acknowledgement. An ambiguous mutation enters manual review, and retry is allowed only when no commit and no mutation have been proven.
 
 There is no exported `execute`, `connect`, `query`, `migrate`, `apply`, or `runSql` capability.
 
 ## Expected introspection
 
-The introspection contract describes later evidence only. It expects the exact two resources, their columns, states, uniqueness, immutability, schema package version/hash, denied runtime privileges, distinct migration/runtime roles, UTC time, suitable transaction isolation, and backup/restore capability.
+The introspection contract describes later evidence only. It expects the exact migration ID/hash, schema-package contract version, two logical resources, state constraints, unique constraints, immutable-field sets, support indexes, denied runtime privileges, distinct migration/runtime roles, UTC time, suitable transaction isolation, and backup/restore capability.
 
 It explicitly rejects delete/reset/reuse, TTL or eviction, advisory-lock-only persistence, runtime schema ownership, superuser privilege, and runtime `ALTER`, `DELETE`, `DROP`, or `TRUNCATE`. This stage performs no catalog query.
 

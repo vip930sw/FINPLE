@@ -7,11 +7,17 @@ const test = require("node:test");
 const {
   DESTRUCTIVE_OPERATIONS,
   FIXED_FALSE_FIELDS,
+  FUTURE_SCENARIO_EXPECTATIONS,
   FUTURE_SCENARIOS,
   LOGICAL_RESOURCES,
   MIGRATION_OPERATIONS,
   QUERY_OPERATIONS,
+  RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+  RUN_EVIDENCE_SUMMARY_FIELDS,
+  SCENARIO_EVIDENCE_CONTRACT_VERSION,
+  SCENARIO_EVIDENCE_FIELDS,
   SPECS,
+  ZERO_HASH,
   buildPackageSummary,
   buildValidPostgresqlTestPackage,
   evaluateMetricsCutoverPostgresqlTestPackage,
@@ -141,6 +147,52 @@ test("Step 114-2X-D preflight summary and supporting artifacts are validated", (
   assertBlocked(schema, "step114_2x_d_claim_schema_semantics_invalid");
 });
 
+test("complete upstream IDs and hashes bind every package layer", () => {
+  const packet = buildValidPostgresqlTestPackage();
+  const upstream = packet.upstreamArtifacts;
+  const expected = {
+    preparationSummaryId: upstream.preparationSummary.preparationId,
+    preparationSummaryHash: upstream.preparationSummary.summaryHash,
+    claimStoreProtocolHash: upstream.claimStoreProtocol.protocolHash,
+    repositoryLockProtocolHash: upstream.repositoryLockProtocol.protocolHash,
+    decisionId: upstream.persistenceDecision.decisionId,
+    decisionHash: upstream.persistenceDecision.decisionHash,
+    schemaPlanId: upstream.schemaPlan.schemaPlanId,
+    schemaPlanHash: upstream.schemaPlan.schemaPlanHash,
+    transactionPlanId: upstream.transactionPlan.transactionPlanId,
+    transactionPlanHash: upstream.transactionPlan.transactionPlanHash,
+    credentialPlanId: upstream.credentialPlan.credentialPlanId,
+    credentialPlanHash: upstream.credentialPlan.credentialPlanHash,
+    runbookId: upstream.migrationRunbook.runbookId,
+    runbookHash: upstream.migrationRunbook.runbookHash,
+    preflightId: upstream.preflightSummary.preflightId,
+    preflightSummaryHash: upstream.preflightSummary.summaryHash,
+  };
+  for (const bindings of [
+    packet.migrationSpec.upstreamBindings,
+    packet.querySpec.upstreamBindings,
+    packet.introspectionSpec.upstreamBindings,
+    packet.testDatabaseGate.packageBindings.upstreamBindings,
+    packet.futureEvidenceSpec.packageBindings.upstreamBindings,
+    buildPackageSummary(packet).upstreamBindings,
+  ]) {
+    assert.deepEqual(bindings, expected);
+  }
+
+  const id = evaluateMutation((value) => {
+    value.migrationSpec.upstreamBindings.decisionId =
+      `metrics-cutover-postgresql-decision-${"a".repeat(64)}`;
+    reseal(value, "migrationSpec", "migration");
+  });
+  assertBlocked(id, "migration_upstream_binding_mismatch:decisionId");
+
+  const hash = evaluateMutation((value) => {
+    value.querySpec.upstreamBindings.runbookHash = "e".repeat(64);
+    reseal(value, "querySpec", "query");
+  });
+  assertBlocked(hash, "query_upstream_binding_mismatch:runbookHash");
+});
+
 test("migration contract version, ID, and hash tampering block", () => {
   const version = evaluateMutation((packet) => {
     packet.migrationSpec.contractVersion = "wrong";
@@ -240,12 +292,12 @@ test("query operation set and order are exact", () => {
   assertBlocked(result, "query_operation_order_invalid");
 });
 
-test("query parameters and state/version/hash predicates are exact", () => {
+test("query storage parameters and state/version/hash predicates are exact", () => {
   const params = evaluateMutation((packet) => {
-    packet.querySpec.operations[0].parameters.pop();
+    packet.querySpec.operations[0].storageParameters.pop();
     reseal(packet, "querySpec", "query");
   });
-  assertBlocked(params, "query_operation_parameters_invalid:acquireClaim");
+  assertBlocked(params, "query_operation_storageParameters_invalid:acquireClaim");
 
   const predicates = evaluateMutation((packet) => {
     packet.querySpec.operations[2].stateVersionHashPredicates = ["expected_version"];
@@ -254,6 +306,81 @@ test("query parameters and state/version/hash predicates are exact", () => {
   assertBlocked(
     predicates,
     "query_operation_stateVersionHashPredicates_invalid:transitionClaimTerminal",
+  );
+});
+
+test("all six adapter inputs map exactly to storage parameters", () => {
+  const packet = buildValidPostgresqlTestPackage();
+  assert.equal(packet.querySpec.operations.length, 6);
+  for (const operation of packet.querySpec.operations) {
+    assert.ok(operation.adapterInputFields.length > 0, operation.operation);
+    assert.ok(Array.isArray(operation.storageParameters), operation.operation);
+    assert.ok(Array.isArray(operation.inputToParameterMapping), operation.operation);
+    assert.ok(Array.isArray(operation.derivedParameterRules), operation.operation);
+  }
+
+  const release = packet.querySpec.operations.find(
+    (entry) => entry.operation === "releaseLock",
+  );
+  assert.deepEqual(
+    release.adapterInputFields,
+    packet.upstreamArtifacts.repositoryLockProtocol.releaseInputFields,
+  );
+  assert.deepEqual(
+    release.inputToParameterMapping.filter(
+      (entry) => entry.destination === "terminalClaimHash",
+    ),
+    [
+      { source: "expectedTerminalClaimHash", destination: "terminalClaimHash" },
+      { source: "terminalClaim.claimHash", destination: "terminalClaimHash" },
+    ],
+  );
+  assert.ok(release.derivedParameterRules.includes(
+    "nextLockHash_from_validated_immutable_fields_nextState_nextVersion_releasedAt_and_terminalClaimHash",
+  ));
+
+  const destination = evaluateMutation((value) => {
+    value.querySpec.operations[0].inputToParameterMapping[0].destination =
+      "unknownStorageParameter";
+    reseal(value, "querySpec", "query");
+  });
+  assertBlocked(destination, "query_operation_mapping_unknown_destination:acquireClaim");
+});
+
+test("release mapping and terminal derivations remain fail-closed", () => {
+  const releaseInputs = evaluateMutation((packet) => {
+    const release = packet.querySpec.operations.find(
+      (entry) => entry.operation === "releaseLock",
+    );
+    release.adapterInputFields = [...release.adapterInputFields].reverse();
+    reseal(packet, "querySpec", "query");
+  });
+  assertBlocked(releaseInputs, "query_release_input_fields_protocol_mismatch");
+
+  const terminalDerivation = evaluateMutation((packet) => {
+    const terminal = packet.querySpec.operations.find(
+      (entry) => entry.operation === "transitionClaimTerminal",
+    );
+    terminal.derivedParameterRules = ["nextVersion_exact_expectedVersion_plus_one"];
+    reseal(packet, "querySpec", "query");
+  });
+  assertBlocked(
+    terminalDerivation,
+    "query_operation_derivedParameterRules_invalid:transitionClaimTerminal",
+  );
+
+  const releaseDerivation = evaluateMutation((packet) => {
+    const release = packet.querySpec.operations.find(
+      (entry) => entry.operation === "releaseLock",
+    );
+    release.derivedParameterRules = release.derivedParameterRules.filter(
+      (entry) => !entry.startsWith("nextLockHash_"),
+    );
+    reseal(packet, "querySpec", "query");
+  });
+  assertBlocked(
+    releaseDerivation,
+    "query_operation_derivedParameterRules_invalid:releaseLock",
   );
 });
 
@@ -299,7 +426,7 @@ test("mutation success requires durable commit acknowledgement", () => {
 
 test("every query operation carries a sealed operation hash", () => {
   const result = evaluateMutation((packet) => {
-    packet.querySpec.operations[4].querySpecHash = "a".repeat(64);
+    packet.querySpec.operations[4].operationSpecHash = "a".repeat(64);
     reseal(packet, "querySpec", "query");
   });
   assertBlocked(result, "query_operation_hash_mismatch:readLock");
@@ -329,6 +456,43 @@ test("introspection requires role separation, UTC, isolation, and backup capabil
       reseal(packet, "introspectionSpec", "introspection");
     });
     assertBlocked(result, `introspection_required_evidence_missing:${field}`);
+  }
+});
+
+test("introspection expected migration and schema values are exact", () => {
+  const cases = [
+    ["expectedMigrationSpecId", (value) => {
+      value.expectedMigrationSpecId =
+        `metrics-cutover-postgresql-migration-spec-${"c".repeat(64)}`;
+    }],
+    ["expectedMigrationSpecHash", (value) => {
+      value.expectedMigrationSpecHash = "c".repeat(64);
+    }],
+    ["expectedSchemaPackageVersion", (value) => {
+      value.expectedSchemaPackageVersion = "wrong-schema-package-version";
+    }],
+    ["expectedLogicalResources", (value) => {
+      value.expectedLogicalResources.reverse();
+    }],
+    ["expectedStateConstraints", (value) => {
+      value.expectedStateConstraints[0].states.push("claim_reset");
+    }],
+    ["expectedUniqueConstraints", (value) => {
+      value.expectedUniqueConstraints[0].uniqueConstraints.push("state");
+    }],
+    ["expectedImmutableFieldSets", (value) => {
+      value.expectedImmutableFieldSets[1].immutableFields.pop();
+    }],
+    ["expectedSupportIndexes", (value) => {
+      value.expectedSupportIndexes[1].supportIndexes.push("unsafe_index");
+    }],
+  ];
+  for (const [field, mutate] of cases) {
+    const result = evaluateMutation((packet) => {
+      mutate(packet.introspectionSpec);
+      reseal(packet, "introspectionSpec", "introspection");
+    });
+    assertBlocked(result, `introspection_expected_value_invalid:${field}`);
   }
 });
 
@@ -403,6 +567,72 @@ test("future evidence plan contains the exact 15 scenarios without execution", (
   assertBlocked(executed, "future_evidence_forbidden_state:executionOccurred");
 });
 
+test("future scenario and run evidence result schemas are exact and inert", () => {
+  const packet = buildValidPostgresqlTestPackage();
+  const evidence = packet.futureEvidenceSpec;
+  assert.deepEqual(evidence.scenarioExpectations, FUTURE_SCENARIO_EXPECTATIONS);
+  assert.equal(
+    evidence.scenarioEvidenceContract.contractVersion,
+    SCENARIO_EVIDENCE_CONTRACT_VERSION,
+  );
+  assert.deepEqual(
+    evidence.scenarioEvidenceContract.exactFields,
+    SCENARIO_EVIDENCE_FIELDS,
+  );
+  assert.equal(
+    evidence.runEvidenceSummaryContract.contractVersion,
+    RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+  );
+  assert.deepEqual(
+    evidence.runEvidenceSummaryContract.exactFields,
+    RUN_EVIDENCE_SUMMARY_FIELDS,
+  );
+  assert.equal(evidence.scenarioEvidenceContract.hashChainGenesis, ZERO_HASH);
+  assert.equal(evidence.runEvidenceSummaryContract.hashChainGenesis, ZERO_HASH);
+  for (const field of [
+    "scenarioSequence", "packageSummaryId", "packageSummaryHash",
+    "testDatabaseGateId", "testDatabaseGateHash", "expectedResultCategory",
+    "observedResultCategory", "expectedAffectedRows", "observedAffectedRows",
+    "winnerCount", "priorStateHash", "resultingStateHash",
+    "manualReviewRequired", "previousEvidenceHash", "evidenceHash",
+  ]) {
+    assert.ok(SCENARIO_EVIDENCE_FIELDS.includes(field), field);
+  }
+  assert.equal(evidence.evidenceProduced, false);
+  assert.equal(evidence.executionOccurred, false);
+  assert.equal(evidence.databaseConnected, false);
+});
+
+test("future evidence expectation and result-schema tampering block", () => {
+  const expectation = evaluateMutation((packet) => {
+    packet.futureEvidenceSpec.scenarioExpectations[3].winnerCount = 2;
+    reseal(packet, "futureEvidenceSpec", "evidence");
+  });
+  assertBlocked(
+    expectation,
+    "future_evidence_scenario_expectation_mismatch:4",
+  );
+
+  const scenarioContract = evaluateMutation((packet) => {
+    packet.futureEvidenceSpec.scenarioEvidenceContract.fieldRules
+      .previousEvidenceHash = "unbound_previous_hash";
+    reseal(packet, "futureEvidenceSpec", "evidence");
+  });
+  assertBlocked(
+    scenarioContract,
+    "scenario_evidence_contract_definition_invalid",
+  );
+
+  const runContract = evaluateMutation((packet) => {
+    packet.futureEvidenceSpec.runEvidenceSummaryContract.exactFields.pop();
+    reseal(packet, "futureEvidenceSpec", "evidence");
+  });
+  assertBlocked(
+    runContract,
+    "run_evidence_summary_contract_definition_invalid",
+  );
+});
+
 test("cross-contract hashes bind gate, evidence, and summary to the same package", () => {
   const gate = evaluateMutation((packet) => {
     packet.testDatabaseGate.packageBindings.querySpecHash = "e".repeat(64);
@@ -422,6 +652,32 @@ test("cross-contract hashes bind gate, evidence, and summary to the same package
   assert.ok(
     validatePackageSummary(summary, packet).includes(
       "package_summary_binding_invalid:querySpecHash",
+    ),
+  );
+});
+
+test("gate, evidence, and summary bind complete ID/hash pairs", () => {
+  const gate = evaluateMutation((packet) => {
+    packet.testDatabaseGate.packageBindings.migrationSpecId =
+      `metrics-cutover-postgresql-migration-spec-${"d".repeat(64)}`;
+    reseal(packet, "testDatabaseGate", "gate");
+  });
+  assertBlocked(gate, "test_database_gate_binding_mismatch");
+
+  const evidence = evaluateMutation((packet) => {
+    packet.futureEvidenceSpec.packageBindings.testDatabaseGateId =
+      `metrics-cutover-postgresql-test-database-gate-${"d".repeat(64)}`;
+    reseal(packet, "futureEvidenceSpec", "evidence");
+  });
+  assertBlocked(evidence, "future_evidence_binding_mismatch");
+
+  const packet = buildValidPostgresqlTestPackage();
+  const summary = buildPackageSummary(packet);
+  summary.futureEvidenceSpecId =
+    `metrics-cutover-postgresql-test-evidence-spec-${"d".repeat(64)}`;
+  assert.ok(
+    validatePackageSummary(summary, packet).includes(
+      "package_summary_binding_invalid:futureEvidenceSpecId",
     ),
   );
 });

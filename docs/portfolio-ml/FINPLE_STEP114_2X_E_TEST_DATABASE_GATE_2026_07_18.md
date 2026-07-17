@@ -40,6 +40,8 @@ The future evidence plan contains exactly 15 scenario classes:
 
 The current package produces none of this evidence and executes none of these scenarios. Cleanup remains manual and evidence-preserving when an outcome is ambiguous; automatic deletion or retry is prohibited.
 
+The future-only scenario-evidence schema fixes the scenario sequence, package-summary and test-database-gate ID/hash pairs, sanitized database fingerprint hash, expected and observed result categories, expected and observed affected rows, winner count, mutation observation, prior/resulting state hashes, manual-review state, previous-evidence hash, and canonical evidence hash. The matching run-summary schema fixes scenario order, first/last evidence hashes, complete hash-chain validation, and all fixed-false authority fields. These are schema definitions only; no evidence record or run summary is generated in this step.
+
 ## Fixed-false boundary
 
 All 24 public authority fields remain explicitly false in ready, blocked, idle, CLI-argument rejection, and CLI-exception results. In particular, provider connection, test/production database connection, SQL execution, schema mutation, migration, credential use, claim/lock mutation, receipt consumption, file writing, Git operations, deployment, publication, pointer mutation, rollback, and loader activation are unauthorized.
