@@ -13,6 +13,9 @@ const {
   sealContract,
   validateSummary,
 } = require("./lib/metrics-cutover-real-adapter-implementation-preflight.cjs");
+const {
+  evaluateCliRequest,
+} = require("./check-metrics-cutover-real-adapter-implementation-preflight.cjs");
 
 function reseal(packet, key, specName) {
   packet[key] = sealContract(packet[key], SPECS[specName]);
@@ -34,6 +37,10 @@ function assertBlocked(result, issue) {
   for (const field of FIXED_FALSE_FIELDS) assert.equal(result[field], false, field);
 }
 
+function assertAllAuthorityFalse(result) {
+  for (const field of FIXED_FALSE_FIELDS) assert.equal(result[field], false, field);
+}
+
 test("valid PostgreSQL table-backed design is preflight-ready with no authority", () => {
   const packet = buildValidPreflightPacket();
   const result = evaluateMetricsCutoverRealAdapterImplementationPreflight(packet);
@@ -51,10 +58,30 @@ test("idle and malformed input suppress the summary", () => {
   const idle = evaluateMetricsCutoverRealAdapterImplementationPreflight();
   assert.equal(idle.status, "idle");
   assert.deepEqual(idle.preflightSummary, {});
+  assertAllAuthorityFalse(idle);
   assertBlocked(
     evaluateMetricsCutoverRealAdapterImplementationPreflight({}),
     "preflight_packet_fields_invalid",
   );
+});
+
+test("Step 114-2X-B preparation summary is required, validated, and hash-bound", () => {
+  const tampered = evaluateMutation((packet) => {
+    packet.preparationSummary.productionClaimEligible = true;
+  });
+  assertBlocked(
+    tampered,
+    "step114_2x_b_preparation_summary_fixed_false_invalid:productionClaimEligible",
+  );
+  const malformed = evaluateMutation((packet) => {
+    packet.preparationSummary = {};
+  });
+  assertBlocked(malformed, "step114_2x_b_preparation_summary_fields_invalid");
+  const binding = evaluateMutation((packet) => {
+    packet.persistenceDecision.preparationSummaryHash = "f".repeat(64);
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(binding, "persistence_decision_preparation_binding_mismatch");
 });
 
 test("candidate comparison contains exactly one preferred candidate", () => {
@@ -63,6 +90,67 @@ test("candidate comparison contains exactly one preferred candidate", () => {
     reseal(packet, "persistenceDecision", "decision");
   });
   assertBlocked(result, "persistence_preferred_candidate_count_invalid");
+});
+
+test("preferred and accepted candidate rows must be the same PostgreSQL row", () => {
+  const swappedPreferred = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[0].preferred = false;
+    packet.persistenceDecision.candidates[1].preferred = true;
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(swappedPreferred, "persistence_preferred_accepted_candidate_mismatch");
+
+  const postgresNotPreferred = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[0].preferred = false;
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(postgresNotPreferred, "postgresql_candidate_capabilities_invalid");
+
+  const secondAccepted = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[1].accepted = true;
+    packet.persistenceDecision.candidates[1].rejectionReasons = [];
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(secondAccepted, "persistence_accepted_candidate_count_invalid");
+
+  const postgresRejected = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[0].rejectionReasons = ["unexpected_rejection"];
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(postgresRejected, "accepted_candidate_rejection_reason_forbidden:dedicated_postgresql_transactional_store");
+
+  const topLevelDrift = evaluateMutation((packet) => {
+    packet.persistenceDecision.preferredCandidate = CANDIDATE_CLASSES[1];
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(topLevelDrift, "persistence_preferred_candidate_binding_mismatch");
+});
+
+test("candidate matrix types and sanitized rejection reasons are strict", () => {
+  const truthy = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[1].accepted = "false";
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(
+    truthy,
+    "persistence_candidate_boolean_invalid:distributed_strongly_consistent_kv:accepted",
+  );
+  const unsafeReason = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[1].rejectionReasons = ["unsafe reason"];
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(
+    unsafeReason,
+    "persistence_candidate_rejection_reasons_invalid:distributed_strongly_consistent_kv",
+  );
+  const capabilitySpoof = evaluateMutation((packet) => {
+    packet.persistenceDecision.candidates[1].atomicCreateIfAbsent = true;
+    reseal(packet, "persistenceDecision", "decision");
+  });
+  assertBlocked(
+    capabilitySpoof,
+    "persistence_candidate_capability_matrix_invalid:distributed_strongly_consistent_kv:atomicCreateIfAbsent",
+  );
 });
 
 test("local filesystem candidate cannot be accepted", () => {
@@ -102,6 +190,31 @@ test("missing unique receipt constraint blocks", () => {
   });
   assertBlocked(result, "claim_schema_semantics_invalid");
 });
+
+for (const [resourceIndex, label, expected, mutations] of [
+  [0, "claim", "claim_schema_semantics_invalid", [
+    [], ["receipt_identity_hash", "receipt_identity_hash"],
+    ["receipt_identity_hash", "state"],
+    ["receipt_identity_hash", "receipt_binding_hash"],
+    ["unknown_constraint", "receipt_identity_hash"],
+  ]],
+  [1, "lock", "repository_lock_schema_semantics_invalid", [
+    [], ["repository_identity_hash", "repository_identity_hash"],
+    ["repository_identity_hash", "state"],
+    ["repository_identity_hash", "receipt_binding_hash"],
+    ["unknown_constraint", "repository_identity_hash"],
+  ]],
+]) {
+  test(`${label} unique constraints are the exact ordered singleton`, () => {
+    for (const uniqueConstraints of mutations) {
+      const result = evaluateMutation((packet) => {
+        packet.schemaPlan.resources[resourceIndex].uniqueConstraints = uniqueConstraints;
+        reseal(packet, "schemaPlan", "schema");
+      });
+      assertBlocked(result, expected);
+    }
+  });
+}
 
 test("missing atomic insert semantics blocks", () => {
   const result = evaluateMutation((packet) => {
@@ -196,6 +309,26 @@ test("Step 114-2X-C protocol and exact methods cannot drift", () => {
   assertBlocked(result, "step114_2x_c_method_or_protocol_mismatch");
 });
 
+test("Step 114-2X-C sealed protocols, capabilities, release fields, versions, and hashes are bound", () => {
+  const cases = [
+    ["claim protocol hash", (packet) => { packet.claimStoreProtocol.protocolHash = "f".repeat(64); }, "step114_2x_c_claim_store_protocol_hash_mismatch"],
+    ["claim capability", (packet) => { packet.claimStoreProtocol.atomicCreateIfAbsent = false; }, "step114_2x_c_claim_store_protocol_capability_missing:atomicCreateIfAbsent"],
+    ["release fields", (packet) => { packet.repositoryLockProtocol.releaseInputFields = ["repositoryIdentityHash"]; }, "step114_2x_c_repository_lock_protocol_release_input_fields_invalid"],
+    ["method drift", (packet) => { packet.claimStoreProtocol.methods = ["acquireClaim"]; }, "step114_2x_c_claim_store_protocol_methods_invalid"],
+    ["version drift", (packet) => { packet.repositoryLockProtocol.contractVersion = "invalid-version"; }, "step114_2x_c_repository_lock_protocol_version_invalid"],
+  ];
+  for (const [label, mutate, issue] of cases) {
+    const result = evaluateMutation(mutate);
+    assertBlocked(result, issue);
+    assert.equal(result.blockingIssues.some((entry) => entry.includes(label)), false);
+  }
+  const bindingMismatch = evaluateMutation((packet) => {
+    packet.transactionPlan.claimStoreProtocolHash = "e".repeat(64);
+    reseal(packet, "transactionPlan", "transaction");
+  });
+  assertBlocked(bindingMismatch, "step114_2x_c_method_or_protocol_mismatch");
+});
+
 test("tampered contract ID and hash fail closed", () => {
   const idTamper = evaluateMutation((packet) => {
     packet.persistenceDecision.decisionId =
@@ -238,11 +371,32 @@ test("pure core imports no filesystem, process, network, provider, or database c
   }
 });
 
-test("validation-only CLI returns ready and rejects every argument", () => {
+test("validation-only CLI ready, argument rejection, and runtime failures use fixed-false safe results", () => {
   const cli = path.join(__dirname, "check-metrics-cutover-real-adapter-implementation-preflight.cjs");
   const ready = JSON.parse(execFileSync(process.execPath, [cli], { encoding: "utf8" }));
   assert.equal(ready.status, "real_adapter_implementation_preflight_ready");
-  const blocked = spawnSync(process.execPath, [cli, "--dsn=forbidden"], { encoding: "utf8" });
+  assertAllAuthorityFalse(ready);
+  const blocked = spawnSync(
+    process.execPath,
+    [cli, "--dsn=private-secret-value-at-C:\\private\\path"],
+    { encoding: "utf8" },
+  );
   assert.equal(blocked.status, 2);
-  assert.equal(JSON.parse(blocked.stdout).blockingIssues[0], "cli_arguments_forbidden");
+  const blockedResult = JSON.parse(blocked.stdout);
+  assert.equal(blockedResult.blockingIssues[0], "cli_arguments_forbidden");
+  assert.deepEqual(blockedResult.preflightSummary, {});
+  assertAllAuthorityFalse(blockedResult);
+  assert.equal(blocked.stdout.includes("private-secret-value"), false);
+  assert.equal(blocked.stdout.includes("C:\\private\\path"), false);
+
+  const syntheticFailure = evaluateCliRequest([], {
+    runCheck() {
+      throw new Error("private-path-and-credential-must-not-leak");
+    },
+  });
+  assert.equal(syntheticFailure.status, "blocked");
+  assert.deepEqual(syntheticFailure.preflightSummary, {});
+  assert.deepEqual(syntheticFailure.blockingIssues, ["preflight_check_failed"]);
+  assertAllAuthorityFalse(syntheticFailure);
+  assert.equal(JSON.stringify(syntheticFailure).includes("private-path"), false);
 });

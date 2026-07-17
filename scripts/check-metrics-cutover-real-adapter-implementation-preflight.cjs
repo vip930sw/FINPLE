@@ -3,6 +3,7 @@
 const {
   buildValidPreflightPacket,
   evaluateMetricsCutoverRealAdapterImplementationPreflight,
+  safeResult,
 } = require("./lib/metrics-cutover-real-adapter-implementation-preflight.cjs");
 
 function runCheck() {
@@ -11,32 +12,25 @@ function runCheck() {
   );
 }
 
-function main(argv = process.argv.slice(2)) {
-  if (argv.length !== 0) {
-    process.stdout.write(`${JSON.stringify({
-      ok: false,
-      status: "blocked",
-      blockingIssues: ["cli_arguments_forbidden"],
-    })}\n`);
-    process.exitCode = 2;
-    return;
+function evaluateCliRequest(argv = process.argv.slice(2), options = {}) {
+  try {
+    if (argv.length !== 0) {
+      return safeResult("blocked", {}, ["cli_arguments_forbidden"]);
+    }
+    return (options.runCheck || runCheck)();
+  } catch {
+    return safeResult("blocked", {}, ["preflight_check_failed"]);
   }
-  const result = runCheck();
+}
+
+function main(argv = process.argv.slice(2), options = {}) {
+  const result = evaluateCliRequest(argv, options);
   process.stdout.write(`${JSON.stringify(result)}\n`);
   process.exitCode = result.ok ? 0 : 2;
 }
 
 if (require.main === module) {
-  try {
-    main();
-  } catch {
-    process.stdout.write(`${JSON.stringify({
-      ok: false,
-      status: "blocked",
-      blockingIssues: ["preflight_check_failed"],
-    })}\n`);
-    process.exitCode = 2;
-  }
+  main();
 }
 
-module.exports = { main, runCheck };
+module.exports = { evaluateCliRequest, main, runCheck };

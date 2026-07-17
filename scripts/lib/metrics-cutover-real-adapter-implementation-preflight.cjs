@@ -12,7 +12,15 @@ const {
   CLAIM_STORE_ADAPTER_PROTOCOL_VERSION,
   REPOSITORY_LOCK_ADAPTER_METHODS,
   REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION,
+  buildClaimStoreAdapterProtocol,
+  buildRepositoryLockAdapterProtocol,
+  validateClaimStoreAdapterProtocol,
+  validateRepositoryLockAdapterProtocol,
 } = require("./metrics-cutover-adapter-conformance.cjs");
+const {
+  buildPreparationSummary,
+  validatePreparationSummary,
+} = require("./metrics-cutover-production-execution-preparation.cjs");
 
 const PERSISTENCE_DECISION_CONTRACT_VERSION =
   "metrics-cutover-production-persistence-decision-v1-step114-2x-d";
@@ -77,6 +85,14 @@ const CANDIDATE_FIELDS = Object.freeze([
   "deleteToRetryPath", "advisoryLockOnly", "dedicatedLeastPrivilegeBoundary",
   "backupAndMigrationCapability", "rejectionReasons",
 ]);
+const CANDIDATE_BOOLEAN_FIELDS = Object.freeze([
+  "preferred", "accepted", "atomicCreateIfAbsent",
+  "conditionalStateVersionHashUpdate", "durableCommitAcknowledgement",
+  "strongReadAfterWrite", "immutableTerminalAudit",
+  "tableBackedLockSurvivesSessionLoss", "ttlOrEvictionRisk",
+  "deleteToRetryPath", "advisoryLockOnly", "dedicatedLeastPrivilegeBoundary",
+  "backupAndMigrationCapability",
+]);
 const CLAIM_RESOURCE_FIELDS = Object.freeze([
   "logicalName", "immutableIdentity", "bindingFields", "states",
   "versionStartsAt", "versionIncreases", "createdAtImmutableUtc",
@@ -124,6 +140,7 @@ const SPECS = Object.freeze({
     idDomain: DOMAINS.decisionId, hashDomain: DOMAINS.decisionHash,
     fields: ["contractVersion", "decisionId", "candidateClasses", "candidates",
       "preferredCandidate", "candidateSelected", "designDecisionOnly",
+      "preparationSummaryHash",
       "claimAdapterProtocolVersion", "repositoryLockAdapterProtocolVersion",
       "decisionHash"],
   },
@@ -132,6 +149,7 @@ const SPECS = Object.freeze({
     hashField: "schemaPlanHash", prefix: "metrics-cutover-postgresql-schema-plan",
     idDomain: DOMAINS.schemaId, hashDomain: DOMAINS.schemaHash,
     fields: ["contractVersion", "schemaPlanId", "decisionId", "decisionHash",
+      "preparationSummaryHash",
       "resources", "logicalNamesOnly", "executableSqlIncluded",
       "deployedObjectNamesIncluded", "schemaPlanHash"],
   },
@@ -140,8 +158,10 @@ const SPECS = Object.freeze({
     hashField: "transactionPlanHash", prefix: "metrics-cutover-transaction-semantics-plan",
     idDomain: DOMAINS.transactionId, hashDomain: DOMAINS.transactionHash,
     fields: ["contractVersion", "transactionPlanId", "decisionId", "decisionHash",
-      "schemaPlanId", "schemaPlanHash", "claimAdapterProtocolVersion",
-      "repositoryLockAdapterProtocolVersion", "claimMethods", "lockMethods",
+      "schemaPlanId", "schemaPlanHash", "preparationSummaryHash",
+      "claimAdapterProtocolVersion", "repositoryLockAdapterProtocolVersion",
+      "claimStoreProtocolHash", "repositoryLockProtocolHash",
+      "claimMethods", "lockMethods", "lockReleaseInputFields",
       "claimSemantics", "lockSemantics", "isolationExpectation",
       "retryBeforeMutationOnly", "ambiguousPostCommitPolicy",
       "serializationOrDeadlockPolicy", "advisoryLockOnly",
@@ -152,7 +172,7 @@ const SPECS = Object.freeze({
     hashField: "credentialPlanHash", prefix: "metrics-cutover-credential-boundary-plan",
     idDomain: DOMAINS.credentialId, hashDomain: DOMAINS.credentialHash,
     fields: ["contractVersion", "credentialPlanId", "decisionId", "decisionHash",
-      "schemaPlanId", "schemaPlanHash", "runtimeCredentialCategory",
+      "schemaPlanId", "schemaPlanHash", "preparationSummaryHash", "runtimeCredentialCategory",
       "migrationCredentialCategory", "credentialsSeparated", "runtimeAccessResources",
       "runtimeDeniedPrivileges", "runtimeUnrelatedResourceAccess",
       "runtimeSchemaOwner", "runtimeSuperuser", "existingCredentialFallbackAllowed",
@@ -165,7 +185,7 @@ const SPECS = Object.freeze({
     idDomain: DOMAINS.runbookId, hashDomain: DOMAINS.runbookHash,
     fields: ["contractVersion", "runbookId", "decisionId", "decisionHash",
       "schemaPlanId", "schemaPlanHash", "transactionPlanId", "transactionPlanHash",
-      "credentialPlanId", "credentialPlanHash", "steps", "manualReviewCases",
+      "credentialPlanId", "credentialPlanHash", "preparationSummaryHash", "steps", "manualReviewCases",
       "automaticRollbackAllowed", "destructiveCleanupAllowed", "dropAllowed",
       "truncateAllowed", "deleteAllowed", "resetAllowed", "forcedContinuationAllowed",
       "cutoverExecutionAllowed", "executableCommandsIncluded", "runbookHash"],
@@ -177,6 +197,7 @@ const SPECS = Object.freeze({
     fields: ["contractVersion", "preflightId", "decisionId", "decisionHash",
       "schemaPlanId", "schemaPlanHash", "transactionPlanId", "transactionPlanHash",
       "credentialPlanId", "credentialPlanHash", "runbookId", "runbookHash",
+      "preparationSummaryHash", "claimStoreProtocolHash", "repositoryLockProtocolHash",
       "preferredCandidate", "candidateSelected", "step114_2x_cCompatible",
       "syntheticConformanceIsRealProviderValidation", ...FIXED_FALSE_FIELDS, "summaryHash"],
   },
@@ -245,7 +266,32 @@ function buildCandidate(candidateClass, preferred, rejectionReasons = []) {
   };
 }
 
-function buildPersistenceDecision() {
+function buildSanitizedPreparationSummary() {
+  return buildPreparationSummary({
+    executionPolicy: {
+      policyId: "sanitized-design-policy",
+      policyHash: "1".repeat(64),
+    },
+    claimStoreProfile: {
+      profileId: "sanitized-design-claim-profile",
+      profileHash: "2".repeat(64),
+    },
+    hostProfile: {
+      profileId: "sanitized-design-host-profile",
+      profileHash: "3".repeat(64),
+    },
+    repositoryLockProfile: {
+      profileId: "sanitized-design-lock-profile",
+      profileHash: "4".repeat(64),
+    },
+    runbook: {
+      runbookId: "sanitized-design-preparation-runbook",
+      runbookHash: "5".repeat(64),
+    },
+  });
+}
+
+function buildPersistenceDecision(preparationSummary) {
   return sealContract({
     contractVersion: PERSISTENCE_DECISION_CONTRACT_VERSION,
     candidateClasses: [...CANDIDATE_CLASSES],
@@ -259,6 +305,7 @@ function buildPersistenceDecision() {
     preferredCandidate: CANDIDATE_CLASSES[0],
     candidateSelected: true,
     designDecisionOnly: true,
+    preparationSummaryHash: preparationSummary.summaryHash,
     claimAdapterProtocolVersion: CLAIM_STORE_ADAPTER_PROTOCOL_VERSION,
     repositoryLockAdapterProtocolVersion: REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION,
   }, SPECS.decision);
@@ -294,23 +341,28 @@ function lockResource() {
   };
 }
 
-function buildSchemaPlan(decision) {
+function buildSchemaPlan(decision, preparationSummary) {
   return sealContract({
     contractVersion: POSTGRESQL_SCHEMA_PLAN_CONTRACT_VERSION,
     decisionId: decision.decisionId, decisionHash: decision.decisionHash,
+    preparationSummaryHash: preparationSummary.summaryHash,
     resources: [claimResource(), lockResource()], logicalNamesOnly: true,
     executableSqlIncluded: false, deployedObjectNamesIncluded: false,
   }, SPECS.schema);
 }
 
-function buildTransactionPlan(decision, schema) {
+function buildTransactionPlan(decision, schema, preparationSummary, claimStoreProtocol, repositoryLockProtocol) {
   return sealContract({
     contractVersion: TRANSACTION_SEMANTICS_PLAN_CONTRACT_VERSION,
     decisionId: decision.decisionId, decisionHash: decision.decisionHash,
     schemaPlanId: schema.schemaPlanId, schemaPlanHash: schema.schemaPlanHash,
+    preparationSummaryHash: preparationSummary.summaryHash,
     claimAdapterProtocolVersion: CLAIM_STORE_ADAPTER_PROTOCOL_VERSION,
     repositoryLockAdapterProtocolVersion: REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION,
+    claimStoreProtocolHash: claimStoreProtocol.protocolHash,
+    repositoryLockProtocolHash: repositoryLockProtocol.protocolHash,
     claimMethods: [...CLAIM_ADAPTER_METHODS], lockMethods: [...REPOSITORY_LOCK_ADAPTER_METHODS],
+    lockReleaseInputFields: [...repositoryLockProtocol.releaseInputFields],
     claimSemantics: {
       acquireClaim: "single_transaction_atomic_insert_unique_conflict_no_mutation",
       readClaim: "strong_read_after_write_exact_record",
@@ -334,11 +386,12 @@ function buildTransactionPlan(decision, schema) {
   }, SPECS.transaction);
 }
 
-function buildCredentialPlan(decision, schema) {
+function buildCredentialPlan(decision, schema, preparationSummary) {
   return sealContract({
     contractVersion: CREDENTIAL_BOUNDARY_PLAN_CONTRACT_VERSION,
     decisionId: decision.decisionId, decisionHash: decision.decisionHash,
     schemaPlanId: schema.schemaPlanId, schemaPlanHash: schema.schemaPlanHash,
+    preparationSummaryHash: preparationSummary.summaryHash,
     runtimeCredentialCategory: "dedicated_cutover_runtime_least_privilege_category",
     migrationCredentialCategory: "separate_operator_migration_category",
     credentialsSeparated: true,
@@ -351,7 +404,7 @@ function buildCredentialPlan(decision, schema) {
   }, SPECS.credential);
 }
 
-function buildMigrationRunbook(decision, schema, transaction, credential) {
+function buildMigrationRunbook(decision, schema, transaction, credential, preparationSummary) {
   return sealContract({
     contractVersion: MIGRATION_RUNBOOK_CONTRACT_VERSION,
     decisionId: decision.decisionId, decisionHash: decision.decisionHash,
@@ -360,6 +413,7 @@ function buildMigrationRunbook(decision, schema, transaction, credential) {
     transactionPlanHash: transaction.transactionPlanHash,
     credentialPlanId: credential.credentialPlanId,
     credentialPlanHash: credential.credentialPlanHash,
+    preparationSummaryHash: preparationSummary.summaryHash,
     steps: [...RUNBOOK_STEPS], manualReviewCases: [...MANUAL_REVIEW_CASES],
     automaticRollbackAllowed: false, destructiveCleanupAllowed: false,
     dropAllowed: false, truncateAllowed: false, deleteAllowed: false,
@@ -369,17 +423,35 @@ function buildMigrationRunbook(decision, schema, transaction, credential) {
 }
 
 function buildValidPreflightPacket() {
-  const persistenceDecision = buildPersistenceDecision();
-  const schemaPlan = buildSchemaPlan(persistenceDecision);
-  const transactionPlan = buildTransactionPlan(persistenceDecision, schemaPlan);
-  const credentialPlan = buildCredentialPlan(persistenceDecision, schemaPlan);
+  const preparationSummary = buildSanitizedPreparationSummary();
+  const claimStoreProtocol = buildClaimStoreAdapterProtocol();
+  const repositoryLockProtocol = buildRepositoryLockAdapterProtocol();
+  const persistenceDecision = buildPersistenceDecision(preparationSummary);
+  const schemaPlan = buildSchemaPlan(persistenceDecision, preparationSummary);
+  const transactionPlan = buildTransactionPlan(
+    persistenceDecision, schemaPlan, preparationSummary,
+    claimStoreProtocol, repositoryLockProtocol,
+  );
+  const credentialPlan = buildCredentialPlan(
+    persistenceDecision, schemaPlan, preparationSummary,
+  );
   const migrationRunbook = buildMigrationRunbook(
     persistenceDecision, schemaPlan, transactionPlan, credentialPlan,
+    preparationSummary,
   );
-  return { persistenceDecision, schemaPlan, transactionPlan, credentialPlan, migrationRunbook };
+  return {
+    preparationSummary,
+    claimStoreProtocol,
+    repositoryLockProtocol,
+    persistenceDecision,
+    schemaPlan,
+    transactionPlan,
+    credentialPlan,
+    migrationRunbook,
+  };
 }
 
-function validateDecision(value) {
+function validateDecision(value, preparationSummary) {
   const issues = validateEnvelope(value, SPECS.decision, "persistence_decision");
   if (!isRecord(value)) return issues;
   if (!exactArray(value.candidateClasses, CANDIDATE_CLASSES)) issues.push("persistence_candidate_classes_invalid");
@@ -387,15 +459,46 @@ function validateDecision(value) {
     issues.push("persistence_candidate_comparison_invalid");
   } else {
     const preferred = value.candidates.filter((candidate) => candidate?.preferred === true);
+    const accepted = value.candidates.filter((candidate) => candidate?.accepted === true);
     if (preferred.length !== 1) issues.push("persistence_preferred_candidate_count_invalid");
+    if (accepted.length !== 1) issues.push("persistence_accepted_candidate_count_invalid");
+    if (preferred.length === 1 && accepted.length === 1 && preferred[0] !== accepted[0]) {
+      issues.push("persistence_preferred_accepted_candidate_mismatch");
+    }
+    if (preferred.length === 1 && preferred[0]?.candidateClass !== value.preferredCandidate) {
+      issues.push("persistence_preferred_candidate_binding_mismatch");
+    }
     value.candidates.forEach((candidate, index) => {
       if (!hasExactKeys(candidate, CANDIDATE_FIELDS) ||
           candidate.candidateClass !== CANDIDATE_CLASSES[index]) {
         issues.push("persistence_candidate_fields_or_order_invalid");
       }
+      for (const field of CANDIDATE_BOOLEAN_FIELDS) {
+        if (typeof candidate?.[field] !== "boolean") {
+          issues.push(`persistence_candidate_boolean_invalid:${candidate?.candidateClass || index}:${field}`);
+        }
+      }
+      const expectedCandidate = buildCandidate(
+        CANDIDATE_CLASSES[index],
+        index === 0,
+      );
+      for (const field of CANDIDATE_BOOLEAN_FIELDS) {
+        if (candidate?.[field] !== expectedCandidate[field]) {
+          issues.push(`persistence_candidate_capability_matrix_invalid:${candidate?.candidateClass || index}:${field}`);
+        }
+      }
+      if (!Array.isArray(candidate?.rejectionReasons) ||
+          candidate.rejectionReasons.some((reason) => !isSafeIdentity(reason)) ||
+          new Set(candidate.rejectionReasons).size !== candidate.rejectionReasons.length) {
+        issues.push(`persistence_candidate_rejection_reasons_invalid:${candidate?.candidateClass || index}`);
+      }
+      if (candidate?.accepted === true && candidate?.rejectionReasons?.length !== 0) {
+        issues.push(`accepted_candidate_rejection_reason_forbidden:${candidate.candidateClass}`);
+      }
     });
     const postgres = value.candidates[0];
-    if (postgres?.candidateClass !== CANDIDATE_CLASSES[0] || postgres?.accepted !== true ||
+    if (postgres?.candidateClass !== CANDIDATE_CLASSES[0] || postgres?.preferred !== true ||
+        postgres?.accepted !== true || postgres?.rejectionReasons?.length !== 0 ||
         postgres?.advisoryLockOnly !== false || postgres?.tableBackedLockSurvivesSessionLoss !== true ||
         postgres?.atomicCreateIfAbsent !== true || postgres?.conditionalStateVersionHashUpdate !== true ||
         postgres?.durableCommitAcknowledgement !== true || postgres?.strongReadAfterWrite !== true ||
@@ -405,10 +508,14 @@ function validateDecision(value) {
     }
     for (const candidateClass of CANDIDATE_CLASSES.slice(1)) {
       const candidate = value.candidates.find((entry) => entry?.candidateClass === candidateClass);
-      if (!candidate || candidate.accepted !== false || !Array.isArray(candidate.rejectionReasons) || candidate.rejectionReasons.length === 0) {
+      if (!candidate || candidate.preferred !== false || candidate.accepted !== false ||
+          !Array.isArray(candidate.rejectionReasons) || candidate.rejectionReasons.length === 0 ||
+          candidate.rejectionReasons.some((reason) => !isSafeIdentity(reason))) {
         issues.push(`persistence_candidate_rejection_missing:${candidateClass}`);
       }
     }
+    const local = value.candidates.find((entry) => entry?.candidateClass === CANDIDATE_CLASSES[4]);
+    if (local?.preferred !== false || local?.accepted !== false) issues.push("local_filesystem_candidate_forbidden");
     const redis = value.candidates.find((entry) => entry?.candidateClass === CANDIDATE_CLASSES[3]);
     if (redis?.ttlOrEvictionRisk !== true) issues.push("redis_like_risk_not_rejected");
   }
@@ -419,13 +526,17 @@ function validateDecision(value) {
       value.repositoryLockAdapterProtocolVersion !== REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION) {
     issues.push("step114_2x_c_protocol_version_mismatch");
   }
+  if (value.preparationSummaryHash !== preparationSummary?.summaryHash) {
+    issues.push("persistence_decision_preparation_binding_mismatch");
+  }
   return uniqueSorted(issues);
 }
 
-function validateSchema(value, decision) {
+function validateSchema(value, decision, preparationSummary) {
   const issues = validateEnvelope(value, SPECS.schema, "schema_plan");
   if (!isRecord(value)) return issues;
   if (value.decisionId !== decision?.decisionId || value.decisionHash !== decision?.decisionHash) issues.push("schema_decision_binding_mismatch");
+  if (value.preparationSummaryHash !== preparationSummary?.summaryHash) issues.push("schema_preparation_binding_mismatch");
   if (value.logicalNamesOnly !== true || value.executableSqlIncluded !== false || value.deployedObjectNamesIncluded !== false) issues.push("schema_plan_boundary_invalid");
   if (!Array.isArray(value.resources) || value.resources.length !== 2) return uniqueSorted([...issues, "schema_resources_invalid"]);
   const [claim, lock] = value.resources;
@@ -434,7 +545,7 @@ function validateSchema(value, decision) {
       !exactArray(claim?.states, CLAIM_STATES) || claim?.versionStartsAt !== 1 ||
       claim?.versionIncreases !== true || claim?.createdAtImmutableUtc !== true ||
       claim?.terminalAtNullableUtc !== true || claim?.terminalEvidenceImmutable !== true || claim?.canonicalRecordHash !== true ||
-      !claim?.uniqueConstraints?.includes("receipt_identity_hash") ||
+      !exactArray(claim?.uniqueConstraints, ["receipt_identity_hash"]) ||
       !exactArray(claim?.conditionalTerminalFields, ["receipt_identity_hash", "state", "version", "record_hash"])) {
     issues.push("claim_schema_semantics_invalid");
   }
@@ -449,7 +560,7 @@ function validateSchema(value, decision) {
       lock?.versionIncreases !== true || lock?.acquiredAtImmutableUtc !== true ||
       lock?.releasedAtNullableUtc !== true ||
       lock?.terminalClaimEvidenceRequired !== true || lock?.canonicalRecordHash !== true ||
-      !lock?.uniqueConstraints?.includes("repository_identity_hash") ||
+      !exactArray(lock?.uniqueConstraints, ["repository_identity_hash"]) ||
       !exactArray(lock?.conditionalReleaseFields, ["repository_identity_hash", "state", "version", "record_hash", "receipt_identity_hash", "receipt_binding_hash", "terminal_claim_hash"])) {
     issues.push("repository_lock_schema_semantics_invalid");
   }
@@ -459,14 +570,23 @@ function validateSchema(value, decision) {
   return uniqueSorted(issues);
 }
 
-function validateTransaction(value, decision, schema) {
+function validateTransaction(value, decision, schema, preparationSummary, claimStoreProtocol, repositoryLockProtocol) {
   const issues = validateEnvelope(value, SPECS.transaction, "transaction_plan");
   if (!isRecord(value)) return issues;
   if (value.decisionId !== decision?.decisionId || value.decisionHash !== decision?.decisionHash ||
       value.schemaPlanId !== schema?.schemaPlanId || value.schemaPlanHash !== schema?.schemaPlanHash) issues.push("transaction_cross_binding_mismatch");
+  if (value.preparationSummaryHash !== preparationSummary?.summaryHash) issues.push("transaction_preparation_binding_mismatch");
   if (value.claimAdapterProtocolVersion !== CLAIM_STORE_ADAPTER_PROTOCOL_VERSION ||
       value.repositoryLockAdapterProtocolVersion !== REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION ||
-      !exactArray(value.claimMethods, CLAIM_ADAPTER_METHODS) || !exactArray(value.lockMethods, REPOSITORY_LOCK_ADAPTER_METHODS)) {
+      value.claimAdapterProtocolVersion !== claimStoreProtocol?.contractVersion ||
+      value.repositoryLockAdapterProtocolVersion !== repositoryLockProtocol?.contractVersion ||
+      value.claimStoreProtocolHash !== claimStoreProtocol?.protocolHash ||
+      value.repositoryLockProtocolHash !== repositoryLockProtocol?.protocolHash ||
+      !exactArray(value.claimMethods, CLAIM_ADAPTER_METHODS) ||
+      !exactArray(value.claimMethods, claimStoreProtocol?.methods || []) ||
+      !exactArray(value.lockMethods, REPOSITORY_LOCK_ADAPTER_METHODS) ||
+      !exactArray(value.lockMethods, repositoryLockProtocol?.methods || []) ||
+      !exactArray(value.lockReleaseInputFields, repositoryLockProtocol?.releaseInputFields || [])) {
     issues.push("step114_2x_c_method_or_protocol_mismatch");
   }
   if (!hasExactKeys(value.claimSemantics, CLAIM_SEMANTICS_FIELDS) ||
@@ -491,11 +611,12 @@ function validateTransaction(value, decision, schema) {
   return uniqueSorted(issues);
 }
 
-function validateCredential(value, decision, schema) {
+function validateCredential(value, decision, schema, preparationSummary) {
   const issues = validateEnvelope(value, SPECS.credential, "credential_plan");
   if (!isRecord(value)) return issues;
   if (value.decisionId !== decision?.decisionId || value.decisionHash !== decision?.decisionHash ||
       value.schemaPlanId !== schema?.schemaPlanId || value.schemaPlanHash !== schema?.schemaPlanHash) issues.push("credential_cross_binding_mismatch");
+  if (value.preparationSummaryHash !== preparationSummary?.summaryHash) issues.push("credential_preparation_binding_mismatch");
   if (value.credentialsSeparated !== true || value.runtimeCredentialCategory === value.migrationCredentialCategory) issues.push("runtime_migration_credential_separation_missing");
   if (value.runtimeCredentialCategory !== "dedicated_cutover_runtime_least_privilege_category" ||
       value.migrationCredentialCategory !== "separate_operator_migration_category") issues.push("credential_category_invalid");
@@ -516,6 +637,7 @@ function validateRunbook(value, packet) {
     ["transactionPlanId", "transactionPlanHash", packet.transactionPlan, "transactionPlanId", "transactionPlanHash"],
     ["credentialPlanId", "credentialPlanHash", packet.credentialPlan, "credentialPlanId", "credentialPlanHash"],
   ]) if (value[idField] !== object?.[objectId] || value[hashField] !== object?.[objectHash]) issues.push(`migration_runbook_binding_mismatch:${idField}`);
+  if (value.preparationSummaryHash !== packet.preparationSummary?.summaryHash) issues.push("migration_runbook_preparation_binding_mismatch");
   if (!exactArray(value.steps, RUNBOOK_STEPS)) issues.push("migration_runbook_steps_invalid");
   if (!exactArray(value.manualReviewCases, MANUAL_REVIEW_CASES)) issues.push("migration_manual_review_cases_invalid");
   for (const field of ["automaticRollbackAllowed", "destructiveCleanupAllowed", "dropAllowed", "truncateAllowed", "deleteAllowed", "resetAllowed", "forcedContinuationAllowed", "cutoverExecutionAllowed", "executableCommandsIncluded"]) {
@@ -534,6 +656,9 @@ function buildSummary(packet) {
     transactionPlanId: transaction.transactionPlanId, transactionPlanHash: transaction.transactionPlanHash,
     credentialPlanId: credential.credentialPlanId, credentialPlanHash: credential.credentialPlanHash,
     runbookId: runbook.runbookId, runbookHash: runbook.runbookHash,
+    preparationSummaryHash: packet.preparationSummary.summaryHash,
+    claimStoreProtocolHash: packet.claimStoreProtocol.protocolHash,
+    repositoryLockProtocolHash: packet.repositoryLockProtocol.protocolHash,
     preferredCandidate: CANDIDATE_CLASSES[0], candidateSelected: true,
     step114_2x_cCompatible: true, syntheticConformanceIsRealProviderValidation: false,
     ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
@@ -550,6 +675,9 @@ function validateSummary(value, packet) {
     ["credentialPlanId", "credentialPlanHash", packet.credentialPlan, "credentialPlanId", "credentialPlanHash"],
     ["runbookId", "runbookHash", packet.migrationRunbook, "runbookId", "runbookHash"],
   ]) if (value[idField] !== object?.[objectId] || value[hashField] !== object?.[objectHash]) issues.push(`preflight_summary_binding_mismatch:${idField}`);
+  if (value.preparationSummaryHash !== packet.preparationSummary?.summaryHash) issues.push("preflight_summary_preparation_binding_mismatch");
+  if (value.claimStoreProtocolHash !== packet.claimStoreProtocol?.protocolHash) issues.push("preflight_summary_claim_protocol_binding_mismatch");
+  if (value.repositoryLockProtocolHash !== packet.repositoryLockProtocol?.protocolHash) issues.push("preflight_summary_lock_protocol_binding_mismatch");
   if (value.preferredCandidate !== CANDIDATE_CLASSES[0] || value.candidateSelected !== true ||
       value.step114_2x_cCompatible !== true || value.syntheticConformanceIsRealProviderValidation !== false) issues.push("preflight_summary_boundary_invalid");
   for (const field of FIXED_FALSE_FIELDS) if (value[field] !== false) issues.push(`preflight_summary_fixed_false_invalid:${field}`);
@@ -573,14 +701,27 @@ function safeResult(status, summary = {}, issues = []) {
 
 function evaluateMetricsCutoverRealAdapterImplementationPreflight(packet) {
   if (packet === undefined || packet === null) return safeResult("idle");
-  if (!isRecord(packet) || !hasExactKeys(packet, ["persistenceDecision", "schemaPlan", "transactionPlan", "credentialPlan", "migrationRunbook"])) {
+  if (!isRecord(packet) || !hasExactKeys(packet, [
+    "preparationSummary", "claimStoreProtocol", "repositoryLockProtocol",
+    "persistenceDecision", "schemaPlan", "transactionPlan",
+    "credentialPlan", "migrationRunbook",
+  ])) {
     return safeResult("blocked", {}, ["preflight_packet_fields_invalid"]);
   }
   const issues = [
-    ...validateDecision(packet.persistenceDecision),
-    ...validateSchema(packet.schemaPlan, packet.persistenceDecision),
-    ...validateTransaction(packet.transactionPlan, packet.persistenceDecision, packet.schemaPlan),
-    ...validateCredential(packet.credentialPlan, packet.persistenceDecision, packet.schemaPlan),
+    ...validatePreparationSummary(packet.preparationSummary).map((issue) => `step114_2x_b_${issue}`),
+    ...validateClaimStoreAdapterProtocol(packet.claimStoreProtocol).map((issue) => `step114_2x_c_${issue}`),
+    ...validateRepositoryLockAdapterProtocol(packet.repositoryLockProtocol).map((issue) => `step114_2x_c_${issue}`),
+    ...validateDecision(packet.persistenceDecision, packet.preparationSummary),
+    ...validateSchema(packet.schemaPlan, packet.persistenceDecision, packet.preparationSummary),
+    ...validateTransaction(
+      packet.transactionPlan, packet.persistenceDecision, packet.schemaPlan,
+      packet.preparationSummary, packet.claimStoreProtocol, packet.repositoryLockProtocol,
+    ),
+    ...validateCredential(
+      packet.credentialPlan, packet.persistenceDecision,
+      packet.schemaPlan, packet.preparationSummary,
+    ),
     ...validateRunbook(packet.migrationRunbook, packet),
   ];
   if (issues.length > 0) return safeResult("blocked", {}, issues);

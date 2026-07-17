@@ -19,7 +19,9 @@ The selected design is a dedicated, table-backed transactional store for two log
 | `redis_like_ephemeral_store` | Rejected | TTL, eviction, asynchronous durability, and conditional persistence risk conflict with immutable terminal evidence. |
 | `local_filesystem` | Rejected | It is not the required production-durable distributed claim and lock boundary. |
 
-Exactly one candidate is preferred. Selection remains `designDecisionOnly=true`; `realProviderAdapterValidated=false` and `productionClaimEligible=false`.
+Exactly one candidate is preferred and exactly one is accepted. Those rows must be the same `dedicated_postgresql_transactional_store` row and must match the top-level preferred candidate. The accepted row has no rejection reason; every other row is explicitly rejected with sanitized non-empty reasons. Every capability field is an actual boolean and must match the candidate class's complete expected matrix. Selection remains `designDecisionOnly=true`; `realProviderAdapterValidated=false` and `productionClaimEligible=false`.
+
+The logical claim and repository-lock unique constraints are exact ordered singleton arrays for receipt identity and repository identity respectively. Additional indexes, if later reviewed, cannot be smuggled into those uniqueness contracts.
 
 ## Required capability evidence for a later stage
 
