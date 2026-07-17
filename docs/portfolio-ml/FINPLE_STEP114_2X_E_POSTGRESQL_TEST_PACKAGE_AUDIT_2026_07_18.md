@@ -55,4 +55,11 @@ The corrective changes remain within the six files already changed by Draft PR #
 - `npm.cmd run build`: passed; only the existing bundle-size advisory was emitted.
 - `npm.cmd run check:ai-production`: passed all smoke checks, including the admin endpoint's tokenless 403.
 - Diff checks: passed for both the unstaged and staged patch.
-- Repository-wide `node --test --test-reporter=dot` did not complete within the 240-second bound and emitted failure markers, so it is not reported as passing. The unrelated existing Step228 test was reproduced independently: 4 tests passed and 1 failed because `snapshot format is not canonical`. The historical Step228 checker, test, snapshot, and `.gitattributes` were not modified.
+
+## Repository-wide bounded failure inventory
+
+The inventory was rerun from clean committed HEAD `26a567bcd6ced12816880be336b00fa02070f2a9` with the spec reporter and a 240-second bound. The full auto-discovery run did not finish before the bound. Before timeout it emitted exactly one failing test name:
+
+- `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
+
+No other failing test name appeared before that timeout. A second read-only run used the Node test runner with the Git-tracked `*.test.{cjs,js,mjs}` file list and excluded only `scripts/check-trading-step228-contract-hardening-handoff.test.cjs`. It also reached the 240-second bound without completing, and emitted zero failing test names before timeout. These bounded results distinguish the observed Step228 portability failure from the absence of any observed non-Step228 failure, but they do not claim a completed repository-wide pass. The Step228 checker, test, snapshot, and `.gitattributes` remain outside PR #284 and were not modified.
