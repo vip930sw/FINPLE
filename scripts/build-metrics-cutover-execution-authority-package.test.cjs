@@ -297,6 +297,30 @@ test("canonical package ID and hash are deterministic and mutations remain bound
   assert.equal(validateMetricsCutoverExecutionAuthorityPackage(mutated).ok, false);
 });
 
+test("well-formed authority package ID tampering fails with the exact mismatch issue", async () => {
+  const setup = await unitSetup();
+  const authorityPackage = buildMetricsCutoverExecutionAuthorityPackage(
+    setup.requestResult.approvalRequest,
+    setup.verification,
+  );
+  const tampered = clone(authorityPackage);
+  const replacementHex = authorityPackage.authorityPackageId.endsWith(
+    "f".repeat(64),
+  )
+    ? "0".repeat(64)
+    : "f".repeat(64);
+  tampered.authorityPackageId =
+    `metrics-cutover-authority-package-${replacementHex}`;
+
+  const validation =
+    validateMetricsCutoverExecutionAuthorityPackage(tampered);
+  assert.equal(validation.ok, false);
+  assert.ok(
+    validation.issues.includes("authority_package_id_mismatch"),
+    validation.issues.join(","),
+  );
+});
+
 test("package schema, targets, counts, policy, and hashes fail closed", async (t) => {
   const setup = await unitSetup();
   const baseline = buildMetricsCutoverExecutionAuthorityPackage(setup.requestResult.approvalRequest, setup.verification);
@@ -351,6 +375,37 @@ test("outer A/B drift and Step 114-2T/2U source drift block with package suppres
     await t.test(name, async () => {
       const result = await runUnit(setup, changes);
       assert.equal(result.status, "blocked");
+      assertSuppressed(result);
+    });
+  }
+});
+
+test("Step 114-2T inherited fixed-false tampering blocks and suppresses the package", async (t) => {
+  const setup = await unitSetup();
+  for (const field of [
+    "fileWriteAuthorized",
+    "approvalGranted",
+    "signatureVerified",
+  ]) {
+    await t.test(field, async () => {
+      const tampered = clone(setup.requestResult);
+      tampered[field] = true;
+      const result = await runUnit(setup, {
+        requestResults: [
+          setup.requestResult,
+          setup.requestResult,
+          tampered,
+        ],
+      });
+
+      assert.equal(result.status, "blocked");
+      assert.equal(result.authorityPackageReady, false);
+      assert.ok(
+        result.blockingIssues.includes(
+          `step114_2t_a_fixed_false_invalid:${field}`,
+        ),
+        result.blockingIssues.join(","),
+      );
       assertSuppressed(result);
     });
   }

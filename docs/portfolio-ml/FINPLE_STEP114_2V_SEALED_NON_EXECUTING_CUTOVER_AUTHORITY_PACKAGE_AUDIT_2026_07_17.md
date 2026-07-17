@@ -89,11 +89,11 @@ No selector, overlay CSV, production loader or pointer, scenario monthly returns
 
 The implementation passed:
 
-- Step 114-2V focused suite: 27 tests;
+- Step 114-2V focused suite: 32 tests, including well-formed authority-package ID tampering and parameterized Step 114-2T inherited fixed-false tampering;
 - real production-default Step 114-2T A/B and Step 114-2U A/B integration plus the actual Step 114-2V CLI;
-- Step 114-2T through 2V combined suite: 166 tests;
-- Step 114-2Q through 2V combined suite: 374 tests;
-- Step 114-2N through 2V combined suite: 578 tests;
+- Step 114-2T through 2V combined suite: 171 tests;
+- Step 114-2Q through 2V combined suite: 379 tests;
+- Step 114-2N through 2V combined suite: 583 tests;
 - Step 114-2M Python candidate-package suite: 16 tests;
 - Python metrics discovery suite: 48 tests;
 - `npm.cmd run check:scenario-metrics`: 80 tests;
