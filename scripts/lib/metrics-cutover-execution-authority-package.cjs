@@ -251,6 +251,32 @@ function validateTarget(target, expected, prefix, issues) {
   }
 }
 
+function validateMetricsCutoverTargetSummaries(
+  value,
+  issuePrefix = "authority_package",
+) {
+  const issues = [];
+  if (!Array.isArray(value) || value.length !== 2) {
+    return [`${issuePrefix}_target_count_invalid`];
+  }
+  validateTarget(
+    value[0],
+    { role: "us_price_metrics", market: "US" },
+    `${issuePrefix}_us_target`,
+    issues,
+  );
+  validateTarget(
+    value[1],
+    { role: "kr_price_metrics", market: "KR" },
+    `${issuePrefix}_kr_target`,
+    issues,
+  );
+  if (!areMetricsTargetPathsDistinct(value[0]?.path, value[1]?.path)) {
+    issues.push(`${issuePrefix}_target_paths_not_distinct`);
+  }
+  return uniqueSorted(issues);
+}
+
 function validateAuthorityRequirements(value, issues) {
   if (!hasExactKeys(value, AUTHORITY_REQUIREMENT_FIELDS)) {
     issues.push("authority_requirements_fields_invalid");
@@ -361,30 +387,12 @@ function validateAuthorityPackageShape(value) {
   if (value.plannedDeleteCount !== 0) {
     issues.push("authority_package_planned_delete_count_invalid");
   }
-  if (!Array.isArray(value.targets) || value.targets.length !== 2) {
-    issues.push("authority_package_target_count_invalid");
-  } else {
-    validateTarget(
-      value.targets[0],
-      { role: "us_price_metrics", market: "US" },
-      "authority_package_us_target",
-      issues,
-    );
-    validateTarget(
-      value.targets[1],
-      { role: "kr_price_metrics", market: "KR" },
-      "authority_package_kr_target",
-      issues,
-    );
-    if (
-      !areMetricsTargetPathsDistinct(
-        value.targets[0]?.path,
-        value.targets[1]?.path,
-      )
-    ) {
-      issues.push("authority_package_target_paths_not_distinct");
-    }
-  }
+  issues.push(
+    ...validateMetricsCutoverTargetSummaries(
+      value.targets,
+      "authority_package",
+    ),
+  );
   validateAuthorityRequirements(value.authorityRequirements, issues);
   try {
     canonicalJson(value);
@@ -1069,5 +1077,6 @@ module.exports = {
   recomputeMetricsCutoverExecutionAuthorityPackageId,
   runMetricsCutoverExecutionAuthorityPackage,
   safeResult,
+  validateMetricsCutoverTargetSummaries,
   validateMetricsCutoverExecutionAuthorityPackage,
 };

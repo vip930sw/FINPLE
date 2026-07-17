@@ -5,24 +5,24 @@ const {
 } = require("node:crypto");
 
 const {
-  TARGET_FIELDS,
-} = require("./metrics-cutover-execution-approval-request.cjs");
-const {
   parseCanonicalUtcMillisecondInstant,
   readDescriptorAtomicJsonObservation,
   readMetricsCutoverExecutionApprovalResponseObservation,
   readMetricsCutoverExecutionApproverAllowlistObservation,
   runMetricsCutoverExecutionApprovalResponseVerification,
   scanJsonForDuplicateObjectKeys,
+  normalizeExecutionApproverAllowlist,
 } = require("./metrics-cutover-execution-approval-response.cjs");
 const {
   AUTHORITY_SUMMARY_CONTRACT_VERSION,
   FIXED_FALSE_FIELDS: STEP114_2V_FIXED_FALSE_FIELDS,
   canonicalizeMetricsCutoverExecutionAuthorityPackage,
   runMetricsCutoverExecutionAuthorityPackage,
+  validateMetricsCutoverTargetSummaries,
   validateMetricsCutoverExecutionAuthorityPackage,
 } = require("./metrics-cutover-execution-authority-package.cjs");
 const {
+  parseIsoInstant,
   readMetricsCutoverPostMergeBundleObservation,
 } = require("./metrics-cutover-post-merge-dry-run-input.cjs");
 
@@ -369,15 +369,12 @@ function validateInvocationShape(value, { skipSignature = false } = {}) {
       issues.push(`execution_invocation_git_sha_invalid:${field}`);
     }
   }
-  if (!Array.isArray(value.targets) || value.targets.length !== 2) {
-    issues.push("execution_invocation_targets_invalid");
-  } else {
-    value.targets.forEach((target, index) => {
-      if (!hasExactKeys(target, TARGET_FIELDS)) {
-        issues.push(`execution_invocation_target_${index}_fields_invalid`);
-      }
-    });
-  }
+  issues.push(
+    ...validateMetricsCutoverTargetSummaries(
+      value.targets,
+      "execution_invocation",
+    ),
+  );
   if (value.plannedWriteCount !== 2) {
     issues.push("execution_invocation_planned_write_count_invalid");
   }
@@ -462,7 +459,7 @@ function validateAuthorityBinding(value, authorityPackage, issues) {
 }
 
 function validateInvocationTime(value, evaluationNow, issues) {
-  const evaluation = parseCanonicalUtcMillisecondInstant(evaluationNow);
+  const evaluation = parseIsoInstant(evaluationNow);
   const invoked = parseCanonicalUtcMillisecondInstant(value.invokedAt);
   const expires = parseCanonicalUtcMillisecondInstant(value.expiresAt);
   if (!evaluation) {
@@ -803,15 +800,12 @@ function validateReceiptShape(value) {
   if (!parseCanonicalUtcMillisecondInstant(value.expiresAt)) {
     issues.push("invocation_receipt_expires_at_invalid");
   }
-  if (!Array.isArray(value.targets) || value.targets.length !== 2) {
-    issues.push("invocation_receipt_targets_invalid");
-  } else {
-    value.targets.forEach((target, index) => {
-      if (!hasExactKeys(target, TARGET_FIELDS)) {
-        issues.push(`invocation_receipt_target_${index}_fields_invalid`);
-      }
-    });
-  }
+  issues.push(
+    ...validateMetricsCutoverTargetSummaries(
+      value.targets,
+      "invocation_receipt",
+    ),
+  );
   if (value.plannedWriteCount !== 2) {
     issues.push("invocation_receipt_planned_write_count_invalid");
   }
@@ -1134,45 +1128,258 @@ function compareAuthorities(left, right) {
   return uniqueSorted(issues);
 }
 
-function collectPriorSignerIdentities(bundle, captures, issues) {
+function canonicalEd25519PublicKeyFingerprint(publicKeyPem) {
+  if (
+    typeof publicKeyPem !== "string" ||
+    publicKeyPem.trim().length === 0 ||
+    publicKeyPem.length > 16 * 1024
+  ) {
+    throw new TypeError("public_key_invalid");
+  }
+  const publicKey = createPublicKey(publicKeyPem);
+  if (publicKey.asymmetricKeyType !== "ed25519") {
+    throw new TypeError("public_key_not_ed25519");
+  }
+  return sha256(publicKey.export({ type: "spki", format: "der" }));
+}
+
+function recordPriorSignerBinding(
+  bindings,
+  role,
+  signerKeyId,
+  signerId,
+  fingerprint,
+  issues,
+) {
+  if (
+    !isSafeIdentity(signerKeyId) ||
+    !isSafeIdentity(signerId) ||
+    !isSha256(fingerprint)
+  ) {
+    issues.push(`prior_signer_binding_invalid:${role}`);
+    return;
+  }
+  const candidate = { signerKeyId, signerId, fingerprint };
+  const existing = bindings.get(role);
+  if (
+    existing &&
+    (existing.signerKeyId !== candidate.signerKeyId ||
+      existing.signerId !== candidate.signerId ||
+      existing.fingerprint !== candidate.fingerprint)
+  ) {
+    issues.push(`prior_signer_binding_changed:${role}`);
+    return;
+  }
+  if (!existing) bindings.set(role, candidate);
+}
+
+function parseFinalApprovalAllowlist(bundle, role, issues) {
+  const raw = bundle?.finalApprovalOptions?.finalApprovalAllowlistJson;
+  if (typeof raw !== "string" || raw.length === 0) {
+    issues.push(`prior_signer_allowlist_invalid:${role}`);
+    return [];
+  }
+  let entries;
+  try {
+    entries = JSON.parse(raw);
+  } catch {
+    issues.push(`prior_signer_allowlist_invalid:${role}`);
+    return [];
+  }
+  if (!Array.isArray(entries) || entries.length === 0) {
+    issues.push(`prior_signer_allowlist_invalid:${role}`);
+    return [];
+  }
+  return entries;
+}
+
+function resolveFinalApprovalSigner(
+  bundle,
+  receiptName,
+  role,
+  bindings,
+  issues,
+) {
+  const receipt = bundle?.finalApprovalInput?.[receiptName];
+  if (
+    !isSafeIdentity(receipt?.signerKeyId) ||
+    !isSafeIdentity(receipt?.signerId)
+  ) {
+    issues.push(`prior_signer_identity_invalid:${role}`);
+    return;
+  }
+  const entries = parseFinalApprovalAllowlist(bundle, role, issues);
+  const keyMatches = entries.filter(
+    (entry) =>
+      isRecord(entry) && entry.signerKeyId === receipt.signerKeyId,
+  );
+  const idMatches = entries.filter(
+    (entry) => isRecord(entry) && entry.signerId === receipt.signerId,
+  );
+  if (
+    keyMatches.length !== 1 ||
+    idMatches.length !== 1 ||
+    keyMatches[0] !== idMatches[0]
+  ) {
+    issues.push(`prior_signer_resolution_failed:${role}`);
+    return;
+  }
+  let fingerprint = "";
+  try {
+    fingerprint = canonicalEd25519PublicKeyFingerprint(
+      keyMatches[0].publicKeyPem,
+    );
+  } catch {
+    issues.push(`prior_signer_public_key_invalid:${role}`);
+    return;
+  }
+  recordPriorSignerBinding(
+    bindings,
+    role,
+    receipt.signerKeyId,
+    receipt.signerId,
+    fingerprint,
+    issues,
+  );
+}
+
+function resolveExecutionApproverSigner(
+  verification,
+  normalizedAllowlist,
+  bindings,
+  issues,
+) {
+  if (
+    !isSafeIdentity(verification?.signerKeyId) ||
+    !isSafeIdentity(verification?.signerId)
+  ) {
+    issues.push("execution_approver_identity_invalid");
+    return;
+  }
+  const keyMatches = normalizedAllowlist.entries.filter(
+    (entry) => entry.signerKeyId === verification.signerKeyId,
+  );
+  const idMatches = normalizedAllowlist.entries.filter(
+    (entry) => entry.signerId === verification.signerId,
+  );
+  if (
+    keyMatches.length !== 1 ||
+    idMatches.length !== 1 ||
+    keyMatches[0] !== idMatches[0]
+  ) {
+    issues.push("execution_approver_resolution_failed");
+    return;
+  }
+  recordPriorSignerBinding(
+    bindings,
+    "execution_approver",
+    verification.signerKeyId,
+    verification.signerId,
+    keyMatches[0].fingerprint,
+    issues,
+  );
+}
+
+function collectPriorSignerIdentities(outerBundle, captures, issues) {
   const keyIds = new Set();
   const signerIds = new Set();
-  for (const receiptName of [
-    "productionApprovalReceipt",
-    "appExportApprovalReceipt",
+  const bindings = new Map();
+  const bundleObservations = [
+    outerBundle,
+    ...captures.flatMap((capture) => capture.bundle || []),
+  ];
+  for (const observation of bundleObservations) {
+    if (!observation?.ok || !isRecord(observation.bundle)) {
+      issues.push("prior_signer_bundle_observation_invalid");
+      continue;
+    }
+    resolveFinalApprovalSigner(
+      observation.bundle,
+      "productionApprovalReceipt",
+      "production_publish",
+      bindings,
+      issues,
+    );
+    resolveFinalApprovalSigner(
+      observation.bundle,
+      "appExportApprovalReceipt",
+      "app_export",
+      bindings,
+      issues,
+    );
+  }
+
+  for (const capture of captures) {
+    const normalizedAllowlists = [];
+    for (const observation of capture.allowlist || []) {
+      if (!observation?.ok) {
+        issues.push("execution_approver_allowlist_observation_invalid");
+        continue;
+      }
+      const normalized = normalizeExecutionApproverAllowlist(
+        observation.value,
+      );
+      if (!normalized.ok) {
+        issues.push("execution_approver_allowlist_invalid");
+        continue;
+      }
+      normalizedAllowlists.push(normalized);
+    }
+    for (const verification of capture.verifications || []) {
+      for (const normalized of normalizedAllowlists) {
+        resolveExecutionApproverSigner(
+          verification,
+          normalized,
+          bindings,
+          issues,
+        );
+      }
+    }
+  }
+
+  for (const role of [
+    "production_publish",
+    "app_export",
+    "execution_approver",
   ]) {
-    const receipt = bundle?.finalApprovalInput?.[receiptName];
-    if (!isSafeIdentity(receipt?.signerKeyId) || !isSafeIdentity(receipt?.signerId)) {
-      issues.push(`prior_signer_identity_invalid:${receiptName}`);
+    const binding = bindings.get(role);
+    if (!binding) {
+      issues.push(`prior_signer_binding_missing:${role}`);
       continue;
     }
-    keyIds.add(receipt.signerKeyId);
-    signerIds.add(receipt.signerId);
+    keyIds.add(binding.signerKeyId);
+    signerIds.add(binding.signerId);
   }
-  const verifications = captures.flatMap((capture) => capture.verifications);
-  let expectedKeyId = null;
-  let expectedSignerId = null;
-  for (const verification of verifications) {
-    if (
-      !isSafeIdentity(verification?.signerKeyId) ||
-      !isSafeIdentity(verification?.signerId)
-    ) {
-      issues.push("execution_approver_identity_invalid");
-      continue;
-    }
-    if (expectedKeyId === null) {
-      expectedKeyId = verification.signerKeyId;
-      expectedSignerId = verification.signerId;
-    } else if (
-      expectedKeyId !== verification.signerKeyId ||
-      expectedSignerId !== verification.signerId
-    ) {
-      issues.push("execution_approver_identity_changed");
-    }
-    keyIds.add(verification.signerKeyId);
-    signerIds.add(verification.signerId);
+  return {
+    keyIds,
+    signerIds,
+    fingerprints: new Map(
+      [...bindings.entries()].map(([role, binding]) => [
+        role,
+        binding.fingerprint,
+      ]),
+    ),
+  };
+}
+
+function addInvokerFingerprintReuseIssues(
+  priorSigners,
+  invokerFingerprint,
+  issues,
+) {
+  if (!isSha256(invokerFingerprint)) {
+    issues.push("execution_invoker_public_key_fingerprint_invalid");
+    return;
   }
-  return { keyIds, signerIds };
+  for (const role of [
+    "production_publish",
+    "app_export",
+    "execution_approver",
+  ]) {
+    if (priorSigners.fingerprints.get(role) === invokerFingerprint) {
+      issues.push(`execution_invoker_public_key_reused:${role}`);
+    }
+  }
 }
 
 function safeResult(status, fields = {}, issues = [], warnings = []) {
@@ -1391,7 +1598,7 @@ async function runMetricsCutoverExecutionInvocationVerification(
     );
   issues.push(...normalizedAllowlist.issues);
   const priorSigners = collectPriorSignerIdentities(
-    outerA.bundle.bundle,
+    outerA.bundle,
     [captures.authority_a],
     issues,
   );
@@ -1417,6 +1624,13 @@ async function runMetricsCutoverExecutionInvocationVerification(
   } else {
     matchedEntry = keyMatches[0];
   }
+  if (matchedEntry) {
+    addInvokerFingerprintReuseIssues(
+      priorSigners,
+      matchedEntry.fingerprint,
+      issues,
+    );
+  }
   if (issues.length === 0 && matchedEntry) {
     const signature = decodeCanonicalBase64(invocation.signatureBase64);
     let verified = false;
@@ -1440,11 +1654,6 @@ async function runMetricsCutoverExecutionInvocationVerification(
     ...validateAuthorityCapture("authority_b", captures.authority_b, outerA),
   );
   issues.push(...compareAuthorities(authorityA, authorityB));
-  collectPriorSignerIdentities(
-    outerA.bundle.bundle,
-    [captures.authority_a, captures.authority_b],
-    issues,
-  );
   if (issues.length > 0) return safeResult("blocked", {}, issues);
 
   const outerB = {
@@ -1495,6 +1704,18 @@ async function runMetricsCutoverExecutionInvocationVerification(
       "consumed_outer_b",
     ),
   );
+  const finalPriorSigners = collectPriorSignerIdentities(
+    outerB.bundle,
+    [captures.authority_a, captures.authority_b],
+    issues,
+  );
+  if (matchedEntry) {
+    addInvokerFingerprintReuseIssues(
+      finalPriorSigners,
+      matchedEntry.fingerprint,
+      issues,
+    );
+  }
   if (issues.length > 0) return safeResult("blocked", {}, issues);
 
   let receipt;

@@ -46,6 +46,7 @@ const {
   EXECUTION_INVOCATION_CONTRACT_VERSION,
   EXECUTION_INVOCATION_POLICY_VERSION,
   EXECUTION_INVOCATION_RECEIPT_CONTRACT_VERSION,
+  EXECUTION_INVOCATION_RECEIPT_HASH_DOMAIN,
   EXECUTION_INVOCATION_STATUS,
   EXECUTION_INVOCATION_SUMMARY_CONTRACT_VERSION,
   EXECUTION_INVOKER_ALLOWLIST_CONTRACT_VERSION,
@@ -87,6 +88,28 @@ const EVALUATION_NOW = "2026-07-17T01:00:00.000Z";
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function canonicalJsonForTest(value) {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJsonForTest(item)).join(",")}]`;
+  }
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalJsonForTest(value[key])}`)
+    .join(",")}}`;
+}
+
+function rehashReceiptForTest(receipt) {
+  const payload = structuredClone(receipt);
+  delete payload.receiptHash;
+  return sha256(
+    Buffer.concat([
+      Buffer.from(EXECUTION_INVOCATION_RECEIPT_HASH_DOMAIN, "utf8"),
+      Buffer.from(canonicalJsonForTest(payload), "utf8"),
+    ]),
+  );
 }
 
 function fixedFalse(fields) {
@@ -136,18 +159,45 @@ function readyDryRun() {
   };
 }
 
-function bundleValue() {
+function makeFinalSigner(role, publicKeyPem = "") {
+  const pair = publicKeyPem ? null : generateKeyPairSync("ed25519");
+  const production = role === "production_publish";
+  return {
+    signerKeyId: `${production ? "production" : "app"}-key`,
+    signerId: `${production ? "production" : "app"}-signer`,
+    publicKeyPem:
+      publicKeyPem || pair.publicKey.export({ type: "spki", format: "pem" }),
+    allowedScopes: [
+      production
+        ? "metrics_production_publish_approval"
+        : "metrics_app_export_approval",
+    ],
+    roles: [
+      production
+        ? "metrics_production_publish_approver"
+        : "metrics_app_export_approver",
+    ],
+    revoked: false,
+  };
+}
+
+function bundleValue({ productionSigner, appSigner } = {}) {
   return {
     evaluationNow: EVALUATION_NOW,
     finalApprovalInput: {
       productionApprovalReceipt: {
-        signerKeyId: "production-key",
-        signerId: "production-signer",
+        signerKeyId: productionSigner?.signerKeyId || "production-key",
+        signerId: productionSigner?.signerId || "production-signer",
       },
       appExportApprovalReceipt: {
-        signerKeyId: "app-key",
-        signerId: "app-signer",
+        signerKeyId: appSigner?.signerKeyId || "app-key",
+        signerId: appSigner?.signerId || "app-signer",
       },
+    },
+    finalApprovalOptions: {
+      finalApprovalAllowlistJson: JSON.stringify(
+        productionSigner && appSigner ? [productionSigner, appSigner] : [],
+      ),
     },
   };
 }
@@ -170,11 +220,11 @@ function observation(kind, bytes, value, overrides = {}) {
   return result;
 }
 
-async function readyStep1142TResult(bundleBytes) {
+async function readyStep1142TResult(bundleBytes, bundle) {
   return runMetricsCutoverExecutionApprovalRequest(
     { repo: "C:\\synthetic-repo", inputPath: "C:\\synthetic\\bundle.json" },
     {
-      observeBundle: async () => observation("bundle", bundleBytes, bundleValue()),
+      observeBundle: async () => observation("bundle", bundleBytes, bundle),
       runDryRun: async (_input, adapters) => {
         await adapters.readBundle("C:\\synthetic\\bundle.json");
         return readyDryRun();
@@ -309,12 +359,33 @@ function cloneObservation(value) {
   return { ...structuredClone(value), bytes: Buffer.from(value.bytes) };
 }
 
-async function unitSetup() {
+async function unitSetup({ reuseInvokerKeyFor = "" } = {}) {
   const bundleBytes = Buffer.from("synthetic-bundle");
+  const invoker = makeInvoker();
+  const productionSigner = makeFinalSigner(
+    "production_publish",
+    reuseInvokerKeyFor === "production_publish"
+      ? invoker.entry.publicKeyPem
+      : "",
+  );
+  const appSigner = makeFinalSigner(
+    "app_export",
+    reuseInvokerKeyFor === "app_export" ? invoker.entry.publicKeyPem : "",
+  );
+  const approver = makeApprover({
+    publicKeyPem:
+      reuseInvokerKeyFor === "execution_approver"
+        ? invoker.entry.publicKeyPem
+        : "",
+  });
+  const bundle = bundleValue({ productionSigner, appSigner });
   const responseValue = { synthetic: "response" };
-  const approverAllowlistValue = { synthetic: "approver-allowlist" };
+  const approverAllowlistValue = {
+    contractVersion: EXECUTION_APPROVER_ALLOWLIST_CONTRACT_VERSION,
+    entries: [approver.entry],
+  };
   const baseObservations = {
-    bundle: observation("bundle", bundleBytes, bundleValue()),
+    bundle: observation("bundle", bundleBytes, bundle),
     response: observation("response", "synthetic-response", responseValue),
     allowlist: observation(
       "allowlist",
@@ -322,18 +393,24 @@ async function unitSetup() {
       approverAllowlistValue,
     ),
   };
-  const requestResult = await readyStep1142TResult(bundleBytes);
+  const requestResult = await readyStep1142TResult(bundleBytes, bundle);
   assert.equal(requestResult.status, "request_ready");
-  const verification = readyStep1142UResult(requestResult.approvalRequest, {
-    bundle: baseObservations.bundle.sha256,
-    response: baseObservations.response.sha256,
-    allowlist: baseObservations.allowlist.sha256,
-  });
+  const verification = readyStep1142UResult(
+    requestResult.approvalRequest,
+    {
+      bundle: baseObservations.bundle.sha256,
+      response: baseObservations.response.sha256,
+      allowlist: baseObservations.allowlist.sha256,
+    },
+    {
+      signerKeyId: approver.entry.signerKeyId,
+      signerId: approver.entry.signerId,
+    },
+  );
   const authorityPackage = buildMetricsCutoverExecutionAuthorityPackage(
     requestResult.approvalRequest,
     verification,
   );
-  const invoker = makeInvoker();
   const invocation = signedInvocation(authorityPackage, invoker);
   const invokerAllowlist = {
     contractVersion: EXECUTION_INVOKER_ALLOWLIST_CONTRACT_VERSION,
@@ -355,10 +432,14 @@ async function unitSetup() {
   return {
     authorityPackage,
     authorityResult: readyAuthorityResult(authorityPackage),
+    approver,
+    appSigner,
+    bundle,
     invocation,
     invoker,
     invokerAllowlist,
     observations,
+    productionSigner,
     verification,
   };
 }
@@ -593,6 +674,102 @@ test("exact millisecond time policy and canonical timestamps fail closed", async
   }
 });
 
+test("operator-bundle evaluationNow preserves ISO instant compatibility", async () => {
+  const setup = await unitSetup();
+  const withoutFraction = validateMetricsCutoverExecutionInvocation(
+    setup.invocation,
+    {
+      authorityPackage: setup.authorityPackage,
+      evaluationNow: "2026-07-17T01:00:00Z",
+    },
+  );
+  const offset = validateMetricsCutoverExecutionInvocation(setup.invocation, {
+    authorityPackage: setup.authorityPackage,
+    evaluationNow: "2026-07-17T10:00:00+09:00",
+  });
+  assert.deepEqual(withoutFraction, { ok: true, issues: [] });
+  assert.deepEqual(offset, withoutFraction);
+  const malformed = validateMetricsCutoverExecutionInvocation(
+    setup.invocation,
+    {
+      authorityPackage: setup.authorityPackage,
+      evaluationNow: "2026-07-17 01:00:00Z",
+    },
+  );
+  assert.equal(malformed.ok, false);
+  assert.ok(
+    malformed.issues.includes("execution_invocation_evaluation_now_invalid"),
+  );
+});
+
+test("standalone invocation and receipt validators enforce complete target semantics", async (t) => {
+  const setup = await unitSetup();
+  const cases = [
+    ["wrong order and role", (targets) => targets.reverse()],
+    ["wrong market", (targets) => { targets[0].market = "KR"; }],
+    [
+      "unsafe path",
+      (targets) => { targets[0].path = "src/data/tickers/../unsafe.csv"; },
+    ],
+    [
+      "case-fold collision",
+      (targets) => {
+        targets[0].path = "src/data/tickers/Future_Target.csv";
+        targets[1].path = "src/data/tickers/future_target.csv";
+      },
+    ],
+    [
+      "NFC collision",
+      (targets) => {
+        targets[0].path = "src/data/tickers/future_caf\u00e9.csv";
+        targets[1].path = "src/data/tickers/future_cafe\u0301.csv";
+      },
+    ],
+    ["malformed hash", (targets) => { targets[0].sha256 = "A".repeat(64); }],
+    ["zero byte size", (targets) => { targets[0].byteSize = 0; }],
+    ["zero row count", (targets) => { targets[0].rowCount = 0; }],
+    [
+      "wrong schema version",
+      (targets) => { targets[0].schemaVersion = "wrong"; },
+    ],
+    ["overwrite write mode", (targets) => { targets[0].writeMode = "overwrite"; }],
+  ];
+  const validReceipt = buildMetricsCutoverExecutionInvocationReceipt(
+    setup.invocation,
+    setup.authorityPackage,
+  );
+  for (const [name, mutate] of cases) {
+    await t.test(name, () => {
+      const invocation = structuredClone(setup.invocation);
+      mutate(invocation.targets);
+      const invocationValidation =
+        validateMetricsCutoverExecutionInvocation(invocation);
+      assert.equal(invocationValidation.ok, false, name);
+      assert.ok(
+        invocationValidation.issues.some((issue) =>
+          issue.startsWith("execution_invocation_")),
+        invocationValidation.issues.join(","),
+      );
+
+      const receipt = structuredClone(validReceipt);
+      mutate(receipt.targets);
+      receipt.receiptHash = rehashReceiptForTest(receipt);
+      const receiptValidation =
+        validateMetricsCutoverExecutionInvocationReceipt(receipt);
+      assert.equal(receiptValidation.ok, false, name);
+      assert.ok(
+        receiptValidation.issues.some((issue) =>
+          issue.startsWith("invocation_receipt_")),
+        receiptValidation.issues.join(","),
+      );
+      assert.equal(
+        receiptValidation.issues.includes("invocation_receipt_hash_mismatch"),
+        false,
+      );
+    });
+  }
+});
+
 test("invoker allowlist key, alias, role, scope, revocation, signer reuse, and signature fail closed", async (t) => {
   const setup = await unitSetup();
   const duplicateKey = { ...setup.invoker.entry, invokerKeyId: "alias-key", invokerId: "alias-id" };
@@ -637,6 +814,30 @@ test("invoker allowlist key, alias, role, scope, revocation, signer reuse, and s
   assert.equal(forgedResult.status, "blocked");
   assert.ok(forgedResult.blockingIssues.includes("execution_invocation_signature_verification_failed"));
   assertSuppressed(forgedResult);
+});
+
+test("invoker public-key fingerprint reuse blocks across all three prior signer roles", async (t) => {
+  for (const role of [
+    "production_publish",
+    "app_export",
+    "execution_approver",
+  ]) {
+    await t.test(role, async () => {
+      const setup = await unitSetup({ reuseInvokerKeyFor: role });
+      const result = await runUnit(setup);
+      assert.equal(result.status, "blocked");
+      assert.ok(
+        result.blockingIssues.includes(
+          `execution_invoker_public_key_reused:${role}`,
+        ),
+        result.blockingIssues.join(","),
+      );
+      assertSuppressed(result);
+      const serialized = JSON.stringify(result);
+      assert.equal(serialized.includes("PUBLIC KEY"), false);
+      assert.equal(serialized.includes("fingerprint"), false);
+    });
+  }
 });
 
 test("all five input files block transient consumed swaps even when outer values match", async (t) => {
@@ -758,14 +959,16 @@ test("CLI accepts exactly six unique flags and maps ready, blocked, and runtime 
   assert.equal(JSON.parse(stdout).status, "idle");
 });
 
-function makeApprover() {
+function makeApprover({ publicKeyPem = "" } = {}) {
   const pair = generateKeyPairSync("ed25519");
   return {
     privateKey: pair.privateKey,
     entry: {
       signerKeyId: "execution-approver-key",
       signerId: "execution-approver",
-      publicKeyPem: pair.publicKey.export({ type: "spki", format: "pem" }),
+      publicKeyPem:
+        publicKeyPem ||
+        pair.publicKey.export({ type: "spki", format: "pem" }),
       allowedScopes: [APPROVAL_SCOPE],
       roles: [APPROVER_ROLE],
       revoked: false,

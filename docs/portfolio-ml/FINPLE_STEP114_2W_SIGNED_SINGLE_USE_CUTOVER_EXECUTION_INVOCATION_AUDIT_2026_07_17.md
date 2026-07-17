@@ -36,7 +36,7 @@ Both real Step 114-2V results must be `authority_package_ready`, validate under 
 
 The invocation is an exact-key object. Its `invocationId` uses SHA-256 with domain `FINPLE_STEP114_2W_EXECUTION_INVOCATION_ID\0`. The Ed25519 signature payload uses domain `FINPLE_STEP114_2W_EXECUTION_INVOCATION_SIGNATURE\0` and the canonical invocation excluding only `signatureBase64`. Canonicalization recursively sorts object keys while preserving array order and rejects sparse arrays, unsupported values, custom prototypes, missing keys, and extra keys.
 
-The invocation must declare scope `metrics_exact_cutover_execution`, status `explicit_single_use_invocation`, exactly the required true/false attestations, canonical base64, and a 32-byte nonce. Its timestamps use strict canonical UTC millisecond form. At the exact evaluation instant:
+The invocation must declare scope `metrics_exact_cutover_execution`, status `explicit_single_use_invocation`, exactly the required true/false attestations, canonical base64, and a 32-to-128-character URL-safe nonce matching `[A-Za-z0-9_-]`. Its timestamps use strict canonical UTC millisecond form. The operator-bundle `evaluationNow` retains the merged ISO-instant compatibility, including equivalent offsets and omitted fractional seconds. At the exact evaluation instant:
 
 - `invokedAt <= evaluationNow + 60 seconds`;
 - `evaluationNow - invokedAt <= 10 minutes`;
@@ -50,7 +50,9 @@ All comparisons use integer milliseconds.
 
 The invoker allowlist accepts only the exact versioned root and entry fields. Every key must parse as Ed25519 and is canonicalized to SPKI DER before a SHA-256 fingerprint is calculated internally. Key IDs and invoker IDs must be unique, and the same public-key material cannot be registered under aliases. The matching entry must be non-revoked and allow only the execution scope and `metrics_cutover_execution_invoker` role.
 
-The execution invoker must differ from both final-approval signers by signer ID and by actual public-key fingerprint. Aliased key IDs therefore cannot satisfy signer separation. Full public keys, fingerprints, signatures, nonces, input bytes, canonical input paths, and absolute paths are not exposed in public results or failure output.
+The execution invoker must differ from all three prior signers: the production-publish signer, app-export signer, and Step 114-2U execution approver. The verifier resolves the production/app receipts against the already validated final-approval allowlist embedded in every consumed operator bundle, resolves every captured Step 114-2U signer against every actually consumed execution-approver allowlist, canonicalizes all matched Ed25519 keys to SPKI DER, and enforces stable identities and SHA-256 public-key fingerprints across both Step 114-2V reproductions. Invoker signer ID, key ID, and actual fingerprint reuse all block; aliased IDs therefore cannot satisfy separation. Full public keys, fingerprints, signatures, nonces, input bytes, canonical input paths, and absolute paths are not exposed in public results or failure output.
+
+Both the standalone invocation validator and standalone receipt validator reuse the merged Step 114-2V target-summary validator. They require the exact ordered US/KR roles and markets, exact target fields, safe repository-relative CSV paths, NFC/case-fold/filesystem-distinct identities, lowercase SHA-256 values, positive byte and row counts, the exact schema version, and `create_only` write mode even when no authority package is supplied.
 
 ## Verified-unconsumed receipt
 
@@ -86,14 +88,17 @@ The implementation performs no signing, execution, filesystem write, Git mutatio
 
 The implementation passed:
 
-- Step 114-2W focused suite: 52 tests;
+- Step 114-2W focused suite: 68 tests;
 - real production-default Step 114-2V A/B reproduction and the actual Step 114-2W CLI with a runtime-generated Ed25519 invocation;
 - transient A/S/B swap coverage for all five inputs;
-- exact millisecond time-boundary, authority/repository/target drift, signer alias and reuse, signature, duplicate-key, malformed JSON, size-bound, ID/hash tampering, redaction, suppression, and no-side-effect tests;
-- Step 114-2V plus 2W combined suite: 84 tests;
-- Step 114-2T through 2W combined suite: 223 tests;
-- Step 114-2Q through 2W combined suite: 431 tests;
-- Step 114-2N through 2W combined suite: 635 tests;
+- exact millisecond time-boundary and compatible operator-bundle ISO-instant representations;
+- cross-role fingerprint reuse for production publish, app export, and the Step 114-2U execution approver, with blocked-result suppression and fixed-false assertions;
+- standalone invocation and rehashed-receipt coverage for ordered roles/markets, safe and distinct paths, hashes, positive sizes/counts, schema, and create-only semantics;
+- authority/repository/target drift, signer alias and ID reuse, signature, duplicate-key, malformed JSON, size-bound, ID/hash tampering, redaction, suppression, and no-side-effect tests;
+- Step 114-2V plus 2W combined suite: 100 tests;
+- Step 114-2T through 2W combined suite: 239 tests;
+- Step 114-2Q through 2W combined suite: 447 tests;
+- Step 114-2N through 2W combined suite: 651 tests;
 - Step 114-2M Python candidate-package suite: 16 tests;
 - Python metrics discovery suite: 48 tests;
 - `npm.cmd run check:scenario-metrics`: 80 tests;
