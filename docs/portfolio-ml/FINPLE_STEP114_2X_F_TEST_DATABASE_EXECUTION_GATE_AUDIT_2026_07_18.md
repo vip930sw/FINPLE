@@ -56,5 +56,12 @@ No production CSV, scenario runtime, selector, loader, pointer, DB/auth/payment/
 - Scenario metrics: 80 passed, 0 failed.
 - Production build: passed with only the existing bundle-size advisory.
 - AI production smoke: passed; the admin endpoint remained tokenless `403`.
-- Unstaged and staged diff checks are required before the implementation commit.
-- The clean-head bounded repository-wide inventory will be recorded after that commit.
+- Unstaged and staged diff checks: passed.
+
+## Repository-wide bounded failure inventory
+
+The spec-reporter auto-discovery run started from clean committed HEAD `91fffe7a621e6da298a7a9c42c0720ca55781e9f` with a 240-second bound. It did not complete before timeout. Before timeout it emitted exactly one failing test name:
+
+- `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
+
+No other failing test name appeared before the bound. This is not reported as a completed repository-wide pass. The existing Step228 checker, test, snapshot, and `.gitattributes` remain outside Issue #285 and were not modified.
