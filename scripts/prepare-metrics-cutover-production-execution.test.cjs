@@ -1,5 +1,13 @@
 const assert = require("node:assert/strict");
-const { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } = require("node:fs");
+const fs = require("node:fs");
+const {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} = fs;
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
@@ -26,6 +34,7 @@ const {
   validatePreparationSummary,
 } = require("./lib/metrics-cutover-production-execution-preparation.cjs");
 const {
+  observeSanitizedJsonFile,
   parseArguments,
   runCli,
 } = require("./prepare-metrics-cutover-production-execution.cjs");
@@ -421,26 +430,228 @@ function cliArgs(files) {
   ];
 }
 
-test("validation-only CLI accepts exactly five sanitized JSON files and emits one line", async (t) => {
-  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-cli-"));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const input = validInput();
+function writeCliFiles(root, input = validInput()) {
   const files = {};
   for (const [field, value] of Object.entries(input)) {
     files[field] = path.join(root, `${field}.json`);
     writeFileSync(files[field], JSON.stringify(value));
   }
+  return files;
+}
+
+function descriptorFs(overrides = {}) {
+  return {
+    closeSync: fs.closeSync,
+    fstatSync: fs.fstatSync,
+    lstatSync: fs.lstatSync,
+    openSync: fs.openSync,
+    readSync: fs.readSync,
+    realpathSync: fs.realpathSync,
+    ...overrides,
+  };
+}
+
+async function captureCli(files, adapters = {}) {
   let stdout = "";
   let exitCode = -1;
   await runCli(cliArgs(files), {
+    ...adapters,
     writeStdout(value) { stdout += value; },
     setExitCode(value) { exitCode = value; },
   });
+  return { exitCode, stdout, result: JSON.parse(stdout.trim()) };
+}
+
+function assertCliReadBlocked(captured, sensitiveValues = []) {
+  assert.equal(captured.exitCode, 2);
+  assert.equal(captured.result.status, "blocked");
+  assert.equal(captured.result.preparationReady, false);
+  assert.notEqual(
+    captured.result.status,
+    "production_execution_preparation_ready",
+  );
+  assert.deepEqual(captured.result.preparationSummary, {});
+  assertFixedFalse(captured.result);
+  for (const value of sensitiveValues) {
+    assert.equal(captured.stdout.includes(value), false);
+  }
+}
+
+test("validation-only CLI accepts exactly five sanitized JSON files and emits one line", async (t) => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-cli-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const files = writeCliFiles(root);
+  const { exitCode, stdout, result } = await captureCli(files);
   assert.equal(exitCode, 0);
   assert.equal(stdout.split("\n").length, 2);
-  const result = JSON.parse(stdout.trim());
   assert.equal(result.status, "production_execution_preparation_ready");
   assertFixedFalse(result);
+});
+
+test("descriptor observation closes the file even when descriptor reading fails", (t) => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-close-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const files = writeCliFiles(root);
+  let closeCount = 0;
+  assert.throws(
+    () => observeSanitizedJsonFile(files.executionPolicy, {
+      fs: descriptorFs({
+        readSync() { throw new Error("synthetic_read_failure"); },
+        closeSync(descriptor) {
+          closeCount += 1;
+          return fs.closeSync(descriptor);
+        },
+      }),
+    }),
+    /synthetic_read_failure/,
+  );
+  assert.equal(closeCount, 1);
+});
+
+test("duplicate JSON object keys block before JSON.parse at every object depth", async (t) => {
+  const cases = [
+    {
+      name: "top-level critical key",
+      field: "executionPolicy",
+      needle: `\"contractVersion\":\"${EXECUTION_POLICY_CONTRACT_VERSION}\"`,
+    },
+    {
+      name: "nested human decision gate key",
+      field: "runbook",
+      needle: "\"documented\":true",
+    },
+    {
+      name: "duplicate key with the same value",
+      field: "executionPolicy",
+      needle: "\"humanDecisionGateRequired\":true",
+    },
+  ];
+  for (const item of cases) {
+    await t.test(item.name, async (nested) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-duplicate-"));
+      nested.after(() => rmSync(root, { recursive: true, force: true }));
+      const files = writeCliFiles(root);
+      const original = readFileSync(files[item.field], "utf8");
+      assert.equal(original.includes(item.needle), true);
+      writeFileSync(
+        files[item.field],
+        original.replace(item.needle, `${item.needle},${item.needle}`),
+      );
+      const captured = await captureCli(files);
+      assertCliReadBlocked(captured, [root, original]);
+      assert.ok(
+        captured.result.blockingIssues.includes(
+          "preparation_cli_duplicate_json_object_key",
+        ),
+      );
+    });
+  }
+});
+
+test("same-size replacement after lstat and before descriptor open blocks", async (t) => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-replace-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const files = writeCliFiles(root);
+  const target = files.executionPolicy;
+  const canonicalTarget = fs.realpathSync(target);
+  const original = readFileSync(target, "utf8");
+  const replacementText = original.replace("preparation_only", "preparation_onlx");
+  assert.equal(Buffer.byteLength(replacementText), Buffer.byteLength(original));
+  const replacement = path.join(root, "replacement.json");
+  writeFileSync(replacement, replacementText);
+  let swapped = false;
+  const captured = await captureCli(files, {
+    fs: descriptorFs({
+      openSync(filePath, flags) {
+        if (!swapped && path.resolve(filePath) === path.resolve(canonicalTarget)) {
+          rmSync(target);
+          renameSync(replacement, target);
+          swapped = true;
+        }
+        return fs.openSync(filePath, flags);
+      },
+    }),
+  });
+  assert.equal(swapped, true);
+  assertCliReadBlocked(captured, [root, original, replacementText]);
+});
+
+test("regular input replaced by a symlink before descriptor open blocks", async (t) => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-symlink-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const files = writeCliFiles(root);
+  const target = files.executionPolicy;
+  const canonicalTarget = fs.realpathSync(target);
+  const original = readFileSync(target, "utf8");
+  let swapped = false;
+  const captured = await captureCli(files, {
+    fs: descriptorFs({
+      openSync(filePath, flags) {
+        if (!swapped && path.resolve(filePath) === path.resolve(canonicalTarget)) {
+          swapped = true;
+        }
+        return fs.openSync(filePath, flags);
+      },
+      lstatSync(filePath, options) {
+        const stat = fs.lstatSync(filePath, options);
+        if (!swapped || path.resolve(filePath) !== path.resolve(target)) {
+          return stat;
+        }
+        return {
+          dev: stat.dev,
+          ino: stat.ino + 1n,
+          size: stat.size,
+          isFile() { return false; },
+          isSymbolicLink() { return true; },
+        };
+      },
+    }),
+  });
+  assert.equal(swapped, true);
+  assertCliReadBlocked(captured, [root, original]);
+});
+
+test("descriptor size or identity changes during reading block", async (t) => {
+  for (const mutation of ["size", "identity"]) {
+    await t.test(mutation, async (nested) => {
+      const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-fstat-"));
+      nested.after(() => rmSync(root, { recursive: true, force: true }));
+      const files = writeCliFiles(root);
+      let fstatCount = 0;
+      const captured = await captureCli(files, {
+        fs: descriptorFs({
+          fstatSync(descriptor, options) {
+            const stat = fs.fstatSync(descriptor, options);
+            fstatCount += 1;
+            if (fstatCount !== 2) return stat;
+            return {
+              dev: stat.dev,
+              ino: mutation === "identity" ? stat.ino + 1n : stat.ino,
+              size: mutation === "size" ? stat.size + 1n : stat.size,
+              isFile() { return true; },
+              isSymbolicLink() { return false; },
+            };
+          },
+        }),
+      });
+      assert.equal(fstatCount, 2);
+      assertCliReadBlocked(captured, [root]);
+    });
+  }
+});
+
+test("one sanitized input path cannot be reused for multiple profile roles", async (t) => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "finple-2x-b-path-reuse-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const files = writeCliFiles(root);
+  files.hostProfile = files.executionPolicy;
+  const captured = await captureCli(files);
+  assertCliReadBlocked(captured, [root, files.executionPolicy]);
+  assert.ok(
+    captured.result.blockingIssues.includes(
+      "preparation_cli_profile_path_reused",
+    ),
+  );
 });
 
 test("CLI rejects provider, execution, stdin-style, and duplicate flags", async () => {

@@ -10,6 +10,10 @@ Step 114-2X-B answers only whether sanitized declarations for a proposed product
 
 The implementation does not invoke Step 114-2X-A, inspect or mutate a repository checkout, acquire a claim or lock, consume a receipt, contact a provider, or create target/selector bytes. The CLI reads exactly five sanitized JSON files and emits one sanitized JSON line. It has no stdin or environment-variable fallback and accepts no authority artifact, repository write path, target bytes, selector bytes, key, signature, nonce, receipt, provider endpoint, credential, or connection material.
 
+Each JSON input is observed through a read-only descriptor. The reader binds path-before, descriptor-before, descriptor-after, and path-after observations to the same regular, non-symlink `dev`/`ino`/size/type identity; reads at most the declared 128 KiB boundary through that descriptor; closes it on every path; requires a stable canonical realpath; and uses fatal UTF-8 decoding. Same-size replacement, symlink substitution, identity drift, size drift, and close/read failure all block before preparation evaluation. The five roles must also have distinct canonical path and file identities.
+
+Before `JSON.parse`, the bounded Step 114-2U duplicate-object-key scanner validates every object depth. Duplicate decoded keys are rejected even when their values are identical, including nested `humanDecisionGate` fields. Failure results expose only safe issue codes and never raw paths or file contents.
+
 ## Versioned contracts
 
 The pure validator implements these exact-key contracts:
@@ -96,7 +100,7 @@ Validated on 2026-07-17:
 
 ```text
 Step 114-2X-B focused
-20 passed
+31 passed
 
 Step 114-2W standalone
 68 passed
@@ -105,13 +109,13 @@ Step 114-2X-A standalone
 24 passed
 
 Step 114-2W + 2X-A + 2X-B
-112 passed
+123 passed
 
 Step 114-2Q through 2X-B
-491 passed
+502 passed
 
 Step 114-2N through 2X-B
-695 passed
+706 passed
 
 python -m unittest discover -s scripts/metrics_pipeline/tests
 48 passed (bundled Python runtime)
@@ -129,4 +133,4 @@ repository-wide node --test
 bounded attempt timed out after 120 seconds; no test failure was reported before timeout
 ```
 
-The focused cases cover valid readiness, all fixed-false fields, local-file rejection, durable claim semantics, host and clock controls, repository locking, freshness and signer separation, human approval, forbidden recovery instructions, contract binding and tampering, redaction, no side effects, and the validation-only CLI.
+The focused cases cover valid readiness, all fixed-false fields, local-file rejection, durable claim semantics, host and clock controls, repository locking, freshness and signer separation, human approval, forbidden recovery instructions, contract binding and tampering, descriptor closure, same-size replacement, symlink/type and descriptor identity drift, size drift, duplicate JSON keys at root and nested depth, input-role path reuse, redaction, no side effects, and the validation-only CLI.

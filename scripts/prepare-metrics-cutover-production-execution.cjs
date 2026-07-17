@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 
-const { lstatSync, readFileSync } = require("node:fs");
+const {
+  closeSync,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  realpathSync,
+} = require("node:fs");
+const path = require("node:path");
+const {
+  scanJsonForDuplicateObjectKeys,
+} = require("./lib/metrics-cutover-execution-approval-response.cjs");
 const {
   FIXED_FALSE_FIELDS,
   PREPARATION_SUMMARY_CONTRACT_VERSION,
@@ -8,6 +19,7 @@ const {
 } = require("./lib/metrics-cutover-production-execution-preparation.cjs");
 
 const MAX_PROFILE_BYTES = 128 * 1024;
+const decoder = new TextDecoder("utf-8", { fatal: true });
 const FLAG_FIELDS = Object.freeze({
   "--policy": "executionPolicy",
   "--claim-store-profile": "claimStoreProfile",
@@ -56,17 +68,157 @@ function runtimeFailure(issue) {
   };
 }
 
+function statTypeIdentity(stat) {
+  if (
+    !stat ||
+    typeof stat.isFile !== "function" ||
+    typeof stat.isSymbolicLink !== "function"
+  ) {
+    throw new TypeError("profile_file_type_identity_invalid");
+  }
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    throw new TypeError("profile_file_not_regular");
+  }
+  return "regular_file";
+}
+
+function statFileIdentity(stat) {
+  if (
+    typeof stat?.dev !== "bigint" ||
+    typeof stat?.ino !== "bigint" ||
+    stat.dev < 0n ||
+    stat.ino <= 0n
+  ) {
+    throw new TypeError("profile_file_identity_invalid");
+  }
+  return `${stat.dev}:${stat.ino}`;
+}
+
+function statByteSize(stat) {
+  if (typeof stat?.size !== "bigint" || stat.size < 0n) {
+    throw new TypeError("profile_file_size_invalid");
+  }
+  return stat.size;
+}
+
+function readBoundedDescriptor(descriptor, expectedSize, fs) {
+  const byteLength = Number(expectedSize);
+  const buffer = Buffer.alloc(byteLength + 1);
+  let offset = 0;
+  while (offset < buffer.length) {
+    const bytesRead = fs.readSync(
+      descriptor,
+      buffer,
+      offset,
+      buffer.length - offset,
+      null,
+    );
+    if (!Number.isInteger(bytesRead) || bytesRead < 0) {
+      throw new TypeError("profile_file_read_invalid");
+    }
+    if (bytesRead === 0) break;
+    offset += bytesRead;
+  }
+  if (offset > byteLength) {
+    throw new TypeError("profile_file_size_changed");
+  }
+  return buffer.subarray(0, offset);
+}
+
+function observeSanitizedJsonFile(filePath, adapters = {}) {
+  const fs = adapters.fs || {
+    closeSync,
+    fstatSync,
+    lstatSync,
+    openSync,
+    readSync,
+    realpathSync,
+  };
+  const absolute = path.resolve(filePath);
+  const pathBefore = fs.lstatSync(absolute, { bigint: true });
+  const canonicalPathBefore = fs.realpathSync(absolute);
+  const expectedType = statTypeIdentity(pathBefore);
+  const expectedIdentity = statFileIdentity(pathBefore);
+  const expectedSize = statByteSize(pathBefore);
+  if (expectedSize <= 0n || expectedSize > BigInt(MAX_PROFILE_BYTES)) {
+    throw new TypeError("profile_file_size_invalid");
+  }
+
+  let descriptor = null;
+  let descriptorBefore;
+  let descriptorAfter;
+  let bytes;
+  let readError = null;
+  let closeError = null;
+  try {
+    descriptor = fs.openSync(canonicalPathBefore, "r");
+    descriptorBefore = fs.fstatSync(descriptor, { bigint: true });
+    statTypeIdentity(descriptorBefore);
+    statFileIdentity(descriptorBefore);
+    statByteSize(descriptorBefore);
+    bytes = readBoundedDescriptor(descriptor, expectedSize, fs);
+    descriptorAfter = fs.fstatSync(descriptor, { bigint: true });
+  } catch (error) {
+    readError = error;
+  } finally {
+    if (descriptor !== null) {
+      try {
+        fs.closeSync(descriptor);
+      } catch (error) {
+        closeError = error;
+      }
+    }
+  }
+  if (closeError) throw new TypeError("profile_file_close_failed");
+  if (readError) throw readError;
+
+  const pathAfter = fs.lstatSync(absolute, { bigint: true });
+  const canonicalPathAfter = fs.realpathSync(absolute);
+  const observations = [pathBefore, descriptorBefore, descriptorAfter, pathAfter];
+  if (
+    observations.some((stat) => statTypeIdentity(stat) !== expectedType) ||
+    observations.some((stat) => statFileIdentity(stat) !== expectedIdentity) ||
+    observations.some((stat) => statByteSize(stat) !== expectedSize) ||
+    canonicalPathBefore !== canonicalPathAfter ||
+    !Buffer.isBuffer(bytes) ||
+    BigInt(bytes.length) !== expectedSize
+  ) {
+    throw new TypeError("profile_file_changed_during_read");
+  }
+
+  let text;
+  try {
+    text = decoder.decode(bytes);
+  } catch {
+    throw new TypeError("profile_file_utf8_invalid");
+  }
+  const duplicateKeyScan = scanJsonForDuplicateObjectKeys(text);
+  if (!duplicateKeyScan.ok) {
+    throw new TypeError(
+      duplicateKeyScan.duplicateKey
+        ? "profile_file_duplicate_json_object_key"
+        : "profile_file_json_invalid",
+    );
+  }
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new TypeError("profile_file_json_invalid");
+  }
+  return {
+    value,
+    canonicalInputPath: canonicalPathBefore,
+    fileIdentity: expectedIdentity,
+  };
+}
+
 function readSanitizedJsonFile(filePath, adapters = {}) {
-  const lstat = adapters.lstat || lstatSync;
-  const readFile = adapters.readFile || readFileSync;
-  const stat = lstat(filePath, { bigint: true });
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new TypeError("profile_file_not_regular");
-  if (stat.size <= 0n || stat.size > BigInt(MAX_PROFILE_BYTES)) throw new TypeError("profile_file_size_invalid");
-  const bytes = readFile(filePath);
-  if (!Buffer.isBuffer(bytes) || BigInt(bytes.length) !== stat.size) throw new TypeError("profile_file_read_invalid");
-  const text = bytes.toString("utf8");
-  if (!Buffer.from(text, "utf8").equals(bytes)) throw new TypeError("profile_file_utf8_invalid");
-  return JSON.parse(text);
+  return observeSanitizedJsonFile(filePath, adapters).value;
+}
+
+function canonicalPathIdentity(value) {
+  return path.normalize(value).normalize("NFC").toLowerCase();
 }
 
 async function runCli(argv = process.argv.slice(2), adapters = {}) {
@@ -82,17 +234,35 @@ async function runCli(argv = process.argv.slice(2), adapters = {}) {
     return;
   }
   try {
-    const input = Object.fromEntries(
-      Object.entries(paths).map(([field, filePath]) => [
-        field,
-        readSanitizedJsonFile(filePath, adapters),
-      ]),
-    );
+    const input = {};
+    const canonicalPaths = new Set();
+    const fileIdentities = new Set();
+    for (const [field, filePath] of Object.entries(paths)) {
+      const observation = observeSanitizedJsonFile(filePath, adapters);
+      const pathIdentity = canonicalPathIdentity(
+        observation.canonicalInputPath,
+      );
+      if (
+        canonicalPaths.has(pathIdentity) ||
+        fileIdentities.has(observation.fileIdentity)
+      ) {
+        throw new TypeError("profile_input_reused");
+      }
+      canonicalPaths.add(pathIdentity);
+      fileIdentities.add(observation.fileIdentity);
+      input[field] = observation.value;
+    }
     const result = prepare(input);
     writeStdout(`${JSON.stringify(result)}\n`);
     setExitCode(result.status === "production_execution_preparation_ready" ? 0 : 1);
-  } catch {
-    writeStdout(`${JSON.stringify(runtimeFailure("preparation_cli_profile_read_failed"))}\n`);
+  } catch (error) {
+    const issue =
+      error?.message === "profile_input_reused"
+        ? "preparation_cli_profile_path_reused"
+        : error?.message === "profile_file_duplicate_json_object_key"
+          ? "preparation_cli_duplicate_json_object_key"
+          : "preparation_cli_profile_read_failed";
+    writeStdout(`${JSON.stringify(runtimeFailure(issue))}\n`);
     setExitCode(2);
   }
 }
@@ -102,6 +272,7 @@ if (require.main === module) void runCli();
 module.exports = {
   FLAG_FIELDS,
   MAX_PROFILE_BYTES,
+  observeSanitizedJsonFile,
   parseArguments,
   readSanitizedJsonFile,
   runCli,
