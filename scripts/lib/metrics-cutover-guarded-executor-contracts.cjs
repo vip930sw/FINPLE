@@ -40,6 +40,11 @@ const CLAIM_FIELDS = Object.freeze([
   "invocationReceiptHash",
   "claimStatus",
   "failureCode",
+  "executionStage",
+  "actualWriteCount",
+  "selectorUpdated",
+  "parentDirectoryDurability",
+  "productionClaimEligible",
   "claimHash",
 ]);
 const POST_WRITE_RECEIPT_FIELDS = Object.freeze([
@@ -64,6 +69,7 @@ const POST_WRITE_RECEIPT_FIELDS = Object.freeze([
   "actualDeleteCount",
   "claimId",
   "claimHash",
+  "claimParentDirectoryDurability",
   "postWriteVerificationHash",
   "receiptHash",
 ]);
@@ -79,6 +85,27 @@ const TARGET_SUMMARY_FIELDS = Object.freeze([
 ]);
 const TARGET_SCHEMA_VERSION =
   "metrics-price-overlay-csv-schema-v1-step114-2p";
+const EXECUTION_STAGES = Object.freeze([
+  "claim_acquired",
+  "final_prewrite_recheck",
+  "us_target_create",
+  "us_target_written",
+  "kr_target_create",
+  "kr_target_written",
+  "selector_preimage_check",
+  "selector_write_pending",
+  "selector_updated",
+  "post_write_verification",
+  "post_write_receipt",
+  "claim_completion",
+  "completed",
+]);
+const CLAIM_DURABILITY_STATES = Object.freeze([
+  "pending",
+  "synced",
+  "unsupported_platform",
+  "sync_failed",
+]);
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
@@ -204,8 +231,16 @@ function safeResult(status, fields = {}, issues = [], warnings = []) {
     claimAcquired: fields.claimAcquired === true,
     receiptConsumed: completed || manualReview,
     targetsCreated: completed && fields.targetsCreated === true,
-    selectorUpdated: completed && fields.selectorUpdated === true,
+    selectorUpdated:
+      (completed || manualReview) && fields.selectorUpdated === true,
     postWriteVerified: completed && fields.postWriteVerified === true,
+    executionStage:
+      completed || manualReview ? fields.executionStage || "" : "",
+    parentDirectoryDurability:
+      completed || manualReview
+        ? fields.parentDirectoryDurability || ""
+        : "",
+    productionClaimEligible: false,
     claimId: completed || manualReview ? fields.claimId || "" : "",
     claimHash: completed || manualReview ? fields.claimHash || "" : "",
     invocationReceiptId:
@@ -217,7 +252,12 @@ function safeResult(status, fields = {}, issues = [], warnings = []) {
         ? structuredClone(fields.postWriteReceipt)
         : {},
     targetFileCount: completed ? 2 : 0,
-    actualWriteCount: completed ? 2 : 0,
+    actualWriteCount:
+      completed || manualReview
+        ? Number.isInteger(fields.actualWriteCount)
+          ? fields.actualWriteCount
+          : 0
+        : 0,
     actualDeleteCount: 0,
     ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
     blockingIssues: uniqueSorted(issues),
@@ -232,7 +272,12 @@ function deriveClaimId(receipt) {
   })}`;
 }
 
-function buildClaim(receipt, claimStatus, failureCode = "") {
+function buildClaim(
+  receipt,
+  claimStatus,
+  failureCode = "",
+  progress = {},
+) {
   const value = {
     contractVersion: CLAIM_CONTRACT_VERSION,
     claimId: deriveClaimId(receipt),
@@ -240,6 +285,14 @@ function buildClaim(receipt, claimStatus, failureCode = "") {
     invocationReceiptHash: receipt.receiptHash,
     claimStatus,
     failureCode,
+    executionStage: progress.executionStage || "claim_acquired",
+    actualWriteCount: Number.isInteger(progress.actualWriteCount)
+      ? progress.actualWriteCount
+      : 0,
+    selectorUpdated: progress.selectorUpdated === true,
+    parentDirectoryDurability:
+      progress.parentDirectoryDurability || "pending",
+    productionClaimEligible: false,
     claimHash: "0".repeat(64),
   };
   const payload = { ...value };
@@ -285,6 +338,25 @@ function validateClaim(value) {
   }
   if (typeof value.failureCode !== "string" || /[\0\r\n]/.test(value.failureCode)) {
     issues.push("claim_failure_code_invalid");
+  }
+  if (!EXECUTION_STAGES.includes(value.executionStage)) {
+    issues.push("claim_execution_stage_invalid");
+  }
+  if (
+    !Number.isInteger(value.actualWriteCount) ||
+    value.actualWriteCount < 0 ||
+    value.actualWriteCount > 2
+  ) {
+    issues.push("claim_actual_write_count_invalid");
+  }
+  if (typeof value.selectorUpdated !== "boolean") {
+    issues.push("claim_selector_updated_invalid");
+  }
+  if (!CLAIM_DURABILITY_STATES.includes(value.parentDirectoryDurability)) {
+    issues.push("claim_parent_directory_durability_invalid");
+  }
+  if (value.productionClaimEligible !== false) {
+    issues.push("claim_production_eligibility_invalid");
   }
   const payload = { ...value };
   delete payload.claimHash;
@@ -343,10 +415,23 @@ function buildPostWriteReceipt(bound, claim, postWrite) {
     actualDeleteCount: 0,
     claimId: claim.claimId,
     claimHash: "",
+    claimParentDirectoryDurability:
+      claim.parentDirectoryDurability,
     postWriteVerificationHash: postWrite.verificationHash,
     receiptHash: "0".repeat(64),
   };
-  const completedClaim = buildClaim(bound.receipt, "consumed_success", "");
+  const completedClaim = buildClaim(
+    bound.receipt,
+    "consumed_success",
+    "",
+    {
+      executionStage: "completed",
+      actualWriteCount: 2,
+      selectorUpdated: true,
+      parentDirectoryDurability:
+        claim.parentDirectoryDurability,
+    },
+  );
   value.claimHash = completedClaim.claimHash;
   value.receiptId = derivePostWriteReceiptId(value);
   const payload = { ...value };
@@ -390,6 +475,9 @@ function validatePostWriteReceipt(
     "receiptHash",
   ]) {
     if (!isSha256(value[field])) issues.push(`post_write_receipt_hash_invalid:${field}`);
+  }
+  if (!CLAIM_DURABILITY_STATES.includes(value.claimParentDirectoryDurability)) {
+    issues.push("post_write_receipt_claim_durability_invalid");
   }
   if (!/^metrics-cutover-execution-invocation-receipt-[a-f0-9]{64}$/.test(value.invocationReceiptId)) {
     issues.push("post_write_receipt_identity_invalid:invocationReceiptId");
@@ -466,6 +554,13 @@ function validatePostWriteReceipt(
     },
     "consumed_success",
     "",
+    {
+      executionStage: "completed",
+      actualWriteCount: 2,
+      selectorUpdated: true,
+      parentDirectoryDurability:
+        value.claimParentDirectoryDurability,
+    },
   );
   if (value.claimId !== expectedClaim.claimId) {
     issues.push("post_write_receipt_claim_id_mismatch");
@@ -525,7 +620,9 @@ function validatePostWriteReceipt(
 
 module.exports = {
   CLAIM_CONTRACT_VERSION,
+  CLAIM_DURABILITY_STATES,
   EXECUTION_SUMMARY_CONTRACT_VERSION,
+  EXECUTION_STAGES,
   FIXED_FALSE_FIELDS,
   POST_WRITE_RECEIPT_CONTRACT_VERSION,
   POST_WRITE_RECEIPT_HASH_DOMAIN,

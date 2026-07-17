@@ -1,6 +1,7 @@
 const {
   closeSync,
   existsSync,
+  fstatSync,
   ftruncateSync,
   fsyncSync,
   lstatSync,
@@ -151,13 +152,82 @@ function isPathInside(parent, child) {
   );
 }
 
+function pathsOverlapOrContain(left, right) {
+  return (
+    filesystemIdentity(left) === filesystemIdentity(right) ||
+    isPathInside(left, right) ||
+    isPathInside(right, left)
+  );
+}
+
+function readStableRegularFile(filePath, issuePrefix) {
+  let descriptor = null;
+  try {
+    const pathBefore = lstatSync(filePath, { bigint: true });
+    if (pathBefore.isSymbolicLink()) {
+      throw new Error(`${issuePrefix}_symlink`);
+    }
+    if (!pathBefore.isFile()) {
+      throw new Error(`${issuePrefix}_not_regular_file`);
+    }
+    if (
+      typeof pathBefore.dev !== "bigint" ||
+      typeof pathBefore.ino !== "bigint" ||
+      pathBefore.dev < 0n ||
+      pathBefore.ino <= 0n
+    ) {
+      throw new Error(`${issuePrefix}_identity_invalid`);
+    }
+    descriptor = openSync(filePath, "r");
+    const descriptorBefore = fstatSync(descriptor, { bigint: true });
+    const bytes = readFileSync(descriptor);
+    const descriptorAfter = fstatSync(descriptor, { bigint: true });
+    const pathAfter = lstatSync(filePath, { bigint: true });
+    const identity = (value) => `${value.dev}:${value.ino}`;
+    const expectedIdentity = identity(pathBefore);
+    if (
+      pathAfter.isSymbolicLink() ||
+      !pathAfter.isFile() ||
+      identity(pathAfter) !== expectedIdentity ||
+      identity(descriptorBefore) !== expectedIdentity ||
+      identity(descriptorAfter) !== expectedIdentity ||
+      pathBefore.size !== descriptorBefore.size ||
+      descriptorBefore.size !== descriptorAfter.size ||
+      descriptorAfter.size !== pathAfter.size ||
+      BigInt(bytes.length) !== descriptorAfter.size
+    ) {
+      throw new Error(`${issuePrefix}_identity_changed`);
+    }
+    return {
+      bytes,
+      mode: Number(pathBefore.mode & 0o777n),
+      identity: expectedIdentity,
+    };
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+  }
+}
+
 function parseMarker(repoRoot) {
   const markerPath = path.join(repoRoot, TEST_MARKER_FILE);
   let value;
   try {
-    value = JSON.parse(readFileSync(markerPath, "utf8"));
-  } catch {
-    return { ok: false, issues: ["test_fixture_marker_invalid"] };
+    const observation = readStableRegularFile(
+      markerPath,
+      "test_fixture_marker",
+    );
+    if (observation.bytes.length === 0 || observation.bytes.length > 4096) {
+      return { ok: false, issues: ["test_fixture_marker_size_invalid"] };
+    }
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(
+      observation.bytes,
+    );
+    value = JSON.parse(text);
+  } catch (error) {
+    const issue = isSafeIdentity(error?.message || "")
+      ? error.message
+      : "test_fixture_marker_invalid";
+    return { ok: false, issues: [issue] };
   }
   const issues = [];
   if (!hasExactKeys(value, TEST_MARKER_FIELDS)) {
@@ -203,10 +273,23 @@ function validateTestEnvironment(repo, claimDirectory, implementationRoot) {
   try {
     implementationReal = realpathSync(implementationRoot);
   } catch {
-    // The module may be copied into a standalone test harness.
+    issues.push("implementation_checkout_path_invalid");
+    implementationReal = "";
   }
-  if (filesystemIdentity(repoRoot) === filesystemIdentity(implementationReal)) {
+  if (
+    implementationReal &&
+    filesystemIdentity(repoRoot) === filesystemIdentity(implementationReal)
+  ) {
     issues.push("real_checkout_execution_prohibited");
+  }
+  if (implementationReal && pathsOverlapOrContain(repoRoot, implementationReal)) {
+    issues.push("test_repository_overlaps_implementation_checkout");
+  }
+  if (implementationReal && pathsOverlapOrContain(claimRoot, implementationReal)) {
+    issues.push("claim_directory_overlaps_implementation_checkout");
+  }
+  if (pathsOverlapOrContain(repoRoot, claimRoot)) {
+    issues.push("test_repository_claim_directory_overlap");
   }
   if (claimRoot === repoRoot || isPathInside(repoRoot, claimRoot)) {
     issues.push("claim_directory_inside_repository");
@@ -260,17 +343,64 @@ function claimPathFor(claimRoot, claim) {
   return path.join(claimRoot, `${claim.claimId}.json`);
 }
 
+function syncClaimParentDirectory(claimRoot) {
+  if (process.platform === "win32") return "unsupported_platform";
+  let descriptor = null;
+  let status = "sync_failed";
+  try {
+    descriptor = openSync(claimRoot, "r");
+    fsyncSync(descriptor);
+    status = "synced";
+  } catch (error) {
+    if (
+      ["EINVAL", "ENOTSUP", "EOPNOTSUPP", "EISDIR", "EPERM"].includes(
+        error?.code,
+      )
+    ) {
+      status = "unsupported_platform";
+    } else {
+      status = "sync_failed";
+    }
+  } finally {
+    if (descriptor !== null) {
+      try {
+        closeSync(descriptor);
+      } catch {
+        status = "sync_failed";
+      }
+    }
+  }
+  return status;
+}
+
 function writeClaimExclusive(claimRoot, claim) {
   const claimPath = claimPathFor(claimRoot, claim);
   let descriptor = null;
+  let claimFileSynced = false;
   try {
     descriptor = openSync(claimPath, "wx", 0o600);
-    writeFileSync(descriptor, serializeJson(claim), { encoding: "utf8" });
-    fsyncSync(descriptor);
+    try {
+      writeFileSync(descriptor, serializeJson(claim), { encoding: "utf8" });
+      fsyncSync(descriptor);
+      claimFileSynced = true;
+    } catch {
+      claimFileSynced = false;
+    }
   } finally {
-    if (descriptor !== null) closeSync(descriptor);
+    if (descriptor !== null) {
+      try {
+        closeSync(descriptor);
+      } catch {
+        claimFileSynced = false;
+      }
+    }
   }
-  return claimPath;
+  return {
+    claimPath,
+    parentDirectoryDurability: claimFileSynced
+      ? syncClaimParentDirectory(claimRoot)
+      : "sync_failed",
+  };
 }
 
 function replaceClaim(claimPath, claim) {
@@ -418,6 +548,29 @@ function assertRegularNonSymlink(filePath, issuePrefix, issues) {
   }
 }
 
+function captureSelectorPreimage(selectorPath, bound) {
+  const observation = readStableRegularFile(
+    selectorPath,
+    "selector_preimage",
+  );
+  if (!observation.bytes.equals(bound.preimageBytes)) {
+    throw new Error("selector_preimage_changed");
+  }
+  if (
+    bound.selectorMode !== undefined &&
+    observation.mode !== bound.selectorMode
+  ) {
+    throw new Error("selector_preimage_mode_changed");
+  }
+  if (
+    bound.selectorIdentity !== undefined &&
+    observation.identity !== bound.selectorIdentity
+  ) {
+    throw new Error("selector_preimage_identity_changed");
+  }
+  return observation;
+}
+
 function ensureContainedPath(repoRoot, repositoryPath, issuePrefix, issues) {
   if (!isSafeRepositoryPath(repositoryPath)) {
     issues.push(`${issuePrefix}_repository_path_invalid`);
@@ -531,17 +684,20 @@ function verifyCurrentPreimage(repoRoot, bound, issues) {
     issues,
   );
   if (selectorPath) {
-    assertRegularNonSymlink(selectorPath, "selector_preimage", issues);
     try {
-      const selectorMode = statSync(selectorPath).mode & 0o777;
-      if (bound.selectorMode === undefined) bound.selectorMode = selectorMode;
-      if (bound.selectorMode !== selectorMode) {
-        issues.push("selector_preimage_mode_changed");
+      const observation = captureSelectorPreimage(selectorPath, bound);
+      if (bound.selectorMode === undefined) {
+        bound.selectorMode = observation.mode;
       }
-      const bytes = readFileSync(selectorPath);
-      if (!bytes.equals(bound.preimageBytes)) issues.push("selector_preimage_changed");
-    } catch {
-      issues.push("selector_preimage_read_failed");
+      if (bound.selectorIdentity === undefined) {
+        bound.selectorIdentity = observation.identity;
+      }
+    } catch (error) {
+      issues.push(
+        isSafeIdentity(error?.message || "")
+          ? error.message
+          : "selector_preimage_read_failed",
+      );
     }
   }
 
@@ -599,19 +755,34 @@ function writeExclusiveAndVerify(repoRoot, filePath, target) {
   }
 }
 
-function replaceSelector(selectorPath, postimageBytes, claimId) {
+function replaceSelector(
+  selectorPath,
+  postimageBytes,
+  claimId,
+  expectedPreimage,
+) {
   const tempPath = path.join(
     path.dirname(selectorPath),
     `.${path.basename(selectorPath)}.${claimId}.tmp`,
   );
   let descriptor = null;
   try {
-    const selectorMode = statSync(selectorPath).mode & 0o777;
-    descriptor = openSync(tempPath, "wx", selectorMode);
+    descriptor = openSync(tempPath, "wx", expectedPreimage.mode);
     writeFileSync(descriptor, postimageBytes);
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = null;
+    const actualPreimage = readStableRegularFile(
+      selectorPath,
+      "selector_pre_rename",
+    );
+    if (
+      !actualPreimage.bytes.equals(expectedPreimage.bytes) ||
+      actualPreimage.mode !== expectedPreimage.mode ||
+      actualPreimage.identity !== expectedPreimage.identity
+    ) {
+      throw new Error("selector_preimage_changed_before_rename");
+    }
     renameSync(tempPath, selectorPath);
   } finally {
     if (descriptor !== null) closeSync(descriptor);
@@ -728,6 +899,7 @@ module.exports = {
   SELECTOR_PATH,
   TEST_MARKER_FILE,
   areTargetPathsDistinct,
+  captureSelectorPreimage,
   countCsvDataRows,
   currentTrackedPathsSha256,
   ensureContainedPath,
@@ -737,6 +909,7 @@ module.exports = {
   replaceClaim,
   replaceSelector,
   runGit,
+  syncClaimParentDirectory,
   validateSelectorTransformation,
   validateTargetCsvBytes,
   validateTestEnvironment,

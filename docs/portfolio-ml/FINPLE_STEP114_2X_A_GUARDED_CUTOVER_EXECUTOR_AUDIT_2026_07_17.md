@@ -14,7 +14,7 @@ Step 114-2X-A adds the first write-capable metrics cutover executor, but deliber
 
 The stage introduces:
 
-- a durable exclusive claim for a Step 114-2W `verified_unconsumed` invocation receipt;
+- an exclusive, file-synced test claim for a Step 114-2W `verified_unconsumed` invocation receipt, with explicit parent-directory durability status;
 - exactly two ordered, exclusive `create_only` target writes;
 - immediate target byte, SHA-256, size, row-count, role, market, schema, and write-mode verification;
 - independent target CSV UTF-8, exact-header, market-only, ticker-identity, duplicate-row, and numeric-field verification;
@@ -44,8 +44,8 @@ All canonical hashes use recursively sorted object keys and preserved array orde
 
 The executor requires all of the following before it can acquire a claim:
 
-1. the repository must resolve to a separate Git working tree, not the checkout containing the executor;
-2. `.finple-step114-2x-a-test-fixture.json` must be committed and contain the exact test-only marker contract;
+1. the repository, implementation checkout, and claim directory must resolve to pairwise disjoint canonical filesystem trees; equality and either-direction containment are blocked;
+2. `.finple-step114-2x-a-test-fixture.json` must be a committed, stable-identity regular non-symlink file and contain the exact test-only marker contract;
 3. the branch must begin with `test/step114-2x-a-` and must not be `main`;
 4. the fixture worktree must be clean;
 5. the claim directory must already exist outside the target repository;
@@ -73,6 +73,10 @@ There is no stdin fallback, environment-secret fallback, alternate target byte i
 
 The claim filename is derived only from the Step 114-2W receipt ID and receipt hash. It is created with exclusive filesystem creation semantics and descriptor `fsync`. Status transitions keep the exclusive claim file continuously present and update it through the same read/write descriptor with identity checks and `fsync`, avoiding replace-over-existing differences between Windows and POSIX.
 
+After a new claim file is synced, the implementation attempts to sync the parent claim directory. POSIX-like platforms report `synced` only after a successful directory `fsync`. Windows reports `unsupported_platform` because Node and Windows do not provide the same portable directory-sync guarantee. Unexpected supported-platform failures report `sync_failed` and force `consumed_failed_manual_review`.
+
+Every claim and public result keeps `productionClaimEligible=false`. A claim with `unsupported_platform` or any environment without a complete durability guarantee cannot be used as a production claim. Step 114-2X-A remains a test-owned claim demonstration, not a production durable claim store.
+
 Claim states are:
 
 ```text
@@ -81,7 +85,7 @@ consumed_success
 consumed_failed_manual_review
 ```
 
-A second attempt using the same receipt blocks before any repository write. The claim is stored outside the target repository and contains only the claim contract, claim ID, invocation-receipt ID/hash, status, sanitized failure code, and claim hash.
+A second attempt using the same receipt blocks before any repository write. The claim is stored outside the target repository and contains only safe contract data: claim and invocation-receipt identities, status, sanitized failure code, execution stage, actual write count, selector-updated state, parent-directory durability state, fixed-false production eligibility, and claim hash.
 
 After the claim is acquired, any failure is terminal for that receipt. It becomes `consumed_failed_manual_review`; the implementation does not delete a created target, restore the selector, release the claim for retry, or automatically invoke a rollback bundle.
 
@@ -105,6 +109,8 @@ Step 114-2W verification
 ```
 
 The target bytes come only from the sealed execution package. The executor does not regenerate CSV content or recalculate the selector transformation.
+
+After the final selector-preimage observation, the executor prepares and syncs the temporary postimage, then immediately re-observes the selected file before rename. The rename is allowed only when selector bytes, mode, and canonical file identity still match the final preimage observation. A mutation in the `before_selector_write` interval is preserved for forensic review and is never overwritten by the sealed postimage.
 
 The selector transformation is independently constrained to replacing exactly these two sources:
 
@@ -156,12 +162,13 @@ This includes:
 - failure after the first target;
 - failure after the second target;
 - selector preimage drift;
+- selector bytes, mode, or file identity changing immediately before rename;
 - selector replacement failure;
 - target or selector tampering after write;
 - an unexpected fourth repository path;
 - post-write receipt or claim persistence failure.
 
-The result remains sanitized. It does not expose raw nonce, signatures, public keys, private keys, target bytes, selector bytes, operator bundle contents, approval contents, absolute repository paths, file identities, credentials, tokens, commands, or rollback content.
+The manual-review claim and result retain only safe forensic progress: `executionStage`, `actualWriteCount`, `selectorUpdated`, and the directory-durability state. Failure after the first target records one actual write; failure after the second target records two. The result remains sanitized and does not expose raw nonce, signatures, public keys, private keys, target bytes, selector bytes, operator bundle contents, approval contents, absolute repository paths, file identities, credentials, tokens, commands, or rollback content.
 
 ## Fixed-false boundary
 
@@ -183,7 +190,7 @@ The executor modifies only a test-owned working tree after all test-only gates p
 
 ## Focused validation
 
-The focused suite contains 20 passing tests covering:
+The focused suite contains 24 passing tests covering:
 
 - successful exact two-target creation and selector replacement;
 - deterministic consumed claim and post-write receipt behavior;
@@ -193,11 +200,14 @@ The focused suite contains 20 passing tests covering:
 - failure after the first and second target writes;
 - selector preimage drift;
 - selector write failure;
+- non-throwing selector mutation immediately before rename without sealed-postimage overwrite;
 - post-write target tampering;
 - post-write selector tampering;
 - unexpected fourth changed path;
 - missing test marker;
+- symlink and directory marker rejection;
 - `main` branch rejection;
+- implementation checkout, test repository, and claim directory overlap/containment rejection;
 - claim directory inside repository rejection;
 - tracked inventory drift;
 - unrelated selector postimage edit rejection;
@@ -210,13 +220,13 @@ Verified on 2026-07-17:
 
 ```text
 node --test scripts/run-metrics-cutover-guarded-executor.test.cjs
-20 passed
+24 passed
 
 node --test scripts/verify-metrics-cutover-execution-invocation.test.cjs scripts/run-metrics-cutover-guarded-executor.test.cjs
-88 passed
+92 passed
 
 Step 114-2Q through Step 114-2X-A combined suite
-467 passed
+471 passed
 
 python -m unittest discover -s scripts/metrics_pipeline/tests
 48 passed (bundled Python runtime)
@@ -251,6 +261,7 @@ Until that separate Step 114-2X-B preparation is approved, the guarded executor 
 ## Known limitations and rollback policy
 
 - Step 114-2X-A does not provide a production policy, production claim store, deployment integration, or permission to run against the FINPLE checkout.
+- Windows parent-directory durability is explicitly `unsupported_platform`; even a POSIX `synced` result does not convert this test-only filesystem claim into an approved production durable claim store.
 - The executor intentionally has no retry-after-claim path and no automatic deletion or rollback. Any post-claim failure requires manual review.
 - Repository history is not created by the executor. Reverting this feature branch or its eventual merge must be done only with a normal Git revert; history rewrite and force-push are outside this stage.
 - Step 114-2X-B must separately prepare and review any production-execution boundary. It cannot infer production authority from this test-only validation.

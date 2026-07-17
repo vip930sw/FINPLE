@@ -75,6 +75,7 @@ const {
   SELECTOR_PATH,
   TEST_MARKER_FILE,
   areTargetPathsDistinct,
+  captureSelectorPreimage,
   countCsvDataRows,
   currentTrackedPathsSha256,
   ensureContainedPath,
@@ -449,12 +450,30 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
     return safeResult("blocked", {}, preclaimIssues);
   }
 
-  const initialClaim = buildClaim(bound.receipt, "claim_in_progress", "");
+  const progress = {
+    executionStage: "claim_acquired",
+    actualWriteCount: 0,
+    selectorUpdated: false,
+    parentDirectoryDurability: "pending",
+  };
+  const initialClaim = buildClaim(
+    bound.receipt,
+    "claim_in_progress",
+    "",
+    progress,
+  );
   const claimIssues = validateClaim(initialClaim);
   if (claimIssues.length > 0) return safeResult("blocked", {}, claimIssues);
   let claimPath = "";
+  let activeClaim = initialClaim;
   try {
-    claimPath = writeClaimExclusive(environment.claimRoot, initialClaim);
+    const acquisition = writeClaimExclusive(
+      environment.claimRoot,
+      initialClaim,
+    );
+    claimPath = acquisition.claimPath;
+    progress.parentDirectoryDurability =
+      acquisition.parentDirectoryDurability;
   } catch (error) {
     return safeResult("blocked", {}, [
       error?.code === "EEXIST"
@@ -464,6 +483,7 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
   }
 
   const manualReview = (failureCode, extraIssues = []) => {
+    const forensicIssues = [...extraIssues];
     const sanitizedFailure = isSafeIdentity(failureCode)
       ? failureCode
       : "execution_failure";
@@ -471,11 +491,12 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
       bound.receipt,
       "consumed_failed_manual_review",
       sanitizedFailure,
+      progress,
     );
     try {
       replaceClaim(claimPath, failedClaim);
     } catch {
-      extraIssues.push("failed_claim_persistence_failed");
+      forensicIssues.push("failed_claim_persistence_failed");
     }
     return safeResult(
       "consumed_failed_manual_review",
@@ -485,14 +506,30 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
         claimHash: failedClaim.claimHash,
         invocationReceiptId: bound.receipt.receiptId,
         invocationReceiptHash: bound.receipt.receiptHash,
+        executionStage: progress.executionStage,
+        actualWriteCount: progress.actualWriteCount,
+        selectorUpdated: progress.selectorUpdated,
+        parentDirectoryDurability:
+          progress.parentDirectoryDurability,
       },
-      [sanitizedFailure, ...extraIssues],
+      [sanitizedFailure, ...forensicIssues],
     );
   };
 
   try {
+    activeClaim = buildClaim(
+      bound.receipt,
+      "claim_in_progress",
+      "",
+      progress,
+    );
+    replaceClaim(claimPath, activeClaim);
+    if (progress.parentDirectoryDurability === "sync_failed") {
+      return manualReview("claim_parent_directory_sync_failed");
+    }
     invokeFault(adapters, "after_claim_acquired", { claimId: initialClaim.claimId });
     const finalPrewriteIssues = [];
+    progress.executionStage = "final_prewrite_recheck";
     verifyCurrentPreimage(environment.repoRoot, bound, finalPrewriteIssues);
     if (finalPrewriteIssues.length > 0) {
       return manualReview("final_prewrite_recheck_failed", finalPrewriteIssues);
@@ -500,6 +537,8 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
 
     for (let index = 0; index < bound.targets.length; index += 1) {
       const target = bound.targets[index];
+      progress.executionStage =
+        index === 0 ? "us_target_create" : "kr_target_create";
       const targetPath = ensureContainedPath(
         environment.repoRoot,
         target.path,
@@ -514,26 +553,36 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
         path: target.path,
       });
       writeExclusiveAndVerify(environment.repoRoot, targetPath, target);
+      progress.actualWriteCount = index + 1;
+      progress.executionStage =
+        index === 0 ? "us_target_written" : "kr_target_written";
       invokeFault(adapters, `after_target_${index}_create`, {
         role: target.role,
         path: target.path,
       });
     }
 
+    progress.executionStage = "selector_preimage_check";
     invokeFault(adapters, "before_selector_preimage_check", {
       selectorPath: SELECTOR_PATH,
     });
-    const currentSelector = require("node:fs").readFileSync(selectorPath);
-    if (!currentSelector.equals(bound.preimageBytes)) {
-      return manualReview("selector_preimage_changed_before_write");
-    }
+    const selectorPreimage = captureSelectorPreimage(selectorPath, bound);
+    progress.executionStage = "selector_write_pending";
     invokeFault(adapters, "before_selector_write", {
       selectorPath: SELECTOR_PATH,
     });
-    replaceSelector(selectorPath, bound.postimageBytes, initialClaim.claimId);
+    replaceSelector(
+      selectorPath,
+      bound.postimageBytes,
+      initialClaim.claimId,
+      selectorPreimage,
+    );
+    progress.selectorUpdated = true;
+    progress.executionStage = "selector_updated";
     invokeFault(adapters, "after_selector_write", {
       selectorPath: SELECTOR_PATH,
     });
+    progress.executionStage = "post_write_verification";
     invokeFault(adapters, "before_post_write_verification", {});
     const postWrite = postWriteVerification(environment.repoRoot, bound);
     if (!postWrite.ok) {
@@ -541,9 +590,10 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
     }
     invokeFault(adapters, "after_post_write_verification", {});
 
+    progress.executionStage = "post_write_receipt";
     const { receipt: postWriteReceipt, completedClaim } = buildPostWriteReceipt(
       bound,
-      initialClaim,
+      activeClaim,
       postWrite,
     );
     const postWriteReceiptIssues = validatePostWriteReceipt(postWriteReceipt, {
@@ -561,6 +611,7 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
     if (completedClaimIssues.length > 0) {
       return manualReview("completed_claim_validation_failed", completedClaimIssues);
     }
+    progress.executionStage = "claim_completion";
     replaceClaim(claimPath, completedClaim);
     return safeResult(
       "cutover_execution_completed",
@@ -569,6 +620,10 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
         targetsCreated: true,
         selectorUpdated: true,
         postWriteVerified: true,
+        executionStage: "completed",
+        actualWriteCount: 2,
+        parentDirectoryDurability:
+          progress.parentDirectoryDurability,
         claimId: completedClaim.claimId,
         claimHash: completedClaim.claimHash,
         invocationReceiptId: bound.receipt.receiptId,
