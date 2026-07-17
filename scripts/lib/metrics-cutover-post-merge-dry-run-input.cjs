@@ -1,8 +1,12 @@
 const {
+  closeSync,
+  fstatSync,
   lstatSync,
+  openSync,
   readFileSync,
   realpathSync,
 } = require("node:fs");
+const { createHash } = require("node:crypto");
 const path = require("node:path");
 const { TextDecoder } = require("node:util");
 
@@ -59,6 +63,62 @@ function isPlainObject(value) {
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function stableFileIdentity(stat) {
+  if (
+    typeof stat?.dev === "bigint" &&
+    stat.dev >= 0n &&
+    typeof stat?.ino === "bigint" &&
+    stat.ino > 0n
+  ) {
+    return {
+      supported: true,
+      value: `${stat.dev}:${stat.ino}`,
+    };
+  }
+  if (
+    Number.isSafeInteger(stat?.dev) &&
+    stat.dev >= 0 &&
+    Number.isSafeInteger(stat?.ino) &&
+    stat.ino > 0
+  ) {
+    return {
+      supported: true,
+      value: `${stat.dev}:${stat.ino}`,
+    };
+  }
+  return { supported: false, value: "" };
+}
+
+function statByteSize(stat) {
+  if (typeof stat?.size === "bigint") {
+    return stat.size >= 0n && stat.size <= BigInt(Number.MAX_SAFE_INTEGER)
+      ? Number(stat.size)
+      : null;
+  }
+  return Number.isSafeInteger(stat?.size) && stat.size >= 0
+    ? stat.size
+    : null;
+}
+
+function identitiesEqual(left, right) {
+  return (
+    left.supported === right.supported &&
+    (!left.supported || left.value === right.value)
+  );
+}
+
+function failedObservation(blockingIssues) {
+  return {
+    ok: false,
+    bundle: null,
+    blockingIssues: uniqueSorted(blockingIssues),
+  };
 }
 
 function normalizeFieldName(value) {
@@ -342,82 +402,185 @@ function parseMetricsCutoverPostMergeBundleBytes(bytes) {
   };
 }
 
-function readMetricsCutoverPostMergeBundle(
+function readMetricsCutoverPostMergeBundleObservation(
   inputPath,
   {
-    fs = { lstatSync, readFileSync, realpathSync },
+    fs = {
+      closeSync,
+      fstatSync,
+      lstatSync,
+      openSync,
+      readFileSync,
+      realpathSync,
+    },
     maxInputBytes = MAX_INPUT_BYTES,
   } = {},
 ) {
   if (typeof inputPath !== "string" || inputPath.length === 0) {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_path_missing"],
-    };
+    return failedObservation(["operator_bundle_input_path_missing"]);
   }
   const absolute = path.resolve(inputPath);
-  let stat;
-  let canonicalPath;
+  let pathStatBefore;
+  let canonicalPathBefore;
   try {
-    stat = fs.lstatSync(absolute);
-    canonicalPath = fs.realpathSync(absolute);
+    pathStatBefore = fs.lstatSync(absolute, { bigint: true });
+    canonicalPathBefore = fs.realpathSync(absolute);
   } catch (error) {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: [
+    return failedObservation([
         error?.code === "ENOENT"
           ? "operator_bundle_input_missing"
           : "operator_bundle_input_inspection_failed",
-      ],
-    };
+    ]);
   }
-  if (stat.isSymbolicLink()) {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_symlink"],
-    };
+  if (pathStatBefore.isSymbolicLink()) {
+    return failedObservation(["operator_bundle_input_symlink"]);
   }
-  if (!stat.isFile()) {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_not_regular_file"],
-    };
+  if (!pathStatBefore.isFile()) {
+    return failedObservation(["operator_bundle_input_not_regular_file"]);
+  }
+  const pathSizeBefore = statByteSize(pathStatBefore);
+  if (
+    pathSizeBefore === null ||
+    pathSizeBefore <= 0 ||
+    pathSizeBefore > maxInputBytes
+  ) {
+    return failedObservation(["operator_bundle_input_size_invalid"]);
+  }
+
+  let descriptor;
+  let descriptorStatBefore;
+  let descriptorStatAfter;
+  let bytes;
+  let readFailed = false;
+  let closeFailed = false;
+  try {
+    descriptor = fs.openSync(canonicalPathBefore, "r");
+    descriptorStatBefore = fs.fstatSync(descriptor, { bigint: true });
+    bytes = fs.readFileSync(descriptor);
+    descriptorStatAfter = fs.fstatSync(descriptor, { bigint: true });
+  } catch {
+    readFailed = true;
+  } finally {
+    if (descriptor !== undefined) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        closeFailed = true;
+      }
+    }
+  }
+  if (closeFailed) {
+    return failedObservation(["operator_bundle_input_close_failed"]);
+  }
+  if (readFailed) {
+    return failedObservation(["operator_bundle_input_read_failed"]);
+  }
+
+  let pathStatAfter;
+  let canonicalPathAfter;
+  try {
+    pathStatAfter = fs.lstatSync(absolute, { bigint: true });
+    canonicalPathAfter = fs.realpathSync(absolute);
+  } catch {
+    return failedObservation([
+      "operator_bundle_input_post_read_inspection_failed",
+    ]);
+  }
+
+  const stabilityIssues = [];
+  if (pathStatAfter.isSymbolicLink()) {
+    stabilityIssues.push("operator_bundle_input_symlink_during_read");
+  }
+  if (!pathStatAfter.isFile()) {
+    stabilityIssues.push(
+      "operator_bundle_input_not_regular_file_during_read",
+    );
+  }
+  if (canonicalPathBefore !== canonicalPathAfter) {
+    stabilityIssues.push(
+      "operator_bundle_input_canonical_path_changed_during_read",
+    );
+  }
+  const pathIdentityBefore = stableFileIdentity(pathStatBefore);
+  const pathIdentityAfter = stableFileIdentity(pathStatAfter);
+  const descriptorIdentityBefore = stableFileIdentity(descriptorStatBefore);
+  const descriptorIdentityAfter = stableFileIdentity(descriptorStatAfter);
+  if (!identitiesEqual(pathIdentityBefore, pathIdentityAfter)) {
+    stabilityIssues.push(
+      "operator_bundle_input_path_identity_changed_during_read",
+    );
+  }
+  if (!identitiesEqual(descriptorIdentityBefore, descriptorIdentityAfter)) {
+    stabilityIssues.push(
+      "operator_bundle_input_descriptor_identity_changed_during_read",
+    );
   }
   if (
-    !Number.isInteger(stat.size) ||
-    stat.size <= 0 ||
-    stat.size > maxInputBytes
+    !identitiesEqual(pathIdentityBefore, descriptorIdentityBefore) ||
+    !identitiesEqual(pathIdentityAfter, descriptorIdentityAfter)
   ) {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_size_invalid"],
-    };
+    stabilityIssues.push(
+      "operator_bundle_input_path_descriptor_identity_mismatch",
+    );
   }
-  let bytes;
-  try {
-    bytes = fs.readFileSync(canonicalPath);
-  } catch {
-    return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_read_failed"],
-    };
+  const pathSizeAfter = statByteSize(pathStatAfter);
+  const descriptorSizeBefore = statByteSize(descriptorStatBefore);
+  const descriptorSizeAfter = statByteSize(descriptorStatAfter);
+  if (
+    pathSizeAfter === null ||
+    descriptorSizeBefore === null ||
+    descriptorSizeAfter === null ||
+    pathSizeBefore !== pathSizeAfter ||
+    pathSizeBefore !== descriptorSizeBefore ||
+    descriptorSizeBefore !== descriptorSizeAfter
+  ) {
+    stabilityIssues.push("operator_bundle_input_size_changed_during_read");
   }
-  if (!Buffer.isBuffer(bytes) || bytes.length !== stat.size) {
+  if (
+    !Buffer.isBuffer(bytes) ||
+    descriptorSizeAfter === null ||
+    bytes.length !== descriptorSizeAfter
+  ) {
+    stabilityIssues.push("operator_bundle_input_bytes_size_mismatch");
+  }
+  if (stabilityIssues.length > 0) {
+    return failedObservation(stabilityIssues);
+  }
+  const parsed = parseMetricsCutoverPostMergeBundleBytes(bytes);
+  if (!parsed.ok) {
     return {
-      ok: false,
-      bundle: null,
-      blockingIssues: ["operator_bundle_input_changed_during_read"],
+      ...parsed,
+      canonicalInputPath: canonicalPathBefore,
+      bytes: Buffer.alloc(0),
+      byteSize: 0,
+      sha256: "",
+      fileIdentity: "",
+      fileIdentitySupported: false,
     };
   }
   return {
-    ...parseMetricsCutoverPostMergeBundleBytes(bytes),
-    canonicalInputPath: canonicalPath,
+    ...parsed,
+    canonicalInputPath: canonicalPathBefore,
+    bytes,
+    byteSize: bytes.length,
+    sha256: sha256(bytes),
+    fileIdentity: descriptorIdentityAfter.value,
+    fileIdentitySupported: descriptorIdentityAfter.supported,
+  };
+}
+
+function readMetricsCutoverPostMergeBundle(inputPath, options = {}) {
+  const observation = readMetricsCutoverPostMergeBundleObservation(
+    inputPath,
+    options,
+  );
+  return {
+    ok: observation.ok,
+    bundle: observation.bundle,
+    blockingIssues: observation.blockingIssues,
+    ...(observation.canonicalInputPath
+      ? { canonicalInputPath: observation.canonicalInputPath }
+      : {}),
   };
 }
 
@@ -429,4 +592,6 @@ module.exports = {
   parseIsoInstant,
   parseMetricsCutoverPostMergeBundleBytes,
   readMetricsCutoverPostMergeBundle,
+  readMetricsCutoverPostMergeBundleObservation,
+  stableFileIdentity,
 };
