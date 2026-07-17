@@ -27,6 +27,7 @@ const {
   REQUEST_FIELDS,
   TARGET_FIELDS,
   TARGET_SCHEMA_VERSION,
+  buildMetricsCutoverExecutionApprovalRequest,
   canonicalizeMetricsCutoverExecutionApprovalRequest,
   compareMetricsCutoverOperatorBundleObservations,
   hashMetricsCutoverExecutionApprovalRequest,
@@ -145,14 +146,58 @@ function observation(bytes = Buffer.from('{"synthetic":"bundle"}'), overrides = 
   };
 }
 
+function mockStat({
+  size,
+  dev = 7n,
+  ino = 42n,
+  symbolicLink = false,
+  file = true,
+} = {}) {
+  return {
+    size,
+    dev,
+    ino,
+    isSymbolicLink: () => symbolicLink,
+    isFile: () => file,
+  };
+}
+
+function atomicObservationFs({
+  bytes,
+  pathStats,
+  descriptorStats,
+  canonicalPaths = ["C:\\canonical\\bundle.json", "C:\\canonical\\bundle.json"],
+} = {}) {
+  let pathStatIndex = 0;
+  let descriptorStatIndex = 0;
+  let canonicalPathIndex = 0;
+  return {
+    lstatSync: () =>
+      pathStats[Math.min(pathStatIndex++, pathStats.length - 1)],
+    realpathSync: () =>
+      canonicalPaths[
+        Math.min(canonicalPathIndex++, canonicalPaths.length - 1)
+      ],
+    openSync: () => 17,
+    fstatSync: () =>
+      descriptorStats[
+        Math.min(descriptorStatIndex++, descriptorStats.length - 1)
+      ],
+    readFileSync: () => Buffer.from(bytes),
+    closeSync: () => {},
+  };
+}
+
 function makeAdapters({
   bytes = Buffer.from('{"synthetic":"bundle"}'),
   observationA,
+  observationS,
   observationB,
   dryRun = readyDryRun(),
 } = {}) {
   const observations = [
     observationA || observation(bytes),
+    observationS || observationA || observation(bytes),
     observationB || observation(bytes),
   ];
   const calls = { observe: 0, dryRun: 0 };
@@ -168,8 +213,11 @@ function makeAdapters({
           bytes: Buffer.from(value.bytes || []),
         };
       },
-      runDryRun: async () => {
+      runDryRun: async (_input, dryRunAdapters) => {
         calls.dryRun += 1;
+        await dryRunAdapters.readBundle(
+          "C:\\synthetic\\operator-bundle.json",
+        );
         return structuredClone(dryRun);
       },
     },
@@ -210,7 +258,7 @@ test("valid stable sanitized Step 114-2S result returns request_ready", async ()
     APPROVAL_REQUEST_SUMMARY_CONTRACT_VERSION,
   );
   assert.equal(result.approvalRequestReady, true);
-  assert.equal(setup.calls.observe, 2);
+  assert.equal(setup.calls.observe, 3);
   assert.equal(setup.calls.dryRun, 1);
   assert.equal(result.approvalRequestHash, result.approvalRequest.requestHash);
   assert.equal(
@@ -528,6 +576,121 @@ test("operator-bundle observation boundary blocks invalid inputs", async (t) => 
   }
 });
 
+test("one operator-bundle observation is descriptor-atomic and fail-closed", async (t) => {
+  const bytes = Buffer.from("same-size-bytes");
+  const stablePath = mockStat({ size: BigInt(bytes.length) });
+  const stableDescriptor = mockStat({ size: BigInt(bytes.length) });
+  const cases = [
+    [
+      "same-size file replacement",
+      {
+        pathStats: [
+          stablePath,
+          mockStat({ size: BigInt(bytes.length), ino: 99n }),
+        ],
+        descriptorStats: [stableDescriptor, stableDescriptor],
+      },
+      /path_identity_changed|path_descriptor_identity_mismatch/,
+    ],
+    [
+      "descriptor identity change",
+      {
+        pathStats: [stablePath, stablePath],
+        descriptorStats: [
+          stableDescriptor,
+          mockStat({ size: BigInt(bytes.length), ino: 99n }),
+        ],
+      },
+      /descriptor_identity_changed|path_descriptor_identity_mismatch/,
+    ],
+    [
+      "canonical path change",
+      {
+        pathStats: [stablePath, stablePath],
+        descriptorStats: [stableDescriptor, stableDescriptor],
+        canonicalPaths: [
+          "C:\\canonical\\bundle.json",
+          "C:\\replacement\\bundle.json",
+        ],
+      },
+      /canonical_path_changed/,
+    ],
+    [
+      "symlink substitution",
+      {
+        pathStats: [
+          stablePath,
+          mockStat({
+            size: BigInt(bytes.length),
+            ino: 99n,
+            symbolicLink: true,
+            file: false,
+          }),
+        ],
+        descriptorStats: [stableDescriptor, stableDescriptor],
+      },
+      /symlink_during_read/,
+    ],
+    [
+      "size change",
+      {
+        pathStats: [
+          stablePath,
+          mockStat({ size: BigInt(bytes.length + 1) }),
+        ],
+        descriptorStats: [
+          stableDescriptor,
+          mockStat({ size: BigInt(bytes.length + 1) }),
+        ],
+      },
+      /size_changed|bytes_size_mismatch/,
+    ],
+  ];
+  for (const [name, scenario, pattern] of cases) {
+    await t.test(name, () => {
+      const result = readMetricsCutoverPostMergeBundleObservation(
+        "bundle.json",
+        { fs: atomicObservationFs({ bytes, ...scenario }) },
+      );
+      assert.equal(result.ok, false);
+      assert.match(result.blockingIssues.join("\n"), pattern);
+      assert.equal(Object.hasOwn(result, "bytes"), false);
+    });
+  }
+
+  await t.test("stable unsupported identity platform", async () => {
+    const root = tempDirectory(t);
+    const repository = await createIsolatedMetricsRepository(
+      REPO_ROOT,
+      path.join(root, "repository"),
+    );
+    const validBytes = Buffer.from(
+      JSON.stringify(
+        await buildRealSyntheticOperatorBundle(REPO_ROOT, repository),
+      ),
+      "utf8",
+    );
+    const unsupported = mockStat({
+      size: BigInt(validBytes.length),
+      dev: 0n,
+      ino: 0n,
+    });
+    const result = readMetricsCutoverPostMergeBundleObservation(
+      "bundle.json",
+      {
+        fs: atomicObservationFs({
+          bytes: validBytes,
+          pathStats: [unsupported, unsupported],
+          descriptorStats: [unsupported, unsupported],
+        }),
+      },
+    );
+    assert.equal(result.ok, true, result.blockingIssues?.join("\n"));
+    assert.equal(result.fileIdentitySupported, false);
+    assert.equal(result.fileIdentity, "");
+  });
+});
+
 test("bundle A/B path, bytes, hash, size, and file identity must remain stable", async (t) => {
   const base = observation(Buffer.from("stable"));
   const mutations = [
@@ -607,12 +770,70 @@ test("coordinator blocks bundle changes across the Step 114-2S call", async (t) 
       });
       assert.equal(result.status, "blocked");
       assert.equal(setup.calls.dryRun, 1);
-      assert.equal(setup.calls.observe, 2);
+      assert.equal(setup.calls.observe, 3);
       assert.match(result.blockingIssues.join("\n"), pattern);
       assertSuppressed(result);
       assertFixedFalse(result);
     });
   }
+});
+
+test("coordinator blocks transient A-original S-different B-original swap", async () => {
+  const original = observation(Buffer.from("original-valid-bundle"));
+  const consumed = observation(Buffer.from("different-valid-bundle"));
+  const { result, setup } = await buildUnitResult({
+    observationA: original,
+    observationS: consumed,
+    observationB: original,
+  });
+  assert.equal(result.status, "blocked");
+  assert.equal(setup.calls.observe, 3);
+  assert.equal(setup.calls.dryRun, 1);
+  assert.match(
+    result.blockingIssues.join("\n"),
+    /operator_bundle_(?:bytes|sha256|byte_size)_changed/,
+  );
+  assertSuppressed(result);
+  assertFixedFalse(result);
+});
+
+test("pure builder recomputes observation byte size and SHA-256", async (t) => {
+  const bytes = Buffer.from("builder-bound-bundle");
+  const source = observation(bytes);
+  const validated = validateMetricsCutoverPostMergeDryRunSummary(
+    readyDryRun(),
+  );
+  assert.equal(validated.ok, true);
+  const summary = validated.summary;
+
+  await t.test("forged SHA-256", () => {
+    assert.throws(
+      () =>
+        buildMetricsCutoverExecutionApprovalRequest(
+          { ...source, sha256: "9".repeat(64) },
+          summary,
+        ),
+      /operator_bundle_observation_sha256_mismatch/,
+    );
+  });
+  await t.test("forged byte size", () => {
+    assert.throws(
+      () =>
+        buildMetricsCutoverExecutionApprovalRequest(
+          { ...source, byteSize: source.byteSize + 1 },
+          summary,
+        ),
+      /operator_bundle_observation_byte_size_mismatch/,
+    );
+  });
+  await t.test("matching bytes, hash, and size", () => {
+    const request = buildMetricsCutoverExecutionApprovalRequest(
+      source,
+      summary,
+    );
+    assert.equal(request.operatorBundleSha256, sha256(bytes));
+    assert.equal(request.operatorBundleByteSize, bytes.length);
+  });
 });
 
 test("unsupported file identity remains valid when both observations agree", async () => {

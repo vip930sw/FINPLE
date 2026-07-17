@@ -555,10 +555,19 @@ function validateMetricsCutoverPostMergeDryRunSummary(value = {}) {
   };
 }
 
-function compareMetricsCutoverOperatorBundleObservations(left, right) {
+function compareMetricsCutoverOperatorBundleObservationsInternal(
+  left,
+  right,
+  leftLabel,
+  rightLabel,
+) {
   const issues = [];
-  if (!left?.ok) issues.push("operator_bundle_observation_a_invalid");
-  if (!right?.ok) issues.push("operator_bundle_observation_b_invalid");
+  if (!left?.ok) {
+    issues.push(`operator_bundle_observation_${leftLabel}_invalid`);
+  }
+  if (!right?.ok) {
+    issues.push(`operator_bundle_observation_${rightLabel}_invalid`);
+  }
   if (issues.length > 0) {
     return { ok: false, issues };
   }
@@ -591,6 +600,15 @@ function compareMetricsCutoverOperatorBundleObservations(left, right) {
   return { ok: issues.length === 0, issues: uniqueSorted(issues) };
 }
 
+function compareMetricsCutoverOperatorBundleObservations(left, right) {
+  return compareMetricsCutoverOperatorBundleObservationsInternal(
+    left,
+    right,
+    "a",
+    "b",
+  );
+}
+
 function buildMetricsCutoverExecutionApprovalRequest(
   operatorBundleObservation,
   dryRunSummary,
@@ -606,6 +624,18 @@ function buildMetricsCutoverExecutionApprovalRequest(
       STEP114_2S_SUMMARY_CONTRACT_VERSION
   ) {
     throw new TypeError("approval_request_source_invalid");
+  }
+  if (
+    operatorBundleObservation.byteSize !==
+    operatorBundleObservation.bytes.length
+  ) {
+    throw new TypeError("operator_bundle_observation_byte_size_mismatch");
+  }
+  if (
+    operatorBundleObservation.sha256 !==
+    sha256(operatorBundleObservation.bytes)
+  ) {
+    throw new TypeError("operator_bundle_observation_sha256_mismatch");
   }
   const request = {
     contractVersion: APPROVAL_REQUEST_CONTRACT_VERSION,
@@ -724,12 +754,28 @@ async function runMetricsCutoverExecutionApprovalRequest(
     );
   }
 
-  const dryRunResult = await runDryRun({
-    repo: input.repo,
-    inputPath: input.inputPath,
-  });
+  let observationS = null;
+  const dryRunResult = await runDryRun(
+    {
+      repo: input.repo,
+      inputPath: input.inputPath,
+    },
+    {
+      readBundle: async (bundlePath) => {
+        observationS = await observeBundle(bundlePath);
+        return observationS;
+      },
+    },
+  );
   const observationB = await observeBundle(input.inputPath);
   const issues = [];
+  if (!observationS?.ok) {
+    issues.push(
+      ...(observationS?.blockingIssues || [
+        "operator_bundle_observation_s_failed",
+      ]),
+    );
+  }
   if (!observationB?.ok) {
     issues.push(
       ...(observationB?.blockingIssues || [
@@ -737,11 +783,19 @@ async function runMetricsCutoverExecutionApprovalRequest(
       ]),
     );
   }
-  const stability = compareMetricsCutoverOperatorBundleObservations(
+  const stabilityAS = compareMetricsCutoverOperatorBundleObservationsInternal(
     observationA,
-    observationB,
+    observationS,
+    "a",
+    "s",
   );
-  issues.push(...stability.issues);
+  const stabilitySB = compareMetricsCutoverOperatorBundleObservationsInternal(
+    observationS,
+    observationB,
+    "s",
+    "b",
+  );
+  issues.push(...stabilityAS.issues, ...stabilitySB.issues);
   const dryRunValidation =
     validateMetricsCutoverPostMergeDryRunSummary(dryRunResult);
   issues.push(...dryRunValidation.issues);
@@ -755,10 +809,15 @@ async function runMetricsCutoverExecutionApprovalRequest(
       observationA,
       dryRunValidation.summary,
     );
-  } catch {
-    return safeResult("blocked", {}, [
-      "approval_request_construction_failed",
-    ]);
+  } catch (error) {
+    const safeIssue =
+      typeof error?.message === "string" &&
+      /^operator_bundle_observation_(?:byte_size|sha256)_mismatch$/.test(
+        error.message,
+      )
+        ? error.message
+        : "approval_request_construction_failed";
+    return safeResult("blocked", {}, [safeIssue]);
   }
   const requestValidation =
     validateMetricsCutoverExecutionApprovalRequest(approvalRequest);

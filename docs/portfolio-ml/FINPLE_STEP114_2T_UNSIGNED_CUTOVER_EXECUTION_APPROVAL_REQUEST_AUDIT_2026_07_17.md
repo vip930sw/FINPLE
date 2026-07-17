@@ -35,15 +35,19 @@ The exact non-retrying flow is:
 
 ```text
 operator bundle observation A
-production-default Step 114-2S dry-run
+production-default Step 114-2S dry-run with captured observation S
 operator bundle observation B
-bundle byte/path/identity stability verification
+A/S/B bundle byte/path/identity stability verification
 sanitized Step 114-2S summary validation
 canonical unsigned approval request
 sanitized public result
 ```
 
-No request is constructed before observation B and all stability checks pass.
+Observation S is produced only by injecting the production
+`readMetricsCutoverPostMergeBundleObservation` reader through the internal
+Step 114-2S `readBundle` boundary. It is not accepted from the operator bundle,
+CLI, or public input. No request is constructed before observation B and all
+three observations pass the stability checks.
 
 ## 4. CLI boundary
 
@@ -75,29 +79,43 @@ Standard output contains exactly one sanitized JSON document.
 The merged Step 114-2S input module now exposes a reusable raw observation
 helper. Each observation performs:
 
-- `lstat`
-- canonical `realpath`
+- pre-read `lstat` and canonical `realpath`
 - regular non-symlink validation
 - existing 64 MiB size enforcement
-- one raw `Buffer` read
-- exact byte-size comparison with `lstat`
+- read-only descriptor open on the canonical path
+- descriptor pre-`fstat`
+- one raw `Buffer` read through that descriptor
+- descriptor post-`fstat` and close
+- post-read `lstat` and canonical `realpath`
+- exact byte-size comparison across path metadata, descriptor metadata, and
+  the actual Buffer
 - SHA-256 of the raw bytes
-- stable `dev:ino` identity when supported
+- BigInt `dev:ino` identity when supported, with safe-integer enforcement for
+  Number stat adapters
 - strict UTF-8 and exact Step 114-2S JSON parsing
 
-Observation A occurs before Step 114-2S. Observation B occurs after it.
+Within one observation, the canonical path, pre/post path identity,
+pre/post descriptor identity, path-to-descriptor identity, and size must all
+remain stable. Both path observations must remain regular non-symlinks.
+Unsupported identity is accepted only when its unsupported state is stable
+across every comparison.
+
+Observation A occurs before Step 114-2S. Observation S contains the exact
+bytes parsed by Step 114-2S. Observation B occurs after Step 114-2S.
 
 The coordinator requires:
 
-- the same canonical path
-- identical raw bytes
-- identical SHA-256
-- identical byte size
-- unchanged file-identity support state
-- identical stable file identity when supported
+- the same canonical path across A/S/B
+- identical raw bytes across A/S/B
+- identical SHA-256 across A/S/B
+- identical byte size across A/S/B
+- unchanged file-identity support state across A/S/B
+- identical stable file identity across A/S/B when supported
 
-Concurrent mutation blocks without retry. Raw bytes, absolute canonical paths,
-and file identities are never copied into the public result.
+The transient sequence A=original, S=different valid bundle, B=original is
+therefore blocked even though A equals B. Concurrent mutation blocks without
+retry. Raw bytes, absolute canonical paths, and file identities are never
+copied into the public result.
 
 ## 6. Direct Step 114-2S invocation
 
@@ -230,6 +248,17 @@ rejects:
 The validator recomputes and verifies both the deterministic request ID and
 the request hash.
 
+Before request construction, the pure builder independently requires:
+
+```text
+operatorBundleObservation.byteSize === operatorBundleObservation.bytes.length
+operatorBundleObservation.sha256 === sha256(operatorBundleObservation.bytes)
+```
+
+Forged observation hash or size metadata is rejected with safe issue codes.
+The request's operator-bundle hash and size therefore come only from bytes
+proven equal across A/S/B and reverified by the builder.
+
 ## 10. Deterministic request ID and hash
 
 The request ID uses:
@@ -324,11 +353,11 @@ test cleanup and are never committed.
 
 The implementation passed:
 
-- Step 114-2T focused suite: 74 tests
+- Step 114-2T focused suite: 86 tests
 - real production-default Step 114-2S integration and actual Step 114-2T CLI
-- Step 114-2S and 2T compatibility suite: 141 tests
-- Step 114-2Q through 2T combined suite: 282 tests
-- Step 114-2N through 2T combined suite: 486 tests
+- Step 114-2S and 2T compatibility suite: 153 tests
+- Step 114-2Q through 2T combined suite: 294 tests
+- Step 114-2N through 2T combined suite: 498 tests
 - Step 114-2M Python candidate-package suite: 16 tests
 - Python metrics discovery suite: 48 tests
 - `npm.cmd run check:scenario-metrics`: 80 tests
