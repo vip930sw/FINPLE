@@ -40,7 +40,9 @@ The future evidence plan contains exactly 15 scenario classes:
 
 The current package produces none of this evidence and executes none of these scenarios. Cleanup remains manual and evidence-preserving when an outcome is ambiguous; automatic deletion or retry is prohibited.
 
-The future-only scenario-evidence schema fixes the scenario sequence, package-summary and test-database-gate ID/hash pairs, sanitized database fingerprint hash, expected and observed result categories, expected and observed affected rows, winner count, mutation observation, prior/resulting state hashes, manual-review state, previous-evidence hash, and canonical evidence hash. The matching run-summary schema fixes scenario order, first/last evidence hashes, complete hash-chain validation, and all fixed-false authority fields. These are schema definitions only; no evidence record or run summary is generated in this step.
+The future-only scenario-evidence schema fixes the scenario sequence, package-summary and test-database-gate ID/hash pairs, sanitized database fingerprint hash, expected and observed result categories, expected and observed affected rows, winner count, mutation observation, prior/resulting state hashes, manual-review state, previous-evidence hash, and canonical evidence hash. The matching run-summary schema fixes scenario order, first/last evidence hashes, complete hash-chain validation, and all fixed-false authority fields.
+
+Pure validators now check a sanitized synthetic scenario fixture, the contiguous 15-item chain, and the final run summary. The first previous-evidence hash must be the zero hash, every later value must bind the immediately preceding evidence hash, and all package, gate, and fingerprint bindings must remain identical across the run. Missing, extra, duplicate, reordered, or tampered scenarios block. `commit_ambiguity_manual_review` alone requires null winner/mutation observations plus mandatory manual review; null is blocked in ordinary single-winner scenarios. No real evidence record or run summary is generated, persisted, or accepted by a database in this step.
 
 ## Fixed-false boundary
 

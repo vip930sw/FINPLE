@@ -57,6 +57,12 @@ The introspection contract describes later evidence only. It expects the exact m
 
 It explicitly rejects delete/reset/reuse, TTL or eviction, advisory-lock-only persistence, runtime schema ownership, superuser privilege, and runtime `ALTER`, `DELETE`, `DROP`, or `TRUNCATE`. This stage performs no catalog query.
 
+## Future evidence validation
+
+Three pure validators enforce the future-only result contracts without connecting to or executing against a database: one validates a single scenario result, one validates the exact 15-item hash chain, and one validates a run summary only after the complete scenario chain passes. They require exact keys, versions, domain-separated IDs/hashes, package/gate bindings, a sanitized database fingerprint hash, exact scenario sequence and order, expected/observed result semantics, state hashes, and previous-evidence chaining.
+
+The `commit_ambiguity_manual_review` scenario is the only scenario permitted to use the tri-state pair `winnerCount: null` and `mutationObserved: null`; it also requires `manualReviewRequired: true`. Other single-winner scenarios require non-null integer winner counts and boolean mutation observations. Tests construct only sanitized synthetic fixtures and do not create database evidence.
+
 ## Non-authority boundary
 
 `postgresql_test_package_ready` means only that the in-memory design package is internally consistent. It grants no provider, test database, production database, SQL execution, schema mutation, migration, credential, claim, lock, receipt, cutover, file-write, Git, deployment, publication, pointer, rollback, or loader authority.

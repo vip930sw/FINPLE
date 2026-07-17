@@ -23,6 +23,9 @@ const {
   evaluateMetricsCutoverPostgresqlTestPackage,
   sealContract,
   validatePackageSummary,
+  validatePostgresqlRunEvidenceSummary,
+  validatePostgresqlScenarioEvidence,
+  validatePostgresqlScenarioEvidenceChain,
 } = require("./lib/metrics-cutover-postgresql-test-package.cjs");
 const {
   evaluateCliRequest,
@@ -52,6 +55,73 @@ function assertBlocked(result, issue) {
   assert.deepEqual(result.packageSummary, {});
   assert.ok(result.blockingIssues.includes(issue), `${issue}: ${result.blockingIssues}`);
   assertAuthorityFalse(result);
+}
+
+function syntheticStateHash(sequence) {
+  return (sequence + 256).toString(16).padStart(64, "0");
+}
+
+function buildSanitizedSyntheticEvidenceFixture() {
+  const packet = buildValidPostgresqlTestPackage();
+  const packageSummary = buildPackageSummary(packet);
+  const context = {
+    packageSummaryId: packageSummary.packageSummaryId,
+    packageSummaryHash: packageSummary.packageSummaryHash,
+    testDatabaseGateId: packet.testDatabaseGate.testDatabaseGateId,
+    testDatabaseGateHash: packet.testDatabaseGate.testDatabaseGateHash,
+    sanitizedDatabaseFingerprintHash: "a".repeat(64),
+  };
+  let previousEvidenceHash = ZERO_HASH;
+  const scenarioEvidence = FUTURE_SCENARIO_EXPECTATIONS.map((expectation) => {
+    const sequence = expectation.scenarioSequence;
+    const evidence = sealContract({
+      contractVersion: SCENARIO_EVIDENCE_CONTRACT_VERSION,
+      scenarioSequence: sequence,
+      scenarioClass: expectation.scenarioClass,
+      packageSummaryId: context.packageSummaryId,
+      packageSummaryHash: context.packageSummaryHash,
+      testDatabaseGateId: context.testDatabaseGateId,
+      testDatabaseGateHash: context.testDatabaseGateHash,
+      sanitizedDatabaseFingerprintHash:
+        context.sanitizedDatabaseFingerprintHash,
+      expectedResultCategory: expectation.expectedResultCategory,
+      observedResultCategory: expectation.expectedResultCategory,
+      expectedAffectedRows: expectation.expectedAffectedRows,
+      observedAffectedRows: expectation.expectedAffectedRows,
+      winnerCount: expectation.winnerCount,
+      mutationObserved: expectation.mutationObserved,
+      priorStateHash: sequence === 1
+        ? ZERO_HASH
+        : syntheticStateHash(sequence - 1),
+      resultingStateHash: syntheticStateHash(sequence),
+      manualReviewRequired: expectation.manualReviewRequired,
+      previousEvidenceHash,
+    }, SPECS.scenarioEvidence);
+    previousEvidenceHash = evidence.evidenceHash;
+    return evidence;
+  });
+  const runSummary = sealContract({
+    contractVersion: RUN_EVIDENCE_SUMMARY_CONTRACT_VERSION,
+    packageSummaryId: context.packageSummaryId,
+    packageSummaryHash: context.packageSummaryHash,
+    testDatabaseGateId: context.testDatabaseGateId,
+    testDatabaseGateHash: context.testDatabaseGateHash,
+    exactScenarioCount: FUTURE_SCENARIOS.length,
+    scenarioOrder: [...FUTURE_SCENARIOS],
+    firstEvidenceHash: scenarioEvidence[0].evidenceHash,
+    lastEvidenceHash: scenarioEvidence[scenarioEvidence.length - 1].evidenceHash,
+    hashChainValidationRequired: true,
+    allEvidenceComplete: true,
+    rawMaterialForbidden: true,
+    executionOccurred: false,
+    databaseConnected: false,
+    ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
+  }, SPECS.runEvidenceSummary);
+  return { context, scenarioEvidence, runSummary };
+}
+
+function assertIssuesInclude(issues, expected) {
+  assert.ok(issues.includes(expected), `${expected}: ${issues}`);
 }
 
 test("valid inert PostgreSQL package is ready without authority", () => {
@@ -631,6 +701,362 @@ test("future evidence expectation and result-schema tampering block", () => {
     runContract,
     "run_evidence_summary_contract_definition_invalid",
   );
+});
+
+test("sanitized synthetic scenario evidence and complete chain validate", () => {
+  const fixture = buildSanitizedSyntheticEvidenceFixture();
+  fixture.scenarioEvidence.forEach((evidence) => {
+    assert.deepEqual(
+      validatePostgresqlScenarioEvidence(evidence, fixture.context),
+      [],
+    );
+  });
+  assert.deepEqual(
+    validatePostgresqlScenarioEvidenceChain(
+      fixture.scenarioEvidence, fixture.context,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    validatePostgresqlRunEvidenceSummary(
+      fixture.runSummary, fixture.scenarioEvidence, fixture.context,
+    ),
+    [],
+  );
+});
+
+test("scenario evidence exact keys, version, ID, and hash fail closed", () => {
+  const missing = buildSanitizedSyntheticEvidenceFixture();
+  delete missing.scenarioEvidence[0].observedAffectedRows;
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidence(
+      missing.scenarioEvidence[0], missing.context,
+    ),
+    "scenario_evidence_fields_invalid",
+  );
+
+  const extra = buildSanitizedSyntheticEvidenceFixture();
+  extra.scenarioEvidence[0].rawValue = "forbidden";
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidence(
+      extra.scenarioEvidence[0], extra.context,
+    ),
+    "scenario_evidence_fields_invalid",
+  );
+
+  const version = buildSanitizedSyntheticEvidenceFixture();
+  version.scenarioEvidence[0].contractVersion = "wrong";
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidence(
+      version.scenarioEvidence[0], version.context,
+    ),
+    "scenario_evidence_contract_version_invalid",
+  );
+
+  const id = buildSanitizedSyntheticEvidenceFixture();
+  id.scenarioEvidence[0].scenarioEvidenceId =
+    `metrics-cutover-postgresql-test-scenario-evidence-${"b".repeat(64)}`;
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidence(id.scenarioEvidence[0], id.context),
+    "scenario_evidence_id_mismatch",
+  );
+
+  const hash = buildSanitizedSyntheticEvidenceFixture();
+  hash.scenarioEvidence[0].evidenceHash = "b".repeat(64);
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidence(hash.scenarioEvidence[0], hash.context),
+    "scenario_evidence_hash_mismatch",
+  );
+});
+
+test("scenario evidence requires canonical state hashes", () => {
+  for (const field of [
+    "priorStateHash", "resultingStateHash", "previousEvidenceHash",
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.scenarioEvidence[0][field] = "not-a-hash";
+    fixture.scenarioEvidence[0] = sealContract(
+      fixture.scenarioEvidence[0], SPECS.scenarioEvidence,
+    );
+    assertIssuesInclude(
+      validatePostgresqlScenarioEvidence(
+        fixture.scenarioEvidence[0], fixture.context,
+      ),
+      `scenario_evidence_state_hash_invalid:${field}`,
+    );
+  }
+});
+
+test("scenario evidence package, gate, and fingerprint bindings fail closed", () => {
+  for (const [field, issue] of [
+    ["packageSummaryId", "scenario_evidence_package_binding_mismatch"],
+    ["packageSummaryHash", "scenario_evidence_package_binding_mismatch"],
+    ["testDatabaseGateId", "scenario_evidence_gate_binding_mismatch"],
+    ["testDatabaseGateHash", "scenario_evidence_gate_binding_mismatch"],
+    ["sanitizedDatabaseFingerprintHash", "scenario_evidence_fingerprint_binding_mismatch"],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.scenarioEvidence[0][field] = field.endsWith("Id")
+      ? `sanitized-wrong-${field.toLowerCase()}`
+      : "c".repeat(64);
+    fixture.scenarioEvidence[0] = sealContract(
+      fixture.scenarioEvidence[0], SPECS.scenarioEvidence,
+    );
+    assertIssuesInclude(
+      validatePostgresqlScenarioEvidence(
+        fixture.scenarioEvidence[0], fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("scenario expectation, observed result, winner, and manual state are exact", () => {
+  for (const [field, value, issue] of [
+    ["expectedResultCategory", "wrong_result", "scenario_evidence_expectation_mismatch:expectedResultCategory"],
+    ["expectedAffectedRows", "wrong_rows", "scenario_evidence_expectation_mismatch:expectedAffectedRows"],
+    ["observedResultCategory", "wrong_result", "scenario_evidence_observed_result_category_invalid"],
+    ["observedAffectedRows", -1, "scenario_evidence_observed_affected_rows_invalid"],
+    ["winnerCount", 2, "scenario_evidence_expectation_mismatch:winnerCount"],
+    ["mutationObserved", false, "scenario_evidence_expectation_mismatch:mutationObserved"],
+    ["manualReviewRequired", true, "scenario_evidence_expectation_mismatch:manualReviewRequired"],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    const index = 3;
+    fixture.scenarioEvidence[index][field] = value;
+    fixture.scenarioEvidence[index] = sealContract(
+      fixture.scenarioEvidence[index], SPECS.scenarioEvidence,
+    );
+    assertIssuesInclude(
+      validatePostgresqlScenarioEvidence(
+        fixture.scenarioEvidence[index], fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("commit ambiguity accepts null tri-state and rejects false zero or no review", () => {
+  const valid = buildSanitizedSyntheticEvidenceFixture();
+  const ambiguityIndex = 8;
+  assert.equal(valid.scenarioEvidence[ambiguityIndex].winnerCount, null);
+  assert.equal(valid.scenarioEvidence[ambiguityIndex].mutationObserved, null);
+  assert.equal(valid.scenarioEvidence[ambiguityIndex].manualReviewRequired, true);
+  assert.deepEqual(
+    validatePostgresqlScenarioEvidence(
+      valid.scenarioEvidence[ambiguityIndex], valid.context,
+    ),
+    [],
+  );
+
+  for (const [field, value, issue] of [
+    ["mutationObserved", false, "scenario_evidence_ambiguity_mutation_observation_invalid"],
+    ["winnerCount", 0, "scenario_evidence_ambiguity_winner_count_invalid"],
+    ["manualReviewRequired", false, "scenario_evidence_ambiguity_manual_review_invalid"],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.scenarioEvidence[ambiguityIndex][field] = value;
+    fixture.scenarioEvidence[ambiguityIndex] = sealContract(
+      fixture.scenarioEvidence[ambiguityIndex], SPECS.scenarioEvidence,
+    );
+    assertIssuesInclude(
+      validatePostgresqlScenarioEvidence(
+        fixture.scenarioEvidence[ambiguityIndex], fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("null tri-state is rejected outside commit ambiguity", () => {
+  for (const [field, issue] of [
+    ["mutationObserved", "scenario_evidence_mutation_observation_invalid"],
+    ["winnerCount", "scenario_evidence_winner_count_invalid"],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    const singleWinnerIndex = 3;
+    fixture.scenarioEvidence[singleWinnerIndex][field] = null;
+    fixture.scenarioEvidence[singleWinnerIndex] = sealContract(
+      fixture.scenarioEvidence[singleWinnerIndex], SPECS.scenarioEvidence,
+    );
+    assertIssuesInclude(
+      validatePostgresqlScenarioEvidence(
+        fixture.scenarioEvidence[singleWinnerIndex], fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("scenario chain rejects duplicate sequence, order drift, and count drift", () => {
+  const duplicate = buildSanitizedSyntheticEvidenceFixture();
+  duplicate.scenarioEvidence[1].scenarioSequence = 1;
+  duplicate.scenarioEvidence[1] = sealContract(
+    duplicate.scenarioEvidence[1], SPECS.scenarioEvidence,
+  );
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      duplicate.scenarioEvidence, duplicate.context,
+    ),
+    "scenario_evidence_chain_duplicate_sequence:1",
+  );
+
+  const order = buildSanitizedSyntheticEvidenceFixture();
+  order.scenarioEvidence[1].scenarioClass = FUTURE_SCENARIOS[2];
+  order.scenarioEvidence[1] = sealContract(
+    order.scenarioEvidence[1], SPECS.scenarioEvidence,
+  );
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      order.scenarioEvidence, order.context,
+    ),
+    "scenario_evidence_scenario_order_mismatch",
+  );
+
+  const missing = buildSanitizedSyntheticEvidenceFixture();
+  missing.scenarioEvidence.pop();
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      missing.scenarioEvidence, missing.context,
+    ),
+    "scenario_evidence_chain_count_invalid",
+  );
+
+  const extra = buildSanitizedSyntheticEvidenceFixture();
+  extra.scenarioEvidence.push(structuredClone(extra.scenarioEvidence[14]));
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      extra.scenarioEvidence, extra.context,
+    ),
+    "scenario_evidence_chain_count_invalid",
+  );
+});
+
+test("scenario chain rejects fingerprint and previous-evidence hash drift", () => {
+  const fingerprint = buildSanitizedSyntheticEvidenceFixture();
+  fingerprint.scenarioEvidence[4].sanitizedDatabaseFingerprintHash =
+    "d".repeat(64);
+  fingerprint.scenarioEvidence[4] = sealContract(
+    fingerprint.scenarioEvidence[4], SPECS.scenarioEvidence,
+  );
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      fingerprint.scenarioEvidence, fingerprint.context,
+    ),
+    "scenario_evidence_fingerprint_binding_mismatch",
+  );
+
+  const previous = buildSanitizedSyntheticEvidenceFixture();
+  previous.scenarioEvidence[1].previousEvidenceHash = "d".repeat(64);
+  previous.scenarioEvidence[1] = sealContract(
+    previous.scenarioEvidence[1], SPECS.scenarioEvidence,
+  );
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      previous.scenarioEvidence, previous.context,
+    ),
+    "scenario_evidence_chain_previous_hash_mismatch:2",
+  );
+
+  const genesis = buildSanitizedSyntheticEvidenceFixture();
+  genesis.scenarioEvidence[0].previousEvidenceHash = "d".repeat(64);
+  genesis.scenarioEvidence[0] = sealContract(
+    genesis.scenarioEvidence[0], SPECS.scenarioEvidence,
+  );
+  assertIssuesInclude(
+    validatePostgresqlScenarioEvidenceChain(
+      genesis.scenarioEvidence, genesis.context,
+    ),
+    "scenario_evidence_chain_previous_hash_mismatch:1",
+  );
+});
+
+test("run summary exact keys, version, ID, and hash fail closed", () => {
+  const missing = buildSanitizedSyntheticEvidenceFixture();
+  delete missing.runSummary.rawMaterialForbidden;
+  assertIssuesInclude(
+    validatePostgresqlRunEvidenceSummary(
+      missing.runSummary, missing.scenarioEvidence, missing.context,
+    ),
+    "run_evidence_summary_fields_invalid",
+  );
+
+  const extra = buildSanitizedSyntheticEvidenceFixture();
+  extra.runSummary.rawValue = "forbidden";
+  assertIssuesInclude(
+    validatePostgresqlRunEvidenceSummary(
+      extra.runSummary, extra.scenarioEvidence, extra.context,
+    ),
+    "run_evidence_summary_fields_invalid",
+  );
+
+  for (const [field, value, issue] of [
+    ["contractVersion", "wrong", "run_evidence_summary_contract_version_invalid"],
+    ["runEvidenceSummaryId", `metrics-cutover-postgresql-test-run-evidence-summary-${"e".repeat(64)}`, "run_evidence_summary_id_mismatch"],
+    ["runEvidenceSummaryHash", "e".repeat(64), "run_evidence_summary_hash_mismatch"],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.runSummary[field] = value;
+    assertIssuesInclude(
+      validatePostgresqlRunEvidenceSummary(
+        fixture.runSummary, fixture.scenarioEvidence, fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("run summary exact binding, count, edge hashes, and authority fail closed", () => {
+  for (const [field, value, issue] of [
+    ["exactScenarioCount", 14, "run_evidence_summary_count_invalid"],
+    ["scenarioOrder", [...FUTURE_SCENARIOS].reverse(), "run_evidence_summary_order_invalid"],
+    ["firstEvidenceHash", "e".repeat(64), "run_evidence_summary_first_hash_invalid"],
+    ["lastEvidenceHash", "e".repeat(64), "run_evidence_summary_last_hash_invalid"],
+    ["packageSummaryHash", "e".repeat(64), "run_evidence_summary_package_binding_mismatch"],
+    ["testDatabaseGateHash", "e".repeat(64), "run_evidence_summary_gate_binding_mismatch"],
+    ["allEvidenceComplete", false, "run_evidence_summary_completeness_invalid"],
+    ["hashChainValidationRequired", false, "run_evidence_summary_hash_chain_validation_invalid"],
+    ["rawMaterialForbidden", false, "run_evidence_summary_raw_material_boundary_invalid"],
+    [FIXED_FALSE_FIELDS[0], true, `run_evidence_summary_fixed_false_invalid:${FIXED_FALSE_FIELDS[0]}`],
+  ]) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.runSummary[field] = value;
+    fixture.runSummary = sealContract(
+      fixture.runSummary, SPECS.runEvidenceSummary,
+    );
+    assertIssuesInclude(
+      validatePostgresqlRunEvidenceSummary(
+        fixture.runSummary, fixture.scenarioEvidence, fixture.context,
+      ),
+      issue,
+    );
+  }
+});
+
+test("every run-summary authority field is fixed false", () => {
+  for (const field of FIXED_FALSE_FIELDS) {
+    const fixture = buildSanitizedSyntheticEvidenceFixture();
+    fixture.runSummary[field] = true;
+    fixture.runSummary = sealContract(
+      fixture.runSummary, SPECS.runEvidenceSummary,
+    );
+    assertIssuesInclude(
+      validatePostgresqlRunEvidenceSummary(
+        fixture.runSummary, fixture.scenarioEvidence, fixture.context,
+      ),
+      `run_evidence_summary_fixed_false_invalid:${field}`,
+    );
+  }
+});
+
+test("run summary rejects an invalid scenario chain before acceptance", () => {
+  const fixture = buildSanitizedSyntheticEvidenceFixture();
+  fixture.scenarioEvidence[2].evidenceHash = "f".repeat(64);
+  const issues = validatePostgresqlRunEvidenceSummary(
+    fixture.runSummary, fixture.scenarioEvidence, fixture.context,
+  );
+  assertIssuesInclude(issues, "run_evidence_summary_chain_invalid");
+  assertIssuesInclude(issues, "scenario_evidence_hash_mismatch");
 });
 
 test("cross-contract hashes bind gate, evidence, and summary to the same package", () => {

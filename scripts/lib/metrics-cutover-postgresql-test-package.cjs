@@ -111,7 +111,7 @@ const FUTURE_SCENARIO_EXPECTATIONS = Object.freeze([
   { expectedResultCategory: "terminal_transition_single_winner", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
   { expectedResultCategory: "release_after_terminal_persistence", expectedAffectedRows: "exactly_one", winnerCount: 1, mutationObserved: true, manualReviewRequired: false },
   { expectedResultCategory: "duplicate_replay_blocked", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
-  { expectedResultCategory: "commit_ambiguity_manual_review", expectedAffectedRows: "unknown", winnerCount: 0, mutationObserved: false, manualReviewRequired: true },
+  { expectedResultCategory: "commit_ambiguity_manual_review", expectedAffectedRows: "unknown", winnerCount: null, mutationObserved: null, manualReviewRequired: true },
   { expectedResultCategory: "retry_before_proven_mutation_only", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
   { expectedResultCategory: "held_lock_persists_after_session_loss", expectedAffectedRows: "read_only", winnerCount: 0, mutationObserved: false, manualReviewRequired: true },
   { expectedResultCategory: "runtime_privilege_denied", expectedAffectedRows: "zero", winnerCount: 0, mutationObserved: false, manualReviewRequired: false },
@@ -220,6 +220,10 @@ const EVIDENCE_CONTRACT_DEFINITION_FIELDS = Object.freeze([
   "canonicalHashValidationRequired", "rawMaterialForbidden", "hashChainGenesis",
   "fieldRules",
 ]);
+const EVIDENCE_VALIDATION_CONTEXT_FIELDS = Object.freeze([
+  "packageSummaryId", "packageSummaryHash", "testDatabaseGateId",
+  "testDatabaseGateHash", "sanitizedDatabaseFingerprintHash",
+]);
 const SCENARIO_EXPECTATION_FIELDS = Object.freeze([
   "scenarioSequence", "scenarioClass", "expectedResultCategory",
   "expectedAffectedRows", "winnerCount", "mutationObserved",
@@ -254,9 +258,9 @@ const SCENARIO_EVIDENCE_FIELD_RULES = Object.freeze({
   expectedResultCategory: "exact_scenario_expectation",
   observedResultCategory: "safe_identity_observation_or_manual_review_category",
   expectedAffectedRows: "exact_scenario_expectation",
-  observedAffectedRows: "non_negative_integer_or_approved_symbolic_observation",
-  winnerCount: "non_negative_integer_exact_scenario_expectation",
-  mutationObserved: "boolean_exact_scenario_expectation",
+  observedAffectedRows: "exact_expected_symbolic_value_or_matching_non_negative_integer",
+  winnerCount: "non_negative_integer_exact_scenario_expectation_or_null_only_commit_ambiguity",
+  mutationObserved: "boolean_exact_scenario_expectation_or_null_only_commit_ambiguity",
   priorStateHash: "sha256_or_zero_hash_when_no_prior_state",
   resultingStateHash: "sha256_or_zero_hash_when_no_resulting_state",
   manualReviewRequired: "boolean_exact_scenario_expectation",
@@ -414,6 +418,214 @@ function validateEnvelope(value, spec, label) {
     issues.push(`${label}_canonicalization_failed`);
   }
   return issues;
+}
+
+function validateEvidenceContext(context) {
+  if (!isRecord(context) ||
+      !hasExactKeys(context, EVIDENCE_VALIDATION_CONTEXT_FIELDS)) {
+    return ["postgresql_evidence_context_fields_invalid"];
+  }
+  const issues = [];
+  for (const field of ["packageSummaryId", "testDatabaseGateId"]) {
+    if (!isSafeIdentity(context[field])) {
+      issues.push(`postgresql_evidence_context_id_invalid:${field}`);
+    }
+  }
+  for (const field of [
+    "packageSummaryHash", "testDatabaseGateHash",
+    "sanitizedDatabaseFingerprintHash",
+  ]) {
+    if (!isSha256(context[field])) {
+      issues.push(`postgresql_evidence_context_hash_invalid:${field}`);
+    }
+  }
+  return uniqueSorted(issues);
+}
+
+function observedAffectedRowsMatches(value, expected) {
+  if (typeof value === "string") {
+    return isSafeIdentity(value) && value === expected;
+  }
+  if (!Number.isSafeInteger(value) || value < 0) return false;
+  const numericExpectations = {
+    schema_package_created: 1,
+    zero_additional_schema_mutations: 0,
+    read_only: 0,
+    exactly_one: 1,
+    zero: 0,
+  };
+  return Object.hasOwn(numericExpectations, expected) &&
+    value === numericExpectations[expected];
+}
+
+function validatePostgresqlScenarioEvidence(value, context) {
+  const contextIssues = validateEvidenceContext(context);
+  const issues = [
+    ...contextIssues,
+    ...validateEnvelope(value, SPECS.scenarioEvidence, "scenario_evidence"),
+  ];
+  if (!isRecord(value) || contextIssues.length > 0) {
+    return uniqueSorted(issues);
+  }
+  if (value.packageSummaryId !== context.packageSummaryId ||
+      value.packageSummaryHash !== context.packageSummaryHash) {
+    issues.push("scenario_evidence_package_binding_mismatch");
+  }
+  if (value.testDatabaseGateId !== context.testDatabaseGateId ||
+      value.testDatabaseGateHash !== context.testDatabaseGateHash) {
+    issues.push("scenario_evidence_gate_binding_mismatch");
+  }
+  if (value.sanitizedDatabaseFingerprintHash !==
+      context.sanitizedDatabaseFingerprintHash) {
+    issues.push("scenario_evidence_fingerprint_binding_mismatch");
+  }
+  if (!Number.isSafeInteger(value.scenarioSequence) ||
+      value.scenarioSequence < 1 ||
+      value.scenarioSequence > FUTURE_SCENARIOS.length) {
+    issues.push("scenario_evidence_sequence_invalid");
+    return uniqueSorted(issues);
+  }
+  const expectation = FUTURE_SCENARIO_EXPECTATIONS[value.scenarioSequence - 1];
+  if (value.scenarioClass !== expectation.scenarioClass) {
+    issues.push("scenario_evidence_scenario_order_mismatch");
+  }
+  for (const field of [
+    "expectedResultCategory", "expectedAffectedRows", "winnerCount",
+    "mutationObserved", "manualReviewRequired",
+  ]) {
+    if (value[field] !== expectation[field]) {
+      issues.push(`scenario_evidence_expectation_mismatch:${field}`);
+    }
+  }
+  if (!isSafeIdentity(value.observedResultCategory) ||
+      value.observedResultCategory !== expectation.expectedResultCategory) {
+    issues.push("scenario_evidence_observed_result_category_invalid");
+  }
+  if (!observedAffectedRowsMatches(
+    value.observedAffectedRows, expectation.expectedAffectedRows,
+  )) {
+    issues.push("scenario_evidence_observed_affected_rows_invalid");
+  }
+  const ambiguity = expectation.scenarioClass ===
+    "commit_ambiguity_manual_review";
+  if (ambiguity) {
+    if (value.winnerCount !== null) {
+      issues.push("scenario_evidence_ambiguity_winner_count_invalid");
+    }
+    if (value.mutationObserved !== null) {
+      issues.push("scenario_evidence_ambiguity_mutation_observation_invalid");
+    }
+    if (value.manualReviewRequired !== true) {
+      issues.push("scenario_evidence_ambiguity_manual_review_invalid");
+    }
+  } else {
+    if (!Number.isSafeInteger(value.winnerCount) || value.winnerCount < 0) {
+      issues.push("scenario_evidence_winner_count_invalid");
+    }
+    if (typeof value.mutationObserved !== "boolean") {
+      issues.push("scenario_evidence_mutation_observation_invalid");
+    }
+    if (typeof value.manualReviewRequired !== "boolean" ||
+        value.manualReviewRequired !== expectation.manualReviewRequired) {
+      issues.push("scenario_evidence_manual_review_invalid");
+    }
+  }
+  for (const field of [
+    "priorStateHash", "resultingStateHash", "previousEvidenceHash",
+  ]) {
+    if (!isSha256(value[field])) {
+      issues.push(`scenario_evidence_state_hash_invalid:${field}`);
+    }
+  }
+  return uniqueSorted(issues);
+}
+
+function validatePostgresqlScenarioEvidenceChain(values, context) {
+  const issues = validateEvidenceContext(context);
+  if (!Array.isArray(values)) {
+    return uniqueSorted([...issues, "scenario_evidence_chain_not_array"]);
+  }
+  if (values.length !== FUTURE_SCENARIOS.length) {
+    issues.push("scenario_evidence_chain_count_invalid");
+  }
+  const sequences = new Set();
+  values.forEach((value, index) => {
+    const sequence = value?.scenarioSequence;
+    if (sequences.has(sequence)) {
+      issues.push(`scenario_evidence_chain_duplicate_sequence:${sequence}`);
+    }
+    sequences.add(sequence);
+    if (sequence !== index + 1) {
+      issues.push(`scenario_evidence_chain_sequence_not_contiguous:${index + 1}`);
+    }
+    issues.push(...validatePostgresqlScenarioEvidence(value, context));
+    const expectedPreviousHash = index === 0
+      ? ZERO_HASH
+      : values[index - 1]?.evidenceHash;
+    if (value?.previousEvidenceHash !== expectedPreviousHash) {
+      issues.push(`scenario_evidence_chain_previous_hash_mismatch:${index + 1}`);
+    }
+  });
+  return uniqueSorted(issues);
+}
+
+function validatePostgresqlRunEvidenceSummary(
+  summary, scenarioEvidence, context,
+) {
+  const chainIssues = validatePostgresqlScenarioEvidenceChain(
+    scenarioEvidence, context,
+  );
+  if (chainIssues.length > 0) {
+    return uniqueSorted([
+      "run_evidence_summary_chain_invalid",
+      ...chainIssues,
+    ]);
+  }
+  const issues = validateEnvelope(
+    summary, SPECS.runEvidenceSummary, "run_evidence_summary",
+  );
+  if (!isRecord(summary)) return uniqueSorted(issues);
+  if (summary.packageSummaryId !== context.packageSummaryId ||
+      summary.packageSummaryHash !== context.packageSummaryHash) {
+    issues.push("run_evidence_summary_package_binding_mismatch");
+  }
+  if (summary.testDatabaseGateId !== context.testDatabaseGateId ||
+      summary.testDatabaseGateHash !== context.testDatabaseGateHash) {
+    issues.push("run_evidence_summary_gate_binding_mismatch");
+  }
+  if (summary.exactScenarioCount !== FUTURE_SCENARIOS.length) {
+    issues.push("run_evidence_summary_count_invalid");
+  }
+  if (!exactArray(summary.scenarioOrder, FUTURE_SCENARIOS)) {
+    issues.push("run_evidence_summary_order_invalid");
+  }
+  if (summary.firstEvidenceHash !== scenarioEvidence[0].evidenceHash) {
+    issues.push("run_evidence_summary_first_hash_invalid");
+  }
+  if (summary.lastEvidenceHash !==
+      scenarioEvidence[scenarioEvidence.length - 1].evidenceHash) {
+    issues.push("run_evidence_summary_last_hash_invalid");
+  }
+  if (summary.hashChainValidationRequired !== true) {
+    issues.push("run_evidence_summary_hash_chain_validation_invalid");
+  }
+  if (summary.allEvidenceComplete !== true) {
+    issues.push("run_evidence_summary_completeness_invalid");
+  }
+  if (summary.rawMaterialForbidden !== true) {
+    issues.push("run_evidence_summary_raw_material_boundary_invalid");
+  }
+  for (const field of ["executionOccurred", "databaseConnected"]) {
+    if (typeof summary[field] !== "boolean") {
+      issues.push(`run_evidence_summary_observation_invalid:${field}`);
+    }
+  }
+  for (const field of FIXED_FALSE_FIELDS) {
+    if (summary[field] !== false) {
+      issues.push(`run_evidence_summary_fixed_false_invalid:${field}`);
+    }
+  }
+  return uniqueSorted(issues);
 }
 
 function buildUpstreamArtifacts() {
@@ -1139,6 +1351,9 @@ module.exports = {
   validateIntrospectionSpec,
   validateMigrationSpec,
   validatePackageSummary,
+  validatePostgresqlRunEvidenceSummary,
+  validatePostgresqlScenarioEvidence,
+  validatePostgresqlScenarioEvidenceChain,
   validateQuerySpec,
   validateTestDatabaseGate,
   validateUpstreamArtifacts,
