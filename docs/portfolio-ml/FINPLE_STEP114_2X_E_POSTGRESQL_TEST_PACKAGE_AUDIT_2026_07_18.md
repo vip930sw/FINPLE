@@ -49,5 +49,5 @@ No database, Redis, object store, Supabase, cloud provider, or network connectio
 - `npm.cmd run check:scenario-metrics`: 80 passed, 0 failed.
 - `npm.cmd run build`: passed; only the existing bundle-size advisory was emitted.
 - `npm.cmd run check:ai-production`: passed. The sandboxed attempt was denied network access; the approved network run passed all smoke checks.
-- Diff checks: passed before staging and will be repeated on the staged patch.
-- Clean-head repository-wide `node --test --test-reporter=dot` with a 120-second bound: pending.
+- Diff checks: passed for both the unstaged and staged patch.
+- Clean-head repository-wide `node --test --test-reporter=dot` with a 120-second bound: timed out after emitting one actual failure marker. The failing test was reproduced independently as the unrelated existing `Step228 checker passes and leaves working tree unchanged` test: 4 tests passed and 1 failed because `snapshot format is not canonical`. The historical Step228 checker and snapshot were not modified.
