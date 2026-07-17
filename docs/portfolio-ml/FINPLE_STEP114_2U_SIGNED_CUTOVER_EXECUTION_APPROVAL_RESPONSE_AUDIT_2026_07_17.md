@@ -45,10 +45,13 @@ Both JSON files use the descriptor-atomic read boundary established by the prior
 - post-read `lstat` and canonical path observation
 - regular-file, non-symlink, canonical-path, file-identity, size, and byte-length checks
 - strict UTF-8 and exact JSON contract parsing
+- bounded duplicate decoded-key scanning before whole-document `JSON.parse`
 
 The response limit is 1 MiB and the allowlist limit is 4 MiB. Observations A and B must have exactly equal canonical paths, raw bytes, SHA-256 values, byte sizes, identity-support states, and supported file identities.
 
 Absolute paths, raw bytes, identities, signatures, public keys, and allowlist contents are not returned.
+
+The duplicate-key scanner walks every object scope, including objects nested in arrays, with a maximum nesting depth of 128. Each object owns an independent decoded-key set, so equal keys in sibling objects are valid while literal and escaped-equivalent duplicates in the same object block. Failed observations expose neither raw bytes nor duplicate key text.
 
 ## Step 114-2T request binding
 
@@ -60,6 +63,8 @@ The requests must be exactly equal for request ID/hash, bundle hash, repository 
 
 The response accepts only the exact contract fields and fixed approval scope, decision, signature algorithm, and eight attestations. Its deterministic ID uses the domain `FINPLE_STEP114_2U_APPROVAL_RESPONSE_ID\0` and binds request ID/hash, signer key/identity, and issuance/expiry instants.
 
+Signed response `issuedAt` and `expiresAt` values must use canonical UTC millisecond form `YYYY-MM-DDTHH:mm:ss.sssZ`. Validation enforces real Gregorian calendar dates, leap-year rules, component ranges, exactly three fractional digits, and exact `toISOString()` round-trip equality. Operator-bundle `evaluationNow` retains the shared Step 114-2S parsing boundary.
+
 The signature payload is the domain `FINPLE_STEP114_2U_APPROVAL_SIGNATURE\0` followed by canonical JSON for the complete response excluding only `signatureBase64`. Verification accepts canonical base64 containing exactly 64 signature bytes and uses only the single resolved Ed25519 SPKI allowlist key. The service never generates a key, reads a private key, or signs a payload.
 
 ## Time policy
@@ -68,13 +73,12 @@ Only the internally parsed operator bundle's `evaluationNow` is trusted. The imp
 
 It requires exact millisecond ordering:
 
-- `issuedAt <= evaluationNow`
+- `issuedAt <= evaluationNow + 60 seconds`
 - `evaluationNow < expiresAt`
 - `expiresAt > issuedAt`
-- age no greater than 30 minutes
-- future skew no greater than 60 seconds, while the stricter no-future issuance rule remains authoritative
+- `evaluationNow - issuedAt <= 30 minutes`
 
-Malformed, stale, expired, future, or conflicting timestamps block.
+Malformed, stale, expired, more-than-60-second-future, or conflicting timestamps block. A response issued up to exactly 60 seconds after the trusted evaluation instant is permitted; 60.001 seconds is blocked.
 
 ## Approver separation and allowlist
 
@@ -114,11 +118,11 @@ No selector, overlay CSV, target CSV, loader, pointer, scenario monthly return, 
 
 The implementation passed:
 
-- Step 114-2U focused suite: 32 tests
+- Step 114-2U focused suite: 53 tests
 - real production-default Step 114-2T A/B integration and actual Step 114-2U CLI
-- Step 114-2T and 2U compatibility suite: 118 tests
-- Step 114-2Q through 2U combined suite: 326 tests
-- Step 114-2N through 2U combined suite: 530 tests
+- Step 114-2T and 2U compatibility suite: 139 tests
+- Step 114-2Q through 2U combined suite: 347 tests
+- Step 114-2N through 2U combined suite: 551 tests
 - Step 114-2M Python candidate-package suite: 16 tests
 - Python metrics discovery suite: 48 tests
 - `npm.cmd run check:scenario-metrics`: 80 tests

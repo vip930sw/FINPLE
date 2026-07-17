@@ -37,6 +37,7 @@ const {
   buildMetricsCutoverExecutionApprovalVerificationReceipt,
   hashMetricsCutoverExecutionApprovalResponse,
   normalizeExecutionApproverAllowlist,
+  readMetricsCutoverExecutionApproverAllowlistObservation,
   readMetricsCutoverExecutionApprovalResponseObservation,
   recomputeMetricsCutoverExecutionApprovalResponseId,
   runMetricsCutoverExecutionApprovalResponseVerification,
@@ -357,14 +358,11 @@ test("signature, signer resolution, scope, role, revocation, and key type fail c
   }
 });
 
-test("request binding and exact evaluationNow time policy fail closed", async (t) => {
+test("request binding remains exact", async (t) => {
   const setup = await unitSetup();
   const cases = [
     ["request hash", { requestHash: "9".repeat(64) }, "approval_response_request_identity_mismatch:requestHash"],
     ["head", { repositoryHeadSha: "9".repeat(40) }, "approval_response_request_identity_mismatch:repositoryHeadSha"],
-    ["future", { issuedAt: "2026-07-17T01:00:00.001Z" }, "approval_response_issued_in_future"],
-    ["expired", { expiresAt: EVALUATION_NOW }, "approval_response_expired"],
-    ["stale", { issuedAt: "2026-07-17T00:29:59.999Z" }, "approval_response_stale"],
   ];
   for (const [name, overrides, issue] of cases) {
     await t.test(name, async () => {
@@ -375,6 +373,88 @@ test("request binding and exact evaluationNow time policy fail closed", async (t
       assertSuppressed(result);
     });
   }
+});
+
+test("future skew and response age boundaries use exact milliseconds", async (t) => {
+  const setup = await unitSetup();
+  for (const [name, overrides] of [
+    ["evaluationNow plus 1ms", { issuedAt: "2026-07-17T01:00:00.001Z" }],
+    ["evaluationNow plus 60 seconds", { issuedAt: "2026-07-17T01:01:00.000Z" }],
+    ["evaluationNow minus 30 minutes", { issuedAt: "2026-07-17T00:30:00.000Z" }],
+  ]) {
+    await t.test(name, async () => {
+      const response = signedResponse(
+        setup.requestResult.approvalRequest,
+        setup.approver,
+        overrides,
+      );
+      const result = await runUnit(setup, { response });
+      assert.equal(result.status, "approval_verified", result.blockingIssues.join(","));
+      assertFixedFalse(result);
+    });
+  }
+  for (const [name, overrides, issue] of [
+    ["evaluationNow plus 60.001 seconds", { issuedAt: "2026-07-17T01:01:00.001Z" }, "approval_response_future_skew_exceeded"],
+    ["evaluationNow minus 30 minutes minus 1ms", { issuedAt: "2026-07-17T00:29:59.999Z" }, "approval_response_stale"],
+    ["evaluationNow equals expiresAt", { expiresAt: EVALUATION_NOW }, "approval_response_expired"],
+    ["expiresAt equals issuedAt", { issuedAt: "2026-07-17T01:00:00.001Z", expiresAt: "2026-07-17T01:00:00.001Z" }, "approval_response_expiry_order_invalid"],
+  ]) {
+    await t.test(name, async () => {
+      const response = signedResponse(
+        setup.requestResult.approvalRequest,
+        setup.approver,
+        overrides,
+      );
+      const result = await runUnit(setup, { response });
+      assert.equal(result.status, "blocked");
+      assert.ok(result.blockingIssues.includes(issue), result.blockingIssues.join(","));
+      assertSuppressed(result);
+    });
+  }
+});
+
+test("signed response timestamps require real canonical UTC millisecond instants", async (t) => {
+  const setup = await unitSetup();
+  const validLeapDay = signedResponse(
+    setup.requestResult.approvalRequest,
+    setup.approver,
+    {
+      issuedAt: "2024-02-29T00:00:00.000Z",
+      expiresAt: "2024-03-01T00:00:00.000Z",
+    },
+  );
+  assert.equal(
+    validateMetricsCutoverExecutionApprovalResponse(validLeapDay).ok,
+    true,
+  );
+  for (const [name, timestamp] of [
+    ["nonexistent February day", "2026-02-30T00:00:00.000Z"],
+    ["non-leap February 29", "2025-02-29T00:00:00.000Z"],
+    ["nonexistent April day", "2026-04-31T00:00:00.000Z"],
+    ["timezone alias", "2026-07-17T00:50:00.000+00:00"],
+    ["two fractional digits", "2026-07-17T00:50:00.00Z"],
+    ["four fractional digits", "2026-07-17T00:50:00.0000Z"],
+  ]) {
+    await t.test(name, () => {
+      const response = { ...setup.response, issuedAt: timestamp };
+      const validation = validateMetricsCutoverExecutionApprovalResponse(response);
+      assert.equal(validation.ok, false);
+      assert.ok(
+        validation.issues.includes("approval_response_issued_at_invalid"),
+        validation.issues.join(","),
+      );
+    });
+  }
+  const noncanonicalExpiry = {
+    ...setup.response,
+    expiresAt: "2026-07-17T01:10:00Z",
+  };
+  const expiryValidation =
+    validateMetricsCutoverExecutionApprovalResponse(noncanonicalExpiry);
+  assert.equal(expiryValidation.ok, false);
+  assert.ok(
+    expiryValidation.issues.includes("approval_response_expires_at_invalid"),
+  );
 });
 
 test("exact response shape, attestations, canonical signature encoding, and response ID are enforced", async (t) => {
@@ -499,6 +579,102 @@ test("one descriptor observation blocks path, descriptor, symlink, size, encodin
   const oversized = readMetricsCutoverExecutionApprovalResponseObservation("x", { fs: atomicFs(Buffer.alloc(MAX_RESPONSE_BYTES + 1)) });
   assert.ok(oversized.blockingIssues.includes("approval_response_input_size_invalid"));
   assert.equal(MAX_ALLOWLIST_BYTES, 4 * 1024 * 1024);
+});
+
+function observeRawJson(text, kind) {
+  const bytes = Buffer.from(text, "utf8");
+  const options = { fs: atomicFs(bytes) };
+  return kind === "allowlist"
+    ? readMetricsCutoverExecutionApproverAllowlistObservation("x", options)
+    : readMetricsCutoverExecutionApprovalResponseObservation("x", options);
+}
+
+test("raw JSON duplicate keys block in every response object scope", async (t) => {
+  const setup = await unitSetup();
+  const raw = JSON.stringify(setup.response);
+  const requestHashPair = `"requestHash":"${setup.response.requestHash}"`;
+  const signerIdPair = `"signerId":"${setup.response.signerId}"`;
+  const cases = [
+    [
+      "decision",
+      raw.replace(
+        '"decision":"approved"',
+        '"decision":"approved","decision":"approved"',
+      ),
+    ],
+    [
+      "requestHash",
+      raw.replace(requestHashPair, `${requestHashPair},${requestHashPair}`),
+    ],
+    [
+      "attestation",
+      raw.replace(
+        '"requestReviewed":true',
+        '"requestReviewed":true,"requestReviewed":true',
+      ),
+    ],
+    [
+      "escaped-equivalent signerId",
+      raw.replace(
+        signerIdPair,
+        `${signerIdPair},"signer\\u0049d":"${setup.response.signerId}"`,
+      ),
+    ],
+  ];
+  for (const [name, duplicateRaw] of cases) {
+    await t.test(name, () => {
+      const result = observeRawJson(duplicateRaw, "response");
+      assert.equal(result.ok, false);
+      assert.deepEqual(result.blockingIssues, [
+        "approval_response_duplicate_json_object_key",
+      ]);
+      assert.equal(result.value, null);
+      assert.equal(Object.hasOwn(result, "bytes"), false);
+    });
+  }
+});
+
+test("raw JSON duplicate keys block in allowlist root and entry objects", async (t) => {
+  const setup = await unitSetup();
+  const raw = JSON.stringify(setup.allowlist);
+  const entriesJson = JSON.stringify(setup.allowlist.entries);
+  const keyPair = `"signerKeyId":"${setup.approver.entry.signerKeyId}"`;
+  const cases = [
+    [
+      "entries",
+      `{"contractVersion":"${EXECUTION_APPROVER_ALLOWLIST_CONTRACT_VERSION}","entries":${entriesJson},"entries":${entriesJson}}`,
+    ],
+    [
+      "entry signerKeyId",
+      raw.replace(keyPair, `${keyPair},${keyPair}`),
+    ],
+  ];
+  for (const [name, duplicateRaw] of cases) {
+    await t.test(name, () => {
+      const result = observeRawJson(duplicateRaw, "allowlist");
+      assert.equal(result.ok, false);
+      assert.deepEqual(result.blockingIssues, [
+        "approver_allowlist_duplicate_json_object_key",
+      ]);
+      assert.equal(result.value, null);
+      assert.equal(Object.hasOwn(result, "bytes"), false);
+    });
+  }
+});
+
+test("the same decoded key in different sibling objects remains valid", async () => {
+  const setup = await unitSetup();
+  const second = makeApprover({
+    signerKeyId: "second-execution-approver-key",
+    signerId: "second-execution-approver",
+  });
+  const allowlist = {
+    contractVersion: EXECUTION_APPROVER_ALLOWLIST_CONTRACT_VERSION,
+    entries: [setup.approver.entry, second.entry],
+  };
+  const result = observeRawJson(JSON.stringify(allowlist), "allowlist");
+  assert.equal(result.ok, true, result.blockingIssues.join(","));
+  assert.equal(result.value.entries.length, 2);
 });
 
 test("CLI accepts exactly four flags, emits one JSON line, and maps 0/1/2", async () => {

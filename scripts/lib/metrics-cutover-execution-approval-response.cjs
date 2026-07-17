@@ -42,6 +42,7 @@ const MAX_RESPONSE_BYTES = 1024 * 1024;
 const MAX_ALLOWLIST_BYTES = 4 * 1024 * 1024;
 const MAX_RESPONSE_AGE_MS = 30 * 60 * 1000;
 const MAX_FUTURE_SKEW_MS = 60 * 1000;
+const MAX_JSON_NESTING_DEPTH = 128;
 
 const RESPONSE_FIELDS = Object.freeze([
   "contractVersion",
@@ -161,6 +162,169 @@ function hasExactKeys(value, expectedFields) {
   );
 }
 
+function parseCanonicalUtcMillisecondInstant(value) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d\.\d{3}Z$/.test(
+      value,
+    )
+  ) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.toISOString() !== value
+  ) {
+    return null;
+  }
+  return parsed;
+}
+
+function scanJsonForDuplicateObjectKeys(
+  text,
+  { maxDepth = MAX_JSON_NESTING_DEPTH } = {},
+) {
+  if (
+    typeof text !== "string" ||
+    !Number.isInteger(maxDepth) ||
+    maxDepth < 1 ||
+    maxDepth > MAX_JSON_NESTING_DEPTH
+  ) {
+    return { ok: false, duplicateKey: false, issue: "invalid_json" };
+  }
+  let index = 0;
+  const skipWhitespace = () => {
+    while (index < text.length && /[\u0009\u000a\u000d\u0020]/.test(text[index])) {
+      index += 1;
+    }
+  };
+  const parseString = () => {
+    if (text[index] !== '"') throw new SyntaxError("string_expected");
+    const start = index;
+    index += 1;
+    while (index < text.length) {
+      const code = text.charCodeAt(index);
+      if (code === 0x22) {
+        index += 1;
+        return JSON.parse(text.slice(start, index));
+      }
+      if (code < 0x20) throw new SyntaxError("control_character");
+      if (code === 0x5c) {
+        index += 1;
+        if (index >= text.length) throw new SyntaxError("escape_truncated");
+        if (text[index] === "u") {
+          if (!/^[a-fA-F0-9]{4}$/.test(text.slice(index + 1, index + 5))) {
+            throw new SyntaxError("unicode_escape_invalid");
+          }
+          index += 5;
+          continue;
+        }
+        if (!/["\\/bfnrt]/.test(text[index])) {
+          throw new SyntaxError("escape_invalid");
+        }
+      }
+      index += 1;
+    }
+    throw new SyntaxError("string_unterminated");
+  };
+  const parseNumber = () => {
+    const match = text
+      .slice(index)
+      .match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/);
+    if (!match) throw new SyntaxError("number_invalid");
+    index += match[0].length;
+  };
+  const parseValue = (depth) => {
+    if (depth > maxDepth) throw new RangeError("json_nesting_exceeded");
+    skipWhitespace();
+    if (text[index] === "{") {
+      index += 1;
+      skipWhitespace();
+      const keys = new Set();
+      if (text[index] === "}") {
+        index += 1;
+        return;
+      }
+      while (index < text.length) {
+        const key = parseString();
+        if (keys.has(key)) {
+          const error = new SyntaxError("duplicate_json_object_key");
+          error.duplicateKey = true;
+          throw error;
+        }
+        keys.add(key);
+        skipWhitespace();
+        if (text[index] !== ":") throw new SyntaxError("colon_expected");
+        index += 1;
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[index] === "}") {
+          index += 1;
+          return;
+        }
+        if (text[index] !== ",") throw new SyntaxError("comma_expected");
+        index += 1;
+        skipWhitespace();
+      }
+      throw new SyntaxError("object_unterminated");
+    }
+    if (text[index] === "[") {
+      index += 1;
+      skipWhitespace();
+      if (text[index] === "]") {
+        index += 1;
+        return;
+      }
+      while (index < text.length) {
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[index] === "]") {
+          index += 1;
+          return;
+        }
+        if (text[index] !== ",") throw new SyntaxError("comma_expected");
+        index += 1;
+      }
+      throw new SyntaxError("array_unterminated");
+    }
+    if (text[index] === '"') {
+      parseString();
+      return;
+    }
+    if (text.startsWith("true", index)) {
+      index += 4;
+      return;
+    }
+    if (text.startsWith("false", index)) {
+      index += 5;
+      return;
+    }
+    if (text.startsWith("null", index)) {
+      index += 4;
+      return;
+    }
+    parseNumber();
+  };
+  try {
+    parseValue(1);
+    skipWhitespace();
+    if (index !== text.length) throw new SyntaxError("trailing_json");
+    return { ok: true, duplicateKey: false, issue: "" };
+  } catch (error) {
+    return {
+      ok: false,
+      duplicateKey: error?.duplicateKey === true,
+      issue:
+        error?.duplicateKey === true
+          ? "duplicate_json_object_key"
+          : error instanceof RangeError
+            ? "json_nesting_exceeded"
+            : "invalid_json",
+    };
+  }
+}
+
 function canonicalJson(value) {
   if (value === null) return "null";
   if (typeof value === "string") return JSON.stringify(value);
@@ -278,10 +442,10 @@ function validateResponseShape(value, { skipSignature = false } = {}) {
   if (value.decision !== "approved") {
     issues.push("approval_response_decision_mismatch");
   }
-  if (!parseIsoInstant(value.issuedAt)) {
+  if (!parseCanonicalUtcMillisecondInstant(value.issuedAt)) {
     issues.push("approval_response_issued_at_invalid");
   }
-  if (!parseIsoInstant(value.expiresAt)) {
+  if (!parseCanonicalUtcMillisecondInstant(value.expiresAt)) {
     issues.push("approval_response_expires_at_invalid");
   }
   if (!isNonEmptyString(value.signerKeyId)) {
@@ -330,8 +494,8 @@ function validateResponseTime(value, evaluationNow, issues) {
     evaluationNow instanceof Date
       ? new Date(evaluationNow.getTime())
       : parseIsoInstant(evaluationNow);
-  const issuedAt = parseIsoInstant(value.issuedAt);
-  const expiresAt = parseIsoInstant(value.expiresAt);
+  const issuedAt = parseCanonicalUtcMillisecondInstant(value.issuedAt);
+  const expiresAt = parseCanonicalUtcMillisecondInstant(value.expiresAt);
   if (!evaluation || !issuedAt || !expiresAt) {
     issues.push("approval_response_time_policy_input_invalid");
     return;
@@ -341,9 +505,6 @@ function validateResponseTime(value, evaluationNow, issues) {
   const expiresMs = expiresAt.getTime();
   if (expiresMs <= issuedMs) {
     issues.push("approval_response_expiry_order_invalid");
-  }
-  if (issuedMs > nowMs) {
-    issues.push("approval_response_issued_in_future");
   }
   if (issuedMs - nowMs > MAX_FUTURE_SKEW_MS) {
     issues.push("approval_response_future_skew_exceeded");
@@ -544,6 +705,14 @@ function parseJsonBytes(bytes, kind) {
     text = decoder.decode(bytes);
   } catch {
     return { ok: false, value: null, issues: ["invalid_utf8"] };
+  }
+  const duplicateKeyScan = scanJsonForDuplicateObjectKeys(text);
+  if (!duplicateKeyScan.ok) {
+    return {
+      ok: false,
+      value: null,
+      issues: [duplicateKeyScan.issue],
+    };
   }
   let value;
   try {
@@ -1141,6 +1310,7 @@ module.exports = {
   FIXED_FALSE_FIELDS,
   MAX_ALLOWLIST_BYTES,
   MAX_FUTURE_SKEW_MS,
+  MAX_JSON_NESTING_DEPTH,
   MAX_RESPONSE_AGE_MS,
   MAX_RESPONSE_BYTES,
   RESPONSE_FIELDS,
@@ -1157,5 +1327,7 @@ module.exports = {
   recomputeMetricsCutoverExecutionApprovalResponseId,
   runMetricsCutoverExecutionApprovalResponseVerification,
   safeResult,
+  scanJsonForDuplicateObjectKeys,
+  parseCanonicalUtcMillisecondInstant,
   validateMetricsCutoverExecutionApprovalResponse,
 };
