@@ -9,10 +9,13 @@ const {
   EVENT_OPERATIONS,
   FIXED_FALSE_FIELDS,
   REPOSITORY_LOCK_ADAPTER_METHODS,
+  REPOSITORY_LOCK_RELEASE_FIELDS,
   SYNTHETIC_ADAPTER_ATTESTATION,
+  buildRepositoryLockAdapterProtocol,
   runMetricsCutoverAdapterConformance,
   validateConformanceLedger,
   validateConformanceSummary,
+  validateRepositoryLockAdapterProtocol,
 } = require("./lib/metrics-cutover-adapter-conformance.cjs");
 const {
   createSyntheticClaimStoreAdapter,
@@ -51,15 +54,22 @@ function barrier(parties, point) {
   };
 }
 
-function claimAcquireInput(receiptIdentityHash = SHA.receipt) {
+function claimAcquireInput(
+  receiptIdentityHash = SHA.receipt,
+  receiptBindingHash = SHA.binding,
+) {
   return {
     receiptIdentityHash,
-    receiptBindingHash: SHA.binding,
+    receiptBindingHash,
     testClockInstant: TIME.acquire,
   };
 }
 
-function lockAcquireInput(repositoryIdentityHash = SHA.repository) {
+function lockAcquireInput(
+  repositoryIdentityHash = SHA.repository,
+  receiptIdentityHash = SHA.receipt,
+  receiptBindingHash = SHA.binding,
+) {
   return {
     repositoryIdentityHash,
     repositoryHeadSha: "9".repeat(40),
@@ -67,12 +77,20 @@ function lockAcquireInput(repositoryIdentityHash = SHA.repository) {
     repositoryBranchName: "synthetic-conformance-fixture",
     trackedPathsSha256: SHA.tracked,
     ownerLivenessHash: SHA.owner,
+    receiptIdentityHash,
+    receiptBindingHash,
     testClockInstant: TIME.acquire,
   };
 }
 
-async function terminalClaim(claimStore, receiptIdentityHash = SHA.receipt) {
-  const acquired = await claimStore.adapter.acquireClaim(claimAcquireInput(receiptIdentityHash));
+async function terminalClaim(
+  claimStore,
+  receiptIdentityHash = SHA.receipt,
+  receiptBindingHash = SHA.binding,
+) {
+  const acquired = await claimStore.adapter.acquireClaim(
+    claimAcquireInput(receiptIdentityHash, receiptBindingHash),
+  );
   assert.equal(acquired.ok, true);
   const terminal = await claimStore.adapter.transitionClaimTerminal({
     receiptIdentityHash,
@@ -85,6 +103,21 @@ async function terminalClaim(claimStore, receiptIdentityHash = SHA.receipt) {
   });
   assert.equal(terminal.ok, true);
   return terminal.claim;
+}
+
+function lockReleaseInput(lock, claim, overrides = {}) {
+  return {
+    repositoryIdentityHash: lock.repositoryIdentityHash,
+    expectedState: "lock_held",
+    expectedVersion: lock.version,
+    expectedLockHash: lock.lockHash,
+    expectedTerminalClaimHash: claim.claimHash,
+    expectedReceiptIdentityHash: lock.receiptIdentityHash,
+    expectedReceiptBindingHash: lock.receiptBindingHash,
+    terminalClaim: claim,
+    testClockInstant: TIME.release,
+    ...overrides,
+  };
 }
 
 function assertFixedFalse(result) {
@@ -129,6 +162,12 @@ test("repository lock adapter exposes the exact immutable protocol method set", 
   assert.equal(Object.isFrozen(adapter), true);
 });
 
+test("repository lock protocol publishes the exact terminal-bound release input", () => {
+  const protocol = buildRepositoryLockAdapterProtocol();
+  assert.deepEqual(protocol.releaseInputFields, REPOSITORY_LOCK_RELEASE_FIELDS);
+  assert.deepEqual(validateRepositoryLockAdapterProtocol(protocol), []);
+});
+
 test("extra adapter method is rejected before orchestration", async () => {
   const claimStore = createSyntheticClaimStoreAdapter();
   const lockStore = createSyntheticRepositoryLockAdapter();
@@ -158,6 +197,26 @@ test("non-synthetic adapter attestation is rejected", async () => {
   );
   assert.equal(result.status, "blocked");
   assert.ok(result.blockingIssues.includes("claim_store_adapter_forbidden_access:providerAccess"));
+});
+
+test("an extra callable symbol is rejected before orchestration", async () => {
+  const claimStore = createSyntheticClaimStoreAdapter();
+  const lockStore = createSyntheticRepositoryLockAdapter();
+  const invalid = { ...claimStore.adapter };
+  Object.defineProperty(invalid, SYNTHETIC_ADAPTER_ATTESTATION, {
+    value: claimStore.adapter[SYNTHETIC_ADAPTER_ATTESTATION],
+  });
+  Object.defineProperty(invalid, Symbol("unexpected-callable"), {
+    value() {},
+  });
+  const result = await runMetricsCutoverAdapterConformance(
+    { scenario: buildSyntheticConformanceScenario() },
+    { claimStoreAdapter: invalid, repositoryLockAdapter: lockStore.adapter },
+  );
+  assert.equal(result.status, "blocked");
+  assert.ok(result.blockingIssues.includes("claim_store_adapter_symbol_set_invalid"));
+  assert.equal(claimStore.diagnostics.mutationCount, 0);
+  assert.equal(lockStore.diagnostics.mutationCount, 0);
 });
 
 test("claim evidence must bind the exact scenario receipt", async () => {
@@ -246,6 +305,55 @@ test("concurrent terminal transition has exactly one winner", async () => {
   assert.equal(store.diagnostics.mutationCount, 2);
 });
 
+test("claim identity and immutable receipt fields survive terminal transition", async () => {
+  const store = createSyntheticClaimStoreAdapter();
+  const acquired = await store.adapter.acquireClaim(claimAcquireInput());
+  const terminal = await store.adapter.transitionClaimTerminal({
+    receiptIdentityHash: SHA.receipt,
+    expectedState: "claim_in_progress",
+    expectedVersion: acquired.claim.version,
+    expectedClaimHash: acquired.claim.claimHash,
+    terminalState: "consumed_success",
+    terminalEvidenceHash: SHA.evidence,
+    testClockInstant: TIME.terminal,
+  });
+  assert.equal(terminal.ok, true);
+  assert.equal(acquired.claim.claimId, terminal.claim.claimId);
+  assert.notEqual(acquired.claim.claimHash, terminal.claim.claimHash);
+  assert.equal(acquired.claim.createdAt, terminal.claim.createdAt);
+  assert.equal(acquired.claim.receiptIdentityHash, terminal.claim.receiptIdentityHash);
+  assert.equal(acquired.claim.receiptBindingHash, terminal.claim.receiptBindingHash);
+  assert.deepEqual(validateSyntheticClaimRecord(acquired.claim), []);
+  assert.deepEqual(validateSyntheticClaimRecord(terminal.claim), []);
+});
+
+test("claim terminal time must be strictly after creation without mutation", async (t) => {
+  for (const [label, testClockInstant] of [
+    ["equal", TIME.acquire],
+    ["earlier", "2026-07-17T00:59:59.999Z"],
+  ]) {
+    await t.test(label, async () => {
+      const store = createSyntheticClaimStoreAdapter();
+      const acquired = await store.adapter.acquireClaim(claimAcquireInput());
+      const result = await store.adapter.transitionClaimTerminal({
+        receiptIdentityHash: SHA.receipt,
+        expectedState: "claim_in_progress",
+        expectedVersion: acquired.claim.version,
+        expectedClaimHash: acquired.claim.claimHash,
+        terminalState: "consumed_success",
+        terminalEvidenceHash: SHA.evidence,
+        testClockInstant,
+      });
+      assert.equal(result.status, "blocked");
+      assert.ok(result.blockingIssues.includes("claim_terminal_time_not_after_created_at"));
+      assert.equal(store.diagnostics.mutationCount, 1);
+      const current = await store.adapter.readClaim({ receiptIdentityHash: SHA.receipt });
+      assert.equal(current.claim.state, "claim_in_progress");
+      assert.equal(current.claim.claimHash, acquired.claim.claimHash);
+    });
+  }
+});
+
 test("stale claim state version or hash cannot transition", async () => {
   const store = createSyntheticClaimStoreAdapter();
   const acquired = await store.adapter.acquireClaim(claimAcquireInput());
@@ -285,11 +393,9 @@ test("lock release before terminal claim persistence is rejected", async () => {
   const lockStore = createSyntheticRepositoryLockAdapter();
   const claim = await claimStore.adapter.acquireClaim(claimAcquireInput());
   const lock = await lockStore.adapter.acquireLock(lockAcquireInput());
-  const result = await lockStore.adapter.releaseLock({
-    repositoryIdentityHash: SHA.repository, expectedState: "lock_held",
-    expectedVersion: 1, expectedLockHash: lock.lock.lockHash,
-    terminalClaim: claim.claim, testClockInstant: TIME.release,
-  });
+  const result = await lockStore.adapter.releaseLock(
+    lockReleaseInput(lock.lock, claim.claim),
+  );
   assert.equal(result.status, "terminal_claim_required");
   assert.equal(lockStore.diagnostics.mutationCount, 1);
 });
@@ -300,11 +406,9 @@ test("tampered terminal evidence cannot release a lock", async () => {
   const claim = await terminalClaim(claimStore);
   const lock = await lockStore.adapter.acquireLock(lockAcquireInput());
   const tampered = { ...claim, terminalEvidenceHash: "f".repeat(64) };
-  const result = await lockStore.adapter.releaseLock({
-    repositoryIdentityHash: SHA.repository, expectedState: "lock_held",
-    expectedVersion: 1, expectedLockHash: lock.lock.lockHash,
-    terminalClaim: tampered, testClockInstant: TIME.release,
-  });
+  const result = await lockStore.adapter.releaseLock(
+    lockReleaseInput(lock.lock, tampered),
+  );
   assert.equal(result.status, "terminal_claim_required");
   assert.equal(lockStore.diagnostics.mutationCount, 1);
 });
@@ -314,11 +418,9 @@ test("lock release requires fresh expected state version and hash", async () => 
   const lockStore = createSyntheticRepositoryLockAdapter();
   const claim = await terminalClaim(claimStore);
   const lock = await lockStore.adapter.acquireLock(lockAcquireInput());
-  const result = await lockStore.adapter.releaseLock({
-    repositoryIdentityHash: SHA.repository, expectedState: "lock_held",
-    expectedVersion: 2, expectedLockHash: lock.lock.lockHash,
-    terminalClaim: claim, testClockInstant: TIME.release,
-  });
+  const result = await lockStore.adapter.releaseLock(
+    lockReleaseInput(lock.lock, claim, { expectedVersion: 2 }),
+  );
   assert.equal(result.status, "stale_repository_lock");
   assert.equal(lockStore.diagnostics.mutationCount, 1);
 });
@@ -337,16 +439,100 @@ test("released lock persists and repeated release cannot mutate", async () => {
   const lockStore = createSyntheticRepositoryLockAdapter();
   const claim = await terminalClaim(claimStore);
   const acquired = await lockStore.adapter.acquireLock(lockAcquireInput());
-  const input = {
-    repositoryIdentityHash: SHA.repository, expectedState: "lock_held",
-    expectedVersion: 1, expectedLockHash: acquired.lock.lockHash,
-    terminalClaim: claim, testClockInstant: TIME.release,
-  };
+  const input = lockReleaseInput(acquired.lock, claim);
   const released = await lockStore.adapter.releaseLock(input);
   const repeated = await lockStore.adapter.releaseLock(input);
   assert.equal(released.ok, true);
   assert.equal(repeated.status, "stale_repository_lock");
   assert.equal(lockStore.diagnostics.mutationCount, 2);
+});
+
+test("lock identity and immutable acquisition bindings survive release", async () => {
+  const claimStore = createSyntheticClaimStoreAdapter();
+  const lockStore = createSyntheticRepositoryLockAdapter();
+  const claim = await terminalClaim(claimStore);
+  const acquired = await lockStore.adapter.acquireLock(lockAcquireInput());
+  const released = await lockStore.adapter.releaseLock(
+    lockReleaseInput(acquired.lock, claim),
+  );
+  assert.equal(released.ok, true);
+  assert.equal(acquired.lock.lockId, released.lock.lockId);
+  assert.notEqual(acquired.lock.lockHash, released.lock.lockHash);
+  for (const field of [
+    "repositoryIdentityHash", "repositoryHeadSha", "repositoryTreeSha",
+    "repositoryBranchName", "trackedPathsSha256", "ownerLivenessHash",
+    "receiptIdentityHash", "receiptBindingHash", "acquiredAt",
+  ]) assert.equal(acquired.lock[field], released.lock[field], field);
+  assert.deepEqual(validateSyntheticRepositoryLockRecord(acquired.lock), []);
+  assert.deepEqual(validateSyntheticRepositoryLockRecord(released.lock), []);
+});
+
+test("terminal claim release binding rejects unrelated or mismatched evidence without mutation", async (t) => {
+  const cases = [
+    {
+      label: "unrelated valid terminal claim",
+      createClaim: (store) => terminalClaim(store, "e".repeat(64), "f".repeat(64)),
+      override: {},
+    },
+    {
+      label: "wrong receipt identity",
+      createClaim: (store) => terminalClaim(store),
+      override: { expectedReceiptIdentityHash: "e".repeat(64) },
+    },
+    {
+      label: "wrong receipt binding",
+      createClaim: (store) => terminalClaim(store),
+      override: { expectedReceiptBindingHash: "f".repeat(64) },
+    },
+    {
+      label: "wrong terminal claim hash",
+      createClaim: (store) => terminalClaim(store),
+      override: { expectedTerminalClaimHash: "e".repeat(64) },
+    },
+  ];
+  for (const fixture of cases) {
+    await t.test(fixture.label, async () => {
+      const claimStore = createSyntheticClaimStoreAdapter();
+      const lockStore = createSyntheticRepositoryLockAdapter();
+      const claim = await fixture.createClaim(claimStore);
+      const acquired = await lockStore.adapter.acquireLock(lockAcquireInput());
+      const result = await lockStore.adapter.releaseLock(
+        lockReleaseInput(acquired.lock, claim, fixture.override),
+      );
+      assert.equal(result.status, "terminal_claim_binding_invalid");
+      assert.equal(lockStore.diagnostics.mutationCount, 1);
+      const current = await lockStore.adapter.readLock({
+        repositoryIdentityHash: SHA.repository,
+      });
+      assert.equal(current.lock.state, "lock_held");
+      assert.equal(current.lock.lockHash, acquired.lock.lockHash);
+    });
+  }
+});
+
+test("lock release time must be strictly after acquisition without mutation", async (t) => {
+  for (const [label, testClockInstant] of [
+    ["equal", TIME.acquire],
+    ["earlier", "2026-07-17T00:59:59.999Z"],
+  ]) {
+    await t.test(label, async () => {
+      const claimStore = createSyntheticClaimStoreAdapter();
+      const lockStore = createSyntheticRepositoryLockAdapter();
+      const claim = await terminalClaim(claimStore);
+      const acquired = await lockStore.adapter.acquireLock(lockAcquireInput());
+      const result = await lockStore.adapter.releaseLock(
+        lockReleaseInput(acquired.lock, claim, { testClockInstant }),
+      );
+      assert.equal(result.status, "blocked");
+      assert.ok(result.blockingIssues.includes("repository_lock_release_time_not_after_acquired_at"));
+      assert.equal(lockStore.diagnostics.mutationCount, 1);
+      const current = await lockStore.adapter.readLock({
+        repositoryIdentityHash: SHA.repository,
+      });
+      assert.equal(current.lock.state, "lock_held");
+      assert.equal(current.lock.lockHash, acquired.lock.lockHash);
+    });
+  }
 });
 
 test("record validators reject state or hash tampering", async () => {
@@ -399,6 +585,75 @@ test("preparation summary tampering blocks before adapter mutation", async () =>
   assert.equal(result.status, "blocked");
   assert.equal(claimStore.diagnostics.mutationCount, 0);
   assert.equal(lockStore.diagnostics.mutationCount, 0);
+});
+
+test("scenario audit instants must be strictly increasing before adapter mutation", async (t) => {
+  const valid = buildSyntheticConformanceScenario();
+  for (const [label, replacement] of [
+    ["equal", valid.testClockInstants[3]],
+    ["earlier", valid.testClockInstants[2]],
+  ]) {
+    await t.test(label, async () => {
+      const testClockInstants = [...valid.testClockInstants];
+      testClockInstants[4] = replacement;
+      const scenario = buildSyntheticConformanceScenario({ testClockInstants });
+      const claimStore = createSyntheticClaimStoreAdapter();
+      const lockStore = createSyntheticRepositoryLockAdapter();
+      const result = await runMetricsCutoverAdapterConformance({ scenario }, {
+        claimStoreAdapter: claimStore.adapter,
+        repositoryLockAdapter: lockStore.adapter,
+      });
+      assert.equal(result.status, "blocked");
+      assert.ok(result.blockingIssues.includes("conformance_scenario_test_clock_invalid"));
+      assert.equal(claimStore.diagnostics.mutationCount, 0);
+      assert.equal(lockStore.diagnostics.mutationCount, 0);
+    });
+  }
+});
+
+test("coordinator blocks a verified terminal claim later than lock release time", async () => {
+  const claimStore = createSyntheticClaimStoreAdapter();
+  const lockStore = createSyntheticRepositoryLockAdapter();
+  const scenario = buildSyntheticConformanceScenario();
+  const wrappedClaimAdapter = {
+    acquireClaim: claimStore.adapter.acquireClaim,
+    readClaim: claimStore.adapter.readClaim,
+    transitionClaimTerminal(input) {
+      return claimStore.adapter.transitionClaimTerminal({
+        ...input,
+        testClockInstant: scenario.testClockInstants[9],
+      });
+    },
+  };
+  Object.defineProperty(wrappedClaimAdapter, SYNTHETIC_ADAPTER_ATTESTATION, {
+    value: claimStore.adapter[SYNTHETIC_ADAPTER_ATTESTATION],
+  });
+  const result = await runMetricsCutoverAdapterConformance({ scenario }, {
+    claimStoreAdapter: wrappedClaimAdapter,
+    repositoryLockAdapter: lockStore.adapter,
+  });
+  assert.equal(result.status, "blocked");
+  assert.ok(result.blockingIssues.includes("terminal_claim_time_after_lock_release_time"));
+  assert.deepEqual(result.eventLedger, {});
+  assert.equal(lockStore.diagnostics.mutationCount, 1);
+  const current = await lockStore.adapter.readLock({
+    repositoryIdentityHash: SHA.repository,
+  });
+  assert.equal(current.lock.state, "lock_held");
+});
+
+test("ledger state transitions keep resource identity while state hashes change", async () => {
+  const events = (await runCheck()).eventLedger.events;
+  const lockAcquire = events[1];
+  const lockRelease = events[8];
+  const claimAcquire = events[3];
+  const claimTerminal = events[6];
+  assert.equal(lockAcquire.resourceIdentityHash, lockRelease.resourceIdentityHash);
+  assert.equal(lockAcquire.resultingStateVersionHash, lockRelease.expectedPriorStateVersionHash);
+  assert.notEqual(lockAcquire.resultingStateVersionHash, lockRelease.resultingStateVersionHash);
+  assert.equal(claimAcquire.resourceIdentityHash, claimTerminal.resourceIdentityHash);
+  assert.equal(claimAcquire.resultingStateVersionHash, claimTerminal.expectedPriorStateVersionHash);
+  assert.notEqual(claimAcquire.resultingStateVersionHash, claimTerminal.resultingStateVersionHash);
 });
 
 test("ledger sequence tampering is detected", async () => {

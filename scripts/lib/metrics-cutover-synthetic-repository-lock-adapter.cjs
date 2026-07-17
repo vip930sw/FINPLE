@@ -9,6 +9,7 @@ const {
 } = require("./metrics-cutover-guarded-executor-contracts.cjs");
 const {
   CLAIM_TERMINAL_STATES,
+  REPOSITORY_LOCK_RELEASE_FIELDS,
   SYNTHETIC_ADAPTER_ATTESTATION,
 } = require("./metrics-cutover-adapter-conformance.cjs");
 const {
@@ -20,19 +21,17 @@ const LOCK_RECORD_CONTRACT_VERSION =
 const LOCK_RECORD_FIELDS = Object.freeze([
   "contractVersion", "lockId", "repositoryIdentityHash", "repositoryHeadSha",
   "repositoryTreeSha", "repositoryBranchName", "trackedPathsSha256",
-  "ownerLivenessHash", "state", "version", "acquiredAt", "releasedAt",
+  "ownerLivenessHash", "receiptIdentityHash", "receiptBindingHash",
+  "state", "version", "acquiredAt", "releasedAt",
   "terminalClaimEvidenceHash", "lockHash",
 ]);
 const ACQUIRE_FIELDS = Object.freeze([
   "repositoryIdentityHash", "repositoryHeadSha", "repositoryTreeSha",
   "repositoryBranchName", "trackedPathsSha256", "ownerLivenessHash",
+  "receiptIdentityHash", "receiptBindingHash",
   "testClockInstant",
 ]);
 const READ_FIELDS = Object.freeze(["repositoryIdentityHash"]);
-const RELEASE_FIELDS = Object.freeze([
-  "repositoryIdentityHash", "expectedState", "expectedVersion",
-  "expectedLockHash", "terminalClaim", "testClockInstant",
-]);
 const DOMAINS = Object.freeze({
   id: "FINPLE_STEP114_2X_C_SYNTHETIC_REPOSITORY_LOCK_ID\0",
   hash: "FINPLE_STEP114_2X_C_SYNTHETIC_REPOSITORY_LOCK_HASH\0",
@@ -60,7 +59,17 @@ function sealLock(fields) {
   };
   lock.lockId = `metrics-cutover-synthetic-repository-lock-${hashWithDomain(
     DOMAINS.id,
-    without(without(lock, "lockId"), "lockHash"),
+    {
+      repositoryIdentityHash: lock.repositoryIdentityHash,
+      repositoryHeadSha: lock.repositoryHeadSha,
+      repositoryTreeSha: lock.repositoryTreeSha,
+      repositoryBranchName: lock.repositoryBranchName,
+      trackedPathsSha256: lock.trackedPathsSha256,
+      ownerLivenessHash: lock.ownerLivenessHash,
+      receiptIdentityHash: lock.receiptIdentityHash,
+      receiptBindingHash: lock.receiptBindingHash,
+      acquiredAt: lock.acquiredAt,
+    },
   )}`;
   lock.lockHash = hashWithDomain(DOMAINS.hash, without(lock, "lockHash"));
   return Object.freeze(lock);
@@ -72,6 +81,7 @@ function validateSyntheticRepositoryLockRecord(value) {
   if (value.contractVersion !== LOCK_RECORD_CONTRACT_VERSION) issues.push("synthetic_repository_lock_version_invalid");
   if (!isSafeIdentity(value.lockId) || !value.lockId.startsWith("metrics-cutover-synthetic-repository-lock-")) issues.push("synthetic_repository_lock_id_invalid");
   if (!isSha256(value.repositoryIdentityHash) || !isSha256(value.trackedPathsSha256) || !isSha256(value.ownerLivenessHash) ||
+      !isSha256(value.receiptIdentityHash) || !isSha256(value.receiptBindingHash) ||
       !isSha256(value.terminalClaimEvidenceHash) || !isSha256(value.lockHash)) issues.push("synthetic_repository_lock_hash_field_invalid");
   if (!isGitSha(value.repositoryHeadSha) || !isGitSha(value.repositoryTreeSha) || !isSafeIdentity(value.repositoryBranchName)) issues.push("synthetic_repository_lock_binding_invalid");
   if (!Number.isInteger(value.version) || ![1, 2].includes(value.version) || !parseCanonicalInstant(value.acquiredAt)) issues.push("synthetic_repository_lock_state_metadata_invalid");
@@ -79,6 +89,11 @@ function validateSyntheticRepositoryLockRecord(value) {
     if (value.version !== 1 || value.releasedAt !== "" || value.terminalClaimEvidenceHash !== "0".repeat(64)) issues.push("synthetic_repository_lock_held_state_invalid");
   } else if (value.state === "lock_released") {
     if (value.version !== 2 || !parseCanonicalInstant(value.releasedAt) || !isSha256(value.terminalClaimEvidenceHash) || value.terminalClaimEvidenceHash === "0".repeat(64)) issues.push("synthetic_repository_lock_released_state_invalid");
+    if (
+      parseCanonicalInstant(value.acquiredAt) &&
+      parseCanonicalInstant(value.releasedAt) &&
+      Date.parse(value.releasedAt) <= Date.parse(value.acquiredAt)
+    ) issues.push("synthetic_repository_lock_release_time_not_after_acquired_at");
   } else issues.push("synthetic_repository_lock_state_invalid");
   try {
     const expected = sealLock(without(without(value, "lockId"), "lockHash"));
@@ -108,7 +123,8 @@ function createSyntheticRepositoryLockAdapter(options = {}) {
     if (!isRecord(input) || !hasExactKeys(input, ACQUIRE_FIELDS)) return blocked("blocked", ["repository_lock_acquire_fields_invalid"]);
     if (!isSha256(input.repositoryIdentityHash) || !isGitSha(input.repositoryHeadSha) || !isGitSha(input.repositoryTreeSha) ||
         !isSafeIdentity(input.repositoryBranchName) || !isSha256(input.trackedPathsSha256) ||
-        !isSha256(input.ownerLivenessHash) || !parseCanonicalInstant(input.testClockInstant)) {
+        !isSha256(input.ownerLivenessHash) || !isSha256(input.receiptIdentityHash) ||
+        !isSha256(input.receiptBindingHash) || !parseCanonicalInstant(input.testClockInstant)) {
       return blocked("blocked", ["repository_lock_acquire_input_invalid"]);
     }
     await scheduler.wait("before_repository_lock_acquire_commit", { repositoryIdentityHash: input.repositoryIdentityHash });
@@ -125,6 +141,8 @@ function createSyntheticRepositoryLockAdapter(options = {}) {
       repositoryBranchName: input.repositoryBranchName,
       trackedPathsSha256: input.trackedPathsSha256,
       ownerLivenessHash: input.ownerLivenessHash,
+      receiptIdentityHash: input.receiptIdentityHash,
+      receiptBindingHash: input.receiptBindingHash,
       state: "lock_held", version: 1,
       acquiredAt: input.testClockInstant, releasedAt: "",
       terminalClaimEvidenceHash: "0".repeat(64),
@@ -142,19 +160,40 @@ function createSyntheticRepositoryLockAdapter(options = {}) {
   }
 
   async function releaseLock(input) {
-    if (!isRecord(input) || !hasExactKeys(input, RELEASE_FIELDS)) return blocked("blocked", ["repository_lock_release_fields_invalid"]);
+    if (!isRecord(input) || !hasExactKeys(input, REPOSITORY_LOCK_RELEASE_FIELDS)) return blocked("blocked", ["repository_lock_release_fields_invalid"]);
     if (!isSha256(input.repositoryIdentityHash) || input.expectedState !== "lock_held" ||
         !Number.isInteger(input.expectedVersion) || !isSha256(input.expectedLockHash) ||
+        !isSha256(input.expectedTerminalClaimHash) ||
+        !isSha256(input.expectedReceiptIdentityHash) ||
+        !isSha256(input.expectedReceiptBindingHash) ||
         !parseCanonicalInstant(input.testClockInstant)) return blocked("blocked", ["repository_lock_release_input_invalid"]);
     const claimIssues = validateSyntheticClaimRecord(input.terminalClaim);
     if (claimIssues.length > 0 || !CLAIM_TERMINAL_STATES.includes(input.terminalClaim?.state)) {
       return blocked("terminal_claim_required", ["terminal_claim_evidence_invalid"]);
+    }
+    if (input.terminalClaim.claimHash !== input.expectedTerminalClaimHash) {
+      return blocked("terminal_claim_binding_invalid", ["terminal_claim_hash_binding_mismatch"]);
+    }
+    if (input.terminalClaim.receiptIdentityHash !== input.expectedReceiptIdentityHash) {
+      return blocked("terminal_claim_binding_invalid", ["terminal_claim_receipt_identity_binding_mismatch"]);
+    }
+    if (input.terminalClaim.receiptBindingHash !== input.expectedReceiptBindingHash) {
+      return blocked("terminal_claim_binding_invalid", ["terminal_claim_receipt_evidence_binding_mismatch"]);
     }
     await scheduler.wait("before_repository_lock_release_commit", { repositoryIdentityHash: input.repositoryIdentityHash });
     const existing = records.get(input.repositoryIdentityHash);
     if (!existing) return blocked("repository_lock_not_found", ["repository_lock_not_found"]);
     if (existing.state !== input.expectedState || existing.version !== input.expectedVersion || existing.lockHash !== input.expectedLockHash) {
       return blocked("stale_repository_lock", ["repository_lock_expected_state_version_hash_stale"], structuredClone(existing));
+    }
+    if (
+      existing.receiptIdentityHash !== input.expectedReceiptIdentityHash ||
+      existing.receiptBindingHash !== input.expectedReceiptBindingHash
+    ) {
+      return blocked("terminal_claim_binding_invalid", ["repository_lock_receipt_binding_mismatch"], structuredClone(existing));
+    }
+    if (Date.parse(input.testClockInstant) <= Date.parse(existing.acquiredAt)) {
+      return blocked("blocked", ["repository_lock_release_time_not_after_acquired_at"], structuredClone(existing));
     }
     const released = sealLock({
       repositoryIdentityHash: existing.repositoryIdentityHash,
@@ -163,6 +202,8 @@ function createSyntheticRepositoryLockAdapter(options = {}) {
       repositoryBranchName: existing.repositoryBranchName,
       trackedPathsSha256: existing.trackedPathsSha256,
       ownerLivenessHash: existing.ownerLivenessHash,
+      receiptIdentityHash: existing.receiptIdentityHash,
+      receiptBindingHash: existing.receiptBindingHash,
       state: "lock_released", version: existing.version + 1,
       acquiredAt: existing.acquiredAt,
       releasedAt: input.testClockInstant,

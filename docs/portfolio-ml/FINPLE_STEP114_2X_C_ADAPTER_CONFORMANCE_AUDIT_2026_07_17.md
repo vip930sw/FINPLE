@@ -20,15 +20,21 @@ metrics-cutover-claim-store-adapter-protocol-v1-step114-2x-c
 
 Its exact method set is `acquireClaim`, `readClaim`, and `transitionClaimTerminal`. The synthetic implementation uses an in-memory map and atomic synchronous compare-and-commit after an optional deterministic test barrier. A successful create starts at `claim_in_progress`. Only `consumed_success` or `consumed_failed_manual_review` may be persisted, and only by matching the expected state, version, and record hash. A terminal transition succeeds once. Existing or terminal claims cannot be deleted, reset, released, reused, or replaced.
 
+`claimId` is derived only from the immutable receipt identity hash and receipt binding hash. It therefore remains identical across acquisition and the terminal transition. The state-sensitive `claimHash` includes version, state, timestamps, and terminal evidence and must change. The terminal record preserves the exact receipt bindings and `createdAt`, and requires `terminalAt > createdAt` before mutation.
+
 The repository-lock protocol is:
 
 ```text
 metrics-cutover-repository-lock-adapter-protocol-v1-step114-2x-c
 ```
 
-Its exact method set is `acquireLock`, `readLock`, and `releaseLock`. Every lock binds the synthetic repository identity hash, HEAD, tree, branch, tracked-path inventory hash, and redacted owner-liveness hash. A concurrent acquisition has one winner. Release requires the current lock state, version, and hash plus a fully valid terminal synthetic claim. A released lock persists and cannot be reacquired, deleted, overwritten, or released again. Any possibly stale existing lock produces explicit manual review; there is no lock stealing or delete-and-retry path.
+Its exact method set is `acquireLock`, `readLock`, and `releaseLock`. Every lock binds the synthetic repository identity hash, HEAD, tree, branch, tracked-path inventory hash, redacted owner-liveness hash, and the expected receipt identity and binding hashes. A concurrent acquisition has one winner. Release requires the current lock state, version, and hash plus a fully valid terminal synthetic claim. A released lock persists and cannot be reacquired, deleted, overwritten, or released again. Any possibly stale existing lock produces explicit manual review; there is no lock stealing or delete-and-retry path.
 
-Both adapters carry non-public synthetic-only attestations. The coordinator rejects an extra string method, a missing method, or an attestation that permits filesystem, process, network, provider, or real-resource access.
+`lockId` is derived only from the immutable repository/acquisition binding, including the acquisition timestamp and receipt binding. It remains identical after release while the state-sensitive `lockHash` changes. Release preserves all repository bindings, owner-liveness evidence, receipt bindings, and `acquiredAt`, and requires `releasedAt > acquiredAt` before mutation.
+
+The exact `releaseLock` input additionally requires `expectedTerminalClaimHash`, `expectedReceiptIdentityHash`, and `expectedReceiptBindingHash`. The terminal claim's contract, state, own hash, claim hash, receipt identity, and receipt binding are all verified against both these expected values and the immutable lock record. A different but otherwise valid terminal claim cannot release the lock.
+
+Both adapters carry non-public synthetic-only attestations. The coordinator rejects an extra string method, a missing method, any extra symbol property beyond the one attestation symbol, or an attestation that permits filesystem, process, network, provider, or real-resource access.
 
 ## Cross-adapter state machine
 
@@ -45,7 +51,7 @@ The coordinator validates and records exactly this sequence:
 9. release the lock with the terminal claim evidence;
 10. read and verify the released lock.
 
-A failure at any stage returns `blocked` and suppresses the conformance ledger and summary. A completed scenario replay is blocked before mutation because both the released lock and terminal claim remain present. Different synthetic receipt and repository identities remain independent.
+A failure at any stage returns `blocked` and suppresses the conformance ledger and summary. Scenario audit instants must be strictly increasing. Claim and lock state transitions separately enforce monotonic record timestamps, and the coordinator requires the verified terminal claim time to be no later than the lock release time. Equal or reversed record-transition timestamps block before mutation. A completed scenario replay is blocked before mutation because both the released lock and terminal claim remain present. Different synthetic receipt and repository identities remain independent.
 
 ## Deterministic event ledger
 
@@ -57,7 +63,7 @@ metrics-cutover-adapter-conformance-ledger-v1-step114-2x-c
 metrics-cutover-adapter-conformance-summary-v1-step114-2x-c
 ```
 
-Events start at sequence 1 and are continuous. Each event binds the scenario, adapter protocol, operation, redacted resource-identity hash, expected prior state/version hash, resulting state/version hash, canonical synthetic test instant, previous-event hash, and its own domain-separated hash. The final ledger has a separate domain-separated hash. Validators recompute the scenario, event, ledger, and summary IDs/hashes and reject changed sequence, operation, chain link, state/version evidence, payload, or ledger hash.
+Events start at sequence 1 and are continuous. Each event binds the scenario, adapter protocol, operation, redacted resource-identity hash, expected prior state/version hash, resulting state/version hash, canonical synthetic test instant, previous-event hash, and its own domain-separated hash. Claim and lock events retain one resource identity while the terminal claim and released lock produce new state hashes. The final ledger has a separate domain-separated hash. Validators recompute the scenario, event, ledger, and summary IDs/hashes and reject changed sequence, operation, chain link, state/version evidence, payload, or ledger hash.
 
 The ledger contains no raw receipt ID, repository path, provider identity, lock token, credential, nonce, signature, or source bytes. Concurrency tests use controlled promises that release contenders at the same compare-and-commit boundary; they do not use sleeps or wall-clock races.
 
@@ -98,7 +104,7 @@ Validated on 2026-07-17:
 
 ```text
 Step 114-2X-C focused
-29 passed
+49 passed
 
 Step 114-2X-B standalone
 31 passed
@@ -110,13 +116,13 @@ Step 114-2W standalone
 68 passed
 
 Step 114-2W + 2X-A + 2X-B + 2X-C
-152 passed
+172 passed
 
 Step 114-2Q through 2X-C
-531 passed
+551 passed
 
 Step 114-2N through 2X-C
-735 passed
+755 passed
 
 python -m unittest discover -s scripts/metrics_pipeline/tests
 48 passed using the bundled Python runtime because `python` is not on PATH
@@ -137,7 +143,7 @@ git diff --cached --check
 passed with an empty index before intentional staging
 
 repository-wide node --test --test-reporter=dot
-bounded attempt timed out after 121 seconds; 86 progress dots and no test failure were reported before timeout
+bounded attempt timed out after 120 seconds after reporting 33 actual failures in unrelated Step 214 through Step 238A scope checkers; a standalone Step 214 reproduction confirmed that its historical touched-file allowlist rejects this PR's Step 114-2X-C audit path as an unexpected Step 214 file. These historical feature-scope checks cannot pass on a later feature branch with an intentional diff from main and were not changed because they are outside this PR's protected scope.
 ```
 
-The focused suite covers the exact method sets and extra-method rejection, valid ten-stage orchestration, concurrent single-winner claim and lock acquisition, concurrent single-winner terminal transition, stale state/version/hash rejection, terminal immutability, release-before-terminal rejection, terminal-evidence tampering, stale-lock manual review, completed-scenario replay without mutation, independent resources, Step 114-2X-B summary binding, ledger chain and payload tampering, redaction, fixed-false output, dependency boundaries, and the one-line synthetic CLI check.
+The focused suite covers the exact method and symbol sets, exact terminal-bound release inputs, immutable claim and lock IDs with state-sensitive hashes, valid ten-stage orchestration, strictly increasing scenario and record times, terminal-before-release ordering, concurrent single-winner claim and lock acquisition, concurrent single-winner terminal transition, unrelated terminal-claim binding rejection without lock mutation, stale state/version/hash rejection, terminal immutability, release-before-terminal rejection, terminal-evidence tampering, stale-lock manual review, completed-scenario replay without mutation, independent resources, Step 114-2X-B summary binding, ledger resource/state transition consistency, ledger chain and payload tampering, redaction, fixed-false output, dependency boundaries, and the one-line synthetic CLI check.

@@ -54,7 +54,10 @@ function sealClaim(fields) {
   };
   claim.claimId = `metrics-cutover-synthetic-claim-${hashWithDomain(
     DOMAINS.id,
-    without(without(claim, "claimId"), "claimHash"),
+    {
+      receiptIdentityHash: claim.receiptIdentityHash,
+      receiptBindingHash: claim.receiptBindingHash,
+    },
   )}`;
   claim.claimHash = hashWithDomain(DOMAINS.hash, without(claim, "claimHash"));
   return Object.freeze(claim);
@@ -76,6 +79,11 @@ function validateSyntheticClaimRecord(value) {
     if (value.version !== 1 || value.terminalAt !== "" || value.terminalEvidenceHash !== "0".repeat(64)) issues.push("synthetic_claim_initial_state_invalid");
   } else if (CLAIM_TERMINAL_STATES.includes(value.state)) {
     if (value.version !== 2 || !parseCanonicalInstant(value.terminalAt) || !isSha256(value.terminalEvidenceHash)) issues.push("synthetic_claim_terminal_state_invalid");
+    if (
+      parseCanonicalInstant(value.createdAt) &&
+      parseCanonicalInstant(value.terminalAt) &&
+      Date.parse(value.terminalAt) <= Date.parse(value.createdAt)
+    ) issues.push("synthetic_claim_terminal_time_not_after_created_at");
   } else {
     issues.push("synthetic_claim_state_invalid");
   }
@@ -140,6 +148,9 @@ function createSyntheticClaimStoreAdapter(options = {}) {
     if (!existing) return blocked("claim_not_found", ["receipt_claim_not_found"]);
     if (existing.state !== input.expectedState || existing.version !== input.expectedVersion || existing.claimHash !== input.expectedClaimHash) {
       return blocked("stale_claim", ["claim_expected_state_version_hash_stale"], structuredClone(existing));
+    }
+    if (Date.parse(input.testClockInstant) <= Date.parse(existing.createdAt)) {
+      return blocked("blocked", ["claim_terminal_time_not_after_created_at"], structuredClone(existing));
     }
     const terminal = sealClaim({
       receiptIdentityHash: existing.receiptIdentityHash,

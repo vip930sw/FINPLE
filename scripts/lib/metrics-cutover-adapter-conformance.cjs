@@ -69,6 +69,12 @@ const REPOSITORY_LOCK_ADAPTER_METHODS = Object.freeze([
   "readLock",
   "releaseLock",
 ]);
+const REPOSITORY_LOCK_RELEASE_FIELDS = Object.freeze([
+  "repositoryIdentityHash", "expectedState", "expectedVersion",
+  "expectedLockHash", "expectedTerminalClaimHash",
+  "expectedReceiptIdentityHash", "expectedReceiptBindingHash",
+  "terminalClaim", "testClockInstant",
+]);
 const CLAIM_TERMINAL_STATES = Object.freeze([
   "consumed_failed_manual_review",
   "consumed_success",
@@ -100,7 +106,7 @@ const CLAIM_PROTOCOL_FIELDS = Object.freeze([
   "resetAllowed", "releaseAllowed", "realProviderAccessAllowed", "protocolHash",
 ]);
 const LOCK_PROTOCOL_FIELDS = Object.freeze([
-  "contractVersion", "methods", "bindingFields", "atomicExclusiveAcquisition",
+  "contractVersion", "methods", "releaseInputFields", "bindingFields", "atomicExclusiveAcquisition",
   "terminalClaimEvidenceRequired", "repeatedReleaseMutates",
   "lockStealingAllowed", "deleteAndRetryAllowed", "overwriteAllowed",
   "staleLockPolicy", "realLockAccessAllowed", "protocolHash",
@@ -199,6 +205,7 @@ function buildRepositoryLockAdapterProtocol() {
   return sealHash({
     contractVersion: REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION,
     methods: [...REPOSITORY_LOCK_ADAPTER_METHODS],
+    releaseInputFields: [...REPOSITORY_LOCK_RELEASE_FIELDS],
     bindingFields: [...REPOSITORY_BINDING_FIELDS],
     atomicExclusiveAcquisition: true,
     terminalClaimEvidenceRequired: true,
@@ -238,6 +245,7 @@ function validateRepositoryLockAdapterProtocol(value) {
   }
   if (value.contractVersion !== REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION) issues.push("repository_lock_protocol_version_invalid");
   if (!arrayEquals(value.methods, REPOSITORY_LOCK_ADAPTER_METHODS)) issues.push("repository_lock_protocol_methods_invalid");
+  if (!arrayEquals(value.releaseInputFields, REPOSITORY_LOCK_RELEASE_FIELDS)) issues.push("repository_lock_protocol_release_input_fields_invalid");
   if (!arrayEquals(value.bindingFields, REPOSITORY_BINDING_FIELDS)) issues.push("repository_lock_protocol_binding_fields_invalid");
   for (const field of ["atomicExclusiveAcquisition", "terminalClaimEvidenceRequired"]) {
     if (value[field] !== true) issues.push(`repository_lock_protocol_capability_missing:${field}`);
@@ -288,7 +296,9 @@ function validateConformanceScenario(value) {
     !Array.isArray(value.testClockInstants) ||
     value.testClockInstants.length !== EVENT_OPERATIONS.length ||
     value.testClockInstants.some((instant) => !parseCanonicalInstant(instant)) ||
-    new Set(value.testClockInstants).size !== value.testClockInstants.length
+    value.testClockInstants.some((instant, index, instants) => (
+      index > 0 && Date.parse(instant) <= Date.parse(instants[index - 1])
+    ))
   ) issues.push("conformance_scenario_test_clock_invalid");
   try {
     const expected = sealConformanceScenario(without(without(value, "scenarioId"), "scenarioHash"));
@@ -304,9 +314,13 @@ function validateAdapter(adapter, expectedMethods, expectedKind) {
   const issues = [];
   if (!isRecord(adapter)) return [`${expectedKind}_adapter_not_object`];
   const stringKeys = Reflect.ownKeys(adapter).filter((key) => typeof key === "string").sort();
+  const symbolKeys = Reflect.ownKeys(adapter).filter((key) => typeof key === "symbol");
   const expected = [...expectedMethods].sort();
   if (stringKeys.length !== expected.length || stringKeys.some((key, index) => key !== expected[index])) {
     issues.push(`${expectedKind}_adapter_method_set_invalid`);
+  }
+  if (symbolKeys.length !== 1 || symbolKeys[0] !== SYNTHETIC_ADAPTER_ATTESTATION) {
+    issues.push(`${expectedKind}_adapter_symbol_set_invalid`);
   }
   for (const method of expectedMethods) {
     if (typeof adapter[method] !== "function") issues.push(`${expectedKind}_adapter_method_invalid:${method}`);
@@ -481,6 +495,8 @@ function validateLockEvidence(lock, scenario, expectedState, terminalClaimHash =
     repositoryBranchName: scenario.repositoryBranchName,
     trackedPathsSha256: scenario.trackedPathsSha256,
     ownerLivenessHash: scenario.ownerLivenessHash,
+    receiptIdentityHash: scenario.receiptIdentityHash,
+    receiptBindingHash: scenario.receiptBindingHash,
   };
   for (const [field, expected] of Object.entries(expectedBindings)) {
     if (lock?.[field] !== expected) issues.push(`repository_lock_binding_mismatch:${field}`);
@@ -542,6 +558,8 @@ async function runMetricsCutoverAdapterConformance(input, adapters = {}) {
       repositoryBranchName: scenario.repositoryBranchName,
       trackedPathsSha256: scenario.trackedPathsSha256,
       ownerLivenessHash: scenario.ownerLivenessHash,
+      receiptIdentityHash: scenario.receiptIdentityHash,
+      receiptBindingHash: scenario.receiptBindingHash,
       testClockInstant: scenario.testClockInstants[1],
     });
     if (lockAcquire?.ok !== true || lockAcquire.status !== "lock_acquired" || !isRecord(lockAcquire.lock)) throw new Error("repository_lock_acquire_failed");
@@ -605,11 +623,17 @@ async function runMetricsCutoverAdapterConformance(input, adapters = {}) {
     if (terminalRead?.ok !== true || terminalRead.status !== "claim_found" || !recordsEqual(terminalRead.claim, terminal.claim)) throw new Error("terminal_claim_read_mismatch");
     appendEvent(EVENT_OPERATIONS[7], CLAIM_STORE_ADAPTER_PROTOCOL_VERSION, scenario.receiptIdentityHash, terminal.claim.claimHash, "terminal_verified", terminalRead.claim.claimHash);
 
+    if (Date.parse(terminalRead.claim.terminalAt) > Date.parse(scenario.testClockInstants[8])) {
+      throw new Error("terminal_claim_time_after_lock_release_time");
+    }
     const released = await adapters.repositoryLockAdapter.releaseLock({
       repositoryIdentityHash: scenario.repositoryIdentityHash,
       expectedState: "lock_held",
       expectedVersion: lockRead.lock.version,
       expectedLockHash: lockRead.lock.lockHash,
+      expectedTerminalClaimHash: terminalRead.claim.claimHash,
+      expectedReceiptIdentityHash: scenario.receiptIdentityHash,
+      expectedReceiptBindingHash: scenario.receiptBindingHash,
       terminalClaim: terminalRead.claim,
       testClockInstant: scenario.testClockInstants[8],
     });
@@ -657,6 +681,7 @@ module.exports = {
   FIXED_FALSE_FIELDS,
   REPOSITORY_BINDING_FIELDS,
   REPOSITORY_LOCK_ADAPTER_METHODS,
+  REPOSITORY_LOCK_RELEASE_FIELDS,
   REPOSITORY_LOCK_ADAPTER_PROTOCOL_VERSION,
   SYNTHETIC_ADAPTER_ATTESTATION,
   SYNTHETIC_EXECUTION_PROTOCOL_VERSION,
