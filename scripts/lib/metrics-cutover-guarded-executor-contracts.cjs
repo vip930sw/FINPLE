@@ -1,4 +1,7 @@
 const { createHash } = require("node:crypto");
+const {
+  areMetricsTargetPathsDistinct,
+} = require("./metrics-target-path-identity.cjs");
 
 const TEST_FIXTURE_CONTRACT_VERSION =
   "metrics-cutover-test-fixture-v1-step114-2x-a";
@@ -64,6 +67,18 @@ const POST_WRITE_RECEIPT_FIELDS = Object.freeze([
   "postWriteVerificationHash",
   "receiptHash",
 ]);
+const TARGET_SUMMARY_FIELDS = Object.freeze([
+  "role",
+  "path",
+  "sha256",
+  "byteSize",
+  "rowCount",
+  "market",
+  "schemaVersion",
+  "writeMode",
+]);
+const TARGET_SCHEMA_VERSION =
+  "metrics-price-overlay-csv-schema-v1-step114-2p";
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
@@ -340,7 +355,10 @@ function buildPostWriteReceipt(bound, claim, postWrite) {
   return { receipt: value, completedClaim };
 }
 
-function validatePostWriteReceipt(value) {
+function validatePostWriteReceipt(
+  value,
+  { bound, completedClaim, postWrite } = {},
+) {
   const issues = [];
   if (!hasExactKeys(value, POST_WRITE_RECEIPT_FIELDS)) {
     return ["post_write_receipt_fields_invalid"];
@@ -373,6 +391,60 @@ function validatePostWriteReceipt(value) {
   ]) {
     if (!isSha256(value[field])) issues.push(`post_write_receipt_hash_invalid:${field}`);
   }
+  if (!/^metrics-cutover-execution-invocation-receipt-[a-f0-9]{64}$/.test(value.invocationReceiptId)) {
+    issues.push("post_write_receipt_identity_invalid:invocationReceiptId");
+  }
+  if (!/^metrics-cutover-authority-package-[a-f0-9]{64}$/.test(value.authorityPackageId)) {
+    issues.push("post_write_receipt_identity_invalid:authorityPackageId");
+  }
+  if (!/^metrics-cutover-receipt-claim-[a-f0-9]{64}$/.test(value.claimId)) {
+    issues.push("post_write_receipt_identity_invalid:claimId");
+  }
+  if (!Array.isArray(value.targets) || value.targets.length !== 2) {
+    issues.push("post_write_receipt_target_count_invalid");
+  } else {
+    const expectedTargets = [
+      { role: "us_price_metrics", market: "US" },
+      { role: "kr_price_metrics", market: "KR" },
+    ];
+    value.targets.forEach((target, index) => {
+      const expected = expectedTargets[index];
+      if (!hasExactKeys(target, TARGET_SUMMARY_FIELDS)) {
+        issues.push(`post_write_receipt_target_fields_invalid:${expected.role}`);
+        return;
+      }
+      if (target.role !== expected.role || target.market !== expected.market) {
+        issues.push(`post_write_receipt_target_identity_invalid:${expected.role}`);
+      }
+      if (
+        !isNonEmptyString(target.path) ||
+        !target.path.startsWith("src/data/tickers/") ||
+        !target.path.endsWith(".csv") ||
+        target.path.includes("\\") ||
+        target.path.split("/").includes("..")
+      ) {
+        issues.push(`post_write_receipt_target_path_invalid:${expected.role}`);
+      }
+      if (!isSha256(target.sha256)) {
+        issues.push(`post_write_receipt_target_hash_invalid:${expected.role}`);
+      }
+      if (!Number.isInteger(target.byteSize) || target.byteSize <= 0) {
+        issues.push(`post_write_receipt_target_size_invalid:${expected.role}`);
+      }
+      if (!Number.isInteger(target.rowCount) || target.rowCount <= 0) {
+        issues.push(`post_write_receipt_target_rows_invalid:${expected.role}`);
+      }
+      if (
+        target.schemaVersion !== TARGET_SCHEMA_VERSION ||
+        target.writeMode !== "create_only"
+      ) {
+        issues.push(`post_write_receipt_target_policy_invalid:${expected.role}`);
+      }
+    });
+    if (!areMetricsTargetPathsDistinct(value.targets[0]?.path, value.targets[1]?.path)) {
+      issues.push("post_write_receipt_target_paths_not_distinct");
+    }
+  }
   for (const field of ["repositoryHeadSha", "repositoryTreeSha"]) {
     if (!isGitSha(value[field])) issues.push(`post_write_receipt_git_sha_invalid:${field}`);
   }
@@ -386,6 +458,67 @@ function validatePostWriteReceipt(value) {
   delete payload.receiptHash;
   if (value.receiptHash !== hashWithDomain(POST_WRITE_RECEIPT_HASH_DOMAIN, payload)) {
     issues.push("post_write_receipt_hash_mismatch");
+  }
+  const expectedClaim = buildClaim(
+    {
+      receiptId: value.invocationReceiptId,
+      receiptHash: value.invocationReceiptHash,
+    },
+    "consumed_success",
+    "",
+  );
+  if (value.claimId !== expectedClaim.claimId) {
+    issues.push("post_write_receipt_claim_id_mismatch");
+  }
+  if (value.claimHash !== expectedClaim.claimHash) {
+    issues.push("post_write_receipt_claim_hash_mismatch");
+  }
+  if (bound) {
+    const expected = {
+      invocationReceiptId: bound.receipt?.receiptId,
+      invocationReceiptHash: bound.receipt?.receiptHash,
+      authorityPackageId: bound.receipt?.authorityPackageId,
+      authorityPackageHash: bound.receipt?.authorityPackageHash,
+      repositoryHeadSha: bound.receipt?.repositoryHeadSha,
+      repositoryTreeSha: bound.receipt?.repositoryTreeSha,
+      trackedPathsSha256: bound.receipt?.trackedPathsSha256,
+      targetPathAbsenceEvidenceHash:
+        bound.receipt?.targetPathAbsenceEvidenceHash,
+      executionPackageHash: bound.receipt?.executionPackageHash,
+      selectorPreimageSha256: bound.receipt?.selectorPreimageSha256,
+      selectorPostimageSha256: bound.receipt?.selectorPostimageSha256,
+    };
+    for (const [field, expectedValue] of Object.entries(expected)) {
+      if (value[field] !== expectedValue) {
+        issues.push(`post_write_receipt_binding_mismatch:${field}`);
+      }
+    }
+    try {
+      if (
+        canonicalJson(value.targets) !==
+        canonicalJson(bound.targets.map(targetSummary))
+      ) {
+        issues.push("post_write_receipt_binding_mismatch:targets");
+      }
+    } catch {
+      issues.push("post_write_receipt_binding_mismatch:targets");
+    }
+  }
+  if (completedClaim) {
+    if (value.claimId !== completedClaim.claimId) {
+      issues.push("post_write_receipt_binding_mismatch:claimId");
+    }
+    if (value.claimHash !== completedClaim.claimHash) {
+      issues.push("post_write_receipt_binding_mismatch:claimHash");
+    }
+  }
+  if (
+    postWrite &&
+    value.postWriteVerificationHash !== postWrite.verificationHash
+  ) {
+    issues.push(
+      "post_write_receipt_binding_mismatch:postWriteVerificationHash",
+    );
   }
   return uniqueSorted(issues);
 }

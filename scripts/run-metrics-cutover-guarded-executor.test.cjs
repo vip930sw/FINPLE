@@ -5,10 +5,18 @@ const {
   mkdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const {
+  validateMetricsCutoverExecutionInvocationReceipt,
+} = require("./lib/metrics-cutover-execution-invocation.cjs");
+const {
+  validateClaim,
+  validatePostWriteReceipt,
+} = require("./lib/metrics-cutover-guarded-executor-contracts.cjs");
 
 const {
   FIXED_FALSE_FIELDS,
@@ -27,6 +35,7 @@ const {
   runCli,
   runGit,
   runMetricsCutoverGuardedExecutor,
+  resealExecution,
   selectorText,
   setup,
   sha256,
@@ -35,6 +44,8 @@ const {
 test("guarded executor completes exactly two create-only writes and one selector postimage", async (t) => {
   const fixture = setup();
   t.after(() => rmSync(fixture.root, { recursive: true, force: true }));
+  const selectorPath = path.join(fixture.repo, ...SELECTOR_PATH.split("/"));
+  const selectorMode = statSync(selectorPath).mode & 0o777;
   const result = await runMetricsCutoverGuardedExecutor(
     input(fixture.repo, fixture.claimDirectory),
     adapters(fixture.execution),
@@ -51,7 +62,7 @@ test("guarded executor completes exactly two create-only writes and one selector
   assert.equal(result.actualDeleteCount, 0);
   assert.equal(existsSync(path.join(fixture.repo, ...US_TARGET.split("/"))), true);
   assert.equal(existsSync(path.join(fixture.repo, ...KR_TARGET.split("/"))), true);
-  const selector = readFileSync(path.join(fixture.repo, ...SELECTOR_PATH.split("/")), "utf8");
+  const selector = readFileSync(selectorPath, "utf8");
   assert.equal(selector.includes(OLD_US), false);
   assert.equal(selector.includes(OLD_KR), false);
   assert.equal(selector.includes(`./${path.basename(US_TARGET)}?raw`), true);
@@ -61,6 +72,13 @@ test("guarded executor completes exactly two create-only writes and one selector
     readFileSync(path.join(fixture.claimDirectory, claimFiles(fixture.claimDirectory)[0]), "utf8"),
   );
   assert.equal(claim.claimStatus, "consumed_success");
+  assert.deepEqual(validateClaim(claim), []);
+  assert.deepEqual(validatePostWriteReceipt(result.postWriteReceipt), []);
+  assert.equal(statSync(selectorPath).mode & 0o777, selectorMode);
+  const serializedResult = JSON.stringify(result);
+  assert.equal(serializedResult.includes(fixture.repo), false);
+  assert.equal(serializedResult.includes("contentBase64"), false);
+  assert.equal(serializedResult.includes("invocationNonce"), false);
   assertFixedFalse(result);
 });
 
@@ -75,10 +93,10 @@ test("a duplicate receipt claim blocks before touching a second identical reposi
   );
   assert.equal(first.status, "cutover_execution_completed");
   const secondExecution = makeExecution(secondRepo);
-  secondExecution.verification.invocationReceipt.receiptId =
-    fixture.execution.invocationReceipt.receiptId;
-  secondExecution.verification.invocationReceipt.receiptHash =
-    fixture.execution.invocationReceipt.receiptHash;
+  assert.equal(
+    secondExecution.invocationReceipt.receiptId,
+    fixture.execution.invocationReceipt.receiptId,
+  );
   const second = await runMetricsCutoverGuardedExecutor(
     input(secondRepo, fixture.claimDirectory),
     adapters(secondExecution),
@@ -100,6 +118,47 @@ test("an existing target blocks before the claim is acquired", async (t) => {
   assert.equal(result.status, "blocked");
   assert.ok(result.blockingIssues.includes("test_repository_not_clean"));
   assert.equal(claimFiles(fixture.claimDirectory).length, 0);
+  assertFixedFalse(result);
+});
+
+test("focused integration uses a real valid Step 114-2W receipt and rejects a forged package hash", async (t) => {
+  const fixture = setup();
+  t.after(() => rmSync(fixture.root, { recursive: true, force: true }));
+  assert.deepEqual(
+    validateMetricsCutoverExecutionInvocationReceipt(
+      fixture.execution.invocationReceipt,
+    ),
+    { ok: true, issues: [] },
+  );
+  fixture.execution.prepared.packageA.executionPackage.executionPackageHash =
+    "f".repeat(64);
+  fixture.execution.prepared.packageA.executionPackageHash = "f".repeat(64);
+  fixture.execution.prepared.packageB = structuredClone(
+    fixture.execution.prepared.packageA,
+  );
+  fixture.execution.verification.invocationReceipt.executionPackageHash =
+    "f".repeat(64);
+  fixture.execution.verification.invocationReceipt.receiptId =
+    require("./lib/metrics-cutover-execution-invocation.cjs")
+      .recomputeMetricsCutoverExecutionInvocationReceiptId(
+        fixture.execution.verification.invocationReceipt,
+      );
+  fixture.execution.verification.invocationReceipt.receiptHash =
+    "0".repeat(64);
+  fixture.execution.verification.invocationReceipt.receiptHash =
+    require("./lib/metrics-cutover-execution-invocation.cjs")
+      .hashMetricsCutoverExecutionInvocationReceipt(
+        fixture.execution.verification.invocationReceipt,
+      );
+  const result = await runMetricsCutoverGuardedExecutor(
+    input(fixture.repo, fixture.claimDirectory),
+    adapters(fixture.execution),
+  );
+  assert.equal(result.status, "blocked");
+  assert.ok(result.blockingIssues.includes("execution_package_hash_mismatch"));
+  assert.equal(result.claimAcquired, false);
+  assert.equal(result.claimId, "");
+  assert.deepEqual(result.postWriteReceipt, {});
   assertFixedFalse(result);
 });
 
@@ -129,6 +188,16 @@ for (const [name, faultStage, assertions] of [
     "before_post_write_verification",
     ({ repo }) => {
       writeFileSync(path.join(repo, ...US_TARGET.split("/")), "tampered\n");
+    },
+  ],
+  [
+    "post-write selector tampering",
+    "before_post_write_verification",
+    ({ repo }) => {
+      writeFileSync(
+        path.join(repo, ...SELECTOR_PATH.split("/")),
+        `${selectorText()}// post-write tamper\n`,
+      );
     },
   ],
 ]) {
@@ -218,6 +287,9 @@ test("tracked inventory drift and a non-exact selector postimage block before cl
     fixture.execution.verification.invocationReceipt.trackedPathsSha256 = "f".repeat(64);
     fixture.execution.prepared.packageA.executionPackage.trackedPathsSha256 = "f".repeat(64);
     fixture.execution.prepared.packageB.executionPackage.trackedPathsSha256 = "f".repeat(64);
+    fixture.execution.prepared.packageA.executionPackage.repositoryPreimage.trackedPathsSha256 = "f".repeat(64);
+    fixture.execution.prepared.packageB.executionPackage.repositoryPreimage.trackedPathsSha256 = "f".repeat(64);
+    resealExecution(fixture.execution);
     const result = await runMetricsCutoverGuardedExecutor(
       input(fixture.repo, fixture.claimDirectory),
       adapters(fixture.execution),
@@ -243,6 +315,7 @@ test("tracked inventory drift and a non-exact selector postimage block before cl
       packageResult.executionPackage.selectorPostimage.selectorSha256 = sha256(bytes);
     }
     fixture.execution.verification.invocationReceipt.selectorPostimageSha256 = sha256(bytes);
+    resealExecution(fixture.execution);
     const result = await runMetricsCutoverGuardedExecutor(
       input(fixture.repo, fixture.claimDirectory),
       adapters(fixture.execution),

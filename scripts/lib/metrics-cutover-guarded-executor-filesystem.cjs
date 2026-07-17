@@ -1,6 +1,7 @@
 const {
   closeSync,
   existsSync,
+  ftruncateSync,
   fsyncSync,
   lstatSync,
   openSync,
@@ -26,6 +27,10 @@ const {
   targetSummary,
   uniqueSorted,
 } = require("./metrics-cutover-guarded-executor-contracts.cjs");
+const {
+  areMetricsTargetPathsDistinct,
+  getMetricsTargetPathIdentity,
+} = require("./metrics-target-path-identity.cjs");
 
 const TEST_MARKER_FILE = ".finple-step114-2x-a-test-fixture.json";
 const SELECTOR_PATH = "src/data/tickers/screenerCandidateOverlay.js";
@@ -46,6 +51,19 @@ const TEST_MARKER_FIELDS = Object.freeze([
   "fixtureId",
   "testOnly",
 ]);
+const TARGET_EXPORT_HEADERS = Object.freeze([
+  "market",
+  "ticker",
+  "expectedCagr",
+  "priceCagr10y",
+  "mdd",
+  "beta",
+  "dataYears",
+  "benchmarkTicker",
+  "metricsStatus",
+  "metricsSource",
+  "reviewReason",
+]);
 
 function runGit(repo, args) {
   const result = spawnSync("git", args, {
@@ -58,6 +76,36 @@ function runGit(repo, args) {
     throw new Error(`git_command_failed:${args[0] || "unknown"}`);
   }
   return result.stdout.replace(/\r?\n$/, "");
+}
+
+function readGitStatus(repo) {
+  const result = spawnSync(
+    "git",
+    ["-c", "core.quotepath=false", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+    {
+      cwd: repo,
+      shell: false,
+      encoding: "buffer",
+      windowsHide: true,
+    },
+  );
+  if (result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
+    throw new Error("git_command_failed:status");
+  }
+  if (result.stdout.length === 0) return [];
+  if (result.stdout.at(-1) !== 0) {
+    throw new Error("git_status_output_not_nul_terminated");
+  }
+  return result.stdout
+    .subarray(0, -1)
+    .toString("utf8")
+    .split("\0")
+    .map((record) => {
+      if (record.length < 4 || record[2] !== " ") {
+        throw new Error("git_status_record_invalid");
+      }
+      return { status: record.slice(0, 2), path: record.slice(3) };
+    });
 }
 
 function isSafeRepositoryPath(value) {
@@ -80,18 +128,17 @@ function isSafeTargetPath(value) {
   );
 }
 
-function targetPathIdentity(value) {
-  return typeof value === "string"
-    ? value.normalize("NFC").toLowerCase()
-    : "";
-}
-
 function areTargetPathsDistinct(left, right) {
   return (
     isSafeTargetPath(left) &&
     isSafeTargetPath(right) &&
-    targetPathIdentity(left) !== targetPathIdentity(right)
+    areMetricsTargetPathsDistinct(left, right)
   );
+}
+
+function filesystemIdentity(value) {
+  return getMetricsTargetPathIdentity(value, { filesystemPath: value })
+    .filesystemCollisionKey;
 }
 
 function isPathInside(parent, child) {
@@ -126,11 +173,27 @@ function parseMarker(repoRoot) {
   return { ok: issues.length === 0, marker: value, issues };
 }
 
+function validateDirectoryIdentity(inputPath, issuePrefix, issues) {
+  try {
+    const stat = lstatSync(inputPath, { bigint: true });
+    if (stat.isSymbolicLink()) issues.push(`${issuePrefix}_symlink`);
+    if (!stat.isDirectory()) issues.push(`${issuePrefix}_not_directory`);
+  } catch {
+    issues.push(`${issuePrefix}_invalid`);
+  }
+}
+
 function validateTestEnvironment(repo, claimDirectory, implementationRoot) {
   const issues = [];
   let repoRoot = "";
   let claimRoot = "";
   try {
+    validateDirectoryIdentity(repo, "test_repository_path", issues);
+    validateDirectoryIdentity(
+      claimDirectory,
+      "claim_directory_path",
+      issues,
+    );
     repoRoot = realpathSync(repo);
     claimRoot = realpathSync(claimDirectory);
   } catch {
@@ -142,7 +205,7 @@ function validateTestEnvironment(repo, claimDirectory, implementationRoot) {
   } catch {
     // The module may be copied into a standalone test harness.
   }
-  if (repoRoot === implementationReal) {
+  if (filesystemIdentity(repoRoot) === filesystemIdentity(implementationReal)) {
     issues.push("real_checkout_execution_prohibited");
   }
   if (claimRoot === repoRoot || isPathInside(repoRoot, claimRoot)) {
@@ -154,13 +217,16 @@ function validateTestEnvironment(repo, claimDirectory, implementationRoot) {
   let statusLines = [];
   try {
     branchName = runGit(repoRoot, ["branch", "--show-current"]);
-    statusLines = runGit(repoRoot, [
-      "status",
-      "--porcelain=v1",
-      "--untracked-files=all",
-    ])
-      .split(/\r?\n/)
-      .filter(Boolean);
+    const trackedMarker = runGit(repoRoot, [
+      "ls-files",
+      "--error-unmatch",
+      "--",
+      TEST_MARKER_FILE,
+    ]);
+    if (trackedMarker !== TEST_MARKER_FILE) {
+      issues.push("test_fixture_marker_not_committed");
+    }
+    statusLines = readGitStatus(repoRoot);
   } catch {
     issues.push("test_repository_git_state_invalid");
   }
@@ -196,25 +262,39 @@ function claimPathFor(claimRoot, claim) {
 
 function writeClaimExclusive(claimRoot, claim) {
   const claimPath = claimPathFor(claimRoot, claim);
-  writeFileSync(claimPath, serializeJson(claim), {
-    encoding: "utf8",
-    flag: "wx",
-    mode: 0o600,
-  });
+  let descriptor = null;
+  try {
+    descriptor = openSync(claimPath, "wx", 0o600);
+    writeFileSync(descriptor, serializeJson(claim), { encoding: "utf8" });
+    fsyncSync(descriptor);
+  } finally {
+    if (descriptor !== null) closeSync(descriptor);
+  }
   return claimPath;
 }
 
 function replaceClaim(claimPath, claim) {
-  const tempPath = `${claimPath}.tmp`;
+  let descriptor = null;
   try {
-    writeFileSync(tempPath, serializeJson(claim), {
-      encoding: "utf8",
-      flag: "wx",
-      mode: 0o600,
+    const before = lstatSync(claimPath, { bigint: true });
+    if (!before.isFile() || before.isSymbolicLink()) {
+      throw new Error("claim_file_identity_invalid");
+    }
+    descriptor = openSync(claimPath, "r+");
+    const descriptorBefore = require("node:fs").fstatSync(descriptor, {
+      bigint: true,
     });
-    renameSync(tempPath, claimPath);
+    if (
+      before.dev !== descriptorBefore.dev ||
+      before.ino !== descriptorBefore.ino
+    ) {
+      throw new Error("claim_file_identity_changed");
+    }
+    ftruncateSync(descriptor, 0);
+    writeFileSync(descriptor, serializeJson(claim), { encoding: "utf8" });
+    fsyncSync(descriptor);
   } finally {
-    if (existsSync(tempPath)) unlinkSync(tempPath);
+    if (descriptor !== null) closeSync(descriptor);
   }
 }
 
@@ -247,6 +327,87 @@ function countCsvDataRows(bytes) {
   return Math.max(0, records - 1);
 }
 
+function parseCsvLine(line) {
+  const cells = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (character === '"' && quoted && line[index + 1] === '"') {
+      current += '"';
+      index += 1;
+    } else if (character === '"') {
+      quoted = !quoted;
+    } else if (character === "," && !quoted) {
+      cells.push(current);
+      current = "";
+    } else {
+      current += character;
+    }
+  }
+  if (quoted) throw new TypeError("csv_unterminated_quote");
+  cells.push(current);
+  return cells;
+}
+
+function validateTargetCsvBytes(bytes, expectedMarket, declaredRowCount) {
+  const issues = [];
+  let text = "";
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return ["csv_utf8_invalid"];
+  }
+  const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+  while (lines.at(-1) === "") lines.pop();
+  if (lines.length < 2 || lines.some((line) => line.length === 0)) {
+    return ["csv_rows_invalid"];
+  }
+  let headers;
+  try {
+    headers = parseCsvLine(lines[0]);
+  } catch {
+    return ["csv_header_invalid"];
+  }
+  headers[0] = headers[0].replace(/^\uFEFF/, "");
+  if (canonicalJson(headers) !== canonicalJson(TARGET_EXPORT_HEADERS)) {
+    issues.push("csv_schema_mismatch");
+  }
+  const seen = new Set();
+  for (let index = 1; index < lines.length; index += 1) {
+    let cells;
+    try {
+      cells = parseCsvLine(lines[index]);
+    } catch {
+      issues.push(`csv_row_invalid:${index}`);
+      continue;
+    }
+    if (cells.length !== TARGET_EXPORT_HEADERS.length) {
+      issues.push(`csv_column_count_invalid:${index}`);
+      continue;
+    }
+    const market = cells[0].trim().toUpperCase();
+    const ticker = cells[1].trim().toUpperCase();
+    if (market !== expectedMarket) issues.push(`csv_market_mismatch:${index}`);
+    if (!ticker) {
+      issues.push(`csv_ticker_missing:${index}`);
+    } else if (seen.has(`${market}:${ticker}`)) {
+      issues.push(`csv_duplicate_market_ticker:${market}:${ticker}`);
+    } else {
+      seen.add(`${market}:${ticker}`);
+    }
+    for (const numericIndex of [2, 3, 4, 5, 6]) {
+      const value = cells[numericIndex].trim();
+      if (value && !Number.isFinite(Number(value))) {
+        issues.push(`csv_numeric_value_invalid:${index}`);
+        break;
+      }
+    }
+  }
+  if (lines.length - 1 !== declaredRowCount) issues.push("csv_row_count_mismatch");
+  return uniqueSorted(issues);
+}
+
 function assertRegularNonSymlink(filePath, issuePrefix, issues) {
   try {
     const stat = lstatSync(filePath);
@@ -258,6 +419,10 @@ function assertRegularNonSymlink(filePath, issuePrefix, issues) {
 }
 
 function ensureContainedPath(repoRoot, repositoryPath, issuePrefix, issues) {
+  if (!isSafeRepositoryPath(repositoryPath)) {
+    issues.push(`${issuePrefix}_repository_path_invalid`);
+    return "";
+  }
   const absolutePath = path.resolve(repoRoot, ...repositoryPath.split("/"));
   const parent = path.dirname(absolutePath);
   let realParent = "";
@@ -270,6 +435,21 @@ function ensureContainedPath(repoRoot, repositoryPath, issuePrefix, issues) {
   if (!isPathInside(repoRoot, absolutePath) || !isPathInside(repoRoot, realParent)) {
     issues.push(`${issuePrefix}_outside_repository`);
     return "";
+  }
+  let cursor = repoRoot;
+  for (const segment of path.relative(repoRoot, parent).split(path.sep)) {
+    if (!segment) continue;
+    cursor = path.join(cursor, segment);
+    try {
+      const stat = lstatSync(cursor, { bigint: true });
+      if (stat.isSymbolicLink() || !stat.isDirectory()) {
+        issues.push(`${issuePrefix}_parent_identity_invalid`);
+        return "";
+      }
+    } catch {
+      issues.push(`${issuePrefix}_parent_invalid`);
+      return "";
+    }
   }
   return absolutePath;
 }
@@ -317,9 +497,11 @@ function validateSelectorTransformation(bound, issues) {
 function verifyCurrentPreimage(repoRoot, bound, issues) {
   let currentHead = "";
   let currentTree = "";
+  let currentBranch = "";
   try {
     currentHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
     currentTree = runGit(repoRoot, ["rev-parse", "HEAD^{tree}"]);
+    currentBranch = runGit(repoRoot, ["branch", "--show-current"]);
   } catch {
     issues.push("repository_identity_read_failed");
   }
@@ -329,6 +511,9 @@ function verifyCurrentPreimage(repoRoot, bound, issues) {
   if (currentTree !== bound.receipt.repositoryTreeSha) {
     issues.push("repository_tree_changed");
   }
+  if (currentBranch !== bound.branchName) {
+    issues.push("repository_branch_changed");
+  }
   try {
     if (currentTrackedPathsSha256(repoRoot) !== bound.receipt.trackedPathsSha256) {
       issues.push("repository_tracked_paths_changed");
@@ -336,13 +521,7 @@ function verifyCurrentPreimage(repoRoot, bound, issues) {
   } catch {
     issues.push("repository_tracked_paths_read_failed");
   }
-  const statusLines = runGit(repoRoot, [
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-  ])
-    .split(/\r?\n/)
-    .filter(Boolean);
+  const statusLines = readGitStatus(repoRoot);
   if (statusLines.length > 0) issues.push("repository_prewrite_not_clean");
 
   const selectorPath = ensureContainedPath(
@@ -354,6 +533,11 @@ function verifyCurrentPreimage(repoRoot, bound, issues) {
   if (selectorPath) {
     assertRegularNonSymlink(selectorPath, "selector_preimage", issues);
     try {
+      const selectorMode = statSync(selectorPath).mode & 0o777;
+      if (bound.selectorMode === undefined) bound.selectorMode = selectorMode;
+      if (bound.selectorMode !== selectorMode) {
+        issues.push("selector_preimage_mode_changed");
+      }
       const bytes = readFileSync(selectorPath);
       if (!bytes.equals(bound.preimageBytes)) issues.push("selector_preimage_changed");
     } catch {
@@ -385,7 +569,16 @@ function invokeFault(adapters, stage, context = {}) {
   if (typeof adapters.fault === "function") adapters.fault(stage, context);
 }
 
-function writeExclusiveAndVerify(filePath, target) {
+function writeExclusiveAndVerify(repoRoot, filePath, target) {
+  if (existsSync(filePath)) {
+    throw new Error(`target_already_exists:${target.role}`);
+  }
+  try {
+    runGit(repoRoot, ["ls-files", "--error-unmatch", "--", target.path]);
+    throw new Error(`target_already_tracked:${target.role}`);
+  } catch (error) {
+    if (error?.message?.startsWith("target_already_tracked:")) throw error;
+  }
   let descriptor = null;
   try {
     descriptor = openSync(filePath, "wx", 0o600);
@@ -462,6 +655,9 @@ function postWriteVerification(repoRoot, bound) {
   if (selectorPath) {
     assertRegularNonSymlink(selectorPath, "postwrite_selector", issues);
     try {
+      if ((statSync(selectorPath).mode & 0o777) !== bound.selectorMode) {
+        issues.push("postwrite_selector_mode_mismatch");
+      }
       const bytes = readFileSync(selectorPath);
       if (!bytes.equals(bound.postimageBytes)) issues.push("postwrite_selector_bytes_mismatch");
       if (sha256(bytes) !== bound.receipt.selectorPostimageSha256) {
@@ -473,13 +669,8 @@ function postWriteVerification(repoRoot, bound) {
   }
   let statusLines = [];
   try {
-    statusLines = runGit(repoRoot, [
-      "status",
-      "--porcelain=v1",
-      "--untracked-files=all",
-    ])
-      .split(/\r?\n/)
-      .filter(Boolean)
+    statusLines = readGitStatus(repoRoot)
+      .map((entry) => `${entry.status} ${entry.path}`)
       .sort();
   } catch {
     issues.push("postwrite_git_status_failed");
@@ -491,6 +682,22 @@ function postWriteVerification(repoRoot, bound) {
   ].sort();
   if (canonicalJson(statusLines) !== canonicalJson(expectedStatus)) {
     issues.push("postwrite_changed_paths_invalid");
+  }
+  try {
+    if (runGit(repoRoot, ["rev-parse", "HEAD"]) !== bound.receipt.repositoryHeadSha) {
+      issues.push("postwrite_repository_head_changed");
+    }
+    if (runGit(repoRoot, ["rev-parse", "HEAD^{tree}"]) !== bound.receipt.repositoryTreeSha) {
+      issues.push("postwrite_repository_tree_changed");
+    }
+    if (runGit(repoRoot, ["branch", "--show-current"]) !== bound.branchName) {
+      issues.push("postwrite_repository_branch_changed");
+    }
+    if (currentTrackedPathsSha256(repoRoot) !== bound.receipt.trackedPathsSha256) {
+      issues.push("postwrite_repository_tracked_paths_changed");
+    }
+  } catch {
+    issues.push("postwrite_repository_identity_read_failed");
   }
   const verification = {
     contractVersion: POST_WRITE_VERIFICATION_CONTRACT_VERSION,
@@ -531,6 +738,7 @@ module.exports = {
   replaceSelector,
   runGit,
   validateSelectorTransformation,
+  validateTargetCsvBytes,
   validateTestEnvironment,
   verifyCurrentPreimage,
   writeClaimExclusive,

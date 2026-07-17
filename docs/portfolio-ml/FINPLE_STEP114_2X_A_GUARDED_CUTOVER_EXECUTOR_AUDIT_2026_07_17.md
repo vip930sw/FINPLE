@@ -17,6 +17,7 @@ The stage introduces:
 - a durable exclusive claim for a Step 114-2W `verified_unconsumed` invocation receipt;
 - exactly two ordered, exclusive `create_only` target writes;
 - immediate target byte, SHA-256, size, row-count, role, market, schema, and write-mode verification;
+- independent target CSV UTF-8, exact-header, market-only, ticker-identity, duplicate-row, and numeric-field verification;
 - an exact two-import selector postimage replacement;
 - final changed-path and no-delete verification;
 - deterministic `consumed_success` and `consumed_failed_manual_review` claim states;
@@ -49,7 +50,7 @@ The executor requires all of the following before it can acquire a claim:
 4. the fixture worktree must be clean;
 5. the claim directory must already exist outside the target repository;
 6. Step 114-2W must return `execution_invocation_verified` with a valid `verified_unconsumed` receipt;
-7. the Step 114-2S/2Q execution package must be rebuilt twice and be canonically identical;
+7. the Step 114-2S/2Q execution package must be rebuilt twice, be canonically identical, contain the exact 2Q field set, and pass an independent self-hash recomputation;
 8. repository HEAD, tree, tracked-path inventory hash, target-absence evidence, execution-package hash, selector hashes, ordered targets, and planned counts must match the receipt;
 9. the target files must still be absent and untracked;
 10. the selector bytes must still equal the sealed preimage.
@@ -70,7 +71,7 @@ There is no stdin fallback, environment-secret fallback, alternate target byte i
 
 ## Single-use claim
 
-The claim filename is derived only from the Step 114-2W receipt ID and receipt hash. It is created with exclusive filesystem creation semantics.
+The claim filename is derived only from the Step 114-2W receipt ID and receipt hash. It is created with exclusive filesystem creation semantics and descriptor `fsync`. Status transitions keep the exclusive claim file continuously present and update it through the same read/write descriptor with identity checks and `fsync`, avoiding replace-over-existing differences between Windows and POSIX.
 
 Claim states are:
 
@@ -124,7 +125,7 @@ M  src/data/tickers/screenerCandidateOverlay.js
 ?? <sealed KR target path>
 ```
 
-No fourth path, deletion, rename, type change, target overwrite, symlink, directory, selector drift, target drift, or row-count mismatch is accepted.
+No fourth path, deletion, rename, type change, target overwrite, symlink, junction/reparse parent escape, directory, selector drift, selector mode drift, target drift, or row-count mismatch is accepted. Git status is read with NUL-delimited porcelain output so path quoting is not platform-dependent. HEAD, tree, branch, and tracked inventory are re-read after the writes and must still match the sealed preimage.
 
 The post-write verification hash binds:
 
@@ -182,7 +183,7 @@ The executor modifies only a test-owned working tree after all test-only gates p
 
 ## Focused validation
 
-The focused suite contains 18 passing tests covering:
+The focused suite contains 20 passing tests covering:
 
 - successful exact two-target creation and selector replacement;
 - deterministic consumed claim and post-write receipt behavior;
@@ -193,15 +194,45 @@ The focused suite contains 18 passing tests covering:
 - selector preimage drift;
 - selector write failure;
 - post-write target tampering;
+- post-write selector tampering;
 - unexpected fourth changed path;
 - missing test marker;
 - `main` branch rejection;
 - claim directory inside repository rejection;
 - tracked inventory drift;
 - unrelated selector postimage edit rejection;
+- real Step 114-2W standalone receipt validation and forged 2Q execution-package self-hash rejection;
 - exact CLI flag parsing and one-line sanitized output.
 
 The suite runs entirely with synthetic target data, temporary directories, temporary Git repositories, and external claim directories. No FINPLE production target or selector was used or modified.
+
+Verified on 2026-07-17:
+
+```text
+node --test scripts/run-metrics-cutover-guarded-executor.test.cjs
+20 passed
+
+node --test scripts/verify-metrics-cutover-execution-invocation.test.cjs scripts/run-metrics-cutover-guarded-executor.test.cjs
+88 passed
+
+Step 114-2Q through Step 114-2X-A combined suite
+467 passed
+
+python -m unittest discover -s scripts/metrics_pipeline/tests
+48 passed (bundled Python runtime)
+
+npm.cmd run check:scenario-metrics
+80 passed
+
+npm.cmd run build
+passed
+
+npm.cmd run check:ai-production
+passed
+
+repository-wide node --test
+bounded attempt timed out after 120 seconds; no failure was reported before timeout
+```
 
 ## Production boundary and next step
 
@@ -215,4 +246,11 @@ Step 114-2X-A is not production approval. A later production-execution stage mus
 6. execute the production cutover once;
 7. stop before commit, push, PR, merge, deployment, pointer, or loader activation unless those later actions receive separate approval.
 
-Until that separate stage is approved, the guarded executor remains limited to test-owned temporary repositories.
+Until that separate Step 114-2X-B preparation is approved, the guarded executor remains limited to test-owned temporary repositories.
+
+## Known limitations and rollback policy
+
+- Step 114-2X-A does not provide a production policy, production claim store, deployment integration, or permission to run against the FINPLE checkout.
+- The executor intentionally has no retry-after-claim path and no automatic deletion or rollback. Any post-claim failure requires manual review.
+- Repository history is not created by the executor. Reverting this feature branch or its eventual merge must be done only with a normal Git revert; history rewrite and force-push are outside this stage.
+- Step 114-2X-B must separately prepare and review any production-execution boundary. It cannot infer production authority from this test-only validation.

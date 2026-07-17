@@ -14,6 +14,7 @@ const {
   decodeCanonicalBase64,
   deriveClaimId,
   derivePostWriteReceiptId,
+  hasExactKeys,
   isNonEmptyString,
   isRecord,
   isSafeIdentity,
@@ -24,6 +25,52 @@ const {
   validateClaim,
   validatePostWriteReceipt,
 } = require("./metrics-cutover-guarded-executor-contracts.cjs");
+const {
+  TARGET_FIELDS: TARGET_SUMMARY_FIELDS,
+  TARGET_SCHEMA_VERSION,
+} = require("./metrics-cutover-execution-approval-request.cjs");
+const {
+  validateMetricsCutoverTargetSummaries,
+} = require("./metrics-cutover-execution-authority-package.cjs");
+
+const EXECUTION_PACKAGE_CONTRACT_VERSION =
+  "metrics-cutover-execution-package-v1-step114-2q";
+const EXECUTION_TARGET_FIELDS = Object.freeze([
+  ...TARGET_SUMMARY_FIELDS,
+  "importName",
+  "contentBase64",
+]);
+const EXECUTION_PACKAGE_FIELDS = Object.freeze([
+  "contractVersion",
+  "cutoverRehearsalEvidenceHash",
+  "candidatePackageId",
+  "candidatePackageHash",
+  "zipPackageSha256",
+  "packageIndexFile",
+  "selectorProvenanceCommitSha",
+  "repositoryHeadSha",
+  "repositoryTreeSha",
+  "trackedPathsSha256",
+  "targetPathAbsenceEvidenceHash",
+  "branchName",
+  "repositoryPreimage",
+  "selectorPreimage",
+  "targetFiles",
+  "selectorPostimage",
+  "exactDiff",
+  "pointerIdentities",
+  "rollbackBundle",
+  "executionPolicy",
+  "plannedWriteCount",
+  "plannedDeleteCount",
+  "executionPackageHash",
+]);
+
+function hashExecutionPackage(value) {
+  const payload = structuredClone(value);
+  delete payload.executionPackageHash;
+  return sha256(Buffer.from(canonicalJson(payload), "utf8"));
+}
 const {
   SELECTOR_PATH,
   TEST_MARKER_FILE,
@@ -37,6 +84,7 @@ const {
   replaceClaim,
   replaceSelector,
   validateSelectorTransformation,
+  validateTargetCsvBytes,
   validateTestEnvironment,
   verifyCurrentPreimage,
   writeClaimExclusive,
@@ -48,7 +96,17 @@ function validateTarget(target, expectedRole, expectedMarket, receiptTarget, iss
     issues.push(`execution_target_not_object:${expectedRole}`);
     return null;
   }
+  if (!hasExactKeys(target, EXECUTION_TARGET_FIELDS)) {
+    issues.push(`execution_target_fields_invalid:${expectedRole}`);
+  }
   if (target.role !== expectedRole) issues.push(`execution_target_role_mismatch:${expectedRole}`);
+  const expectedImportName =
+    expectedRole === "us_price_metrics"
+      ? "usPriceMetricsOverlayCsv"
+      : "krPriceMetricsOverlayCsv";
+  if (target.importName !== expectedImportName) {
+    issues.push(`execution_target_import_name_mismatch:${expectedRole}`);
+  }
   if (target.market !== expectedMarket) issues.push(`execution_target_market_mismatch:${expectedRole}`);
   if (!isSafeTargetPath(target.path)) issues.push(`execution_target_path_invalid:${expectedRole}`);
   if (!isSha256(target.sha256)) issues.push(`execution_target_hash_invalid:${expectedRole}`);
@@ -58,7 +116,7 @@ function validateTarget(target, expectedRole, expectedMarket, receiptTarget, iss
   if (!Number.isInteger(target.rowCount) || target.rowCount <= 0) {
     issues.push(`execution_target_row_count_invalid:${expectedRole}`);
   }
-  if (!isNonEmptyString(target.schemaVersion)) {
+  if (target.schemaVersion !== TARGET_SCHEMA_VERSION) {
     issues.push(`execution_target_schema_invalid:${expectedRole}`);
   }
   if (target.writeMode !== "create_only") {
@@ -82,6 +140,13 @@ function validateTarget(target, expectedRole, expectedMarket, receiptTarget, iss
   } catch {
     issues.push(`execution_target_csv_invalid:${expectedRole}`);
   }
+  for (const issue of validateTargetCsvBytes(
+    bytes,
+    expectedMarket,
+    target.rowCount,
+  )) {
+    issues.push(`execution_target_${issue}:${expectedRole}`);
+  }
   try {
     if (canonicalJson(targetSummary(target)) !== canonicalJson(receiptTarget)) {
       issues.push(`execution_target_receipt_mismatch:${expectedRole}`);
@@ -103,6 +168,12 @@ function validateExecutionBinding(verification, prepared, issues) {
     return null;
   }
   const receipt = verification.invocationReceipt;
+  issues.push(
+    ...validateMetricsCutoverTargetSummaries(
+      receipt.targets,
+      "execution_receipt",
+    ),
+  );
   for (const [summaryField, receiptField] of [
     ["receiptId", "receiptId"],
     ["receiptHash", "receiptHash"],
@@ -144,6 +215,22 @@ function validateExecutionBinding(verification, prepared, issues) {
     issues.push("execution_package_missing");
     return null;
   }
+  if (!hasExactKeys(executionPackage, EXECUTION_PACKAGE_FIELDS)) {
+    issues.push("execution_package_fields_invalid");
+  }
+  if (executionPackage.contractVersion !== EXECUTION_PACKAGE_CONTRACT_VERSION) {
+    issues.push("execution_package_contract_version_mismatch");
+  }
+  try {
+    if (
+      executionPackage.executionPackageHash !==
+      hashExecutionPackage(executionPackage)
+    ) {
+      issues.push("execution_package_hash_mismatch");
+    }
+  } catch {
+    issues.push("execution_package_hash_recomputation_failed");
+  }
   for (const field of [
     "executionPackageHash",
     "repositoryHeadSha",
@@ -154,6 +241,18 @@ function validateExecutionBinding(verification, prepared, issues) {
     if (executionPackage[field] !== receipt[field]) {
       issues.push(`execution_package_receipt_mismatch:${field}`);
     }
+  }
+  if (
+    executionPackage.repositoryPreimage?.repositoryHeadSha !==
+      receipt.repositoryHeadSha ||
+    executionPackage.repositoryPreimage?.repositoryTreeSha !==
+      receipt.repositoryTreeSha ||
+    executionPackage.repositoryPreimage?.trackedPathsSha256 !==
+      receipt.trackedPathsSha256 ||
+    executionPackage.repositoryPreimage?.targetPathAbsenceEvidenceHash !==
+      receipt.targetPathAbsenceEvidenceHash
+  ) {
+    issues.push("execution_package_repository_preimage_receipt_mismatch");
   }
   const selectorPreimage = executionPackage.selectorPreimage;
   const selectorPostimage = executionPackage.selectorPostimage;
@@ -218,6 +317,7 @@ function validateExecutionBinding(verification, prepared, issues) {
   const bound = {
     receipt,
     executionPackage,
+    branchName: executionPackage.branchName,
     targets: validatedTargets,
     preimageBytes,
     postimageBytes,
@@ -413,7 +513,7 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
         role: target.role,
         path: target.path,
       });
-      writeExclusiveAndVerify(targetPath, target);
+      writeExclusiveAndVerify(environment.repoRoot, targetPath, target);
       invokeFault(adapters, `after_target_${index}_create`, {
         role: target.role,
         path: target.path,
@@ -446,7 +546,11 @@ async function runMetricsCutoverGuardedExecutor(input = {}, adapters = {}) {
       initialClaim,
       postWrite,
     );
-    const postWriteReceiptIssues = validatePostWriteReceipt(postWriteReceipt);
+    const postWriteReceiptIssues = validatePostWriteReceipt(postWriteReceipt, {
+      bound,
+      completedClaim,
+      postWrite,
+    });
     if (postWriteReceiptIssues.length > 0) {
       return manualReview(
         "post_write_receipt_validation_failed",

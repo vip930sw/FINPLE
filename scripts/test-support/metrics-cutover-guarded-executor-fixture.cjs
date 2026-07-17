@@ -12,6 +12,16 @@ const {
 const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const {
+  hashMetricsCutoverExecutionInvocationReceipt,
+  recomputeMetricsCutoverExecutionInvocationReceiptId,
+} = require("../lib/metrics-cutover-execution-invocation.cjs");
+const {
+  TARGET_SCHEMA_VERSION,
+} = require("../lib/metrics-cutover-execution-approval-request.cjs");
+const {
+  canonicalJson,
+} = require("../lib/metrics-cutover-guarded-executor-contracts.cjs");
 const test = require("node:test");
 
 const {
@@ -124,7 +134,7 @@ function target(role, market, targetPath, ticker) {
     byteSize: bytes.length,
     rowCount: 1,
     market,
-    schemaVersion: "metrics-target-export-v1-step114-2l",
+    schemaVersion: TARGET_SCHEMA_VERSION,
     writeMode: "create_only",
   };
 }
@@ -140,6 +150,31 @@ function summary(targetValue) {
     schemaVersion: targetValue.schemaVersion,
     writeMode: targetValue.writeMode,
   };
+}
+
+function resealExecution(execution) {
+  for (const packageResult of [
+    execution.prepared.packageA,
+    execution.prepared.packageB,
+  ]) {
+    const payload = structuredClone(packageResult.executionPackage);
+    delete payload.executionPackageHash;
+    packageResult.executionPackage.executionPackageHash = sha256(
+      Buffer.from(canonicalJson(payload), "utf8"),
+    );
+    packageResult.executionPackageHash =
+      packageResult.executionPackage.executionPackageHash;
+  }
+  const receipt = execution.verification.invocationReceipt;
+  receipt.executionPackageHash =
+    execution.prepared.packageA.executionPackageHash;
+  receipt.receiptId =
+    recomputeMetricsCutoverExecutionInvocationReceiptId(receipt);
+  receipt.receiptHash = "0".repeat(64);
+  receipt.receiptHash = hashMetricsCutoverExecutionInvocationReceipt(receipt);
+  execution.invocationReceipt = receipt;
+  execution.executionPackage = execution.prepared.packageA.executionPackage;
+  return execution;
 }
 
 function makeExecution(repo) {
@@ -164,11 +199,67 @@ function makeExecution(repo) {
   const postimageBytes = Buffer.from(postimageText, "utf8");
   const us = target("us_price_metrics", "US", US_TARGET, "AAPL");
   const kr = target("kr_price_metrics", "KR", KR_TARGET, "005930");
-  const executionPackageHash = "e".repeat(64);
   const targetPathAbsenceEvidenceHash = "d".repeat(64);
+  const executionPackage = {
+    contractVersion: "metrics-cutover-execution-package-v1-step114-2q",
+    cutoverRehearsalEvidenceHash: "c".repeat(64),
+    candidatePackageId: "step114-2x-a-synthetic-candidate",
+    candidatePackageHash: "1".repeat(64),
+    zipPackageSha256: "2".repeat(64),
+    packageIndexFile: "candidate-package-index.json",
+    selectorProvenanceCommitSha: "3".repeat(40),
+    repositoryHeadSha: head,
+    repositoryTreeSha: tree,
+    trackedPathsSha256,
+    targetPathAbsenceEvidenceHash,
+    branchName: "test/step114-2x-a-fixture",
+    repositoryPreimage: {
+      contractVersion: "metrics-repository-preimage-v1-step114-2q",
+      selectorProvenanceCommitSha: "3".repeat(40),
+      repositoryHeadSha: head,
+      repositoryTreeSha: tree,
+      selectorPath: SELECTOR_PATH,
+      selectorContentBase64: preimageBytes.toString("base64"),
+      selectorSha256: sha256(preimageBytes),
+      trackedPaths: tracked,
+      trackedPathsSha256,
+      targetPathAbsenceEvidenceHash,
+      worktreeClean: true,
+      branchName: "test/step114-2x-a-fixture",
+    },
+    selectorPreimage: {
+      contractVersion: "metrics-repository-preimage-v1-step114-2q",
+      selectorPath: SELECTOR_PATH,
+      selectorContentBase64: preimageBytes.toString("base64"),
+      selectorSha256: sha256(preimageBytes),
+    },
+    targetFiles: [us, kr],
+    selectorPostimage: {
+      selectorPath: SELECTOR_PATH,
+      selectorContentBase64: postimageBytes.toString("base64"),
+      selectorSha256: sha256(postimageBytes),
+    },
+    exactDiff: { replacementCount: 2, changedLineCount: 2 },
+    pointerIdentities: {
+      currentPointerIdentityHash: "4".repeat(64),
+      targetPointerIdentityHash: "5".repeat(64),
+      rollbackPointerIdentityHash: "4".repeat(64),
+    },
+    rollbackBundle: { rollbackFileDeletes: [] },
+    executionPolicy: { requireCreateOnlyTargets: true },
+    plannedWriteCount: 2,
+    plannedDeleteCount: 0,
+    executionPackageHash: "0".repeat(64),
+  };
+  const packagePayload = structuredClone(executionPackage);
+  delete packagePayload.executionPackageHash;
+  executionPackage.executionPackageHash = sha256(
+    Buffer.from(canonicalJson(packagePayload), "utf8"),
+  );
+  const executionPackageHash = executionPackage.executionPackageHash;
   const invocationReceipt = {
     contractVersion: "metrics-cutover-execution-invocation-receipt-v1-step114-2w",
-    receiptId: `metrics-cutover-execution-invocation-receipt-${"1".repeat(64)}`,
+    receiptId: "",
     receiptStatus: "verified_unconsumed",
     invocationId: `metrics-cutover-execution-invocation-${"2".repeat(64)}`,
     invocationHash: "3".repeat(64),
@@ -206,29 +297,12 @@ function makeExecution(repo) {
       allowTargetDeletion: false,
       allowAutomaticRollback: false,
     },
-    receiptHash: "b".repeat(64),
+    receiptHash: "0".repeat(64),
   };
-  const executionPackage = {
-    contractVersion: "metrics-cutover-execution-package-v1-step114-2q",
-    executionPackageHash,
-    repositoryHeadSha: head,
-    repositoryTreeSha: tree,
-    trackedPathsSha256,
-    targetPathAbsenceEvidenceHash,
-    selectorPreimage: {
-      selectorPath: SELECTOR_PATH,
-      selectorContentBase64: preimageBytes.toString("base64"),
-      selectorSha256: sha256(preimageBytes),
-    },
-    targetFiles: [us, kr],
-    selectorPostimage: {
-      selectorPath: SELECTOR_PATH,
-      selectorContentBase64: postimageBytes.toString("base64"),
-      selectorSha256: sha256(postimageBytes),
-    },
-    plannedWriteCount: 2,
-    plannedDeleteCount: 0,
-  };
+  invocationReceipt.receiptId =
+    recomputeMetricsCutoverExecutionInvocationReceiptId(invocationReceipt);
+  invocationReceipt.receiptHash =
+    hashMetricsCutoverExecutionInvocationReceipt(invocationReceipt);
   const packageResult = {
     ok: true,
     status: "package_ready",
@@ -254,7 +328,6 @@ function makeExecution(repo) {
 function adapters(execution, fault) {
   return {
     verifyInvocation: async () => structuredClone(execution.verification),
-    validateInvocationReceipt: () => ({ ok: true, issues: [] }),
     prepareExecutionPackage: async () => structuredClone(execution.prepared),
     fault,
   };
@@ -308,6 +381,7 @@ module.exports = {
   target,
   summary,
   makeExecution,
+  resealExecution,
   adapters,
   input,
   assertFixedFalse,
