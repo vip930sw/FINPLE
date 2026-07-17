@@ -55,4 +55,4 @@ All public authority fields remain false, including provider connection, schema 
 - `npm.cmd run check:ai-production`: passed.
 - Diff checks: passed before commit; staged checks will be repeated immediately before commit.
 - Original implementation clean-head repository-wide `node --test --test-reporter=dot`: timed out at the 120-second bound after 86 dot-reporter progress markers; 0 actual failures were emitted before timeout.
-- Corrective-review clean-head repository-wide `node --test --test-reporter=dot`: pending the corrective commit.
+- Corrective-review clean-head repository-wide `node --test --test-reporter=dot`: timed out at the 120-second bound after emitting one failure marker. A bounded spec-reporter diagnostic reproduced 2,143 pass markers and one actual failure before timeout: the unrelated existing `Step228 checker passes and leaves working tree unchanged` test reported `snapshot format is not canonical`. The historical Step228 checker was not modified.
