@@ -742,6 +742,7 @@ function readDescriptorAtomicJsonObservation(
       readFileSync,
       realpathSync,
     },
+    parseBytes,
   } = {},
 ) {
   if (!isNonEmptyString(inputPath)) {
@@ -849,7 +850,10 @@ function readDescriptorAtomicJsonObservation(
     issues.push("bytes_size_mismatch");
   }
   if (issues.length > 0) return failedObservation(kind, issues);
-  const parsed = parseJsonBytes(bytes, kind);
+  const parsed =
+    typeof parseBytes === "function"
+      ? parseBytes(bytes)
+      : parseJsonBytes(bytes, kind);
   if (!parsed.ok) return failedObservation(kind, parsed.issues);
   return {
     ok: true,
@@ -1322,6 +1326,7 @@ module.exports = {
   hashMetricsCutoverExecutionApprovalResponse,
   hashMetricsCutoverExecutionApprovalVerificationReceipt,
   normalizeExecutionApproverAllowlist,
+  readDescriptorAtomicJsonObservation,
   readMetricsCutoverExecutionApprovalResponseObservation,
   readMetricsCutoverExecutionApproverAllowlistObservation,
   recomputeMetricsCutoverExecutionApprovalResponseId,
