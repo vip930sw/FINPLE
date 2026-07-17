@@ -1,0 +1,65 @@
+# Step 114-2X-E PostgreSQL test-package audit
+
+Date: 2026-07-18
+Baseline: `cb29996ae55cbbf43e6e8ded69dac9099c5b7db7`
+Branch: `codex/step114-2x-e-postgresql-test-package`
+
+## Scope and inherited validation
+
+Step 114-2X-E adds an inert PostgreSQL migration/query specification, expected introspection specification, disposable test-database gate, future evidence plan, and sanitized package summary. It directly includes and validates the merged sealed artifacts from:
+
+- Step 114-2X-B preparation summary;
+- Step 114-2X-C claim-store protocol;
+- Step 114-2X-C repository-lock protocol;
+- Step 114-2X-D preflight summary;
+- Step 114-2X-D persistence decision, schema plan, transaction plan, credential plan, and migration runbook.
+
+The package reuses the merged validators rather than trusting copied version strings or method lists. Complete upstream IDs/hashes and cross-contract ID/hash pairs bind the migration, query, introspection, gate, future evidence, and final summary to one validated upstream packet.
+
+## Fail-closed findings
+
+- Logical resources, operations, fields, states, unique constraints, immutable fields, adapter inputs, storage parameters, and input-to-parameter mappings are exact and ordered.
+- Every mutation encodes state/version/hash conditions and durable commit acknowledgement.
+- Ambiguous mutation outcomes require manual review; there is no automatic retry after possible mutation.
+- Destructive operations, down/reset paths, automatic cleanup, extensions, superuser behavior, and advisory-lock-only persistence are forbidden.
+- The introspection object is expected evidence only and cannot query a catalog.
+- The test-database gate is limited to a future disposable isolated conformance database with distinct future credential categories and no fallback.
+- Pure validators enforce each future scenario result, the exact contiguous 15-item evidence chain, and the run summary only after the full chain passes; tests use sanitized synthetic fixtures and no database evidence is fabricated.
+- Commit ambiguity uses an explicit null/null/manual-review tri-state. Null winner or mutation observations are rejected for every non-ambiguity scenario.
+- The core imports no filesystem, child-process, network, provider, or database client and exports no execution method.
+- The CLI accepts no arguments, file input, stdin input, environment fallback, connection material, or credential material.
+- Ready, blocked, idle, argument-rejection, and runtime-exception results all preserve the 24 fixed-false authority fields. Blocked and idle results suppress the summary.
+
+## Protected scope
+
+No database, Redis, object store, Supabase, cloud provider, or network connection occurred. No provider SDK was added. No SQL, DDL, migration, catalog query, schema/table creation, claim, lock, receipt consumption, production cutover, target CSV write, selector change, loader/pointer change, Git authorization, or deployment action occurred. No real key, signature, nonce, provider identity, endpoint, DSN, credential, connection string, receipt, claim, lock, or production data was used or committed.
+
+## Corrective-review boundary
+
+The corrective changes remain within the six files already changed by Draft PR #284. `scripts/check-trading-step228-contract-hardening-handoff.cjs`, `scripts/check-trading-step228-contract-hardening-handoff.test.cjs`, `data/processed/trading-ai-ml/step192_contract_hardening_audit_baseline.json`, and `.gitattributes` are outside this PR's changed-file scope and were not modified. The existing Windows newline portability failure reported by the Step228 checker remains separately recorded as `snapshot format is not canonical`; it is not repaired or bypassed by this PR.
+
+## Validation results
+
+- Step 114-2X-E focused corrective suite: 50 passed, 0 failed.
+- Step 114-2X-D standalone: 38 passed, 0 failed.
+- Step 114-2X-C standalone: 49 passed, 0 failed.
+- Step 114-2X-B standalone: 31 passed, 0 failed.
+- Step 114-2X-A standalone: 24 passed, 0 failed.
+- Step 114-2W standalone: 68 passed, 0 failed.
+- Combined Step 114-2W through 2X-E: 260 passed, 0 failed.
+- Combined Step 114-2Q through 2X-E: 639 passed, 0 failed.
+- Combined Step 114-2N through 2X-E: 843 passed, 0 failed.
+- Python Step 114-2M candidate-package tests: 16 passed, 0 failed.
+- Python metrics discovery: 48 passed, 0 failed.
+- `npm.cmd run check:scenario-metrics`: 80 passed, 0 failed.
+- `npm.cmd run build`: passed; only the existing bundle-size advisory was emitted.
+- `npm.cmd run check:ai-production`: passed all smoke checks, including the admin endpoint's tokenless 403.
+- Diff checks: passed for both the unstaged and staged patch.
+
+## Repository-wide bounded failure inventory
+
+The inventory was rerun from clean committed HEAD `26a567bcd6ced12816880be336b00fa02070f2a9` with the spec reporter and a 240-second bound. The full auto-discovery run did not finish before the bound. Before timeout it emitted exactly one failing test name:
+
+- `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
+
+No other failing test name appeared before that timeout. A second read-only run used the Node test runner with the Git-tracked `*.test.{cjs,js,mjs}` file list and excluded only `scripts/check-trading-step228-contract-hardening-handoff.test.cjs`. It also reached the 240-second bound without completing, and emitted zero failing test names before timeout. These bounded results distinguish the observed Step228 portability failure from the absence of any observed non-Step228 failure, but they do not claim a completed repository-wide pass. The Step228 checker, test, snapshot, and `.gitattributes` remain outside PR #284 and were not modified.
