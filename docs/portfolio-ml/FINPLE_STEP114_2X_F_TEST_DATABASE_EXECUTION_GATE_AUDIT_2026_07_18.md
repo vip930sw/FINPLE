@@ -66,7 +66,7 @@ No production CSV, scenario runtime, selector, loader, pointer, DB/auth/payment/
 
 ## Repository-wide bounded failure inventory
 
-The spec-reporter auto-discovery run started from clean committed corrective HEAD `35f20a014fb38db881ea59988655c634ba569875` with a 240-second bound. It did not complete before timeout. Before timeout it emitted exactly one failing test name:
+The spec-reporter auto-discovery run started from clean committed corrective HEAD `717b1699a6a5b3c73f1eea0c6137f21819ad910a` with a 240-second bound. It did not complete before timeout. Before timeout it emitted exactly one failing test name:
 
 - `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
 
