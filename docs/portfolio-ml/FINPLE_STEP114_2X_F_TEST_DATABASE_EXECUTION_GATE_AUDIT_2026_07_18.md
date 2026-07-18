@@ -63,8 +63,8 @@ No production CSV, scenario runtime, selector, loader, pointer, DB/auth/payment/
 
 ## Repository-wide bounded failure inventory
 
-The spec-reporter auto-discovery run started from clean committed HEAD `91fffe7a621e6da298a7a9c42c0720ca55781e9f` with a 240-second bound. It did not complete before timeout. Before timeout it emitted exactly one failing test name:
+The spec-reporter auto-discovery run started from clean committed corrective HEAD `35f20a014fb38db881ea59988655c634ba569875` with a 240-second bound. It did not complete before timeout. Before timeout it emitted exactly one failing test name:
 
 - `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
 
-No other failing test name appeared before the bound. This is not reported as a completed repository-wide pass. The existing Step228 checker, test, snapshot, and `.gitattributes` remain outside Issue #285 and were not modified.
+No Step228-external failing test name appeared before the bound: Step228 failures 1, Step228-external failures 0. This is not reported as a completed repository-wide pass. The existing Step228 checker, test, snapshot, and `.gitattributes` remain outside Issue #285 and were not modified. The run-created TEMP `finple-*` directories were removed after inventory collection.
