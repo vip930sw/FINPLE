@@ -49,7 +49,16 @@ Pre-commit validation completed:
 
 The exact AI production smoke initially met external 120-second and 180-second timeouts. Endpoint-level diagnosis likewise timed out for API health, AI status, and admin usage while the production web HEAD remained HTTP 200. After API health recovered to HTTP 200, the unchanged exact smoke command passed. The transient availability interval was not a code-test failure.
 
-The clean committed-head 240-second repository-wide inventory will be recorded in a follow-up audit commit so the run cannot observe an uncommitted implementation.
+Clean committed-head repository-wide inventory:
+
+- `node --test --test-reporter=spec` was bounded at 240 seconds;
+- one failure appeared before timeout: `Step228 checker passes and leaves working tree unchanged`;
+- its existing error was `snapshot format is not canonical` in the Step228 checker;
+- no other error marker appeared before timeout;
+- a second 240-second read-only run skipped that exact Step228 test name;
+- the second run reported zero `Error`, `ERR_TEST_FAILURE`, snapshot error, or `not ok` markers before timeout.
+
+Both runs reached the requested time bound before a final repository-wide aggregate count. The inventory records every failure emitted before timeout rather than claiming full-suite completion. All temporary `finple-*` test directories and generated build/cache artifacts were removed afterward.
 
 ## Step228 boundary
 
