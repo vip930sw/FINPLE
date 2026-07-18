@@ -47,7 +47,16 @@ Pre-commit validation completed:
 - AI production smoke: passed after the sandbox-only network denial was rerun with read-only network access;
 - unstaged and staged diff checks: passed.
 
-The clean committed-head 240-second repository-wide inventory is recorded in a follow-up audit commit so the run cannot observe an uncommitted implementation.
+Clean committed-head repository-wide inventory:
+
+- `node --test --test-reporter=spec` was bounded at 240 seconds;
+- one failure appeared before timeout: `Step228 checker passes and leaves working tree unchanged`;
+- its existing error was `snapshot format is not canonical` in the Step228 checker;
+- no other failure marker appeared before timeout;
+- a second 240-second read-only run skipped that exact Step228 test name;
+- the second run reported no `Error`, `ERR_TEST_FAILURE`, snapshot error, or `not ok` marker before timeout.
+
+Both runs reached the requested time bound before the repository-wide suite produced a final aggregate count. The inventory therefore records every failure emitted before timeout rather than claiming full-suite completion. The bounded runs created only temporary test directories; all `finple-*` test directories and build/cache artifacts were removed afterward.
 
 ## Step228 boundary
 
