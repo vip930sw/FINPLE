@@ -1,0 +1,1055 @@
+"use strict";
+
+const {
+  canonicalJson,
+  hasExactKeys,
+  hashWithDomain,
+  isRecord,
+  isSafeIdentity,
+  isSha256,
+  uniqueSorted,
+} = require("./metrics-cutover-guarded-executor-contracts.cjs");
+const {
+  FIXED_FALSE_FIELDS: STEP_E_FIXED_FALSE_FIELDS,
+  FUTURE_SCENARIOS,
+  buildPackageSummary,
+  buildValidPostgresqlTestPackage,
+  validateFutureEvidenceSpec,
+  validateIntrospectionSpec,
+  validateMigrationSpec,
+  validatePackageSummary,
+  validateQuerySpec,
+  validateTestDatabaseGate,
+  validateUpstreamArtifacts,
+} = require("./metrics-cutover-postgresql-test-package.cjs");
+
+const VERSIONS = Object.freeze({
+  environment: "metrics-cutover-test-database-environment-classification-v1-step114-2x-f",
+  network: "metrics-cutover-network-destination-observation-policy-v1-step114-2x-f",
+  database: "metrics-cutover-database-fingerprint-observation-policy-v1-step114-2x-f",
+  certificate: "metrics-cutover-certificate-fingerprint-observation-policy-v1-step114-2x-f",
+  credential: "metrics-cutover-test-database-credential-injection-policy-v1-step114-2x-f",
+  authorization: "metrics-cutover-test-database-one-time-authorization-policy-v1-step114-2x-f",
+  networkObservation: "metrics-cutover-test-database-network-observation-v1-step114-2x-f",
+  databaseObservation: "metrics-cutover-test-database-database-observation-v1-step114-2x-f",
+  certificateObservation: "metrics-cutover-test-database-certificate-observation-v1-step114-2x-f",
+  namespaceObservation: "metrics-cutover-test-database-namespace-observation-v1-step114-2x-f",
+  authorizationEnvelope: "metrics-cutover-test-database-one-time-authorization-envelope-v1-step114-2x-f",
+  summary: "metrics-cutover-test-database-execution-gate-preparation-summary-v1-step114-2x-f",
+});
+
+const FIXED_FALSE_FIELDS = Object.freeze([...new Set([
+  ...STEP_E_FIXED_FALSE_FIELDS,
+  "environmentObservationExecuted", "networkDestinationValidated",
+  "databaseFingerprintValidated", "certificateFingerprintValidated",
+  "namespaceIsolationValidated", "credentialInjectionValidated",
+  "oneTimeAuthorizationIssued", "oneTimeAuthorizationConsumed",
+])]);
+
+const DOMAINS = Object.freeze(Object.fromEntries(
+  Object.keys(VERSIONS).flatMap((name) => [
+    [`${name}Id`, `FINPLE_STEP114_2X_F_${name.toUpperCase()}_ID\0`],
+    [`${name}Hash`, `FINPLE_STEP114_2X_F_${name.toUpperCase()}_HASH\0`],
+  ]),
+));
+
+const OBSERVATION_NAMES = Object.freeze([
+  "networkObservation", "databaseObservation", "certificateObservation",
+  "namespaceObservation",
+]);
+const OBSERVATION_CONTEXT_NAMES = Object.freeze([
+  "network", "database", "certificate", "namespace",
+]);
+const OBSERVATION_SET_HASH_DOMAIN =
+  "FINPLE_STEP114_2X_F_AUTHORIZATION_OBSERVATION_SET_HASH\0";
+
+const SPECS = Object.freeze(Object.fromEntries(Object.entries(VERSIONS).map(
+  ([name, version]) => [name, Object.freeze({
+    version,
+    idField: name === "summary" ? "preparationSummaryId"
+      : OBSERVATION_NAMES.includes(name) ? "observationId"
+        : name === "authorizationEnvelope" ? "authorizationEnvelopeId"
+          : `${name}PolicyId`.replace("environmentPolicy", "environmentClassification"),
+    hashField: name === "summary" ? "preparationSummaryHash"
+      : OBSERVATION_NAMES.includes(name) ? "observationHash"
+        : name === "authorizationEnvelope" ? "authorizationEnvelopeHash"
+          : `${name}PolicyHash`.replace("environmentPolicy", "environmentClassification"),
+    prefix: `metrics-cutover-test-database-${name}`,
+    idDomain: DOMAINS[`${name}Id`],
+    hashDomain: DOMAINS[`${name}Hash`],
+  })]),
+));
+
+const UPSTREAM_BINDING_FIELDS = Object.freeze([
+  "packageSummaryId", "packageSummaryHash", "testDatabaseGateId",
+  "testDatabaseGateHash", "futureEvidenceSpecId", "futureEvidenceSpecHash",
+  "exactScenarioCount",
+]);
+
+const ENVIRONMENT_FIELDS = Object.freeze([
+  "contractVersion", "environmentClassificationId", "upstreamBindings",
+  "purposeClassification", "production", "staging", "sharedDevelopment",
+  "applicationDataStorage", "analyticsOrReportingStorage",
+  "existingFinpleApplicationDatabase", "containsUnrelatedData",
+  "allowedNamespaceCategories", "futureNamespaceEvidenceRequired",
+  "maximumAgeSeconds", "allowedClockSkewSeconds",
+  "environmentObserved", "environmentClassificationHash",
+]);
+const NETWORK_FIELDS = Object.freeze([
+  "contractVersion", "networkPolicyId", "upstreamBindings",
+  "futureObservationFields", "observationMethodCategory", "maximumAgeSeconds",
+  "allowedClockSkewSeconds", "exactDestinationCount", "wildcardAllowed",
+  "redirectAllowed", "dnsRebindingAllowed", "loopbackAllowed",
+  "privateNetworkAllowed", "metadataServiceAllowed",
+  "productionDestinationAllowed", "stagingDestinationAllowed",
+  "unrelatedDestinationAllowed", "ambiguityPolicy", "rawMaterialForbidden",
+  "observationExecuted", "networkPolicyHash",
+]);
+const DATABASE_FIELDS = Object.freeze([
+  "contractVersion", "databasePolicyId", "upstreamBindings",
+  "futureObservationFields", "purposeClassification",
+  "serverCapabilityCategoryRequired", "utcBehaviorAttestationRequired",
+  "transactionIsolationAttestationRequired", "schemaPackageStates",
+  "applicationObjectAbsenceRequired", "unrelatedObjectAbsenceRequired",
+  "maximumAgeSeconds", "allowedClockSkewSeconds", "mismatchPolicy",
+  "ambiguityPolicy", "catalogQueryExecuted", "observationExecuted",
+  "databasePolicyHash",
+]);
+const CERTIFICATE_FIELDS = Object.freeze([
+  "contractVersion", "certificatePolicyId", "upstreamBindings",
+  "futureObservationFields", "tlsRequired", "chainVerificationCategory",
+  "hostnameVerificationRequired", "rotationPolicy", "mismatchPolicy",
+  "expiryPolicy", "maximumAgeSeconds", "allowedClockSkewSeconds",
+  "rawMaterialForbidden", "observationExecuted",
+  "certificatePolicyHash",
+]);
+const CREDENTIAL_FIELDS = Object.freeze([
+  "contractVersion", "credentialPolicyId", "upstreamBindings",
+  "migrationCredentialCategory", "runtimeCredentialCategory",
+  "categoriesDistinct", "futureSecretInjectionBoundaryOnly",
+  "forbiddenInjectionSources", "forbiddenReuseCategories",
+  "runtimeDeniedPrivileges", "runtimeSchemaOwner", "runtimeSuperuser",
+  "migrationCredentialUsedForAdapterScenarios", "rotationRequired",
+  "revocationRequired", "expiryRequired", "credentialValuesPresent",
+  "credentialPolicyHash",
+]);
+const AUTHORIZATION_FIELDS = Object.freeze([
+  "contractVersion", "authorizationPolicyId", "upstreamBindings",
+  "environmentClassificationId", "environmentClassificationHash",
+  "networkPolicyId", "networkPolicyHash", "databasePolicyId",
+  "databasePolicyHash", "certificatePolicyId", "certificatePolicyHash",
+  "credentialPolicyId", "credentialPolicyHash", "futureEnvelopeFields",
+  "testPurpose", "allowedOperationSet", "maximumExecutionCount",
+  "productionScopeAllowed", "productionCutoverScopeAllowed", "reuseAllowed",
+  "extensionAllowed", "transferAllowed", "deleteToRetryAllowed",
+  "automaticReissueAllowed", "maximumAuthorizationLifetimeSeconds",
+  "allowedClockSkewSeconds", "issuedAtBeforeExpiresAtRequired",
+  "nonceUniquenessRequired", "nonceReplayPolicy", "ambiguousIssuePolicy",
+  "ambiguousConsumePolicy", "authorizationIssued", "authorizationConsumed",
+  "authorizationPolicyHash",
+]);
+const OBSERVATION_COMMON_FIELDS = Object.freeze([
+  "contractVersion", "observationId", "packageSummaryId",
+  "packageSummaryHash", "testDatabaseGateId", "testDatabaseGateHash",
+  "environmentBindingHash", "policyId", "policyHash",
+  "observerAttestationHash", "observedAt", "expiresAt",
+]);
+const NETWORK_OBSERVATION_FIELDS = Object.freeze([
+  ...OBSERVATION_COMMON_FIELDS, "destinationAllowlistHash",
+  "observedDestinationCount", "wildcardObserved", "redirectObserved",
+  "dnsRebindingObserved", "loopbackObserved", "privateNetworkObserved",
+  "metadataServiceObserved", "productionDestinationObserved",
+  "stagingDestinationObserved", "unrelatedDestinationObserved",
+  "manualReviewRequired", "rawMaterialPresent", "observationHash",
+]);
+const DATABASE_OBSERVATION_FIELDS = Object.freeze([
+  ...OBSERVATION_COMMON_FIELDS, "databaseFingerprintHash",
+  "disposableNamespaceEvidenceHash", "purposeClassification",
+  "serverCapabilityCategory", "utcBehaviorAttestationHash",
+  "transactionIsolationAttestationHash", "schemaPackageState",
+  "applicationObjectObserved", "unrelatedObjectObserved",
+  "namespaceIsolationValidated", "manualReviewRequired",
+  "rawMaterialPresent", "observationHash",
+]);
+const CERTIFICATE_OBSERVATION_FIELDS = Object.freeze([
+  ...OBSERVATION_COMMON_FIELDS, "certificateFingerprintHash",
+  "tlsValidated", "certificateChainValidated",
+  "hostnameVerificationValidated", "rotationAmbiguous", "expired",
+  "manualReviewRequired", "rawMaterialPresent", "observationHash",
+]);
+const NAMESPACE_OBSERVATION_FIELDS = Object.freeze([
+  ...OBSERVATION_COMMON_FIELDS, "disposableNamespaceEvidenceHash",
+  "namespaceCategory", "namespaceEmpty", "namespaceIsolated",
+  "applicationObjectObserved", "unrelatedObjectObserved",
+  "manualReviewRequired", "rawMaterialPresent", "observationHash",
+]);
+const AUTHORIZATION_ENVELOPE_FIELDS = Object.freeze([
+  "contractVersion", "authorizationEnvelopeId", "packageSummaryId",
+  "packageSummaryHash", "testDatabaseGateId", "testDatabaseGateHash",
+  "authorizationPolicyId", "authorizationPolicyHash",
+  "environmentClassificationId", "environmentClassificationHash",
+  "environmentBindingHash", "observationSetHash",
+  "networkObservationId", "networkObservationHash",
+  "databaseObservationId", "databaseObservationHash",
+  "certificateObservationId", "certificateObservationHash",
+  "namespaceObservationId", "namespaceObservationHash",
+  "credentialPolicyId", "credentialPolicyHash", "futureEvidenceSpecId",
+  "futureEvidenceSpecHash", "exactScenarioCount", "scenarioOrder",
+  "sanitizedApproverIdentityHash", "issuedAt", "expiresAt", "nonceHash",
+  "maximumExecutionCount", "allowedOperationSet", "manualReviewRequired",
+  "rawMaterialPresent", "authorizationEnvelopeHash",
+]);
+const SUMMARY_FIELDS = Object.freeze([
+  "contractVersion", "preparationSummaryId", "upstreamBindings",
+  "environmentClassificationId", "environmentClassificationHash",
+  "networkPolicyId", "networkPolicyHash", "databasePolicyId",
+  "databasePolicyHash", "certificatePolicyId", "certificatePolicyHash",
+  "credentialPolicyId", "credentialPolicyHash", "authorizationPolicyId",
+  "authorizationPolicyHash", "futureObservationContractVersions",
+  "authorizationEnvelopeContractVersion", "exactScenarioCount", "gatePrepared",
+  "environmentObserved", "authorizationIssued", "authorizationConsumed",
+  ...FIXED_FALSE_FIELDS, "preparationSummaryHash",
+]);
+
+const FIELD_SETS = Object.freeze({
+  environment: ENVIRONMENT_FIELDS, network: NETWORK_FIELDS,
+  database: DATABASE_FIELDS, certificate: CERTIFICATE_FIELDS,
+  credential: CREDENTIAL_FIELDS, authorization: AUTHORIZATION_FIELDS,
+  networkObservation: NETWORK_OBSERVATION_FIELDS,
+  databaseObservation: DATABASE_OBSERVATION_FIELDS,
+  certificateObservation: CERTIFICATE_OBSERVATION_FIELDS,
+  namespaceObservation: NAMESPACE_OBSERVATION_FIELDS,
+  authorizationEnvelope: AUTHORIZATION_ENVELOPE_FIELDS,
+  summary: SUMMARY_FIELDS,
+});
+
+function without(value, field) {
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== field));
+}
+
+function canonicalEqual(left, right) {
+  try { return canonicalJson(left) === canonicalJson(right); } catch { return false; }
+}
+
+function buildObservationSetHash(environmentBindingHash, observations) {
+  return hashWithDomain(OBSERVATION_SET_HASH_DOMAIN, {
+    environmentBindingHash,
+    observations: OBSERVATION_CONTEXT_NAMES.map((name) => ({
+      observationName: name,
+      observationId: observations?.[name]?.observationId,
+      observationHash: observations?.[name]?.observationHash,
+    })),
+  });
+}
+
+function sealContract(value, name) {
+  const spec = SPECS[name];
+  const withId = { ...value };
+  withId[spec.idField] = `${spec.prefix}-${hashWithDomain(spec.idDomain, value)}`;
+  return {
+    ...withId,
+    [spec.hashField]: hashWithDomain(spec.hashDomain, withId),
+  };
+}
+
+function validateEnvelope(value, name) {
+  const spec = SPECS[name];
+  const issues = [];
+  if (!isRecord(value) || !hasExactKeys(value, FIELD_SETS[name])) {
+    return [`${name}_fields_invalid`];
+  }
+  if (value.contractVersion !== spec.version) issues.push(`${name}_contract_version_invalid`);
+  const idInput = without(without(value, spec.idField), spec.hashField);
+  const expectedId = `${spec.prefix}-${hashWithDomain(spec.idDomain, idInput)}`;
+  if (!isSafeIdentity(value[spec.idField]) || value[spec.idField] !== expectedId) {
+    issues.push(`${name}_id_mismatch`);
+  }
+  const expectedHash = hashWithDomain(spec.hashDomain, without(value, spec.hashField));
+  if (!isSha256(value[spec.hashField]) || value[spec.hashField] !== expectedHash) {
+    issues.push(`${name}_hash_mismatch`);
+  }
+  return issues;
+}
+
+function buildUpstream() {
+  const postgresqlPackage = buildValidPostgresqlTestPackage();
+  return { postgresqlPackage, packageSummary: buildPackageSummary(postgresqlPackage) };
+}
+
+function buildUpstreamBindings(upstream) {
+  const packet = upstream.postgresqlPackage;
+  return {
+    packageSummaryId: upstream.packageSummary.packageSummaryId,
+    packageSummaryHash: upstream.packageSummary.packageSummaryHash,
+    testDatabaseGateId: packet.testDatabaseGate.testDatabaseGateId,
+    testDatabaseGateHash: packet.testDatabaseGate.testDatabaseGateHash,
+    futureEvidenceSpecId: packet.futureEvidenceSpec.futureEvidenceSpecId,
+    futureEvidenceSpecHash: packet.futureEvidenceSpec.futureEvidenceSpecHash,
+    exactScenarioCount: FUTURE_SCENARIOS.length,
+  };
+}
+
+function validateUpstream(upstream) {
+  if (!isRecord(upstream) || !hasExactKeys(upstream, ["postgresqlPackage", "packageSummary"])) {
+    return ["upstream_fields_invalid"];
+  }
+  const packet = upstream.postgresqlPackage;
+  if (!isRecord(packet) || !hasExactKeys(packet, [
+    "upstreamArtifacts", "migrationSpec", "querySpec", "introspectionSpec",
+    "testDatabaseGate", "futureEvidenceSpec",
+  ])) return ["upstream_postgresql_package_fields_invalid"];
+  return uniqueSorted([
+    ...validateUpstreamArtifacts(packet.upstreamArtifacts),
+    ...validateMigrationSpec(packet.migrationSpec, packet.upstreamArtifacts),
+    ...validateQuerySpec(packet.querySpec, packet.upstreamArtifacts),
+    ...validateIntrospectionSpec(packet.introspectionSpec, packet.upstreamArtifacts, packet.migrationSpec),
+    ...validateTestDatabaseGate(packet.testDatabaseGate, packet.upstreamArtifacts, packet.migrationSpec, packet.querySpec, packet.introspectionSpec),
+    ...validateFutureEvidenceSpec(packet.futureEvidenceSpec, packet.upstreamArtifacts, packet.migrationSpec, packet.querySpec, packet.introspectionSpec, packet.testDatabaseGate),
+    ...validatePackageSummary(upstream.packageSummary, packet),
+  ]);
+}
+
+function validateBindings(value, upstream, label) {
+  if (!isRecord(value) || !hasExactKeys(value, UPSTREAM_BINDING_FIELDS)) {
+    return [`${label}_upstream_binding_fields_invalid`];
+  }
+  return canonicalEqual(value, buildUpstreamBindings(upstream))
+    ? [] : [`${label}_upstream_binding_mismatch`];
+}
+
+function buildEnvironmentClassification(upstream) {
+  return sealContract({
+    contractVersion: VERSIONS.environment,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    purposeClassification: "disposable_isolated_conformance_only",
+    production: false, staging: false, sharedDevelopment: false,
+    applicationDataStorage: false, analyticsOrReportingStorage: false,
+    existingFinpleApplicationDatabase: false, containsUnrelatedData: false,
+    allowedNamespaceCategories: [
+      "new_empty_disposable_namespace",
+      "separately_approved_disposable_namespace",
+    ],
+    futureNamespaceEvidenceRequired: true,
+    maximumAgeSeconds: 900, allowedClockSkewSeconds: 30,
+    environmentObserved: false,
+  }, "environment");
+}
+
+function buildNetworkPolicy(upstream) {
+  return sealContract({
+    contractVersion: VERSIONS.network,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    futureObservationFields: [
+      "environmentBindingHash", "destinationAllowlistHash",
+      "observationMethodCategory",
+      "observerAttestationHash", "observedAt", "expiresAt",
+    ],
+    observationMethodCategory: "future_sanitized_out_of_band_attestation",
+    maximumAgeSeconds: 900, allowedClockSkewSeconds: 30,
+    exactDestinationCount: 1, wildcardAllowed: false, redirectAllowed: false,
+    dnsRebindingAllowed: false, loopbackAllowed: false,
+    privateNetworkAllowed: false, metadataServiceAllowed: false,
+    productionDestinationAllowed: false, stagingDestinationAllowed: false,
+    unrelatedDestinationAllowed: false, ambiguityPolicy: "manual_review_fail_closed",
+    rawMaterialForbidden: ["endpoint", "hostname", "ip_address", "port", "url"],
+    observationExecuted: false,
+  }, "network");
+}
+
+function buildDatabasePolicy(upstream) {
+  return sealContract({
+    contractVersion: VERSIONS.database,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    futureObservationFields: [
+      "environmentBindingHash", "databaseFingerprintHash",
+      "disposableNamespaceEvidenceHash",
+      "purposeClassification", "serverCapabilityCategory",
+      "utcBehaviorAttestationHash", "transactionIsolationAttestationHash",
+      "schemaPackageState", "observedAt", "expiresAt",
+    ],
+    purposeClassification: "disposable_isolated_conformance_only",
+    serverCapabilityCategoryRequired: true,
+    utcBehaviorAttestationRequired: true,
+    transactionIsolationAttestationRequired: true,
+    schemaPackageStates: [
+      "expected_package_absent_before_migration",
+      "exact_expected_package_bound_after_migration",
+    ],
+    applicationObjectAbsenceRequired: true, unrelatedObjectAbsenceRequired: true,
+    maximumAgeSeconds: 900, allowedClockSkewSeconds: 30,
+    mismatchPolicy: "manual_review_fail_closed",
+    ambiguityPolicy: "manual_review_fail_closed",
+    catalogQueryExecuted: false, observationExecuted: false,
+  }, "database");
+}
+
+function buildCertificatePolicy(upstream) {
+  return sealContract({
+    contractVersion: VERSIONS.certificate,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    futureObservationFields: [
+      "environmentBindingHash", "certificateFingerprintHash", "observedAt",
+      "expiresAt",
+    ],
+    tlsRequired: true,
+    chainVerificationCategory: "future_full_chain_verification_required",
+    hostnameVerificationRequired: true,
+    rotationPolicy: "new_fingerprint_requires_new_observation_and_manual_review",
+    mismatchPolicy: "manual_review_fail_closed",
+    expiryPolicy: "manual_review_fail_closed",
+    maximumAgeSeconds: 900, allowedClockSkewSeconds: 30,
+    rawMaterialForbidden: [
+      "raw_certificate", "subject", "issuer", "san", "hostname", "endpoint",
+    ],
+    observationExecuted: false,
+  }, "certificate");
+}
+
+function buildCredentialPolicy(upstream) {
+  return sealContract({
+    contractVersion: VERSIONS.credential,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    migrationCredentialCategory: "future_dedicated_test_migration_credential",
+    runtimeCredentialCategory: "future_dedicated_test_runtime_credential",
+    categoriesDistinct: true, futureSecretInjectionBoundaryOnly: true,
+    forbiddenInjectionSources: [
+      "cli", "stdin", "environment_fallback", "committed_file", "log",
+      "public_output", "application_variable_fallback",
+    ],
+    forbiddenReuseCategories: [
+      "application_service_role", "managed_application_database",
+      "trading_provider", "payment", "authentication", "deployment",
+    ],
+    runtimeDeniedPrivileges: [
+      "ALTER", "DELETE", "DROP", "TRUNCATE", "SCHEMA_OWNER", "SUPERUSER",
+    ],
+    runtimeSchemaOwner: false, runtimeSuperuser: false,
+    migrationCredentialUsedForAdapterScenarios: false,
+    rotationRequired: true, revocationRequired: true, expiryRequired: true,
+    credentialValuesPresent: false,
+  }, "credential");
+}
+
+function buildAuthorizationPolicy(upstream, contracts) {
+  return sealContract({
+    contractVersion: VERSIONS.authorization,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    environmentClassificationId: contracts.environment.environmentClassificationId,
+    environmentClassificationHash: contracts.environment.environmentClassificationHash,
+    networkPolicyId: contracts.network.networkPolicyId,
+    networkPolicyHash: contracts.network.networkPolicyHash,
+    databasePolicyId: contracts.database.databasePolicyId,
+    databasePolicyHash: contracts.database.databasePolicyHash,
+    certificatePolicyId: contracts.certificate.certificatePolicyId,
+    certificatePolicyHash: contracts.certificate.certificatePolicyHash,
+    credentialPolicyId: contracts.credential.credentialPolicyId,
+    credentialPolicyHash: contracts.credential.credentialPolicyHash,
+    futureEnvelopeFields: [
+      "environmentBindingHash", "observationSetHash",
+      "sanitizedApproverIdentityHash", "issuedAt", "expiresAt", "nonceHash",
+    ],
+    testPurpose: "exact_15_scenario_disposable_conformance_run",
+    allowedOperationSet: [
+      "connect_once_to_disposable_test_database",
+      "apply_exact_bound_migration_package",
+      "execute_exact_15_scenario_conformance_run",
+      "collect_sanitized_hash_chained_evidence",
+    ],
+    maximumExecutionCount: 1,
+    productionScopeAllowed: false, productionCutoverScopeAllowed: false,
+    reuseAllowed: false, extensionAllowed: false, transferAllowed: false,
+    deleteToRetryAllowed: false, automaticReissueAllowed: false,
+    maximumAuthorizationLifetimeSeconds: 900, allowedClockSkewSeconds: 30,
+    issuedAtBeforeExpiresAtRequired: true, nonceUniquenessRequired: true,
+    nonceReplayPolicy: "manual_review_fail_closed",
+    ambiguousIssuePolicy: "manual_review_fail_closed",
+    ambiguousConsumePolicy: "manual_review_fail_closed",
+    authorizationIssued: false, authorizationConsumed: false,
+  }, "authorization");
+}
+
+function buildContracts(upstream) {
+  const contracts = {
+    environment: buildEnvironmentClassification(upstream),
+    network: buildNetworkPolicy(upstream),
+    database: buildDatabasePolicy(upstream),
+    certificate: buildCertificatePolicy(upstream),
+    credential: buildCredentialPolicy(upstream),
+  };
+  contracts.authorization = buildAuthorizationPolicy(upstream, contracts);
+  return contracts;
+}
+
+function expectedContract(name, upstream, contracts) {
+  if (name === "environment") return buildEnvironmentClassification(upstream);
+  if (name === "network") return buildNetworkPolicy(upstream);
+  if (name === "database") return buildDatabasePolicy(upstream);
+  if (name === "certificate") return buildCertificatePolicy(upstream);
+  if (name === "credential") return buildCredentialPolicy(upstream);
+  return buildAuthorizationPolicy(upstream, contracts);
+}
+
+function validateContract(value, name, upstream, contracts) {
+  const issues = [
+    ...validateEnvelope(value, name),
+    ...validateBindings(value?.upstreamBindings, upstream, name),
+  ];
+  let expected;
+  try { expected = expectedContract(name, upstream, contracts); } catch {
+    return uniqueSorted([...issues, `${name}_expected_contract_failed`]);
+  }
+  for (const field of FIELD_SETS[name]) {
+    if (field === SPECS[name].idField || field === SPECS[name].hashField) continue;
+    if (!canonicalEqual(value?.[field], expected[field])) issues.push(`${name}_field_invalid:${field}`);
+  }
+  return uniqueSorted(issues);
+}
+
+function parseCanonicalInstant(value) {
+  if (typeof value !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+  const milliseconds = Date.parse(value);
+  if (!Number.isFinite(milliseconds) ||
+      new Date(milliseconds).toISOString() !== value) return null;
+  return milliseconds;
+}
+
+function observationPolicyName(name) {
+  if (name === "networkObservation") return "network";
+  if (name === "databaseObservation") return "database";
+  if (name === "certificateObservation") return "certificate";
+  return "environment";
+}
+
+function validateObservationContext(context, name) {
+  if (!isRecord(context) || !hasExactKeys(context, ["upstream", "contracts"])) {
+    return [`${name}_context_fields_invalid`];
+  }
+  const policyName = observationPolicyName(name);
+  return uniqueSorted([
+    ...validateUpstream(context.upstream),
+    ...validateContract(
+      context.contracts?.[policyName], policyName,
+      context.upstream, context.contracts,
+    ),
+  ]);
+}
+
+function validateObservationTime(
+  value, policy, evaluationClockInstant, label,
+) {
+  const issues = [];
+  const observedAt = parseCanonicalInstant(value?.observedAt);
+  const expiresAt = parseCanonicalInstant(value?.expiresAt);
+  const evaluationClock = parseCanonicalInstant(evaluationClockInstant);
+  if (observedAt === null) issues.push(`${label}_observed_at_invalid`);
+  if (expiresAt === null) issues.push(`${label}_expires_at_invalid`);
+  if (evaluationClock === null) issues.push(`${label}_evaluation_clock_invalid`);
+  if (observedAt === null || expiresAt === null || evaluationClock === null) {
+    return issues;
+  }
+  if (observedAt >= expiresAt) issues.push(`${label}_timestamp_inversion`);
+  const maximumAgeMs = policy.maximumAgeSeconds * 1000;
+  const skewMs = policy.allowedClockSkewSeconds * 1000;
+  if (observedAt > evaluationClock + skewMs) issues.push(`${label}_future_dated`);
+  if (evaluationClock - observedAt > maximumAgeMs) issues.push(`${label}_stale`);
+  if (evaluationClock >= expiresAt) issues.push(`${label}_expired`);
+  if (expiresAt - observedAt > maximumAgeMs + skewMs) {
+    issues.push(`${label}_validity_window_excessive`);
+  }
+  return issues;
+}
+
+function validateObservationBase(value, name, context, evaluationClockInstant) {
+  const issues = [
+    ...validateEnvelope(value, name),
+    ...validateObservationContext(context, name),
+  ];
+  if (!isRecord(value) || !isRecord(context) || !isRecord(context.contracts)) {
+    return uniqueSorted(issues);
+  }
+  const bindings = buildUpstreamBindings(context.upstream);
+  const policyName = observationPolicyName(name);
+  const policy = context.contracts[policyName];
+  if (value.packageSummaryId !== bindings.packageSummaryId ||
+      value.packageSummaryHash !== bindings.packageSummaryHash) {
+    issues.push(`${name}_package_binding_mismatch`);
+  }
+  if (value.testDatabaseGateId !== bindings.testDatabaseGateId ||
+      value.testDatabaseGateHash !== bindings.testDatabaseGateHash) {
+    issues.push(`${name}_gate_binding_mismatch`);
+  }
+  if (value.policyId !== policy?.[SPECS[policyName].idField] ||
+      value.policyHash !== policy?.[SPECS[policyName].hashField]) {
+    issues.push(`${name}_policy_binding_mismatch`);
+  }
+  if (!isSha256(value.observerAttestationHash)) {
+    issues.push(`${name}_observer_attestation_hash_invalid`);
+  }
+  if (!isSha256(value.environmentBindingHash)) {
+    issues.push(`${name}_environment_binding_hash_invalid`);
+  }
+  if (value.rawMaterialPresent !== false) {
+    issues.push(`${name}_raw_material_boundary_invalid`);
+  }
+  issues.push(...validateObservationTime(
+    value, policy, evaluationClockInstant, name,
+  ));
+  return uniqueSorted(issues);
+}
+
+function finalizeObservationIssues(value, name, issues, resultIssues) {
+  const reviewRequired = issues.length > 0 || resultIssues.length > 0;
+  issues.push(...resultIssues);
+  if (reviewRequired && value?.manualReviewRequired !== true) {
+    issues.push(`${name}_manual_review_required`);
+  }
+  if (!reviewRequired && value?.manualReviewRequired !== false) {
+    issues.push(`${name}_manual_review_unexpected`);
+  }
+  return uniqueSorted(issues);
+}
+
+function validateNetworkObservation(value, context, evaluationClockInstant) {
+  const issues = validateObservationBase(
+    value, "networkObservation", context, evaluationClockInstant,
+  );
+  const resultIssues = [];
+  if (!isSha256(value?.destinationAllowlistHash)) {
+    resultIssues.push("network_observation_destination_hash_invalid");
+  }
+  if (value?.observedDestinationCount !== 1) {
+    resultIssues.push("network_observation_destination_count_invalid");
+  }
+  for (const field of [
+    "wildcardObserved", "redirectObserved", "dnsRebindingObserved",
+    "loopbackObserved", "privateNetworkObserved", "metadataServiceObserved",
+    "productionDestinationObserved", "stagingDestinationObserved",
+    "unrelatedDestinationObserved",
+  ]) {
+    if (value?.[field] !== false) {
+      resultIssues.push(`network_observation_unsafe_result:${field}`);
+    }
+  }
+  return finalizeObservationIssues(
+    value, "networkObservation", issues, resultIssues,
+  );
+}
+
+function validateDatabaseObservation(value, context, evaluationClockInstant) {
+  const issues = validateObservationBase(
+    value, "databaseObservation", context, evaluationClockInstant,
+  );
+  const resultIssues = [];
+  for (const field of [
+    "databaseFingerprintHash", "disposableNamespaceEvidenceHash",
+    "utcBehaviorAttestationHash", "transactionIsolationAttestationHash",
+  ]) {
+    if (!isSha256(value?.[field])) {
+      resultIssues.push(`database_observation_hash_invalid:${field}`);
+    }
+  }
+  if (value?.purposeClassification !== "disposable_isolated_conformance_only") {
+    resultIssues.push("database_observation_purpose_invalid");
+  }
+  if (!isSafeIdentity(value?.serverCapabilityCategory)) {
+    resultIssues.push("database_observation_capability_invalid");
+  }
+  if (!context?.contracts?.database?.schemaPackageStates?.includes(
+    value?.schemaPackageState,
+  )) resultIssues.push("database_observation_schema_package_state_invalid");
+  for (const field of ["applicationObjectObserved", "unrelatedObjectObserved"]) {
+    if (value?.[field] !== false) {
+      resultIssues.push(`database_observation_unexpected_object:${field}`);
+    }
+  }
+  if (value?.namespaceIsolationValidated !== true) {
+    resultIssues.push("database_observation_namespace_isolation_invalid");
+  }
+  return finalizeObservationIssues(
+    value, "databaseObservation", issues, resultIssues,
+  );
+}
+
+function validateCertificateObservation(value, context, evaluationClockInstant) {
+  const issues = validateObservationBase(
+    value, "certificateObservation", context, evaluationClockInstant,
+  );
+  const resultIssues = [];
+  if (!isSha256(value?.certificateFingerprintHash)) {
+    resultIssues.push("certificate_observation_fingerprint_invalid");
+  }
+  for (const field of [
+    "tlsValidated", "certificateChainValidated",
+    "hostnameVerificationValidated",
+  ]) {
+    if (value?.[field] !== true) {
+      resultIssues.push(`certificate_observation_validation_invalid:${field}`);
+    }
+  }
+  for (const field of ["rotationAmbiguous", "expired"]) {
+    if (value?.[field] !== false) {
+      resultIssues.push(`certificate_observation_unsafe_result:${field}`);
+    }
+  }
+  return finalizeObservationIssues(
+    value, "certificateObservation", issues, resultIssues,
+  );
+}
+
+function validateNamespaceObservation(value, context, evaluationClockInstant) {
+  const issues = validateObservationBase(
+    value, "namespaceObservation", context, evaluationClockInstant,
+  );
+  const resultIssues = [];
+  if (!isSha256(value?.disposableNamespaceEvidenceHash)) {
+    resultIssues.push("namespace_observation_evidence_hash_invalid");
+  }
+  if (!context?.contracts?.environment?.allowedNamespaceCategories?.includes(
+    value?.namespaceCategory,
+  )) resultIssues.push("namespace_observation_category_invalid");
+  for (const field of ["namespaceEmpty", "namespaceIsolated"]) {
+    if (value?.[field] !== true) {
+      resultIssues.push(`namespace_observation_validation_invalid:${field}`);
+    }
+  }
+  for (const field of ["applicationObjectObserved", "unrelatedObjectObserved"]) {
+    if (value?.[field] !== false) {
+      resultIssues.push(`namespace_observation_unexpected_object:${field}`);
+    }
+  }
+  return finalizeObservationIssues(
+    value, "namespaceObservation", issues, resultIssues,
+  );
+}
+
+function validateAuthorizationEnvelopeContext(context) {
+  if (!isRecord(context)) {
+    return ["authorization_envelope_context_fields_invalid"];
+  }
+  const issues = [];
+  if (!hasExactKeys(context, [
+    "upstream", "contracts", "observations", "priorNonceHashes",
+  ])) issues.push("authorization_envelope_context_fields_invalid");
+  const contractNames = [
+    "environment", "network", "database", "certificate", "credential",
+    "authorization",
+  ];
+  if (!isRecord(context.contracts) ||
+      !hasExactKeys(context.contracts, contractNames)) {
+    issues.push("authorization_envelope_contracts_fields_invalid");
+  }
+  issues.push(...validateUpstream(context.upstream));
+  for (const name of contractNames) {
+    issues.push(...validateContract(
+      context.contracts?.[name], name, context.upstream, context.contracts,
+    ));
+  }
+  if (!isRecord(context.observations) ||
+      !hasExactKeys(context.observations, [
+        "network", "database", "certificate", "namespace",
+      ])) {
+    issues.push("authorization_envelope_observations_fields_invalid");
+  }
+  if (!Array.isArray(context.priorNonceHashes)) {
+    issues.push("authorization_envelope_prior_nonce_hashes_invalid");
+  } else {
+    context.priorNonceHashes.forEach((hash, index) => {
+      if (!isSha256(hash)) {
+        issues.push(`authorization_envelope_prior_nonce_hash_invalid:${index}`);
+      }
+    });
+    if (new Set(context.priorNonceHashes).size !==
+        context.priorNonceHashes.length) {
+      issues.push("authorization_envelope_prior_nonce_hashes_duplicate");
+    }
+    if (!canonicalEqual(
+      context.priorNonceHashes, [...context.priorNonceHashes].sort(),
+    )) {
+      issues.push("authorization_envelope_prior_nonce_hashes_unsorted");
+    }
+  }
+  return uniqueSorted(issues);
+}
+
+function validateAuthorizationEnvelope(
+  value, context, evaluationClockInstant,
+) {
+  const issues = [
+    ...validateEnvelope(value, "authorizationEnvelope"),
+    ...validateAuthorizationEnvelopeContext(context),
+  ];
+  if (!isRecord(value) || !isRecord(context) ||
+      !isRecord(context.contracts) || !hasExactKeys(context.contracts, [
+        "environment", "network", "database", "certificate", "credential",
+        "authorization",
+      ]) || !isRecord(context.observations) ||
+      !hasExactKeys(context.observations, [
+        "network", "database", "certificate", "namespace",
+      ]) || !Array.isArray(context.priorNonceHashes)) {
+    return uniqueSorted(issues);
+  }
+  const observationContext = {
+    upstream: context.upstream, contracts: context.contracts,
+  };
+  const observationValidators = [
+    ["network", validateNetworkObservation],
+    ["database", validateDatabaseObservation],
+    ["certificate", validateCertificateObservation],
+    ["namespace", validateNamespaceObservation],
+  ];
+  for (const [name, validator] of observationValidators) {
+    const observationIssues = validator(
+      context.observations?.[name], observationContext, evaluationClockInstant,
+    );
+    if (observationIssues.length > 0) {
+      issues.push(`authorization_envelope_observation_invalid:${name}`);
+      issues.push(...observationIssues);
+    }
+  }
+  const bindings = buildUpstreamBindings(context.upstream);
+  for (const field of [
+    "packageSummaryId", "packageSummaryHash", "testDatabaseGateId",
+    "testDatabaseGateHash", "futureEvidenceSpecId", "futureEvidenceSpecHash",
+  ]) {
+    if (value[field] !== bindings[field]) {
+      issues.push(`authorization_envelope_upstream_binding_mismatch:${field}`);
+    }
+  }
+  const authorization = context.contracts.authorization;
+  const environment = context.contracts.environment;
+  const credential = context.contracts.credential;
+  for (const [field, expected] of [
+    ["authorizationPolicyId", authorization.authorizationPolicyId],
+    ["authorizationPolicyHash", authorization.authorizationPolicyHash],
+    ["environmentClassificationId", environment.environmentClassificationId],
+    ["environmentClassificationHash", environment.environmentClassificationHash],
+    ["credentialPolicyId", credential.credentialPolicyId],
+    ["credentialPolicyHash", credential.credentialPolicyHash],
+  ]) {
+    if (value[field] !== expected) {
+      issues.push(`authorization_envelope_policy_binding_mismatch:${field}`);
+    }
+  }
+  for (const name of OBSERVATION_CONTEXT_NAMES) {
+    const observation = context.observations[name];
+    if (value[`${name}ObservationId`] !== observation?.observationId ||
+        value[`${name}ObservationHash`] !== observation?.observationHash) {
+      issues.push(`authorization_envelope_observation_binding_mismatch:${name}`);
+    }
+  }
+  if (!isSha256(value.environmentBindingHash)) {
+    issues.push("authorization_envelope_environment_binding_hash_invalid");
+  }
+  if (OBSERVATION_CONTEXT_NAMES.some((name) =>
+    context.observations[name].environmentBindingHash !==
+      value.environmentBindingHash)) {
+    issues.push("authorization_envelope_environment_binding_mismatch");
+  }
+  if (context.observations.database.disposableNamespaceEvidenceHash !==
+      context.observations.namespace.disposableNamespaceEvidenceHash) {
+    issues.push("authorization_envelope_namespace_evidence_binding_mismatch");
+  }
+  let expectedObservationSetHash = null;
+  try {
+    expectedObservationSetHash = buildObservationSetHash(
+      value.environmentBindingHash, context.observations,
+    );
+  } catch {}
+  if (!isSha256(value.observationSetHash) ||
+      value.observationSetHash !== expectedObservationSetHash) {
+    issues.push("authorization_envelope_observation_set_hash_mismatch");
+  }
+  if (value.exactScenarioCount !== FUTURE_SCENARIOS.length ||
+      !canonicalEqual(value.scenarioOrder, FUTURE_SCENARIOS)) {
+    issues.push("authorization_envelope_scenario_order_invalid");
+  }
+  if (!canonicalEqual(value.allowedOperationSet, authorization.allowedOperationSet)) {
+    issues.push("authorization_envelope_operation_order_invalid");
+  }
+  if (!isSha256(value.sanitizedApproverIdentityHash)) {
+    issues.push("authorization_envelope_approver_hash_invalid");
+  }
+  if (!isSha256(value.nonceHash)) {
+    issues.push("authorization_envelope_nonce_hash_invalid");
+  } else if (context.priorNonceHashes.includes(value.nonceHash)) {
+    issues.push("authorization_envelope_nonce_replay_manual_review");
+  }
+  if (value.maximumExecutionCount !== 1) {
+    issues.push("authorization_envelope_execution_count_invalid");
+  }
+  if (value.rawMaterialPresent !== false) {
+    issues.push("authorization_envelope_raw_material_boundary_invalid");
+  }
+  const issuedAt = parseCanonicalInstant(value.issuedAt);
+  const expiresAt = parseCanonicalInstant(value.expiresAt);
+  const evaluationClock = parseCanonicalInstant(evaluationClockInstant);
+  if (issuedAt === null) issues.push("authorization_envelope_issued_at_invalid");
+  if (expiresAt === null) issues.push("authorization_envelope_expires_at_invalid");
+  if (evaluationClock === null) issues.push("authorization_envelope_evaluation_clock_invalid");
+  if (issuedAt !== null && expiresAt !== null && evaluationClock !== null) {
+    const lifetime = authorization.maximumAuthorizationLifetimeSeconds * 1000;
+    const skew = authorization.allowedClockSkewSeconds * 1000;
+    if (issuedAt >= expiresAt) issues.push("authorization_envelope_timestamp_inversion");
+    if (issuedAt > evaluationClock + skew) issues.push("authorization_envelope_future_dated");
+    if (evaluationClock >= expiresAt) issues.push("authorization_envelope_expired");
+    if (expiresAt - issuedAt > lifetime) {
+      issues.push("authorization_envelope_lifetime_excessive");
+    }
+  }
+  const observationTimes = OBSERVATION_CONTEXT_NAMES.map((name) => ({
+    observedAt: parseCanonicalInstant(context.observations[name].observedAt),
+    expiresAt: parseCanonicalInstant(context.observations[name].expiresAt),
+  }));
+  if (issuedAt !== null &&
+      observationTimes.every((times) => times.observedAt !== null) &&
+      issuedAt < Math.max(...observationTimes.map((times) => times.observedAt))) {
+    issues.push("authorization_envelope_issued_before_observation");
+  }
+  if (expiresAt !== null &&
+      observationTimes.every((times) => times.expiresAt !== null) &&
+      expiresAt > Math.min(...observationTimes.map((times) => times.expiresAt))) {
+    issues.push("authorization_envelope_outlives_observation");
+  }
+  const reviewRequired = issues.some((issue) =>
+    issue !== "authorization_envelope_manual_review_unexpected",
+  );
+  if (reviewRequired && value.manualReviewRequired !== true) {
+    issues.push("authorization_envelope_manual_review_required");
+  }
+  if (!reviewRequired && value.manualReviewRequired !== false) {
+    issues.push("authorization_envelope_manual_review_unexpected");
+  }
+  return uniqueSorted(issues);
+}
+
+function buildPreparationSummary(upstream, contracts) {
+  return sealContract({
+    contractVersion: VERSIONS.summary,
+    upstreamBindings: buildUpstreamBindings(upstream),
+    environmentClassificationId: contracts.environment.environmentClassificationId,
+    environmentClassificationHash: contracts.environment.environmentClassificationHash,
+    networkPolicyId: contracts.network.networkPolicyId,
+    networkPolicyHash: contracts.network.networkPolicyHash,
+    databasePolicyId: contracts.database.databasePolicyId,
+    databasePolicyHash: contracts.database.databasePolicyHash,
+    certificatePolicyId: contracts.certificate.certificatePolicyId,
+    certificatePolicyHash: contracts.certificate.certificatePolicyHash,
+    credentialPolicyId: contracts.credential.credentialPolicyId,
+    credentialPolicyHash: contracts.credential.credentialPolicyHash,
+    authorizationPolicyId: contracts.authorization.authorizationPolicyId,
+    authorizationPolicyHash: contracts.authorization.authorizationPolicyHash,
+    futureObservationContractVersions: OBSERVATION_NAMES.map(
+      (name) => VERSIONS[name],
+    ),
+    authorizationEnvelopeContractVersion: VERSIONS.authorizationEnvelope,
+    exactScenarioCount: FUTURE_SCENARIOS.length,
+    gatePrepared: true, environmentObserved: false,
+    authorizationIssued: false, authorizationConsumed: false,
+    ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
+  }, "summary");
+}
+
+function validatePreparationSummary(summary, upstream, contracts) {
+  const issues = [
+    ...validateEnvelope(summary, "summary"),
+    ...validateBindings(summary?.upstreamBindings, upstream, "summary"),
+  ];
+  let expected;
+  try { expected = buildPreparationSummary(upstream, contracts); } catch {
+    return uniqueSorted([...issues, "summary_expected_contract_failed"]);
+  }
+  for (const field of SUMMARY_FIELDS) {
+    if ([SPECS.summary.idField, SPECS.summary.hashField].includes(field)) continue;
+    if (!canonicalEqual(summary?.[field], expected[field])) issues.push(`summary_field_invalid:${field}`);
+  }
+  for (const field of FIXED_FALSE_FIELDS) {
+    if (summary?.[field] !== false) issues.push(`summary_fixed_false_invalid:${field}`);
+  }
+  return uniqueSorted(issues);
+}
+
+function buildValidPreparationPacket() {
+  const upstream = buildUpstream();
+  const contracts = buildContracts(upstream);
+  return { upstream, contracts };
+}
+
+function safeResult(status, summary = {}, issues = []) {
+  const ready = status === "test_database_execution_gate_prepared";
+  return {
+    ok: ready, status, contractVersion: VERSIONS.summary,
+    gatePrepared: ready, upstreamValidated: ready,
+    environmentPolicyValidated: ready, networkPolicyValidated: ready,
+    databasePolicyValidated: ready, certificatePolicyValidated: ready,
+    credentialPolicyValidated: ready, authorizationPolicyValidated: ready,
+    preparationSummary: ready ? summary : {},
+    ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
+    blockingIssues: uniqueSorted(issues),
+    warningIssues: ready ? [
+      "gate_prepared_is_not_environment_observation_connection_or_execution_authority",
+    ] : [],
+  };
+}
+
+function evaluateTestDatabaseExecutionGatePreparation(packet) {
+  if (packet === undefined || packet === null) return safeResult("idle");
+  if (!isRecord(packet) || !hasExactKeys(packet, ["upstream", "contracts"]) ||
+      !isRecord(packet.contracts) || !hasExactKeys(packet.contracts, [
+        "environment", "network", "database", "certificate", "credential",
+        "authorization",
+      ])) return safeResult("blocked", {}, ["preparation_packet_fields_invalid"]);
+  const issues = validateUpstream(packet.upstream);
+  for (const name of [
+    "environment", "network", "database", "certificate", "credential",
+    "authorization",
+  ]) {
+    issues.push(...validateContract(
+      packet.contracts[name], name, packet.upstream, packet.contracts,
+    ));
+  }
+  if (issues.length > 0) return safeResult("blocked", {}, issues);
+  try {
+    const summary = buildPreparationSummary(packet.upstream, packet.contracts);
+    issues.push(...validatePreparationSummary(summary, packet.upstream, packet.contracts));
+    canonicalJson(summary);
+    return issues.length > 0
+      ? safeResult("blocked", {}, issues)
+      : safeResult("test_database_execution_gate_prepared", summary);
+  } catch {
+    return safeResult("blocked", {}, ["preparation_summary_construction_failed"]);
+  }
+}
+
+module.exports = {
+  FIELD_SETS,
+  FIXED_FALSE_FIELDS,
+  OBSERVATION_SET_HASH_DOMAIN,
+  SPECS,
+  UPSTREAM_BINDING_FIELDS,
+  VERSIONS,
+  buildObservationSetHash,
+  buildAuthorizationPolicy,
+  buildCertificatePolicy,
+  buildContracts,
+  buildCredentialPolicy,
+  buildDatabasePolicy,
+  buildEnvironmentClassification,
+  buildNetworkPolicy,
+  buildPreparationSummary,
+  buildUpstream,
+  buildUpstreamBindings,
+  buildValidPreparationPacket,
+  evaluateTestDatabaseExecutionGatePreparation,
+  safeResult,
+  sealContract,
+  validateContract,
+  validateAuthorizationEnvelope,
+  validateAuthorizationEnvelopeContext,
+  validateCertificateObservation,
+  validateDatabaseObservation,
+  validateNetworkObservation,
+  validateNamespaceObservation,
+  validatePreparationSummary,
+  validateUpstream,
+};
