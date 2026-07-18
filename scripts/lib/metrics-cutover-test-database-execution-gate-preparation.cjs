@@ -700,20 +700,52 @@ function validateNamespaceObservation(value, context, evaluationClockInstant) {
 }
 
 function validateAuthorizationEnvelopeContext(context) {
-  if (!isRecord(context) || !hasExactKeys(context, [
-    "upstream", "contracts", "observations", "priorNonceHashes",
-  ]) || !isRecord(context.observations) || !hasExactKeys(context.observations, [
-    "network", "database", "certificate", "namespace",
-  ]) || !Array.isArray(context.priorNonceHashes)) {
+  if (!isRecord(context)) {
     return ["authorization_envelope_context_fields_invalid"];
   }
-  return uniqueSorted([
-    ...validateUpstream(context.upstream),
-    ...validateContract(
-      context.contracts?.authorization, "authorization",
-      context.upstream, context.contracts,
-    ),
-  ]);
+  const issues = [];
+  if (!hasExactKeys(context, [
+    "upstream", "contracts", "observations", "priorNonceHashes",
+  ])) issues.push("authorization_envelope_context_fields_invalid");
+  const contractNames = [
+    "environment", "network", "database", "certificate", "credential",
+    "authorization",
+  ];
+  if (!isRecord(context.contracts) ||
+      !hasExactKeys(context.contracts, contractNames)) {
+    issues.push("authorization_envelope_contracts_fields_invalid");
+  }
+  issues.push(...validateUpstream(context.upstream));
+  for (const name of contractNames) {
+    issues.push(...validateContract(
+      context.contracts?.[name], name, context.upstream, context.contracts,
+    ));
+  }
+  if (!isRecord(context.observations) ||
+      !hasExactKeys(context.observations, [
+        "network", "database", "certificate", "namespace",
+      ])) {
+    issues.push("authorization_envelope_observations_fields_invalid");
+  }
+  if (!Array.isArray(context.priorNonceHashes)) {
+    issues.push("authorization_envelope_prior_nonce_hashes_invalid");
+  } else {
+    context.priorNonceHashes.forEach((hash, index) => {
+      if (!isSha256(hash)) {
+        issues.push(`authorization_envelope_prior_nonce_hash_invalid:${index}`);
+      }
+    });
+    if (new Set(context.priorNonceHashes).size !==
+        context.priorNonceHashes.length) {
+      issues.push("authorization_envelope_prior_nonce_hashes_duplicate");
+    }
+    if (!canonicalEqual(
+      context.priorNonceHashes, [...context.priorNonceHashes].sort(),
+    )) {
+      issues.push("authorization_envelope_prior_nonce_hashes_unsorted");
+    }
+  }
+  return uniqueSorted(issues);
 }
 
 function validateAuthorizationEnvelope(
@@ -723,7 +755,14 @@ function validateAuthorizationEnvelope(
     ...validateEnvelope(value, "authorizationEnvelope"),
     ...validateAuthorizationEnvelopeContext(context),
   ];
-  if (!isRecord(value) || !isRecord(context) || !isRecord(context.contracts)) {
+  if (!isRecord(value) || !isRecord(context) ||
+      !isRecord(context.contracts) || !hasExactKeys(context.contracts, [
+        "environment", "network", "database", "certificate", "credential",
+        "authorization",
+      ]) || !isRecord(context.observations) ||
+      !hasExactKeys(context.observations, [
+        "network", "database", "certificate", "namespace",
+      ]) || !Array.isArray(context.priorNonceHashes)) {
     return uniqueSorted(issues);
   }
   const observationContext = {
@@ -811,6 +850,22 @@ function validateAuthorizationEnvelope(
     if (expiresAt - issuedAt > lifetime) {
       issues.push("authorization_envelope_lifetime_excessive");
     }
+  }
+  const observationTimes = [
+    "network", "database", "certificate", "namespace",
+  ].map((name) => ({
+    observedAt: parseCanonicalInstant(context.observations[name].observedAt),
+    expiresAt: parseCanonicalInstant(context.observations[name].expiresAt),
+  }));
+  if (issuedAt !== null &&
+      observationTimes.every((times) => times.observedAt !== null) &&
+      issuedAt < Math.max(...observationTimes.map((times) => times.observedAt))) {
+    issues.push("authorization_envelope_issued_before_observation");
+  }
+  if (expiresAt !== null &&
+      observationTimes.every((times) => times.expiresAt !== null) &&
+      expiresAt > Math.min(...observationTimes.map((times) => times.expiresAt))) {
+    issues.push("authorization_envelope_outlives_observation");
   }
   const reviewRequired = issues.some((issue) =>
     issue !== "authorization_envelope_manual_review_unexpected",
@@ -944,6 +999,7 @@ module.exports = {
   sealContract,
   validateContract,
   validateAuthorizationEnvelope,
+  validateAuthorizationEnvelopeContext,
   validateCertificateObservation,
   validateDatabaseObservation,
   validateNetworkObservation,

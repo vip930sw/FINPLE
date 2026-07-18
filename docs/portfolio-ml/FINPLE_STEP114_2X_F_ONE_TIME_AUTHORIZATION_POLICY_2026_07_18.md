@@ -36,11 +36,17 @@ The policy fixes `maximumAuthorizationLifetimeSeconds=900`, `allowedClockSkewSec
 
 Duplicate nonce, replay, timestamp inversion, excessive clock skew, expiry, binding mismatch, scope mismatch, or observed/consume ambiguity blocks. No automatic retry or cleanup is allowed.
 
+The explicit `priorNonceHashes` context is validation input only. It must be an array whose entries are SHA-256 hashes in unique canonical sorted order. Malformed, duplicate, or unsorted entries fail closed. This package adds no nonce store, database write, or filesystem persistence.
+
 ## Future authorization envelope result
 
 The strict future envelope contract binds the package summary, Step 114-2X-E test gate and future-evidence spec, Step 114-2X-F authorization/environment/credential policies, all four observation ID/hash pairs, the exact 15-scenario count/order, a sanitized approver-identity hash, canonical issue/expiry instants, nonce hash, exact operation order, and maximum execution count 1.
 
 Its pure validator accepts an explicit evaluation-clock instant and validates all four observation results before validating the envelope. It then enforces exact keys/version/domain-separated ID/hash, every upstream and policy binding, scenario and operation order, lifetime/skew/expiry/inversion rules, nonce uniqueness against an explicit prior-hash set, manual-review consistency, and `rawMaterialPresent=false`.
+
+The authorization context has exactly six policy keys: environment, network, database, certificate, credential, and authorization. Every policy validator is called directly. A self-consistent reseal cannot hide a weakened credential or authorization policy.
+
+Chronology is strict: observation, observation validation, authorization issue, then connection/migration/scenario execution. `issuedAt` must be greater than or equal to the latest canonical `observedAt` across the four observations, and authorization `expiresAt` must be less than or equal to the earliest observation `expiresAt`. Issuance before any required observation or an envelope that outlives any observation fails closed. Environment observation remains a prerequisite and is not added to the allowed operation set.
 
 Only sanitized synthetic fixtures instantiate the envelope in tests. Step 114-2X-F does not create, issue, persist, transfer, or consume an authorization.
 

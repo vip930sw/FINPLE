@@ -16,6 +16,7 @@ const {
   evaluateTestDatabaseExecutionGatePreparation,
   sealContract,
   validateAuthorizationEnvelope,
+  validateAuthorizationEnvelopeContext,
   validateCertificateObservation,
   validateContract,
   validateDatabaseObservation,
@@ -171,6 +172,36 @@ function resealSynthetic(value, name) {
   delete next[SPECS[name].idField];
   delete next[SPECS[name].hashField];
   return sealContract(next, name);
+}
+
+function resealObservationBinding(fixture, name) {
+  fixture.observations[name] = resealSynthetic(
+    fixture.observations[name], `${name}Observation`,
+  );
+  fixture.authorizationEnvelope[`${name}ObservationId`] =
+    fixture.observations[name].observationId;
+  fixture.authorizationEnvelope[`${name}ObservationHash`] =
+    fixture.observations[name].observationHash;
+}
+
+function resealCredentialAuthorizationChain(fixture) {
+  reseal(fixture.packet, "credential");
+  fixture.packet.contracts.authorization.credentialPolicyId =
+    fixture.packet.contracts.credential.credentialPolicyId;
+  fixture.packet.contracts.authorization.credentialPolicyHash =
+    fixture.packet.contracts.credential.credentialPolicyHash;
+  reseal(fixture.packet, "authorization");
+  fixture.authorizationEnvelope.credentialPolicyId =
+    fixture.packet.contracts.credential.credentialPolicyId;
+  fixture.authorizationEnvelope.credentialPolicyHash =
+    fixture.packet.contracts.credential.credentialPolicyHash;
+  fixture.authorizationEnvelope.authorizationPolicyId =
+    fixture.packet.contracts.authorization.authorizationPolicyId;
+  fixture.authorizationEnvelope.authorizationPolicyHash =
+    fixture.packet.contracts.authorization.authorizationPolicyHash;
+  fixture.authorizationEnvelope = resealSynthetic(
+    fixture.authorizationEnvelope, "authorizationEnvelope",
+  );
 }
 
 test("valid preparation packet is ready without any authority", () => {
@@ -605,6 +636,124 @@ test("authorization envelope requires every observation binding", () => {
     drift.authorizationEnvelope, drift.authorizationContext,
     SYNTHETIC_EVALUATION_CLOCK,
   ).includes("authorization_envelope_observation_binding_mismatch:database"));
+});
+
+test("authorization context directly revalidates every policy after a full reseal", () => {
+  for (const [field, value] of [
+    ["runtimeDeniedPrivileges", ["ALTER", "DELETE", "DROP", "TRUNCATE"]],
+    ["runtimeSchemaOwner", true],
+    ["runtimeSuperuser", true],
+    ["migrationCredentialUsedForAdapterScenarios", true],
+    ["categoriesDistinct", false],
+    ["credentialValuesPresent", true],
+  ]) {
+    const fixture = buildSanitizedSyntheticFutureFixture();
+    fixture.packet.contracts.credential[field] = value;
+    resealCredentialAuthorizationChain(fixture);
+    const issues = validateAuthorizationEnvelope(
+      fixture.authorizationEnvelope, fixture.authorizationContext,
+      SYNTHETIC_EVALUATION_CLOCK,
+    );
+    assert.ok(issues.includes(`credential_field_invalid:${field}`), `${field}: ${issues}`);
+    assert.ok(issues.includes("authorization_envelope_manual_review_required"));
+  }
+});
+
+test("authorization context requires the exact six policy keys", () => {
+  const missing = buildSanitizedSyntheticFutureFixture();
+  delete missing.authorizationContext.contracts.credential;
+  assert.ok(validateAuthorizationEnvelopeContext(
+    missing.authorizationContext,
+  ).includes("authorization_envelope_contracts_fields_invalid"));
+
+  const extra = buildSanitizedSyntheticFutureFixture();
+  extra.authorizationContext.contracts.unexpected = {};
+  assert.ok(validateAuthorizationEnvelopeContext(
+    extra.authorizationContext,
+  ).includes("authorization_envelope_contracts_fields_invalid"));
+});
+
+test("authorization issuance and expiry are bounded by every observation", () => {
+  const oneLater = buildSanitizedSyntheticFutureFixture();
+  oneLater.observations.network.observedAt = "2026-07-18T00:04:30.000Z";
+  resealObservationBinding(oneLater, "network");
+  oneLater.authorizationEnvelope = resealSynthetic(
+    oneLater.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    oneLater.authorizationEnvelope, oneLater.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_issued_before_observation"));
+
+  const allLater = buildSanitizedSyntheticFutureFixture();
+  for (const name of ["network", "database", "certificate", "namespace"]) {
+    allLater.observations[name].observedAt = "2026-07-18T00:04:30.000Z";
+    resealObservationBinding(allLater, name);
+  }
+  allLater.authorizationEnvelope = resealSynthetic(
+    allLater.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    allLater.authorizationEnvelope, allLater.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_issued_before_observation"));
+
+  const outlives = buildSanitizedSyntheticFutureFixture();
+  outlives.observations.database.expiresAt = "2026-07-18T00:08:00.000Z";
+  resealObservationBinding(outlives, "database");
+  outlives.authorizationEnvelope = resealSynthetic(
+    outlives.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    outlives.authorizationEnvelope, outlives.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_outlives_observation"));
+});
+
+test("observation validation precedes normal authorization issuance", () => {
+  const ordered = buildSanitizedSyntheticFutureFixture();
+  assert.deepEqual(validateAuthorizationEnvelope(
+    ordered.authorizationEnvelope, ordered.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ), []);
+
+  const sameObservedAt = buildSanitizedSyntheticFutureFixture();
+  for (const name of ["network", "database", "certificate", "namespace"]) {
+    sameObservedAt.observations[name].observedAt = "2026-07-18T00:04:00.000Z";
+    resealObservationBinding(sameObservedAt, name);
+  }
+  sameObservedAt.authorizationEnvelope.issuedAt = "2026-07-18T00:04:00.000Z";
+  sameObservedAt.authorizationEnvelope = resealSynthetic(
+    sameObservedAt.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.deepEqual(validateAuthorizationEnvelope(
+    sameObservedAt.authorizationEnvelope, sameObservedAt.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ), []);
+});
+
+test("prior nonce hashes require an array of unique canonically sorted hashes", () => {
+  for (const [value, issue] of [
+    ["not-an-array", "authorization_envelope_prior_nonce_hashes_invalid"],
+    [["not-a-hash"], "authorization_envelope_prior_nonce_hash_invalid:0"],
+    [["0".repeat(64), "0".repeat(64)], "authorization_envelope_prior_nonce_hashes_duplicate"],
+    [["b".repeat(64), "0".repeat(64)], "authorization_envelope_prior_nonce_hashes_unsorted"],
+  ]) {
+    const fixture = buildSanitizedSyntheticFutureFixture();
+    fixture.authorizationContext.priorNonceHashes = value;
+    assert.ok(validateAuthorizationEnvelopeContext(
+      fixture.authorizationContext,
+    ).includes(issue), `${issue}`);
+  }
+
+  const valid = buildSanitizedSyntheticFutureFixture();
+  valid.authorizationContext.priorNonceHashes = [
+    "0".repeat(64), "b".repeat(64),
+  ];
+  assert.deepEqual(validateAuthorizationEnvelope(
+    valid.authorizationEnvelope, valid.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ), []);
 });
 
 test("authorization envelope rejects expiry inversion future issue and excess lifetime", () => {

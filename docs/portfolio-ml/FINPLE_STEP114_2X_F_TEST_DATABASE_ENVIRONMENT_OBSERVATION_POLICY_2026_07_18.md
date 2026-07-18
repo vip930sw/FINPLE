@@ -57,6 +57,8 @@ They must be distinct and injected only through a later secret boundary. CLI, st
 
 The runtime category cannot `ALTER`, `DELETE`, `DROP`, `TRUNCATE`, own the schema, or act as superuser. The migration category cannot be used for adapter scenarios. Rotation, revocation, and expiry are mandatory. No credential value or real secret name exists in this package.
 
+Any future authorization-envelope context must contain exactly the environment, network, database, certificate, credential, and authorization contracts. The pure context validator directly revalidates all six contracts rather than trusting their sealed IDs/hashes. Weakening a credential privilege rule and resealing the credential, authorization policy, and envelope therefore still blocks.
+
 ## Manual review and non-authority
 
 Missing, malformed, stale, expired, tampered, mismatched, ambiguous, replayed, or privilege-drifted evidence blocks. There is no automatic retry, deletion, reset, cleanup, forced continuation, or authorization reissue.

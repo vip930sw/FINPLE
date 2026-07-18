@@ -33,6 +33,9 @@ All Step 114-2X-F contracts bind the relevant package-summary, test-gate, and fu
 - One-time authorization is future-only, exact-scope, exact-count, non-reusable, non-transferable, and manual-review-on-ambiguity.
 - Four strict future observation-result contracts and pure explicit-clock validators enforce exact IDs/hashes, upstream/policy bindings, freshness, expiry, skew, sanitized results, and manual-review consistency without performing an observation.
 - A strict future authorization-envelope contract and pure validator require all four valid observations, exact policy/evidence/scenario/operation bindings, bounded lifetime, unique nonce classification, and fixed single execution. Synthetic fixtures exist only in tests.
+- Authorization context validation requires exactly six policy contracts and directly revalidates environment, network, database, certificate, credential, and authorization contracts, so a fully resealed privilege weakening remains blocked.
+- Authorization issuance cannot precede the latest observation, and authorization expiry cannot outlive the earliest observation expiry. Observation remains a prerequisite outside the allowed operation set.
+- Prior nonce hashes must be a SHA-256-only, duplicate-free, canonically sorted array; malformed context fails closed without adding persistence.
 - Environment observation is a prerequisite, not an authorized operation; the exact operation order begins with one disposable test-database connection.
 - Prepared, blocked, idle, CLI rejection, and exception results explicitly return every authority field false; blocked/idle suppress the summary.
 
@@ -44,16 +47,16 @@ No production CSV, scenario runtime, selector, loader, pointer, DB/auth/payment/
 
 ## Focused validation
 
-- Step 114-2X-F focused corrective suite: 25 passed, 0 failed.
+- Step 114-2X-F focused corrective suite: 30 passed, 0 failed.
 - Step 114-2X-E standalone: 50 passed, 0 failed.
 - Step 114-2X-D standalone: 38 passed, 0 failed.
 - Step 114-2X-C standalone: 49 passed, 0 failed.
 - Step 114-2X-B standalone: 31 passed, 0 failed.
 - Step 114-2X-A standalone: 24 passed, 0 failed.
 - Step 114-2W standalone: 68 passed, 0 failed.
-- Combined Step 114-2W through 2X-F: 285 passed, 0 failed.
-- Combined Step 114-2Q through 2X-F: 664 passed, 0 failed.
-- Combined Step 114-2N through 2X-F: 868 passed, 0 failed.
+- Combined Step 114-2W through 2X-F: 290 passed, 0 failed.
+- Combined Step 114-2Q through 2X-F: 669 passed, 0 failed.
+- Combined Step 114-2N through 2X-F: 873 passed, 0 failed.
 - Python candidate package: 16 passed, 0 failed.
 - Python metrics discovery: 48 passed, 0 failed.
 - Scenario metrics: 80 passed, 0 failed.
