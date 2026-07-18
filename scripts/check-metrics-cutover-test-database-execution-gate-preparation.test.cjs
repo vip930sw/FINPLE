@@ -9,8 +9,10 @@ const test = require("node:test");
 const {
   FIELD_SETS,
   FIXED_FALSE_FIELDS,
+  OBSERVATION_SET_HASH_DOMAIN,
   SPECS,
   VERSIONS,
+  buildObservationSetHash,
   buildPreparationSummary,
   buildValidPreparationPacket,
   evaluateTestDatabaseExecutionGatePreparation,
@@ -24,6 +26,9 @@ const {
   validateNamespaceObservation,
   validatePreparationSummary,
 } = require("./lib/metrics-cutover-test-database-execution-gate-preparation.cjs");
+const {
+  hashWithDomain,
+} = require("./lib/metrics-cutover-guarded-executor-contracts.cjs");
 const {
   FUTURE_SCENARIOS,
 } = require("./lib/metrics-cutover-postgresql-test-package.cjs");
@@ -60,14 +65,17 @@ function evaluateMutation(name, mutate) {
 const SYNTHETIC_OBSERVED_AT = "2026-07-18T00:00:00.000Z";
 const SYNTHETIC_EVALUATION_CLOCK = "2026-07-18T00:05:00.000Z";
 const SYNTHETIC_EXPIRES_AT = "2026-07-18T00:10:00.000Z";
+const SYNTHETIC_ENVIRONMENT_BINDING_HASH = "e".repeat(64);
+const SYNTHETIC_NAMESPACE_EVIDENCE_HASH = "4".repeat(64);
 
-function syntheticObservationBase(packet, policyName) {
+function syntheticObservationBase(packet, policyName, environmentBindingHash) {
   const bindings = packet.contracts[policyName].upstreamBindings;
   return {
     packageSummaryId: bindings.packageSummaryId,
     packageSummaryHash: bindings.packageSummaryHash,
     testDatabaseGateId: bindings.testDatabaseGateId,
     testDatabaseGateHash: bindings.testDatabaseGateHash,
+    environmentBindingHash,
     policyId: packet.contracts[policyName][SPECS[policyName].idField],
     policyHash: packet.contracts[policyName][SPECS[policyName].hashField],
     observerAttestationHash: "1".repeat(64),
@@ -76,12 +84,14 @@ function syntheticObservationBase(packet, policyName) {
   };
 }
 
-function buildSanitizedSyntheticFutureFixture() {
+function buildSanitizedSyntheticFutureFixture(
+  environmentBindingHash = SYNTHETIC_ENVIRONMENT_BINDING_HASH,
+) {
   const packet = buildValidPreparationPacket();
   const observations = {
     network: sealContract({
       contractVersion: VERSIONS.networkObservation,
-      ...syntheticObservationBase(packet, "network"),
+      ...syntheticObservationBase(packet, "network", environmentBindingHash),
       destinationAllowlistHash: "2".repeat(64),
       observedDestinationCount: 1,
       wildcardObserved: false, redirectObserved: false,
@@ -93,9 +103,9 @@ function buildSanitizedSyntheticFutureFixture() {
     }, "networkObservation"),
     database: sealContract({
       contractVersion: VERSIONS.databaseObservation,
-      ...syntheticObservationBase(packet, "database"),
+      ...syntheticObservationBase(packet, "database", environmentBindingHash),
       databaseFingerprintHash: "3".repeat(64),
-      disposableNamespaceEvidenceHash: "4".repeat(64),
+      disposableNamespaceEvidenceHash: SYNTHETIC_NAMESPACE_EVIDENCE_HASH,
       purposeClassification: "disposable_isolated_conformance_only",
       serverCapabilityCategory: "supported_postgresql_capability_category",
       utcBehaviorAttestationHash: "5".repeat(64),
@@ -107,7 +117,7 @@ function buildSanitizedSyntheticFutureFixture() {
     }, "databaseObservation"),
     certificate: sealContract({
       contractVersion: VERSIONS.certificateObservation,
-      ...syntheticObservationBase(packet, "certificate"),
+      ...syntheticObservationBase(packet, "certificate", environmentBindingHash),
       certificateFingerprintHash: "7".repeat(64),
       tlsValidated: true, certificateChainValidated: true,
       hostnameVerificationValidated: true, rotationAmbiguous: false,
@@ -115,8 +125,8 @@ function buildSanitizedSyntheticFutureFixture() {
     }, "certificateObservation"),
     namespace: sealContract({
       contractVersion: VERSIONS.namespaceObservation,
-      ...syntheticObservationBase(packet, "environment"),
-      disposableNamespaceEvidenceHash: "8".repeat(64),
+      ...syntheticObservationBase(packet, "environment", environmentBindingHash),
+      disposableNamespaceEvidenceHash: SYNTHETIC_NAMESPACE_EVIDENCE_HASH,
       namespaceCategory: "new_empty_disposable_namespace",
       namespaceEmpty: true, namespaceIsolated: true,
       applicationObjectObserved: false, unrelatedObjectObserved: false,
@@ -136,6 +146,10 @@ function buildSanitizedSyntheticFutureFixture() {
       packet.contracts.environment.environmentClassificationId,
     environmentClassificationHash:
       packet.contracts.environment.environmentClassificationHash,
+    environmentBindingHash,
+    observationSetHash: buildObservationSetHash(
+      environmentBindingHash, observations,
+    ),
     networkObservationId: observations.network.observationId,
     networkObservationHash: observations.network.observationHash,
     databaseObservationId: observations.database.observationId,
@@ -182,6 +196,10 @@ function resealObservationBinding(fixture, name) {
     fixture.observations[name].observationId;
   fixture.authorizationEnvelope[`${name}ObservationHash`] =
     fixture.observations[name].observationHash;
+  fixture.authorizationEnvelope.observationSetHash = buildObservationSetHash(
+    fixture.authorizationEnvelope.environmentBindingHash,
+    fixture.observations,
+  );
 }
 
 function resealCredentialAuthorizationChain(fixture) {
@@ -636,6 +654,119 @@ test("authorization envelope requires every observation binding", () => {
     drift.authorizationEnvelope, drift.authorizationContext,
     SYNTHETIC_EVALUATION_CLOCK,
   ).includes("authorization_envelope_observation_binding_mismatch:database"));
+});
+
+test("all observations and the envelope share one sanitized environment binding", () => {
+  const fixture = buildSanitizedSyntheticFutureFixture();
+  for (const name of ["network", "database", "certificate", "namespace"]) {
+    assert.equal(
+      fixture.observations[name].environmentBindingHash,
+      SYNTHETIC_ENVIRONMENT_BINDING_HASH,
+    );
+  }
+  assert.equal(
+    fixture.authorizationEnvelope.environmentBindingHash,
+    SYNTHETIC_ENVIRONMENT_BINDING_HASH,
+  );
+  assert.equal(
+    fixture.observations.database.disposableNamespaceEvidenceHash,
+    fixture.observations.namespace.disposableNamespaceEvidenceHash,
+  );
+  assert.equal(
+    fixture.authorizationEnvelope.observationSetHash,
+    buildObservationSetHash(
+      SYNTHETIC_ENVIRONMENT_BINDING_HASH, fixture.observations,
+    ),
+  );
+  assert.deepEqual(validateAuthorizationEnvelope(
+    fixture.authorizationEnvelope, fixture.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ), []);
+  assertAuthorityFalse(evaluateTestDatabaseExecutionGatePreparation(
+    fixture.packet,
+  ));
+});
+
+test("environment binding drift and cross-environment observation swaps block", () => {
+  for (const name of ["network", "certificate"]) {
+    const fixture = buildSanitizedSyntheticFutureFixture();
+    fixture.observations[name].environmentBindingHash = "f".repeat(64);
+    resealObservationBinding(fixture, name);
+    fixture.authorizationEnvelope = resealSynthetic(
+      fixture.authorizationEnvelope, "authorizationEnvelope",
+    );
+    assert.ok(validateAuthorizationEnvelope(
+      fixture.authorizationEnvelope, fixture.authorizationContext,
+      SYNTHETIC_EVALUATION_CLOCK,
+    ).includes("authorization_envelope_environment_binding_mismatch"));
+  }
+
+  const fixture = buildSanitizedSyntheticFutureFixture();
+  const otherEnvironment = buildSanitizedSyntheticFutureFixture("f".repeat(64));
+  fixture.observations.certificate = structuredClone(
+    otherEnvironment.observations.certificate,
+  );
+  resealObservationBinding(fixture, "certificate");
+  fixture.authorizationEnvelope = resealSynthetic(
+    fixture.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    fixture.authorizationEnvelope, fixture.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_environment_binding_mismatch"));
+});
+
+test("database and namespace observations bind the same namespace evidence", () => {
+  const fixture = buildSanitizedSyntheticFutureFixture();
+  fixture.observations.namespace.disposableNamespaceEvidenceHash = "f".repeat(64);
+  resealObservationBinding(fixture, "namespace");
+  fixture.authorizationEnvelope = resealSynthetic(
+    fixture.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    fixture.authorizationEnvelope, fixture.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_namespace_evidence_binding_mismatch"));
+});
+
+test("envelope environment and ordered observation-set hashes fail closed", () => {
+  const environmentDrift = buildSanitizedSyntheticFutureFixture();
+  environmentDrift.authorizationEnvelope.environmentBindingHash = "f".repeat(64);
+  environmentDrift.authorizationEnvelope.observationSetHash = buildObservationSetHash(
+    environmentDrift.authorizationEnvelope.environmentBindingHash,
+    environmentDrift.observations,
+  );
+  environmentDrift.authorizationEnvelope = resealSynthetic(
+    environmentDrift.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    environmentDrift.authorizationEnvelope,
+    environmentDrift.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_environment_binding_mismatch"));
+
+  const orderTamper = buildSanitizedSyntheticFutureFixture();
+  orderTamper.authorizationEnvelope.observationSetHash = hashWithDomain(
+    OBSERVATION_SET_HASH_DOMAIN,
+    {
+      environmentBindingHash:
+        orderTamper.authorizationEnvelope.environmentBindingHash,
+      observations: ["namespace", "certificate", "database", "network"].map(
+        (name) => ({
+          observationName: name,
+          observationId: orderTamper.observations[name].observationId,
+          observationHash: orderTamper.observations[name].observationHash,
+        }),
+      ),
+    },
+  );
+  orderTamper.authorizationEnvelope = resealSynthetic(
+    orderTamper.authorizationEnvelope, "authorizationEnvelope",
+  );
+  assert.ok(validateAuthorizationEnvelope(
+    orderTamper.authorizationEnvelope, orderTamper.authorizationContext,
+    SYNTHETIC_EVALUATION_CLOCK,
+  ).includes("authorization_envelope_observation_set_hash_mismatch"));
 });
 
 test("authorization context directly revalidates every policy after a full reseal", () => {

@@ -57,6 +57,11 @@ const OBSERVATION_NAMES = Object.freeze([
   "networkObservation", "databaseObservation", "certificateObservation",
   "namespaceObservation",
 ]);
+const OBSERVATION_CONTEXT_NAMES = Object.freeze([
+  "network", "database", "certificate", "namespace",
+]);
+const OBSERVATION_SET_HASH_DOMAIN =
+  "FINPLE_STEP114_2X_F_AUTHORIZATION_OBSERVATION_SET_HASH\0";
 
 const SPECS = Object.freeze(Object.fromEntries(Object.entries(VERSIONS).map(
   ([name, version]) => [name, Object.freeze({
@@ -146,8 +151,8 @@ const AUTHORIZATION_FIELDS = Object.freeze([
 const OBSERVATION_COMMON_FIELDS = Object.freeze([
   "contractVersion", "observationId", "packageSummaryId",
   "packageSummaryHash", "testDatabaseGateId", "testDatabaseGateHash",
-  "policyId", "policyHash", "observerAttestationHash", "observedAt",
-  "expiresAt",
+  "environmentBindingHash", "policyId", "policyHash",
+  "observerAttestationHash", "observedAt", "expiresAt",
 ]);
 const NETWORK_OBSERVATION_FIELDS = Object.freeze([
   ...OBSERVATION_COMMON_FIELDS, "destinationAllowlistHash",
@@ -183,6 +188,7 @@ const AUTHORIZATION_ENVELOPE_FIELDS = Object.freeze([
   "packageSummaryHash", "testDatabaseGateId", "testDatabaseGateHash",
   "authorizationPolicyId", "authorizationPolicyHash",
   "environmentClassificationId", "environmentClassificationHash",
+  "environmentBindingHash", "observationSetHash",
   "networkObservationId", "networkObservationHash",
   "databaseObservationId", "databaseObservationHash",
   "certificateObservationId", "certificateObservationHash",
@@ -223,6 +229,17 @@ function without(value, field) {
 
 function canonicalEqual(left, right) {
   try { return canonicalJson(left) === canonicalJson(right); } catch { return false; }
+}
+
+function buildObservationSetHash(environmentBindingHash, observations) {
+  return hashWithDomain(OBSERVATION_SET_HASH_DOMAIN, {
+    environmentBindingHash,
+    observations: OBSERVATION_CONTEXT_NAMES.map((name) => ({
+      observationName: name,
+      observationId: observations?.[name]?.observationId,
+      observationHash: observations?.[name]?.observationHash,
+    })),
+  });
 }
 
 function sealContract(value, name) {
@@ -323,7 +340,8 @@ function buildNetworkPolicy(upstream) {
     contractVersion: VERSIONS.network,
     upstreamBindings: buildUpstreamBindings(upstream),
     futureObservationFields: [
-      "destinationAllowlistHash", "observationMethodCategory",
+      "environmentBindingHash", "destinationAllowlistHash",
+      "observationMethodCategory",
       "observerAttestationHash", "observedAt", "expiresAt",
     ],
     observationMethodCategory: "future_sanitized_out_of_band_attestation",
@@ -343,7 +361,8 @@ function buildDatabasePolicy(upstream) {
     contractVersion: VERSIONS.database,
     upstreamBindings: buildUpstreamBindings(upstream),
     futureObservationFields: [
-      "databaseFingerprintHash", "disposableNamespaceEvidenceHash",
+      "environmentBindingHash", "databaseFingerprintHash",
+      "disposableNamespaceEvidenceHash",
       "purposeClassification", "serverCapabilityCategory",
       "utcBehaviorAttestationHash", "transactionIsolationAttestationHash",
       "schemaPackageState", "observedAt", "expiresAt",
@@ -369,7 +388,8 @@ function buildCertificatePolicy(upstream) {
     contractVersion: VERSIONS.certificate,
     upstreamBindings: buildUpstreamBindings(upstream),
     futureObservationFields: [
-      "certificateFingerprintHash", "observedAt", "expiresAt",
+      "environmentBindingHash", "certificateFingerprintHash", "observedAt",
+      "expiresAt",
     ],
     tlsRequired: true,
     chainVerificationCategory: "future_full_chain_verification_required",
@@ -425,6 +445,7 @@ function buildAuthorizationPolicy(upstream, contracts) {
     credentialPolicyId: contracts.credential.credentialPolicyId,
     credentialPolicyHash: contracts.credential.credentialPolicyHash,
     futureEnvelopeFields: [
+      "environmentBindingHash", "observationSetHash",
       "sanitizedApproverIdentityHash", "issuedAt", "expiresAt", "nonceHash",
     ],
     testPurpose: "exact_15_scenario_disposable_conformance_run",
@@ -564,6 +585,9 @@ function validateObservationBase(value, name, context, evaluationClockInstant) {
   }
   if (!isSha256(value.observerAttestationHash)) {
     issues.push(`${name}_observer_attestation_hash_invalid`);
+  }
+  if (!isSha256(value.environmentBindingHash)) {
+    issues.push(`${name}_environment_binding_hash_invalid`);
   }
   if (value.rawMaterialPresent !== false) {
     issues.push(`${name}_raw_material_boundary_invalid`);
@@ -807,12 +831,34 @@ function validateAuthorizationEnvelope(
       issues.push(`authorization_envelope_policy_binding_mismatch:${field}`);
     }
   }
-  for (const name of ["network", "database", "certificate", "namespace"]) {
+  for (const name of OBSERVATION_CONTEXT_NAMES) {
     const observation = context.observations[name];
     if (value[`${name}ObservationId`] !== observation?.observationId ||
         value[`${name}ObservationHash`] !== observation?.observationHash) {
       issues.push(`authorization_envelope_observation_binding_mismatch:${name}`);
     }
+  }
+  if (!isSha256(value.environmentBindingHash)) {
+    issues.push("authorization_envelope_environment_binding_hash_invalid");
+  }
+  if (OBSERVATION_CONTEXT_NAMES.some((name) =>
+    context.observations[name].environmentBindingHash !==
+      value.environmentBindingHash)) {
+    issues.push("authorization_envelope_environment_binding_mismatch");
+  }
+  if (context.observations.database.disposableNamespaceEvidenceHash !==
+      context.observations.namespace.disposableNamespaceEvidenceHash) {
+    issues.push("authorization_envelope_namespace_evidence_binding_mismatch");
+  }
+  let expectedObservationSetHash = null;
+  try {
+    expectedObservationSetHash = buildObservationSetHash(
+      value.environmentBindingHash, context.observations,
+    );
+  } catch {}
+  if (!isSha256(value.observationSetHash) ||
+      value.observationSetHash !== expectedObservationSetHash) {
+    issues.push("authorization_envelope_observation_set_hash_mismatch");
   }
   if (value.exactScenarioCount !== FUTURE_SCENARIOS.length ||
       !canonicalEqual(value.scenarioOrder, FUTURE_SCENARIOS)) {
@@ -851,9 +897,7 @@ function validateAuthorizationEnvelope(
       issues.push("authorization_envelope_lifetime_excessive");
     }
   }
-  const observationTimes = [
-    "network", "database", "certificate", "namespace",
-  ].map((name) => ({
+  const observationTimes = OBSERVATION_CONTEXT_NAMES.map((name) => ({
     observedAt: parseCanonicalInstant(context.observations[name].observedAt),
     expiresAt: parseCanonicalInstant(context.observations[name].expiresAt),
   }));
@@ -980,9 +1024,11 @@ function evaluateTestDatabaseExecutionGatePreparation(packet) {
 module.exports = {
   FIELD_SETS,
   FIXED_FALSE_FIELDS,
+  OBSERVATION_SET_HASH_DOMAIN,
   SPECS,
   UPSTREAM_BINDING_FIELDS,
   VERSIONS,
+  buildObservationSetHash,
   buildAuthorizationPolicy,
   buildCertificatePolicy,
   buildContracts,
