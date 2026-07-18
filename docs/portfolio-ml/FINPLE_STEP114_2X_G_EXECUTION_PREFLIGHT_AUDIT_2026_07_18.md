@@ -50,7 +50,15 @@ All future observation, authorization, and manifest fixtures are sanitized synth
 - AI production smoke: passed; the admin endpoint remained tokenless `403`.
 - Unstaged and staged diff checks: passed.
 
-The clean committed-head 240-second repository-wide failure inventory is recorded in a follow-up audit update after the implementation commit.
+## Repository-wide bounded failure inventory
+
+The spec-reporter auto-discovery run started from clean committed implementation HEAD `6fd60ce0b4ccda55ab0c258fd70a93870e217f0b` with a 240-second bound. It did not complete before timeout. A failure-only filtered rerun at the same clean HEAD emitted exactly one failing test name before its 240-second timeout:
+
+- `Step228 checker passes and leaves working tree unchanged` — `snapshot format is not canonical`.
+
+A second read-only auto-discovery run used the exact test-name skip pattern for that Step228 test and also reached the 240-second bound without completing. It emitted zero failing test names before timeout. Therefore the observed inventory is Step228 failures 1 and observed Step228-external failures 0; this is not reported as a completed repository-wide pass.
+
+The runner-created 5,070 TEMP `finple-*` directories were removed after both inventories. The 48 directories initially blocked by Windows long-path cleanup were emptied through a validated TEMP-direct-child cleanup and then removed. Final TEMP `finple-*` count is 0, and the repository remained clean before this audit-only update.
 
 ## Step228 boundary
 
