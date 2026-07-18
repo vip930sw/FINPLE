@@ -10,7 +10,7 @@ export default function SimulatorTabNav({ activeSimulatorTab, changeSimulatorTab
           type="button"
           id={`simulator-tab-${item.key}`}
           aria-current={activeSimulatorTab === item.key ? "step" : undefined}
-          onClick={() => changeSimulatorTab(item.key)}
+          onClick={() => changeSimulatorTab(item.key, { userInitiated: true })}
         >
           <span>{item.step}</span>
           <strong>{item.title}</strong>

@@ -100,7 +100,7 @@ test("PortfolioSimulator keeps direct-link refresh, imperative changeTab, and pa
   assert.match(source, /addEventListener\("hashchange"/);
   assert.match(source, /removeEventListener\("hashchange"/);
   assert.match(source, /changeTab\(nextTab, options = \{\}\)/);
-  assert.match(source, /onActiveTabChange\?\.\(effectiveActiveSimulatorTab\)/);
+  assert.match(source, /onActiveTabChange\?\.\(effectiveActiveSimulatorTab, activeTabChangeContextRef\.current\)/);
   assert.match(source, /id="probability-analysis"/);
   assert.match(source, /id="external-shock-analysis"/);
   assert.match(source, /id="ai-analysis"/);

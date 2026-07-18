@@ -8,6 +8,7 @@ import {
   normalizeSimulatorTab,
   SIMULATOR_TAB_ITEMS,
 } from "./simulatorNavigation.js";
+import { scrollActiveSimulatorRouteStep } from "./simulatorRouteNavScroll.js";
 
 function readSource(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -121,4 +122,50 @@ test("Step 1 through Step 6 identifiers and anchors remain unchanged", () => {
       ["ai", "ai-analysis"],
     ]
   );
+});
+
+test("active route step uses one horizontal-only scroll helper for every simulator step", () => {
+  const scrollCalls = [];
+  const navElement = {
+    clientWidth: 300,
+    scrollWidth: 700,
+    scrollLeft: 0,
+    getBoundingClientRect: () => ({ left: 0, right: 300 }),
+    scrollTo: (options) => scrollCalls.push(options),
+  };
+  const step7Button = {
+    getBoundingClientRect: () => ({ left: 275, right: 345 }),
+  };
+
+  assert.equal(scrollActiveSimulatorRouteStep(navElement, step7Button), true);
+  assert.deepEqual(scrollCalls, [{ left: 53, behavior: "auto" }]);
+  assert.equal(Object.hasOwn(scrollCalls[0], "top"), false);
+
+  navElement.scrollLeft = 120;
+  const step1Button = {
+    getBoundingClientRect: () => ({ left: -120, right: -50 }),
+  };
+  assert.equal(
+    scrollActiveSimulatorRouteStep(navElement, step1Button, { behavior: "smooth" }),
+    true
+  );
+  assert.deepEqual(scrollCalls[1], { left: 0, behavior: "smooth" });
+});
+
+test("direct hash, hashchange, and user clicks share active route auto-scroll wiring", () => {
+  const personalPage = readSource("src/components/PersonalPage.jsx");
+  const simulator = readSource("src/components/PortfolioSimulator.jsx");
+  const tabNav = readSource("src/components/portfolio/components/SimulatorTabNav.jsx");
+  const scrollHelper = readSource("src/components/portfolio/utils/simulatorRouteNavScroll.js");
+
+  assert.match(personalPage, /simulatorRouteSubNavRef/);
+  assert.match(personalPage, /simulatorRouteStepButtonRefs/);
+  assert.match(personalPage, /data-simulator-step=\{item\.key\}/);
+  assert.match(personalPage, /scrollActiveSimulatorRouteStep\(/);
+  assert.match(personalPage, /context\.userInitiated === true \? "smooth" : "auto"/);
+  assert.match(personalPage, /aria-current=\{activeSimulatorStep === item\.key \? "step" : undefined\}/);
+  assert.match(simulator, /activeTabChangeContextRef/);
+  assert.match(simulator, /onTabChange\(nextTab\) \{[\s\S]*userInitiated: false/);
+  assert.match(tabNav, /changeSimulatorTab\(item\.key, \{ userInitiated: true \}\)/);
+  assert.doesNotMatch(scrollHelper, /window\.scrollTo|scrollIntoView|\btop\s*:/);
 });

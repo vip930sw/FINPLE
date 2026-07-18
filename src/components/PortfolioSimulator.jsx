@@ -100,13 +100,15 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     [scenarioContextInputs]
   );
   const changeSimulatorTabRef = useRef(changeSimulatorTab);
+  const activeTabChangeContextRef = useRef({ userInitiated: false });
 
   useEffect(() => {
     changeSimulatorTabRef.current = changeSimulatorTab;
   }, [changeSimulatorTab]);
 
   useEffect(() => {
-    onActiveTabChange?.(effectiveActiveSimulatorTab);
+    onActiveTabChange?.(effectiveActiveSimulatorTab, activeTabChangeContextRef.current);
+    activeTabChangeContextRef.current = { userInitiated: false };
   }, [effectiveActiveSimulatorTab, onActiveTabChange]);
 
   useEffect(() => {
@@ -114,6 +116,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     const hashNavigator = createSimulatorHashNavigator({
       getHash: () => window.location.hash,
       onTabChange(nextTab) {
+        activeTabChangeContextRef.current = { userInitiated: false };
         changeSimulatorTabRef.current(nextTab);
         window.setTimeout(() => {
           document.getElementById(getSimulatorTabAnchorId(nextTab))?.scrollIntoView({
@@ -152,6 +155,7 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
 
   const handleSimulatorTabChange = useCallback(function handleSimulatorTabChange(nextTab, options = {}) {
     const normalizedTab = normalizeSimulatorTab(nextTab);
+    activeTabChangeContextRef.current = { userInitiated: options.userInitiated === true };
     changeSimulatorTab(normalizedTab);
 
     if (typeof window !== "undefined" && options.history !== false) {
