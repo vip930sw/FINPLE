@@ -352,6 +352,7 @@ test("navigation includes Step 5 between Step 4 and AI without removing existing
       ["probability", "STEP 4"],
       ["shock", "STEP 5"],
       ["ai", "STEP 6"],
+      ["saved", "STEP 7"],
     ]
   );
 });

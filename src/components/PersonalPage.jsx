@@ -4,6 +4,11 @@ import StartHubPage from "./StartHubPage";
 import InvestmentMbtiPage from "./InvestmentMbtiPage";
 import InvestmentMbtiMarketChoiceBridge from "./InvestmentMbtiMarketChoiceBridge";
 import ScreenerPage from "./ScreenerPage";
+import {
+  normalizeSimulatorTab,
+  SIMULATOR_TAB_ITEMS,
+} from "./portfolio/utils/simulatorNavigation";
+import { scrollActiveSimulatorRouteStep } from "./portfolio/utils/simulatorRouteNavScroll";
 
 function replaceToolPath(path) {
   if (typeof window === "undefined") return;
@@ -37,13 +42,6 @@ function getPathForPersonalView(view) {
   return "/start";
 }
 
-const SIMULATOR_STEP_ITEMS = [
-  { key: "settings", step: "Step 1", label: "시뮬레이터" },
-  { key: "compare", step: "Step 2", label: "포트폴리오" },
-  { key: "detail", step: "Step 3", label: "상세분석" },
-  { key: "ai", step: "Step 4", label: "포트폴리오 AI 분석" },
-];
-
 function scrollWindowTop(delay = 70) {
   if (typeof window === "undefined") return;
   window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), delay);
@@ -51,12 +49,22 @@ function scrollWindowTop(delay = 70) {
 
 function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
   const [personalView, setPersonalView] = useState(getInitialPersonalView);
-  const [initialTab, setInitialTab] = useState("settings");
-  const [activeSimulatorStep, setActiveSimulatorStep] = useState("settings");
+  const [initialTab, setInitialTab] = useState(() =>
+    normalizeSimulatorTab(typeof window === "undefined" ? "" : window.location.hash)
+  );
+  const [activeSimulatorStep, setActiveSimulatorStep] = useState(initialTab);
   const simulatorRef = useRef(null);
+  const simulatorRouteSubNavRef = useRef(null);
+  const simulatorRouteStepButtonRefs = useRef(new Map());
+  const simulatorRouteScrollBehaviorRef = useRef("auto");
 
   const moveToSimulatorTab = useCallback(function moveToSimulatorTab(tabName, options = {}) {
     simulatorRef.current?.changeTab(tabName, options);
+  }, []);
+
+  const handleActiveSimulatorStepChange = useCallback((nextStep, context = {}) => {
+    simulatorRouteScrollBehaviorRef.current = context.userInitiated === true ? "smooth" : "auto";
+    setActiveSimulatorStep(nextStep);
   }, []);
 
   function openSimulator(tabName = "settings", options = {}) {
@@ -107,7 +115,7 @@ function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
     if (personalView !== "simulator") return;
 
     window.setTimeout(() => {
-      moveToSimulatorTab(initialTab, { scroll: false });
+      moveToSimulatorTab(initialTab, { scroll: false, history: false });
       simulatorRef.current?.scrollToTop?.();
     }, 120);
   }, [personalView, initialTab, moveToSimulatorTab]);
@@ -139,20 +147,31 @@ function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
     }
 
     onHeaderSubNavChange?.(
-      <nav className="routeSubNav simulatorRouteSubNav" aria-label="시뮬레이터 단계 이동">
-        {SIMULATOR_STEP_ITEMS.map((item) => (
+      <nav
+        ref={simulatorRouteSubNavRef}
+        className="routeSubNav simulatorRouteSubNav"
+        aria-label="시뮬레이터 단계 이동"
+      >
+        {SIMULATOR_TAB_ITEMS.map((item) => (
           <button
             key={item.key}
+            ref={(node) => {
+              if (node) simulatorRouteStepButtonRefs.current.set(item.key, node);
+              else simulatorRouteStepButtonRefs.current.delete(item.key);
+            }}
+            data-simulator-step={item.key}
             type="button"
-            aria-label={`${item.step} ${item.label}`}
+            aria-label={`${item.step.replace("STEP", "Step")} ${item.title}`}
+            aria-current={activeSimulatorStep === item.key ? "step" : undefined}
             className={activeSimulatorStep === item.key ? "active" : ""}
             onClick={() => {
+              simulatorRouteScrollBehaviorRef.current = "smooth";
               setActiveSimulatorStep(item.key);
-              moveToSimulatorTab(item.key);
+              moveToSimulatorTab(item.key, { userInitiated: true });
             }}
-            title={item.label}
+            title={item.title}
           >
-            {item.step}
+            {item.step.replace("STEP", "Step")}
           </button>
         ))}
       </nav>
@@ -160,6 +179,21 @@ function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
 
     return () => onHeaderSubNavChange?.(null);
   }, [activeSimulatorStep, moveToSimulatorTab, onHeaderSubNavChange, personalView]);
+
+  useEffect(() => {
+    if (personalView !== "simulator") return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      scrollActiveSimulatorRouteStep(
+        simulatorRouteSubNavRef.current,
+        simulatorRouteStepButtonRefs.current.get(activeSimulatorStep),
+        { behavior: simulatorRouteScrollBehaviorRef.current }
+      );
+      simulatorRouteScrollBehaviorRef.current = "auto";
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeSimulatorStep, personalView]);
 
   useEffect(() => {
     function handlePopState() {
@@ -205,7 +239,7 @@ function PersonalPage({ onBack, onNavigate, onHeaderSubNavChange }) {
 
   return (
     <main className="page personalPage">
-      <PortfolioSimulator ref={simulatorRef} onActiveTabChange={setActiveSimulatorStep} />
+      <PortfolioSimulator ref={simulatorRef} onActiveTabChange={handleActiveSimulatorStepChange} />
     </main>
   );
 }

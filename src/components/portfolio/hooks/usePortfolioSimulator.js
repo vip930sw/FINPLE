@@ -179,7 +179,7 @@ export default function usePortfolioSimulator() {
   function resetActivePortfolioAssets() { setAssets(cloneAssets(DEFAULT_ASSETS)); pendingTemplateAutoLookupRef.current = true; setTargetWeightDrafts({}); setAssetLookupSummary("기본 포트폴리오로 초기화했습니다. 자산 데이터를 자동 조회합니다."); }
   function resetGlobalSettings() { setSettings(DEFAULT_SETTINGS); }
   function changeSimulatorTab(nextTab) { setActiveSimulatorTab(normalizeSimulatorTab(nextTab)); }
-  function scrollToPortfolioTop() { document.getElementById("portfolio")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  function scrollToPortfolioTop() { document.getElementById("saved-portfolios")?.scrollIntoView({ behavior: "smooth", block: "start" }); }
   function selectPortfolioFromFloating(id) { selectPortfolio(id); }
   function downloadPortfolioBackup() { downloadJsonFile({ portfolioList, activePortfolioId, globalSettings: settings, appVersion: FINPLE_APP_VERSION, backupVersion: FINPLE_BACKUP_VERSION, schemaVersion: FINPLE_BACKUP_SCHEMA_VERSION, exportedAt: new Date().toISOString() }, createBackupFileName(activePortfolio?.name)); }
   function openPortfolioBackupFile() { backupFileInputRef.current?.click(); }
