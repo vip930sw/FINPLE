@@ -24,7 +24,7 @@ Every contract uses exact-key validation, canonical JSON, domain-separated IDs a
 
 ## Purpose and operations
 
-The exact purpose is `exact_15_scenario_disposable_conformance_run`. The future allowed operation set is restricted to sanitized environment evidence observation, one disposable test-database connection, the exact bound migration package, the exact 15-scenario conformance run, and sanitized hash-chained evidence collection.
+The exact purpose is `exact_15_scenario_disposable_conformance_run`. Sanitized environment observations are prerequisites completed before authorization issuance. They are not an authorized operation. The future allowed operation set is restricted, in exact order, to one disposable test-database connection, the exact bound migration package, the exact 15-scenario conformance run, and sanitized hash-chained evidence collection.
 
 This is a future policy description, not current authority. No operation in that set is performed or authorized by Step 114-2X-F.
 
@@ -32,7 +32,17 @@ This is a future policy description, not current authority. No operation in that
 
 `maximumExecutionCount` is exactly 1. Production scope, production cutover scope, reuse, extension, transfer, delete-to-retry, and automatic reissue are fixed false. Ambiguous issue or consume state resolves to `manual_review_fail_closed`.
 
+The policy fixes `maximumAuthorizationLifetimeSeconds=900`, `allowedClockSkewSeconds=30`, `issuedAtBeforeExpiresAtRequired=true`, `nonceUniquenessRequired=true`, and `nonceReplayPolicy=manual_review_fail_closed`.
+
 Duplicate nonce, replay, timestamp inversion, excessive clock skew, expiry, binding mismatch, scope mismatch, or observed/consume ambiguity blocks. No automatic retry or cleanup is allowed.
+
+## Future authorization envelope result
+
+The strict future envelope contract binds the package summary, Step 114-2X-E test gate and future-evidence spec, Step 114-2X-F authorization/environment/credential policies, all four observation ID/hash pairs, the exact 15-scenario count/order, a sanitized approver-identity hash, canonical issue/expiry instants, nonce hash, exact operation order, and maximum execution count 1.
+
+Its pure validator accepts an explicit evaluation-clock instant and validates all four observation results before validating the envelope. It then enforces exact keys/version/domain-separated ID/hash, every upstream and policy binding, scenario and operation order, lifetime/skew/expiry/inversion rules, nonce uniqueness against an explicit prior-hash set, manual-review consistency, and `rawMaterialPresent=false`.
+
+Only sanitized synthetic fixtures instantiate the envelope in tests. Step 114-2X-F does not create, issue, persist, transfer, or consume an authorization.
 
 ## Fixed-false state
 

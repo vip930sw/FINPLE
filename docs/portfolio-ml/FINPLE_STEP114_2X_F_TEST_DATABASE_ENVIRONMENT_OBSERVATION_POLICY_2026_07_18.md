@@ -22,6 +22,16 @@ Wildcards, redirects, DNS rebinding, loopback, private-network, metadata-service
 
 No network destination is observed in this step.
 
+## Future observation result contracts
+
+Four strict future result contracts are defined for network, database, certificate, and namespace observations. Each result has exact keys and a domain-separated observation ID/hash, binds the Step 114-2X-E package-summary and test-gate ID/hash pairs plus its Step 114-2X-F policy ID/hash, and contains only a sanitized observer-attestation hash, canonical `observedAt`/`expiresAt` instants, sanitized result fields, `manualReviewRequired`, and `rawMaterialPresent=false`.
+
+Pure validators accept an explicit canonical UTC evaluation-clock instant. They do not read the system clock. They enforce `observedAt < expiresAt`, maximum age, permitted clock skew, expiry at evaluation time, non-excessive validity windows, exact bindings, and manual-review consistency. Missing, extra, stale, expired, future-dated, inverted, or tampered results block.
+
+The network result fixes one observed destination and every wildcard, redirect, DNS-rebinding, loopback, private-network, metadata-service, production, staging, and unrelated-destination observation false. The database result requires fingerprint and namespace-evidence hashes, exact purpose/capability/package state, UTC and isolation attestations, no application or unrelated objects, and validated namespace isolation. The certificate result requires a fingerprint hash, TLS, chain, and hostname validation with no rotation ambiguity or expiry. The namespace result requires an allowed disposable category, an empty isolated namespace, and no application or unrelated objects.
+
+Only sanitized synthetic fixtures instantiate these contracts in tests. No runtime builder, observation route, clock read, DNS/TLS/database operation, or evidence persistence is added.
+
 ## Database fingerprint observation
 
 The future observation requires a database fingerprint hash, disposable-namespace evidence hash, exact purpose classification, server-capability category, UTC behavior attestation hash, transaction-isolation attestation hash, schema-package state, and bounded UTC observation/expiry instants.
