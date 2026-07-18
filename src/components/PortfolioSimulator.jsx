@@ -154,6 +154,13 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     const normalizedTab = normalizeSimulatorTab(nextTab);
     changeSimulatorTab(normalizedTab);
 
+    if (typeof window !== "undefined" && options.history !== false) {
+      const nextHash = `#${getSimulatorTabAnchorId(normalizedTab)}`;
+      if (window.location.hash !== nextHash) {
+        window.location.hash = nextHash;
+      }
+    }
+
     if (options.scroll !== false) {
       scrollToSimulatorTab(normalizedTab);
     }
@@ -318,26 +325,28 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
         </div>
       )}
 
-      <div id="portfolio" className="portfolioAnchor">
-        <PortfolioManagerPanel
-          portfolioList={portfolioList}
-          activePortfolioId={activePortfolioId}
-          activePortfolio={activePortfolio}
-          isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
-          setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
-          createPortfolioFromTemplate={createPortfolioFromTemplate}
-          duplicateActivePortfolio={duplicateActivePortfolio}
-          selectPortfolio={selectPortfolio}
-          renameActivePortfolio={renameActivePortfolio}
-          deleteActivePortfolio={deleteActivePortfolio}
-          downloadPortfolioBackup={downloadPortfolioBackup}
-          openPortfolioBackupFile={openPortfolioBackupFile}
-          backupFileInputRef={backupFileInputRef}
-          restorePortfolioBackup={restorePortfolioBackup}
-          dataManagementSummary={dataManagementSummary}
-          scrollToPortfolioTop={scrollToPortfolioTop}
-        />
-      </div>
+      {effectiveActiveSimulatorTab === "saved" && (
+        <div id="saved-portfolios" className="portfolioAnchor simulatorTabAnchor">
+          <PortfolioManagerPanel
+            portfolioList={portfolioList}
+            activePortfolioId={activePortfolioId}
+            activePortfolio={activePortfolio}
+            isNewPortfolioMenuOpen={isNewPortfolioMenuOpen}
+            setIsNewPortfolioMenuOpen={setIsNewPortfolioMenuOpen}
+            createPortfolioFromTemplate={createPortfolioFromTemplate}
+            duplicateActivePortfolio={duplicateActivePortfolio}
+            selectPortfolio={selectPortfolio}
+            renameActivePortfolio={renameActivePortfolio}
+            deleteActivePortfolio={deleteActivePortfolio}
+            downloadPortfolioBackup={downloadPortfolioBackup}
+            openPortfolioBackupFile={openPortfolioBackupFile}
+            backupFileInputRef={backupFileInputRef}
+            restorePortfolioBackup={restorePortfolioBackup}
+            dataManagementSummary={dataManagementSummary}
+            scrollToPortfolioTop={scrollToPortfolioTop}
+          />
+        </div>
+      )}
 
       {shouldShowFloatingPortfolioDropdown ? (
         <FloatingPortfolioDropdown

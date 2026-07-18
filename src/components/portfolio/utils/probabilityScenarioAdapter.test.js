@@ -240,6 +240,7 @@ test("Step 1 through Step 3 navigation remains and Step 4 probability does not r
       ["probability", "STEP 4"],
       ["shock", "STEP 5"],
       ["ai", "STEP 6"],
+      ["saved", "STEP 7"],
     ]
   );
 });

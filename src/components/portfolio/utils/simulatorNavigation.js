@@ -5,6 +5,7 @@ export const SIMULATOR_TAB_ITEMS = Object.freeze([
   { key: "probability", step: "STEP 4", title: "확률분석", anchorId: "probability-analysis" },
   { key: "shock", step: "STEP 5", title: "외부충격분석", anchorId: "external-shock-analysis" },
   { key: "ai", step: "STEP 6", title: "AI 분석", anchorId: "ai-analysis" },
+  { key: "saved", step: "STEP 7", title: "저장된 포트폴리오", anchorId: "saved-portfolios" },
 ]);
 
 export const SIMULATOR_TAB_KEYS = Object.freeze(SIMULATOR_TAB_ITEMS.map((item) => item.key));

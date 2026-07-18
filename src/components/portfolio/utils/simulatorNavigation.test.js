@@ -16,7 +16,7 @@ function readSource(path) {
   return fs.readFileSync(path, "utf8");
 }
 
-test("simulator navigation exposes the final six-step order and labels", () => {
+test("simulator navigation exposes the exact seven-step order and labels", () => {
   assert.deepEqual(
     SIMULATOR_TAB_ITEMS.map(({ key, step, title }) => ({ key, step, title })),
     [
@@ -26,15 +26,20 @@ test("simulator navigation exposes the final six-step order and labels", () => {
       { key: "probability", step: "STEP 4", title: "확률분석" },
       { key: "shock", step: "STEP 5", title: "외부충격분석" },
       { key: "ai", step: "STEP 6", title: "AI 분석" },
+      { key: "saved", step: "STEP 7", title: "저장된 포트폴리오" },
     ]
   );
-  assert.deepEqual(SIMULATOR_TAB_KEYS, ["settings", "compare", "detail", "probability", "shock", "ai"]);
+  assert.deepEqual(SIMULATOR_TAB_KEYS, [
+    "settings", "compare", "detail", "probability", "shock", "ai", "saved",
+  ]);
 });
 
 test("internal keys and anchors preserve Step 4, Step 5, and existing AI identifiers", () => {
   assert.equal(getSimulatorTabAnchorId("probability"), "probability-analysis");
   assert.equal(getSimulatorTabAnchorId("shock"), "external-shock-analysis");
   assert.equal(getSimulatorTabAnchorId("ai"), "ai-analysis");
+  assert.equal(getSimulatorTabAnchorId("saved"), "saved-portfolios");
+  assert.equal(normalizeSimulatorTab("#saved-portfolios"), "saved");
   assert.equal(normalizeSimulatorTab("#ai-analysis"), "ai");
   assert.equal(normalizeSimulatorTab("ai-analysis"), "ai");
   assert.equal(normalizeSimulatorTab("#external-shock-analysis"), "shock");
@@ -103,7 +108,7 @@ test("PortfolioSimulator keeps direct-link refresh, imperative changeTab, and pa
 
 test("SimulatorTabNav uses native step navigation without an incomplete ARIA tab pattern", () => {
   const source = readSource("src/components/portfolio/components/SimulatorTabNav.jsx");
-  assert.match(source, /<nav className="simulatorTabNav fourStepNav"/);
+  assert.match(source, /<nav className="simulatorTabNav fourStepNav sevenStepNav"/);
   assert.match(source, /type="button"/);
   assert.match(source, /aria-current=/);
   assert.doesNotMatch(source, /role="tablist"|role="tab"|aria-selected=|aria-controls=/);
@@ -173,11 +178,11 @@ test("AI service endpoints stay on the existing provider and status routes", () 
   assert.doesNotMatch(serviceSource, /probability|external-shock|scenario\/api|billing/);
 });
 
-test("six-step nav mobile containment and visible focus styles are present", () => {
+test("seven-step nav mobile containment and visible focus styles are present", () => {
   const appStyle = readSource("src/App.css");
   const aiStyle = readSource("src/AiAnalysisPanel.css");
   const combined = `${appStyle}\n${aiStyle}`;
-  assert.match(combined, /grid-template-columns:\s*repeat\(6,\s*minmax\(132px,\s*1fr\)\)/);
+  assert.match(combined, /grid-template-columns:\s*repeat\(7,\s*minmax\(132px,\s*1fr\)\)/);
   assert.match(combined, /@media\s*\(max-width:\s*980px\)[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(132px,\s*1fr\)\)/);
   assert.match(combined, /@media\s*\(max-width:\s*(380|560)px\)[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(118px,\s*1fr\)\)/);
   assert.match(combined, /overflow-x:\s*auto/);
