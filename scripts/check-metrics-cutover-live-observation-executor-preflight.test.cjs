@@ -10,6 +10,9 @@ const test = require("node:test");
 const stepM = require("./lib/metrics-cutover-live-observation-approval-response.cjs");
 const stepN = require("./lib/metrics-cutover-live-observation-invocation.cjs");
 const subject = require("./lib/metrics-cutover-live-observation-executor-preflight.cjs");
+const {
+  hashWithDomain,
+} = require("./lib/metrics-cutover-guarded-executor-contracts.cjs");
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
@@ -289,6 +292,42 @@ test("claim key binds invocation ID hash and nonce", () => {
     subject.deriveClaimKeyHash(packet.context.upstream));
   const drift = fixture({ inputOverrides: { claimKeyHash: "0".repeat(64) } });
   expectBlocked(drift, "executor_input_field_invalid:claimKeyHash");
+});
+
+test("policy-declared domain bytes and input fields independently reproduce claim key", () => {
+  const packet = fixture();
+  const policy = packet.context.consumptionPolicy;
+  const invocation = packet.context.upstream.stepNPacket.invocation;
+  const payload = Object.fromEntries(
+    policy.claimKeyInputFields.map((field) => [field, invocation[field]]),
+  );
+  assert.equal(policy.claimKeyDerivationDomain, subject.CLAIM_KEY_DERIVATION_DOMAIN);
+  assert.equal(Buffer.from(policy.claimKeyDerivationDomain, "utf8").at(-1), 0);
+  assert.deepEqual(policy.claimKeyInputFields, subject.CLAIM_KEY_INPUT_FIELDS);
+  assert.equal(hashWithDomain(policy.claimKeyDerivationDomain, payload),
+    policy.claimKeyHash);
+});
+
+test("claim-key domain separator and input-field tampering block", () => {
+  for (const domain of [
+    "FINPLE_STEP114_2X_O_SINGLE_USE_CLAIM_KEY",
+    "FINPLE_STEP114_2X_O_SINGLE_USE_CLAIM_KEY\0\0",
+  ]) {
+    const packet = fixture();
+    packet.context.consumptionPolicy.claimKeyDerivationDomain = domain;
+    packet.context.consumptionPolicy = reseal(
+      packet.context.consumptionPolicy, "consumption",
+      "singleUseConsumptionPolicyId", "singleUseConsumptionPolicyHash",
+    );
+    expectBlocked(packet, "claimKeyDerivationDomain");
+  }
+  const fields = fixture();
+  fields.context.consumptionPolicy.claimKeyInputFields.reverse();
+  fields.context.consumptionPolicy = reseal(
+    fields.context.consumptionPolicy, "consumption",
+    "singleUseConsumptionPolicyId", "singleUseConsumptionPolicyHash",
+  );
+  expectBlocked(fields, "claimKeyInputFields");
 });
 
 test("single-use policy requires one atomic claim and compare-and-set equivalence", () => {

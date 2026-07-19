@@ -86,6 +86,8 @@ const ADAPTER_OBSERVATION_SEQUENCE = Object.freeze(
 const CLAIM_KEY_INPUT_FIELDS = Object.freeze([
   "invocationId", "invocationHash", "invocationNonceHash",
 ]);
+const CLAIM_KEY_DERIVATION_DOMAIN =
+  "FINPLE_STEP114_2X_O_SINGLE_USE_CLAIM_KEY\0";
 const CLAIM_ATOMICITY = "compare_and_set_or_equivalent";
 const CLAIM_NAMESPACE = "live_observation_single_use_claim";
 const EXECUTION_RECEIPT_NAMESPACE = "live_observation_execution_receipt";
@@ -419,7 +421,7 @@ function validateUpstream(upstream) {
 function deriveClaimKeyHash(upstream) {
   const invocation = upstream.stepNPacket.invocation;
   return hashWithDomain(
-    "FINPLE_STEP114_2X_O_SINGLE_USE_CLAIM_KEY\0",
+    CLAIM_KEY_DERIVATION_DOMAIN,
     {
       invocationId: invocation.invocationId,
       invocationHash: invocation.invocationHash,
@@ -465,7 +467,7 @@ function buildConsumptionPolicy(upstream) {
   return sealContract({
     contractVersion: VERSIONS.consumption,
     ...buildBindings(upstream),
-    claimKeyDerivationDomain: "FINPLE_STEP114_2X_O_SINGLE_USE_CLAIM_KEY",
+    claimKeyDerivationDomain: CLAIM_KEY_DERIVATION_DOMAIN,
     claimKeyInputFields: [...CLAIM_KEY_INPUT_FIELDS],
     claimKeyHash: deriveClaimKeyHash(upstream),
     claimExpiresAt: upstream.stepNPacket.invocation.expiresAt,
@@ -834,6 +836,7 @@ module.exports = {
   ADAPTER_INTERFACE_VERSION,
   ADAPTER_OBSERVATION_SEQUENCE,
   CLAIM_ATOMICITY,
+  CLAIM_KEY_DERIVATION_DOMAIN,
   CLAIM_KEY_INPUT_FIELDS,
   CLAIM_NAMESPACE,
   EXECUTION_RECEIPT_NAMESPACE,
