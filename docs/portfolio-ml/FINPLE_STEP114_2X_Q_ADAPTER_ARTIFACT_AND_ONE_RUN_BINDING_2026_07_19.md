@@ -20,6 +20,11 @@ rejects paths, commands, endpoints, hostnames, addresses, ports, URLs,
 database/schema/table identities, credentials, certificates, provider/account
 identities, source text, screenshots, SQL, or raw evidence.
 
+The manifest is constructed and validated before signed-authorization
+verification. Its ID/hash and all four sanitized artifact identity/hash fields
+are part of the Ed25519 payload; a different valid resealed manifest therefore
+requires a new signature and cannot reuse an earlier authorization.
+
 ## Non-executing one-run package
 
 After the signed authorization, operator allowlist, verification policy, and

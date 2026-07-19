@@ -155,9 +155,15 @@ const STEP_P_BINDING_FIELDS = Object.freeze([
   "stepOAdapterCapabilityPolicyId", "stepOAdapterCapabilityPolicyHash",
   "stepNInvocationId", "stepNInvocationHash",
 ]);
+const ADAPTER_MANIFEST_AUTHORIZATION_BINDING_FIELDS = Object.freeze([
+  "adapterArtifactManifestId", "adapterArtifactManifestHash",
+  "adapterArtifactId", "adapterArtifactSha256", "adapterSourceTreeSha256",
+  "adapterCapabilityManifestSha256",
+]);
 
 const AUTHORIZATION_FIELDS = Object.freeze([
   "contractVersion", "operatorAuthorizationId", ...STEP_P_BINDING_FIELDS,
+  ...ADAPTER_MANIFEST_AUTHORIZATION_BINDING_FIELDS,
   "claimKeyHash", "requestNonceHash", "intakeNonceHash",
   "approvalResponseNonceHash", "invocationNonceHash", "claimNonceHash",
   "operatorAuthorizationNonceHash", "operatorScope", "operatorRole",
@@ -562,13 +568,17 @@ function validateVerificationPolicy(value, upstream) {
   return uniqueSorted(issues);
 }
 
-function buildUnsignedOperatorAuthorization(upstream, overrides = {}) {
+function buildUnsignedOperatorAuthorization(upstream, manifest, overrides = {}) {
   const { pPacket, oPacket, nPacket, mPacket, lPacket } = getMaterial(upstream);
+  if (!isRecord(manifest)) throw new TypeError("operator_authorization_adapter_manifest_required");
   const input = oPacket.executorInput;
   const invocation = nPacket.invocation;
   const body = {
     contractVersion: VERSIONS.authorization,
     ...buildBindings(upstream),
+    ...Object.fromEntries(ADAPTER_MANIFEST_AUTHORIZATION_BINDING_FIELDS.map(
+      (field) => [field, manifest[field]],
+    )),
     claimKeyHash: input.claimKeyHash,
     requestNonceHash: invocation.requestNonceHash,
     intakeNonceHash: invocation.intakeNonceHash,
@@ -624,6 +634,8 @@ function validateAuthorizationShape(value) {
   const issues = [...validateEnvelope(value, "authorization")];
   if (!isRecord(value)) return uniqueSorted(issues);
   for (const field of [
+    "adapterArtifactManifestHash", "adapterArtifactSha256",
+    "adapterSourceTreeSha256", "adapterCapabilityManifestSha256",
     "claimKeyHash", "requestNonceHash", "intakeNonceHash",
     "approvalResponseNonceHash", "invocationNonceHash", "claimNonceHash",
     "operatorAuthorizationNonceHash", "operatorIdentityHash",
@@ -672,7 +684,7 @@ function validateAuthorizationContext(context) {
     ),
   ]);
 }
-function validateSignedOperatorAuthorization(value, context, evaluationClockInstant) {
+function validateSignedOperatorAuthorization(value, context, manifest, evaluationClockInstant) {
   const contextIssues = validateAuthorizationContext(context);
   const issues = [...validateAuthorizationShape(value), ...contextIssues];
   if (!isRecord(value) || contextIssues.length > 0) return uniqueSorted(issues);
@@ -682,6 +694,11 @@ function validateSignedOperatorAuthorization(value, context, evaluationClockInst
   const bindings = buildBindings(upstream);
   for (const field of STEP_P_BINDING_FIELDS) {
     if (value[field] !== bindings[field]) issues.push(`operator_authorization_binding_mismatch:${field}`);
+  }
+  for (const field of ADAPTER_MANIFEST_AUTHORIZATION_BINDING_FIELDS) {
+    if (value[field] !== manifest?.[field]) {
+      issues.push(`operator_authorization_adapter_manifest_binding_mismatch:${field}`);
+    }
   }
   const input = oPacket.executorInput;
   const invocation = nPacket.invocation;
@@ -983,11 +1000,13 @@ function evaluateSignedOperatorRunPackage(packet) {
     "evaluationClockInstant",
   ])) return safeResult("blocked", {}, {}, ["operator_run_packet_fields_invalid"]);
   try {
-    const issues = validateSignedOperatorAuthorization(
-      packet.operatorAuthorization, packet.context, packet.evaluationClockInstant,
-    );
-    issues.push(...validateAdapterArtifactManifest(
+    const issues = validateAdapterArtifactManifest(
       packet.adapterArtifactManifest, packet.context.upstream,
+    );
+    if (issues.length > 0) return safeResult("blocked", {}, {}, issues);
+    issues.push(...validateSignedOperatorAuthorization(
+      packet.operatorAuthorization, packet.context, packet.adapterArtifactManifest,
+      packet.evaluationClockInstant,
     ));
     if (issues.length > 0) return safeResult("blocked", {}, {}, issues);
     const binding = buildOneRunAdapterBinding(

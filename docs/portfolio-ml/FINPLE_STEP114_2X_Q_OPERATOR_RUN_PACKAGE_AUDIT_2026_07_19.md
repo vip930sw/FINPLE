@@ -42,6 +42,7 @@ provider material is committed.
 Focused tests cover the exact public states, zero-input/CLI behavior, complete
 Step P revalidation, signer separation, signature and allowlist failures, nonce
 replay/context strictness, chronology and expiry, artifact manifest tampering,
+valid resealed-manifest substitution, signed artifact hash binding,
 one-run binding tampering, exact fixed-false fields, and source capability
 boundaries. Final standalone, combined, Python, scenario-metrics, build, AI
 production smoke, diff checks, and bounded clean-head inventory results are

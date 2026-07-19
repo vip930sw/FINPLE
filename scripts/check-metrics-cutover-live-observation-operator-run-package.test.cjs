@@ -129,8 +129,11 @@ function fixture({ allowlistPem = OPERATOR_PEM, allowlistOverrides = {},
     verificationPolicy: subject.buildVerificationPolicy(upstream),
     priorOperatorAuthorizationNonceHashes: priorNonceHashes,
   };
+  const adapterArtifactManifest = subject.buildAdapterArtifactManifest(
+    upstream, manifestOverrides,
+  );
   const unsigned = subject.buildUnsignedOperatorAuthorization(
-    upstream, authorizationOverrides,
+    upstream, adapterArtifactManifest, authorizationOverrides,
   );
   const operatorAuthorization = subject.sealSignedOperatorAuthorization(
     unsigned,
@@ -140,22 +143,28 @@ function fixture({ allowlistPem = OPERATOR_PEM, allowlistOverrides = {},
   return {
     context,
     operatorAuthorization,
-    adapterArtifactManifest: subject.buildAdapterArtifactManifest(
-      upstream, manifestOverrides,
-    ),
+    adapterArtifactManifest,
     evaluationClockInstant,
   };
 }
 
 function rebuildAuthorization(packet, overrides = {}, signingKey = OPERATOR_KEYS.privateKey) {
   const unsigned = subject.buildUnsignedOperatorAuthorization(
-    packet.context.upstream, overrides,
+    packet.context.upstream, packet.adapterArtifactManifest, overrides,
   );
   packet.operatorAuthorization = subject.sealSignedOperatorAuthorization(
     unsigned,
     sign(null, subject.buildOperatorAuthorizationSignaturePayload(unsigned),
       signingKey).toString("base64"),
   );
+  return packet;
+}
+
+function resealManifest(packet, overrides = {}) {
+  const body = Object.fromEntries(Object.entries(packet.adapterArtifactManifest)
+    .filter(([key]) => !["adapterArtifactManifestId",
+      "adapterArtifactManifestHash"].includes(key)));
+  packet.adapterArtifactManifest = subject.sealContract({ ...body, ...overrides }, "manifest");
   return packet;
 }
 
@@ -397,6 +406,50 @@ test("adapter artifact, source-tree, and capability hash tampering block", () =>
   }
 });
 
+test("an existing signature cannot authorize a different valid resealed manifest", () => {
+  const packet = fixture();
+  resealManifest(packet, {
+    adapterArtifactId: "synthetic-sanitized-read-only-observer-artifact-replacement",
+  });
+  expectBlocked(packet, "operator_authorization_adapter_manifest_binding_mismatch");
+});
+
+test("resealed artifact, source-tree, and capability hash replacement blocks", () => {
+  for (const field of ["adapterArtifactSha256", "adapterSourceTreeSha256",
+    "adapterCapabilityManifestSha256"]) {
+    const packet = fixture();
+    resealManifest(packet, { [field]: "9".repeat(64) });
+    expectBlocked(packet, `operator_authorization_adapter_manifest_binding_mismatch:${field}`);
+  }
+});
+
+test("manifest ID and hash tampering block before authorization validation", () => {
+  const id = fixture();
+  id.adapterArtifactManifest.adapterArtifactManifestId = "wrong";
+  expectBlocked(id, "manifest_id_invalid");
+  const hash = fixture();
+  hash.adapterArtifactManifest.adapterArtifactManifestHash = "9".repeat(64);
+  expectBlocked(hash, "manifest_hash_invalid");
+});
+
+test("a changed valid manifest passes only after it is included and re-signed", () => {
+  const packet = fixture();
+  resealManifest(packet, {
+    adapterArtifactId: "synthetic-sanitized-read-only-observer-artifact-resigned",
+    adapterArtifactSha256: "9".repeat(64),
+    adapterSourceTreeSha256: "8".repeat(64),
+    adapterCapabilityManifestSha256: "6".repeat(64),
+  });
+  rebuildAuthorization(packet);
+  const result = subject.evaluateSignedOperatorRunPackage(packet);
+  assert.equal(result.ok, true, JSON.stringify(result.blockingIssues));
+  assert.equal(result.status, "signed_live_observation_operator_run_package_verified");
+  assert.equal(result.oneRunAdapterBindingPackage.adapterArtifactManifestId,
+    packet.adapterArtifactManifest.adapterArtifactManifestId);
+  assert.equal(result.oneRunAdapterBindingPackage.adapterArtifactManifestHash,
+    packet.adapterArtifactManifest.adapterArtifactManifestHash);
+});
+
 test("adapter interface, operation, category, outputs, and counts stay bound", () => {
   const cases = [
     [{ adapterInterfaceVersion: "other" }, "adapterInterfaceVersion"],
@@ -485,7 +538,7 @@ test("binding and summary reject every fixed-false authority drift", () => {
 test("packet exact keys and exceptions fail closed", () => {
   expectBlocked({ ...fixture(), unexpected: true }, "packet_fields_invalid");
   const malformed = fixture(); malformed.context.upstream = null;
-  expectBlocked(malformed, "step_p_upstream_fields_invalid");
+  expectBlocked(malformed, "adapter_manifest_upstream_invalid");
 });
 
 test("production source exposes only crypto verification and no ambient capability", () => {

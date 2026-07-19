@@ -22,7 +22,10 @@ malformed, ambiguous, replayed, expired, or mismatched material returns
 
 The authorization is exact-key and binds the complete Step P summary, receipt,
 dependency bundle, execution plan, three interface hashes, state trace, Step O
-input and adapter policy, and Step N invocation. The role and scope are fixed to:
+input and adapter policy, and Step N invocation. It also binds the validated
+adapter-artifact manifest ID/hash, sanitized artifact ID/SHA-256, source-tree
+SHA-256, and capability-manifest SHA-256 directly into the signed payload. The
+role and scope are fixed to:
 
 - role: `metrics_live_observation_execution_operator`
 - scope: `single_sanitized_disposable_environment_observation_run`
@@ -38,6 +41,8 @@ The ordered operations are:
 Claim acquisition and adapter invocation maxima are one. Destination and
 observation counts are one. The signature is canonical Base64 Ed25519 over a
 domain-separated canonical JSON payload that excludes only `signatureBase64`.
+The caller-supplied manifest must exactly match every signed artifact-binding
+field before the authorization can verify.
 
 ## Signer, nonce, and time validation
 
