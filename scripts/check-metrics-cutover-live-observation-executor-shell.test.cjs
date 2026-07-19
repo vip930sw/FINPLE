@@ -118,6 +118,25 @@ function fixture({ claimOverrides = {}, adapterOverrides = {},
   };
 }
 
+function rebuildForClock(packet, evaluationClockInstant,
+  completedAt = "2026-07-18T00:03:15.000Z") {
+  packet.evaluationClockInstant = evaluationClockInstant;
+  packet.dependencyBundle = subject.buildDependencyBundle(
+    packet.context.upstream,
+    packet.context.claimStoreInterface,
+    packet.context.adapterInterface,
+    packet.context.receiptStoreInterface,
+    evaluationClockInstant,
+  );
+  packet.executionPlan = subject.buildExecutionPlan(
+    packet.context.upstream, packet.dependencyBundle,
+  );
+  packet.adapterOutput = subject.buildSyntheticAdapterOutput(
+    packet.context.upstream, completedAt,
+  );
+  return packet;
+}
+
 function reseal(value, name, idField, hashField) {
   return subject.sealContract(
     Object.fromEntries(Object.entries(value).filter(([key]) =>
@@ -424,11 +443,40 @@ test("state trace hash and maximum invocation count reject drift", () => {
   }
 });
 
-test("execution clock and claim expiry failures block", () => {
-  const expired = fixture();
-  expired.evaluationClockInstant = expired.context.upstream.stepOPacket
-    .executorInput.expiresAt;
-  expectBlocked(expired, "execution_dependency_bundle_field_invalid", 0);
+test("resealed execution clock binds to observation and minimum expiry half-open interval", () => {
+  const base = fixture();
+  const input = base.context.upstream.stepOPacket.executorInput;
+  const invocation = base.context.upstream.stepOPacket.context.upstream
+    .stepNPacket.invocation;
+  const beforeStart = new Date(
+    Date.parse(input.observationWindowStartsAt) - 1,
+  ).toISOString();
+  expectBlocked(rebuildForClock(fixture(), beforeStart),
+    "evaluation_clock_before_observation_window", 0);
+
+  expectBlocked(rebuildForClock(fixture(), input.claimExpiresAt),
+    "evaluation_clock_expired", 0);
+
+  const afterInvocationExpiry = new Date(
+    Date.parse(invocation.expiresAt) + 1,
+  ).toISOString();
+  expectBlocked(rebuildForClock(fixture(), afterInvocationExpiry),
+    "evaluation_clock_expired", 0);
+
+  const minimumExpiry = Math.min(
+    Date.parse(input.claimExpiresAt),
+    Date.parse(input.expiresAt),
+    Date.parse(invocation.expiresAt),
+    Date.parse(input.observationWindowExpiresAt),
+  );
+  const immediatelyBeforeExpiry = new Date(minimumExpiry - 1).toISOString();
+  const valid = subject.evaluateLiveObservationExecutorShell(
+    rebuildForClock(fixture(), immediatelyBeforeExpiry, immediatelyBeforeExpiry),
+  );
+  assert.equal(valid.status, "live_observation_executor_shell_validated",
+    JSON.stringify(valid.blockingIssues));
+  assert.equal(valid.syntheticAdapterInvocationCount, 1);
+
   const malformed = fixture(); malformed.evaluationClockInstant = "invalid";
   expectBlocked(malformed, "evaluation", 0);
 });

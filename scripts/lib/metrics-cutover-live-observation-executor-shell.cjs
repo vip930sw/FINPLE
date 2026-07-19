@@ -614,8 +614,31 @@ function validateDependencyBundle(value, context, evaluationClockInstant) {
       issues.push(`execution_dependency_bundle_field_invalid:${field}`);
     }
   }
-  if (parseInstant(evaluationClockInstant) === null) {
+  const now = parseInstant(evaluationClockInstant);
+  if (now === null) {
     issues.push("execution_dependency_evaluation_clock_invalid");
+  } else {
+    let material;
+    try { material = getMaterial(context.upstream); } catch {
+      issues.push("execution_dependency_clock_binding_material_invalid");
+    }
+    if (material) {
+      const input = material.oPacket.executorInput;
+      const starts = parseInstant(input.observationWindowStartsAt);
+      const expiries = [
+        parseInstant(input.claimExpiresAt),
+        parseInstant(input.expiresAt),
+        parseInstant(material.nPacket.invocation.expiresAt),
+        parseInstant(input.observationWindowExpiresAt),
+      ];
+      if (starts === null || expiries.some((instant) => instant === null)) {
+        issues.push("execution_dependency_clock_boundary_invalid");
+      } else if (now < starts) {
+        issues.push("execution_dependency_evaluation_clock_before_observation_window");
+      } else if (now >= Math.min(...expiries)) {
+        issues.push("execution_dependency_evaluation_clock_expired");
+      }
+    }
   }
   if (issues.length === 0) {
     issues.push(...validateUpstream(context.upstream));
