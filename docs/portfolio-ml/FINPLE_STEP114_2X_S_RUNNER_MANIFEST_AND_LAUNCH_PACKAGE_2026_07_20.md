@@ -17,6 +17,8 @@ The one-run launch package is a sealed, non-executing handoff. It requires, but 
 - bounded disposal handling
 - fail-closed manual review for ambiguous outcomes
 
+The launch package explicitly binds the execution confirmation's `issuedAt` and `expiresAt`. Its `earliestExpiry` is the effective launch expiry: the earlier of the signed execution-confirmation expiry and the Step R runtime-precondition earliest expiry. The summary seals the launch package ID/hash, so this effective expiry cannot drift independently.
+
 The package preserves separate artifact, claim, transport, receipt, evidence, and disposal namespaces. Every launch, load, claim, invocation, observation, connection, persistence, disposal, production, Git, and deployment authority remains false.
 
 ## Capability boundary

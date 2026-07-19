@@ -442,6 +442,71 @@ test("chronology lifetime key validity expiry and clock skew block", () => {
   })).ok, true);
 });
 
+test("launch expiry is the minimum of confirmation and Step R expiry", () => {
+  const packet = buildFixture();
+  const result = subject.evaluateRunnerLaunchPackage(packet);
+  assert.equal(result.ok, true);
+  assert.equal(result.oneRunRunnerLaunchPackage.executionConfirmationIssuedAt,
+    packet.executionConfirmation.issuedAt);
+  assert.equal(result.oneRunRunnerLaunchPackage.executionConfirmationExpiresAt,
+    packet.executionConfirmation.expiresAt);
+  assert.ok(Date.parse(packet.executionConfirmation.expiresAt) < Date.parse(
+    packet.context.upstream.runtimePreconditionManifest.earliestExpiry));
+  assert.equal(result.oneRunRunnerLaunchPackage.earliestExpiry,
+    packet.executionConfirmation.expiresAt);
+
+  const args = [packet.context.upstream, packet.executionConfirmation,
+    packet.context.executionConfirmerAllowlist, packet.context.verificationPolicy,
+    packet.runnerImplementationManifest, packet.evaluationClockInstant,
+    packet.context.priorExecutionConfirmationNonceHashes];
+  const laterStepRExpiry = reseal(result.oneRunRunnerLaunchPackage, "launch", {
+    earliestExpiry:
+      packet.context.upstream.runtimePreconditionManifest.earliestExpiry,
+  });
+  assert.ok(subject.validateOneRunRunnerLaunchPackage(laterStepRExpiry, ...args)
+    .some((issue) => issue.includes("earliestExpiry")));
+});
+
+test("effective launch expiry boundary and confirmation rebinding fail closed", () => {
+  expectBlocked(buildFixture({
+    evaluationClockInstant: "2026-07-18T00:03:39.000Z",
+  }), "evaluation_time_invalid");
+  const justBefore = subject.evaluateRunnerLaunchPackage(buildFixture({
+    evaluationClockInstant: "2026-07-18T00:03:38.999Z",
+  }));
+  assert.equal(justBefore.ok, true);
+  assert.equal(justBefore.oneRunRunnerLaunchPackage.earliestExpiry,
+    "2026-07-18T00:03:39.000Z");
+
+  const earlierPacket = buildFixture({
+    confirmationOverrides: { expiresAt: "2026-07-18T00:03:38.000Z" },
+    evaluationClockInstant: "2026-07-18T00:03:37.999Z",
+  });
+  const earlier = subject.evaluateRunnerLaunchPackage(earlierPacket);
+  assert.equal(earlier.ok, true);
+  assert.equal(earlier.oneRunRunnerLaunchPackage.executionConfirmationExpiresAt,
+    "2026-07-18T00:03:38.000Z");
+  assert.equal(earlier.oneRunRunnerLaunchPackage.earliestExpiry,
+    "2026-07-18T00:03:38.000Z");
+  assert.notEqual(earlier.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
+    justBefore.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash);
+
+  const args = [earlierPacket.context.upstream, earlierPacket.executionConfirmation,
+    earlierPacket.context.executionConfirmerAllowlist,
+    earlierPacket.context.verificationPolicy,
+    earlierPacket.runnerImplementationManifest,
+    earlierPacket.evaluationClockInstant,
+    earlierPacket.context.priorExecutionConfirmationNonceHashes];
+  for (const overrides of [
+    { executionConfirmationIssuedAt: "2026-07-18T00:03:21.001Z" },
+    { executionConfirmationExpiresAt: "2026-07-18T00:03:38.001Z" },
+    { earliestExpiry: "2026-07-18T00:03:38.001Z" },
+  ]) {
+    const tampered = reseal(earlier.oneRunRunnerLaunchPackage, "launch", overrides);
+    assert.ok(subject.validateOneRunRunnerLaunchPackage(tampered, ...args).length > 0);
+  }
+});
+
 test("runner manifest identity interface order counts and executable flags block", () => {
   const cases = [
     { runnerArtifactId: "*" },

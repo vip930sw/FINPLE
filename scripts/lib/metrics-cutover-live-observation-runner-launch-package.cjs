@@ -183,6 +183,14 @@ function parseInstant(value) {
   if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== value) return null;
   return parsed;
 }
+function minCanonicalInstant(left, right) {
+  const leftMs = parseInstant(left);
+  const rightMs = parseInstant(right);
+  if (leftMs === null || rightMs === null) {
+    throw new TypeError("launch_expiry_instant_invalid");
+  }
+  return leftMs <= rightMs ? left : right;
+}
 function decodeCanonicalBase64(value) {
   if (typeof value !== "string" || value.length === 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return null;
   try {
@@ -882,6 +890,7 @@ const LAUNCH_FIELDS = Object.freeze([
   "runnerSourceTreeSha256", "runnerCapabilityManifestSha256",
   "executionOperatorPublicKeyFingerprint", "confirmationScope",
   "orderedConfirmations", "handoffSequence", "evaluationClockInstant",
+  "executionConfirmationIssuedAt", "executionConfirmationExpiresAt",
   "earliestExpiry", "executionConfirmationNonceHash",
   "priorExecutionConfirmationNonceContextDigest", "artifactRequirements",
   "claimRequirements", "transportRequirements", "receiptRequirements",
@@ -923,6 +932,10 @@ function buildOneRunRunnerLaunchPackage(stepRPacket, confirmation, allowlist,
   const input = stepRPacket.runtimeHandoffInput;
   const loader = stepRPacket.adapterLoaderPolicy;
   const dependency = stepRPacket.runtimeDependencyPolicy;
+  const effectiveLaunchExpiry = minCanonicalInstant(
+    confirmation.expiresAt,
+    stepRPacket.runtimePreconditionManifest.earliestExpiry,
+  );
   return sealContract({
     contractVersion: VERSIONS.launch,
     ...buildBindings(stepRPacket),
@@ -948,7 +961,9 @@ function buildOneRunRunnerLaunchPackage(stepRPacket, confirmation, allowlist,
     orderedConfirmations: [...confirmation.orderedConfirmations],
     handoffSequence: [...stepRPacket.oneRunExecutionHandoff.handoffSequence],
     evaluationClockInstant,
-    earliestExpiry: stepRPacket.runtimePreconditionManifest.earliestExpiry,
+    executionConfirmationIssuedAt: confirmation.issuedAt,
+    executionConfirmationExpiresAt: confirmation.expiresAt,
+    earliestExpiry: effectiveLaunchExpiry,
     executionConfirmationNonceHash: confirmation.executionConfirmationNonceHash,
     priorExecutionConfirmationNonceContextDigest: hashWithDomain(
       "FINPLE_STEP114_2X_S_PRIOR_EXECUTION_CONFIRMATION_NONCE_CONTEXT\0",
