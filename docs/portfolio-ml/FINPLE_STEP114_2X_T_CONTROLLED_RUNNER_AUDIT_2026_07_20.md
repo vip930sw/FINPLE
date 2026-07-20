@@ -50,4 +50,4 @@ The bounded clean-head repository-wide failure inventory is recorded in the Draf
 - unstaged and staged diff checks: passed
 
 - prior clean-head repository-wide spec inventory: bounded at 240.7 seconds; 0 failing test names observed before timeout
-- corrective clean-head 240-second inventory: pending until the corrective commit exists
+- corrective clean-head repository-wide spec inventory: bounded at 240.5 seconds; 0 failing test names observed before timeout
