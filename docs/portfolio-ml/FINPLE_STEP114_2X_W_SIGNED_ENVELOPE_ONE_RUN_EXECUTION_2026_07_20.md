@@ -34,6 +34,12 @@ post-timeout reconciliation, and exact atomic namespace mutation. It forbids
 retry, fallback, discovery, provider access, production mutation, unbounded
 mutation, and raw material.
 
+Primary-operation timeout aborts its signal before reconciliation. Reconciliation
+uses a fresh `AbortController`, a fresh bounded deadline, and its own timeout
+race, and is called exactly once. A reconciliation timeout, exception, malformed
+shape, `committed` result without a SHA-256 resource hash, or non-committed
+result with a non-null resource hash is classified as ambiguous without retry.
+
 The claim binds the Step V envelope and approval, approval nonce, Step U
 evidence/material/inventory pairs, Step T operation-plan hash, Step S launch
 pair, lease/claim request identities, counts of one, and effective expiry. An
@@ -52,3 +58,10 @@ External exception messages and stacks are never included in results. Failures
 use only the four fixed classifications and sanitized issue codes. A blocked,
 ambiguous, timed-out, malformed-closure, or disposal-uncertain Step T outcome is
 never retried and never produces a completed Step W closeout receipt.
+
+Step T completed and blocked results have separate canonical validators. A
+thrown, malformed, or unknown result and every `disposal_uncertain` result are
+manual-review uncertainties regardless of any untrusted adapter count. After a
+claim has been acquired, terminalization is attempted exactly once. Public Step
+W output contains only a validated sanitized Step T summary; it never republishes
+an unvalidated Step T object or any external exception material.

@@ -30,7 +30,8 @@ function buildEnvelopeStore(options = {}) {
       const context = args.at(-1);
       options.operationContexts.push({ name, operationId: context.operationId,
         idempotencyKey: context.idempotencyKey, deadline: context.deadline,
-        hasAbortSignal: context.abortSignal instanceof AbortSignal });
+        hasAbortSignal: context.abortSignal instanceof AbortSignal,
+        abortSignal: context.abortSignal });
     }
     return fn(...args);
   };
@@ -49,9 +50,8 @@ function buildEnvelopeStore(options = {}) {
         return { outcome: "acquired", claimHash: "6".repeat(64) };
       }),
     reconcileOperationOutcome: wrap("reconcileOperationOutcome",
-      (...args) => select("reconciliation", {
-        outcome: "aborted", resourceHash: null,
-      }, ...args)),
+      (...args) => options.reconciliationHang ? new Promise(() => {}) :
+        select("reconciliation", { outcome: "aborted", resourceHash: null }, ...args)),
     finalizeExecutionEnvelopeClaim: wrap("finalizeExecutionEnvelopeClaim",
       async (input, context) => {
         if (options.finalizeHang) return new Promise(() => {});

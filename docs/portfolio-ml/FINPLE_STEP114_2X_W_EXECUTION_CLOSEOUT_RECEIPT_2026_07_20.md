@@ -16,6 +16,13 @@ terminalization, timeout without conclusive reconciliation, invalid receipt,
 invalid evidence, invalid closure, disposal uncertainty, or invalid lease
 terminalization.
 
+Both acquisition and terminalization accept a timeout-reconciled `committed`
+outcome only when its `resourceHash` is a canonical SHA-256 value. `aborted`,
+`not_committed`, and `ambiguous` outcomes require `resourceHash=null`. A
+reconciliation hang, exception, invalid outcome/hash pair, thrown runner, or
+malformed runner result is sealed only as a sanitized uncertainty summary and
+cannot contribute fields to a completed closeout.
+
 ## Bound fields
 
 The domain-separated closeout ID/hash binds only approved sanitized material:

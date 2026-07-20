@@ -22,6 +22,27 @@ async function withRunnerResult(value, run) {
   stepT.runControlledLiveObservation = async () => value;
   try { return await run(); } finally { stepT.runControlledLiveObservation = original; }
 }
+async function withRunnerFunction(implementation, run) {
+  const original = stepT.runControlledLiveObservation;
+  stepT.runControlledLiveObservation = implementation;
+  try { return await run(); } finally { stepT.runControlledLiveObservation = original; }
+}
+function canonicalBlockedStepTResult({ adapterInvocationCount = 0,
+  failureClassification = adapterInvocationCount ? "blocked_after_observation" :
+    "blocked_before_observation", disposalAttempted = true,
+  disposalCompleted = true } = {}) {
+  const observationReached = adapterInvocationCount === 1;
+  return { ...SUCCESS_STEP_T_RESULT, ok: false, status: "blocked",
+    failureClassification,
+    executionTerminalState: failureClassification === "disposal_uncertain"
+      ? "disposal_uncertain" : adapterInvocationCount
+        ? "failed_after_invocation" : "failed_before_invocation",
+    blockingIssues: ["synthetic_step_t_blocked"], manualReviewRequired: true,
+    runtimeStateSequence: stepT.RUNTIME_SEQUENCE.slice(0, observationReached ? 15 : 8),
+    adapterInvocationCount, disposalAttempted, disposalCompleted,
+    sanitizedExecutionReceipt: {}, sanitizedEvidence: {},
+    sanitizedExecutionClosureReceipt: {} };
+}
 
 test("zero input returns exact awaiting state with every authority false", async () => {
   const result = await subject.executeSignedEnvelopeOnce();
@@ -31,7 +52,16 @@ test("zero input returns exact awaiting state with every authority false", async
 });
 
 test("valid signed envelope invokes Step T exactly once and seals canonical closeout", async () => {
-  const result = await subject.executeSignedEnvelopeOnce(BASE.packet);
+  const original = stepT.runControlledLiveObservation;
+  let observedRunnerCalls = 0;
+  stepT.runControlledLiveObservation = async (packet) => {
+    observedRunnerCalls++;
+    SUCCESS_STEP_T_RESULT = await original(packet);
+    return SUCCESS_STEP_T_RESULT;
+  };
+  let result;
+  try { result = await subject.executeSignedEnvelopeOnce(BASE.packet); }
+  finally { stepT.runControlledLiveObservation = original; }
   assert.equal(result.status,
     "signed_envelope_controlled_observation_execution_completed");
   assert.deepEqual(result.executionSequence, subject.EXECUTION_SEQUENCE);
@@ -40,10 +70,13 @@ test("valid signed envelope invokes Step T exactly once and seals canonical clos
   assert.equal(result.stepTRunnerInvocationCount, 1);
   assert.equal(result.adapterInvocationCount, 1);
   assert.equal(result.envelopeClaimTerminalState, "completed");
+  assert.equal(observedRunnerCalls, 1);
   assert.deepEqual(BASE.envelopeStore.calls,
     ["acquireExecutionEnvelopeClaim", "finalizeExecutionEnvelopeClaim"]);
-  assert.deepEqual(subject.validateStepTResult(result.stepTExecutionResult,
+  assert.deepEqual(subject.validateCompletedStepTResult(SUCCESS_STEP_T_RESULT,
     BASE.packet.stepVPacket.stepUPacket.stepSPackage), []);
+  assert.equal(result.stepTExecutionSummary.resultKind, "completed");
+  assert.equal(Object.hasOwn(result, "stepTExecutionResult"), false);
   const claim = subject.buildEnvelopeClaim(
     BASE.packet.stepVResult.singleUseExecutionEnvelope,
     BASE.packet.stepVPacket.stepUPacket,
@@ -54,7 +87,6 @@ test("valid signed envelope invokes Step T exactly once and seals canonical clos
   assert.equal(result.executionCloseoutReceipt.rawMaterialPresent, false);
   assert.ok(Object.isFrozen(result));
   assert.ok(Object.isFrozen(result.executionCloseoutReceipt));
-  SUCCESS_STEP_T_RESULT = result.stepTExecutionResult;
 });
 
 test("Step V, U, T, S and bound artifact tampering blocks before envelope claim", async () => {
@@ -102,7 +134,9 @@ test("already-consumed, failed, and ambiguous claims never invoke Step T", async
 });
 
 test("timeout with late committed reconciliation runs once and terminalizes", async () => {
+  const operationContexts = [];
   const built = packetWithStore({ acquireHang: true,
+    operationContexts,
     reconciliation: { outcome: "committed", resourceHash: "6".repeat(64) } });
   const result = await subject.executeSignedEnvelopeOnce(built.packet);
   assert.equal(result.status,
@@ -111,6 +145,15 @@ test("timeout with late committed reconciliation runs once and terminalizes", as
   assert.equal(result.envelopeClaimTerminalizationCount, 1);
   assert.deepEqual(built.envelopeStore.calls, ["acquireExecutionEnvelopeClaim",
     "reconcileOperationOutcome", "finalizeExecutionEnvelopeClaim"]);
+  const [primary, reconciliation] = operationContexts;
+  assert.equal(primary.name, "acquireExecutionEnvelopeClaim");
+  assert.equal(reconciliation.name, "reconcileOperationOutcome");
+  assert.notEqual(primary.abortSignal, reconciliation.abortSignal);
+  assert.equal(primary.abortSignal.aborted, true);
+  assert.equal(reconciliation.abortSignal.aborted, false);
+  assert.ok(Date.parse(reconciliation.deadline) > Date.parse(primary.deadline));
+  assert.equal(primary.operationId, reconciliation.operationId);
+  assert.equal(primary.idempotencyKey, reconciliation.idempotencyKey);
 });
 
 test("timeout with ambiguous reconciliation blocks without Step T", async () => {
@@ -123,12 +166,59 @@ test("timeout with ambiguous reconciliation blocks without Step T", async () => 
   assert.equal(result.envelopeClaimTerminalizationCount, 0);
 });
 
+test("acquire and finalize reconciliation permanent hangs are bounded and ambiguous", async () => {
+  const acquire = packetWithStore({ acquireHang: true, reconciliationHang: true });
+  const acquireResult = await subject.executeSignedEnvelopeOnce(acquire.packet);
+  assert.equal(acquireResult.failureClassification, "execution_outcome_uncertain");
+  assert.equal(acquireResult.manualReviewRequired, true);
+  assert.equal(acquireResult.stepTRunnerInvocationCount, 0);
+  assert.deepEqual(acquire.envelopeStore.calls,
+    ["acquireExecutionEnvelopeClaim", "reconcileOperationOutcome"]);
+
+  const finalize = packetWithStore({ finalizeHang: true, reconciliationHang: true });
+  const finalizeResult = await subject.executeSignedEnvelopeOnce(finalize.packet);
+  assert.equal(finalizeResult.failureClassification, "execution_outcome_uncertain");
+  assert.equal(finalizeResult.manualReviewRequired, true);
+  assert.equal(finalizeResult.stepTRunnerInvocationCount, 1);
+  assert.equal(finalizeResult.envelopeClaimTerminalizationCount, 1);
+  assert.deepEqual(finalizeResult.executionCloseoutReceipt, {});
+  assert.deepEqual(finalize.envelopeStore.calls,
+    ["acquireExecutionEnvelopeClaim", "finalizeExecutionEnvelopeClaim",
+      "reconcileOperationOutcome"]);
+});
+
+test("reconciliation outcome resourceHash contract is exact before Step T", async () => {
+  for (const reconciliation of [
+    { outcome: "committed", resourceHash: null },
+    { outcome: "committed", resourceHash: "malformed" },
+    { outcome: "aborted", resourceHash: "6".repeat(64) },
+    { outcome: "not_committed", resourceHash: "6".repeat(64) },
+  ]) {
+    const built = packetWithStore({ acquireHang: true, reconciliation });
+    const result = await subject.executeSignedEnvelopeOnce(built.packet);
+    assert.equal(result.failureClassification, "execution_outcome_uncertain");
+    assert.equal(result.manualReviewRequired, true);
+    assert.equal(result.stepTRunnerInvocationCount, 0);
+    assert.equal(built.envelopeStore.calls.filter((name) =>
+      name === "reconcileOperationOutcome").length, 1);
+  }
+});
+
+test("terminalization committed reconciliation requires a SHA-256 hash", async () => {
+  const built = packetWithStore({ finalizeHang: true,
+    reconciliation: { outcome: "committed", resourceHash: null } });
+  const result = await subject.executeSignedEnvelopeOnce(built.packet);
+  assert.equal(result.failureClassification, "execution_outcome_uncertain");
+  assert.equal(result.manualReviewRequired, true);
+  assert.equal(result.stepTRunnerInvocationCount, 1);
+  assert.equal(result.envelopeClaimTerminalizationCount, 1);
+  assert.deepEqual(result.executionCloseoutReceipt, {});
+});
+
 test("Step T blocked before or after observation is terminalized without retry", async () => {
   for (const adapterInvocationCount of [0, 1]) {
-    const fake = { ...SUCCESS_STEP_T_RESULT, ok: false, status: "blocked",
-      failureClassification: adapterInvocationCount ? "blocked_after_observation" :
-        "blocked_before_observation", adapterInvocationCount,
-      sanitizedExecutionClosureReceipt: {} };
+    const fake = canonicalBlockedStepTResult({ adapterInvocationCount });
+    assert.deepEqual(subject.validateBlockedStepTResult(fake), []);
     const built = packetWithStore();
     const result = await withRunnerResult(fake,
       () => subject.executeSignedEnvelopeOnce(built.packet));
@@ -136,9 +226,65 @@ test("Step T blocked before or after observation is terminalized without retry",
     assert.equal(result.stepTRunnerInvocationCount, 1);
     assert.equal(result.envelopeClaimTerminalizationCount, 1);
     assert.deepEqual(result.executionCloseoutReceipt, {});
+    assert.equal(result.blockingIssues[0], "step_t_canonical_blocked_result");
+    assert.equal(result.stepTExecutionSummary.resultKind, "blocked");
     assert.equal(built.envelopeStore.calls.filter((name) =>
       name === "finalizeExecutionEnvelopeClaim").length, 1);
   }
+});
+
+test("Step T runner throw is uncertain, terminalized once, and sanitized", async () => {
+  const sensitive = "endpoint=private-db token=secret credential=raw";
+  const built = packetWithStore();
+  const result = await withRunnerFunction(async () => { throw new Error(sensitive); },
+    () => subject.executeSignedEnvelopeOnce(built.packet));
+  const serialized = JSON.stringify(result);
+  assert.equal(result.failureClassification, "execution_outcome_uncertain");
+  assert.equal(result.manualReviewRequired, true);
+  assert.equal(result.stepTRunnerInvocationCount, 1);
+  assert.equal(result.envelopeClaimTerminalizationCount, 1);
+  assert.equal(result.blockingIssues[0], "step_t_execution_result_uncertain");
+  assert.equal(serialized.includes(sensitive), false);
+  assert.deepEqual(result.executionCloseoutReceipt, {});
+});
+
+test("disposal_uncertain has priority even with adapter invocation count zero", async () => {
+  const fake = canonicalBlockedStepTResult({ adapterInvocationCount: 0,
+    failureClassification: "disposal_uncertain", disposalAttempted: true,
+    disposalCompleted: false });
+  assert.deepEqual(subject.validateBlockedStepTResult(fake), []);
+  const built = packetWithStore();
+  const result = await withRunnerResult(fake,
+    () => subject.executeSignedEnvelopeOnce(built.packet));
+  assert.equal(result.failureClassification, "execution_outcome_uncertain");
+  assert.equal(result.envelopeClaimTerminalState, "execution_outcome_uncertain");
+  assert.equal(result.manualReviewRequired, true);
+  assert.equal(result.envelopeClaimTerminalizationCount, 1);
+  assert.deepEqual(result.executionCloseoutReceipt, {});
+});
+
+test("canonical blocked and malformed Step T results remain distinguishable", async () => {
+  const canonical = packetWithStore();
+  const canonicalResult = await withRunnerResult(canonicalBlockedStepTResult(),
+    () => subject.executeSignedEnvelopeOnce(canonical.packet));
+  assert.equal(canonicalResult.failureClassification, "blocked_after_runner_invocation");
+  assert.equal(canonicalResult.blockingIssues[0], "step_t_canonical_blocked_result");
+  assert.equal(canonicalResult.stepTExecutionSummary.resultKind, "blocked");
+
+  const malformed = packetWithStore();
+  const malformedRaw = { status: "blocked", adapterInvocationCount: 0,
+    sensitiveField: "credential=raw endpoint=private-db" };
+  const malformedResult = await withRunnerResult(malformedRaw,
+    () => subject.executeSignedEnvelopeOnce(malformed.packet));
+  const serialized = JSON.stringify(malformedResult);
+  assert.equal(malformedResult.failureClassification, "execution_outcome_uncertain");
+  assert.equal(malformedResult.blockingIssues[0], "step_t_execution_result_uncertain");
+  assert.equal(malformedResult.stepTExecutionSummary.resultKind, "uncertain");
+  assert.equal(malformedResult.manualReviewRequired, true);
+  assert.equal(serialized.includes("credential=raw"), false);
+  assert.equal(serialized.includes("private-db"), false);
+  assert.equal(Object.hasOwn(malformedResult, "stepTExecutionResult"), false);
+  assert.equal(malformedResult.envelopeClaimTerminalizationCount, 1);
 });
 
 test("malformed Step T receipt, evidence, closure, disposal, or lease blocks closeout", async () => {
@@ -158,6 +304,9 @@ test("malformed Step T receipt, evidence, closure, disposal, or lease blocks clo
     assert.deepEqual(result.executionCloseoutReceipt, {});
     assert.equal(result.stepTRunnerInvocationCount, 1);
     assert.equal(result.envelopeClaimTerminalizationCount, 1);
+    assert.equal(result.failureClassification, "execution_outcome_uncertain");
+    assert.equal(result.manualReviewRequired, true);
+    assert.equal(result.stepTExecutionSummary.resultKind, "uncertain");
   }
 });
 
@@ -169,6 +318,7 @@ test("terminalization ambiguity is uncertain and never seals completed closeout"
   assert.equal(result.manualReviewRequired, true);
   assert.deepEqual(result.executionCloseoutReceipt, {});
   assert.equal(result.stepTRunnerInvocationCount, 1);
+  assert.equal(result.stepTExecutionSummary.resultKind, "completed");
 });
 
 test("the same envelope store rejects a second execution without a second runner call", async () => {
@@ -215,7 +365,7 @@ test("successful output is deterministic, recursively frozen, and sanitized", as
   const right = await subject.executeSignedEnvelopeOnce(two.packet);
   assert.equal(subject.canonicalJson(left), subject.canonicalJson(right));
   assert.ok(Object.isFrozen(left));
-  assert.ok(Object.isFrozen(left.stepTExecutionResult));
+  assert.ok(Object.isFrozen(left.stepTExecutionSummary));
   assert.equal(/token=|credential=|private-db|postgres(?:ql)?:\/\/|BEGIN PRIVATE|raw endpoint/i.test(
     subject.canonicalJson(left)), false);
 });

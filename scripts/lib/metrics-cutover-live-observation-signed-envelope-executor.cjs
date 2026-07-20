@@ -98,9 +98,32 @@ function safeResult(status, overrides = {}) {
     stepTRunnerInvocationCount: overrides.stepTRunnerInvocationCount || 0,
     adapterInvocationCount: overrides.adapterInvocationCount || 0,
     envelopeClaimTerminalState: overrides.envelopeClaimTerminalState || null,
-    stepTExecutionResult: overrides.stepTExecutionResult || {},
+    stepTExecutionSummary: overrides.stepTExecutionSummary || {},
     executionCloseoutReceipt: overrides.executionCloseoutReceipt || {},
     ...fixedFalse(),
+  });
+}
+
+function sanitizedStepTSummary(kind, value = {}) {
+  const blocked = kind === "blocked";
+  const completed = kind === "completed";
+  return deepFreeze({
+    resultKind: kind,
+    status: completed ? stepT.PUBLIC_STATES[1] : blocked ? stepT.PUBLIC_STATES[2] : "unknown",
+    failureClassification: blocked ? value.failureClassification :
+      (kind === "uncertain" ? "execution_outcome_uncertain" : null),
+    executionTerminalState: completed ? "completed" :
+      (blocked ? value.executionTerminalState : "execution_outcome_uncertain"),
+    adapterInvocationCount: Number.isInteger(value.adapterInvocationCount)
+      ? value.adapterInvocationCount : 0,
+    disposalAttempted: value.disposalAttempted === true,
+    disposalCompleted: value.disposalCompleted === true,
+    executionClosureReceiptId: completed
+      ? value.sanitizedExecutionClosureReceipt.executionClosureReceiptId : null,
+    executionClosureReceiptHash: completed
+      ? value.sanitizedExecutionClosureReceipt.executionClosureReceiptHash : null,
+    manualReviewRequired: blocked ? value.manualReviewRequired === true : kind === "uncertain",
+    rawMaterialPresent: false,
   });
 }
 
@@ -248,9 +271,20 @@ function directValidateStepV(stepVPacket, suppliedResult) {
   return { ...value, issues: [...value.issues] };
 }
 
-function validateStepTResult(value, stepSPackage) {
+const STEP_T_RESULT_FIELDS = Object.freeze([
+  "ok", "status", "contractVersion", "failureClassification",
+  "executionTerminalState", "blockingIssues", "manualReviewRequired",
+  "runtimeStateSequence", "capabilityInvocationCounts", "adapterInvocationCount",
+  "disposalAttempted", "disposalCompleted", "sanitizedExecutionReceipt",
+  "sanitizedEvidence", "sanitizedExecutionClosureReceipt", ...stepT.FIXED_FALSE_FIELDS,
+]);
+
+function validateCompletedStepTResult(value, stepSPackage) {
   const issues = [];
-  if (!isRecord(value) || value.status !== stepT.PUBLIC_STATES[1] || value.ok !== true ||
+  if (!exactKeys(value, STEP_T_RESULT_FIELDS) ||
+      value.status !== stepT.PUBLIC_STATES[1] || value.ok !== true ||
+      value.contractVersion !== stepT.VERSION || value.failureClassification !== null ||
+      value.manualReviewRequired !== false ||
       !canonicalEqual(value.runtimeStateSequence, stepT.RUNTIME_SEQUENCE) ||
       value.adapterInvocationCount !== 1 || value.disposalAttempted !== true ||
       value.disposalCompleted !== true || value.executionTerminalState !== "completed") {
@@ -297,6 +331,53 @@ function validateStepTResult(value, stepSPackage) {
     issues.push("step_t_fixed_false_invalid"); break;
   }
   return [...new Set(issues)].sort();
+}
+
+function validateBlockedStepTResult(value) {
+  const issues = [];
+  if (!exactKeys(value, STEP_T_RESULT_FIELDS)) {
+    return ["step_t_blocked_result_fields_invalid"];
+  }
+  if (value.ok !== false || value.status !== stepT.PUBLIC_STATES[2] ||
+      value.contractVersion !== stepT.VERSION || value.manualReviewRequired !== true ||
+      !stepT.FAILURE_CLASSIFICATIONS.includes(value.failureClassification) ||
+      !Array.isArray(value.blockingIssues) || value.blockingIssues.length === 0 ||
+      value.blockingIssues.some((issue) => typeof issue !== "string" ||
+        !/^[a-z0-9_:.-]+$/.test(issue))) {
+    issues.push("step_t_blocked_result_header_invalid");
+  }
+  const trace = value.runtimeStateSequence;
+  if (!Array.isArray(trace) || trace.length >= stepT.RUNTIME_SEQUENCE.length ||
+      !canonicalEqual(trace, stepT.RUNTIME_SEQUENCE.slice(0, trace.length))) {
+    issues.push("step_t_blocked_runtime_trace_invalid");
+  }
+  if (!exactKeys(value.capabilityInvocationCounts, stepT.CAPABILITY_NAMES) ||
+      Object.values(value.capabilityInvocationCounts).some((count) =>
+        !Number.isInteger(count) || count < 0)) {
+    issues.push("step_t_blocked_capability_counts_invalid");
+  }
+  const observationReached = Array.isArray(trace) &&
+    trace.includes("read_only_observation_invoked_once");
+  if (![0, 1].includes(value.adapterInvocationCount) ||
+      value.adapterInvocationCount !== (observationReached ? 1 : 0) ||
+      typeof value.disposalAttempted !== "boolean" ||
+      typeof value.disposalCompleted !== "boolean" ||
+      !isRecord(value.sanitizedExecutionReceipt) || !isRecord(value.sanitizedEvidence) ||
+      !exactKeys(value.sanitizedExecutionClosureReceipt, [])) {
+    issues.push("step_t_blocked_result_boundary_invalid");
+  }
+  if (value.failureClassification === "disposal_uncertain" &&
+      value.executionTerminalState !== "disposal_uncertain") {
+    issues.push("step_t_blocked_disposal_uncertainty_invalid");
+  }
+  for (const field of stepT.FIXED_FALSE_FIELDS) if (value[field] !== false) {
+    issues.push("step_t_blocked_fixed_false_invalid"); break;
+  }
+  return [...new Set(issues)].sort();
+}
+
+function validateStepTResult(value, stepSPackage) {
+  return validateCompletedStepTResult(value, stepSPackage);
 }
 
 function buildCloseoutReceipt(packet, claim, terminalizationHash, stepTResult) {
@@ -351,31 +432,57 @@ function validateCloseoutReceipt(value, packet, claim, terminalizationHash, step
 }
 
 async function callStore(store, method, payload, operation, clockInstant, expiry) {
-  const remaining = parseInstant(expiry) - parseInstant(clockInstant);
+  const clockMs = parseInstant(clockInstant);
+  const expiryMs = parseInstant(expiry);
+  const remaining = expiryMs - clockMs;
   if (!Number.isFinite(remaining) || remaining <= 0) {
     return { kind: "expired", issue: "execution_envelope_effective_expiry_reached" };
   }
   const timeoutMs = Math.min(store.descriptor.hardTimeoutMilliseconds, remaining);
-  const controller = new AbortController();
-  const context = { operationId: operation.operationId,
+  const primaryController = new AbortController();
+  const primaryDeadlineMs = clockMs + timeoutMs;
+  const primaryContext = { operationId: operation.operationId,
     idempotencyKey: operation.idempotencyKey,
-    deadline: new Date(parseInstant(clockInstant) + timeoutMs).toISOString(),
-    abortSignal: controller.signal };
-  let timer;
-  const timeout = new Promise((resolve) => { timer = setTimeout(() => resolve({ timeout: true }), timeoutMs); });
-  let raced;
-  try { raced = await Promise.race([Promise.resolve().then(() =>
-    store[method](payload, context)).then((value) => ({ value }), () => ({ error: true })), timeout]); }
-  finally { clearTimeout(timer); }
+    deadline: new Date(primaryDeadlineMs).toISOString(),
+    abortSignal: primaryController.signal };
+  const raceOnce = async (invoke, milliseconds) => {
+    let timer;
+    const timeout = new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ timeout: true }), Math.max(0, milliseconds));
+    });
+    try {
+      return await Promise.race([Promise.resolve().then(invoke)
+        .then((value) => ({ value }), () => ({ error: true })), timeout]);
+    } finally { clearTimeout(timer); }
+  };
+  const raced = await raceOnce(() => store[method](payload, primaryContext), timeoutMs);
   if (raced?.timeout) {
-    controller.abort();
-    let reconciliation;
-    try { reconciliation = await store.reconcileOperationOutcome({ operationId: operation.operationId,
-      idempotencyKey: operation.idempotencyKey }, context); }
-    catch { return { kind: "ambiguous", issue: "execution_envelope_operation_reconciliation_failed" }; }
-    if (!exactKeys(reconciliation, ["outcome", "resourceHash"]) ||
-        !["aborted", "not_committed", "committed", "ambiguous"].includes(reconciliation.outcome) ||
-        (reconciliation.resourceHash !== null && !isSha(reconciliation.resourceHash))) {
+    primaryController.abort();
+    const reconciliationController = new AbortController();
+    const reconciliationDeadlineMs = Math.min(expiryMs,
+      primaryDeadlineMs + store.descriptor.hardTimeoutMilliseconds);
+    const reconciliationContext = { operationId: operation.operationId,
+      idempotencyKey: operation.idempotencyKey,
+      deadline: new Date(reconciliationDeadlineMs).toISOString(),
+      abortSignal: reconciliationController.signal };
+    const reconciliationRace = await raceOnce(() => store.reconcileOperationOutcome({
+      operationId: operation.operationId, idempotencyKey: operation.idempotencyKey,
+    }, reconciliationContext), reconciliationDeadlineMs - primaryDeadlineMs);
+    if (reconciliationRace?.timeout) {
+      reconciliationController.abort();
+      return { kind: "ambiguous",
+        issue: "execution_envelope_operation_reconciliation_timeout" };
+    }
+    if (reconciliationRace?.error) return { kind: "ambiguous",
+      issue: "execution_envelope_operation_reconciliation_failed" };
+    const reconciliation = reconciliationRace.value;
+    const outcomeValid = exactKeys(reconciliation, ["outcome", "resourceHash"]) &&
+      ["aborted", "not_committed", "committed", "ambiguous"]
+        .includes(reconciliation.outcome) &&
+      (reconciliation.outcome === "committed"
+        ? isSha(reconciliation.resourceHash)
+        : reconciliation.resourceHash === null);
+    if (!outcomeValid) {
       return { kind: "ambiguous", issue: "execution_envelope_operation_reconciliation_invalid" };
     }
     return { kind: reconciliation.outcome, resourceHash: reconciliation.resourceHash };
@@ -387,15 +494,15 @@ async function callStore(store, method, payload, operation, clockInstant, expiry
 async function executeSignedEnvelopeOnce(packet) {
   if (packet === undefined) return safeResult(PUBLIC_STATES[0]);
   let sequence = []; let acquisitions = 0; let terminalizations = 0; let runnerCalls = 0;
-  let adapterCount = 0; let claimAcquired = false; let claimHash = null;
-  let terminalState = null; let stepTResult = {};
+  let adapterCount = 0; let claimHash = null;
+  let terminalState = null; let stepTSummary = {};
   const block = (classification, issue, manualReviewRequired = false) => safeResult(
     PUBLIC_STATES[2], { failureClassification: classification, blockingIssues: [issue],
       manualReviewRequired, executionSequence: sequence,
       envelopeClaimAcquisitionCount: acquisitions,
       envelopeClaimTerminalizationCount: terminalizations,
       stepTRunnerInvocationCount: runnerCalls, adapterInvocationCount: adapterCount,
-      envelopeClaimTerminalState: terminalState, stepTExecutionResult: stepTResult });
+      envelopeClaimTerminalState: terminalState, stepTExecutionSummary: stepTSummary });
   if (!exactKeys(packet, ["mergedMainSha", "stepVPacket", "stepVResult",
     "singleUseExternalExecutionEnvelopeStore", "executionClockInstant"])) {
     return block("blocked_before_envelope_claim", "step_w_packet_fields_invalid");
@@ -427,10 +534,12 @@ async function executeSignedEnvelopeOnce(packet) {
   acquisitions++;
   const acquired = await callStore(store, "acquireExecutionEnvelopeClaim", claim,
     plan[0], packet.executionClockInstant, envelope.effectiveExecutionExpiresAt);
-  if (acquired.kind === "committed") { claimAcquired = true; claimHash = acquired.resourceHash; }
+  if (acquired.kind === "committed" && isSha(acquired.resourceHash)) {
+    claimHash = acquired.resourceHash;
+  }
   else if (acquired.kind === "result" && exactKeys(acquired.value, ["outcome", "claimHash"]) &&
       acquired.value.outcome === "acquired" && isSha(acquired.value.claimHash)) {
-    claimAcquired = true; claimHash = acquired.value.claimHash;
+    claimHash = acquired.value.claimHash;
   } else {
     const uncertain = acquired.kind === "ambiguous" ||
       acquired.value?.outcome === "ambiguous";
@@ -445,29 +554,41 @@ async function executeSignedEnvelopeOnce(packet) {
     executionClockInstant: packet.executionClockInstant };
   sequence.push(EXECUTION_SEQUENCE[5]);
   runnerCalls++;
-  try { stepTResult = await stepT.runControlledLiveObservation(stepTPacket); }
-  catch { stepTResult = { status: "blocked", adapterInvocationCount: 0 }; }
-  adapterCount = Number.isInteger(stepTResult.adapterInvocationCount)
-    ? stepTResult.adapterInvocationCount : 0;
+  let rawStepTResult; let runnerThrew = false;
+  try { rawStepTResult = await stepT.runControlledLiveObservation(stepTPacket); }
+  catch { runnerThrew = true; }
   sequence.push(EXECUTION_SEQUENCE[6]);
-  const stepTIssues = validateStepTResult(stepTResult, stepTPacket.stepSPackage);
-  const completed = stepTIssues.length === 0;
-  if (completed) sequence.push(EXECUTION_SEQUENCE[7], EXECUTION_SEQUENCE[8]);
+  const completedIssues = runnerThrew ? ["runner_threw"] :
+    validateCompletedStepTResult(rawStepTResult, stepTPacket.stepSPackage);
+  const completed = completedIssues.length === 0;
+  const blockedIssues = completed || runnerThrew ? ["not_blocked"] :
+    validateBlockedStepTResult(rawStepTResult);
+  const canonicalBlocked = !completed && !runnerThrew && blockedIssues.length === 0;
+  if (completed) {
+    adapterCount = 1;
+    stepTSummary = sanitizedStepTSummary("completed", rawStepTResult);
+    sequence.push(EXECUTION_SEQUENCE[7], EXECUTION_SEQUENCE[8]);
+  } else if (canonicalBlocked) {
+    adapterCount = rawStepTResult.adapterInvocationCount;
+    stepTSummary = sanitizedStepTSummary("blocked", rawStepTResult);
+    sequence.push(EXECUTION_SEQUENCE[7]);
+  } else {
+    adapterCount = 0;
+    stepTSummary = sanitizedStepTSummary("uncertain");
+  }
   terminalState = completed ? "completed" :
-    (adapterCount === 0 ? "blocked_before_observation" :
-      (stepTResult.failureClassification === "disposal_uncertain"
-        ? "execution_outcome_uncertain" : "blocked_after_observation"));
+    (canonicalBlocked && rawStepTResult.failureClassification !== "disposal_uncertain"
+      ? (adapterCount === 0 ? "blocked_before_observation" : "blocked_after_observation")
+      : "execution_outcome_uncertain");
   const terminalInput = {
     executionEnvelopeClaimHash: claimHash,
     singleUseExecutionEnvelopeId: envelope.singleUseExecutionEnvelopeId,
     singleUseExecutionEnvelopeHash: envelope.singleUseExecutionEnvelopeHash,
-    stepTResultState: stepTResult.status || "blocked",
+    stepTResultState: stepTSummary.status,
     adapterInvocationCount: adapterCount,
-    executionClosureReceiptId: stepTResult.sanitizedExecutionClosureReceipt
-      ?.executionClosureReceiptId || null,
-    executionClosureReceiptHash: stepTResult.sanitizedExecutionClosureReceipt
-      ?.executionClosureReceiptHash || null,
-    disposalState: stepTResult.disposalCompleted === true ? "completed" : "not_completed",
+    executionClosureReceiptId: stepTSummary.executionClosureReceiptId,
+    executionClosureReceiptHash: stepTSummary.executionClosureReceiptHash,
+    disposalState: stepTSummary.disposalCompleted ? "completed" : "not_completed",
     executionClockInstant: packet.executionClockInstant,
     terminalState, automaticRetryAllowed: false,
     secondRunnerInvocationAllowed: false, secondObservationAllowed: false,
@@ -477,7 +598,9 @@ async function executeSignedEnvelopeOnce(packet) {
   const finalized = await callStore(store, "finalizeExecutionEnvelopeClaim", terminalInput,
     plan[1], packet.executionClockInstant, envelope.effectiveExecutionExpiresAt);
   let terminalizationHash = null;
-  if (finalized.kind === "committed") terminalizationHash = finalized.resourceHash;
+  if (finalized.kind === "committed" && isSha(finalized.resourceHash)) {
+    terminalizationHash = finalized.resourceHash;
+  }
   else if (finalized.kind === "result" && exactKeys(finalized.value,
     ["outcome", "terminalState", "terminalizationHash"]) &&
     finalized.value.outcome === "finalized" && finalized.value.terminalState === terminalState &&
@@ -487,20 +610,20 @@ async function executeSignedEnvelopeOnce(packet) {
   if (!terminalizationHash) return block("execution_outcome_uncertain",
     "execution_envelope_claim_terminalization_uncertain", true);
   sequence.push(EXECUTION_SEQUENCE[9]);
-  if (!completed) return block(adapterCount === 0 ? "blocked_after_runner_invocation" :
-    (terminalState === "execution_outcome_uncertain" ? "execution_outcome_uncertain" :
-      "blocked_after_runner_invocation"), stepTIssues[0] || "step_t_execution_blocked",
-    terminalState === "execution_outcome_uncertain");
-  const closeout = buildCloseoutReceipt(packet, claim, terminalizationHash, stepTResult);
+  if (!completed) return block(terminalState === "execution_outcome_uncertain"
+    ? "execution_outcome_uncertain" : "blocked_after_runner_invocation",
+  canonicalBlocked ? "step_t_canonical_blocked_result" :
+    "step_t_execution_result_uncertain", terminalState === "execution_outcome_uncertain");
+  const closeout = buildCloseoutReceipt(packet, claim, terminalizationHash, rawStepTResult);
   if (validateCloseoutReceipt(closeout, packet, claim, terminalizationHash,
-    stepTResult).length) return block("blocked_after_runner_invocation",
+    rawStepTResult).length) return block("blocked_after_runner_invocation",
     "execution_closeout_receipt_invalid");
   sequence.push(EXECUTION_SEQUENCE[10], EXECUTION_SEQUENCE[11]);
   return safeResult(PUBLIC_STATES[1], { executionSequence: sequence,
     envelopeClaimAcquisitionCount: acquisitions,
     envelopeClaimTerminalizationCount: terminalizations,
     stepTRunnerInvocationCount: runnerCalls, adapterInvocationCount: adapterCount,
-    envelopeClaimTerminalState: terminalState, stepTExecutionResult: stepTResult,
+    envelopeClaimTerminalState: terminalState, stepTExecutionSummary: stepTSummary,
     executionCloseoutReceipt: closeout });
 }
 
@@ -510,5 +633,6 @@ module.exports = {
   buildCloseoutReceipt, buildEnvelopeClaim, buildEnvelopeClaimPlan,
   buildExecutionEnvelopeStoreDescriptor, canonicalJson, directValidateStepV,
   executeSignedEnvelopeOnce, hashContract, safeResult,
-  validateCloseoutReceipt, validateExecutionEnvelopeStore, validateStepTResult,
+  sanitizedStepTSummary, validateBlockedStepTResult, validateCloseoutReceipt,
+  validateCompletedStepTResult, validateExecutionEnvelopeStore, validateStepTResult,
 };
