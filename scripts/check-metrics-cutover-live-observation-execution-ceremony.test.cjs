@@ -46,6 +46,7 @@ test("public states, zero input, and CLI default are exact", () => {
   assert.equal(idle.status, subject.PUBLIC_STATES[0]);
   assert.equal(idle.ok, false);
   assert.deepEqual(idle.runtimeMaterialInventory, {});
+  assert.deepEqual(idle.runtimeMaterialManifest, {});
   assertFixedFalse(idle);
   assertDeepFrozen(idle);
   const cli = JSON.parse(execFileSync(process.execPath, [path.join(__dirname,
@@ -92,6 +93,83 @@ test("runtime inventory is exact, descriptor-bound, and invocation-free", () => 
   }
   assert.equal(inventory.noCapabilityInvoked, true);
   assert.equal(inventory.rawMaterialPresent, false);
+  assert.match(inventory.runtimeMaterialInventoryId,
+    /^step114-2x-u-runtime-material-inventory-[0-9a-f]{64}$/);
+  assert.match(inventory.runtimeMaterialInventoryHash, /^[0-9a-f]{64}$/);
+  assert.deepEqual(subject.validateRuntimeMaterialInventory(inventory,
+    built.packet.stepSPackage, built.packet.runtimeCapabilities,
+    built.packet.runtimeMaterial), []);
+  assert.deepEqual(built.calls, []);
+});
+
+test("runtime material manifest binds nonce plan inventory availability and authority", () => {
+  const built = fixture.buildFixture();
+  const result = subject.evaluateExecutionCeremony(built.packet);
+  const manifest = result.runtimeMaterialManifest;
+  assert.equal(manifest.ceremonyNonceHash, built.packet.runtimeMaterial.ceremonyNonceHash);
+  assert.equal(manifest.operationPlanHash,
+    stepT.hashOperationPlan(built.packet.runtimeMaterial.operationPlan));
+  assert.equal(manifest.runtimeMaterialInventoryId,
+    result.runtimeMaterialInventory.runtimeMaterialInventoryId);
+  assert.equal(manifest.runtimeMaterialInventoryHash,
+    result.runtimeMaterialInventory.runtimeMaterialInventoryHash);
+  assert.equal(manifest.executionLeaseRequestId,
+    built.packet.runtimeMaterial.singleUseIdentities.executionLeaseRequestId);
+  assert.equal(manifest.claimRequestId,
+    built.packet.runtimeMaterial.singleUseIdentities.claimRequestId);
+  assert.deepEqual(subject.validateRuntimeMaterialManifest(manifest,
+    built.packet.stepSPackage, built.packet.runtimeMaterial,
+    result.runtimeMaterialInventory, built.packet.priorCeremonyNonceHashes), []);
+  assert.deepEqual(built.calls, []);
+});
+
+test("nonce and operation plan changes produce distinct sanitized manifest hashes", () => {
+  const first = fixture.buildFixture();
+  const second = fixture.buildFixture({ runtimeMaterialOverrides: {
+    ceremonyNonceHash: "b".repeat(64),
+  } });
+  const left = subject.evaluateExecutionCeremony(first.packet);
+  const right = subject.evaluateExecutionCeremony(second.packet);
+  assert.equal(left.status, subject.PUBLIC_STATES[1]);
+  assert.equal(right.status, subject.PUBLIC_STATES[1]);
+  assert.notEqual(left.runtimeMaterialManifest.runtimeMaterialManifestHash,
+    right.runtimeMaterialManifest.runtimeMaterialManifestHash);
+  assert.notEqual(left.evidenceHandoffManifest.evidenceHandoffManifestHash,
+    right.evidenceHandoffManifest.evidenceHandoffManifestHash);
+
+  const changedMaterial = fixture.clone(first.packet.runtimeMaterial);
+  changedMaterial.operationPlan = stepT.buildOperationPlan("9".repeat(64));
+  changedMaterial.singleUseIdentities.executionLeaseRequestId =
+    changedMaterial.operationPlan.find((entry) =>
+      entry.stage === "execution_lease_acquisition").operationId;
+  changedMaterial.singleUseIdentities.claimRequestId = changedMaterial.operationPlan.find(
+    (entry) => entry.stage === "claim_acquisition").operationId;
+  const changedInventory = subject.buildRuntimeMaterialInventory(first.packet.stepSPackage,
+    first.packet.runtimeCapabilities, changedMaterial);
+  const changedManifest = subject.buildRuntimeMaterialManifest(first.packet.stepSPackage,
+    changedMaterial, changedInventory, first.packet.priorCeremonyNonceHashes);
+  assert.notEqual(changedInventory.operationPlanHash,
+    left.runtimeMaterialInventory.operationPlanHash);
+  assert.notEqual(changedManifest.runtimeMaterialManifestHash,
+    left.runtimeMaterialManifest.runtimeMaterialManifestHash);
+  assert.deepEqual(first.calls, []);
+  assert.deepEqual(second.calls, []);
+});
+
+test("runtime inventory and material manifest hash tampering is rejected", () => {
+  const built = fixture.buildFixture();
+  const result = subject.evaluateExecutionCeremony(built.packet);
+  const inventory = fixture.clone(result.runtimeMaterialInventory);
+  inventory.runtimeMaterialInventoryHash = "0".repeat(64);
+  assert.deepEqual(subject.validateRuntimeMaterialInventory(inventory,
+    built.packet.stepSPackage, built.packet.runtimeCapabilities,
+    built.packet.runtimeMaterial), ["runtime_material_inventory_invalid"]);
+  const manifest = fixture.clone(result.runtimeMaterialManifest);
+  manifest.runtimeMaterialManifestHash = "0".repeat(64);
+  assert.deepEqual(subject.validateRuntimeMaterialManifest(manifest,
+    built.packet.stepSPackage, built.packet.runtimeMaterial,
+    result.runtimeMaterialInventory, built.packet.priorCeremonyNonceHashes),
+  ["runtime_material_manifest_invalid"]);
   assert.deepEqual(built.calls, []);
 });
 
@@ -155,7 +233,7 @@ test("mutation, retry, fallback, trigger, route, worker, and deployment authorit
   }
 });
 
-test("single-use identities must bind Step S and remain unused", async () => {
+test("single-use identities bind Step S and the exact lease and claim operations", async () => {
   await expectBlocked((packet) => {
     packet.runtimeMaterial.singleUseIdentities.invocationHash = "0".repeat(64);
   }, "single_use_identity_mismatch:invocationHash");
@@ -165,20 +243,29 @@ test("single-use identities must bind Step S and remain unused", async () => {
   await expectBlocked((packet) => {
     packet.runtimeMaterial.singleUseIdentities.claimRequestId =
       packet.runtimeMaterial.singleUseIdentities.executionLeaseRequestId;
-  }, "single_use_request_identities_invalid");
+  }, "claim_request_identity_mismatch");
+  await expectBlocked((packet) => {
+    packet.runtimeMaterial.singleUseIdentities.executionLeaseRequestId =
+      packet.runtimeMaterial.operationPlan.find((entry) =>
+        entry.stage === "claim_acquisition").operationId;
+  }, "execution_lease_request_identity_mismatch");
 });
 
-test("operation IDs and idempotency keys are exact unique and sanitized", async () => {
+test("Step T and Step U use the exact same canonical operation plan", async () => {
+  const built = fixture.buildFixture();
+  const expected = stepT.buildOperationPlan(built.stepSPackage.oneRunRunnerLaunchPackage
+    .oneRunRunnerLaunchPackageHash);
+  assert.deepEqual(built.packet.runtimeMaterial.operationPlan, expected);
   await expectBlocked((packet) => {
-    delete packet.runtimeMaterial.operationIdentities.claimAcquisition;
-  }, "operation_identities_fields_invalid");
+    packet.runtimeMaterial.operationPlan[6].operationId =
+      `step114-2x-t-operation-${"1".repeat(64)}`;
+  }, "runtime_operation_plan_mismatch");
   await expectBlocked((packet) => {
-    packet.runtimeMaterial.operationIdentities.claimAcquisition.operationId =
-      packet.runtimeMaterial.operationIdentities.executionLeaseAcquisition.operationId;
-  }, "operation_identities_not_unique");
+    packet.runtimeMaterial.operationPlan[6].idempotencyKey = "2".repeat(64);
+  }, "runtime_operation_plan_mismatch");
   await expectBlocked((packet) => {
-    packet.runtimeMaterial.operationIdentities.claimAcquisition.idempotencyKey = "not-a-hash";
-  }, "operation_identity_invalid:claimAcquisition");
+    packet.runtimeMaterial.operationPlan.reverse();
+  }, "runtime_operation_plan_mismatch");
 });
 
 test("destination and observation counts must both remain one", async () => {
@@ -230,6 +317,18 @@ test("evidence handoff binds only sanitized approved identities policies counts 
   assert.equal(manifest.destinationCount, 1);
   assert.equal(manifest.observationCount, 1);
   assert.equal(manifest.capabilityCount, 10);
+  assert.equal(manifest.ceremonyNonceHash,
+    result.runtimeMaterialManifest.ceremonyNonceHash);
+  assert.equal(manifest.operationPlanHash,
+    result.runtimeMaterialManifest.operationPlanHash);
+  assert.equal(manifest.runtimeMaterialInventoryId,
+    result.runtimeMaterialInventory.runtimeMaterialInventoryId);
+  assert.equal(manifest.runtimeMaterialInventoryHash,
+    result.runtimeMaterialInventory.runtimeMaterialInventoryHash);
+  assert.equal(manifest.runtimeMaterialManifestId,
+    result.runtimeMaterialManifest.runtimeMaterialManifestId);
+  assert.equal(manifest.runtimeMaterialManifestHash,
+    result.runtimeMaterialManifest.runtimeMaterialManifestHash);
   assert.equal(manifest.externalExecutionApproved, false);
   assert.equal(manifest.stepTRunnerInvoked, false);
   assert.equal(manifest.capabilityMethodInvoked, false);

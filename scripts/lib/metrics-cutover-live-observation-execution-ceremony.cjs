@@ -22,17 +22,9 @@ const RUNTIME_MATERIAL_INVENTORY = Object.freeze([
   "environmentDisposalCoordinator",
   "executionClock",
 ]);
-const OPERATION_NAMES = Object.freeze([
-  "executionLeaseAcquisition",
-  "claimAcquisition",
-  "executionConfirmationConsumption",
-  "operatorAuthorizationConsumption",
-  "invocationConsumption",
-  "readOnlyObservation",
-  "receiptPersistence",
-  "evidencePersistence",
-  "environmentDisposal",
-  "executionLeaseTerminalization",
+const OPERATION_PLAN_FIELDS = Object.freeze([
+  "sequence", "stage", "capabilityName", "methodName", "operationId",
+  "idempotencyKey",
 ]);
 const CHECKLIST_TRUE_FIELDS = Object.freeze([
   "targetDisposableIsolatedNonProduction",
@@ -166,6 +158,7 @@ function safeResult(status, overrides = {}) {
     stepSValidated: overrides.stepSValidated || false,
     stepTContractValidated: overrides.stepTContractValidated || false,
     runtimeMaterialInventory: overrides.runtimeMaterialInventory || {},
+    runtimeMaterialManifest: overrides.runtimeMaterialManifest || {},
     operatorChecklist: overrides.operatorChecklist || {},
     evidenceHandoffManifest: overrides.evidenceHandoffManifest || {},
     ...fixedFalse(),
@@ -188,6 +181,11 @@ function validateMergedStepTContract() {
     "controlled_live_observation_execution_completed",
     "blocked",
   ])) issues.push("step_t_public_states_mismatch");
+  const syntheticPlan = stepT.buildOperationPlan("0".repeat(64));
+  if (syntheticPlan.length !== stepT.OPERATION_PLAN_DEFINITIONS.length ||
+      syntheticPlan.length !== 21 || !isSha(stepT.hashOperationPlan(syntheticPlan))) {
+    issues.push("step_t_operation_plan_contract_mismatch");
+  }
   for (const name of RUNTIME_MATERIAL_INVENTORY) {
     const descriptor = stepT.buildCapabilityDescriptor(name);
     if (descriptor.cooperativeCancellationRequired !== true ||
@@ -226,7 +224,7 @@ function validateRuntimeMaterial(value, stepSPackage, runtimeCapabilities,
   evaluationClockInstant, priorNonceHashes) {
   const keys = ["contractVersion", "runtimeMaterialState", "ceremonyNonceHash",
     "effectiveExpiry", "destinationCount", "observationCount", "singleUseIdentities",
-    "operationIdentities", "availability", "authority"];
+    "operationPlan", "availability", "authority"];
   if (!exactKeys(value, keys)) return ["runtime_material_fields_invalid"];
   const issues = [];
   const launch = stepSPackage.oneRunRunnerLaunchPackage;
@@ -250,6 +248,8 @@ function validateRuntimeMaterial(value, stepSPackage, runtimeCapabilities,
     "executionConfirmationUnused", "operatorAuthorizationUnused", "invocationUnused",
     "executionLeaseUnused", "claimUnused"];
   const identities = value.singleUseIdentities;
+  const expectedOperationPlan = stepT.buildOperationPlan(
+    launch.oneRunRunnerLaunchPackageHash);
   if (!exactKeys(identities, identityKeys)) issues.push("single_use_identities_fields_invalid");
   else {
     const expected = {
@@ -264,10 +264,15 @@ function validateRuntimeMaterial(value, stepSPackage, runtimeCapabilities,
     for (const [field, expectedValue] of Object.entries(expected)) {
       if (identities[field] !== expectedValue) issues.push(`single_use_identity_mismatch:${field}`);
     }
-    if (!isSafeId(identities.executionLeaseRequestId) ||
-        !isSafeId(identities.claimRequestId) ||
-        identities.executionLeaseRequestId === identities.claimRequestId) {
-      issues.push("single_use_request_identities_invalid");
+    const leaseOperation = expectedOperationPlan.find((entry) =>
+      entry.stage === "execution_lease_acquisition");
+    const claimOperation = expectedOperationPlan.find((entry) =>
+      entry.stage === "claim_acquisition");
+    if (identities.executionLeaseRequestId !== leaseOperation?.operationId) {
+      issues.push("execution_lease_request_identity_mismatch");
+    }
+    if (identities.claimRequestId !== claimOperation?.operationId) {
+      issues.push("claim_request_identity_mismatch");
     }
     for (const field of ["executionConfirmationUnused", "operatorAuthorizationUnused",
       "invocationUnused", "executionLeaseUnused", "claimUnused"]) {
@@ -275,22 +280,10 @@ function validateRuntimeMaterial(value, stepSPackage, runtimeCapabilities,
     }
   }
 
-  if (!exactKeys(value.operationIdentities, OPERATION_NAMES)) {
-    issues.push("operation_identities_fields_invalid");
-  } else {
-    const operationIds = []; const idempotencyKeys = [];
-    for (const name of OPERATION_NAMES) {
-      const operation = value.operationIdentities[name];
-      if (!exactKeys(operation, ["operationId", "idempotencyKey"]) ||
-          !isSafeId(operation?.operationId) || !isSha(operation?.idempotencyKey)) {
-        issues.push(`operation_identity_invalid:${name}`); continue;
-      }
-      operationIds.push(operation.operationId); idempotencyKeys.push(operation.idempotencyKey);
-    }
-    if (new Set(operationIds).size !== OPERATION_NAMES.length ||
-        new Set(idempotencyKeys).size !== OPERATION_NAMES.length) {
-      issues.push("operation_identities_not_unique");
-    }
+  if (!Array.isArray(value.operationPlan) || value.operationPlan.some((entry) =>
+    !exactKeys(entry, OPERATION_PLAN_FIELDS)) ||
+    !canonicalEqual(value.operationPlan, expectedOperationPlan)) {
+    issues.push("runtime_operation_plan_mismatch");
   }
 
   const availabilityKeys = ["runnerArtifactBytesAvailable", "adapterArtifactBytesAvailable",
@@ -344,7 +337,7 @@ function buildRuntimeMaterialInventory(stepSPackage, runtimeCapabilities, runtim
     descriptorValidated: true,
     methodInvocationCount: 0,
   }));
-  return {
+  const body = {
     contractVersion: "finple.step114-2x-u.runtime-material-inventory.v1",
     mergedMainSha: MERGED_MAIN_SHA,
     stepTContractVersion: stepT.VERSION,
@@ -357,6 +350,7 @@ function buildRuntimeMaterialInventory(stepSPackage, runtimeCapabilities, runtim
     oneRunRunnerLaunchPackageId: launch.oneRunRunnerLaunchPackageId,
     oneRunRunnerLaunchPackageHash: launch.oneRunRunnerLaunchPackageHash,
     effectiveExpiry: runtimeMaterial.effectiveExpiry,
+    operationPlanHash: stepT.hashOperationPlan(runtimeMaterial.operationPlan),
     destinationCount: 1,
     observationCount: 1,
     capabilityCount: capabilities.length,
@@ -368,6 +362,59 @@ function buildRuntimeMaterialInventory(stepSPackage, runtimeCapabilities, runtim
     noCapabilityInvoked: true,
     rawMaterialPresent: false,
   };
+  const idHash = hashContract("FINPLE_STEP114_2X_U_RUNTIME_MATERIAL_INVENTORY_ID\0",
+    body);
+  const withId = { ...body,
+    runtimeMaterialInventoryId: `step114-2x-u-runtime-material-inventory-${idHash}` };
+  return { ...withId, runtimeMaterialInventoryHash: hashContract(
+    "FINPLE_STEP114_2X_U_RUNTIME_MATERIAL_INVENTORY_HASH\0", withId) };
+}
+
+function validateRuntimeMaterialInventory(value, stepSPackage, runtimeCapabilities,
+  runtimeMaterial) {
+  return canonicalEqual(value, buildRuntimeMaterialInventory(stepSPackage,
+    runtimeCapabilities, runtimeMaterial)) ? [] : ["runtime_material_inventory_invalid"];
+}
+
+function buildRuntimeMaterialManifest(stepSPackage, runtimeMaterial, inventory,
+  priorCeremonyNonceHashes) {
+  const launch = stepSPackage.oneRunRunnerLaunchPackage;
+  const priorNonceContextDigest = hashContract(
+    "FINPLE_STEP114_2X_U_PRIOR_NONCE_CONTEXT\0", priorCeremonyNonceHashes);
+  const body = {
+    contractVersion: "finple.step114-2x-u.runtime-material-manifest.v1",
+    mergedMainSha: MERGED_MAIN_SHA,
+    oneRunRunnerLaunchPackageId: launch.oneRunRunnerLaunchPackageId,
+    oneRunRunnerLaunchPackageHash: launch.oneRunRunnerLaunchPackageHash,
+    ceremonyNonceHash: runtimeMaterial.ceremonyNonceHash,
+    priorNonceContextDigest,
+    effectiveExpiry: runtimeMaterial.effectiveExpiry,
+    singleUseIdentities: runtimeMaterial.singleUseIdentities,
+    executionLeaseRequestId: runtimeMaterial.singleUseIdentities.executionLeaseRequestId,
+    claimRequestId: runtimeMaterial.singleUseIdentities.claimRequestId,
+    operationPlanHash: inventory.operationPlanHash,
+    runtimeMaterialInventoryId: inventory.runtimeMaterialInventoryId,
+    runtimeMaterialInventoryHash: inventory.runtimeMaterialInventoryHash,
+    runtimeCapabilityInventoryHash: hashContract(
+      "FINPLE_STEP114_2X_U_RUNTIME_CAPABILITY_INVENTORY\0", inventory.capabilities),
+    destinationCount: runtimeMaterial.destinationCount,
+    observationCount: runtimeMaterial.observationCount,
+    availability: runtimeMaterial.availability,
+    authority: runtimeMaterial.authority,
+    rawMaterialPresent: false,
+  };
+  const idHash = hashContract("FINPLE_STEP114_2X_U_RUNTIME_MATERIAL_MANIFEST_ID\0",
+    body);
+  const withId = { ...body,
+    runtimeMaterialManifestId: `step114-2x-u-runtime-material-manifest-${idHash}` };
+  return { ...withId, runtimeMaterialManifestHash: hashContract(
+    "FINPLE_STEP114_2X_U_RUNTIME_MATERIAL_MANIFEST_HASH\0", withId) };
+}
+
+function validateRuntimeMaterialManifest(value, stepSPackage, runtimeMaterial, inventory,
+  priorCeremonyNonceHashes) {
+  return canonicalEqual(value, buildRuntimeMaterialManifest(stepSPackage, runtimeMaterial,
+    inventory, priorCeremonyNonceHashes)) ? [] : ["runtime_material_manifest_invalid"];
 }
 
 function buildOperatorChecklist(confirmations) {
@@ -384,7 +431,8 @@ function buildOperatorChecklist(confirmations) {
   };
 }
 
-function buildEvidenceHandoffManifest(stepSPackage, inventory, checklist) {
+function buildEvidenceHandoffManifest(stepSPackage, inventory, runtimeMaterialManifest,
+  checklist) {
   const launch = stepSPackage.oneRunRunnerLaunchPackage;
   const manifest = stepSPackage.inputPacket.runnerImplementationManifest;
   const { stepRPacket, stepQPacket, stepOPacket, stepNPacket } = nested(stepSPackage);
@@ -407,6 +455,12 @@ function buildEvidenceHandoffManifest(stepSPackage, inventory, checklist) {
     invocationId: stepNPacket.invocation.invocationId,
     invocationHash: stepNPacket.invocation.invocationHash,
     claimKeyHash: stepOPacket.executorInput.claimKeyHash,
+    ceremonyNonceHash: runtimeMaterialManifest.ceremonyNonceHash,
+    operationPlanHash: runtimeMaterialManifest.operationPlanHash,
+    runtimeMaterialInventoryId: inventory.runtimeMaterialInventoryId,
+    runtimeMaterialInventoryHash: inventory.runtimeMaterialInventoryHash,
+    runtimeMaterialManifestId: runtimeMaterialManifest.runtimeMaterialManifestId,
+    runtimeMaterialManifestHash: runtimeMaterialManifest.runtimeMaterialManifestHash,
     runtimePreconditionManifestId:
       stepRPacket.runtimePreconditionManifest.runtimePreconditionManifestId,
     runtimePreconditionManifestHash:
@@ -465,14 +519,30 @@ function evaluateExecutionCeremony(packet) {
   });
   const inventory = buildRuntimeMaterialInventory(packet.stepSPackage,
     packet.runtimeCapabilities, packet.runtimeMaterial);
+  const inventoryIssues = validateRuntimeMaterialInventory(inventory, packet.stepSPackage,
+    packet.runtimeCapabilities, packet.runtimeMaterial);
+  if (inventoryIssues.length) return safeResult(PUBLIC_STATES[2], {
+    blockingIssues: inventoryIssues, mergedMainShaBound: true,
+    stepSValidated: true, stepTContractValidated: true,
+  });
+  const runtimeMaterialManifest = buildRuntimeMaterialManifest(packet.stepSPackage,
+    packet.runtimeMaterial, inventory, packet.priorCeremonyNonceHashes);
+  const manifestIssues = validateRuntimeMaterialManifest(runtimeMaterialManifest,
+    packet.stepSPackage, packet.runtimeMaterial, inventory,
+    packet.priorCeremonyNonceHashes);
+  if (manifestIssues.length) return safeResult(PUBLIC_STATES[2], {
+    blockingIssues: manifestIssues, mergedMainShaBound: true,
+    stepSValidated: true, stepTContractValidated: true,
+  });
   const checklist = buildOperatorChecklist(packet.operatorChecklistConfirmations);
   const evidenceHandoffManifest = buildEvidenceHandoffManifest(
-    packet.stepSPackage, inventory, checklist);
+    packet.stepSPackage, inventory, runtimeMaterialManifest, checklist);
   return safeResult(PUBLIC_STATES[1], {
     mergedMainShaBound: true,
     stepSValidated: true,
     stepTContractValidated: true,
     runtimeMaterialInventory: inventory,
+    runtimeMaterialManifest,
     operatorChecklist: checklist,
     evidenceHandoffManifest,
   });
@@ -483,13 +553,14 @@ module.exports = {
   CHECKLIST_TRUE_FIELDS,
   FIXED_FALSE_FIELDS,
   MERGED_MAIN_SHA,
-  OPERATION_NAMES,
+  OPERATION_PLAN_FIELDS,
   PUBLIC_STATES,
   RUNTIME_MATERIAL_INVENTORY,
   VERSION,
   buildEvidenceHandoffManifest,
   buildOperatorChecklist,
   buildRuntimeMaterialInventory,
+  buildRuntimeMaterialManifest,
   canonicalJson,
   evaluateExecutionCeremony,
   hashContract,
@@ -497,4 +568,6 @@ module.exports = {
   validateMergedStepTContract,
   validateRuntimeCapabilities,
   validateRuntimeMaterial,
+  validateRuntimeMaterialInventory,
+  validateRuntimeMaterialManifest,
 };

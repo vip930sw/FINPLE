@@ -59,6 +59,33 @@ const CAPABILITY_SPECS = Object.freeze({
   executionClock: ["now", "reconcileOperationOutcome"],
 });
 const CAPABILITY_NAMES = Object.freeze(Object.keys(CAPABILITY_SPECS));
+const OPERATION_PLAN_DEFINITIONS = Object.freeze([
+  ["execution_clock", "executionClock", "now"],
+  ["runner_artifact_read", "runtimeArtifactSource", "readRunnerArtifactBytes"],
+  ["adapter_artifact_read", "runtimeArtifactSource", "readAdapterArtifactBytes"],
+  ["pre_execution_lease_clock", "executionClock", "now"],
+  ["execution_lease_acquisition", "singleUseExecutionLeaseStore", "acquireExecutionLease"],
+  ["pre_claim_clock", "executionClock", "now"],
+  ["claim_acquisition", "atomicClaimStore", "acquireClaim"],
+  ["execution_confirmation_consumption", "singleUseExecutionLeaseStore",
+    "consumeExecutionConfirmation"],
+  ["operator_authorization_consumption", "singleUseExecutionLeaseStore",
+    "consumeOperatorAuthorization"],
+  ["invocation_consumption", "singleUseExecutionLeaseStore", "consumeInvocation"],
+  ["runner_load", "runnerArtifactLoader", "loadRunner"],
+  ["adapter_load", "adapterArtifactLoader", "loadAdapter"],
+  ["pre_observation_clock", "executionClock", "now"],
+  ["kill_switch_check", "readOnlyObservationTransport", "checkKillSwitch"],
+  ["read_only_observation", "readOnlyObservationTransport", "invokeReadOnlyObservation"],
+  ["pre_receipt_persistence_clock", "executionClock", "now"],
+  ["sanitized_receipt_persistence", "executionReceiptStore", "persistSanitizedReceipt"],
+  ["pre_evidence_persistence_clock", "executionClock", "now"],
+  ["sanitized_evidence_finalization", "evidenceFinalizer", "finalizeSanitizedEvidence"],
+  ["environment_disposal", "environmentDisposalCoordinator", "disposeEnvironment"],
+  ["execution_lease_terminalization", "singleUseExecutionLeaseStore",
+    "finalizeExecutionLease"],
+].map(([stage, capabilityName, methodName]) =>
+  Object.freeze({ stage, capabilityName, methodName })));
 const CAPABILITY_MUTABILITY_POLICIES = Object.freeze({
   runtimeArtifactSource: "immutable_artifact_read_only",
   runnerArtifactLoader: "immutable_runtime_load_only",
@@ -91,6 +118,17 @@ function deriveOperationIdentity(seed, stage, sequence) {
     { seed, stage, sequence });
   return { operationId: `step114-2x-t-operation-${digest}`,
     idempotencyKey: digest };
+}
+function buildOperationPlan(operationSeed) {
+  if (!isSha(operationSeed)) return [];
+  return OPERATION_PLAN_DEFINITIONS.map((definition, index) => {
+    const sequence = index + 1;
+    return { sequence, ...definition,
+      ...deriveOperationIdentity(operationSeed, definition.stage, sequence) };
+  });
+}
+function hashOperationPlan(operationPlan) {
+  return hashContract("FINPLE_STEP114_2X_T_OPERATION_PLAN\0", operationPlan);
 }
 function computeCapabilityDeadline(capability, currentClockInstant, effectiveExpiry) {
   const current = parseInstant(currentClockInstant);
@@ -139,8 +177,7 @@ async function callCapability(capability, method, args, stage, timingContext) {
   const timing = computeCapabilityDeadline(capability,
     timingContext.currentClockInstant, timingContext.effectiveExpiry);
   if (!timing) fail(`${stage}_deadline_expired`);
-  const identity = deriveOperationIdentity(timingContext.operationSeed,
-    stage, timingContext.operationSequence);
+  const identity = timingContext.operationIdentity;
   const abortController = new AbortController();
   const operationContext = { ...identity, deadline: timing.deadline,
     abortSignal: abortController.signal };
@@ -516,14 +553,23 @@ async function runControlledLiveObservation(packet) {
   const caps = packet.runtimeCapabilities;
   const effectiveExpiry = packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry;
   let currentClockInstant = packet.executionClockInstant;
-  let operationSequence = 0;
   const operationSeed = packet.stepSPackage.oneRunRunnerLaunchPackage
     .oneRunRunnerLaunchPackageHash;
+  const operationPlan = buildOperationPlan(operationSeed);
+  const operationByStage = new Map(operationPlan.map((entry) => [entry.stage, entry]));
+  const invokedOperationStages = new Set();
   const invoke = async (capabilityName, method, args, stage) => {
+    const operation = operationByStage.get(stage);
+    if (!operation || operation.capabilityName !== capabilityName ||
+        operation.methodName !== method || invokedOperationStages.has(stage)) {
+      fail("runtime_operation_plan_mismatch");
+    }
+    invokedOperationStages.add(stage);
     counts[capabilityName]++;
     return callCapability(caps[capabilityName], method, args, stage, {
-      currentClockInstant, effectiveExpiry, operationSeed,
-      operationSequence: ++operationSequence,
+      currentClockInstant, effectiveExpiry,
+      operationIdentity: { operationId: operation.operationId,
+        idempotencyKey: operation.idempotencyKey },
     });
   };
   const refreshExecutionClock = async (stage) => {
@@ -799,8 +845,10 @@ function buildCapabilityDescriptor(capabilityName) {
 module.exports = {
   CAPABILITY_MUTABILITY_POLICIES, CAPABILITY_NAMES, CAPABILITY_SPECS,
   FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS,
-  PUBLIC_STATES, RUNTIME_SEQUENCE, TRANSPORT_CLASS, VERSION,
+  OPERATION_PLAN_DEFINITIONS, PUBLIC_STATES, RUNTIME_SEQUENCE, TRANSPORT_CLASS, VERSION,
+  buildOperationPlan,
   buildCapabilityDescriptor, buildMutabilityPolicy, canonicalJson, hashContract,
+  hashOperationPlan,
   runControlledLiveObservation,
   sha256, validateCapabilityBundle, validateDirectStepSPackage,
   validateSanitizedObservation,

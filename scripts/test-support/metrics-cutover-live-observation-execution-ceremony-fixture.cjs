@@ -1,6 +1,7 @@
 "use strict";
 
 const stepTFixture = require("./metrics-cutover-live-observation-controlled-runner-fixture.cjs");
+const stepT = require("../lib/metrics-cutover-live-observation-controlled-runner.cjs");
 const subject = require("../lib/metrics-cutover-live-observation-execution-ceremony.cjs");
 
 const CLOCK = "2026-07-18T00:03:22.000Z";
@@ -14,17 +15,17 @@ function nested(stepSPackage) {
   const stepNPacket = stepOPacket.context.upstream.stepNPacket;
   return { stepQPacket, stepOPacket, stepNPacket };
 }
-function buildOperationIdentities() {
-  return Object.fromEntries(subject.OPERATION_NAMES.map((name, index) => [name, {
-    operationId: `step114-2x-u-${name.replace(/[A-Z]/g,
-      (letter) => `-${letter.toLowerCase()}`)}-operation`,
-    idempotencyKey: subject.hashContract("FINPLE_STEP114_2X_U_SYNTHETIC_OPERATION\0",
-      { name, index }),
-  }]));
+function buildOperationPlan(stepSPackage) {
+  return stepT.buildOperationPlan(stepSPackage.oneRunRunnerLaunchPackage
+    .oneRunRunnerLaunchPackageHash);
 }
 function buildRuntimeMaterial(stepSPackage, overrides = {}) {
   const launch = stepSPackage.oneRunRunnerLaunchPackage;
   const { stepQPacket, stepOPacket, stepNPacket } = nested(stepSPackage);
+  const operationPlan = buildOperationPlan(stepSPackage);
+  const leaseOperation = operationPlan.find((entry) =>
+    entry.stage === "execution_lease_acquisition");
+  const claimOperation = operationPlan.find((entry) => entry.stage === "claim_acquisition");
   return {
     contractVersion: "finple.step114-2x-u.runtime-material.v1",
     runtimeMaterialState: "complete",
@@ -40,15 +41,15 @@ function buildRuntimeMaterial(stepSPackage, overrides = {}) {
       invocationId: stepNPacket.invocation.invocationId,
       invocationHash: stepNPacket.invocation.invocationHash,
       claimKeyHash: stepOPacket.executorInput.claimKeyHash,
-      executionLeaseRequestId: "step114-2x-u-synthetic-execution-lease-request",
-      claimRequestId: "step114-2x-u-synthetic-claim-request",
+      executionLeaseRequestId: leaseOperation.operationId,
+      claimRequestId: claimOperation.operationId,
       executionConfirmationUnused: true,
       operatorAuthorizationUnused: true,
       invocationUnused: true,
       executionLeaseUnused: true,
       claimUnused: true,
     },
-    operationIdentities: buildOperationIdentities(),
+    operationPlan,
     availability: {
       runnerArtifactBytesAvailable: true,
       adapterArtifactBytesAvailable: true,
@@ -102,7 +103,7 @@ module.exports = {
   CLOCK,
   buildChecklist,
   buildFixture,
-  buildOperationIdentities,
+  buildOperationPlan,
   buildRuntimeMaterial,
   clone,
 };

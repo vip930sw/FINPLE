@@ -48,11 +48,13 @@ Any missing, false-required, true-forbidden, extra, or malformed checklist field
 5. Confirm the ceremony nonce is new against a canonical sorted replay context.
 6. Confirm destination and observation counts are each one.
 7. Confirm the Step S/T-bound confirmation, authorization, invocation, and claim identities match exactly.
-8. Confirm lease and claim request IDs are distinct and unused.
-9. Confirm every operation ID and idempotency key is present, valid, and unique.
-10. Confirm artifact, kill-switch, store, disposal, and terminalization availability booleans.
-11. Confirm every mutation, retry, fallback, trigger, route, cron, worker, deployment, and execution authority field remains false.
-12. Review the sanitized evidence-handoff manifest and verify no raw runtime material is present.
+8. Rebuild the 21-entry operation plan with the Step T pure helper and require canonical equality, including sequence, stage, capability, method, operation ID, and idempotency key.
+9. Confirm the lease and claim request IDs equal the corresponding lease-acquisition and claim-acquisition operation IDs and remain unused.
+10. Verify the domain-separated operation-plan hash and runtime capability-inventory hash.
+11. Verify the sealed runtime-material inventory ID/hash and runtime-material manifest ID/hash, including ceremony nonce and prior-nonce context digest.
+12. Confirm artifact, kill-switch, store, disposal, and terminalization availability booleans.
+13. Confirm every mutation, retry, fallback, trigger, route, cron, worker, deployment, and execution authority field remains false.
+14. Review the sanitized evidence-handoff manifest and verify its runtime-material, inventory, operation-plan, and ceremony-nonce bindings contain no raw runtime material.
 
 ## Fail-closed handoff
 
