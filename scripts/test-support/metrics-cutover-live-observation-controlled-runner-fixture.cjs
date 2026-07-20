@@ -148,7 +148,11 @@ function buildObservation(stepSPackage, overrides = {}) {
 
 function buildCapabilities(stepSPackage, options = {}) {
   const calls = [];
-  const outcome = (name, fallback) => options[name] || fallback;
+  const outcome = (name, fallback, ...args) => {
+    const selected = Object.prototype.hasOwnProperty.call(options, name)
+      ? options[name] : fallback;
+    return typeof selected === "function" ? selected(...args) : selected;
+  };
   const wrap = (name, fn) => async (...args) => { calls.push(name); return fn(...args); };
   const cap = (name, methods) => ({ descriptor: subject.buildCapabilityDescriptor(name), ...methods });
   const capabilities = {
@@ -184,7 +188,7 @@ function buildCapabilities(stepSPackage, options = {}) {
         { outcome: "consumed" })),
       consumeInvocation: wrap("consumeInvocation", () => outcome("invocation", { outcome: "consumed" })),
       finalizeExecutionLease: wrap("finalizeExecutionLease", (value) => outcome("terminal",
-        { outcome: "finalized", terminalState: value.terminalState })),
+        { outcome: "finalized", terminalState: value.terminalState }, value)),
     }),
     atomicClaimStore: cap("atomicClaimStore", { acquireClaim: wrap("acquireClaim",
       () => outcome("claim", { outcome: "acquired", claimReceiptHash: "4".repeat(64) })) }),
@@ -196,11 +200,13 @@ function buildCapabilities(stepSPackage, options = {}) {
     }),
     executionReceiptStore: cap("executionReceiptStore", {
       persistSanitizedReceipt: wrap("persistSanitizedReceipt", (receipt) => outcome("receipt",
-        { outcome: "persisted", persistedReceiptHash: receipt.sanitizedExecutionReceiptHash })),
+        { outcome: "persisted", persistedReceiptHash: receipt.sanitizedExecutionReceiptHash },
+      receipt)),
     }),
     evidenceFinalizer: cap("evidenceFinalizer", {
       finalizeSanitizedEvidence: wrap("finalizeSanitizedEvidence", (evidence) => outcome("evidence",
-        { outcome: "finalized", finalizedEvidenceHash: evidence.sanitizedEvidenceHash })),
+        { outcome: "finalized", finalizedEvidenceHash: evidence.sanitizedEvidenceHash },
+      evidence)),
     }),
     environmentDisposalCoordinator: cap("environmentDisposalCoordinator", {
       disposeEnvironment: wrap("disposeEnvironment", () => outcome("disposal",

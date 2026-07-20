@@ -72,7 +72,22 @@ test("complete synthetic run directly revalidates Step S and follows exact seque
   assert.match(result.sanitizedExecutionReceipt.sanitizedExecutionReceiptHash, /^[0-9a-f]{64}$/);
   assert.match(result.sanitizedEvidence.sanitizedEvidenceHash, /^[0-9a-f]{64}$/);
   assert.equal(result.sanitizedExecutionReceipt.rawMaterialPresent, false);
+  assert.equal(result.sanitizedExecutionReceipt.receiptPhase,
+    "pre_disposal_candidate");
   assert.equal(result.sanitizedEvidence.rawMaterialPresent, false);
+  const closure = result.sanitizedExecutionClosureReceipt;
+  assert.equal(closure.disposalStatus, "completed");
+  assert.equal(closure.disposalReceiptHash, "5".repeat(64));
+  assert.equal(closure.leaseTerminalState, "completed");
+  assert.deepEqual(closure.runtimeStateTrace, subject.RUNTIME_SEQUENCE);
+  assert.equal(closure.runtimeStateTraceHash, subject.hashContract(
+    "FINPLE_STEP114_2X_T_COMPLETE_RUNTIME_TRACE\0", subject.RUNTIME_SEQUENCE));
+  assert.equal(closure.oneRunRunnerLaunchPackageId,
+    built.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageId);
+  assert.equal(closure.oneRunRunnerLaunchPackageHash,
+    built.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash);
+  assert.equal(closure.rawMaterialPresent, false);
+  assert.match(closure.executionClosureReceiptHash, /^[0-9a-f]{64}$/);
   assertFixedFalse(result);
 });
 
@@ -100,6 +115,39 @@ test("capability contracts use exact keys sealed descriptors and no discovery", 
   const tamperedResult = await subject.runControlledLiveObservation(tampered.packet);
   assert.equal(tamperedResult.status, "blocked");
   assert.deepEqual(tampered.calls, []);
+});
+
+test("capability mutability policies are role-specific and resealed drift blocks", async () => {
+  const built = fixture.buildFixture();
+  const policies = Object.fromEntries(Object.entries(built.packet.runtimeCapabilities)
+    .map(([name, value]) => [name, value.descriptor.mutabilityPolicy.mode]));
+  assert.equal(policies.readOnlyObservationTransport, "external_target_read_only");
+  assert.equal(policies.singleUseExecutionLeaseStore,
+    "exact_atomic_namespace_mutation_only");
+  assert.equal(policies.atomicClaimStore, "exact_atomic_namespace_mutation_only");
+  assert.equal(policies.executionReceiptStore,
+    "sanitized_named_namespace_persistence_only");
+  assert.equal(policies.evidenceFinalizer,
+    "sanitized_named_namespace_persistence_only");
+  assert.equal(policies.environmentDisposalCoordinator,
+    "bound_disposable_environment_mutation_only");
+  for (const capability of Object.values(built.packet.runtimeCapabilities)) {
+    assert.equal(capability.descriptor.mutabilityPolicy.productionMutationAllowed, false);
+    assert.equal(capability.descriptor.mutabilityPolicy.providerMutationAllowed, false);
+  }
+  const capability = built.packet.runtimeCapabilities.atomicClaimStore;
+  const body = { ...capability.descriptor,
+    mutabilityPolicy: { ...capability.descriptor.mutabilityPolicy,
+      mode: "external_target_read_only", atomicNamespaceMutationOnly: false,
+      externalTargetReadOnly: true } };
+  delete body.descriptorHash;
+  capability.descriptor = { ...body, descriptorHash: subject.hashContract(
+    "FINPLE_STEP114_2X_T_CAPABILITY_DESCRIPTOR\0", body) };
+  const result = await subject.runControlledLiveObservation(built.packet);
+  assert.equal(result.status, "blocked");
+  assert.ok(result.blockingIssues.includes(
+    "runtime_capability_descriptor_invalid:atomicClaimStore"));
+  assert.deepEqual(built.calls, []);
 });
 
 test("tampered Step S root blocks before every runtime capability", async () => {
@@ -141,7 +189,7 @@ test("non-acquired lease and claim fail closed without adapter invocation or ret
 
 test("all three single-use consumptions precede loading and stop on first failure", async () => {
   const failed = await expectBlocked({ authorization: { outcome: "already_consumed" } },
-    "consumeOperatorAuthorization_failed", { consumeExecutionConfirmation: 1,
+    "operator_authorization_consumption_not_consumed", { consumeExecutionConfirmation: 1,
       consumeOperatorAuthorization: 1, consumeInvocation: 0, loadRunner: 0,
       invokeReadOnlyObservation: 0 });
   assert.ok(failed.built.calls.indexOf("acquireClaim") <
@@ -150,7 +198,7 @@ test("all three single-use consumptions precede loading and stop on first failur
 
 test("loader failures and observation failure never retry", async () => {
   await expectBlocked({ adapterLoad: { outcome: "failed", adapterHandleHash: "2".repeat(64) } },
-    "adapter_load_failed", { loadAdapter: 1, invokeReadOnlyObservation: 0 });
+    "adapter_load_invalid_outcome", { loadAdapter: 1, invokeReadOnlyObservation: 0 });
   const observed = await expectBlocked({ observation: { outcome: "ambiguous" } },
     "sanitized_observation_fields_invalid", { invokeReadOnlyObservation: 1,
       persistSanitizedReceipt: 0, finalizeSanitizedEvidence: 0,
@@ -187,28 +235,67 @@ test("sanitized observation rejects order, raw material and malformed hashes", a
 
 test("receipt and evidence failures block after one observation and still dispose", async () => {
   await expectBlocked({ receipt: { outcome: "ambiguous", persistedReceiptHash: "0".repeat(64) } },
-    "sanitized_receipt_persistence_failed", { invokeReadOnlyObservation: 1,
+    "sanitized_receipt_persistence_invalid_outcome", { invokeReadOnlyObservation: 1,
       persistSanitizedReceipt: 1, finalizeSanitizedEvidence: 0, disposeEnvironment: 1 });
   await expectBlocked({ evidence: { outcome: "failed", finalizedEvidenceHash: "0".repeat(64) } },
-    "sanitized_evidence_finalization_failed", { invokeReadOnlyObservation: 1,
+    "sanitized_evidence_finalization_invalid_outcome", { invokeReadOnlyObservation: 1,
       persistSanitizedReceipt: 1, finalizeSanitizedEvidence: 1, disposeEnvironment: 1 });
 });
 
 test("disposal uncertainty overrides success and post-observation failures", async () => {
   const failed = await expectBlocked({ disposal: { outcome: "ambiguous",
-    disposalReceiptHash: "5".repeat(64) } }, "environment_disposal_uncertain",
+    disposalReceiptHash: "5".repeat(64) } }, "environment_disposal_invalid_outcome",
   { invokeReadOnlyObservation: 1, disposeEnvironment: 1 });
   assert.equal(failed.result.failureClassification, "disposal_uncertain");
   assert.equal(failed.result.disposalAttempted, true);
   assert.equal(failed.result.disposalCompleted, false);
   assert.equal(failed.result.executionTerminalState, "disposal_uncertain");
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
 });
 
 test("ambiguous atomic lease terminalization blocks completed publication", async () => {
   const failed = await expectBlocked({ terminal: { outcome: "ambiguous",
-    terminalState: "completed" } }, "execution_lease_terminalization_failed",
+    terminalState: "completed" } }, "execution_lease_terminalization_invalid_outcome",
   { invokeReadOnlyObservation: 1, disposeEnvironment: 1, finalizeExecutionLease: 1 });
   assert.equal(failed.result.failureClassification, "blocked_after_observation");
+});
+
+test("hanging bound capability times out once then disposes and terminalizes", async () => {
+  const failed = await expectBlocked({ claim: () => new Promise(() => {}) },
+    "claim_acquisition_timeout", { acquireClaim: 1, invokeReadOnlyObservation: 0,
+      disposeEnvironment: 1, finalizeExecutionLease: 1 });
+  assert.equal(failed.result.failureClassification, "blocked_before_observation");
+});
+
+test("hanging observation times out without a second invocation", async () => {
+  const failed = await expectBlocked({ observation: () => new Promise(() => {}) },
+    "read_only_observation_timeout", { invokeReadOnlyObservation: 1,
+      persistSanitizedReceipt: 0, disposeEnvironment: 1,
+      finalizeExecutionLease: 1 });
+  assert.equal(failed.result.adapterInvocationCount, 1);
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("hanging disposal becomes disposal_uncertain without retry or closure receipt", async () => {
+  const failed = await expectBlocked({ disposal: () => new Promise(() => {}) },
+    "environment_disposal_timeout", { invokeReadOnlyObservation: 1,
+      disposeEnvironment: 1, finalizeExecutionLease: 1 });
+  assert.equal(failed.result.failureClassification, "disposal_uncertain");
+  assert.equal(failed.result.executionTerminalState, "disposal_uncertain");
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("external sensitive Error details are replaced with a fixed issue code", async () => {
+  const sensitive = "endpoint=db.internal credential=secret token=abc certificate=x host=h db=prod";
+  const failed = await expectBlocked({ runnerLoad: () => { throw new Error(sensitive); } },
+    "runner_load_failed", { loadRunner: 1, invokeReadOnlyObservation: 0,
+      disposeEnvironment: 1, finalizeExecutionLease: 1 });
+  const serialized = JSON.stringify(failed.result);
+  assert.equal(serialized.includes(sensitive), false);
+  for (const fragment of ["db.internal", "secret", "token=abc", "db=prod"]) {
+    assert.equal(serialized.includes(fragment), false);
+  }
+  assert.deepEqual(failed.result.blockingIssues, ["runner_load_failed"]);
 });
 
 test("production core has no ambient filesystem network DB provider or process capability", () => {

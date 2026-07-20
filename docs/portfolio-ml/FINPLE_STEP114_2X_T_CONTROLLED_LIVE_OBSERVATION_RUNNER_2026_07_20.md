@@ -18,7 +18,11 @@ The runtime clock is canonical UTC, must equal the explicitly supplied execution
 
 ## Capability interfaces
 
-The exact capability bundle contains `runtimeArtifactSource`, `runnerArtifactLoader`, `adapterArtifactLoader`, `singleUseExecutionLeaseStore`, `atomicClaimStore`, `readOnlyObservationTransport`, `executionReceiptStore`, `evidenceFinalizer`, `environmentDisposalCoordinator`, and `executionClock`. Each capability has an exact method set and a domain-separated descriptor hash. Its descriptor fixes automatic retry, fallback, and external discovery to false and sanitized-only to true.
+The exact capability bundle contains `runtimeArtifactSource`, `runnerArtifactLoader`, `adapterArtifactLoader`, `singleUseExecutionLeaseStore`, `atomicClaimStore`, `readOnlyObservationTransport`, `executionReceiptStore`, `evidenceFinalizer`, `environmentDisposalCoordinator`, and `executionClock`. Each capability has an exact method set and a domain-separated descriptor hash. Its descriptor fixes automatic retry, fallback, external discovery, provider mutation, and production mutation to false and declares a hard 5,000 ms timeout that the common invocation wrapper enforces.
+
+Mutability is capability-specific. The transport is external-target read-only; lease and claim stores permit only their exact atomic namespaces; receipt and evidence capabilities permit only sanitized named-namespace persistence; disposal permits only mutation of the bound disposable environment. Artifact readers/loaders and the injected clock have immutable/no-mutation modes. A global `readOnlyOnly` assertion is not used for mutation-bearing safety capabilities.
+
+Every external exception and timeout is converted at the wrapper boundary to a fixed stage-specific issue code. External error messages and stacks are discarded and cannot enter the public result, receipt, evidence, or closure receipt. A timeout never retries. Any timeout after runtime binding still reaches finally-equivalent disposal, and an acquired lease is terminalized once.
 
 Runner and adapter bytes are returned only by the injected artifact source. The core computes SHA-256 in memory and checks exact equality with the signed Step S runner manifest and signed Step Q adapter manifest before either loader can run.
 

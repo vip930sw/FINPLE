@@ -56,9 +56,43 @@ const CAPABILITY_SPECS = Object.freeze({
   executionClock: ["now"],
 });
 const CAPABILITY_NAMES = Object.freeze(Object.keys(CAPABILITY_SPECS));
+const CAPABILITY_MUTABILITY_POLICIES = Object.freeze({
+  runtimeArtifactSource: "immutable_artifact_read_only",
+  runnerArtifactLoader: "immutable_runtime_load_only",
+  adapterArtifactLoader: "immutable_runtime_load_only",
+  singleUseExecutionLeaseStore: "exact_atomic_namespace_mutation_only",
+  atomicClaimStore: "exact_atomic_namespace_mutation_only",
+  readOnlyObservationTransport: "external_target_read_only",
+  executionReceiptStore: "sanitized_named_namespace_persistence_only",
+  evidenceFinalizer: "sanitized_named_namespace_persistence_only",
+  environmentDisposalCoordinator: "bound_disposable_environment_mutation_only",
+  executionClock: "no_mutation",
+});
 const TRANSPORT_CLASS = "disposable_environment_read_only_observer";
 const VERSION = "finple.step114-2x-t.controlled-runner.v1";
 const directStepSValidationCache = new WeakMap();
+const CAPABILITY_TIMEOUT = Symbol("capability_timeout");
+
+class RunnerFailure {
+  constructor(issueCode) { this.issueCode = issueCode; }
+}
+function fail(issueCode) { throw new RunnerFailure(issueCode); }
+async function callCapability(capability, method, args, stage) {
+  const timeoutMilliseconds = capability?.descriptor?.hardTimeoutMilliseconds;
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => capability[method](...args)),
+      new Promise((unused, reject) => {
+        timer = setTimeout(() => reject(CAPABILITY_TIMEOUT), timeoutMilliseconds);
+      }),
+    ]);
+  } catch (error) {
+    fail(error === CAPABILITY_TIMEOUT ? `${stage}_timeout` : `${stage}_failed`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function canonicalJson(value) {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -89,6 +123,21 @@ function parseInstant(value) {
   const ms = Date.parse(value);
   return Number.isFinite(ms) && new Date(ms).toISOString() === value ? ms : null;
 }
+function buildMutabilityPolicy(capabilityName) {
+  const mode = CAPABILITY_MUTABILITY_POLICIES[capabilityName];
+  return {
+    mode,
+    externalTargetReadOnly: mode === "external_target_read_only",
+    atomicNamespaceMutationOnly: mode === "exact_atomic_namespace_mutation_only",
+    sanitizedNamedNamespacePersistenceOnly:
+      mode === "sanitized_named_namespace_persistence_only",
+    boundDisposableEnvironmentMutationOnly:
+      mode === "bound_disposable_environment_mutation_only",
+    productionMutationAllowed: false,
+    providerMutationAllowed: false,
+    unboundedMutationAllowed: false,
+  };
+}
 function nested(stepSPacket) {
   const stepRPacket = stepSPacket.inputPacket.context.upstream;
   const qPacket = stepRPacket.upstream.stepQPacket;
@@ -115,6 +164,7 @@ function safeResult(status, overrides = {}) {
     disposalCompleted: overrides.disposalCompleted || false,
     sanitizedExecutionReceipt: overrides.sanitizedExecutionReceipt || {},
     sanitizedEvidence: overrides.sanitizedEvidence || {},
+    sanitizedExecutionClosureReceipt: overrides.sanitizedExecutionClosureReceipt || {},
     ...Object.fromEntries(FIXED_FALSE_FIELDS.map((field) => [field, false])),
   };
 }
@@ -179,8 +229,9 @@ function validateCapabilityBundle(value) {
     const descriptorKeys = ["capabilityName", "capabilityClass", "contractVersion",
       "methodNames", "maximumInvocationCount", "hardTimeoutMilliseconds",
       "automaticRetryAllowed", "fallbackAllowed", "externalDiscoveryAllowed",
-      "readOnlyOnly", "productionAccessAllowed", "maximumDestinationCount",
-      "maximumObservationCount", "sanitizationPolicy", "descriptorHash"];
+      "productionAccessAllowed", "maximumDestinationCount",
+      "maximumObservationCount", "mutabilityPolicy", "sanitizationPolicy",
+      "descriptorHash"];
     if (!exactKeys(descriptor, descriptorKeys)) {
       issues.push(`runtime_capability_descriptor_fields_invalid:${name}`); continue;
     }
@@ -193,8 +244,12 @@ function validateCapabilityBundle(value) {
         descriptor.hardTimeoutMilliseconds !== 5000 ||
         descriptor.automaticRetryAllowed !== false ||
         descriptor.fallbackAllowed !== false || descriptor.externalDiscoveryAllowed !== false ||
-        descriptor.readOnlyOnly !== true || descriptor.productionAccessAllowed !== false ||
-        descriptor.maximumDestinationCount !== 1 || descriptor.maximumObservationCount !== 1 ||
+        descriptor.productionAccessAllowed !== false ||
+        descriptor.maximumDestinationCount !==
+          (name === "readOnlyObservationTransport" ? 1 : 0) ||
+        descriptor.maximumObservationCount !==
+          (name === "readOnlyObservationTransport" ? 1 : 0) ||
+        !canonicalEqual(descriptor.mutabilityPolicy, buildMutabilityPolicy(name)) ||
         !canonicalEqual(descriptor.sanitizationPolicy, {
           sanitizedOutputOnly: true, rawMaterialForbidden: true,
           credentialEchoForbidden: true, persistenceOutsideNamedStoreForbidden: true,
@@ -245,7 +300,7 @@ function validateSanitizedObservation(value, stepSPackage, clockInstant) {
   return [...new Set(issues)].sort();
 }
 
-function makeReceipt(stepSPackage, observation, clockInstant,
+function makePreDisposalReceipt(stepSPackage, observation, clockInstant,
   executionLeaseHash, claimReceiptHash) {
   const { stepRPacket, qPacket, oPacket, nPacket } = nested(stepSPackage);
   const launch = stepSPackage.oneRunRunnerLaunchPackage;
@@ -272,8 +327,9 @@ function makeReceipt(stepSPackage, observation, clockInstant,
     executionStartedAt: stepSPackage.inputPacket.evaluationClockInstant,
     executionEndedAt: clockInstant,
     effectiveExpiry: launch.earliestExpiry,
-    adapterInvocationCount: 1, finalDisposalStatus: "required_before_completion",
-    disposalRequired: true,
+    adapterInvocationCount: 1,
+    receiptPhase: "pre_disposal_candidate",
+    disposalCompletionRequired: true,
     rawMaterialPresent: false,
   };
   const idHash = hashContract("FINPLE_STEP114_2X_T_RECEIPT_ID\0", body);
@@ -298,6 +354,34 @@ function makeEvidence(stepSPackage, receipt, clockInstant) {
   return { ...withId, sanitizedEvidenceHash:
     hashContract("FINPLE_STEP114_2X_T_EVIDENCE_HASH\0", withId) };
 }
+function makeExecutionClosureReceipt(stepSPackage, receipt, evidence,
+  disposalReceiptHash, leaseTerminalState, completeTrace, clockInstant) {
+  const body = {
+    contractVersion: "finple.step114-2x-t.execution-closure-receipt.v1",
+    oneRunRunnerLaunchPackageId:
+      stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageId,
+    oneRunRunnerLaunchPackageHash:
+      stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
+    sanitizedExecutionReceiptId: receipt.sanitizedExecutionReceiptId,
+    sanitizedExecutionReceiptHash: receipt.sanitizedExecutionReceiptHash,
+    sanitizedEvidenceId: evidence.sanitizedEvidenceId,
+    sanitizedEvidenceHash: evidence.sanitizedEvidenceHash,
+    disposalStatus: "completed",
+    disposalReceiptHash,
+    leaseTerminalState,
+    runtimeStateTrace: [...completeTrace],
+    runtimeStateTraceHash: hashContract(
+      "FINPLE_STEP114_2X_T_COMPLETE_RUNTIME_TRACE\0", completeTrace),
+    adapterInvocationCount: 1,
+    completedAt: clockInstant,
+    rawMaterialPresent: false,
+  };
+  const idHash = hashContract("FINPLE_STEP114_2X_T_EXECUTION_CLOSURE_ID\0", body);
+  const withId = { ...body,
+    executionClosureReceiptId: `step114-2x-t-closure-${idHash}` };
+  return { ...withId, executionClosureReceiptHash:
+    hashContract("FINPLE_STEP114_2X_T_EXECUTION_CLOSURE_HASH\0", withId) };
+}
 
 async function runControlledLiveObservation(packet) {
   if (packet === undefined) return safeResult(PUBLIC_STATES[0]);
@@ -305,9 +389,11 @@ async function runControlledLiveObservation(packet) {
   const trace = [];
   let bound = false; let leaseAcquired = false; let observationInvoked = false;
   let leaseHash = null; let claimReceiptHash = null;
+  let disposalReceiptHash = null;
   let disposalAttempted = false; let disposalCompleted = false;
-  let receipt = {}; let evidence = {};
+  let receipt = {}; let evidence = {}; let closureReceipt = {};
   let executionTerminalState = null;
+  let disposalIssue = null;
   const block = (classification, issue) => safeResult("blocked", {
     failureClassification: classification, blockingIssues: [issue],
     runtimeStateSequence: [...trace], capabilityInvocationCounts: { ...counts },
@@ -316,7 +402,7 @@ async function runControlledLiveObservation(packet) {
         (observationInvoked ? "failed_after_invocation" : "failed_before_invocation")),
     adapterInvocationCount: observationInvoked ? 1 : 0,
     disposalAttempted, disposalCompleted, sanitizedExecutionReceipt: receipt,
-    sanitizedEvidence: evidence,
+    sanitizedEvidence: evidence, sanitizedExecutionClosureReceipt: closureReceipt,
   });
   if (!exactKeys(packet, ["stepSPackage", "runtimeCapabilities", "executionClockInstant"])) {
     return block("blocked_before_runtime_binding", "controlled_runner_packet_fields_invalid");
@@ -333,13 +419,14 @@ async function runControlledLiveObservation(packet) {
   const caps = packet.runtimeCapabilities;
   let primaryIssue = null; let classification = "blocked_before_lease";
   try {
-    counts.executionClock++; const now = await caps.executionClock.now();
+    counts.executionClock++; const now = await callCapability(
+      caps.executionClock, "now", [], "execution_clock");
     if (now !== packet.executionClockInstant || parseInstant(now) === null ||
         parseInstant(now) >= parseInstant(packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry)) {
       return block("blocked_before_runtime_binding", "controlled_runner_execution_clock_invalid");
     }
-    counts.runtimeArtifactSource++; const runnerArtifact =
-      await caps.runtimeArtifactSource.readRunnerArtifactBytes();
+    counts.runtimeArtifactSource++; const runnerArtifact = await callCapability(
+      caps.runtimeArtifactSource, "readRunnerArtifactBytes", [], "runner_artifact_read");
     trace.push(RUNTIME_SEQUENCE[2]);
     const runnerManifest = packet.stepSPackage.inputPacket.runnerImplementationManifest;
     if (!isRecord(runnerArtifact) || !exactKeys(runnerArtifact, ["artifactBytes",
@@ -352,8 +439,8 @@ async function runControlledLiveObservation(packet) {
       return block("blocked_before_runtime_binding", "runner_artifact_digest_mismatch");
     }
     trace.push(RUNTIME_SEQUENCE[3]);
-    counts.runtimeArtifactSource++; const adapterArtifact =
-      await caps.runtimeArtifactSource.readAdapterArtifactBytes();
+    counts.runtimeArtifactSource++; const adapterArtifact = await callCapability(
+      caps.runtimeArtifactSource, "readAdapterArtifactBytes", [], "adapter_artifact_read");
     trace.push(RUNTIME_SEQUENCE[4]);
     const { qPacket, oPacket, nPacket } = nested(packet.stepSPackage);
     const adapterManifest = qPacket.adapterArtifactManifest;
@@ -369,7 +456,8 @@ async function runControlledLiveObservation(packet) {
     }
     trace.push(RUNTIME_SEQUENCE[5], RUNTIME_SEQUENCE[6]); bound = true;
     counts.singleUseExecutionLeaseStore++;
-    const lease = await caps.singleUseExecutionLeaseStore.acquireExecutionLease({
+    const lease = await callCapability(caps.singleUseExecutionLeaseStore,
+      "acquireExecutionLease", [{
       launchPackageId: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageId,
       launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
       executionConfirmationId: packet.stepSPackage.inputPacket.executionConfirmation.executionConfirmationId,
@@ -386,19 +474,19 @@ async function runControlledLiveObservation(packet) {
       claimNonceHash: oPacket.executorInput.claimNonceHash,
       expiresAt: packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry,
       destinationCount: 1, observationCount: 1,
-    });
+      }], "execution_lease_acquisition");
     if (!exactKeys(lease, ["outcome", "leaseHash"]) || lease.outcome !== "acquired" ||
-        !isSha(lease.leaseHash)) throw new Error("single_use_execution_lease_not_acquired");
+        !isSha(lease.leaseHash)) fail("single_use_execution_lease_not_acquired");
     leaseAcquired = true; leaseHash = lease.leaseHash;
     trace.push(RUNTIME_SEQUENCE[7]); classification = "blocked_before_observation";
     counts.atomicClaimStore++;
-    const claim = await caps.atomicClaimStore.acquireClaim({
+    const claim = await callCapability(caps.atomicClaimStore, "acquireClaim", [{
       claimKeyHash: oPacket.executorInput.claimKeyHash,
       claimNonceHash: oPacket.executorInput.claimNonceHash,
       expiresAt: packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry,
-    });
+      }], "claim_acquisition");
     if (!exactKeys(claim, ["outcome", "claimReceiptHash"]) || claim.outcome !== "acquired" ||
-        !isSha(claim.claimReceiptHash)) throw new Error("single_use_claim_not_acquired");
+        !isSha(claim.claimReceiptHash)) fail("single_use_claim_not_acquired");
     claimReceiptHash = claim.claimReceiptHash;
     trace.push(RUNTIME_SEQUENCE[8]);
     for (const [method, state, item] of [
@@ -407,80 +495,100 @@ async function runControlledLiveObservation(packet) {
       ["consumeInvocation", RUNTIME_SEQUENCE[11], nPacket.invocation],
     ]) {
       counts.singleUseExecutionLeaseStore++;
-      const consumed = await caps.singleUseExecutionLeaseStore[method]({
+      const stage = method === "consumeExecutionConfirmation"
+        ? "execution_confirmation_consumption"
+        : method === "consumeOperatorAuthorization"
+          ? "operator_authorization_consumption" : "invocation_consumption";
+      const consumed = await callCapability(caps.singleUseExecutionLeaseStore, method, [{
         id: item.executionConfirmationId || item.operatorAuthorizationId || item.invocationId,
         hash: item.executionConfirmationHash || item.operatorAuthorizationHash || item.invocationHash,
         leaseHash: lease.leaseHash,
-      });
+      }], stage);
       if (!exactKeys(consumed, ["outcome"]) || consumed.outcome !== "consumed") {
-        throw new Error(`${method}_failed`);
+        fail(`${stage}_not_consumed`);
       }
       trace.push(state);
     }
-    counts.runnerArtifactLoader++; const runner = await caps.runnerArtifactLoader
-      .loadRunner(runnerArtifact.artifactBytes);
+    counts.runnerArtifactLoader++; const runner = await callCapability(
+      caps.runnerArtifactLoader, "loadRunner", [runnerArtifact.artifactBytes], "runner_load");
     if (!exactKeys(runner, ["outcome", "runnerHandleHash"]) || runner.outcome !== "loaded" ||
-        !isSha(runner.runnerHandleHash)) throw new Error("runner_load_failed");
+        !isSha(runner.runnerHandleHash)) fail("runner_load_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[12]);
-    counts.adapterArtifactLoader++; const adapter = await caps.adapterArtifactLoader
-      .loadAdapter(adapterArtifact.artifactBytes);
+    counts.adapterArtifactLoader++; const adapter = await callCapability(
+      caps.adapterArtifactLoader, "loadAdapter", [adapterArtifact.artifactBytes], "adapter_load");
     if (!exactKeys(adapter, ["outcome", "adapterHandleHash"]) || adapter.outcome !== "loaded" ||
-        !isSha(adapter.adapterHandleHash)) throw new Error("adapter_load_failed");
+        !isSha(adapter.adapterHandleHash)) fail("adapter_load_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[13]);
     counts.readOnlyObservationTransport++;
-    const killSwitch = await caps.readOnlyObservationTransport.checkKillSwitch({
+    const killSwitch = await callCapability(caps.readOnlyObservationTransport,
+      "checkKillSwitch", [{
       launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
       executionClockInstant: packet.executionClockInstant,
-    });
+      }], "kill_switch_check");
     if (!exactKeys(killSwitch, ["outcome", "checkedAt"]) ||
         killSwitch.outcome !== "clear" || killSwitch.checkedAt !== packet.executionClockInstant) {
-      throw new Error("read_only_observation_kill_switch_not_clear");
+      fail("read_only_observation_kill_switch_not_clear");
     }
     counts.readOnlyObservationTransport++; observationInvoked = true;
-    const observation = await caps.readOnlyObservationTransport.invokeReadOnlyObservation({
+    const observation = await callCapability(caps.readOnlyObservationTransport,
+      "invokeReadOnlyObservation", [{
       transportClass: TRANSPORT_CLASS,
       runnerHandleHash: runner.runnerHandleHash,
       adapterHandleHash: adapter.adapterHandleHash,
       operationOrder: qPacket.adapterArtifactManifest.operationOrder,
       observationCategoryOrder: qPacket.adapterArtifactManifest.observationCategoryOrder,
       destinationCount: 1, observationCount: 1, readOnly: true,
-    });
+      }], "read_only_observation");
     trace.push(RUNTIME_SEQUENCE[14]); classification = "blocked_after_observation";
     const observationIssues = validateSanitizedObservation(
       observation, packet.stepSPackage, packet.executionClockInstant);
-    if (observationIssues.length) throw new Error(observationIssues[0]);
+    if (observationIssues.length) fail(observationIssues[0]);
     trace.push(RUNTIME_SEQUENCE[15]);
-    receipt = makeReceipt(packet.stepSPackage, observation, packet.executionClockInstant,
+    receipt = makePreDisposalReceipt(packet.stepSPackage, observation,
+      packet.executionClockInstant,
       leaseHash, claimReceiptHash);
     counts.executionReceiptStore++;
-    const persisted = await caps.executionReceiptStore.persistSanitizedReceipt(receipt);
+    const persisted = await callCapability(caps.executionReceiptStore,
+      "persistSanitizedReceipt", [receipt], "sanitized_receipt_persistence");
     if (!exactKeys(persisted, ["outcome", "persistedReceiptHash"]) ||
         persisted.outcome !== "persisted" || persisted.persistedReceiptHash !==
-        receipt.sanitizedExecutionReceiptHash) throw new Error("sanitized_receipt_persistence_failed");
+        receipt.sanitizedExecutionReceiptHash) fail("sanitized_receipt_persistence_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[16]);
     evidence = makeEvidence(packet.stepSPackage, receipt, packet.executionClockInstant);
     counts.evidenceFinalizer++;
-    const finalized = await caps.evidenceFinalizer.finalizeSanitizedEvidence(evidence);
+    const finalized = await callCapability(caps.evidenceFinalizer,
+      "finalizeSanitizedEvidence", [evidence], "sanitized_evidence_finalization");
     if (!exactKeys(finalized, ["outcome", "finalizedEvidenceHash"]) ||
         finalized.outcome !== "finalized" || finalized.finalizedEvidenceHash !==
-        evidence.sanitizedEvidenceHash) throw new Error("sanitized_evidence_finalization_failed");
+        evidence.sanitizedEvidenceHash) fail("sanitized_evidence_finalization_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[17]);
   } catch (error) {
-    primaryIssue = error instanceof Error ? error.message : "controlled_runner_execution_failed";
+    primaryIssue = error instanceof RunnerFailure
+      ? error.issueCode : "controlled_runner_execution_failed";
   } finally {
     if (bound) {
       disposalAttempted = true; counts.environmentDisposalCoordinator++;
       try {
-        const disposed = await packet.runtimeCapabilities.environmentDisposalCoordinator
-          .disposeEnvironment({
+        const disposed = await callCapability(
+          packet.runtimeCapabilities.environmentDisposalCoordinator,
+          "disposeEnvironment", [{
             launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
             leaseAcquired, observationInvoked, receiptHash: receipt.sanitizedExecutionReceiptHash || null,
             evidenceHash: evidence.sanitizedEvidenceHash || null,
-          });
+          }], "environment_disposal");
         disposalCompleted = exactKeys(disposed, ["outcome", "disposalReceiptHash"]) &&
           disposed.outcome === "completed" && isSha(disposed.disposalReceiptHash);
-        if (disposalCompleted && !primaryIssue) trace.push(RUNTIME_SEQUENCE[18]);
-      } catch { disposalCompleted = false; }
+        if (disposalCompleted) {
+          disposalReceiptHash = disposed.disposalReceiptHash;
+          if (!primaryIssue) trace.push(RUNTIME_SEQUENCE[18]);
+        } else {
+          disposalIssue = "environment_disposal_invalid_outcome";
+        }
+      } catch (error) {
+        disposalCompleted = false;
+        disposalIssue = error instanceof RunnerFailure
+          ? error.issueCode : "environment_disposal_failed";
+      }
     }
     if (leaseAcquired) {
       executionTerminalState = !disposalCompleted ? "disposal_uncertain" :
@@ -488,20 +596,25 @@ async function runControlledLiveObservation(packet) {
           "failed_before_invocation") : "completed");
       counts.singleUseExecutionLeaseStore++;
       try {
-        const terminal = await packet.runtimeCapabilities.singleUseExecutionLeaseStore
-          .finalizeExecutionLease({ leaseHash, terminalState: executionTerminalState,
+        const terminal = await callCapability(
+          packet.runtimeCapabilities.singleUseExecutionLeaseStore,
+          "finalizeExecutionLease", [{ leaseHash, terminalState: executionTerminalState,
             adapterInvocationCount: observationInvoked ? 1 : 0,
-            disposalCompleted });
+            disposalCompleted }], "execution_lease_terminalization");
         if (!exactKeys(terminal, ["outcome", "terminalState"]) ||
             terminal.outcome !== "finalized" ||
             terminal.terminalState !== executionTerminalState) {
-          primaryIssue ||= "execution_lease_terminalization_failed";
+          primaryIssue ||= "execution_lease_terminalization_invalid_outcome";
         }
-      } catch { primaryIssue ||= "execution_lease_terminalization_failed"; }
+      } catch (error) {
+        primaryIssue ||= error instanceof RunnerFailure
+          ? error.issueCode : "execution_lease_terminalization_failed";
+      }
     }
   }
   if (!disposalCompleted && bound) {
-    return block("disposal_uncertain", primaryIssue || "environment_disposal_uncertain");
+    return block("disposal_uncertain",
+      disposalIssue || primaryIssue || "environment_disposal_uncertain");
   }
   if (primaryIssue) return block(classification, primaryIssue);
   if (!canonicalEqual(trace, RUNTIME_SEQUENCE.slice(0, 19)) ||
@@ -509,11 +622,14 @@ async function runControlledLiveObservation(packet) {
     return block("blocked_after_observation", "runtime_state_sequence_invalid");
   }
   trace.push(RUNTIME_SEQUENCE[19]);
+  closureReceipt = makeExecutionClosureReceipt(packet.stepSPackage, receipt, evidence,
+    disposalReceiptHash, executionTerminalState, trace, packet.executionClockInstant);
   return safeResult(PUBLIC_STATES[1], {
     executionTerminalState: "completed",
     runtimeStateSequence: trace, capabilityInvocationCounts: counts,
     adapterInvocationCount: 1, disposalAttempted, disposalCompleted,
     sanitizedExecutionReceipt: receipt, sanitizedEvidence: evidence,
+    sanitizedExecutionClosureReceipt: closureReceipt,
   });
 }
 
@@ -526,8 +642,10 @@ function buildCapabilityDescriptor(capabilityName) {
     hardTimeoutMilliseconds: 5000,
     automaticRetryAllowed: false, fallbackAllowed: false,
     externalDiscoveryAllowed: false,
-    readOnlyOnly: true, productionAccessAllowed: false,
-    maximumDestinationCount: 1, maximumObservationCount: 1,
+    productionAccessAllowed: false,
+    maximumDestinationCount: capabilityName === "readOnlyObservationTransport" ? 1 : 0,
+    maximumObservationCount: capabilityName === "readOnlyObservationTransport" ? 1 : 0,
+    mutabilityPolicy: buildMutabilityPolicy(capabilityName),
     sanitizationPolicy: { sanitizedOutputOnly: true, rawMaterialForbidden: true,
       credentialEchoForbidden: true, persistenceOutsideNamedStoreForbidden: true },
   };
@@ -536,9 +654,11 @@ function buildCapabilityDescriptor(capabilityName) {
 }
 
 module.exports = {
-  CAPABILITY_NAMES, CAPABILITY_SPECS, FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS,
+  CAPABILITY_MUTABILITY_POLICIES, CAPABILITY_NAMES, CAPABILITY_SPECS,
+  FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS,
   PUBLIC_STATES, RUNTIME_SEQUENCE, TRANSPORT_CLASS, VERSION,
-  buildCapabilityDescriptor, canonicalJson, hashContract, runControlledLiveObservation,
+  buildCapabilityDescriptor, buildMutabilityPolicy, canonicalJson, hashContract,
+  runControlledLiveObservation,
   sha256, validateCapabilityBundle, validateDirectStepSPackage,
   validateSanitizedObservation,
 };

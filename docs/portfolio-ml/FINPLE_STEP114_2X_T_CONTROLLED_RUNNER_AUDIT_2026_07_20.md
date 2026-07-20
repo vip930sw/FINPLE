@@ -9,6 +9,10 @@ Step T is fail-closed, dependency-injected, transport-neutral, and deterministic
 - exact public states, zero-input state, CLI default, and blocked CLI arguments
 - every exposed Step S validator plus evaluator and launch/summary canonical equality
 - exact capability keys, methods, sealed descriptors, fixed no-retry/no-fallback/no-discovery policy
+- role-specific capability mutability policies with provider/production mutation fixed false
+- common 5,000 ms timeout enforcement for every injected capability call
+- hanging bound capability, observation, and disposal fail-closed coverage without retry
+- external sensitive exception message and stack redaction to fixed issue codes
 - execution-clock expiry and runner/adapter byte digest mismatch before lease
 - already-existing or ambiguous lease/claim outcomes with adapter count zero
 - confirmation, authorization, and invocation consumption order and fail-closed behavior
@@ -16,6 +20,8 @@ Step T is fail-closed, dependency-injected, transport-neutral, and deterministic
 - exact transport class, operation/category order, sanitized hashes/timestamps, one destination, one observation
 - malformed/raw/order-drift output blocking after one invocation without retry
 - receipt/evidence persistence and exact returned-hash binding
+- post-disposal closure receipt binding disposal status/hash, lease terminal state, complete trace/hash, and Step S launch identity
+- no completed closure receipt after disposal failure or ambiguity
 - finally-equivalent disposal on failure and `disposal_uncertain` override
 - exact twenty-state successful trace and maximum one adapter invocation
 
@@ -31,11 +37,11 @@ The bounded clean-head repository-wide failure inventory is recorded in the Draf
 
 ## Validation record
 
-- Step T focused within combined runs: 14 passed, 0 failed
+- Step T corrective focused: 19 passed, 0 failed
 - S/R/Q/P/O/N/M/L/K/J/I/H/G/F/E/D/C/B/A/W regression chain: 661 passed, 0 failed before adding Step T
-- W through T combined: 675 passed, 0 failed
-- Q through T combined: 1,054 passed, 0 failed
-- N through T combined: 1,258 passed, 0 failed
+- W through T corrective combined: 680 passed, 0 failed
+- Q through T corrective combined: 1,059 passed, 0 failed
+- N through T corrective combined: 1,263 passed, 0 failed
 - Python candidate package: 16 passed, 0 failed
 - Python full discovery: 48 passed, 0 failed
 - scenario metrics: 80 passed, 0 failed
@@ -43,4 +49,5 @@ The bounded clean-head repository-wide failure inventory is recorded in the Draf
 - AI production smoke: passed
 - unstaged and staged diff checks: passed
 
-- clean-head repository-wide spec inventory: bounded at 240.7 seconds; 0 failing test names observed before timeout
+- prior clean-head repository-wide spec inventory: bounded at 240.7 seconds; 0 failing test names observed before timeout
+- corrective clean-head 240-second inventory: pending until the corrective commit exists
