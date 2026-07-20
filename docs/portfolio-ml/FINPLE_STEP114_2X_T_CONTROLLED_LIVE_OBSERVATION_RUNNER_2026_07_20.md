@@ -1,0 +1,56 @@
+# Step 114-2X-T controlled live-observation runner
+
+## Boundary
+
+Step 114-2X-T supplies an explicit dependency-injected orchestration core for one guarded, sanitized, read-only observation against a disposable-environment capability. The repository implementation cannot discover or construct a provider, network, database, credential, certificate, endpoint, runtime route, worker, or deployment dependency. Zero input and the CLI default remain `awaiting_external_controlled_live_observation_execution`.
+
+The only public states are:
+
+- `awaiting_external_controlled_live_observation_execution`
+- `controlled_live_observation_execution_completed`
+- `blocked`
+
+## Direct Step S validation
+
+Before any injected capability is called, the runner calls every exposed Step S validator directly: Step R package, confirmation context, confirmation policy, confirmation shape, signed confirmation, runner manifest, launch package, and summary validation. It normalizes the allowlist, reruns `evaluateRunnerLaunchPackage`, and requires canonical equality for both the supplied launch package and summary.
+
+The runtime clock is canonical UTC, must equal the explicitly supplied execution instant, and must be strictly earlier than the Step S effective launch expiry. Equality is expired and blocked.
+
+## Capability interfaces
+
+The exact capability bundle contains `runtimeArtifactSource`, `runnerArtifactLoader`, `adapterArtifactLoader`, `singleUseExecutionLeaseStore`, `atomicClaimStore`, `readOnlyObservationTransport`, `executionReceiptStore`, `evidenceFinalizer`, `environmentDisposalCoordinator`, and `executionClock`. Each capability has an exact method set and a domain-separated descriptor hash. Its descriptor fixes automatic retry, fallback, and external discovery to false and sanitized-only to true.
+
+Runner and adapter bytes are returned only by the injected artifact source. The core computes SHA-256 in memory and checks exact equality with the signed Step S runner manifest and signed Step Q adapter manifest before either loader can run.
+
+## Atomic use and failure semantics
+
+The execution lease and claim must each return one unambiguous `acquired` result. Confirmation, operator authorization, and invocation are then consumed exactly once, in that order. Any other lease, claim, or consumption outcome blocks before the adapter. No operation retries or falls back.
+
+Failures are classified as `blocked_before_runtime_binding`, `blocked_before_lease`, `blocked_before_observation`, `blocked_after_observation`, or `disposal_uncertain`. Once runtime dependencies have been bound, a finally-equivalent disposal call is attempted even when a later step fails. Missing, failed, or ambiguous disposal is always `disposal_uncertain`.
+
+The transport contract is exactly `disposable_environment_read_only_observer`, one destination, one observation, and the signed Step Q operation/category order. Output may contain only required sanitized SHA-256 placeholders and canonical timestamps. Raw material, writes, SQL, DDL, DML, migration, scenario execution, production access, shared-environment access, retries, or a second invocation are not represented or allowed.
+
+## Runtime sequence
+
+1. `step_s_package_revalidated`
+2. `runtime_capabilities_validated`
+3. `runner_artifact_bytes_read`
+4. `runner_artifact_digest_verified`
+5. `adapter_artifact_bytes_read`
+6. `adapter_artifact_digest_verified`
+7. `runtime_dependencies_bound`
+8. `single_use_execution_lease_acquired`
+9. `single_use_claim_acquired`
+10. `execution_confirmation_consumed`
+11. `operator_authorization_consumed`
+12. `invocation_consumed`
+13. `runner_loaded`
+14. `adapter_loaded`
+15. `read_only_observation_invoked_once`
+16. `sanitized_observation_validated`
+17. `sanitized_execution_receipt_persisted`
+18. `sanitized_evidence_finalized`
+19. `environment_disposal_completed`
+20. `controlled_live_observation_execution_completed`
+
+The sequence is emitted only when those exact transitions occur; a skip, reorder, duplicate, extension, second adapter invocation, or incomplete disposal cannot produce the completed state.
