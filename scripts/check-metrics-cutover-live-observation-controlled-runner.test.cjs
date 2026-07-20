@@ -171,6 +171,50 @@ test("capabilities receive deterministic operation identity deadline and AbortSi
     assert.equal(context.abortSignal.aborted, false);
   }
   assert.notEqual(contexts[0].operationId, contexts[1].operationId);
+  const plan = subject.buildOperationPlan(built.stepSPackage.oneRunRunnerLaunchPackage
+    .oneRunRunnerLaunchPackageHash);
+  const leaseOperation = plan.find((entry) => entry.stage === "execution_lease_acquisition");
+  const receiptOperation = plan.find((entry) => entry.stage === "sanitized_receipt_persistence");
+  assert.deepEqual({ operationId: contexts[0].operationId,
+    idempotencyKey: contexts[0].idempotencyKey }, {
+    operationId: leaseOperation.operationId,
+    idempotencyKey: leaseOperation.idempotencyKey,
+  });
+  assert.deepEqual({ operationId: contexts[1].operationId,
+    idempotencyKey: contexts[1].idempotencyKey }, {
+    operationId: receiptOperation.operationId,
+    idempotencyKey: receiptOperation.idempotencyKey,
+  });
+});
+
+test("pure operation plan covers every primary capability call in exact order", () => {
+  const built = fixture.buildFixture();
+  const seed = built.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash;
+  const plan = subject.buildOperationPlan(seed);
+  assert.equal(plan.length, 21);
+  assert.deepEqual(plan.map(({ sequence, stage, capabilityName, methodName }) => ({
+    sequence, stage, capabilityName, methodName,
+  })), subject.OPERATION_PLAN_DEFINITIONS.map((definition, index) => ({
+    sequence: index + 1, ...definition,
+  })));
+  assert.equal(new Set(plan.map((entry) => entry.operationId)).size, plan.length);
+  assert.equal(new Set(plan.map((entry) => entry.idempotencyKey)).size, plan.length);
+  assert.match(subject.hashOperationPlan(plan), /^[0-9a-f]{64}$/);
+});
+
+test("successful runner capability contexts equal the complete pure operation plan", async () => {
+  const operationContexts = [];
+  const built = fixture.buildFixture({ operationContexts });
+  const result = await subject.runControlledLiveObservation(built.packet);
+  assert.equal(result.status, subject.PUBLIC_STATES[1], JSON.stringify(result.blockingIssues));
+  const expected = subject.buildOperationPlan(built.stepSPackage.oneRunRunnerLaunchPackage
+    .oneRunRunnerLaunchPackageHash);
+  assert.deepEqual(operationContexts.map(({ operationId, idempotencyKey }) => ({
+    operationId, idempotencyKey,
+  })), expected.map(({ operationId, idempotencyKey }) => ({
+    operationId, idempotencyKey,
+  })));
+  assert.equal(operationContexts.length, 21);
 });
 
 test("capability mutability policies are role-specific and resealed drift blocks", async () => {

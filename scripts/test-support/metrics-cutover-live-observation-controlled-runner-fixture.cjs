@@ -153,7 +153,17 @@ function buildCapabilities(stepSPackage, options = {}) {
       ? options[name] : fallback;
     return typeof selected === "function" ? selected(...args) : selected;
   };
-  const wrap = (name, fn) => async (...args) => { calls.push(name); return fn(...args); };
+  const wrap = (name, fn) => async (...args) => {
+    calls.push(name);
+    const context = args.at(-1);
+    if (Array.isArray(options.operationContexts) && context &&
+        typeof context.operationId === "string" &&
+        typeof context.idempotencyKey === "string") {
+      options.operationContexts.push({ name, operationId: context.operationId,
+        idempotencyKey: context.idempotencyKey });
+    }
+    return fn(...args);
+  };
   const cap = (name, methods) => ({ descriptor: subject.buildCapabilityDescriptor(name), ...methods });
   const reconcile = (callName, optionName, fallback = {
     outcome: "aborted", acknowledgment: "aborted", resourceHash: null,
