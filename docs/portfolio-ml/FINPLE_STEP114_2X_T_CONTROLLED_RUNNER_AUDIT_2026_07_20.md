@@ -43,4 +43,4 @@ The bounded clean-head repository-wide failure inventory is recorded in the Draf
 - AI production smoke: passed
 - unstaged and staged diff checks: passed
 
-The clean-head 240-second repository-wide spec inventory is intentionally pending until the corrective commit exists and is run from that committed head.
+- clean-head repository-wide spec inventory: bounded at 240.7 seconds; 0 failing test names observed before timeout
