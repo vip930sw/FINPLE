@@ -43,17 +43,20 @@ const FIXED_FALSE_FIELDS = Object.freeze([
   "runtimeRouteAdded", "cronAdded", "workerAdded", "deploymentWorkflowChanged",
 ]);
 const CAPABILITY_SPECS = Object.freeze({
-  runtimeArtifactSource: ["readRunnerArtifactBytes", "readAdapterArtifactBytes"],
-  runnerArtifactLoader: ["loadRunner"],
-  adapterArtifactLoader: ["loadAdapter"],
+  runtimeArtifactSource: ["readRunnerArtifactBytes", "readAdapterArtifactBytes",
+    "reconcileOperationOutcome"],
+  runnerArtifactLoader: ["loadRunner", "reconcileOperationOutcome"],
+  adapterArtifactLoader: ["loadAdapter", "reconcileOperationOutcome"],
   singleUseExecutionLeaseStore: ["acquireExecutionLease", "consumeExecutionConfirmation",
-    "consumeOperatorAuthorization", "consumeInvocation", "finalizeExecutionLease"],
-  atomicClaimStore: ["acquireClaim"],
-  readOnlyObservationTransport: ["checkKillSwitch", "invokeReadOnlyObservation"],
-  executionReceiptStore: ["persistSanitizedReceipt"],
-  evidenceFinalizer: ["finalizeSanitizedEvidence"],
-  environmentDisposalCoordinator: ["disposeEnvironment"],
-  executionClock: ["now"],
+    "consumeOperatorAuthorization", "consumeInvocation", "finalizeExecutionLease",
+    "reconcileOperationOutcome"],
+  atomicClaimStore: ["acquireClaim", "reconcileOperationOutcome"],
+  readOnlyObservationTransport: ["checkKillSwitch", "invokeReadOnlyObservation",
+    "reconcileOperationOutcome"],
+  executionReceiptStore: ["persistSanitizedReceipt", "reconcileOperationOutcome"],
+  evidenceFinalizer: ["finalizeSanitizedEvidence", "reconcileOperationOutcome"],
+  environmentDisposalCoordinator: ["disposeEnvironment", "reconcileOperationOutcome"],
+  executionClock: ["now", "reconcileOperationOutcome"],
 });
 const CAPABILITY_NAMES = Object.freeze(Object.keys(CAPABILITY_SPECS));
 const CAPABILITY_MUTABILITY_POLICIES = Object.freeze({
@@ -74,21 +77,101 @@ const directStepSValidationCache = new WeakMap();
 const CAPABILITY_TIMEOUT = Symbol("capability_timeout");
 
 class RunnerFailure {
-  constructor(issueCode) { this.issueCode = issueCode; }
+  constructor(issueCode, details = {}) {
+    this.issueCode = issueCode;
+    this.operationId = details.operationId || null;
+    this.terminalOutcome = details.terminalOutcome || null;
+    this.acknowledgment = details.acknowledgment || null;
+    this.resourceHash = details.resourceHash || null;
+  }
 }
 function fail(issueCode) { throw new RunnerFailure(issueCode); }
-async function callCapability(capability, method, args, stage) {
-  const timeoutMilliseconds = capability?.descriptor?.hardTimeoutMilliseconds;
+function deriveOperationIdentity(seed, stage, sequence) {
+  const digest = hashContract("FINPLE_STEP114_2X_T_RUNTIME_OPERATION\0",
+    { seed, stage, sequence });
+  return { operationId: `step114-2x-t-operation-${digest}`,
+    idempotencyKey: digest };
+}
+function computeCapabilityDeadline(capability, currentClockInstant, effectiveExpiry) {
+  const current = parseInstant(currentClockInstant);
+  const expiry = parseInstant(effectiveExpiry);
+  const declared = capability?.descriptor?.hardTimeoutMilliseconds;
+  if (current === null || expiry === null || !Number.isInteger(declared) ||
+      declared <= 0 || current >= expiry) return null;
+  const duration = Math.min(declared, expiry - current);
+  return { deadline: new Date(current + duration).toISOString(),
+    timeoutMilliseconds: duration };
+}
+function validateReconciliation(value) {
+  return exactKeys(value, ["outcome", "acknowledgment", "resourceHash"]) &&
+    ["aborted", "not_committed", "committed", "ambiguous"].includes(value.outcome) &&
+    ["aborted", "settled"].includes(value.acknowledgment) &&
+    (value.outcome === "committed" ? isSha(value.resourceHash) :
+      (value.outcome === "ambiguous"
+        ? (value.resourceHash === null || isSha(value.resourceHash))
+        : value.resourceHash === null));
+}
+async function reconcileTimedOutOperation(capability, operationContext, timing, stage) {
+  const reconciliationAbortController = new AbortController();
+  const reconciliationContext = { ...operationContext,
+    abortSignal: reconciliationAbortController.signal };
   let timer;
   try {
     return await Promise.race([
-      Promise.resolve().then(() => capability[method](...args)),
+      Promise.resolve().then(() => capability.reconcileOperationOutcome(
+        { operationId: operationContext.operationId,
+          idempotencyKey: operationContext.idempotencyKey },
+        reconciliationContext)),
       new Promise((unused, reject) => {
-        timer = setTimeout(() => reject(CAPABILITY_TIMEOUT), timeoutMilliseconds);
+        timer = setTimeout(() => reject(CAPABILITY_TIMEOUT),
+          timing.timeoutMilliseconds);
+      }),
+    ]);
+  } catch {
+    reconciliationAbortController.abort("reconciliation_deadline_exceeded");
+    throw new RunnerFailure(`${stage}_timeout_ambiguous`, {
+      operationId: operationContext.operationId,
+      terminalOutcome: "ambiguous",
+    });
+  } finally { clearTimeout(timer); }
+}
+async function callCapability(capability, method, args, stage, timingContext) {
+  const timing = computeCapabilityDeadline(capability,
+    timingContext.currentClockInstant, timingContext.effectiveExpiry);
+  if (!timing) fail(`${stage}_deadline_expired`);
+  const identity = deriveOperationIdentity(timingContext.operationSeed,
+    stage, timingContext.operationSequence);
+  const abortController = new AbortController();
+  const operationContext = { ...identity, deadline: timing.deadline,
+    abortSignal: abortController.signal };
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => capability[method](...args, operationContext)),
+      new Promise((unused, reject) => {
+        timer = setTimeout(() => reject(CAPABILITY_TIMEOUT), timing.timeoutMilliseconds);
       }),
     ]);
   } catch (error) {
-    fail(error === CAPABILITY_TIMEOUT ? `${stage}_timeout` : `${stage}_failed`);
+    if (error !== CAPABILITY_TIMEOUT) {
+      throw new RunnerFailure(`${stage}_failed`, { operationId: identity.operationId });
+    }
+    abortController.abort("capability_deadline_exceeded");
+    let reconciled;
+    try {
+      reconciled = await reconcileTimedOutOperation(capability, operationContext,
+        timing, stage);
+    } catch (reconciliationFailure) { throw reconciliationFailure; }
+    if (!validateReconciliation(reconciled)) {
+      throw new RunnerFailure(`${stage}_timeout_ambiguous`, {
+        operationId: identity.operationId, terminalOutcome: "ambiguous" });
+    }
+    throw new RunnerFailure(`${stage}_timeout_${reconciled.outcome}`, {
+      operationId: identity.operationId,
+      terminalOutcome: reconciled.outcome,
+      acknowledgment: reconciled.acknowledgment,
+      resourceHash: reconciled.resourceHash,
+    });
   } finally {
     clearTimeout(timer);
   }
@@ -228,6 +311,9 @@ function validateCapabilityBundle(value) {
     const descriptor = capability.descriptor;
     const descriptorKeys = ["capabilityName", "capabilityClass", "contractVersion",
       "methodNames", "maximumInvocationCount", "hardTimeoutMilliseconds",
+      "cooperativeCancellationRequired", "deadlineEnforcementRequired",
+      "postTimeoutOutcomeReconciliationRequired", "lateCompletionForbidden",
+      "lateOutcomePolicy", "terminalOutcomes", "invocationContextFields",
       "automaticRetryAllowed", "fallbackAllowed", "externalDiscoveryAllowed",
       "productionAccessAllowed", "maximumDestinationCount",
       "maximumObservationCount", "mutabilityPolicy", "sanitizationPolicy",
@@ -242,6 +328,16 @@ function validateCapabilityBundle(value) {
         !canonicalEqual(descriptor.methodNames, methods) ||
         descriptor.maximumInvocationCount !== methods.length ||
         descriptor.hardTimeoutMilliseconds !== 5000 ||
+        descriptor.cooperativeCancellationRequired !== true ||
+        descriptor.deadlineEnforcementRequired !== true ||
+        descriptor.postTimeoutOutcomeReconciliationRequired !== true ||
+        descriptor.lateCompletionForbidden !== false ||
+        descriptor.lateOutcomePolicy !==
+          "read_only_terminal_outcome_reconciliation_required" ||
+        !canonicalEqual(descriptor.terminalOutcomes,
+          ["aborted", "not_committed", "committed", "ambiguous"]) ||
+        !canonicalEqual(descriptor.invocationContextFields,
+          ["operationId", "idempotencyKey", "deadline", "abortSignal"]) ||
         descriptor.automaticRetryAllowed !== false ||
         descriptor.fallbackAllowed !== false || descriptor.externalDiscoveryAllowed !== false ||
         descriptor.productionAccessAllowed !== false ||
@@ -388,6 +484,7 @@ async function runControlledLiveObservation(packet) {
   const counts = Object.fromEntries(CAPABILITY_NAMES.map((name) => [name, 0]));
   const trace = [];
   let bound = false; let leaseAcquired = false; let observationInvoked = false;
+  let observationAbortAcknowledged = false;
   let leaseHash = null; let claimReceiptHash = null;
   let disposalReceiptHash = null;
   let disposalAttempted = false; let disposalCompleted = false;
@@ -417,16 +514,39 @@ async function runControlledLiveObservation(packet) {
   if (capabilityIssues.length) return block("blocked_before_runtime_binding", capabilityIssues[0]);
   trace.push(RUNTIME_SEQUENCE[1]);
   const caps = packet.runtimeCapabilities;
+  const effectiveExpiry = packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry;
+  let currentClockInstant = packet.executionClockInstant;
+  let operationSequence = 0;
+  const operationSeed = packet.stepSPackage.oneRunRunnerLaunchPackage
+    .oneRunRunnerLaunchPackageHash;
+  const invoke = async (capabilityName, method, args, stage) => {
+    counts[capabilityName]++;
+    return callCapability(caps[capabilityName], method, args, stage, {
+      currentClockInstant, effectiveExpiry, operationSeed,
+      operationSequence: ++operationSequence,
+    });
+  };
+  const refreshExecutionClock = async (stage) => {
+    const observedClock = await invoke("executionClock", "now", [], stage);
+    if (parseInstant(observedClock) === null ||
+        parseInstant(observedClock) < parseInstant(currentClockInstant) ||
+        parseInstant(observedClock) >= parseInstant(effectiveExpiry)) {
+      fail(`${stage}_effective_expiry_reached`);
+    }
+    currentClockInstant = observedClock;
+  };
   let primaryIssue = null; let classification = "blocked_before_lease";
   try {
-    counts.executionClock++; const now = await callCapability(
-      caps.executionClock, "now", [], "execution_clock");
-    if (now !== packet.executionClockInstant || parseInstant(now) === null ||
-        parseInstant(now) >= parseInstant(packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry)) {
+    if (parseInstant(packet.executionClockInstant) === null ||
+        parseInstant(packet.executionClockInstant) >= parseInstant(effectiveExpiry)) {
       return block("blocked_before_runtime_binding", "controlled_runner_execution_clock_invalid");
     }
-    counts.runtimeArtifactSource++; const runnerArtifact = await callCapability(
-      caps.runtimeArtifactSource, "readRunnerArtifactBytes", [], "runner_artifact_read");
+    const now = await invoke("executionClock", "now", [], "execution_clock");
+    if (now !== packet.executionClockInstant || parseInstant(now) === null) {
+      return block("blocked_before_runtime_binding", "controlled_runner_execution_clock_invalid");
+    }
+    const runnerArtifact = await invoke("runtimeArtifactSource",
+      "readRunnerArtifactBytes", [], "runner_artifact_read");
     trace.push(RUNTIME_SEQUENCE[2]);
     const runnerManifest = packet.stepSPackage.inputPacket.runnerImplementationManifest;
     if (!isRecord(runnerArtifact) || !exactKeys(runnerArtifact, ["artifactBytes",
@@ -439,8 +559,8 @@ async function runControlledLiveObservation(packet) {
       return block("blocked_before_runtime_binding", "runner_artifact_digest_mismatch");
     }
     trace.push(RUNTIME_SEQUENCE[3]);
-    counts.runtimeArtifactSource++; const adapterArtifact = await callCapability(
-      caps.runtimeArtifactSource, "readAdapterArtifactBytes", [], "adapter_artifact_read");
+    const adapterArtifact = await invoke("runtimeArtifactSource",
+      "readAdapterArtifactBytes", [], "adapter_artifact_read");
     trace.push(RUNTIME_SEQUENCE[4]);
     const { qPacket, oPacket, nPacket } = nested(packet.stepSPackage);
     const adapterManifest = qPacket.adapterArtifactManifest;
@@ -455,9 +575,10 @@ async function runControlledLiveObservation(packet) {
       return block("blocked_before_runtime_binding", "adapter_artifact_digest_mismatch");
     }
     trace.push(RUNTIME_SEQUENCE[5], RUNTIME_SEQUENCE[6]); bound = true;
-    counts.singleUseExecutionLeaseStore++;
-    const lease = await callCapability(caps.singleUseExecutionLeaseStore,
-      "acquireExecutionLease", [{
+    await refreshExecutionClock("pre_execution_lease_clock");
+    let lease;
+    try {
+      lease = await invoke("singleUseExecutionLeaseStore", "acquireExecutionLease", [{
       launchPackageId: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageId,
       launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
       executionConfirmationId: packet.stepSPackage.inputPacket.executionConfirmation.executionConfirmationId,
@@ -475,12 +596,20 @@ async function runControlledLiveObservation(packet) {
       expiresAt: packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry,
       destinationCount: 1, observationCount: 1,
       }], "execution_lease_acquisition");
+    } catch (error) {
+      if (error instanceof RunnerFailure && error.terminalOutcome === "committed" &&
+          isSha(error.resourceHash)) {
+        leaseAcquired = true;
+        leaseHash = error.resourceHash;
+      }
+      throw error;
+    }
     if (!exactKeys(lease, ["outcome", "leaseHash"]) || lease.outcome !== "acquired" ||
         !isSha(lease.leaseHash)) fail("single_use_execution_lease_not_acquired");
     leaseAcquired = true; leaseHash = lease.leaseHash;
     trace.push(RUNTIME_SEQUENCE[7]); classification = "blocked_before_observation";
-    counts.atomicClaimStore++;
-    const claim = await callCapability(caps.atomicClaimStore, "acquireClaim", [{
+    await refreshExecutionClock("pre_claim_clock");
+    const claim = await invoke("atomicClaimStore", "acquireClaim", [{
       claimKeyHash: oPacket.executorInput.claimKeyHash,
       claimNonceHash: oPacket.executorInput.claimNonceHash,
       expiresAt: packet.stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry,
@@ -494,12 +623,11 @@ async function runControlledLiveObservation(packet) {
       ["consumeOperatorAuthorization", RUNTIME_SEQUENCE[10], qPacket.operatorAuthorization],
       ["consumeInvocation", RUNTIME_SEQUENCE[11], nPacket.invocation],
     ]) {
-      counts.singleUseExecutionLeaseStore++;
       const stage = method === "consumeExecutionConfirmation"
         ? "execution_confirmation_consumption"
         : method === "consumeOperatorAuthorization"
           ? "operator_authorization_consumption" : "invocation_consumption";
-      const consumed = await callCapability(caps.singleUseExecutionLeaseStore, method, [{
+      const consumed = await invoke("singleUseExecutionLeaseStore", method, [{
         id: item.executionConfirmationId || item.operatorAuthorizationId || item.invocationId,
         hash: item.executionConfirmationHash || item.operatorAuthorizationHash || item.invocationHash,
         leaseHash: lease.leaseHash,
@@ -509,54 +637,63 @@ async function runControlledLiveObservation(packet) {
       }
       trace.push(state);
     }
-    counts.runnerArtifactLoader++; const runner = await callCapability(
-      caps.runnerArtifactLoader, "loadRunner", [runnerArtifact.artifactBytes], "runner_load");
+    const runner = await invoke("runnerArtifactLoader", "loadRunner",
+      [runnerArtifact.artifactBytes], "runner_load");
     if (!exactKeys(runner, ["outcome", "runnerHandleHash"]) || runner.outcome !== "loaded" ||
         !isSha(runner.runnerHandleHash)) fail("runner_load_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[12]);
-    counts.adapterArtifactLoader++; const adapter = await callCapability(
-      caps.adapterArtifactLoader, "loadAdapter", [adapterArtifact.artifactBytes], "adapter_load");
+    const adapter = await invoke("adapterArtifactLoader", "loadAdapter",
+      [adapterArtifact.artifactBytes], "adapter_load");
     if (!exactKeys(adapter, ["outcome", "adapterHandleHash"]) || adapter.outcome !== "loaded" ||
         !isSha(adapter.adapterHandleHash)) fail("adapter_load_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[13]);
-    counts.readOnlyObservationTransport++;
-    const killSwitch = await callCapability(caps.readOnlyObservationTransport,
-      "checkKillSwitch", [{
+    await refreshExecutionClock("pre_observation_clock");
+    const killSwitch = await invoke("readOnlyObservationTransport", "checkKillSwitch", [{
       launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
-      executionClockInstant: packet.executionClockInstant,
+      executionClockInstant: currentClockInstant,
       }], "kill_switch_check");
     if (!exactKeys(killSwitch, ["outcome", "checkedAt"]) ||
-        killSwitch.outcome !== "clear" || killSwitch.checkedAt !== packet.executionClockInstant) {
+        killSwitch.outcome !== "clear" || killSwitch.checkedAt !== currentClockInstant) {
       fail("read_only_observation_kill_switch_not_clear");
     }
-    counts.readOnlyObservationTransport++; observationInvoked = true;
-    const observation = await callCapability(caps.readOnlyObservationTransport,
-      "invokeReadOnlyObservation", [{
-      transportClass: TRANSPORT_CLASS,
-      runnerHandleHash: runner.runnerHandleHash,
-      adapterHandleHash: adapter.adapterHandleHash,
-      operationOrder: qPacket.adapterArtifactManifest.operationOrder,
-      observationCategoryOrder: qPacket.adapterArtifactManifest.observationCategoryOrder,
-      destinationCount: 1, observationCount: 1, readOnly: true,
-      }], "read_only_observation");
+    observationInvoked = true;
+    let observation;
+    try {
+      observation = await invoke("readOnlyObservationTransport",
+        "invokeReadOnlyObservation", [{
+          transportClass: TRANSPORT_CLASS,
+          runnerHandleHash: runner.runnerHandleHash,
+          adapterHandleHash: adapter.adapterHandleHash,
+          operationOrder: qPacket.adapterArtifactManifest.operationOrder,
+          observationCategoryOrder: qPacket.adapterArtifactManifest.observationCategoryOrder,
+          destinationCount: 1, observationCount: 1, readOnly: true,
+        }], "read_only_observation");
+      observationAbortAcknowledged = true;
+    } catch (error) {
+      if (error instanceof RunnerFailure) {
+        observationAbortAcknowledged = error.issueCode.includes("_timeout_")
+          ? ["aborted", "settled"].includes(error.acknowledgment) : true;
+      }
+      throw error;
+    }
     trace.push(RUNTIME_SEQUENCE[14]); classification = "blocked_after_observation";
     const observationIssues = validateSanitizedObservation(
-      observation, packet.stepSPackage, packet.executionClockInstant);
+      observation, packet.stepSPackage, currentClockInstant);
     if (observationIssues.length) fail(observationIssues[0]);
     trace.push(RUNTIME_SEQUENCE[15]);
+    await refreshExecutionClock("pre_receipt_persistence_clock");
     receipt = makePreDisposalReceipt(packet.stepSPackage, observation,
-      packet.executionClockInstant,
+      currentClockInstant,
       leaseHash, claimReceiptHash);
-    counts.executionReceiptStore++;
-    const persisted = await callCapability(caps.executionReceiptStore,
+    const persisted = await invoke("executionReceiptStore",
       "persistSanitizedReceipt", [receipt], "sanitized_receipt_persistence");
     if (!exactKeys(persisted, ["outcome", "persistedReceiptHash"]) ||
         persisted.outcome !== "persisted" || persisted.persistedReceiptHash !==
         receipt.sanitizedExecutionReceiptHash) fail("sanitized_receipt_persistence_invalid_outcome");
     trace.push(RUNTIME_SEQUENCE[16]);
-    evidence = makeEvidence(packet.stepSPackage, receipt, packet.executionClockInstant);
-    counts.evidenceFinalizer++;
-    const finalized = await callCapability(caps.evidenceFinalizer,
+    await refreshExecutionClock("pre_evidence_persistence_clock");
+    evidence = makeEvidence(packet.stepSPackage, receipt, currentClockInstant);
+    const finalized = await invoke("evidenceFinalizer",
       "finalizeSanitizedEvidence", [evidence], "sanitized_evidence_finalization");
     if (!exactKeys(finalized, ["outcome", "finalizedEvidenceHash"]) ||
         finalized.outcome !== "finalized" || finalized.finalizedEvidenceHash !==
@@ -566,11 +703,10 @@ async function runControlledLiveObservation(packet) {
     primaryIssue = error instanceof RunnerFailure
       ? error.issueCode : "controlled_runner_execution_failed";
   } finally {
-    if (bound) {
-      disposalAttempted = true; counts.environmentDisposalCoordinator++;
+    if (bound && (!observationInvoked || observationAbortAcknowledged)) {
+      disposalAttempted = true;
       try {
-        const disposed = await callCapability(
-          packet.runtimeCapabilities.environmentDisposalCoordinator,
+        const disposed = await invoke("environmentDisposalCoordinator",
           "disposeEnvironment", [{
             launchPackageHash: packet.stepSPackage.oneRunRunnerLaunchPackage.oneRunRunnerLaunchPackageHash,
             leaseAcquired, observationInvoked, receiptHash: receipt.sanitizedExecutionReceiptHash || null,
@@ -589,15 +725,15 @@ async function runControlledLiveObservation(packet) {
         disposalIssue = error instanceof RunnerFailure
           ? error.issueCode : "environment_disposal_failed";
       }
+    } else if (bound && observationInvoked && !observationAbortAcknowledged) {
+      disposalIssue = primaryIssue || "observation_abort_acknowledgment_missing";
     }
     if (leaseAcquired) {
       executionTerminalState = !disposalCompleted ? "disposal_uncertain" :
         (primaryIssue ? (observationInvoked ? "failed_after_invocation" :
           "failed_before_invocation") : "completed");
-      counts.singleUseExecutionLeaseStore++;
       try {
-        const terminal = await callCapability(
-          packet.runtimeCapabilities.singleUseExecutionLeaseStore,
+        const terminal = await invoke("singleUseExecutionLeaseStore",
           "finalizeExecutionLease", [{ leaseHash, terminalState: executionTerminalState,
             adapterInvocationCount: observationInvoked ? 1 : 0,
             disposalCompleted }], "execution_lease_terminalization");
@@ -623,7 +759,7 @@ async function runControlledLiveObservation(packet) {
   }
   trace.push(RUNTIME_SEQUENCE[19]);
   closureReceipt = makeExecutionClosureReceipt(packet.stepSPackage, receipt, evidence,
-    disposalReceiptHash, executionTerminalState, trace, packet.executionClockInstant);
+    disposalReceiptHash, executionTerminalState, trace, currentClockInstant);
   return safeResult(PUBLIC_STATES[1], {
     executionTerminalState: "completed",
     runtimeStateSequence: trace, capabilityInvocationCounts: counts,
@@ -640,6 +776,13 @@ function buildCapabilityDescriptor(capabilityName) {
     methodNames: [...CAPABILITY_SPECS[capabilityName]],
     maximumInvocationCount: CAPABILITY_SPECS[capabilityName].length,
     hardTimeoutMilliseconds: 5000,
+    cooperativeCancellationRequired: true,
+    deadlineEnforcementRequired: true,
+    postTimeoutOutcomeReconciliationRequired: true,
+    lateCompletionForbidden: false,
+    lateOutcomePolicy: "read_only_terminal_outcome_reconciliation_required",
+    terminalOutcomes: ["aborted", "not_committed", "committed", "ambiguous"],
+    invocationContextFields: ["operationId", "idempotencyKey", "deadline", "abortSignal"],
     automaticRetryAllowed: false, fallbackAllowed: false,
     externalDiscoveryAllowed: false,
     productionAccessAllowed: false,

@@ -94,6 +94,19 @@ test("complete synthetic run directly revalidates Step S and follows exact seque
 test("capability contracts use exact keys sealed descriptors and no discovery", async () => {
   const built = fixture.buildFixture();
   assert.deepEqual(subject.validateCapabilityBundle(built.packet.runtimeCapabilities), []);
+  for (const capability of Object.values(built.packet.runtimeCapabilities)) {
+    const descriptor = capability.descriptor;
+    assert.equal(descriptor.cooperativeCancellationRequired, true);
+    assert.equal(descriptor.deadlineEnforcementRequired, true);
+    assert.equal(descriptor.postTimeoutOutcomeReconciliationRequired, true);
+    assert.equal(descriptor.lateCompletionForbidden, false);
+    assert.equal(descriptor.lateOutcomePolicy,
+      "read_only_terminal_outcome_reconciliation_required");
+    assert.deepEqual(descriptor.terminalOutcomes,
+      ["aborted", "not_committed", "committed", "ambiguous"]);
+    assert.deepEqual(descriptor.invocationContextFields,
+      ["operationId", "idempotencyKey", "deadline", "abortSignal"]);
+  }
   delete built.packet.runtimeCapabilities.atomicClaimStore;
   const missing = await subject.runControlledLiveObservation(built.packet);
   assert.equal(missing.status, "blocked");
@@ -115,6 +128,49 @@ test("capability contracts use exact keys sealed descriptors and no discovery", 
   const tamperedResult = await subject.runControlledLiveObservation(tampered.packet);
   assert.equal(tamperedResult.status, "blocked");
   assert.deepEqual(tampered.calls, []);
+
+  const cancellationDrift = fixture.buildFixture();
+  const descriptor = cancellationDrift.packet.runtimeCapabilities.atomicClaimStore.descriptor;
+  const driftBody = { ...descriptor, cooperativeCancellationRequired: false };
+  delete driftBody.descriptorHash;
+  cancellationDrift.packet.runtimeCapabilities.atomicClaimStore.descriptor = {
+    ...driftBody, descriptorHash: subject.hashContract(
+      "FINPLE_STEP114_2X_T_CAPABILITY_DESCRIPTOR\0", driftBody),
+  };
+  const cancellationResult = await subject.runControlledLiveObservation(
+    cancellationDrift.packet);
+  assert.equal(cancellationResult.status, "blocked");
+  assert.ok(cancellationResult.blockingIssues.includes(
+    "runtime_capability_descriptor_invalid:atomicClaimStore"));
+  assert.deepEqual(cancellationDrift.calls, []);
+});
+
+test("capabilities receive deterministic operation identity deadline and AbortSignal", async () => {
+  const contexts = [];
+  const built = fixture.buildFixture({
+    lease: (input, context) => {
+      contexts.push(context);
+      return { outcome: "acquired", leaseHash: "3".repeat(64) };
+    },
+    receipt: (receipt, context) => {
+      contexts.push(context);
+      return { outcome: "persisted",
+        persistedReceiptHash: receipt.sanitizedExecutionReceiptHash };
+    },
+  });
+  const result = await subject.runControlledLiveObservation(built.packet);
+  assert.equal(result.status, subject.PUBLIC_STATES[1], JSON.stringify(result.blockingIssues));
+  assert.equal(contexts.length, 2);
+  for (const context of contexts) {
+    assert.deepEqual(Object.keys(context),
+      ["operationId", "idempotencyKey", "deadline", "abortSignal"]);
+    assert.match(context.operationId, /^step114-2x-t-operation-[0-9a-f]{64}$/);
+    assert.match(context.idempotencyKey, /^[0-9a-f]{64}$/);
+    assert.equal(context.deadline, "2026-07-18T00:03:27.000Z");
+    assert.ok(context.abortSignal instanceof AbortSignal);
+    assert.equal(context.abortSignal.aborted, false);
+  }
+  assert.notEqual(contexts[0].operationId, contexts[1].operationId);
 });
 
 test("capability mutability policies are role-specific and resealed drift blocks", async () => {
@@ -262,14 +318,16 @@ test("ambiguous atomic lease terminalization blocks completed publication", asyn
 
 test("hanging bound capability times out once then disposes and terminalizes", async () => {
   const failed = await expectBlocked({ claim: () => new Promise(() => {}) },
-    "claim_acquisition_timeout", { acquireClaim: 1, invokeReadOnlyObservation: 0,
+    "claim_acquisition_timeout_aborted", { acquireClaim: 1,
+      reconcileAtomicClaimStore: 1, invokeReadOnlyObservation: 0,
       disposeEnvironment: 1, finalizeExecutionLease: 1 });
   assert.equal(failed.result.failureClassification, "blocked_before_observation");
 });
 
 test("hanging observation times out without a second invocation", async () => {
   const failed = await expectBlocked({ observation: () => new Promise(() => {}) },
-    "read_only_observation_timeout", { invokeReadOnlyObservation: 1,
+    "read_only_observation_timeout_aborted", { invokeReadOnlyObservation: 1,
+      reconcileObservationTransport: 1,
       persistSanitizedReceipt: 0, disposeEnvironment: 1,
       finalizeExecutionLease: 1 });
   assert.equal(failed.result.adapterInvocationCount, 1);
@@ -278,11 +336,105 @@ test("hanging observation times out without a second invocation", async () => {
 
 test("hanging disposal becomes disposal_uncertain without retry or closure receipt", async () => {
   const failed = await expectBlocked({ disposal: () => new Promise(() => {}) },
-    "environment_disposal_timeout", { invokeReadOnlyObservation: 1,
+    "environment_disposal_timeout_aborted", { invokeReadOnlyObservation: 1,
+      reconcileEnvironmentDisposal: 1,
       disposeEnvironment: 1, finalizeExecutionLease: 1 });
   assert.equal(failed.result.failureClassification, "disposal_uncertain");
   assert.equal(failed.result.executionTerminalState, "disposal_uncertain");
   assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("late committed lease is reconciled and terminalized without claim or retry", async () => {
+  const failed = await expectBlocked({
+    lease: () => new Promise(() => {}),
+    leaseStoreReconciliation: { outcome: "committed", acknowledgment: "settled",
+      resourceHash: "3".repeat(64) },
+  }, "execution_lease_acquisition_timeout_committed", {
+    acquireExecutionLease: 1, reconcileExecutionLeaseStore: 1,
+    acquireClaim: 0, invokeReadOnlyObservation: 0, disposeEnvironment: 1,
+    finalizeExecutionLease: 1,
+  });
+  assert.equal(failed.result.adapterInvocationCount, 0);
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("late committed claim is reconciled and cannot reach observation", async () => {
+  const failed = await expectBlocked({
+    claim: () => new Promise(() => {}),
+    claimReconciliation: { outcome: "committed", acknowledgment: "settled",
+      resourceHash: "4".repeat(64) },
+  }, "claim_acquisition_timeout_committed", {
+    acquireClaim: 1, reconcileAtomicClaimStore: 1,
+    invokeReadOnlyObservation: 0, disposeEnvironment: 1,
+    finalizeExecutionLease: 1,
+  });
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("observation abort acknowledgment precedes disposal and blocks delayed side effect", async () => {
+  let delayedSideEffectCount = 0;
+  const failed = await expectBlocked({
+    observation: (input, context) => new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        delayedSideEffectCount++;
+        resolve(input);
+      }, 5200);
+      context.abortSignal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+    }),
+  }, "read_only_observation_timeout_aborted", {
+    invokeReadOnlyObservation: 1, reconcileObservationTransport: 1,
+    disposeEnvironment: 1,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(delayedSideEffectCount, 0);
+  assert.ok(failed.built.calls.indexOf("reconcileObservationTransport") <
+    failed.built.calls.indexOf("disposeEnvironment"));
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("abort-ignoring observation becomes ambiguous and disposal is forbidden", async () => {
+  const failed = await expectBlocked({
+    observation: () => new Promise(() => {}),
+    observationReconciliation: () => new Promise(() => {}),
+  }, "read_only_observation_timeout_ambiguous", {
+    invokeReadOnlyObservation: 1, reconcileObservationTransport: 1,
+    disposeEnvironment: 0, finalizeExecutionLease: 1,
+  });
+  assert.equal(failed.result.failureClassification, "disposal_uncertain");
+  assert.equal(failed.result.manualReviewRequired, true);
+  assert.equal(failed.result.disposalAttempted, false);
+  assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+});
+
+test("mid-run effective expiry blocks the next capability before claim", async () => {
+  const expiry = fixture.buildFixture().stepSPackage.oneRunRunnerLaunchPackage.earliestExpiry;
+  const failed = await expectBlocked({ clockSequence: [fixture.CLOCK, fixture.CLOCK, expiry] },
+    "pre_claim_clock_effective_expiry_reached", {
+      acquireExecutionLease: 1, acquireClaim: 0, invokeReadOnlyObservation: 0,
+      disposeEnvironment: 1, finalizeExecutionLease: 1,
+    });
+  assert.equal(failed.result.adapterInvocationCount, 0);
+});
+
+test("late observation resolution or rejection never publishes a closure or retries", async () => {
+  for (const rejects of [false, true]) {
+    const failed = await expectBlocked({
+      observation: () => new Promise((resolve, reject) => setTimeout(() => {
+        if (rejects) reject(new Error("sensitive late failure"));
+        else resolve({ late: true });
+      }, 5200)),
+      observationReconciliation: { outcome: "ambiguous", acknowledgment: "settled",
+        resourceHash: null },
+    }, "read_only_observation_timeout_ambiguous", {
+      invokeReadOnlyObservation: 1, reconcileObservationTransport: 1,
+      disposeEnvironment: 1,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(failed.built.calls.filter((item) =>
+      item === "invokeReadOnlyObservation").length, 1);
+    assert.deepEqual(failed.result.sanitizedExecutionClosureReceipt, {});
+    assert.equal(JSON.stringify(failed.result).includes("sensitive late failure"), false);
+  }
 });
 
 test("external sensitive Error details are replaced with a fixed issue code", async () => {

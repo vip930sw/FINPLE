@@ -10,8 +10,14 @@ Step T is fail-closed, dependency-injected, transport-neutral, and deterministic
 - every exposed Step S validator plus evaluator and launch/summary canonical equality
 - exact capability keys, methods, sealed descriptors, fixed no-retry/no-fallback/no-discovery policy
 - role-specific capability mutability policies with provider/production mutation fixed false
-- common 5,000 ms timeout enforcement for every injected capability call
+- per-call hard deadline capped by both the 5,000 ms descriptor limit and remaining Step S effective lifetime
+- exact cooperative cancellation context with operation ID, idempotency key, deadline, and AbortSignal
+- post-timeout terminal-outcome reconciliation for aborted/not-committed/committed/ambiguous outcomes
 - hanging bound capability, observation, and disposal fail-closed coverage without retry
+- late lease/claim commit reconciliation, mandatory late-lease terminalization, and adapter count zero
+- observation abort acknowledgment before disposal and abort-ignoring manual-review behavior
+- mid-run clock expiry before the next lease/claim/observation/persistence capability
+- late resolution/rejection cannot publish a closure or trigger a second invocation
 - external sensitive exception message and stack redaction to fixed issue codes
 - execution-clock expiry and runner/adapter byte digest mismatch before lease
 - already-existing or ambiguous lease/claim outcomes with adapter count zero
@@ -37,11 +43,11 @@ The bounded clean-head repository-wide failure inventory is recorded in the Draf
 
 ## Validation record
 
-- Step T corrective focused: 19 passed, 0 failed
+- Step T cancellable-deadline corrective focused: 26 passed, 0 failed
 - S/R/Q/P/O/N/M/L/K/J/I/H/G/F/E/D/C/B/A/W regression chain: 661 passed, 0 failed before adding Step T
-- W through T corrective combined: 680 passed, 0 failed
-- Q through T corrective combined: 1,059 passed, 0 failed
-- N through T corrective combined: 1,263 passed, 0 failed
+- W through T cancellable-deadline combined: 687 passed, 0 failed
+- Q through T expanded combined, including later UI regressions: 1,123 passed, 0 failed
+- N through T metrics combined: 1,270 passed, 0 failed
 - Python candidate package: 16 passed, 0 failed
 - Python full discovery: 48 passed, 0 failed
 - scenario metrics: 80 passed, 0 failed

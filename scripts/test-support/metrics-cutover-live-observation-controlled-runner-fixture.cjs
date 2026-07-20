@@ -155,6 +155,15 @@ function buildCapabilities(stepSPackage, options = {}) {
   };
   const wrap = (name, fn) => async (...args) => { calls.push(name); return fn(...args); };
   const cap = (name, methods) => ({ descriptor: subject.buildCapabilityDescriptor(name), ...methods });
+  const reconcile = (callName, optionName, fallback = {
+    outcome: "aborted", acknowledgment: "aborted", resourceHash: null,
+  }) => wrap(callName, (...args) => outcome(optionName, fallback, ...args));
+  const clockSequence = Array.isArray(options.clockSequence)
+    ? [...options.clockSequence] : null;
+  let clockIndex = 0;
+  const currentClock = () => clockSequence
+    ? clockSequence[Math.min(clockIndex++, clockSequence.length - 1)]
+    : (options.clock || CLOCK);
   const capabilities = {
     runtimeArtifactSource: cap("runtimeArtifactSource", {
       readRunnerArtifactBytes: wrap("readRunnerArtifactBytes", () => ({
@@ -174,45 +183,71 @@ function buildCapabilities(stepSPackage, options = {}) {
           capabilityManifestSha256: options.adapterCapabilityManifestSha256 ||
             manifest.adapterCapabilityManifestSha256 };
       }),
+      reconcileOperationOutcome: reconcile("reconcileRuntimeArtifactSource",
+        "runtimeArtifactReconciliation"),
     }),
     runnerArtifactLoader: cap("runnerArtifactLoader", { loadRunner: wrap("loadRunner",
-      () => outcome("runnerLoad", { outcome: "loaded", runnerHandleHash: "1".repeat(64) })) }),
+      (...args) => outcome("runnerLoad", { outcome: "loaded", runnerHandleHash: "1".repeat(64) },
+        ...args)),
+      reconcileOperationOutcome: reconcile("reconcileRunnerArtifactLoader",
+        "runnerLoaderReconciliation") }),
     adapterArtifactLoader: cap("adapterArtifactLoader", { loadAdapter: wrap("loadAdapter",
-      () => outcome("adapterLoad", { outcome: "loaded", adapterHandleHash: "2".repeat(64) })) }),
+      (...args) => outcome("adapterLoad", { outcome: "loaded", adapterHandleHash: "2".repeat(64) },
+        ...args)),
+      reconcileOperationOutcome: reconcile("reconcileAdapterArtifactLoader",
+        "adapterLoaderReconciliation") }),
     singleUseExecutionLeaseStore: cap("singleUseExecutionLeaseStore", {
-      acquireExecutionLease: wrap("acquireExecutionLease", () => outcome("lease",
-        { outcome: "acquired", leaseHash: "3".repeat(64) })),
-      consumeExecutionConfirmation: wrap("consumeExecutionConfirmation", () => outcome("confirmation",
-        { outcome: "consumed" })),
-      consumeOperatorAuthorization: wrap("consumeOperatorAuthorization", () => outcome("authorization",
-        { outcome: "consumed" })),
-      consumeInvocation: wrap("consumeInvocation", () => outcome("invocation", { outcome: "consumed" })),
-      finalizeExecutionLease: wrap("finalizeExecutionLease", (value) => outcome("terminal",
-        { outcome: "finalized", terminalState: value.terminalState }, value)),
+      acquireExecutionLease: wrap("acquireExecutionLease", (...args) => outcome("lease",
+        { outcome: "acquired", leaseHash: "3".repeat(64) }, ...args)),
+      consumeExecutionConfirmation: wrap("consumeExecutionConfirmation", (...args) => outcome("confirmation",
+        { outcome: "consumed" }, ...args)),
+      consumeOperatorAuthorization: wrap("consumeOperatorAuthorization", (...args) => outcome("authorization",
+        { outcome: "consumed" }, ...args)),
+      consumeInvocation: wrap("consumeInvocation", (...args) => outcome("invocation",
+        { outcome: "consumed" }, ...args)),
+      finalizeExecutionLease: wrap("finalizeExecutionLease", (value, context) => outcome("terminal",
+        { outcome: "finalized", terminalState: value.terminalState }, value, context)),
+      reconcileOperationOutcome: reconcile("reconcileExecutionLeaseStore",
+        "leaseStoreReconciliation"),
     }),
     atomicClaimStore: cap("atomicClaimStore", { acquireClaim: wrap("acquireClaim",
-      () => outcome("claim", { outcome: "acquired", claimReceiptHash: "4".repeat(64) })) }),
+      (...args) => outcome("claim", { outcome: "acquired", claimReceiptHash: "4".repeat(64) },
+        ...args)),
+      reconcileOperationOutcome: reconcile("reconcileAtomicClaimStore",
+        "claimReconciliation") }),
     readOnlyObservationTransport: cap("readOnlyObservationTransport", {
-      checkKillSwitch: wrap("checkKillSwitch", () => outcome("killSwitch",
-        { outcome: "clear", checkedAt: options.clock || CLOCK })),
+      checkKillSwitch: wrap("checkKillSwitch", (...args) => outcome("killSwitch",
+        { outcome: "clear", checkedAt: options.clock || CLOCK }, ...args)),
       invokeReadOnlyObservation: wrap("invokeReadOnlyObservation",
-        () => outcome("observation", buildObservation(stepSPackage))),
+        (...args) => outcome("observation", buildObservation(stepSPackage), ...args)),
+      reconcileOperationOutcome: reconcile("reconcileObservationTransport",
+        "observationReconciliation"),
     }),
     executionReceiptStore: cap("executionReceiptStore", {
-      persistSanitizedReceipt: wrap("persistSanitizedReceipt", (receipt) => outcome("receipt",
+      persistSanitizedReceipt: wrap("persistSanitizedReceipt", (receipt, context) => outcome("receipt",
         { outcome: "persisted", persistedReceiptHash: receipt.sanitizedExecutionReceiptHash },
-      receipt)),
+      receipt, context)),
+      reconcileOperationOutcome: reconcile("reconcileExecutionReceiptStore",
+        "receiptReconciliation"),
     }),
     evidenceFinalizer: cap("evidenceFinalizer", {
-      finalizeSanitizedEvidence: wrap("finalizeSanitizedEvidence", (evidence) => outcome("evidence",
+      finalizeSanitizedEvidence: wrap("finalizeSanitizedEvidence", (evidence, context) => outcome("evidence",
         { outcome: "finalized", finalizedEvidenceHash: evidence.sanitizedEvidenceHash },
-      evidence)),
+      evidence, context)),
+      reconcileOperationOutcome: reconcile("reconcileEvidenceFinalizer",
+        "evidenceReconciliation"),
     }),
     environmentDisposalCoordinator: cap("environmentDisposalCoordinator", {
-      disposeEnvironment: wrap("disposeEnvironment", () => outcome("disposal",
-        { outcome: "completed", disposalReceiptHash: "5".repeat(64) })),
+      disposeEnvironment: wrap("disposeEnvironment", (...args) => outcome("disposal",
+        { outcome: "completed", disposalReceiptHash: "5".repeat(64) }, ...args)),
+      reconcileOperationOutcome: reconcile("reconcileEnvironmentDisposal",
+        "disposalReconciliation"),
     }),
-    executionClock: cap("executionClock", { now: wrap("now", () => options.clock || CLOCK) }),
+    executionClock: cap("executionClock", {
+      now: wrap("now", () => currentClock()),
+      reconcileOperationOutcome: reconcile("reconcileExecutionClock",
+        "clockReconciliation"),
+    }),
   };
   return { capabilities, calls };
 }
