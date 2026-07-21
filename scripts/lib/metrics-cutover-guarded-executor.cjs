@@ -658,6 +658,7 @@ module.exports = {
   postWriteVerification,
   runMetricsCutoverGuardedExecutor,
   safeResult,
+  validateExecutionBinding,
   validateClaim,
   validatePostWriteReceipt,
 };

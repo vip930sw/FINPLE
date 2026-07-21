@@ -20,10 +20,12 @@ const OPERATOR_KEYS = generateKeyPairSync("ed25519");
 const pem = (keys) => keys.publicKey.export({ type: "spki", format: "pem" });
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
-function deepFreeze(value) {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+function deepFreeze(value, seen = new WeakSet()) {
+  if (value && typeof value === "object" && !seen.has(value) &&
+      !Object.isFrozen(value)) {
+    seen.add(value);
     Object.freeze(value);
-    for (const item of Object.values(value)) deepFreeze(item);
+    for (const item of Object.values(value)) deepFreeze(item, seen);
   }
   return value;
 }

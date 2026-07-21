@@ -849,6 +849,7 @@ module.exports = {
   buildOperationPlan,
   buildCapabilityDescriptor, buildMutabilityPolicy, canonicalJson, hashContract,
   hashOperationPlan,
+  makeEvidence, makeExecutionClosureReceipt, makePreDisposalReceipt,
   runControlledLiveObservation,
   sha256, validateCapabilityBundle, validateDirectStepSPackage,
   validateSanitizedObservation,
