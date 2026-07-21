@@ -82,7 +82,10 @@ const INVOCATION_PACKAGE_FIELDS = Object.freeze([
   "sealedInvocationPackageHash",
 ]);
 const EXPLICIT_DEPENDENCY_NAMES = Object.freeze([
-  "invocationPackage", ...stepZ.CAPABILITY_NAMES,
+  "invocationPackage", "signedOperatorAuthorization",
+  "productionCutoverOperatorAllowlist", "priorAuthorizationNonceHashes",
+  "evaluationClockInstant", "stepZAPacket", "stepZExecutionPacket",
+  ...stepZ.CAPABILITY_NAMES,
 ]);
 
 function isRecord(value) {
@@ -637,6 +640,179 @@ function validateInvocationPackageSeal(value) {
   return uniqueSorted(issues);
 }
 
+function invocationCoreFromPackage(value) {
+  return {
+    contractVersion: value.contractVersion,
+    invocationPackageId: value.invocationPackageId,
+    ...Object.fromEntries(PACKAGE_CORE_FIELDS.slice(1).map((field) =>
+      [field, value[field]])),
+    invocationPackageHash: value.invocationPackageHash,
+  };
+}
+
+function validateCommandBoundaryDependencies(input) {
+  const issues = [];
+  const packageIssues = validateInvocationPackageSeal(input.invocationPackage);
+  issues.push(...packageIssues);
+  const capabilityIssues = stepZ.CAPABILITY_NAMES.flatMap((name) =>
+    stepZ.validateCapability(name, input[name]));
+  issues.push(...capabilityIssues);
+
+  let rebuiltZA = null; let zaValidation = null;
+  if (!exactKeys(input.stepZAPacket, stepZA.INPUT_FIELDS)) {
+    issues.push("command_step_za_packet_fields_invalid");
+  } else {
+    try {
+      rebuiltZA = stepZA.evaluateProductionCutoverRuntimeCeremony(input.stepZAPacket);
+      zaValidation = validateStepZA(input.stepZAPacket, rebuiltZA);
+      issues.push(...zaValidation.issues);
+    } catch { issues.push("command_step_za_direct_validation_failed"); }
+  }
+
+  let expectedCore = null;
+  if (rebuiltZA && zaValidation?.issues.length === 0) {
+    try { expectedCore = buildInvocationPackageCore(rebuiltZA); }
+    catch { issues.push("command_invocation_package_core_reconstruction_failed"); }
+  }
+  if (expectedCore && packageIssues.length === 0 && !canonicalEqual(
+    invocationCoreFromPackage(input.invocationPackage), expectedCore)) {
+    issues.push("command_invocation_package_za_binding_invalid");
+  }
+
+  let stepZValidation = null;
+  if (!exactKeys(input.stepZExecutionPacket, stepZ.INPUT_FIELDS)) {
+    issues.push("step_z_execution_packet_fields_invalid");
+  } else {
+    try {
+      stepZValidation = stepZA.validateStepZPacket(input.stepZExecutionPacket);
+      issues.push(...stepZValidation.issues.map((issue) =>
+        `step_z_execution:${issue}`));
+    } catch { issues.push("step_z_execution_packet_validation_failed"); }
+    if (input.stepZExecutionPacket.mergedMainSha !== stepZ.MERGED_MAIN_SHA ||
+        input.stepZExecutionPacket.mergedMainSha !==
+        input.stepZAPacket?.stepZPacket?.mergedMainSha) {
+      issues.push("step_z_execution_merged_main_binding_invalid");
+    }
+    if (input.stepZExecutionPacket.executionClockInstant !==
+        input.stepZAPacket?.stepZPacket?.executionClockInstant) {
+      issues.push("step_z_execution_clock_binding_invalid");
+    }
+    if (input.stepZExecutionPacket !== input.stepZAPacket?.stepZPacket) {
+      issues.push("step_z_execution_step_y_binding_invalid");
+    }
+    for (const name of stepZ.CAPABILITY_NAMES) {
+      if (input.stepZExecutionPacket[name] !== input[name] ||
+          input.stepZAPacket?.stepZPacket?.[name] !== input[name]) {
+        issues.push(`step_z_execution_capability_dependency_mismatch:${name}`);
+      }
+    }
+  }
+
+  let authorization = null;
+  if (expectedCore) {
+    authorization = validateSignedOperatorAuthorization(
+      input.signedOperatorAuthorization, input.productionCutoverOperatorAllowlist,
+      input.stepZAPacket, expectedCore, input.priorAuthorizationNonceHashes,
+      input.evaluationClockInstant);
+    issues.push(...authorization.issues);
+    if (authorization.issues.length === 0) {
+      const expectedPackage = buildFinalInvocationPackage(expectedCore,
+        input.signedOperatorAuthorization);
+      if (!canonicalEqual(input.invocationPackage, expectedPackage)) {
+        issues.push("invocation_package_operator_authorization_binding_invalid");
+      }
+    }
+  } else {
+    issues.push("operator_authorization_command_revalidation_unavailable");
+  }
+
+  if (stepZValidation?.direct && expectedCore) {
+    const envelope = stepZValidation.direct.envelope;
+    if (expectedCore.chainIdentities.stepYEnvelopeId !==
+        envelope?.singleUseProductionCutoverEnvelopeId ||
+        expectedCore.chainIdentities.stepYEnvelopeHash !==
+        envelope?.singleUseProductionCutoverEnvelopeHash ||
+        expectedCore.singleUseClaimNamespaceHash !==
+        buildSingleUseClaimNamespaceHash(rebuiltZA.explicitExecutionHandoff)) {
+      issues.push("step_z_execution_package_za_y_claim_binding_invalid");
+    }
+  }
+
+  return {
+    issues: uniqueSorted(issues), rebuiltZA, zaValidation, expectedCore,
+    stepZValidation, authorization,
+  };
+}
+
+function buildStepZExecutionPacketBinding(stepZExecutionPacket, stepZValidation) {
+  const envelope = stepZValidation.direct.envelope;
+  const approval = stepZValidation.direct.rebuilt.productionCutoverApproval;
+  const body = {
+    contractVersion: "finple.step114-2x-zb.step-z-execution-packet-binding.v1",
+    mergedMainSha: stepZExecutionPacket.mergedMainSha,
+    executionClockInstant: stepZExecutionPacket.executionClockInstant,
+    exactInputFields: [...stepZ.INPUT_FIELDS],
+    stepYApprovalId: approval.productionCutoverApprovalId,
+    stepYApprovalHash: approval.productionCutoverApprovalHash,
+    stepYEnvelopeId: envelope.singleUseProductionCutoverEnvelopeId,
+    stepYEnvelopeHash: envelope.singleUseProductionCutoverEnvelopeHash,
+    stepYCriticalBindings: envelope.criticalBindings,
+    capabilityDescriptorHashes: Object.fromEntries(stepZ.CAPABILITY_NAMES.map(
+      (name) => [name, stepZExecutionPacket[name].descriptor.descriptorHash])),
+    rawMaterialPresent: false,
+  };
+  return deepFreeze({ ...body, stepZExecutionPacketBindingHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_STEP_Z_EXECUTION_PACKET_BINDING_HASH\0", body) });
+}
+
+function buildCommandBoundaryDescriptor(input, validation, commandConstructed) {
+  const authorization = sanitizedAuthorizationSummary(
+    input.signedOperatorAuthorization);
+  const body = {
+    contractVersion: "finple.step114-2x-zb.non-executing-command-boundary.v2",
+    descriptorState: commandConstructed ? "sanitized_descriptor_constructed" :
+      "dry_validation_completed",
+    invocationPackageId: input.invocationPackage.invocationPackageId,
+    invocationPackageHash: input.invocationPackage.invocationPackageHash,
+    sealedInvocationPackageHash:
+      input.invocationPackage.sealedInvocationPackageHash,
+    oneRunCommandIdentity: input.invocationPackage.oneRunCommandIdentity,
+    stepZAHandoffId: validation.rebuiltZA.explicitExecutionHandoff
+      .explicitExecutionHandoffId,
+    stepZAHandoffHash: validation.rebuiltZA.explicitExecutionHandoff
+      .explicitExecutionHandoffHash,
+    singleUseClaimNamespaceHash:
+      input.invocationPackage.singleUseClaimNamespaceHash,
+    operatorAuthorizationId: authorization.operatorAuthorizationId,
+    operatorAuthorizationHash: authorization.operatorAuthorizationHash,
+    operatorSignatureDigest: authorization.operatorSignatureDigest,
+    operatorSignerIdentity: {
+      signerKeyId: authorization.signerKeyId,
+      signerSanitizedIdentityHash: authorization.signerSanitizedIdentityHash,
+      signerPublicKeyFingerprintSha256:
+        authorization.signerPublicKeyFingerprintSha256,
+      role: authorization.role, scope: authorization.scope,
+    },
+    authorizationEffectiveExpiresAt: authorization.effectiveExpiresAt,
+    stepZExecutionPacketBinding: buildStepZExecutionPacketBinding(
+      input.stepZExecutionPacket, validation.stepZValidation),
+    explicitDependencyNames: [...EXPLICIT_DEPENDENCY_NAMES],
+    fixedCapabilityTimeoutMilliseconds: 100,
+    singleUse: true, dryValidationCompleted: true, commandConstructed,
+    executionPerformed: false, executorInvoked: false,
+    capabilityMethodInvoked: false, envelopeClaimAcquired: false,
+    envelopeClaimTerminalized: false, productionWritePerformed: false,
+    selectorMutationPerformed: false, cutoverReceiptPersisted: false,
+    rollbackInvoked: false, rawMaterialPresent: false,
+  };
+  const idHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_COMMAND_BOUNDARY_DESCRIPTOR_ID\0", body);
+  const withId = { ...body,
+    commandBoundaryDescriptorId: `step114-2x-zb-command-boundary-${idHash}` };
+  return deepFreeze({ ...withId, commandBoundaryDescriptorHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_COMMAND_BOUNDARY_DESCRIPTOR_HASH\0", withId) });
+}
+
 function evaluateExplicitProductionCutoverInvocation(packet) {
   if (packet === undefined) return safeResult(PUBLIC_STATES[0]);
   if (!exactKeys(packet, INPUT_FIELDS)) return safeResult(PUBLIC_STATES[2], {
@@ -689,49 +865,38 @@ function evaluateExplicitProductionCutoverInvocation(packet) {
   });
 }
 
-function dryValidateOneRunInvocation(input) {
+function evaluateCommandBoundary(input, commandConstructed) {
   if (input === undefined) return safeResult(PUBLIC_STATES[0]);
   if (!exactKeys(input, EXPLICIT_DEPENDENCY_NAMES)) return safeResult(PUBLIC_STATES[2], {
     failureClassification: FAILURE_CLASSIFICATIONS[3],
     blockingIssues: ["explicit_command_dependencies_invalid"],
   });
-  const packageIssues = validateInvocationPackageSeal(input.invocationPackage);
-  const capabilityIssues = stepZ.CAPABILITY_NAMES.flatMap((name) =>
-    stepZ.validateCapability(name, input[name]));
-  if (packageIssues.length || capabilityIssues.length) return safeResult(PUBLIC_STATES[2], {
+  const validation = validateCommandBoundaryDependencies(input);
+  if (validation.issues.length) return safeResult(PUBLIC_STATES[2], {
     failureClassification: FAILURE_CLASSIFICATIONS[3],
-    blockingIssues: uniqueSorted([...packageIssues, ...capabilityIssues]),
+    blockingIssues: validation.issues,
   });
-  const inventory = new Map(input.invocationPackage.capabilityInventory.map((entry) =>
-    [entry.capabilityName, entry]));
-  for (const name of stepZ.CAPABILITY_NAMES) {
-    if (inventory.get(name)?.descriptorHash !== input[name].descriptor.descriptorHash) {
-      return safeResult(PUBLIC_STATES[2], {
-        failureClassification: FAILURE_CLASSIFICATIONS[3],
-        blockingIssues: [`explicit_command_capability_binding_invalid:${name}`],
-      });
-    }
-  }
-  const commandBoundary = deepFreeze({
-    contractVersion: "finple.step114-2x-zb.non-executing-command-boundary.v1",
-    invocationPackageId: input.invocationPackage.invocationPackageId,
-    invocationPackageHash: input.invocationPackage.invocationPackageHash,
-    oneRunCommandIdentity: input.invocationPackage.oneRunCommandIdentity,
-    explicitDependencyNames: [...EXPLICIT_DEPENDENCY_NAMES],
-    dryValidationCompleted: true, commandConstructed: false,
-    executionPerformed: false, executorInvoked: false,
-    capabilityMethodInvoked: false, rawMaterialPresent: false,
-  });
+  const commandBoundary = buildCommandBoundaryDescriptor(input, validation,
+    commandConstructed);
   return safeResult(PUBLIC_STATES[1], {
+    stepZADirectlyValidated: true,
+    completeStepZAZYXWVUTSChainValidated: true,
     invocationIdentityValidated: true, operatorAuthorizationVerified: true,
     signerSeparationValidated: true, nonceValidated: true, chronologyValidated: true,
-    dryValidationCompleted: true, invocationPackage: input.invocationPackage,
+    dryValidationCompleted: true,
+    signedOperatorAuthorization: sanitizedAuthorizationSummary(
+      input.signedOperatorAuthorization),
+    invocationPackage: input.invocationPackage,
     commandBoundary,
   });
 }
 
+function dryValidateOneRunInvocation(input) {
+  return evaluateCommandBoundary(input, false);
+}
+
 function prepareOneRunInvocationCommand(input) {
-  return dryValidateOneRunInvocation(input);
+  return evaluateCommandBoundary(input, true);
 }
 
 module.exports = {
@@ -748,6 +913,7 @@ module.exports = {
   hashContract, normalizeOperatorAllowlist, prepareOneRunInvocationCommand,
   safeResult, sanitizedAuthorizationSummary, sealSignedOperatorAuthorization,
   sealUnsignedOperatorAuthorization, validateInvocationPackageSeal,
+  validateCommandBoundaryDependencies,
   validatePriorAuthorizationNonces, validateSignedOperatorAuthorization,
   validateStepZA,
 };

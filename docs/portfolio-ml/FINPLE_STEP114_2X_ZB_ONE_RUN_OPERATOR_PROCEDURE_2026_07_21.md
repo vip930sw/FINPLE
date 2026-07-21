@@ -47,6 +47,12 @@ The later command boundary must receive exactly these explicit dependencies:
 
 ```text
 invocationPackage
+signedOperatorAuthorization
+productionCutoverOperatorAllowlist
+priorAuthorizationNonceHashes
+evaluationClockInstant
+stepZAPacket
+stepZExecutionPacket
 singleUseCutoverEnvelopeStore
 cutoverClock
 cutoverPreimageReader
@@ -56,10 +62,18 @@ cutoverReceiptStore
 rollbackCoordinator
 ```
 
+`stepZExecutionPacket` must have the exact Step Z `INPUT_FIELDS` shape and must
+contain the exact canonical Step Y packet/result, merged Step Z SHA, execution
+clock, and the same seven explicitly supplied capability objects already sealed
+through ZA. The current evaluation clock is separate from the Step Z execution
+clock and is used to re-check authorization freshness and replay at command
+validation time.
+
 No dependency may be discovered through CLI arguments, stdin, environment
 variables, filesystem search, a route, cron, worker, trigger, deployment workflow,
-or dynamic module loading. ZB dry validation checks this exact schema but does not
-construct or execute the production command.
+or dynamic module loading. ZB dry validation checks this exact schema. Command
+preparation constructs only a sanitized frozen descriptor and never constructs a
+function, invokes the executor, or calls a capability method.
 
 ## Later one-run execution order
 

@@ -114,14 +114,31 @@ invocation counts are zero.
 ## Command boundary
 
 `dryValidateOneRunInvocation` and `prepareOneRunInvocationCommand` accept exactly
-one invocation package plus the seven named Step Z capabilities through explicit
-dependency injection. They validate the final package seals, capability method
-shape, exact descriptor hashes, and expected dependency schema.
+one invocation package, the original signed operator authorization, the exact
+one-entry allowlist, prior authorization nonce hashes, the current evaluation
+clock, the exact ZA validation packet, one complete Step Z execution packet, and
+the seven named Step Z capabilities through explicit dependency injection.
 
-Their successful output is a frozen non-executing command-boundary descriptor.
-It records `commandConstructed=false`, `executionPerformed=false`,
-`executorInvoked=false`, and `capabilityMethodInvoked=false`. No function in Step
-ZB invokes Step Z or any supplied method.
+The command boundary does not trust the package's unkeyed seal as authorization.
+It directly re-evaluates ZA, validates the exact Step Z input shape and canonical
+Step Y packet/result, verifies the Step Z execution clock and capability object
+bindings, reconstructs the package core, and re-runs Ed25519 signature, allowlist,
+signer-separation, nonce, chronology, expiry, package, handoff, and claim-namespace
+validation. It then reconstructs the expected final package from the verified
+authorization and requires canonical equality. A self-resealed forged signer
+identity, authorization hash, or signature digest therefore fails closed.
+
+`dryValidateOneRunInvocation` returns a frozen descriptor with
+`commandConstructed=false`. `prepareOneRunInvocationCommand` separately returns a
+deterministic, recursively frozen, sanitized descriptor with
+`commandConstructed=true`; this means only that a data descriptor was built, not
+that a function or closure exists. Both record `executionPerformed=false`,
+`executorInvoked=false`, and `capabilityMethodInvoked=false`. Their output contains
+only sanitized authorization, ZA/Y/claim, Step Z input-shape, execution-clock, and
+capability-descriptor identities. It never contains the Step Z packet, raw bytes,
+signature text, public keys, functions, or methods.
+
+No function in Step ZB invokes Step Z or any supplied method.
 
 The production module imports no filesystem, process, environment, HTTP, network,
 provider, database, deployment, route, worker, cron, or trigger capability.

@@ -84,14 +84,30 @@ function buildFixture(options = {}) {
 }
 
 function commandInput(result, built) {
+  const stepZExecutionPacket = built.packet.stepZAPacket.stepZPacket;
   return {
     invocationPackage: result.invocationPackage,
-    ...Object.fromEntries(subject.EXPLICIT_DEPENDENCY_NAMES.slice(1).map((name) =>
-      [name, built.packet.stepZAPacket.stepZPacket[name]])),
+    signedOperatorAuthorization: built.packet.signedOperatorAuthorization,
+    productionCutoverOperatorAllowlist:
+      built.packet.productionCutoverOperatorAllowlist,
+    priorAuthorizationNonceHashes: built.packet.priorAuthorizationNonceHashes,
+    evaluationClockInstant: built.packet.evaluationClockInstant,
+    stepZAPacket: built.packet.stepZAPacket,
+    stepZExecutionPacket,
+    ...Object.fromEntries(subject.EXPLICIT_DEPENDENCY_NAMES.slice(7).map((name) =>
+      [name, stepZExecutionPacket[name]])),
   };
+}
+
+function resealInvocationPackage(invocationPackage, overrides = {}) {
+  const body = { ...clone(invocationPackage), ...overrides };
+  delete body.sealedInvocationPackageHash;
+  return { ...body, sealedInvocationPackageHash: subject.hashContract(
+    "FINPLE_STEP114_2X_ZB_SEALED_INVOCATION_PACKAGE_HASH\0", body) };
 }
 
 module.exports = {
   EVALUATION_CLOCK, OPERATOR_KEYS, baseZA, buildFixture, clone, commandInput, pem,
-  resealAllowlist, resealAuthorization, signAuthorizationBody, signerFromAllowlist,
+  resealAllowlist, resealAuthorization, resealInvocationPackage,
+  signAuthorizationBody, signerFromAllowlist,
 };

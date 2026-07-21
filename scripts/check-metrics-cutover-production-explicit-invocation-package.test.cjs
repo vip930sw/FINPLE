@@ -48,6 +48,19 @@ function expectBlocked(mutator, issue, classification) {
   assertNoCalls(built); assertZeroCounts(result);
   return result;
 }
+function expectCommandBlocked(mutator, issue) {
+  const built = fixture.buildFixture();
+  const verified = subject.evaluateExplicitProductionCutoverInvocation(built.packet);
+  assert.equal(verified.status, subject.PUBLIC_STATES[1]);
+  const input = fixture.commandInput(verified, built);
+  mutator(input, built, verified);
+  const result = subject.dryValidateOneRunInvocation(input);
+  assert.equal(result.status, subject.PUBLIC_STATES[2]);
+  assert.ok(result.blockingIssues.some((item) => item.includes(issue)),
+    JSON.stringify(result.blockingIssues));
+  assertNoCalls(built); assertZeroCounts(result);
+  return result;
+}
 
 test("public states, zero input, zero-argument CLI, and forbidden arguments are exact", () => {
   assert.deepEqual(subject.PUBLIC_STATES, [
@@ -330,12 +343,123 @@ test("dry validation accepts only exact package and explicit Step Z dependencies
   const input = fixture.commandInput(verified, built);
   const dry = subject.dryValidateOneRunInvocation(input);
   const prepared = subject.prepareOneRunInvocationCommand(input);
-  assert.equal(dry.status, subject.PUBLIC_STATES[1]);
-  assert.deepEqual(prepared, dry);
+  assert.equal(dry.status, subject.PUBLIC_STATES[1],
+    JSON.stringify(dry.blockingIssues));
+  assert.equal(prepared.status, subject.PUBLIC_STATES[1],
+    JSON.stringify(prepared.blockingIssues));
   assert.equal(dry.commandBoundary.dryValidationCompleted, true);
   assert.equal(dry.commandBoundary.commandConstructed, false);
+  assert.equal(dry.commandBoundary.descriptorState, "dry_validation_completed");
+  assert.equal(prepared.commandBoundary.commandConstructed, true);
+  assert.equal(prepared.commandBoundary.descriptorState,
+    "sanitized_descriptor_constructed");
+  assert.notEqual(prepared.commandBoundary.commandBoundaryDescriptorHash,
+    dry.commandBoundary.commandBoundaryDescriptorHash);
   assert.equal(dry.commandBoundary.executionPerformed, false);
-  assertNoCalls(built); assertZeroCounts(dry);
+  assert.equal(prepared.commandBoundary.executionPerformed, false);
+  assert.equal(prepared.commandBoundary.executorInvoked, false);
+  assert.deepEqual(prepared.commandBoundary.explicitDependencyNames,
+    subject.EXPLICIT_DEPENDENCY_NAMES);
+  assertDeepFrozen(prepared); assertSanitized(prepared);
+  assertNoCalls(built); assertZeroCounts(dry); assertZeroCounts(prepared);
+});
+
+test("self-resealed forged operator identity package is rejected at command boundary", () => {
+  expectCommandBlocked((input) => {
+    input.invocationPackage = fixture.resealInvocationPackage(
+      input.invocationPackage, { operatorSignerIdentity: {
+        ...input.invocationPackage.operatorSignerIdentity,
+        signerKeyId: "forged-step-zb-operator-key",
+      } });
+  }, "invocation_package_operator_authorization_binding_invalid");
+});
+
+test("self-resealed forged authorization hash package is rejected at command boundary", () => {
+  expectCommandBlocked((input) => {
+    input.invocationPackage = fixture.resealInvocationPackage(
+      input.invocationPackage, { operatorAuthorizationHash: "0".repeat(64) });
+  }, "invocation_package_operator_authorization_binding_invalid");
+});
+
+test("self-resealed forged signature digest package is rejected at command boundary", () => {
+  expectCommandBlocked((input) => {
+    input.invocationPackage = fixture.resealInvocationPackage(
+      input.invocationPackage, { operatorSignatureDigest: "f".repeat(64) });
+  }, "invocation_package_operator_authorization_binding_invalid");
+});
+
+test("authorization expired between package creation and command validation is rejected", () => {
+  expectCommandBlocked((input) => {
+    input.evaluationClockInstant =
+      input.signedOperatorAuthorization.effectiveExpiresAt;
+  }, "operator_authorization_chronology_or_expiry_invalid");
+});
+
+test("command-boundary nonce replay is rejected", () => {
+  expectCommandBlocked((input) => {
+    input.priorAuthorizationNonceHashes = [
+      input.signedOperatorAuthorization.authorizationNonceHash,
+    ];
+  }, "operator_authorization_nonce_invalid_or_replayed");
+});
+
+test("missing or tampered Step Z execution packet is rejected", () => {
+  expectCommandBlocked((input) => { delete input.stepZExecutionPacket; },
+    "explicit_command_dependencies_invalid");
+  expectCommandBlocked((input) => {
+    input.stepZExecutionPacket = { ...input.stepZExecutionPacket,
+      mergedMainSha: "0".repeat(40) };
+  }, "step_z_execution_merged_main_binding_invalid");
+});
+
+test("Step Y packet or result mismatch in execution material is rejected", () => {
+  expectCommandBlocked((input) => {
+    const stepYResult = fixture.clone(input.stepZExecutionPacket.stepYResult);
+    stepYResult.singleUseProductionCutoverEnvelope
+      .singleUseProductionCutoverEnvelopeHash = "0".repeat(64);
+    input.stepZExecutionPacket = { ...input.stepZExecutionPacket, stepYResult };
+  }, "step_z_execution_step_y_binding_invalid");
+});
+
+test("Step Z execution clock mismatch is rejected", () => {
+  expectCommandBlocked((input) => {
+    input.stepZExecutionPacket = { ...input.stepZExecutionPacket,
+      executionClockInstant: "2026-07-18T00:03:28.500Z" };
+  }, "step_z_execution_clock_binding_invalid");
+});
+
+test("actual upstream public-key fingerprint collision reaches signer separation failure", () => {
+  const base = fixture.buildFixture();
+  const upstreamKeys = base.zaBase.stepZBase.stepYFixture.approverKeys;
+  const built = fixture.buildFixture({ operatorKeys: upstreamKeys });
+  const result = subject.evaluateExplicitProductionCutoverInvocation(built.packet);
+  assert.equal(result.status, subject.PUBLIC_STATES[2]);
+  assert.ok(result.blockingIssues.includes(
+    "operator_signer_upstream_separation_failed"),
+  JSON.stringify(result.blockingIssues));
+  assertNoCalls(built); assertZeroCounts(result);
+});
+
+test("valid complete command descriptor is exact frozen sanitized and non-executing", () => {
+  const built = fixture.buildFixture();
+  const verified = subject.evaluateExplicitProductionCutoverInvocation(built.packet);
+  const prepared = subject.prepareOneRunInvocationCommand(
+    fixture.commandInput(verified, built));
+  const descriptor = prepared.commandBoundary;
+  assert.equal(prepared.status, subject.PUBLIC_STATES[1],
+    JSON.stringify(prepared.blockingIssues));
+  assert.equal(descriptor.commandConstructed, true);
+  assert.equal(descriptor.executionPerformed, false);
+  assert.equal(descriptor.executorInvoked, false);
+  assert.equal(descriptor.capabilityMethodInvoked, false);
+  assert.equal(descriptor.rawMaterialPresent, false);
+  assert.deepEqual(descriptor.stepZExecutionPacketBinding.exactInputFields,
+    require("./lib/metrics-cutover-production-single-use-executor.cjs").INPUT_FIELDS);
+  assert.match(descriptor.commandBoundaryDescriptorId,
+    /^step114-2x-zb-command-boundary-[0-9a-f]{64}$/);
+  assert.match(descriptor.commandBoundaryDescriptorHash, /^[0-9a-f]{64}$/);
+  assertDeepFrozen(prepared); assertSanitized(prepared);
+  assertNoCalls(built); assertZeroCounts(prepared);
 });
 
 test("command boundary blocks missing package dependency drift and zero input awaits", () => {
@@ -347,13 +471,19 @@ test("command boundary blocks missing package dependency drift and zero input aw
   const absent = subject.dryValidateOneRunInvocation(missing);
   assert.equal(absent.status, subject.PUBLIC_STATES[2]);
   assert.ok(absent.blockingIssues.includes("explicit_command_dependencies_invalid"));
+  const malformed = fixture.commandInput(verified, built);
+  malformed.invocationPackage = null;
+  const malformedResult = subject.dryValidateOneRunInvocation(malformed);
+  assert.equal(malformedResult.status, subject.PUBLIC_STATES[2]);
+  assert.ok(malformedResult.blockingIssues.includes("invocation_package_fields_invalid"));
   const drift = fixture.commandInput(verified, built);
   drift.cutoverClock = { ...drift.cutoverClock,
     descriptor: { ...drift.cutoverClock.descriptor, automaticRetryAllowed: true } };
   const invalid = subject.dryValidateOneRunInvocation(drift);
   assert.equal(invalid.status, subject.PUBLIC_STATES[2]);
   assert.ok(invalid.blockingIssues.some((item) => item.includes("cutoverClock_descriptor_invalid")));
-  assertNoCalls(built); assertZeroCounts(absent); assertZeroCounts(invalid);
+  assertNoCalls(built); assertZeroCounts(absent); assertZeroCounts(malformedResult);
+  assertZeroCounts(invalid);
 });
 
 test("production source has no ambient filesystem network DB provider deployment or executor call", () => {
