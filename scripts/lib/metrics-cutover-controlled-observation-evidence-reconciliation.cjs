@@ -3,6 +3,10 @@
 const { createHash } = require("node:crypto");
 const stepT = require("./metrics-cutover-live-observation-controlled-runner.cjs");
 const stepW = require("./metrics-cutover-live-observation-signed-envelope-executor.cjs");
+const guardedCutover = require("./metrics-cutover-guarded-executor.cjs");
+const {
+  validateMetricsCutoverExecutionInvocationReceipt,
+} = require("./metrics-cutover-execution-invocation.cjs");
 
 const MERGED_MAIN_SHA = "a2bd8736fa331c1ef03a8e149e898f2ec328653b";
 const VERSION = "finple.step114-2x-x.observation-evidence-reconciliation.v1";
@@ -27,19 +31,11 @@ const INPUT_FIELDS = Object.freeze([
   "mergedMainSha", "stepWPacket", "stepWResult", "persistedSanitizedObservation",
   "stepTCompletedResult", "envelopeClaimTerminalizationHash",
   "reconciliationClockInstant", "priorReconciliationNonceHashes",
-  "reconciliationNonceHash",
+  "reconciliationNonceHash", "productionCutoverEvidence",
 ]);
 const MAXIMUM_EVIDENCE_INTAKE_AGE_MILLISECONDS = 24 * 60 * 60 * 1000;
-const CUTOVER_IDENTITY_FIELDS = Object.freeze([
-  "candidatePackageId", "candidatePackageHash", "executionPackageHash",
-  "selectorPreimageSha256", "selectorPostimageSha256", "repositoryPreimageSha256",
-  "repositoryTreeSha256", "repositoryHeadSha", "repositoryBranchHash",
-  "trackedPathsSha256", "usCandidateContentSha256", "krCandidateContentSha256",
-  "usCandidateRowCount", "krCandidateRowCount", "usCandidateByteCount",
-  "krCandidateByteCount", "usSchemaHeaderSha256", "krSchemaHeaderSha256",
-  "datasetPackageHash", "authorityPackageId", "authorityPackageHash",
-  "invocationId", "invocationHash", "targetAbsenceAttestationHash",
-  "noDriftAttestationHash", "candidateGeneratedAt", "approvalIssuedAt",
+const PRODUCTION_CUTOVER_EVIDENCE_FIELDS = Object.freeze([
+  "verification", "prepared", "productionCutoverIdentities",
 ]);
 
 function isRecord(value) {
@@ -112,27 +108,6 @@ function nested(stepSPackage) {
   return { stepRPacket, qPacket, pPacket, oPacket };
 }
 
-function collectFieldValues(root, requestedFields) {
-  const requested = new Set(requestedFields);
-  const found = Object.fromEntries([...requested].map((field) => [field, []]));
-  const seen = new Set();
-  const visit = (value) => {
-    if (!value || typeof value !== "object" || seen.has(value)) return;
-    seen.add(value);
-    if (Array.isArray(value)) { for (const item of value) visit(item); return; }
-    for (const [key, child] of Object.entries(value)) {
-      if (requested.has(key) && (typeof child === "string" ||
-          typeof child === "number" || typeof child === "boolean")) {
-        found[key].push(child);
-      }
-      visit(child);
-    }
-  };
-  visit(root);
-  return Object.fromEntries(Object.entries(found).map(([field, values]) =>
-    [field, [...new Set(values.map((value) => canonicalJson(value)))].map(JSON.parse)]));
-}
-
 function buildExpectedObservationBindings(stepSPackage) {
   const { oPacket } = nested(stepSPackage);
   const input = oPacket.executorInput;
@@ -163,17 +138,111 @@ function buildExpectedObservationBindings(stepSPackage) {
     unresolvedTimestampFields };
 }
 
-function collectProductionCutoverIdentities(stepSPackage) {
-  const values = collectFieldValues(stepSPackage, CUTOVER_IDENTITY_FIELDS);
-  const result = {};
-  for (const field of CUTOVER_IDENTITY_FIELDS) {
-    if (values[field].length === 1) result[field] = values[field][0];
+function buildCanonicalProductionCutoverIdentities(bound) {
+  const executionPackage = bound.executionPackage;
+  const receipt = bound.receipt;
+  const repository = executionPackage.repositoryPreimage;
+  const datasets = executionPackage.targetFiles.map((target) => ({
+    role: target.role,
+    market: target.market,
+    contentSha256: target.sha256,
+    schemaVersion: target.schemaVersion,
+    schemaIdentitySha256: hashContract(
+      "FINPLE_STEP114_2X_X_DATASET_SCHEMA_IDENTITY\0", {
+        role: target.role, market: target.market, schemaVersion: target.schemaVersion,
+      }),
+    rowCount: target.rowCount,
+    byteCount: target.byteSize,
+    datasetIdentityHash: hashContract(
+      "FINPLE_STEP114_2X_X_DATASET_IDENTITY\0", {
+        role: target.role, market: target.market, contentSha256: target.sha256,
+        schemaVersion: target.schemaVersion, rowCount: target.rowCount,
+        byteCount: target.byteSize,
+      }),
+  }));
+  const repositoryIdentity = {
+    repositoryHeadSha: repository.repositoryHeadSha,
+    repositoryTreeSha: repository.repositoryTreeSha,
+    trackedPathsSha256: repository.trackedPathsSha256,
+    targetPathAbsenceEvidenceHash: repository.targetPathAbsenceEvidenceHash,
+    branchName: repository.branchName,
+  };
+  return {
+    contractVersion: "finple.step114-2x-x.production-cutover-identities.v1",
+    candidatePackage: {
+      candidatePackageId: executionPackage.candidatePackageId,
+      candidatePackageHash: executionPackage.candidatePackageHash,
+      zipPackageSha256: executionPackage.zipPackageSha256,
+      cutoverRehearsalEvidenceHash: executionPackage.cutoverRehearsalEvidenceHash,
+    },
+    executionPackage: {
+      executionPackageHash: executionPackage.executionPackageHash,
+      plannedWriteCount: executionPackage.plannedWriteCount,
+      plannedDeleteCount: executionPackage.plannedDeleteCount,
+    },
+    selector: {
+      selectorPath: executionPackage.selectorPreimage.selectorPath,
+      selectorPreimageSha256: executionPackage.selectorPreimage.selectorSha256,
+      selectorPostimageSha256: executionPackage.selectorPostimage.selectorSha256,
+    },
+    repository: {
+      ...repositoryIdentity,
+      repositoryPreimageSha256: hashContract(
+        "FINPLE_STEP114_2X_X_REPOSITORY_PREIMAGE\0", repository),
+      repositoryIdentityHash: hashContract(
+        "FINPLE_STEP114_2X_X_REPOSITORY_IDENTITY\0", repositoryIdentity),
+    },
+    datasets,
+    datasetPackageHash: hashContract(
+      "FINPLE_STEP114_2X_X_DATASET_PACKAGE\0", datasets),
+    authority: {
+      authorityPackageId: receipt.authorityPackageId,
+      authorityPackageHash: receipt.authorityPackageHash,
+      verificationReceiptHash: receipt.verificationReceiptHash,
+    },
+    invocation: {
+      invocationId: receipt.invocationId,
+      invocationHash: receipt.invocationHash,
+      invocationReceiptId: receipt.receiptId,
+      invocationReceiptHash: receipt.receiptHash,
+      invocationNonceHash: receipt.invocationNonceHash,
+      invokedAt: receipt.invokedAt,
+      expiresAt: receipt.expiresAt,
+    },
+    attestations: {
+      targetAbsenceAttestationHash: receipt.targetPathAbsenceEvidenceHash,
+      noDriftAttestationHash: hashContract(
+        "FINPLE_STEP114_2X_X_NO_DRIFT_ATTESTATION\0", repositoryIdentity),
+    },
+  };
+}
+
+function validateProductionCutoverEvidence(evidence) {
+  const issues = [];
+  if (!exactKeys(evidence, PRODUCTION_CUTOVER_EVIDENCE_FIELDS)) {
+    return { issues: ["production_cutover_evidence_fields_invalid"] };
   }
-  const { oPacket } = nested(stepSPackage);
-  result.requiredHashPlaceholders = [...oPacket.executorInput.requiredHashPlaceholders];
-  result.requiredTimestampPlaceholders =
-    [...oPacket.executorInput.requiredTimestampPlaceholders];
-  return result;
+  const receipt = evidence.verification?.invocationReceipt;
+  const receiptValidation =
+    validateMetricsCutoverExecutionInvocationReceipt(receipt);
+  issues.push(...receiptValidation.issues);
+  let bound = null;
+  try {
+    bound = guardedCutover.validateExecutionBinding(
+      evidence.verification, evidence.prepared, issues);
+  } catch {
+    issues.push("production_cutover_execution_binding_invalid");
+  }
+  let expectedIdentities = null;
+  if (bound && issues.length === 0) {
+    try { expectedIdentities = buildCanonicalProductionCutoverIdentities(bound); }
+    catch { issues.push("production_cutover_identity_reconstruction_failed"); }
+  }
+  if (!expectedIdentities ||
+      !canonicalEqual(evidence.productionCutoverIdentities, expectedIdentities)) {
+    issues.push("production_cutover_identity_manifest_mismatch");
+  }
+  return { issues: [...new Set(issues)].sort(), expectedIdentities };
 }
 
 function validateNonceContext(prior, fresh, packet) {
@@ -240,26 +309,21 @@ function validateStepWChain(packet) {
     packet.stepTCompletedResult));
   const expectedSummary = stepW.sanitizedStepTSummary("completed",
     packet.stepTCompletedResult);
-  if (!isRecord(packet.stepWResult) || packet.stepWResult.ok !== true ||
-      packet.stepWResult.status !== stepW.PUBLIC_STATES[1] ||
-      packet.stepWResult.contractVersion !== stepW.VERSION ||
-      packet.stepWResult.failureClassification !== null ||
-      packet.stepWResult.manualReviewRequired !== false ||
-      !canonicalEqual(packet.stepWResult.executionSequence, stepW.EXECUTION_SEQUENCE) ||
-      packet.stepWResult.envelopeClaimAcquisitionCount !== 1 ||
-      packet.stepWResult.envelopeClaimTerminalizationCount !== 1 ||
-      packet.stepWResult.stepTRunnerInvocationCount !== 1 ||
-      packet.stepWResult.adapterInvocationCount !== 1 ||
-      packet.stepWResult.envelopeClaimTerminalState !== "completed" ||
-      !canonicalEqual(packet.stepWResult.stepTExecutionSummary, expectedSummary) ||
-      !canonicalEqual(packet.stepWResult.executionCloseoutReceipt, expectedCloseout)) {
+  const expectedStepWResult = stepW.safeResult(stepW.PUBLIC_STATES[1], {
+    executionSequence: [...stepW.EXECUTION_SEQUENCE],
+    envelopeClaimAcquisitionCount: 1,
+    envelopeClaimTerminalizationCount: 1,
+    stepTRunnerInvocationCount: 1,
+    adapterInvocationCount: 1,
+    envelopeClaimTerminalState: "completed",
+    stepTExecutionSummary: expectedSummary,
+    executionCloseoutReceipt: expectedCloseout,
+  });
+  if (!canonicalEqual(packet.stepWResult, expectedStepWResult)) {
     issues.push("step_w_completed_result_invalid");
   }
-  for (const field of stepW.FIXED_FALSE_FIELDS) {
-    if (packet.stepWResult[field] !== false) issues.push("step_w_fixed_false_invalid");
-  }
   return { issues: [...new Set(issues)].sort(), stepSPackage, expectedPlan,
-    expectedPlanHash, envelope, claim, expectedCloseout };
+    expectedPlanHash, envelope, claim, expectedCloseout, expectedStepWResult };
 }
 
 function validateObservationReconciliation(packet, chain) {
@@ -314,12 +378,12 @@ function validateChronology(packet) {
   return [];
 }
 
-function buildReconciledEvidenceManifest(packet, chain, observation) {
+function buildReconciledEvidenceManifest(packet, chain, observation,
+  productionCutoverIdentities) {
   const uResult = packet.stepWPacket.stepVPacket.stepUCeremonyResult;
   const approval = packet.stepWPacket.stepVPacket.externalExecutionApproval;
   const tResult = packet.stepTCompletedResult;
   const closeout = packet.stepWResult.executionCloseoutReceipt;
-  const productionIdentities = collectProductionCutoverIdentities(chain.stepSPackage);
   const body = {
     contractVersion: "finple.step114-2x-x.reconciled-evidence-manifest.v1",
     mergedMainSha: MERGED_MAIN_SHA,
@@ -351,7 +415,7 @@ function buildReconciledEvidenceManifest(packet, chain, observation) {
     sanitizedObservationDigest: observation.expectedDigest,
     orderedHashOutputsDigest: observation.hashOutputsDigest,
     orderedTimestampOutputsDigest: observation.timestampOutputsDigest,
-    productionCutoverIdentities: productionIdentities,
+    productionCutoverIdentities,
     destinationCount: 1, observationCount: 1, runnerInvocationCount: 1,
     adapterInvocationCount: 1, disposalStatus: "completed",
     stepTLeaseTerminalState: "completed", envelopeClaimTerminalState: "completed",
@@ -421,6 +485,30 @@ function buildReadinessSummary(readinessPackage) {
     "FINPLE_STEP114_2X_X_READINESS_SUMMARY_HASH\0", withId) };
 }
 
+function validateReconciledEvidenceManifest(value, packet, chain, observation,
+  productionCutoverIdentities) {
+  let expected;
+  try {
+    expected = buildReconciledEvidenceManifest(packet, chain, observation,
+      productionCutoverIdentities);
+  } catch { return ["reconciled_evidence_manifest_reconstruction_failed"]; }
+  return canonicalEqual(value, expected) ? [] : ["reconciled_evidence_manifest_invalid"];
+}
+
+function validateProductionCutoverReadinessPackage(value, manifest) {
+  let expected;
+  try { expected = buildProductionCutoverReadinessPackage(manifest); }
+  catch { return ["production_cutover_readiness_reconstruction_failed"]; }
+  return canonicalEqual(value, expected) ? [] : ["production_cutover_readiness_invalid"];
+}
+
+function validateReadinessSummary(value, readinessPackage) {
+  let expected;
+  try { expected = buildReadinessSummary(readinessPackage); }
+  catch { return ["production_cutover_summary_reconstruction_failed"]; }
+  return canonicalEqual(value, expected) ? [] : ["production_cutover_summary_invalid"];
+}
+
 function evaluateControlledObservationEvidence(packet) {
   if (packet === undefined) return safeResult(PUBLIC_STATES[0]);
   if (!exactKeys(packet, INPUT_FIELDS)) {
@@ -450,8 +538,17 @@ function evaluateControlledObservationEvidence(packet) {
   if (observation.issues.length) {
     return block(FAILURE_CLASSIFICATIONS[1], observation.issues[0]);
   }
+  let productionCutover;
+  try { productionCutover = validateProductionCutoverEvidence(
+    packet.productionCutoverEvidence); }
+  catch { return block(FAILURE_CLASSIFICATIONS[2],
+    "cutover_identity_reconciliation_failed"); }
+  if (productionCutover.issues.length) {
+    return block(FAILURE_CLASSIFICATIONS[2], productionCutover.issues[0]);
+  }
   let manifest;
-  try { manifest = buildReconciledEvidenceManifest(packet, chain, observation); }
+  try { manifest = buildReconciledEvidenceManifest(packet, chain, observation,
+    productionCutover.expectedIdentities); }
   catch { return block(FAILURE_CLASSIFICATIONS[2], "cutover_identity_reconciliation_failed"); }
   const readiness = buildProductionCutoverReadinessPackage(manifest);
   const summary = buildReadinessSummary(readiness);
@@ -463,12 +560,14 @@ function evaluateControlledObservationEvidence(packet) {
 }
 
 module.exports = {
-  CUTOVER_IDENTITY_FIELDS, FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS,
+  FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS,
   INPUT_FIELDS, MAXIMUM_EVIDENCE_INTAKE_AGE_MILLISECONDS, MERGED_MAIN_SHA,
-  PUBLIC_STATES, VERSION,
+  PRODUCTION_CUTOVER_EVIDENCE_FIELDS, PUBLIC_STATES, VERSION,
+  buildCanonicalProductionCutoverIdentities,
   buildExpectedObservationBindings, buildProductionCutoverReadinessPackage,
   buildReadinessSummary, buildReconciledEvidenceManifest, canonicalJson,
-  collectProductionCutoverIdentities, evaluateControlledObservationEvidence,
+  evaluateControlledObservationEvidence,
   hashContract, safeResult, validateNonceContext, validateObservationReconciliation,
-  validateStepWChain,
+  validateProductionCutoverEvidence, validateProductionCutoverReadinessPackage,
+  validateReadinessSummary, validateReconciledEvidenceManifest, validateStepWChain,
 };

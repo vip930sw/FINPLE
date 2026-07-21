@@ -23,6 +23,18 @@ the Step W envelope-store descriptor, the single-use envelope claim, the supplie
 Step T completed receipt/evidence/closure, and the Step W completion-only closeout.
 No injected method is called while performing those checks.
 
+The completed Step W result is reconstructed with the merged Step W `safeResult`
+helper and compared as one canonical value. Missing or extra fields—including raw
+observation, credential, endpoint, or production-write authority fields—therefore
+fail before closeout validation rather than being ignored.
+
+Production-cutover identity reconciliation uses the merged guarded-executor and
+invocation-receipt pure validators against the exact `verification`, `prepared`,
+package A/B, execution-package, selector, repository-preimage, US/KR target, and
+receipt paths. The caller-supplied canonical identity manifest must exactly equal
+the reconstructed manifest. Empty, partial, duplicated, conflicting, stale,
+mistyped, or drifted identity evidence fails during candidate reconciliation.
+
 The persisted observation is validated through the merged Step T validator. Its
 ordered hash and timestamp output fields must exactly match the upstream executor
 input, and each value must match the corresponding sanitized value already bound

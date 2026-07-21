@@ -12,6 +12,11 @@ const fixture = require("./test-support/metrics-cutover-controlled-observation-e
 
 const BASE = fixture.buildFixture();
 function packetWith(overrides = {}) { return { ...BASE.packet, ...overrides }; }
+function cutoverPacket(mutator) {
+  const evidence = fixture.clone(BASE.packet.productionCutoverEvidence);
+  mutator(evidence);
+  return packetWith({ productionCutoverEvidence: evidence });
+}
 function resealObservation(observation) {
   const stepSPackage = BASE.packet.stepWPacket.stepVPacket.stepUPacket.stepSPackage;
   const stepTResult = fixture.buildCompletedStepTResult(stepSPackage, observation);
@@ -88,6 +93,145 @@ test("blocked or uncertain Step W public results are never accepted", () => {
       packetWith({ stepWResult: result }));
     assert.equal(evaluated.status, "blocked");
   }
+});
+
+test("Step W result requires exact full canonical reconstruction", () => {
+  assert.deepEqual(subject.validateStepWChain(BASE.packet).issues, []);
+  for (const extra of [
+    { unknownField: true },
+    { productionWriteAuthorized: true },
+    { rawObservation: { value: "forbidden" } },
+    { credential: "forbidden" },
+    { endpoint: "forbidden" },
+  ]) {
+    const stepWResult = { ...BASE.packet.stepWResult, ...extra };
+    const result = subject.evaluateControlledObservationEvidence(
+      packetWith({ stepWResult }));
+    assert.equal(result.status, "blocked");
+    assert.equal(result.failureClassification, "blocked_before_closeout_validation");
+    assert.deepEqual(result.blockingIssues, ["step_w_completed_result_invalid"]);
+  }
+  const missing = fixture.clone(BASE.packet.stepWResult);
+  delete missing.stepTExecutionSummary;
+  assert.equal(subject.evaluateControlledObservationEvidence(
+    packetWith({ stepWResult: missing })).status, "blocked");
+});
+
+test("empty and partial production cutover identities cannot create readiness", () => {
+  for (const identities of [{}, { contractVersion:
+    "finple.step114-2x-x.production-cutover-identities.v1" }]) {
+    const result = subject.evaluateControlledObservationEvidence(cutoverPacket(
+      (evidence) => { evidence.productionCutoverIdentities = identities; }));
+    assert.equal(result.status, "blocked");
+    assert.equal(result.failureClassification,
+      "blocked_during_cutover_candidate_reconciliation");
+    assert.deepEqual(result.reconciledEvidenceManifest, {});
+    assert.deepEqual(result.productionCutoverReadinessPackage, {});
+  }
+});
+
+test("every mandatory canonical production identity is required", () => {
+  const paths = [
+    ["candidatePackage", "candidatePackageId"],
+    ["candidatePackage", "candidatePackageHash"],
+    ["candidatePackage", "zipPackageSha256"],
+    ["candidatePackage", "cutoverRehearsalEvidenceHash"],
+    ["executionPackage", "executionPackageHash"],
+    ["selector", "selectorPreimageSha256"],
+    ["selector", "selectorPostimageSha256"],
+    ["repository", "repositoryPreimageSha256"],
+    ["repository", "repositoryTreeSha"],
+    ["repository", "repositoryHeadSha"],
+    ["repository", "repositoryIdentityHash"],
+    ["authority", "authorityPackageId"],
+    ["authority", "authorityPackageHash"],
+    ["invocation", "invocationId"],
+    ["invocation", "invocationHash"],
+    ["invocation", "invokedAt"],
+    ["attestations", "targetAbsenceAttestationHash"],
+    ["attestations", "noDriftAttestationHash"],
+  ];
+  for (const pathParts of paths) {
+    const result = subject.evaluateControlledObservationEvidence(cutoverPacket(
+      (evidence) => { delete evidence.productionCutoverIdentities[pathParts[0]][pathParts[1]]; }));
+    assert.equal(result.status, "blocked", pathParts.join("."));
+    assert.deepEqual(result.productionCutoverReadinessPackage, {});
+  }
+  for (const topLevel of ["datasets", "datasetPackageHash", "candidatePackage",
+    "executionPackage", "selector", "repository", "authority", "invocation",
+    "attestations"]) {
+    const result = subject.evaluateControlledObservationEvidence(cutoverPacket(
+      (evidence) => { delete evidence.productionCutoverIdentities[topLevel]; }));
+    assert.equal(result.status, "blocked", topLevel);
+  }
+});
+
+test("conflicting duplicate and stale upstream production identities block", () => {
+  const conflict = cutoverPacket((evidence) => {
+    evidence.prepared.packageB.executionPackage.candidatePackageId += "-conflict";
+  });
+  assert.equal(subject.evaluateControlledObservationEvidence(conflict).status, "blocked");
+  for (const mutate of [
+    (evidence) => { evidence.prepared.packageB.executionPackage.targetFiles[0].sha256 =
+      "a".repeat(64); },
+    (evidence) => { evidence.prepared.packageB.executionPackage.selectorPreimage
+      .selectorSha256 = "a".repeat(64); },
+    (evidence) => { evidence.prepared.packageB.executionPackage.repositoryPreimage
+      .repositoryTreeSha = "a".repeat(40); },
+  ]) {
+    const result = subject.evaluateControlledObservationEvidence(cutoverPacket(mutate));
+    assert.equal(result.status, "blocked");
+  }
+});
+
+test("candidate, selector, repository, attestation, type, and US/KR drift block", () => {
+  const mutators = [
+    (ids) => { ids.candidatePackage.candidatePackageHash = "a".repeat(64); },
+    (ids) => { ids.datasets[0].contentSha256 = "a".repeat(64); },
+    (ids) => { ids.datasets[1].contentSha256 = "b".repeat(64); },
+    (ids) => { ids.selector.selectorPreimageSha256 = "c".repeat(64); },
+    (ids) => { ids.selector.selectorPostimageSha256 = "d".repeat(64); },
+    (ids) => { ids.repository.repositoryHeadSha = "e".repeat(40); },
+    (ids) => { ids.attestations.targetAbsenceAttestationHash = "f".repeat(64); },
+    (ids) => { delete ids.attestations.noDriftAttestationHash; },
+    (ids) => { ids.datasets[0].rowCount = "1"; },
+    (ids) => { ids.datasets[0].byteCount = null; },
+    (ids) => { ids.invocation.invokedAt = 0; },
+  ];
+  for (const mutate of mutators) {
+    const result = subject.evaluateControlledObservationEvidence(cutoverPacket(
+      (evidence) => mutate(evidence.productionCutoverIdentities)));
+    assert.equal(result.status, "blocked");
+    assert.equal(result.failureClassification,
+      "blocked_during_cutover_candidate_reconciliation");
+  }
+});
+
+test("canonical manifest, readiness package, and summary reject tampering", () => {
+  const result = subject.evaluateControlledObservationEvidence(BASE.packet);
+  assert.equal(result.status, subject.PUBLIC_STATES[1], result.blockingIssues.join(","));
+  const chain = subject.validateStepWChain(BASE.packet);
+  const observation = subject.validateObservationReconciliation(BASE.packet, chain);
+  const identities = BASE.packet.productionCutoverEvidence.productionCutoverIdentities;
+  assert.deepEqual(subject.validateReconciledEvidenceManifest(
+    result.reconciledEvidenceManifest, BASE.packet, chain, observation, identities), []);
+  assert.deepEqual(subject.validateProductionCutoverReadinessPackage(
+    result.productionCutoverReadinessPackage, result.reconciledEvidenceManifest), []);
+  assert.deepEqual(subject.validateReadinessSummary(
+    result.productionCutoverReadinessSummary,
+    result.productionCutoverReadinessPackage), []);
+  const manifest = fixture.clone(result.reconciledEvidenceManifest);
+  delete manifest.productionCutoverIdentities.authority.authorityPackageHash;
+  assert.notDeepEqual(subject.validateReconciledEvidenceManifest(
+    manifest, BASE.packet, chain, observation, identities), []);
+  const readiness = { ...result.productionCutoverReadinessPackage,
+    eligibleForSeparateProductionCutoverApproval: false };
+  assert.notDeepEqual(subject.validateProductionCutoverReadinessPackage(
+    readiness, result.reconciledEvidenceManifest), []);
+  const summary = { ...result.productionCutoverReadinessSummary,
+    unknownAuthority: true };
+  assert.notDeepEqual(subject.validateReadinessSummary(
+    summary, result.productionCutoverReadinessPackage), []);
 });
 
 test("missing, extra, reordered, malformed, and unknown observation fields block", () => {

@@ -4,6 +4,8 @@ const stepT = require("../lib/metrics-cutover-live-observation-controlled-runner
 const stepW = require("../lib/metrics-cutover-live-observation-signed-envelope-executor.cjs");
 const stepTFixture = require("./metrics-cutover-live-observation-controlled-runner-fixture.cjs");
 const stepWFixture = require("./metrics-cutover-live-observation-signed-envelope-executor-fixture.cjs");
+const guardedCutover = require("../lib/metrics-cutover-guarded-executor.cjs");
+const guardedCutoverFixture = require("./metrics-cutover-guarded-executor-fixture.cjs");
 const subject = require("../lib/metrics-cutover-controlled-observation-evidence-reconciliation.cjs");
 
 const RECONCILIATION_CLOCK = "2026-07-18T00:03:26.000Z";
@@ -54,6 +56,19 @@ let cached;
 function buildFixture() {
   if (cached) return cached;
   const w = stepWFixture.buildFixture();
+  const legacy = guardedCutoverFixture.setup();
+  const bindingIssues = [];
+  const authoritativeBinding = guardedCutover.validateExecutionBinding(
+    legacy.execution.verification, legacy.execution.prepared, bindingIssues);
+  if (!authoritativeBinding || bindingIssues.length) {
+    throw new Error(`synthetic_cutover_binding_invalid:${bindingIssues.join(",")}`);
+  }
+  const productionCutoverEvidence = deepFreeze({
+    verification: clone(legacy.execution.verification),
+    prepared: clone(legacy.execution.prepared),
+    productionCutoverIdentities:
+      subject.buildCanonicalProductionCutoverIdentities(authoritativeBinding),
+  });
   const stepSPackage = w.packet.stepVPacket.stepUPacket.stepSPackage;
   const binding = subject.buildExpectedObservationBindings(stepSPackage);
   const baseObservation = stepTFixture.buildObservation(stepSPackage);
@@ -90,9 +105,10 @@ function buildFixture() {
     reconciliationClockInstant: RECONCILIATION_CLOCK,
     priorReconciliationNonceHashes: [],
     reconciliationNonceHash: RECONCILIATION_NONCE_HASH,
+    productionCutoverEvidence,
   });
   cached = { packet, binding, claim, closeout, stepTCompletedResult,
-    stepWResult, stepWFixture: w };
+    stepWResult, stepWFixture: w, productionCutoverEvidence };
   return cached;
 }
 

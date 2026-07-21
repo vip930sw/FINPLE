@@ -10,8 +10,15 @@ The reconciled evidence manifest binds the Step W closeout and claim, Step V
 approval and execution envelope, Step U evidence/material/inventory records, Step T
 receipt/evidence/closure, the exact operation-plan and runtime-trace hashes, the
 Step S launch package, the sanitized observation digest, ordered output digests,
-the available upstream production-cutover identities, completion counts and
+the exact canonical upstream production-cutover identities, completion counts and
 terminal states, chronology, and the fresh/prior reconciliation nonce context.
+
+Those identities bind the candidate and execution packages, selector preimage and
+postimage, repository preimage/tree/head, tracked paths, target-absence and
+no-drift attestations, both ordered US/KR dataset content/schema/row/byte
+identities, authority and invocation identities, and canonical invocation
+timestamps. A partial identity object cannot produce either reconciled evidence or
+`eligibleForSeparateProductionCutoverApproval=true`.
 
 Step X uses these domain-separated seals:
 
