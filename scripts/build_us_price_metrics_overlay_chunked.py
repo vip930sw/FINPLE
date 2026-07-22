@@ -20,8 +20,8 @@ and may use dividendYield separately.
 
 Example
 -------
-python build_us_price_metrics_overlay_chunked.py \
-  --input finple_app_candidates_6000_balanced_v1.csv \
+python -m scripts.build_us_price_metrics_overlay_chunked \
+  --input src/data/tickers/finple_app_candidates_6000_balanced_v1.csv \
   --out-runtime us_price_metrics_overlay_20260528_part0000_0100.csv \
   --out-audit us_price_metrics_overlay_20260528_part0000_0100_audit.csv \
   --out-summary us_price_metrics_overlay_20260528_part0000_0100_summary.json \

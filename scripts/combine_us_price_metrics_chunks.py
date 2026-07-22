@@ -4,7 +4,7 @@ Run this in Colab after chunk files are created.
 
 Example
 -------
-python combine_us_price_metrics_chunks.py \
+python -m scripts.combine_us_price_metrics_chunks \
   --pattern 'us_price_metrics_overlay_20260528_part*.csv' \
   --out-runtime us_price_metrics_overlay_20260528.csv \
   --out-summary us_price_metrics_overlay_20260528_summary.json

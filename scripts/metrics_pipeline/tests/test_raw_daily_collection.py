@@ -12,6 +12,7 @@ from unittest import mock
 import pandas as pd
 
 from scripts import build_us_price_metrics_overlay_chunked as us_builder
+from scripts import build_kr_price_metrics_overlay_chunked as kr_builder
 from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows, prepare_inputs
 from scripts.raw_daily_price_chunks import (
     combine_raw_daily_chunks,
@@ -101,6 +102,55 @@ class RawDailyCollectionTests(unittest.TestCase):
         self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in rows))
         self.assertEqual({row["totalReturnAdjustedClose"] for row in rows}, {""})
         self.assertEqual({row["priceAdjustmentBasis"] for row in rows}, {"split_adjusted"})
+
+    def test_mock_us_and_kr_twenty_asset_builder_smoke(self):
+        cases = [(us_builder, "US"), (kr_builder, "KR")]
+        for builder, market in cases:
+            with self.subTest(market=market), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                input_path = root / "universe.csv"
+                with input_path.open("w", encoding="utf-8-sig", newline="") as handle:
+                    writer = csv.DictWriter(
+                        handle,
+                        fieldnames=["market", "ticker", "providerSymbol", "assetType", "nameKr"],
+                    )
+                    writer.writeheader()
+                    for index in range(20):
+                        ticker = f"{index + 1:06d}" if market == "KR" else f"T{index:03d}"
+                        writer.writerow(
+                            {
+                                "market": market,
+                                "ticker": ticker,
+                                "providerSymbol": f"{ticker}.KS" if market == "KR" else ticker,
+                                "assetType": "stock",
+                                "nameKr": "",
+                            }
+                        )
+                runtime = root / "runtime.csv"
+                audit = root / "audit.csv"
+                summary = root / "summary.json"
+                raw = root / "raw.csv"
+                argv = [
+                    builder.__name__.split(".")[-1],
+                    "--input", str(input_path),
+                    "--out-runtime", str(runtime),
+                    "--out-audit", str(audit),
+                    "--out-summary", str(summary),
+                    "--out-raw", str(raw),
+                    "--as-of", "2026-07-23",
+                    "--start", "0",
+                    "--limit", "20",
+                    "--checkpoint-every", "5",
+                    "--retrieved-at", "2026-07-23T00:00:00+00:00",
+                ]
+                with mock.patch.object(builder, "pd", pd), mock.patch.object(builder, "yf", object()), mock.patch.object(
+                    builder, "download_history", side_effect=lambda *_args, **_kwargs: fake_history()
+                ), mock.patch.object(sys, "argv", argv):
+                    builder.main()
+                result = json.loads(summary.read_text(encoding="utf-8"))
+                self.assertEqual(result["processed_count"], 20)
+                self.assertEqual(result["raw_daily_asset_count"], 20)
+                self.assertEqual(len({(row["market"], row["ticker"]) for row in read_raw_daily_rows(raw)}), 20)
 
     def test_us_100_asset_checkpoint_and_resume_uses_mock_provider(self):
         with tempfile.TemporaryDirectory() as temp_dir:

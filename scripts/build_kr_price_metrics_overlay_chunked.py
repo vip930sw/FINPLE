@@ -5,8 +5,8 @@ It is designed for Colab chunk runs and should not overwrite the base 6,000 CSV.
 
 Example
 -------
-python build_kr_price_metrics_overlay_chunked.py \
-  --input finple_app_candidates_6000_balanced_v1.csv \
+python -m scripts.build_kr_price_metrics_overlay_chunked \
+  --input src/data/tickers/finple_app_candidates_6000_balanced_v1.csv \
   --out-runtime kr_price_metrics_overlay_20260528_part0000_0100.csv \
   --out-audit kr_price_metrics_overlay_20260528_part0000_0100_audit.csv \
   --out-summary kr_price_metrics_overlay_20260528_part0000_0100_summary.json \
