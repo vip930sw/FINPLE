@@ -101,6 +101,75 @@ function rootPolicyIdentity(kind, canonicalRoot) {
   return hashContract("FINPLE_STEP114_2X_ZB_R_ROOT_POLICY_IDENTITY\0",
     { kind, canonicalRootIdentityHash: sha256(Buffer.from(canonicalRoot, "utf8")) });
 }
+function buildFactoryApprovedRelativeActualPathIdentity(input) {
+  const fields = ["filesystem", "pathApi", "approvedRoot", "candidatePath",
+    "pathRole", "leafMayBeMissing"];
+  if (!exactKeys(input, fields) || !isRecord(input.filesystem) ||
+      !isRecord(input.pathApi) || typeof input.pathRole !== "string" ||
+      input.pathRole.length === 0 || typeof input.leafMayBeMissing !== "boolean") {
+    throw new TypeError("actual_path_identity_input_invalid");
+  }
+  const fs = input.filesystem; const path = input.pathApi;
+  const requiredFs = ["existsSync", "lstatSync", "realpathSync"];
+  const requiredPath = ["basename", "dirname", "isAbsolute", "join", "relative",
+    "resolve"];
+  if (requiredFs.some((name) => typeof fs[name] !== "function") ||
+      requiredPath.some((name) => typeof path[name] !== "function") ||
+      typeof path.sep !== "string") throw new TypeError("actual_path_capability_invalid");
+  const approvedRoot = path.resolve(input.approvedRoot);
+  const candidate = path.resolve(input.candidatePath);
+  if (!path.isAbsolute(input.approvedRoot) || approvedRoot !== input.approvedRoot ||
+      !path.isAbsolute(input.candidatePath) || candidate !== input.candidatePath ||
+      !fs.existsSync(approvedRoot) || fs.lstatSync(approvedRoot).isSymbolicLink()) {
+    throw new Error("actual_path_canonicalization_or_root_invalid");
+  }
+  const approvedRootReal = fs.realpathSync(approvedRoot);
+  const lexicalRelative = path.relative(approvedRoot, candidate);
+  if (!lexicalRelative || lexicalRelative === ".." ||
+      lexicalRelative.startsWith(`..${path.sep}`) || path.isAbsolute(lexicalRelative)) {
+    throw new Error("actual_path_root_escape");
+  }
+  let cursor = approvedRoot;
+  const lexicalComponents = lexicalRelative.split(path.sep);
+  for (let index = 0; index < lexicalComponents.length; index += 1) {
+    const component = lexicalComponents[index];
+    if (!component || component === "." || component === "..") {
+      throw new Error("actual_path_segment_invalid");
+    }
+    cursor = path.join(cursor, component);
+    if (!fs.existsSync(cursor)) {
+      if (input.leafMayBeMissing && index === lexicalComponents.length - 1) break;
+      throw new Error("actual_path_parent_missing");
+    }
+    if (fs.lstatSync(cursor).isSymbolicLink()) {
+      throw new Error("actual_path_symlink_or_junction_forbidden");
+    }
+  }
+  let canonicalPath;
+  if (fs.existsSync(candidate)) {
+    canonicalPath = fs.realpathSync(candidate);
+  } else {
+    if (!input.leafMayBeMissing) throw new Error("actual_path_missing");
+    const parentReal = fs.realpathSync(path.dirname(candidate));
+    canonicalPath = path.resolve(parentReal, path.basename(candidate));
+  }
+  const relative = path.relative(approvedRootReal, canonicalPath);
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relative)) throw new Error("actual_path_realpath_escape");
+  const components = relative.split(path.sep);
+  if (components.some((component) => !component || component === "." ||
+    component === ".." || component.includes("/") || component.includes("\\"))) {
+    throw new Error("actual_path_canonical_relative_invalid");
+  }
+  const canonicalApprovedRelativePath = components.join("/");
+  return hashContract(
+    "FINPLE_STEP114_2X_ZB_R_APPROVED_RELATIVE_ACTUAL_PATH_IDENTITY\0", {
+      pathRole: input.pathRole,
+      approvedRootPolicyIdentity: rootPolicyIdentity(
+        "approved_data_root", approvedRootReal),
+      canonicalApprovedRelativePath,
+    });
+}
 function buildAdapterConstructionSchemaIdentity() {
   return hashContract("FINPLE_STEP114_2X_ZB_R_ADAPTER_CONSTRUCTION_SCHEMA\0", {
     constructionFields: CONSTRUCTION_FIELDS,
@@ -131,20 +200,25 @@ function buildProductionAdapterConstructionBinding(input) {
       !Array.isArray(input.targetContracts) || input.targetContracts.length !== 2 ||
       !canonicalEqual(input.targetContracts.map((entry) => entry.market), ["US", "KR"]) ||
       input.targetContracts.some((entry) => !exactKeys(entry, [
-        "role", "market", "pathIdentityHash", "publicPath", "versionedTarget",
+        "role", "market", "publicPathIdentityHash",
+        "approvedRelativePathIdentityHash", "publicPath", "versionedTarget",
         "writeMode", "schemaVersion", "normalizedHeaderSha256",
         "schemaIdentitySha256", "expectedContentSha256",
         "expectedDatasetIdentityHash", "expectedRowCount", "expectedByteCount",
-      ]) || !isSha(entry.pathIdentityHash) || typeof entry.publicPath !== "string" ||
+      ]) || !isSha(entry.publicPathIdentityHash) ||
+        !isSha(entry.approvedRelativePathIdentityHash) ||
+        typeof entry.publicPath !== "string" ||
         entry.publicPath.length === 0 || entry.versionedTarget !== true ||
         entry.writeMode !== "create_only" || !isSha(entry.normalizedHeaderSha256) ||
         !isSha(entry.schemaIdentitySha256) || !isSha(entry.expectedContentSha256) ||
         !isSha(entry.expectedDatasetIdentityHash) ||
         !Number.isInteger(entry.expectedRowCount) || entry.expectedRowCount < 1 ||
         !Number.isInteger(entry.expectedByteCount) || entry.expectedByteCount < 1) ||
-      !exactKeys(input.selectorBinding, ["pathIdentityHash", "publicPath",
-        "preimageSha256", "expectedPostimageSha256", "targetReferences"]) ||
-      !isSha(input.selectorBinding.pathIdentityHash) ||
+      !exactKeys(input.selectorBinding, ["publicPathIdentityHash",
+        "approvedRelativePathIdentityHash", "publicPath", "preimageSha256",
+        "expectedPostimageSha256", "targetReferences"]) ||
+      !isSha(input.selectorBinding.publicPathIdentityHash) ||
+      !isSha(input.selectorBinding.approvedRelativePathIdentityHash) ||
       typeof input.selectorBinding.publicPath !== "string" ||
       !isSha(input.selectorBinding.preimageSha256) ||
       !isSha(input.selectorBinding.expectedPostimageSha256) ||
@@ -173,11 +247,16 @@ function buildProductionAdapterConstructionBinding(input) {
       !Array.isArray(input.restorationMaterialIdentity.targets) ||
       input.restorationMaterialIdentity.targets.length !== 2 ||
       input.restorationMaterialIdentity.targets.some((entry) => !exactKeys(entry,
-        ["market", "pathIdentityHash", "exists"]) || !isSha(entry.pathIdentityHash) ||
+        ["market", "publicPathIdentityHash", "approvedRelativePathIdentityHash",
+          "exists"]) || !isSha(entry.publicPathIdentityHash) ||
+        !isSha(entry.approvedRelativePathIdentityHash) ||
         entry.exists !== false) ||
       !exactKeys(input.restorationMaterialIdentity.selector,
-        ["pathIdentityHash", "contentSha256", "byteCount"]) ||
-      !isSha(input.restorationMaterialIdentity.selector.pathIdentityHash) ||
+        ["publicPathIdentityHash", "approvedRelativePathIdentityHash",
+          "contentSha256", "byteCount"]) ||
+      !isSha(input.restorationMaterialIdentity.selector.publicPathIdentityHash) ||
+      !isSha(input.restorationMaterialIdentity.selector
+        .approvedRelativePathIdentityHash) ||
       !isSha(input.restorationMaterialIdentity.selector.contentSha256) ||
       !Number.isInteger(input.restorationMaterialIdentity.selector.byteCount) ||
       input.restorationMaterialIdentity.selector.byteCount < 1 ||
@@ -201,6 +280,18 @@ function buildProductionAdapterConstructionBinding(input) {
       input.adapterConstructionSchemaIdentity !==
         buildAdapterConstructionSchemaIdentity()) {
     throw new TypeError("adapter_construction_binding_input_invalid");
+  }
+  if (!canonicalEqual(input.targetContracts.map((entry) => ({
+    market: entry.market, publicPathIdentityHash: entry.publicPathIdentityHash,
+    approvedRelativePathIdentityHash: entry.approvedRelativePathIdentityHash,
+  })), input.restorationMaterialIdentity.targets.map((entry) => ({
+    market: entry.market, publicPathIdentityHash: entry.publicPathIdentityHash,
+    approvedRelativePathIdentityHash: entry.approvedRelativePathIdentityHash,
+  }))) || input.selectorBinding.publicPathIdentityHash !==
+      input.restorationMaterialIdentity.selector.publicPathIdentityHash ||
+      input.selectorBinding.approvedRelativePathIdentityHash !==
+      input.restorationMaterialIdentity.selector.approvedRelativePathIdentityHash) {
+    throw new Error("restoration_actual_path_identity_binding_mismatch");
   }
   const capabilityBindings = CAPABILITY_NAMES.map((capabilityName) => ({
     capabilityName, descriptor: stepZ.buildCapabilityDescriptor(capabilityName),
@@ -443,15 +534,32 @@ function buildPathGuard(input) {
     assertPath(raw, stateRoot, stateReal, missing) };
 }
 
-function deriveFactoryRestorationMaterialIdentity(input) {
+function deriveFactoryRestorationMaterialIdentity(input, expectedActualPathIdentities) {
+  if (!exactKeys(expectedActualPathIdentities, ["targets", "selector"]) ||
+      !Array.isArray(expectedActualPathIdentities.targets) ||
+      expectedActualPathIdentities.targets.length !== 2 ||
+      expectedActualPathIdentities.targets.some((entry) => !isSha(entry)) ||
+      !isSha(expectedActualPathIdentities.selector)) {
+    throw new TypeError("restoration_expected_actual_path_identities_invalid");
+  }
   const targetIdentities = input.restorationMaterial.targets.map((entry, index) => {
     const target = input.targetPaths[index];
     if (entry.market !== target.market || entry.path !== target.path ||
         entry.publicPath !== target.publicPath || entry.exists !== false) {
       throw new Error("restoration_target_binding_invalid");
     }
+    const approvedRelativePathIdentityHash =
+      buildFactoryApprovedRelativeActualPathIdentity({
+        filesystem: input.filesystem, pathApi: input.pathApi,
+        approvedRoot: input.approvedRoot, candidatePath: entry.path,
+        pathRole: `production_csv_target:${entry.market}`, leafMayBeMissing: true,
+      });
+    if (approvedRelativePathIdentityHash !== expectedActualPathIdentities.targets[index]) {
+      throw new Error("restoration_target_actual_path_identity_mismatch");
+    }
     return { market: entry.market,
-      pathIdentityHash: pathIdentity(entry.market, entry.publicPath), exists: false };
+      publicPathIdentityHash: pathIdentity(entry.market, entry.publicPath),
+      approvedRelativePathIdentityHash, exists: false };
   });
   const selectorBytes = canonicalBase64(
     input.restorationMaterial.selector.contentBase64);
@@ -459,10 +567,23 @@ function deriveFactoryRestorationMaterialIdentity(input) {
       input.restorationMaterial.selector.publicPath !== input.selectorPath.publicPath) {
     throw new Error("restoration_selector_binding_invalid");
   }
+  const selectorApprovedRelativePathIdentityHash =
+    buildFactoryApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot,
+      candidatePath: input.restorationMaterial.selector.path,
+      pathRole: "production_selector", leafMayBeMissing: false,
+    });
+  if (selectorApprovedRelativePathIdentityHash !==
+      expectedActualPathIdentities.selector) {
+    throw new Error("restoration_selector_actual_path_identity_mismatch");
+  }
   const body = {
     contractVersion: "finple.step114-2x-zb-r.restoration-identity.v1",
     targets: targetIdentities,
-    selector: { pathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+    selector: {
+      publicPathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+      approvedRelativePathIdentityHash: selectorApprovedRelativePathIdentityHash,
       contentSha256: sha256(selectorBytes), byteCount: selectorBytes.length },
     restorationSchemaVersion: "create-only-absent-targets-selector-preimage.v1",
     createOnly: true,
@@ -484,9 +605,23 @@ function deriveFactoryConstructionBinding(input, guard) {
       futureStateRootPathIdentity: sha256(Buffer.from(guard.stateRoot, "utf8")),
       stateRootAbsent: true,
     });
-  const targetContracts = input.targetPaths.map((entry) => ({
+  const targetApprovedRelativePathIdentityHashes = input.targetPaths.map((entry) =>
+    buildFactoryApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot, candidatePath: entry.path,
+      pathRole: `production_csv_target:${entry.market}`, leafMayBeMissing: true,
+    }));
+  const selectorApprovedRelativePathIdentityHash =
+    buildFactoryApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot, candidatePath: input.selectorPath.path,
+      pathRole: "production_selector", leafMayBeMissing: false,
+    });
+  const targetContracts = input.targetPaths.map((entry, index) => ({
     role: entry.role, market: entry.market,
-    pathIdentityHash: pathIdentity(entry.market, entry.publicPath),
+    publicPathIdentityHash: pathIdentity(entry.market, entry.publicPath),
+    approvedRelativePathIdentityHash:
+      targetApprovedRelativePathIdentityHashes[index],
     publicPath: entry.publicPath, versionedTarget: entry.versionedTarget,
     writeMode: entry.writeMode, schemaVersion: entry.schemaVersion,
     normalizedHeaderSha256: entry.normalizedHeaderSha256,
@@ -511,7 +646,9 @@ function deriveFactoryConstructionBinding(input, guard) {
       treeSha: input.repositoryIdentity.treeSha },
     approvedRootPolicyIdentity, stateRootPolicyIdentity, targetContracts,
     selectorBinding: {
-      pathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+      publicPathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+      approvedRelativePathIdentityHash:
+        selectorApprovedRelativePathIdentityHash,
       publicPath: input.selectorPath.publicPath,
       preimageSha256: sha256(selectorPreimageBytes),
       expectedPostimageSha256: sha256(input.selectorExpectedPostimageBytes),
@@ -519,7 +656,10 @@ function deriveFactoryConstructionBinding(input, guard) {
     },
     operationPlan: input.operationBindings.map((entry) => ({ ...entry })),
     platformCapabilities: { ...input.platformCapabilities },
-    restorationMaterialIdentity: deriveFactoryRestorationMaterialIdentity(input),
+    restorationMaterialIdentity: deriveFactoryRestorationMaterialIdentity(input, {
+      targets: targetApprovedRelativePathIdentityHashes,
+      selector: selectorApprovedRelativePathIdentityHash,
+    }),
     noOpProductionFaultInjectorIdentity:
       buildNoOpProductionFaultInjectorIdentity(input.faultInjector),
     adapterConstructionSchemaIdentity: buildAdapterConstructionSchemaIdentity(),

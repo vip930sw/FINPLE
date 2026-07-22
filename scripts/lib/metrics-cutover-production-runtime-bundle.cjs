@@ -212,6 +212,75 @@ function rootPolicyIdentity(kind, canonicalRoot) {
   return hashContract("FINPLE_STEP114_2X_ZB_R_ROOT_POLICY_IDENTITY\0",
     { kind, canonicalRootIdentityHash: sha256(Buffer.from(canonicalRoot, "utf8")) });
 }
+function buildReadOnlyApprovedRelativeActualPathIdentity(input) {
+  const fields = ["filesystem", "pathApi", "approvedRoot", "candidatePath",
+    "pathRole", "leafMayBeMissing"];
+  if (!exactKeys(input, fields) || !isRecord(input.filesystem) ||
+      !isRecord(input.pathApi) || typeof input.pathRole !== "string" ||
+      input.pathRole.length === 0 || typeof input.leafMayBeMissing !== "boolean") {
+    throw new TypeError("actual_path_identity_input_invalid");
+  }
+  const fs = input.filesystem; const path = input.pathApi;
+  const requiredFs = ["existsSync", "lstatSync", "realpathSync"];
+  const requiredPath = ["basename", "dirname", "isAbsolute", "join", "relative",
+    "resolve"];
+  if (requiredFs.some((name) => typeof fs[name] !== "function") ||
+      requiredPath.some((name) => typeof path[name] !== "function") ||
+      typeof path.sep !== "string") throw new TypeError("actual_path_capability_invalid");
+  const approvedRoot = path.resolve(input.approvedRoot);
+  const candidate = path.resolve(input.candidatePath);
+  if (!path.isAbsolute(input.approvedRoot) || approvedRoot !== input.approvedRoot ||
+      !path.isAbsolute(input.candidatePath) || candidate !== input.candidatePath ||
+      !fs.existsSync(approvedRoot) || fs.lstatSync(approvedRoot).isSymbolicLink()) {
+    throw new Error("actual_path_canonicalization_or_root_invalid");
+  }
+  const approvedRootReal = fs.realpathSync(approvedRoot);
+  const lexicalRelative = path.relative(approvedRoot, candidate);
+  if (!lexicalRelative || lexicalRelative === ".." ||
+      lexicalRelative.startsWith(`..${path.sep}`) || path.isAbsolute(lexicalRelative)) {
+    throw new Error("actual_path_root_escape");
+  }
+  let cursor = approvedRoot;
+  const lexicalComponents = lexicalRelative.split(path.sep);
+  for (let index = 0; index < lexicalComponents.length; index += 1) {
+    const component = lexicalComponents[index];
+    if (!component || component === "." || component === "..") {
+      throw new Error("actual_path_segment_invalid");
+    }
+    cursor = path.join(cursor, component);
+    if (!fs.existsSync(cursor)) {
+      if (input.leafMayBeMissing && index === lexicalComponents.length - 1) break;
+      throw new Error("actual_path_parent_missing");
+    }
+    if (fs.lstatSync(cursor).isSymbolicLink()) {
+      throw new Error("actual_path_symlink_or_junction_forbidden");
+    }
+  }
+  let canonicalPath;
+  if (fs.existsSync(candidate)) {
+    canonicalPath = fs.realpathSync(candidate);
+  } else {
+    if (!input.leafMayBeMissing) throw new Error("actual_path_missing");
+    const parentReal = fs.realpathSync(path.dirname(candidate));
+    canonicalPath = path.resolve(parentReal, path.basename(candidate));
+  }
+  const relative = path.relative(approvedRootReal, canonicalPath);
+  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relative)) throw new Error("actual_path_realpath_escape");
+  const components = relative.split(path.sep);
+  if (components.some((component) => !component || component === "." ||
+    component === ".." || component.includes("/") || component.includes("\\"))) {
+    throw new Error("actual_path_canonical_relative_invalid");
+  }
+  const canonicalApprovedRelativePath = components.join("/");
+  return hashContract(
+    "FINPLE_STEP114_2X_ZB_R_APPROVED_RELATIVE_ACTUAL_PATH_IDENTITY\0", {
+      pathRole: input.pathRole,
+      approvedRootPolicyIdentity: rootPolicyIdentity(
+        "approved_data_root", approvedRootReal),
+      canonicalApprovedRelativePath,
+    });
+}
 
 function buildStepZExecutionMaterialDescriptor(stepZAPacket, stepZAResult,
   targetSelectorBindingHash) {
@@ -437,7 +506,7 @@ function runIsolatedPlatformProbe(input) {
 }
 
 function deriveRestorationMaterialIdentity(restorationMaterial, input,
-  selectorPreimageBytes) {
+  selectorPreimageBytes, expectedActualPathIdentities) {
   if (!exactKeys(restorationMaterial, ["contractVersion", "targets", "selector",
     "createOnly"]) || restorationMaterial.contractVersion !==
       "finple.step114-2x-zb-r.private-restoration-material.v1" ||
@@ -445,6 +514,11 @@ function deriveRestorationMaterialIdentity(restorationMaterial, input,
       !Array.isArray(restorationMaterial.targets) ||
       restorationMaterial.targets.length !== 2 ||
       !canonicalEqual(restorationMaterial.targets.map((entry) => entry.market), ["US", "KR"]) ||
+      !exactKeys(expectedActualPathIdentities, ["targets", "selector"]) ||
+      !Array.isArray(expectedActualPathIdentities.targets) ||
+      expectedActualPathIdentities.targets.length !== 2 ||
+      expectedActualPathIdentities.targets.some((entry) => !isSha(entry)) ||
+      !isSha(expectedActualPathIdentities.selector) ||
       !exactKeys(restorationMaterial.selector,
         ["path", "publicPath", "contentBase64"])) {
     throw new TypeError("restoration_material_invalid");
@@ -456,8 +530,18 @@ function deriveRestorationMaterialIdentity(restorationMaterial, input,
         entry.publicPath !== target.publicPath || entry.exists !== false) {
       throw new Error("restoration_target_binding_invalid");
     }
+    const approvedRelativePathIdentityHash =
+      buildReadOnlyApprovedRelativeActualPathIdentity({
+        filesystem: input.filesystem, pathApi: input.pathApi,
+        approvedRoot: input.approvedRoot, candidatePath: entry.path,
+        pathRole: `production_csv_target:${entry.market}`, leafMayBeMissing: true,
+      });
+    if (approvedRelativePathIdentityHash !== expectedActualPathIdentities.targets[index]) {
+      throw new Error("restoration_target_actual_path_identity_mismatch");
+    }
     return { market: entry.market,
-      pathIdentityHash: pathIdentity(entry.market, entry.publicPath), exists: false };
+      publicPathIdentityHash: pathIdentity(entry.market, entry.publicPath),
+      approvedRelativePathIdentityHash, exists: false };
   });
   const selectorBytes = canonicalBase64(restorationMaterial.selector.contentBase64);
   if (!selectorBytes || restorationMaterial.selector.path !== input.selectorPath.path ||
@@ -465,10 +549,22 @@ function deriveRestorationMaterialIdentity(restorationMaterial, input,
       selectorBytes.compare(selectorPreimageBytes) !== 0) {
     throw new Error("restoration_selector_binding_invalid");
   }
+  const selectorApprovedRelativePathIdentityHash =
+    buildReadOnlyApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot,
+      candidatePath: restorationMaterial.selector.path,
+      pathRole: "production_selector", leafMayBeMissing: false,
+    });
+  if (selectorApprovedRelativePathIdentityHash !==
+      expectedActualPathIdentities.selector) {
+    throw new Error("restoration_selector_actual_path_identity_mismatch");
+  }
   const body = {
     contractVersion: "finple.step114-2x-zb-r.restoration-identity.v1",
     targets: targetIdentities,
-    selector: { pathIdentityHash: input.selectorPath.pathIdentityHash,
+    selector: { publicPathIdentityHash: input.selectorPath.pathIdentityHash,
+      approvedRelativePathIdentityHash: selectorApprovedRelativePathIdentityHash,
       contentSha256: sha256(selectorBytes), byteCount: selectorBytes.length },
     restorationSchemaVersion: "create-only-absent-targets-selector-preimage.v1",
     createOnly: true,
@@ -604,8 +700,23 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   }
   const selectorPreimageIdentity = { pathIdentityHash: input.selectorPath.pathIdentityHash,
     contentIdentityHash: sha256(selectorPreimageBytes), byteCount: selectorPreimageBytes.length };
+  const targetApprovedRelativePathIdentityHashes = input.targetPaths.map((entry) =>
+    buildReadOnlyApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot, candidatePath: entry.path,
+      pathRole: `production_csv_target:${entry.market}`, leafMayBeMissing: true,
+    }));
+  const selectorApprovedRelativePathIdentityHash =
+    buildReadOnlyApprovedRelativeActualPathIdentity({
+      filesystem: input.filesystem, pathApi: input.pathApi,
+      approvedRoot: input.approvedRoot, candidatePath: input.selectorPath.path,
+      pathRole: "production_selector", leafMayBeMissing: false,
+    });
   const restorationMaterialIdentity = deriveRestorationMaterialIdentity(
-    input.restorationMaterial, input, selectorPreimageBytes);
+    input.restorationMaterial, input, selectorPreimageBytes, {
+      targets: targetApprovedRelativePathIdentityHashes,
+      selector: selectorApprovedRelativePathIdentityHash,
+    });
 
   const rebuiltProvenance = provenance.evaluateCurrentMainProvenanceBridge(
     input.provenancePacket);
@@ -686,9 +797,11 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
         headSha: repositoryMaterial.repositorySnapshot.headSha,
         treeSha: repositoryMaterial.repositorySnapshot.treeSha },
       approvedRootPolicyIdentity, stateRootPolicyIdentity,
-      targetContracts: input.targetPaths.map((entry) => ({
+      targetContracts: input.targetPaths.map((entry, index) => ({
         role: entry.role, market: entry.market,
-        pathIdentityHash: entry.approvedPathIdentityHash,
+        publicPathIdentityHash: entry.approvedPathIdentityHash,
+        approvedRelativePathIdentityHash:
+          targetApprovedRelativePathIdentityHashes[index],
         publicPath: entry.publicPath, versionedTarget: entry.versionedTarget,
         writeMode: entry.writeMode, schemaVersion: entry.schemaVersion,
         normalizedHeaderSha256: entry.normalizedHeaderSha256,
@@ -698,7 +811,10 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
         expectedRowCount: entry.expectedRowCount,
         expectedByteCount: entry.expectedByteCount,
       })),
-      selectorBinding: { pathIdentityHash: input.selectorPath.pathIdentityHash,
+      selectorBinding: {
+        publicPathIdentityHash: input.selectorPath.pathIdentityHash,
+        approvedRelativePathIdentityHash:
+          selectorApprovedRelativePathIdentityHash,
         publicPath: input.selectorPath.publicPath,
         preimageSha256: selectorPreimageIdentity.contentIdentityHash,
         expectedPostimageSha256: selectorExpectedPostimageIdentity.contentSha256,

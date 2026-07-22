@@ -548,6 +548,24 @@ test("Phase B accepts only one exact approved factory adapter set and binding", 
   const serializedBinding = JSON.stringify(binding);
   assert.equal(serializedBinding.includes(fixture.approvedRoot), false);
   assert.equal(serializedBinding.includes(fixture.stateRootParent), false);
+  for (const [index, target] of binding.targetContracts.entries()) {
+    assert.equal(typeof target.publicPathIdentityHash, "string");
+    assert.equal(typeof target.approvedRelativePathIdentityHash, "string");
+    assert.equal(target.approvedRelativePathIdentityHash,
+      binding.restorationMaterialIdentity.targets[index]
+        .approvedRelativePathIdentityHash);
+    assert.equal(Object.hasOwn(target, "actualPath"), false);
+    assert.equal(Object.hasOwn(target, "approvedRelativePath"), false);
+  }
+  assert.equal(typeof binding.selectorBinding.publicPathIdentityHash, "string");
+  assert.equal(typeof binding.selectorBinding.approvedRelativePathIdentityHash,
+    "string");
+  assert.equal(binding.selectorBinding.approvedRelativePathIdentityHash,
+    binding.restorationMaterialIdentity.selector
+      .approvedRelativePathIdentityHash);
+  assert.equal(Object.hasOwn(binding.selectorBinding, "actualPath"), false);
+  assert.equal(Object.hasOwn(binding.selectorBinding, "approvedRelativePath"),
+    false);
 
   const historicalPacket = fixture.readOnlyBuilderInput.stepZAPacket.stepZPacket;
   const historicalInput = { phaseAPreConstructionResult: phaseA,
@@ -621,6 +639,24 @@ test("Phase B accepts only one exact approved factory adapter set and binding", 
     selector: { ...baseConstruction.restorationMaterial.selector,
       path: alternateRootSelectorPath },
   };
+  const actualOnlyTargetPaths = ["US", "KR"].map((market, changedIndex) =>
+    baseConstruction.targetPaths.map((entry, index) => index === changedIndex
+      ? { ...entry, path: path.join(fixture.approvedRoot,
+        `versioned-${market.toLowerCase()}-actual-only.csv`) } : entry));
+  const actualOnlyTargetRestorations = actualOnlyTargetPaths.map((targets) => ({
+    ...baseConstruction.restorationMaterial,
+    targets: baseConstruction.restorationMaterial.targets.map((entry, index) => ({
+      ...entry, path: targets[index].path })),
+  }));
+  const selectorActualOnlyPath = path.join(fixture.approvedRoot,
+    "selector-actual-only.js");
+  fs.writeFileSync(selectorActualOnlyPath, Buffer.from(
+    baseConstruction.restorationMaterial.selector.contentBase64, "base64"));
+  const selectorActualOnlyRestoration = {
+    ...baseConstruction.restorationMaterial,
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      path: selectorActualOnlyPath },
+  };
   const variantConstructions = [
     { ...baseConstruction, stateRoot: alternateStateRoot },
     { ...baseConstruction, repositoryIdentity: {
@@ -639,6 +675,14 @@ test("Phase B accepts only one exact approved factory adapter set and binding", 
       selectorPath: { ...baseConstruction.selectorPath,
         path: alternateRootSelectorPath },
       restorationMaterial: alternateRootRestoration },
+    { ...baseConstruction, targetPaths: actualOnlyTargetPaths[0],
+      restorationMaterial: actualOnlyTargetRestorations[0] },
+    { ...baseConstruction, targetPaths: actualOnlyTargetPaths[1],
+      restorationMaterial: actualOnlyTargetRestorations[1] },
+    { ...baseConstruction,
+      selectorPath: { ...baseConstruction.selectorPath,
+        path: selectorActualOnlyPath },
+      restorationMaterial: selectorActualOnlyRestoration },
   ];
   for (const construction of variantConstructions) {
     const adapterSet = adapters.createProductionCapabilityAdapters(construction);
@@ -648,6 +692,56 @@ test("Phase B accepts only one exact approved factory adapter set and binding", 
       "phase_b_adapter_construction_binding_mismatch"));
     assert.deepEqual(Object.values(blocked.capabilityInvocationCounts), Array(7).fill(0));
   }
+
+  const restorationTargetDriftPath = path.join(fixture.approvedRoot,
+    "restoration-target-drift.csv");
+  const restorationTargetDrift = {
+    ...baseConstruction.restorationMaterial,
+    targets: baseConstruction.restorationMaterial.targets.map((entry, index) =>
+      index === 0 ? { ...entry, path: restorationTargetDriftPath } : entry),
+  };
+  assert.throws(() => adapters.createProductionCapabilityAdapters({
+    ...baseConstruction, restorationMaterial: restorationTargetDrift,
+  }), /restoration_target_binding_invalid/);
+  const restorationSelectorDriftPath = path.join(fixture.approvedRoot,
+    "restoration-selector-drift.js");
+  fs.writeFileSync(restorationSelectorDriftPath, Buffer.from(
+    baseConstruction.restorationMaterial.selector.contentBase64, "base64"));
+  const restorationSelectorDrift = {
+    ...baseConstruction.restorationMaterial,
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      path: restorationSelectorDriftPath },
+  };
+  assert.throws(() => adapters.createProductionCapabilityAdapters({
+    ...baseConstruction, restorationMaterial: restorationSelectorDrift,
+  }), /restoration_selector_binding_invalid/);
+
+  const targetAlias = `${fixture.approvedRoot}${path.sep}.${path.sep}${path.basename(
+    baseConstruction.targetPaths[0].path)}`;
+  const aliasTargets = baseConstruction.targetPaths.map((entry, index) =>
+    index === 0 ? { ...entry, path: targetAlias } : entry);
+  const aliasRestoration = {
+    ...baseConstruction.restorationMaterial,
+    targets: baseConstruction.restorationMaterial.targets.map((entry, index) =>
+      index === 0 ? { ...entry, path: targetAlias } : entry),
+  };
+  assert.throws(() => adapters.createProductionCapabilityAdapters({
+    ...baseConstruction, targetPaths: aliasTargets,
+    restorationMaterial: aliasRestoration,
+  }), /approved_root_escape_or_alias|actual_path_canonicalization_or_root_invalid/);
+  const selectorSeparatorAlias = `${fixture.approvedRoot}${path.sep}${path.sep}${path.basename(
+    baseConstruction.selectorPath.path)}`;
+  const selectorAliasRestoration = {
+    ...baseConstruction.restorationMaterial,
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      path: selectorSeparatorAlias },
+  };
+  assert.throws(() => adapters.createProductionCapabilityAdapters({
+    ...baseConstruction,
+    selectorPath: { ...baseConstruction.selectorPath,
+      path: selectorSeparatorAlias },
+    restorationMaterial: selectorAliasRestoration,
+  }), /approved_root_escape_or_alias|actual_path_canonicalization_or_root_invalid/);
 });
 
 test("valid Phase A and Phase B return frozen sanitized descriptors with zero calls", (t) => {
