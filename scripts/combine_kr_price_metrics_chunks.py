@@ -18,7 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 from scripts.metrics_pipeline.schemas import is_valid_kr_candidate_ticker
-from scripts.raw_daily_price_chunks import combine_raw_daily_chunks
+from scripts.raw_daily_price_chunks import collection_date_window, combine_raw_daily_chunks
 
 RUNTIME_COLUMNS = [
     "market",
@@ -42,13 +42,16 @@ def main() -> None:
     parser.add_argument("--out-summary", required=True)
     parser.add_argument("--raw-pattern", help="Glob for non-overlapping KR RAW_DAILY_PRICE_COLUMNS chunks.")
     parser.add_argument("--out-raw", help="Combined KR raw-daily CSV path.")
+    parser.add_argument("--requested-as-of-included", default="")
+    parser.add_argument("--provider-download-end-exclusive", default="")
+    parser.add_argument("--metric-base-date", default="")
     args = parser.parse_args()
 
     files = sorted([path for path in glob.glob(args.pattern) if "_audit" not in path])
     if not files:
         raise SystemExit(f"No files found for pattern: {args.pattern}")
 
-    frames = [pd.read_csv(path, dtype={"ticker": str}) for path in files]
+    frames = [pd.read_csv(path, dtype={"ticker": str, "benchmarkTicker": str}, keep_default_na=False) for path in files]
     df = pd.concat(frames, ignore_index=True)
     df["market"] = df["market"].fillna("KR").astype(str).str.strip().str.upper()
     df["ticker"] = df["ticker"].astype(str).str.strip()
@@ -60,6 +63,10 @@ def main() -> None:
     for column in RUNTIME_COLUMNS:
         if column not in df.columns:
             df[column] = ""
+    df["benchmarkTicker"] = df["benchmarkTicker"].astype(str).str.strip()
+    invalid_benchmarks = sorted(set(df["benchmarkTicker"]).difference({"", "069500", "229200"}))
+    if invalid_benchmarks:
+        raise SystemExit(f"Invalid KR benchmarkTicker identity in runtime chunks: {invalid_benchmarks[:5]}")
     df = df[RUNTIME_COLUMNS]
 
     out_runtime = Path(args.out_runtime)
@@ -79,6 +86,18 @@ def main() -> None:
         raise SystemExit("--raw-pattern and --out-raw must be provided together")
     if args.raw_pattern and args.out_raw:
         summary.update(combine_raw_daily_chunks(args.raw_pattern, Path(args.out_raw), "KR"))
+    if args.requested_as_of_included:
+        expected_end = collection_date_window(args.requested_as_of_included, 1)[1]
+        if args.provider_download_end_exclusive != expected_end:
+            raise SystemExit(f"provider download end must be {expected_end}")
+        if args.metric_base_date != args.requested_as_of_included:
+            raise SystemExit("metricBaseDate must equal requestedAsOfIncluded")
+    summary.update({
+        "requestedAsOfIncluded": args.requested_as_of_included,
+        "providerDownloadEndExclusive": args.provider_download_end_exclusive,
+        "actualLastPriceDate": summary.get("rawDailyLastDate", ""),
+        "metricBaseDate": args.metric_base_date,
+    })
 
     out_summary = Path(args.out_summary)
     out_summary.parent.mkdir(parents=True, exist_ok=True)

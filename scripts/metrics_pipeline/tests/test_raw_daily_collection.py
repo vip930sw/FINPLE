@@ -16,7 +16,10 @@ from scripts import build_kr_price_metrics_overlay_chunked as kr_builder
 from scripts import combine_kr_price_metrics_chunks as kr_combiner
 from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows, prepare_inputs
 from scripts.raw_daily_price_chunks import (
+    actual_last_price_date,
+    collection_date_window,
     combine_raw_daily_chunks,
+    ensure_operating_run_paths,
     extract_raw_daily_rows,
     read_raw_daily_rows,
     write_raw_daily_rows,
@@ -108,7 +111,7 @@ class RawDailyCollectionTests(unittest.TestCase):
         cases = [(us_builder, "US"), (kr_builder, "KR")]
         for builder, market in cases:
             with self.subTest(market=market), tempfile.TemporaryDirectory() as temp_dir:
-                provider_calls: list[str] = []
+                provider_calls: list[tuple[str, str, str]] = []
                 root = Path(temp_dir)
                 input_path = root / "universe.csv"
                 with input_path.open("w", encoding="utf-8-sig", newline="") as handle:
@@ -145,8 +148,8 @@ class RawDailyCollectionTests(unittest.TestCase):
                     "--checkpoint-every", "5",
                     "--retrieved-at", "2026-07-23T00:00:00+00:00",
                 ]
-                def fake_download(symbol, *_args, **_kwargs):
-                    provider_calls.append(symbol)
+                def fake_download(symbol, start, end, **_kwargs):
+                    provider_calls.append((symbol, start, end))
                     if symbol == "0086C0.KS":
                         return None
                     return fake_history()
@@ -158,12 +161,47 @@ class RawDailyCollectionTests(unittest.TestCase):
                 result = json.loads(summary.read_text(encoding="utf-8"))
                 self.assertEqual(result["processed_count"], 20)
                 self.assertEqual(result["raw_daily_asset_count"], 20)
+                self.assertEqual(result["requestedAsOfIncluded"], "2026-07-23")
+                self.assertEqual(result["providerDownloadEndExclusive"], "2026-07-24")
+                self.assertEqual(result["actualLastPriceDate"], "2025-01-06")
+                self.assertEqual(result["metricBaseDate"], "2026-07-23")
+                self.assertTrue(all(start == "2006-07-23" and end == "2026-07-24" for _, start, end in provider_calls))
                 raw_rows = read_raw_daily_rows(raw)
                 self.assertEqual(len({(row["market"], row["ticker"]) for row in raw_rows}), 20)
                 if market == "KR":
-                    self.assertIn("0086C0.KS", provider_calls)
-                    self.assertIn("0086C0.KQ", provider_calls)
+                    called_symbols = [symbol for symbol, _start, _end in provider_calls]
+                    self.assertIn("0086C0.KS", called_symbols)
+                    self.assertIn("0086C0.KQ", called_symbols)
                     self.assertIn("0086C0", {row["ticker"] for row in raw_rows})
+
+    def test_as_of_is_inclusive_and_operating_paths_support_drive_or_local(self):
+        self.assertEqual(collection_date_window("2026-06-30", 20), ("2006-06-30", "2026-07-01"))
+        self.assertEqual(collection_date_window("2026-07-01", 20), ("2006-07-01", "2026-07-02"))
+        self.assertEqual(
+            actual_last_price_date([{"date": "2026-06-30"}, {"date": "2026-07-01"}]),
+            "2026-07-01",
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            drive_paths = ensure_operating_run_paths(
+                "2026-07-22",
+                use_google_drive=True,
+                drive_root=str(root / "drive"),
+            )
+            local_paths = ensure_operating_run_paths(
+                "2026-07-22",
+                use_google_drive=False,
+                drive_root=str(root / "unused-drive"),
+                local_root=str(root / "local"),
+            )
+            for paths, expected_root in [
+                (drive_paths, root / "drive" / "2026-07-22"),
+                (local_paths, root / "local" / "2026-07-22"),
+            ]:
+                self.assertEqual(paths["root"], expected_root)
+                for name in ["smoke", "chunks", "combined", "validation", "one_click"]:
+                    self.assertTrue(paths[name].is_dir())
 
     def test_kr_candidate_symbols_preserve_numeric_and_alphanumeric_identity(self):
         self.assertEqual(
@@ -297,19 +335,20 @@ class RawDailyCollectionTests(unittest.TestCase):
             with chunk.open("w", encoding="utf-8-sig", newline="") as handle:
                 writer = csv.DictWriter(handle, fieldnames=kr_combiner.RUNTIME_COLUMNS)
                 writer.writeheader()
-                writer.writerow({
-                    "market": "KR",
-                    "ticker": "0086C0",
-                    "expectedCagr": "",
-                    "priceCagr10y": "",
-                    "mdd": "",
-                    "beta": "",
-                    "dataYears": "",
-                    "benchmarkTicker": "069500",
-                    "metricsStatus": "review_required",
-                    "metricsSource": "mock",
-                    "reviewReason": "mock",
-                })
+                for ticker, benchmark in [("0086C0", "069500"), ("005930", "229200"), ("000660", "")]:
+                    writer.writerow({
+                        "market": "KR",
+                        "ticker": ticker,
+                        "expectedCagr": "",
+                        "priceCagr10y": "",
+                        "mdd": "",
+                        "beta": "",
+                        "dataYears": "",
+                        "benchmarkTicker": benchmark,
+                        "metricsStatus": "review_required",
+                        "metricsSource": "mock",
+                        "reviewReason": "mock",
+                    })
             output = root / "combined.csv"
             summary = root / "summary.json"
             argv = [
@@ -317,12 +356,39 @@ class RawDailyCollectionTests(unittest.TestCase):
                 "--pattern", str(root / "kr_part*.csv"),
                 "--out-runtime", str(output),
                 "--out-summary", str(summary),
+                "--requested-as-of-included", "2026-07-22",
+                "--provider-download-end-exclusive", "2026-07-23",
+                "--metric-base-date", "2026-07-22",
             ]
             with mock.patch.object(sys, "argv", argv):
                 kr_combiner.main()
             with output.open("r", encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
-            self.assertEqual([row["ticker"] for row in rows], ["0086C0"])
+            self.assertEqual([row["ticker"] for row in rows], ["0086C0", "005930", "000660"])
+            self.assertEqual({row["benchmarkTicker"] for row in rows}, {"", "069500", "229200"})
+            combined_summary = json.loads(summary.read_text(encoding="utf-8"))
+            self.assertEqual(combined_summary["requestedAsOfIncluded"], "2026-07-22")
+            self.assertEqual(combined_summary["providerDownloadEndExclusive"], "2026-07-23")
+            self.assertEqual(combined_summary["metricBaseDate"], "2026-07-22")
+
+    def test_kr_runtime_chunk_combine_rejects_numeric_coercion_artifacts(self):
+        for invalid in ["69500", "69500.0", "229200.0"]:
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                chunk = root / "kr_part0000.csv"
+                with chunk.open("w", encoding="utf-8-sig", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=kr_combiner.RUNTIME_COLUMNS)
+                    writer.writeheader()
+                    writer.writerow({
+                        "market": "KR", "ticker": "0086C0", "expectedCagr": "", "priceCagr10y": "",
+                        "mdd": "", "beta": "", "dataYears": "", "benchmarkTicker": invalid,
+                        "metricsStatus": "review_required", "metricsSource": "mock", "reviewReason": "mock",
+                    })
+                with mock.patch.object(sys, "argv", [
+                    "combine_kr_price_metrics_chunks.py", "--pattern", str(chunk),
+                    "--out-runtime", str(root / "combined.csv"), "--out-summary", str(root / "summary.json"),
+                ]), self.assertRaises(SystemExit):
+                    kr_combiner.main()
 
     def test_prepared_source_declares_split_adjusted_price_return(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -367,7 +433,7 @@ class RawDailyCollectionTests(unittest.TestCase):
                     output_dir=str(output_dir),
                     report=str(root / "report.json"),
                     metric_base_date="2026-07-23",
-                    as_of="2026-07-23",
+                    as_of_included="2026-07-23",
                     acquired_at="",
                     operator_id="colab-operator",
                     submission_id="test-price-return",
@@ -376,6 +442,15 @@ class RawDailyCollectionTests(unittest.TestCase):
             source = json.loads((output_dir / "source_declaration.json").read_text(encoding="utf-8"))
             self.assertEqual(source["returnBasis"], "price_return")
             self.assertEqual(source["priceAdjustmentBasis"], "split_adjusted")
+            self.assertEqual(source["requestedAsOfIncluded"], "2026-07-23")
+            self.assertEqual(source["providerDownloadEndExclusive"], "2026-07-24")
+            self.assertEqual(source["actualLastPriceDate"], "2025-01-06")
+            self.assertEqual(source["metricBaseDate"], "2026-07-23")
+            operator_manifest = json.loads((output_dir / "operator_submission_manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(operator_manifest["requestedAsOfIncluded"], "2026-07-23")
+            self.assertEqual(operator_manifest["providerDownloadEndExclusive"], "2026-07-24")
+            self.assertEqual(operator_manifest["actualLastPriceDate"], "2025-01-06")
+            self.assertEqual(operator_manifest["metricBaseDate"], "2026-07-23")
             self.assertFalse(summary["productionPublishReady"])
             self.assertFalse(summary["appExportApproved"])
 

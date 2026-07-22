@@ -6,6 +6,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from calendar import monthrange
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from zipfile import ZipFile
 
@@ -188,6 +189,12 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertTrue(any(row["ticker"] == "123456" and row["issueType"] == "review_required" for row in review_rows))
             self.assertEqual(full_by_ticker["BADBLK"]["dataStatus"], "review_required")
             self.assertEqual(full_by_ticker["BADBLK"]["reviewFlag"], "review_required")
+            self.assertEqual(full_by_ticker["SPY"]["mddPolicy"], "full_period_actual")
+            self.assertEqual(full_by_ticker["SPY"]["rollingMdd10yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["betaPolicy"], "aligned_monthly_return_beta")
+            self.assertEqual(full_by_ticker["SPY"]["rollingBeta10yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["rollingBeta5yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["selectedMdd"], full_by_ticker["SPY"]["mddFullPeriod"])
 
             required_columns = {
                 "ticker",
@@ -287,6 +294,27 @@ class MetricsPipelineTests(unittest.TestCase):
         self.assertEqual(blocked.validRollingWindowCount10y, 0)
         self.assertEqual(blocked.cagrPolicy, "blank_review_required")
         self.assertIn("Price CAGR blocked", blocked.reviewReason)
+
+    def test_twenty_year_history_selects_multi_window_ten_year_cagr_median(self):
+        rows = []
+        for index in range(242):
+            zero_based = 2006 * 12 + 5 + index
+            year, month_index = divmod(zero_based, 12)
+            rows.append(
+                {
+                    "month": f"{year:04d}-{month_index + 1:02d}-{monthrange(year, month_index + 1)[1]:02d}",
+                    "close": f"{100 * (1.006 ** index):.8f}",
+                    "currency": "USD",
+                    "priceAdjustmentBasis": "split_adjusted",
+                }
+            )
+
+        metrics = compute_rolling_price_metrics(rows)
+        self.assertGreater(metrics.validRollingWindowCount10y, 1)
+        self.assertEqual(metrics.selectedCagr, metrics.rollingCagr10yMedian)
+        self.assertEqual(metrics.cagrPolicy, "rolling_10y_median")
+        self.assertIsNotNone(metrics.rollingCagr10yP25)
+        self.assertIsNotNone(metrics.rollingCagr10yP75)
 
     def test_review_overlay_is_review_only_and_preserves_historical_loader_contract(self):
         protected_paths = [

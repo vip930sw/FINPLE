@@ -34,6 +34,8 @@ from typing import Iterable
 
 from scripts.metrics_pipeline.schemas import KR_CANDIDATE_TICKER_PATTERN
 from scripts.raw_daily_price_chunks import (
+    actual_last_price_date,
+    collection_date_window,
     extract_raw_daily_rows,
     history_series,
     read_raw_daily_rows,
@@ -396,12 +398,17 @@ def build_summary(
     start_index: int,
     limit: int,
     total_candidates: int,
-    as_of: date,
+    as_of_included: date,
+    provider_end_exclusive: str,
     raw_rows: list[dict[str, str]] | None = None,
 ) -> dict[str, object]:
     raw_rows = raw_rows or []
     return {
-        "as_of": as_of.isoformat(),
+        "as_of": as_of_included.isoformat(),
+        "requestedAsOfIncluded": as_of_included.isoformat(),
+        "providerDownloadEndExclusive": provider_end_exclusive,
+        "actualLastPriceDate": actual_last_price_date(raw_rows),
+        "metricBaseDate": as_of_included.isoformat(),
         "start": start_index,
         "limit": limit,
         "processed_count": len(results),
@@ -448,12 +455,12 @@ def main() -> None:
     parser.add_argument("--out-audit", required=True)
     parser.add_argument("--out-summary", required=True)
     parser.add_argument("--out-raw", help="RAW_DAILY_PRICE_COLUMNS chunk output.")
-    parser.add_argument("--as-of", default=date.today().isoformat())
+    parser.add_argument("--as-of-included", "--as-of", dest="as_of_included", default=date.today().isoformat())
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--checkpoint-every", type=int, default=25)
     parser.add_argument("--sleep", type=float, default=0.0)
-    parser.add_argument("--years", type=int, default=10)
+    parser.add_argument("--years", type=int, default=20)
     parser.add_argument("--resume", action="store_true", help="Resume from existing audit/raw checkpoint files.")
     parser.add_argument("--retrieved-at", default="", help="ISO timestamp recorded in raw provenance rows.")
     args = parser.parse_args()
@@ -461,10 +468,9 @@ def main() -> None:
     if yf is None or pd is None:
         raise SystemExit("pandas and yfinance are required. Install with: pip install pandas yfinance")
 
-    as_of = datetime.strptime(args.as_of, "%Y-%m-%d").date()
-    start_date = date(as_of.year - args.years, as_of.month, as_of.day).isoformat()
-    end_date = as_of.isoformat()
-    source_tag = f"yfinance_kr_close_price_{as_of.strftime('%Y%m%d')}"
+    as_of_included = datetime.strptime(args.as_of_included, "%Y-%m-%d").date()
+    start_date, provider_end_exclusive = collection_date_window(args.as_of_included, args.years)
+    source_tag = f"yfinance_kr_close_price_{as_of_included.strftime('%Y%m%d')}"
     retrieved_at = args.retrieved_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     rows = read_csv(Path(args.input))
@@ -473,7 +479,7 @@ def main() -> None:
 
     print(f"Total KR candidates: {len(all_candidates)}", flush=True)
     print(f"Processing chunk: start={args.start}, limit={args.limit}, selected={len(selected)}", flush=True)
-    print(f"Date range: {start_date} to {end_date}", flush=True)
+    print(f"Date range: {start_date} to {as_of_included.isoformat()} inclusive; provider end={provider_end_exclusive}", flush=True)
 
     out_runtime = Path(args.out_runtime)
     out_audit = Path(args.out_audit)
@@ -499,18 +505,18 @@ def main() -> None:
             print(f"[{offset}/{len(selected)} | global {absolute_index}] {ticker} checkpoint hit", flush=True)
             continue
         print(f"[{offset}/{len(selected)} | global {absolute_index}] {ticker} provider={provider}", flush=True)
-        result, asset_raw_rows = build_result(candidate, source_tag, start_date, end_date, args.sleep, retrieved_at)
+        result, asset_raw_rows = build_result(candidate, source_tag, start_date, provider_end_exclusive, args.sleep, retrieved_at)
         results.append(result)
         result_by_ticker[result.ticker] = result
         raw_rows.extend(asset_raw_rows)
         if args.checkpoint_every and offset % args.checkpoint_every == 0:
             ordered_results = [result_by_ticker[ticker] for ticker in selected_order if ticker in result_by_ticker]
-            summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of, raw_rows)
+            summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of_included, provider_end_exclusive, raw_rows)
             save_outputs(ordered_results, out_runtime, out_audit, out_summary, summary, out_raw=out_raw, raw_rows=raw_rows)
             print(f"Checkpoint saved: {offset} rows", flush=True)
 
     ordered_results = [result_by_ticker[ticker] for ticker in selected_order if ticker in result_by_ticker]
-    summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of, raw_rows)
+    summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of_included, provider_end_exclusive, raw_rows)
     save_outputs(ordered_results, out_runtime, out_audit, out_summary, summary, out_raw=out_raw, raw_rows=raw_rows)
     print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
 

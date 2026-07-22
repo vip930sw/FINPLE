@@ -140,6 +140,34 @@ class NotebookSmokeTests(unittest.TestCase):
                     self.assertIn("re.fullmatch(r'[0-9A-Z]{6}', row['ticker'])", payload)
                     self.assertNotIn("row['ticker'].isdigit()", payload)
 
+    def test_operating_notebooks_share_date_history_and_drive_settings(self):
+        for path in [US_COLLECTION_NOTEBOOK, KR_COLLECTION_NOTEBOOK, NOTEBOOK_PATH]:
+            with self.subTest(path=path.name):
+                payload = "\n".join(collection_code_sources(path))
+                for setting in [
+                    'AS_OF_INCLUDED = "2026-07-22"',
+                    "HISTORY_YEARS = 20",
+                    "USE_GOOGLE_DRIVE = True",
+                    'DRIVE_ROOT = "/content/drive/MyDrive/FINPLE/monthly-metrics"',
+                ]:
+                    self.assertIn(setting, payload)
+                self.assertIn("drive.mount(", payload)
+                self.assertIn("/content/drive", payload)
+                for directory in ["smoke", "chunks", "combined", "validation", "one-click"]:
+                    self.assertIn(directory, payload)
+
+        for path in [US_COLLECTION_NOTEBOOK, KR_COLLECTION_NOTEBOOK]:
+            payload = "\n".join(collection_code_sources(path))
+            self.assertIn("'--as-of-included', AS_OF_INCLUDED", payload)
+            self.assertIn("'--years', str(HISTORY_YEARS)", payload)
+            self.assertIn("'providerDownloadEndExclusive'", payload)
+            self.assertIn("DOWNLOAD_OUTPUTS = False", payload)
+
+        one_click = "\n".join(collection_code_sources(NOTEBOOK_PATH))
+        self.assertIn('"metric_base_date": AS_OF_INCLUDED', one_click)
+        self.assertIn('"--as-of-included", AS_OF_INCLUDED', one_click)
+        self.assertIn("DOWNLOAD_OUTPUT_ZIP = False", one_click)
+
     def test_collection_notebooks_use_shallow_fetch_head_detached_checkout(self):
         for path in [US_COLLECTION_NOTEBOOK, KR_COLLECTION_NOTEBOOK]:
             with self.subTest(path=path.name):
@@ -185,7 +213,10 @@ class NotebookSmokeTests(unittest.TestCase):
                 smoke_index = next(index for index, source in enumerate(sources) if "20-asset smoke" in source)
                 bootstrap = sources[bootstrap_index]
                 self.assertLess(bootstrap_index, smoke_index)
-                self.assertIn("REQUIRED_COLLECTOR_OPTIONS = {'--out-raw', '--retrieved-at', '--resume'}", bootstrap)
+                self.assertIn(
+                    "REQUIRED_COLLECTOR_OPTIONS = {'--out-raw', '--retrieved-at', '--resume', '--as-of-included', '--years'}",
+                    bootstrap,
+                )
                 self.assertIn("missing CLI options", bootstrap)
                 self.assertIn("raise RuntimeError", bootstrap)
                 self.assertIn("[sys.executable, '-m', COLLECTOR_MODULE, '--help']", bootstrap)
@@ -234,7 +265,9 @@ class NotebookSmokeTests(unittest.TestCase):
                     "sys": SimpleNamespace(executable=sys.executable),
                     "COLLECTOR_MODULE": collector_module,
                     "COMBINE_MODULE": "scripts.combine_unused",
-                    "REQUIRED_COLLECTOR_OPTIONS": {"--out-raw", "--retrieved-at", "--resume"},
+                    "REQUIRED_COLLECTOR_OPTIONS": {
+                        "--out-raw", "--retrieved-at", "--resume", "--as-of-included", "--years"
+                    },
                 }
                 exec(bootstrap_function(path, "checkout_and_preflight"), namespace)
                 collector_file = REPO_ROOT / "scripts" / f"{collector_module.rsplit('.', 1)[-1]}.py"

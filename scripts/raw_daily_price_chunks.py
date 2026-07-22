@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import glob
 import math
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -18,6 +19,45 @@ from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_k
 
 def clean(value: object) -> str:
     return str(value or "").strip()
+
+
+def collection_date_window(as_of_included: str, history_years: int) -> tuple[str, str]:
+    """Return inclusive history start and yfinance's exclusive end date."""
+    if history_years <= 0:
+        raise ValueError("history_years must be positive")
+    included = datetime.strptime(as_of_included, "%Y-%m-%d").date()
+    try:
+        start = included.replace(year=included.year - history_years)
+    except ValueError:
+        start = date(included.year - history_years, 2, 28)
+    return start.isoformat(), (included + timedelta(days=1)).isoformat()
+
+
+def actual_last_price_date(rows: Iterable[Mapping[str, object]]) -> str:
+    dates = [clean(row.get("date")) for row in rows if clean(row.get("date"))]
+    return max(dates) if dates else ""
+
+
+def ensure_operating_run_paths(
+    as_of_included: str,
+    *,
+    use_google_drive: bool,
+    drive_root: str,
+    local_root: str = "/content/finple-monthly-metrics",
+) -> dict[str, Path]:
+    datetime.strptime(as_of_included, "%Y-%m-%d")
+    root = Path(drive_root if use_google_drive else local_root) / as_of_included
+    paths = {
+        "root": root,
+        "smoke": root / "smoke",
+        "chunks": root / "chunks",
+        "combined": root / "combined",
+        "validation": root / "validation",
+        "one_click": root / "one-click",
+    }
+    for path in paths.values():
+        path.mkdir(parents=True, exist_ok=True)
+    return paths
 
 
 def finite_float(value: object) -> float | None:

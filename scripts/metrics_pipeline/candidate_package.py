@@ -7,7 +7,7 @@ import json
 import re
 import zipfile
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -266,8 +266,6 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
             if package_config.internal_preview_review_only
             else "manual_operator_upload_candidate_review_only"
         )
-        if metrics_row.get("betaPolicy") == "fixture_aligned_monthly_returns":
-            metrics_row["betaPolicy"] = "candidate_aligned_monthly_returns"
         metrics_row["notes"] = (
             "Step 114-2Y internal Preview candidate; license/publication review required; not production-publish-ready or app-export-approved."
             if package_config.internal_preview_review_only
@@ -662,6 +660,19 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
         _add_issue(issues, "as_of_date_future", "critical", True, "source_declaration", "source_declaration.json", "asOfDate is in the future.")
     elif metric_base and as_of < metric_base:
         _add_issue(issues, "source_data_stale", "critical", True, "source_declaration", "source_declaration.json", "asOfDate is older than metric base date.")
+    requested_as_of = _parse_date(str(source.get("requestedAsOfIncluded", "")))
+    provider_end = _parse_date(str(source.get("providerDownloadEndExclusive", "")))
+    actual_last = _parse_date(str(source.get("actualLastPriceDate", "")))
+    source_metric_base = _parse_date(str(source.get("metricBaseDate", "")))
+    if any(field in source for field in ["requestedAsOfIncluded", "providerDownloadEndExclusive", "actualLastPriceDate", "metricBaseDate"]):
+        if requested_as_of is None or requested_as_of != as_of or requested_as_of != metric_base:
+            _add_issue(issues, "requested_as_of_mismatch", "critical", True, "source_declaration", "source_declaration.json", "requestedAsOfIncluded, asOfDate, and metricBaseDate must match.")
+        if requested_as_of is None or provider_end != requested_as_of + timedelta(days=1):
+            _add_issue(issues, "provider_end_exclusive_invalid", "critical", True, "source_declaration", "source_declaration.json", "providerDownloadEndExclusive must be requestedAsOfIncluded plus one day.")
+        if actual_last is None or (requested_as_of is not None and actual_last > requested_as_of):
+            _add_issue(issues, "actual_last_price_date_invalid", "critical", True, "source_declaration", "source_declaration.json", "actualLastPriceDate must be present and not later than requestedAsOfIncluded.")
+        if source_metric_base != metric_base:
+            _add_issue(issues, "metric_base_date_mismatch", "critical", True, "source_declaration", "source_declaration.json", "Source metricBaseDate must match candidate config.")
 
 
 def _validate_submission_manifest(manifest: Mapping[str, Any], paths: Mapping[str, Path], config: CandidatePackageConfig, issues: list[dict[str, str]]) -> None:
@@ -869,6 +880,9 @@ def _validate_scope_reconciliation(
             _add_issue(issues, "market_scope_reconciliation_mismatch", "critical", True, label, "", f"{label} scope {scope} does not match config scope {expected_sorted}.")
     if source.get("operatorId") != manifest.get("submittedBy"):
         _add_issue(issues, "operator_identity_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", "submittedBy must match source operatorId.")
+    for field in ["requestedAsOfIncluded", "providerDownloadEndExclusive", "actualLastPriceDate", "metricBaseDate"]:
+        if field in source and manifest.get(field) != source.get(field):
+            _add_issue(issues, "collection_metadata_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", f"{field} must match source declaration.")
     candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
     raw_identities = {(row.get("market", ""), row.get("ticker", "")) for row in raw_rows}
     missing_candidate_prices = candidate_identities.difference(raw_identities)
@@ -959,6 +973,9 @@ def _write_candidate_outputs(
         "contractVersion": CANDIDATE_PACKAGE_CONTRACT_VERSION,
         "candidatePackageVersion": CANDIDATE_PACKAGE_VERSION,
         "metricBaseDate": package_config.metric_base_date,
+        "requestedAsOfIncluded": source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date),
+        "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
+        "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
         "validationDate": package_config.validation_date.isoformat(),
         "pipelineVersion": PIPELINE_VERSION,
         "normalizationVersion": NORMALIZATION_VERSION,
@@ -992,6 +1009,10 @@ def _write_candidate_outputs(
             "currencyMode": source_declaration.get("currencyMode", ""),
             "returnBasis": source_declaration.get("returnBasis", ""),
             "priceAdjustmentBasis": source_declaration.get("priceAdjustmentBasis", ""),
+            "requestedAsOfIncluded": source_declaration.get("requestedAsOfIncluded", ""),
+            "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
+            "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
+            "metricBaseDate": source_declaration.get("metricBaseDate", ""),
             "redistributionReviewStatus": source_declaration.get("redistributionReviewStatus", ""),
             "appUseReviewStatus": source_declaration.get("appUseReviewStatus", ""),
             "fixtureOnly": source_declaration.get("fixtureOnly", None),

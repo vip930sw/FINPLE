@@ -22,6 +22,7 @@ from scripts.metrics_pipeline.candidate_package import (
 from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
 from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
+from scripts.raw_daily_price_chunks import collection_date_window
 
 
 BENCHMARK_ROWS = [
@@ -170,6 +171,7 @@ def combine_market_raw_files(
         "coveredIdentities": covered,
         "firstDateByMarket": first_dates,
         "lastDateByMarket": last_dates,
+        "rawDailyLastDate": max(last_dates.values()) if last_dates else "",
         "latestRetrievedAt": max(retrieved_at_values) if retrieved_at_values else "",
     }
 
@@ -184,6 +186,9 @@ def file_inventory_item(role: str, path: Path) -> dict[str, object]:
 
 
 def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
+    if args.metric_base_date != args.as_of_included:
+        raise ValueError("metricBaseDate must equal requestedAsOfIncluded")
+    provider_end_exclusive = collection_date_window(args.as_of_included, 1)[1]
     output_dir = Path(args.output_dir)
     if output_dir.exists():
         existing = {path.name for path in output_dir.iterdir() if path.is_file()}
@@ -220,7 +225,11 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "sourceName": "Yahoo Finance via existing FINPLE yfinance collectors",
         "sourceReference": "operator-colab-existing-yfinance-collection",
         "acquiredAt": acquired_at,
-        "asOfDate": args.as_of,
+        "asOfDate": args.as_of_included,
+        "requestedAsOfIncluded": args.as_of_included,
+        "providerDownloadEndExclusive": provider_end_exclusive,
+        "actualLastPriceDate": raw_summary["rawDailyLastDate"],
+        "metricBaseDate": args.metric_base_date,
         "marketScope": ["US", "KR"],
         "timezone": "UTC",
         "currencyMode": "mixed",
@@ -248,6 +257,10 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "submittedAt": acquired_at,
         "submittedBy": args.operator_id,
         "intendedMetricBaseDate": args.metric_base_date,
+        "requestedAsOfIncluded": args.as_of_included,
+        "providerDownloadEndExclusive": provider_end_exclusive,
+        "actualLastPriceDate": raw_summary["rawDailyLastDate"],
+        "metricBaseDate": args.metric_base_date,
         "expectedMarketScope": ["US", "KR"],
         "fileInventory": inventory,
         "expectedPipelineVersion": PIPELINE_VERSION,
@@ -282,6 +295,10 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
             market: sum(1 for identity in missing if identity[0] == market) for market in ["US", "KR"]
         },
         "duplicateMarketTickerDateCount": 0,
+        "requestedAsOfIncluded": args.as_of_included,
+        "providerDownloadEndExclusive": provider_end_exclusive,
+        "actualLastPriceDate": raw_summary["rawDailyLastDate"],
+        "metricBaseDate": args.metric_base_date,
         **raw_summary,
         "candidateInputDir": str(output_dir),
         "productionPublishReady": False,
@@ -301,7 +318,7 @@ def main() -> None:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--metric-base-date", required=True)
-    parser.add_argument("--as-of", required=True)
+    parser.add_argument("--as-of-included", "--as-of", dest="as_of_included", required=True)
     parser.add_argument("--acquired-at", default="", help="Optional override; defaults to latest raw retrievedAt.")
     parser.add_argument("--operator-id", default="colab-operator")
     parser.add_argument("--submission-id", required=True)

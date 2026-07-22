@@ -271,7 +271,11 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 metrics = list(csv.DictReader(handle))
             self.assertEqual(metrics[0]["ticker"], "005930")
-            self.assertEqual(metrics[0]["betaPolicy"], "candidate_aligned_monthly_returns")
+            self.assertEqual(metrics[0]["mddPolicy"], "full_period_actual")
+            self.assertEqual(metrics[0]["betaPolicy"], "aligned_monthly_return_beta")
+            self.assertEqual(metrics[0]["rollingMdd10yMedian"], "")
+            self.assertEqual(metrics[0]["rollingBeta10yMedian"], "")
+            self.assertEqual(metrics[0]["rollingBeta5yMedian"], "")
             with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 utf8_sig_metrics = list(csv.DictReader(handle))
             self.assertEqual(utf8_sig_metrics[0]["nameKr"], "삼성전자")
@@ -287,6 +291,28 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertIn("finple_candidate_manifest_2026_06_candidate.json", names)
             self.assertIn("finple_candidate_hash_inventory_2026_06_candidate.csv", names)
             self.assertIn("finple_candidate_package_index_2026_06_candidate.json", names)
+
+    def test_collection_date_metadata_is_preserved_in_candidate_manifest(self):
+        metadata = {
+            "requestedAsOfIncluded": "2026-06-30",
+            "providerDownloadEndExclusive": "2026-07-01",
+            "actualLastPriceDate": "2026-06-30",
+            "metricBaseDate": "2026-06-30",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                source_patch=metadata,
+                manifest_patch=metadata,
+            )
+            result = run_candidate(input_dir, root / "out")
+            self.assertTrue(result["candidatePackageReady"])
+            with Path(result["outputs"]["manifestJson"]).open("r", encoding="utf-8") as handle:
+                manifest = json.load(handle)
+            for field, expected in metadata.items():
+                self.assertEqual(manifest[field], expected)
+                self.assertEqual(manifest["sourceDeclaration"][field], expected)
 
     def test_missing_required_inputs_return_deterministic_blocked_package(self):
         cases = [
