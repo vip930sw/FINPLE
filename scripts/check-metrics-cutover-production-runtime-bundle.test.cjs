@@ -203,6 +203,41 @@ test("provenance bridge and adapter manifest drift are rejected before authoriza
   "blocked");
 });
 
+test("runtime bundle and approved no-op sources require exact Git tree/blob provenance", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const runtimeSources = fixture.readOnlyBuilderInput.provenancePacket
+    .observedSourceIdentities.filter((entry) => entry.role.startsWith("production_"));
+  assert.ok(runtimeSources.some((entry) => entry.role === "production_runtime_bundle"));
+  assert.ok(runtimeSources.some((entry) =>
+    entry.role === "production_no_op_fault_injector"));
+  const packet = fixtureSupport.clone(fixture.readOnlyBuilderInput.provenancePacket);
+  packet.reviewedSourceIdentities = packet.reviewedSourceIdentities.filter(
+    (entry) => entry.role !== "production_runtime_bundle");
+  packet.observedSourceIdentities = packet.observedSourceIdentities.filter(
+    (entry) => entry.role !== "production_runtime_bundle");
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture, { provenancePacket: packet })
+  })).status, "blocked");
+  const runtimeBlob = runtimeSources.find((entry) =>
+    entry.role === "production_runtime_bundle").sourceGitBlobSha;
+  const originalGit = fixture.readOnlyBuilderInput.gitExecFileSync;
+  const gitExecFileSync = (...args) => {
+    if (args[1][2] === "cat-file" && args[1][4] === runtimeBlob) {
+      return Buffer.from("forged runtime source\n");
+    }
+    return originalGit(...args);
+  };
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture, { gitExecFileSync })
+  })).status, "blocked");
+  const valid = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  assert.equal(typeof valid.productionConfigurationManifest.runtimeSourceIdentityHash,
+    "string");
+  assert.equal(valid.productionInvocationBundle.runtimeSourceProvenanceIdentity
+    .runtimeSourceIdentityHash,
+  valid.productionConfigurationManifest.runtimeSourceIdentityHash);
+});
+
 test("predecessor drift and an existing versioned target fail closed", (t) => {
   const drift = fixtureSupport.buildFixture(t);
   fs.appendFileSync(drift.predecessorPaths[0].path, "US,DRIFT,1\n");
@@ -262,6 +297,29 @@ test("actual candidate header, schema, content, dataset, row, and byte identitie
   }
 });
 
+test("historical Step Z target and selector paths bind directly before manifest creation", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const differentTargets = fixture.targetPaths.map((entry, index) => index === 0
+    ? { ...entry, publicPath: `${entry.publicPath}.different`,
+      approvedPathIdentityHash: subject.pathIdentity(entry.market,
+        `${entry.publicPath}.different`) } : entry);
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture, { targetPaths: differentTargets })
+  })).status, "blocked");
+  const selector = { ...fixture.readOnlyBuilderInput.selectorPath,
+    publicPath: `${fixture.readOnlyBuilderInput.selectorPath.publicPath}.different` };
+  selector.pathIdentityHash = subject.pathIdentity("selector", selector.publicPath);
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture, { selectorPath: selector })
+  })).status, "blocked");
+  const postimage = Buffer.from(fixture.readOnlyBuilderInput.selectorExpectedPostimageBytes);
+  postimage[postimage.length - 1] ^= 1;
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture,
+      { selectorExpectedPostimageBytes: postimage })
+  })).status, "blocked");
+});
+
 test("selector preimage and postimage reference constraints are exact", (t) => {
   const preimage = fixtureSupport.buildFixture(t);
   fs.appendFileSync(preimage.selectorPath, "// drift\n");
@@ -280,16 +338,78 @@ test("selector preimage and postimage reference constraints are exact", (t) => {
 
 test("no-op fault injector and isolated platform attestation are mandatory", (t) => {
   const fixture = fixtureSupport.buildFixture(t);
-  const noOp = { ...fixture.readOnlyBuilderInput.noOpFaultInjectorContract,
-    mode: "throw_on_hit" };
-  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+  const approved = fixture.readOnlyBuilderInput.noOpProductionFaultInjector;
+  for (const noOpProductionFaultInjector of [
+    { descriptor: approved.descriptor, hit() {} },
+    { descriptor: { ...approved.descriptor }, hit() { throw new Error("forbidden"); } },
+  ]) assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
     readOnlyBuilderInput: builderInputWith(fixture,
-      { noOpFaultInjectorContract: noOp }) })).status, "blocked");
-  const platform = { ...fixture.readOnlyBuilderInput.platformAttestation,
-    actualProductionPathUsed: true };
+      { noOpProductionFaultInjector }) })).status, "blocked");
   assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
-    readOnlyBuilderInput: builderInputWith(fixture,
-      { platformAttestation: platform }) })).status, "blocked");
+    readOnlyBuilderInput: { ...fixture.readOnlyBuilderInput,
+      platformAttestation: { atomicSameDirectoryRename: true, exclusiveCreate: true,
+        fileFsync: true, directoryFsync: true, attestationHash: subject.sha256("forged") }
+    } })).status, "blocked");
+});
+
+test("isolated platform probe performs exclusive create fsync rename content and cleanup", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const valid = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  assert.equal(valid.status, "production_runtime_invocation_bundle_verified");
+  assert.equal(fs.readdirSync(fixture.platformProbeRoot)
+    .some((name) => name.startsWith(".finple-zb-r-probe-")), false);
+  const failures = [
+    { openSync(value, flags) {
+      if (String(value).includes(".finple-zb-r-probe-") && flags === "wx") {
+        const error = new Error("synthetic exclusive failure"); error.code = "EACCES";
+        throw error;
+      }
+      return fs.openSync(value, flags);
+    } },
+    { fsyncSync() { throw new Error("synthetic fsync failure"); } },
+    { renameSync() { throw new Error("synthetic rename failure"); } },
+    { readFileSync(value, ...args) {
+      if (String(value).endsWith(".renamed")) return Buffer.from("mismatch");
+      return fs.readFileSync(value, ...args);
+    } },
+  ];
+  for (const overrides of failures) {
+    const filesystem = { ...fs, ...overrides };
+    assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+      readOnlyBuilderInput: builderInputWith(fixture, { filesystem })
+    })).status, "blocked");
+    assert.equal(fs.readdirSync(fixture.platformProbeRoot)
+      .some((name) => name.startsWith(".finple-zb-r-probe-")), false);
+  }
+  const platformProbe = { probeRoot: fixture.approvedRoot,
+    probeRootPolicyIdentity: subject.rootPolicyIdentity(
+      "isolated_platform_probe_root", fs.realpathSync(fixture.approvedRoot)) };
+  assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+    readOnlyBuilderInput: builderInputWith(fixture, { platformProbe })
+  })).status, "blocked");
+});
+
+test("restoration identity is derived from exact absent targets and selector preimage", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const valid = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  assert.equal(typeof valid.productionConfigurationManifest.restorationMaterialIdentity
+    .restorationMaterialIdentityHash, "string");
+  const base = fixture.readOnlyBuilderInput.restorationMaterial;
+  const cases = [
+    { ...base, forgedRestorationHash: subject.sha256("forged") },
+    { ...base, selector: { ...base.selector,
+      contentBase64: Buffer.from("selector drift").toString("base64") } },
+    { ...base, selector: { ...base.selector, path: fixture.targetPaths[0].path } },
+    { ...base, targets: base.targets.map((entry, index) => index === 0
+      ? { ...entry, exists: true } : entry) },
+    { ...base, targets: base.targets.map((entry, index) => index === 0
+      ? { ...entry, path: fixture.selectorPath } : entry) },
+  ];
+  for (const restorationMaterial of cases) {
+    assert.equal(subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+      readOnlyBuilderInput: builderInputWith(fixture, { restorationMaterial })
+    })).status, "blocked");
+  }
 });
 
 test("later boundary rejects a self-resealed forged bundle and later expiry", (t) => {
@@ -299,20 +419,68 @@ test("later boundary rejects a self-resealed forged bundle and later expiry", (t
     operatorSignatureDigest: subject.sha256("forged-signature-digest") });
   const blocked = subject.validateLaterExecutionBoundary(fixtureSupport.laterInput(
     result, fixture, { productionInvocationBundle: forged }));
-  assert.deepEqual(blocked.blockingIssues, ["later_boundary_bundle_canonical_mismatch"]);
+  assert.deepEqual(blocked.blockingIssues, ["phase_a_bundle_canonical_mismatch"]);
   const expired = subject.validateLaterExecutionBoundary(fixtureSupport.laterInput(
     result, fixture, { currentEvaluationClockInstant:
       fixture.authorization.effectiveExpiresAt }));
   assert.equal(expired.status, "blocked");
 });
 
-test("valid later boundary returns only a frozen sanitized dependency descriptor", (t) => {
+test("Phase A requires every explicit dependency and revalidates private material", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const result = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  const phaseAInput = fixtureSupport.laterInput(result, fixture);
+  const missing = { ...phaseAInput }; delete missing.filesystem;
+  assert.deepEqual(subject.validatePhaseAPreConstructionBoundary(missing).blockingIssues,
+    ["phase_a_fields_invalid"]);
+  const privateMaterial = { ...phaseAInput.privateProductionConfigurationMaterial,
+    selectorExpectedPostimageBytes: Buffer.from("forged selector postimage\n") };
+  assert.equal(subject.validatePhaseAPreConstructionBoundary({ ...phaseAInput,
+    privateProductionConfigurationMaterial: privateMaterial }).status, "blocked");
+  const immutable = { ...phaseAInput.stepZImmutableExecutionMaterial,
+    stepZExecutionMaterialDescriptor: { ...phaseAInput.stepZImmutableExecutionMaterial
+      .stepZExecutionMaterialDescriptor,
+    stepZExecutionMaterialDescriptorHash: subject.sha256("forged") } };
+  assert.deepEqual(subject.validatePhaseAPreConstructionBoundary({ ...phaseAInput,
+    stepZImmutableExecutionMaterial: immutable }).blockingIssues,
+  ["phase_a_step_z_immutable_material_mismatch"]);
+});
+
+test("Phase B binds the complete Step Z packet and seven identical capability objects", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const bundle = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  const phaseA = subject.validatePhaseAPreConstructionBoundary(
+    fixtureSupport.laterInput(bundle, fixture));
+  assert.equal(phaseA.phaseAPreConstructionValidated, true);
+  const validInput = fixtureSupport.phaseBInput(phaseA, fixture);
+  const aliased = { ...validInput,
+    singleUseCutoverEnvelopeStore: {
+      ...validInput.singleUseCutoverEnvelopeStore } };
+  assert.ok(subject.validatePhaseBPostConstructionBoundary(aliased).blockingIssues
+    .includes("phase_b_capability_object_identity_mismatch:singleUseCutoverEnvelopeStore"));
+  const changedPacket = { ...validInput.completeStepZPacket,
+    executionClockInstant: "2026-07-18T00:03:29.000Z" };
+  const changed = { ...validInput, completeStepZPacket: changedPacket,
+    ...Object.fromEntries(stepZ.CAPABILITY_NAMES.map((name) =>
+      [name, changedPacket[name]])) };
+  assert.equal(subject.validatePhaseBPostConstructionBoundary(changed).status, "blocked");
+  const invalidCapability = { ...validInput.cutoverClock,
+    descriptor: { ...validInput.cutoverClock.descriptor, methodNames: [] } };
+  const invalidPacket = { ...validInput.completeStepZPacket,
+    cutoverClock: invalidCapability };
+  assert.equal(subject.validatePhaseBPostConstructionBoundary({ ...validInput,
+    completeStepZPacket: invalidPacket, cutoverClock: invalidCapability }).status,
+  "blocked");
+});
+
+test("valid Phase A and Phase B return frozen sanitized descriptors with zero calls", (t) => {
   const fixture = fixtureSupport.buildFixture(t);
   const result = subject.evaluateProductionRuntimeBundle(fixture.packet);
   const later = subject.validateLaterExecutionBoundary(
     fixtureSupport.laterInput(result, fixture));
   assert.equal(later.status, "production_runtime_invocation_bundle_verified");
   assert.equal(later.laterExecutionBoundaryValidated, true);
+  assert.equal(later.phaseAPreConstructionValidated, true);
   assert.equal(Object.isFrozen(later.sanitizedDependencyDescriptor), true);
   assert.deepEqual(later.sanitizedDependencyDescriptor.postConstructionDependencyNames,
     stepZ.CAPABILITY_NAMES);
@@ -329,13 +497,20 @@ test("valid later boundary returns only a frozen sanitized dependency descriptor
   assert.deepEqual(later.productionInvocationBundle.stepZExecutionMaterialDescriptor
     .exactInputFields, stepZ.INPUT_FIELDS);
   assert.deepEqual(Object.values(later.capabilityInvocationCounts), Array(7).fill(0));
+  const phaseB = subject.validatePhaseBPostConstructionBoundary(
+    fixtureSupport.phaseBInput(later, fixture));
+  assert.equal(phaseB.status, "production_runtime_invocation_bundle_verified");
+  assert.equal(phaseB.phaseBPostConstructionValidated, true);
+  assert.equal(phaseB.sanitizedCommandDescriptor.commandConstructed, true);
+  assert.equal(phaseB.sanitizedCommandDescriptor.executorInvoked, false);
+  assert.deepEqual(Object.values(phaseB.capabilityInvocationCounts), Array(7).fill(0));
 });
 
 test("production runtime source cannot execute, construct adapters, create state, or discover ambient inputs", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "lib/metrics-cutover-production-runtime-bundle.cjs"), "utf8");
   for (const forbidden of ["executeSingleUseProductionCutover(",
-    "createProductionCapabilityAdapters(", "mkdirSync(", "writeFileSync(",
+    "createProductionCapabilityAdapters(", "mkdirSync(",
     "process.cwd(", "process.env", "Date.now(", "fetch(", "child_process"]) {
     assert.equal(source.includes(forbidden), false, forbidden);
   }

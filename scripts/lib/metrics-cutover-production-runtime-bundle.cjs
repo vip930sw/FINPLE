@@ -6,6 +6,7 @@ const stepZA = require("./metrics-cutover-production-runtime-ceremony.cjs");
 const stepZB = require("./metrics-cutover-production-explicit-invocation-package.cjs");
 const provenance = require("./metrics-cutover-current-main-provenance-bridge.cjs");
 const adapters = require("./metrics-cutover-production-capability-adapters.cjs");
+const noOpFaultInjector = require("./metrics-cutover-production-no-op-fault-injector.cjs");
 
 const VERSION = "finple.step114-2x-zb-r.production-runtime-bundle.v1";
 const IMPLEMENTATION_BASELINE_SHA = "51f5c5b923622614875899bcda1f2447dc36e9ed";
@@ -40,8 +41,8 @@ const BUILDER_FIELDS = Object.freeze([
   "filesystem", "pathApi", "repositoryRoot", "gitExecutable", "gitExecFileSync",
   "executionMainSha", "approvedRoot", "stateRootParent", "futureStateRootPath",
   "predecessorPaths", "targetPaths", "selectorPath", "candidateContents",
-  "selectorExpectedPostimageBytes", "noOpFaultInjectorContract",
-  "platformAttestation", "restorationMaterialIdentity", "adapterManifest",
+  "selectorExpectedPostimageBytes", "noOpProductionFaultInjector",
+  "platformProbe", "restorationMaterial", "adapterManifest",
   "provenancePacket", "provenanceResult", "stepZAPacket", "stepZAResult",
 ]);
 const EVALUATION_FIELDS = Object.freeze([
@@ -49,9 +50,26 @@ const EVALUATION_FIELDS = Object.freeze([
   "signedProductionAuthorization", "priorAuthorizationNonceHashes",
   "evaluationClockInstant", "historicalZBPacket", "historicalZBResult",
 ]);
-const LATER_BOUNDARY_FIELDS = Object.freeze([
-  ...EVALUATION_FIELDS, "productionInvocationBundle",
-  "currentEvaluationClockInstant", "currentPriorAuthorizationNonceHashes",
+const PRIVATE_PRODUCTION_CONFIGURATION_FIELDS = Object.freeze([
+  "repositoryRoot", "executionMainSha", "approvedRoot", "stateRootParent",
+  "futureStateRootPath", "predecessorPaths", "targetPaths", "selectorPath",
+  "candidateContents", "selectorExpectedPostimageBytes", "platformProbe",
+  "restorationMaterial", "adapterManifest", "provenancePacket", "provenanceResult",
+  "historicalZBPacket", "historicalZBResult",
+]);
+const STEP_Z_IMMUTABLE_EXECUTION_MATERIAL_FIELDS = Object.freeze([
+  "stepZAPacket", "stepZAResult", "stepZExecutionMaterialDescriptor",
+]);
+const PHASE_A_PRE_CONSTRUCTION_FIELDS = Object.freeze([
+  "productionInvocationBundle", "signedProductionAuthorization",
+  "productionOperatorAllowlist", "currentPriorAuthorizationNonceHashes",
+  "currentEvaluationClockInstant", "privateProductionConfigurationMaterial",
+  "stepZImmutableExecutionMaterial", "filesystem", "pathApi", "gitExecutable",
+  "gitExecFileSync", "noOpProductionFaultInjector",
+]);
+const LATER_BOUNDARY_FIELDS = PHASE_A_PRE_CONSTRUCTION_FIELDS;
+const PHASE_B_POST_CONSTRUCTION_FIELDS = Object.freeze([
+  "phaseAPreConstructionResult", "completeStepZPacket", ...stepZ.CAPABILITY_NAMES,
 ]);
 const ALLOWLIST_ENTRY_FIELDS = Object.freeze([
   "signerKeyId", "signerSanitizedIdentityHash", "publicKeyPem",
@@ -67,7 +85,8 @@ const AUTHORIZATION_BODY_FIELDS = Object.freeze([
   "contractVersion", "executionMainSha", "provenanceBridgeId",
   "provenanceBridgeHash", "productionConfigurationManifestId",
   "productionConfigurationManifestHash", "adapterManifestId",
-  "adapterManifestHash", "targetSelectorIdentityHash", "stepZContractIdentityHash",
+  "adapterManifestHash", "runtimeSourceIdentityHash", "targetSelectorIdentityHash",
+  "stepZContractIdentityHash",
   "stepZOperationPlanHash", "singleUseClaimNamespaceHash",
   "environmentIdentityHash", "authorizationNonceHash",
   "priorAuthorizationNonceContextDigest", "upstreamNonceContextDigest",
@@ -84,9 +103,9 @@ const AUTHORIZATION_FIELDS = Object.freeze([
 const DEPENDENCY_SCHEMA = Object.freeze({
   preConstructionDependencyNames: Object.freeze([
     "productionInvocationBundle", "signedProductionAuthorization",
-    "productionOperatorAllowlist", "priorAuthorizationNonceHashes",
-    "evaluationClockInstant", "privateProductionConfigurationMaterial",
-    "stepZExecutionPacket", "filesystem", "pathApi", "gitExecutable",
+    "productionOperatorAllowlist", "currentPriorAuthorizationNonceHashes",
+    "currentEvaluationClockInstant", "privateProductionConfigurationMaterial",
+    "stepZImmutableExecutionMaterial", "filesystem", "pathApi", "gitExecutable",
     "gitExecFileSync", "noOpProductionFaultInjector",
   ]),
   postConstructionDependencyNames: Object.freeze([...stepZ.CAPABILITY_NAMES]),
@@ -97,6 +116,7 @@ const ADAPTER_TARGET_CONTRACT_FIELDS = Object.freeze([
   "schemaIdentitySha256", "expectedContentSha256",
   "expectedDatasetIdentityHash", "expectedRowCount", "expectedByteCount",
 ]);
+const approvedPhaseAResults = new WeakSet();
 
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value) &&
@@ -167,6 +187,10 @@ function safeResult(status, overrides = {}) {
     nonceValidated: overrides.nonceValidated === true,
     chronologyValidated: overrides.chronologyValidated === true,
     laterExecutionBoundaryValidated: overrides.laterExecutionBoundaryValidated === true,
+    phaseAPreConstructionValidated: overrides.phaseAPreConstructionValidated === true,
+    phaseBPostConstructionValidated: overrides.phaseBPostConstructionValidated === true,
+    phaseAValidationReceipt: overrides.phaseAValidationReceipt || {},
+    sanitizedCommandDescriptor: overrides.sanitizedCommandDescriptor || {},
     productionConfigurationManifest: overrides.productionConfigurationManifest || {},
     productionAuthorization: overrides.productionAuthorization || {},
     productionInvocationBundle: overrides.productionInvocationBundle || {},
@@ -194,7 +218,8 @@ function rootPolicyIdentity(kind, canonicalRoot) {
     { kind, canonicalRootIdentityHash: sha256(Buffer.from(canonicalRoot, "utf8")) });
 }
 
-function buildStepZExecutionMaterialDescriptor(stepZAPacket, stepZAResult) {
+function buildStepZExecutionMaterialDescriptor(stepZAPacket, stepZAResult,
+  targetSelectorBindingHash) {
   const stepZPacket = stepZAPacket.stepZPacket;
   const inventory = stepZAResult.runtimeMaterialInventory;
   const handoff = stepZAResult.explicitExecutionHandoff;
@@ -214,6 +239,7 @@ function buildStepZExecutionMaterialDescriptor(stepZAPacket, stepZAResult) {
     explicitExecutionHandoffHash: handoff.explicitExecutionHandoffHash,
     operationPlanHash: handoff.operationPlanHash,
     executorTraceHash: handoff.executorTraceHash,
+    targetSelectorBindingHash,
     privateStepYPacketRequiredAtInvocation: true,
     privateStepYResultRequiredAtInvocation: true,
     sevenConstructedCapabilitiesRequiredAtInvocation: true,
@@ -231,21 +257,10 @@ function buildStepZExecutionMaterialDescriptor(stepZAPacket, stepZAResult) {
 }
 
 function validateNoOpFaultInjectorContract(value) {
-  if (!exactKeys(value, ["contractVersion", "mode", "hitBehavior",
-    "productionSafe", "mutationCount", "contractIdentityHash"]) ||
-      value.contractVersion !== "finple.step114-2x-zb-r.no-op-fault-injector.v1" ||
-      value.mode !== "no_op" || value.hitBehavior !== "return_without_side_effect" ||
-      value.productionSafe !== true || value.mutationCount !== 0) return false;
-  const body = { ...value }; delete body.contractIdentityHash;
-  return value.contractIdentityHash === hashContract(
-    "FINPLE_STEP114_2X_ZB_R_NO_OP_FAULT_INJECTOR\0", body);
+  return noOpFaultInjector.isApprovedNoOpProductionFaultInjector(value);
 }
 function buildNoOpFaultInjectorContract() {
-  const body = { contractVersion: "finple.step114-2x-zb-r.no-op-fault-injector.v1",
-    mode: "no_op", hitBehavior: "return_without_side_effect",
-    productionSafe: true, mutationCount: 0 };
-  return deepFreeze({ ...body, contractIdentityHash: hashContract(
-    "FINPLE_STEP114_2X_ZB_R_NO_OP_FAULT_INJECTOR\0", body) });
+  return noOpFaultInjector.createNoOpProductionFaultInjector();
 }
 
 function buildReadOnlyPathGuard(input) {
@@ -346,15 +361,140 @@ function buildPlatformAttestation(input) {
     "FINPLE_STEP114_2X_ZB_R_PLATFORM_ATTESTATION\0", body) });
 }
 
+function runIsolatedPlatformProbe(input) {
+  const fields = ["filesystem", "pathApi", "probeRoot", "approvedRoot",
+    "stateRootParent", "probeRootPolicyIdentity"];
+  if (!exactKeys(input, fields) || !isRecord(input.filesystem) ||
+      !isRecord(input.pathApi) || !isSha(input.probeRootPolicyIdentity)) {
+    throw new TypeError("platform_probe_input_invalid");
+  }
+  const fs = input.filesystem; const path = input.pathApi;
+  const fsMethods = ["closeSync", "existsSync", "fsyncSync", "lstatSync", "openSync",
+    "readFileSync", "realpathSync", "renameSync", "unlinkSync", "writeFileSync"];
+  const pathMethods = ["isAbsolute", "join", "relative", "resolve"];
+  if (fsMethods.some((name) => typeof fs[name] !== "function") ||
+      pathMethods.some((name) => typeof path[name] !== "function") ||
+      typeof path.sep !== "string") throw new TypeError("platform_probe_capability_invalid");
+  const canonical = (value) => path.resolve(value);
+  const probeRoot = canonical(input.probeRoot);
+  const approvedRoot = canonical(input.approvedRoot);
+  const stateRootParent = canonical(input.stateRootParent);
+  if ([input.probeRoot, input.approvedRoot, input.stateRootParent].some(
+    (value, index) => !path.isAbsolute(value) || canonical(value) !== value ||
+      !fs.existsSync(value) || fs.lstatSync(value).isSymbolicLink() ||
+      !fs.lstatSync(value).isDirectory()) ||
+      new Set([probeRoot, approvedRoot, stateRootParent]).size !== 3) {
+    throw new Error("platform_probe_root_invalid");
+  }
+  const probeReal = fs.realpathSync(probeRoot);
+  const approvedReal = fs.realpathSync(approvedRoot);
+  const stateReal = fs.realpathSync(stateRootParent);
+  const inside = (root, candidate) => {
+    const relative = path.relative(root, candidate);
+    return relative === "" || (relative !== ".." &&
+      !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+  };
+  if (inside(approvedReal, probeReal) || inside(probeReal, approvedReal) ||
+      inside(stateReal, probeReal) || inside(probeReal, stateReal) ||
+      input.probeRootPolicyIdentity !== rootPolicyIdentity(
+        "isolated_platform_probe_root", probeReal)) {
+    throw new Error("platform_probe_not_isolated");
+  }
+  const suffix = input.probeRootPolicyIdentity.slice(0, 20);
+  const source = path.join(probeRoot, `.finple-zb-r-probe-${suffix}.tmp`);
+  const destination = path.join(probeRoot, `.finple-zb-r-probe-${suffix}.renamed`);
+  const payload = Buffer.from(`finple-zb-r-platform-probe:${suffix}\n`, "utf8");
+  let sourceCreated = false; let destinationCreated = false; let handle = null;
+  let directoryHandle = null; let directoryFsync = false;
+  try {
+    if (fs.existsSync(source) || fs.existsSync(destination)) {
+      throw new Error("platform_probe_preexisting_artifact");
+    }
+    handle = fs.openSync(source, "wx"); sourceCreated = true;
+    let exclusiveCreate = false;
+    try { const duplicate = fs.openSync(source, "wx"); fs.closeSync(duplicate); }
+    catch (error) { exclusiveCreate = error?.code === "EEXIST"; }
+    if (!exclusiveCreate) throw new Error("platform_probe_exclusive_create_failed");
+    fs.writeFileSync(handle, payload); fs.fsyncSync(handle); fs.closeSync(handle); handle = null;
+    fs.renameSync(source, destination); sourceCreated = false; destinationCreated = true;
+    const observed = fs.readFileSync(destination);
+    if (!Buffer.isBuffer(observed) || observed.compare(payload) !== 0) {
+      throw new Error("platform_probe_renamed_content_mismatch");
+    }
+    try {
+      directoryHandle = fs.openSync(probeRoot, "r");
+      fs.fsyncSync(directoryHandle); directoryFsync = true;
+    } catch { directoryFsync = false; }
+    finally {
+      if (directoryHandle !== null) { fs.closeSync(directoryHandle); directoryHandle = null; }
+    }
+  } finally {
+    if (handle !== null) { try { fs.closeSync(handle); } catch {} }
+    if (sourceCreated && fs.existsSync(source)) fs.unlinkSync(source);
+    if (destinationCreated && fs.existsSync(destination)) fs.unlinkSync(destination);
+  }
+  if (fs.existsSync(source) || fs.existsSync(destination)) {
+    throw new Error("platform_probe_cleanup_failed");
+  }
+  return buildPlatformAttestation({ probeRootPolicyIdentity: input.probeRootPolicyIdentity,
+    atomicSameDirectoryRename: true, exclusiveCreate: true, fileFsync: true,
+    directoryFsync });
+}
+
+function deriveRestorationMaterialIdentity(restorationMaterial, input,
+  selectorPreimageBytes) {
+  if (!exactKeys(restorationMaterial, ["contractVersion", "targets", "selector",
+    "createOnly"]) || restorationMaterial.contractVersion !==
+      "finple.step114-2x-zb-r.private-restoration-material.v1" ||
+      restorationMaterial.createOnly !== true ||
+      !Array.isArray(restorationMaterial.targets) ||
+      restorationMaterial.targets.length !== 2 ||
+      !canonicalEqual(restorationMaterial.targets.map((entry) => entry.market), ["US", "KR"]) ||
+      !exactKeys(restorationMaterial.selector,
+        ["path", "publicPath", "contentBase64"])) {
+    throw new TypeError("restoration_material_invalid");
+  }
+  const targetIdentities = restorationMaterial.targets.map((entry, index) => {
+    const target = input.targetPaths[index];
+    if (!exactKeys(entry, ["market", "path", "publicPath", "exists"]) ||
+        entry.market !== target.market || entry.path !== target.path ||
+        entry.publicPath !== target.publicPath || entry.exists !== false) {
+      throw new Error("restoration_target_binding_invalid");
+    }
+    return { market: entry.market,
+      pathIdentityHash: pathIdentity(entry.market, entry.publicPath), exists: false };
+  });
+  const selectorBytes = canonicalBase64(restorationMaterial.selector.contentBase64);
+  if (!selectorBytes || restorationMaterial.selector.path !== input.selectorPath.path ||
+      restorationMaterial.selector.publicPath !== input.selectorPath.publicPath ||
+      selectorBytes.compare(selectorPreimageBytes) !== 0) {
+    throw new Error("restoration_selector_binding_invalid");
+  }
+  const body = {
+    contractVersion: "finple.step114-2x-zb-r.restoration-identity.v1",
+    targets: targetIdentities,
+    selector: { pathIdentityHash: input.selectorPath.pathIdentityHash,
+      contentSha256: sha256(selectorBytes), byteCount: selectorBytes.length },
+    restorationSchemaVersion: "create-only-absent-targets-selector-preimage.v1",
+    createOnly: true,
+    rawMaterialPresent: false,
+  };
+  return deepFreeze({ ...body, restorationMaterialIdentityHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_R_RESTORATION_MATERIAL_IDENTITY\0", body) });
+}
+
 function buildReadOnlyProductionConfigurationMaterial(input) {
   if (!exactKeys(input, BUILDER_FIELDS) || !isGitSha(input.executionMainSha) ||
       typeof input.gitExecFileSync !== "function" ||
-      !isSha(input.restorationMaterialIdentity) ||
-      !validateNoOpFaultInjectorContract(input.noOpFaultInjectorContract) ||
-      !validatePlatformAttestation(input.platformAttestation)) {
+      !validateNoOpFaultInjectorContract(input.noOpProductionFaultInjector) ||
+      !exactKeys(input.platformProbe, ["probeRoot", "probeRootPolicyIdentity"])) {
     throw new TypeError("read_only_builder_input_invalid");
   }
   const guard = buildReadOnlyPathGuard(input);
+  const platformAttestation = runIsolatedPlatformProbe({ filesystem: input.filesystem,
+    pathApi: input.pathApi, probeRoot: input.platformProbe.probeRoot,
+    probeRootPolicyIdentity: input.platformProbe.probeRootPolicyIdentity,
+    approvedRoot: input.approvedRoot, stateRootParent: input.stateRootParent });
   const approvedRootPolicyIdentity = rootPolicyIdentity("approved_data_root",
     guard.approvedReal);
   const stateRootPolicyIdentity = hashContract(
@@ -372,6 +512,18 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   const repositoryMaterial = provenance.buildReadOnlyRepositoryMaterial({
     repositoryRoot: input.repositoryRoot, executionSha: input.executionMainSha,
     criticalSourcePaths: provenance.CRITICAL_SOURCE_PATHS, gitObjectReader: gitReader });
+  const runtimeSourceIdentities = repositoryMaterial.observedSourceIdentities.filter(
+    (entry) => ["production_runtime_bundle", "production_no_op_fault_injector"]
+      .includes(entry.role));
+  if (runtimeSourceIdentities.length !== 2 ||
+      !canonicalEqual(runtimeSourceIdentities.map(({ role, sourcePath }) =>
+        ({ role, sourcePath })), provenance.CRITICAL_SOURCE_PATHS.filter((entry) =>
+        ["production_runtime_bundle", "production_no_op_fault_injector"]
+          .includes(entry.role)))) {
+    throw new Error("runtime_source_provenance_invalid");
+  }
+  const runtimeSourceIdentityHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_R_RUNTIME_SOURCE_IDENTITY\0", runtimeSourceIdentities);
 
   if (!Array.isArray(input.predecessorPaths) || input.predecessorPaths.length !== 2 ||
       !canonicalEqual(input.predecessorPaths.map((entry) => entry.market), ["US", "KR"]) ||
@@ -433,11 +585,13 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   if (!Buffer.isBuffer(input.selectorExpectedPostimageBytes)) {
     throw new TypeError("selector_postimage_bytes_invalid");
   }
+  const selectorTargetReferences = input.targetPaths.map((entry) =>
+    `./${entry.publicPath.split("/").at(-1)}?raw`);
   const selectorExpectedPostimageIdentity =
     provenance.buildSelectorExpectedPostimageIdentity({
       selectorPathIdentityHash: input.selectorPath.pathIdentityHash,
       selectorPostimageBytes: input.selectorExpectedPostimageBytes,
-      versionedTargetPublicPaths: input.targetPaths.map((entry) => entry.publicPath),
+      versionedTargetPublicPaths: selectorTargetReferences,
       targetPathIdentities: input.targetPaths.map((entry) => ({ market: entry.market,
         approvedRootPolicyHash: approvedRootPolicyIdentity,
         approvedPathIdentityHash: entry.approvedPathIdentityHash,
@@ -449,6 +603,8 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   }
   const selectorPreimageIdentity = { pathIdentityHash: input.selectorPath.pathIdentityHash,
     contentIdentityHash: sha256(selectorPreimageBytes), byteCount: selectorPreimageBytes.length };
+  const restorationMaterialIdentity = deriveRestorationMaterialIdentity(
+    input.restorationMaterial, input, selectorPreimageBytes);
 
   const rebuiltProvenance = provenance.evaluateCurrentMainProvenanceBridge(
     input.provenancePacket);
@@ -474,11 +630,25 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   const za = stepZB.validateStepZA(input.stepZAPacket, input.stepZAResult);
   if (za.issues.length) throw new Error("step_za_chain_validation_failed");
   const envelope = za.stepZDirect.envelope;
+  const executionPackage = za.stepZDirect.executionPackage;
   const expectedPlan = stepZA.buildOperationPlan(
     envelope.singleUseProductionCutoverEnvelopeHash);
   if (!canonicalEqual(input.stepZAResult.runtimeMaterialInventory.operationPlan,
     expectedPlan)) throw new Error("step_z_operation_plan_mismatch");
   const expectedTargets = envelope.criticalBindings.productionCsvTargets;
+  if (!canonicalEqual(input.targetPaths.map((entry) => entry.publicPath),
+      expectedTargets.map((entry) => entry.targetPath)) ||
+      !canonicalEqual(executionPackage.targetFiles.map((entry) => entry.path),
+        expectedTargets.map((entry) => entry.targetPath)) ||
+      input.selectorPath.publicPath !== executionPackage.selectorPreimage.selectorPath ||
+      input.selectorPath.publicPath !== executionPackage.selectorPostimage.selectorPath ||
+      sha256(selectorPreimageBytes) !== envelope.criticalBindings.selectorPreimageSha256 ||
+      sha256(input.selectorExpectedPostimageBytes) !==
+        envelope.criticalBindings.selectorExpectedPostimageSha256 ||
+      !canonicalEqual(selectorTargetReferences, expectedTargets.map((entry) =>
+        `./${entry.targetPath.split("/").at(-1)}?raw`))) {
+    throw new Error("step_z_target_selector_binding_mismatch");
+  }
   if (!canonicalEqual(targetIdentities.map((entry) => ({ market: entry.market,
     role: entry.role, contentSha256: entry.contentSha256,
     schemaVersion: entry.schemaVersion, schemaIdentitySha256: entry.schemaIdentitySha256,
@@ -493,10 +663,20 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
     "FINPLE_STEP114_2X_ZB_R_TARGET_SELECTOR_IDENTITY\0", {
       targets: targetIdentities, selectorPreimageIdentity,
       selectorExpectedPostimageIdentity });
+  const targetSelectorBindingHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_R_STEP_Z_TARGET_SELECTOR_BINDING\0", {
+      targetPaths: input.targetPaths.map((entry) => ({ market: entry.market,
+        pathIdentityHash: entry.approvedPathIdentityHash, publicPath: entry.publicPath })),
+      selectorPathIdentityHash: input.selectorPath.pathIdentityHash,
+      selectorPreimageSha256: selectorPreimageIdentity.contentIdentityHash,
+      selectorExpectedPostimageSha256: selectorExpectedPostimageIdentity.contentSha256,
+      selectorTargetReferences,
+    });
   const operationPlanHash = hashContract(
     "FINPLE_STEP114_2X_ZB_R_OPERATION_PLAN\0", expectedPlan);
   const stepZExecutionMaterialDescriptor =
-    buildStepZExecutionMaterialDescriptor(input.stepZAPacket, input.stepZAResult);
+    buildStepZExecutionMaterialDescriptor(input.stepZAPacket, input.stepZAResult,
+      targetSelectorBindingHash);
   const adapterConstructionSchemaIdentity = hashContract(
     "FINPLE_STEP114_2X_ZB_R_ADAPTER_CONSTRUCTION_SCHEMA\0", {
       constructionFields: adapters.CONSTRUCTION_FIELDS,
@@ -518,16 +698,16 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
     provenanceBridgeHash: rebuiltProvenance.provenanceBridge.provenanceBridgeHash,
     adapterManifestId: input.adapterManifest.adapterManifestId,
     adapterManifestHash: input.adapterManifest.adapterManifestHash,
+    runtimeSourceIdentities, runtimeSourceIdentityHash,
     approvedRootPolicyIdentity, stateRootPolicyIdentity, environmentIdentityHash,
     predecessorIdentities, targetIdentities, selectorPreimageIdentity,
     selectorExpectedPostimageIdentity, targetSelectorIdentityHash,
     noOpFaultInjectorContractIdentity:
-      input.noOpFaultInjectorContract.contractIdentityHash,
-    platformAttestation: clone(input.platformAttestation),
-    adapterConstructionSchemaIdentity, restorationMaterialIdentity:
-      input.restorationMaterialIdentity,
+      input.noOpProductionFaultInjector.descriptor.descriptorHash,
+    platformAttestation: clone(platformAttestation),
+    adapterConstructionSchemaIdentity, restorationMaterialIdentity,
     operationPlan: clone(expectedPlan), operationPlanHash,
-    stepZExecutionMaterialDescriptor,
+    stepZExecutionMaterialDescriptor, targetSelectorBindingHash,
     idempotencyIdentities: expectedPlan.map((entry) => ({ sequence: entry.sequence,
       operationId: entry.operationId, idempotencyKey: entry.idempotencyKey })),
     singleUseClaimNamespaceHash, productionCapable: true,
@@ -550,6 +730,8 @@ function buildProductionConfigurationManifest(material) {
     provenanceBridgeHash: material.provenanceBridgeHash,
     adapterManifestId: material.adapterManifestId,
     adapterManifestHash: material.adapterManifestHash,
+    runtimeSourceIdentities: material.runtimeSourceIdentities,
+    runtimeSourceIdentityHash: material.runtimeSourceIdentityHash,
     approvedRootPolicyIdentity: material.approvedRootPolicyIdentity,
     stateRootPolicyIdentity: material.stateRootPolicyIdentity,
     environmentIdentityHash: material.environmentIdentityHash,
@@ -558,6 +740,7 @@ function buildProductionConfigurationManifest(material) {
     selectorPreimageIdentity: material.selectorPreimageIdentity,
     selectorExpectedPostimageIdentity: material.selectorExpectedPostimageIdentity,
     targetSelectorIdentityHash: material.targetSelectorIdentityHash,
+    targetSelectorBindingHash: material.targetSelectorBindingHash,
     noOpFaultInjectorContractIdentity: material.noOpFaultInjectorContractIdentity,
     platformAttestation: material.platformAttestation,
     adapterConstructionSchemaIdentity: material.adapterConstructionSchemaIdentity,
@@ -688,6 +871,7 @@ function buildAuthorizationBody(configurationManifest, signer, nonceContext,
       configurationManifest.productionConfigurationManifestHash,
     adapterManifestId: configurationManifest.adapterManifestId,
     adapterManifestHash: configurationManifest.adapterManifestHash,
+    runtimeSourceIdentityHash: configurationManifest.runtimeSourceIdentityHash,
     targetSelectorIdentityHash: configurationManifest.targetSelectorIdentityHash,
     stepZContractIdentityHash: stepZContractIdentityHash(),
     stepZOperationPlanHash: configurationManifest.operationPlanHash,
@@ -909,6 +1093,10 @@ function buildProductionInvocationBundle(configurationManifest, authorization,
     productionAdapterManifestIdentity: { adapterManifestId:
       configurationManifest.adapterManifestId, adapterManifestHash:
       configurationManifest.adapterManifestHash },
+    runtimeSourceProvenanceIdentity: {
+      runtimeSourceIdentities: configurationManifest.runtimeSourceIdentities,
+      runtimeSourceIdentityHash: configurationManifest.runtimeSourceIdentityHash,
+    },
     targetIdentities: configurationManifest.targetIdentities,
     selectorPreimageIdentity: configurationManifest.selectorPreimageIdentity,
     selectorExpectedPostimageIdentity:
@@ -1020,70 +1208,252 @@ function evaluateProductionRuntimeBundle(packet) {
     sanitizedDependencyDescriptor: bundle.sanitizedDependencyDescriptor });
 }
 
-function validateLaterExecutionBoundary(input) {
+function stepZImmutableCoreHash(packet) {
+  if (!exactKeys(packet, stepZ.INPUT_FIELDS)) throw new TypeError("step_z_packet_fields_invalid");
+  const direct = stepZ.directValidateStepY(packet);
+  if (direct.issues.length) throw new Error("step_z_immutable_core_chain_invalid");
+  const envelope = direct.envelope;
+  return hashContract("FINPLE_STEP114_2X_ZB_R_STEP_Z_IMMUTABLE_CORE\0", {
+    mergedMainSha: packet.mergedMainSha,
+    executionClockInstant: packet.executionClockInstant,
+    stepYResultStatus: packet.stepYResult.status,
+    productionCutoverApprovalId: envelope.productionCutoverApprovalId,
+    productionCutoverApprovalHash: envelope.productionCutoverApprovalHash,
+    singleUseProductionCutoverEnvelopeId: envelope.singleUseProductionCutoverEnvelopeId,
+    singleUseProductionCutoverEnvelopeHash:
+      envelope.singleUseProductionCutoverEnvelopeHash,
+    criticalBindings: envelope.criticalBindings,
+  });
+}
+
+function buildPhaseAValidationReceipt(manifest, bundle, immutableMaterial,
+  evaluationClockInstant) {
+  const body = {
+    contractVersion: `${VERSION}.phase-a-validation-receipt.v1`,
+    productionConfigurationManifestId: manifest.productionConfigurationManifestId,
+    productionConfigurationManifestHash: manifest.productionConfigurationManifestHash,
+    productionInvocationBundleId: bundle.productionInvocationBundleId,
+    productionInvocationBundleHash: bundle.productionInvocationBundleHash,
+    stepZImmutableCoreHash: stepZImmutableCoreHash(
+      immutableMaterial.stepZAPacket.stepZPacket),
+    stepZExecutionMaterialDescriptorId:
+      immutableMaterial.stepZExecutionMaterialDescriptor
+        .stepZExecutionMaterialDescriptorId,
+    stepZExecutionMaterialDescriptorHash:
+      immutableMaterial.stepZExecutionMaterialDescriptor
+        .stepZExecutionMaterialDescriptorHash,
+    targetSelectorBindingHash: manifest.targetSelectorBindingHash,
+    runtimeSourceIdentityHash: manifest.runtimeSourceIdentityHash,
+    restorationMaterialIdentityHash:
+      manifest.restorationMaterialIdentity.restorationMaterialIdentityHash,
+    evaluationClockInstant,
+    preConstructionValidationComplete: true,
+    adapterConstructionPerformed: false,
+    stateRootCreated: false,
+    capabilityMethodInvoked: false,
+    executionPerformed: false,
+    rawMaterialPresent: false,
+  };
+  const idHash = hashContract("FINPLE_STEP114_2X_ZB_R_PHASE_A_RECEIPT_ID\0", body);
+  const withId = { ...body,
+    phaseAValidationReceiptId: `step114-2x-zb-r-phase-a-${idHash}` };
+  return deepFreeze({ ...withId, phaseAValidationReceiptHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_R_PHASE_A_RECEIPT_HASH\0", withId) });
+}
+
+function validatePhaseAPreConstructionBoundary(input) {
   if (input === undefined) return safeResult(PUBLIC_STATES[0]);
-  if (!exactKeys(input, LATER_BOUNDARY_FIELDS)) return safeResult(PUBLIC_STATES[2], {
+  if (!exactKeys(input, PHASE_A_PRE_CONSTRUCTION_FIELDS)) {
+    return safeResult(PUBLIC_STATES[2], {
     failureClassification: FAILURE_CLASSIFICATIONS[4],
-    blockingIssues: ["later_boundary_fields_invalid"] });
-  if (!isRecord(input.signedProductionAuthorization)) return safeResult(PUBLIC_STATES[2], {
+    blockingIssues: ["phase_a_fields_invalid"] });
+  }
+  const privateMaterial = input.privateProductionConfigurationMaterial;
+  const immutableMaterial = input.stepZImmutableExecutionMaterial;
+  if (!exactKeys(privateMaterial, PRIVATE_PRODUCTION_CONFIGURATION_FIELDS) ||
+      !exactKeys(immutableMaterial, STEP_Z_IMMUTABLE_EXECUTION_MATERIAL_FIELDS) ||
+      !isRecord(input.signedProductionAuthorization) ||
+      !validateNoOpFaultInjectorContract(input.noOpProductionFaultInjector)) {
+    return safeResult(PUBLIC_STATES[2], {
     failureClassification: FAILURE_CLASSIFICATIONS[4],
-    blockingIssues: ["later_boundary_authorization_invalid"] });
-  const basePacket = Object.fromEntries(EVALUATION_FIELDS.map((field) =>
-    [field, input[field]]));
-  basePacket.evaluationClockInstant = input.signedProductionAuthorization
-    .evaluationClockInstant;
-  const initial = evaluateProductionRuntimeBundle(basePacket);
-  if (!initial.ok) return safeResult(PUBLIC_STATES[2], {
+    blockingIssues: ["phase_a_private_or_immutable_material_invalid"] });
+  }
+  const readOnlyBuilderInput = {
+    filesystem: input.filesystem, pathApi: input.pathApi,
+    repositoryRoot: privateMaterial.repositoryRoot,
+    gitExecutable: input.gitExecutable, gitExecFileSync: input.gitExecFileSync,
+    executionMainSha: privateMaterial.executionMainSha,
+    approvedRoot: privateMaterial.approvedRoot,
+    stateRootParent: privateMaterial.stateRootParent,
+    futureStateRootPath: privateMaterial.futureStateRootPath,
+    predecessorPaths: privateMaterial.predecessorPaths,
+    targetPaths: privateMaterial.targetPaths,
+    selectorPath: privateMaterial.selectorPath,
+    candidateContents: privateMaterial.candidateContents,
+    selectorExpectedPostimageBytes: privateMaterial.selectorExpectedPostimageBytes,
+    noOpProductionFaultInjector: input.noOpProductionFaultInjector,
+    platformProbe: privateMaterial.platformProbe,
+    restorationMaterial: privateMaterial.restorationMaterial,
+    adapterManifest: privateMaterial.adapterManifest,
+    provenancePacket: privateMaterial.provenancePacket,
+    provenanceResult: privateMaterial.provenanceResult,
+    stepZAPacket: immutableMaterial.stepZAPacket,
+    stepZAResult: immutableMaterial.stepZAResult,
+  };
+  let material; let manifest;
+  try {
+    material = buildReadOnlyProductionConfigurationMaterial(readOnlyBuilderInput);
+    manifest = buildProductionConfigurationManifest(material);
+  } catch (error) {
+    return safeResult(PUBLIC_STATES[2], {
+      failureClassification: FAILURE_CLASSIFICATIONS[4],
+      blockingIssues: [String(error.message || "phase_a_read_only_validation_failed")] });
+  }
+  if (!canonicalEqual(immutableMaterial.stepZExecutionMaterialDescriptor,
+      manifest.stepZExecutionMaterialDescriptor)) {
+    return safeResult(PUBLIC_STATES[2], {
+      failureClassification: FAILURE_CLASSIFICATIONS[4],
+      blockingIssues: ["phase_a_step_z_immutable_material_mismatch"] });
+  }
+  const historical = validateHistoricalZB(privateMaterial.historicalZBPacket,
+    privateMaterial.historicalZBResult);
+  if (historical.issues.length) return safeResult(PUBLIC_STATES[2], {
     failureClassification: FAILURE_CLASSIFICATIONS[4],
-    blockingIssues: initial.blockingIssues });
-  let material;
-  try { material = buildReadOnlyProductionConfigurationMaterial(input.readOnlyBuilderInput); }
-  catch { return safeResult(PUBLIC_STATES[2], {
-    failureClassification: FAILURE_CLASSIFICATIONS[4],
-    blockingIssues: ["later_boundary_read_only_material_drift"] }); }
-  const manifest = buildProductionConfigurationManifest(material);
+    blockingIssues: historical.issues });
   const auth = validateProductionAuthorization(input.signedProductionAuthorization,
-    input.productionOperatorAllowlist, manifest, input.readOnlyBuilderInput.stepZAPacket,
-    input.historicalZBPacket, input.historicalZBResult,
+    input.productionOperatorAllowlist, manifest, immutableMaterial.stepZAPacket,
+    privateMaterial.historicalZBPacket, privateMaterial.historicalZBResult,
     input.currentPriorAuthorizationNonceHashes,
     input.currentEvaluationClockInstant, false);
   if (auth.issues.length) return safeResult(PUBLIC_STATES[2], {
-    failureClassification: FAILURE_CLASSIFICATIONS[4], blockingIssues: auth.issues });
+    failureClassification: FAILURE_CLASSIFICATIONS[4],
+    blockingIssues: auth.issues });
   const expectedBundle = buildProductionInvocationBundle(manifest,
-    input.signedProductionAuthorization, input.readOnlyBuilderInput.stepZAPacket);
+    input.signedProductionAuthorization, immutableMaterial.stepZAPacket);
   if (!canonicalEqual(input.productionInvocationBundle, expectedBundle)) {
     return safeResult(PUBLIC_STATES[2], {
       failureClassification: FAILURE_CLASSIFICATIONS[4],
-      blockingIssues: ["later_boundary_bundle_canonical_mismatch"] });
+      blockingIssues: ["phase_a_bundle_canonical_mismatch"] });
   }
-  return safeResult(PUBLIC_STATES[1], { productionConfigurationValidated: true,
+  const receipt = buildPhaseAValidationReceipt(manifest, expectedBundle,
+    immutableMaterial, input.currentEvaluationClockInstant);
+  const result = safeResult(PUBLIC_STATES[1], { productionConfigurationValidated: true,
     productionAuthorizationVerified: true, signerSeparationValidated: true,
     nonceValidated: true, chronologyValidated: true,
-    laterExecutionBoundaryValidated: true,
+    laterExecutionBoundaryValidated: true, phaseAPreConstructionValidated: true,
+    phaseAValidationReceipt: receipt,
     productionConfigurationManifest: manifest,
     productionAuthorization: authorizationSummary(input.signedProductionAuthorization),
     productionInvocationBundle: expectedBundle,
     sanitizedDependencyDescriptor: expectedBundle.sanitizedDependencyDescriptor });
+  approvedPhaseAResults.add(result);
+  return result;
 }
+
+function buildPhaseBCommandDescriptor(phaseAResult, packet) {
+  const receipt = phaseAResult.phaseAValidationReceipt;
+  const body = {
+    contractVersion: `${VERSION}.phase-b-sanitized-command-descriptor.v1`,
+    phaseAValidationReceiptId: receipt.phaseAValidationReceiptId,
+    phaseAValidationReceiptHash: receipt.phaseAValidationReceiptHash,
+    productionInvocationBundleId:
+      phaseAResult.productionInvocationBundle.productionInvocationBundleId,
+    productionInvocationBundleHash:
+      phaseAResult.productionInvocationBundle.productionInvocationBundleHash,
+    stepZImmutableCoreHash: stepZImmutableCoreHash(packet),
+    targetSelectorBindingHash: receipt.targetSelectorBindingHash,
+    capabilityBindings: stepZ.CAPABILITY_NAMES.map((name) => ({
+      capabilityName: name, descriptor: clone(packet[name].descriptor),
+    })),
+    commandConstructed: true,
+    executorInvoked: false,
+    capabilityMethodInvoked: false,
+    executionPerformed: false,
+    mutationCount: 0,
+    rawMaterialPresent: false,
+  };
+  const idHash = hashContract("FINPLE_STEP114_2X_ZB_R_PHASE_B_COMMAND_ID\0", body);
+  const withId = { ...body,
+    phaseBCommandDescriptorId: `step114-2x-zb-r-phase-b-command-${idHash}` };
+  return deepFreeze({ ...withId, phaseBCommandDescriptorHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_R_PHASE_B_COMMAND_HASH\0", withId) });
+}
+
+function validatePhaseBPostConstructionBoundary(input) {
+  if (input === undefined) return safeResult(PUBLIC_STATES[0]);
+  if (!exactKeys(input, PHASE_B_POST_CONSTRUCTION_FIELDS) ||
+      !approvedPhaseAResults.has(input.phaseAPreConstructionResult) ||
+      !exactKeys(input.completeStepZPacket, stepZ.INPUT_FIELDS)) {
+    return safeResult(PUBLIC_STATES[2], {
+      failureClassification: FAILURE_CLASSIFICATIONS[4],
+      blockingIssues: ["phase_b_fields_or_phase_a_result_invalid"] });
+  }
+  const issues = [];
+  try {
+    if (stepZImmutableCoreHash(input.completeStepZPacket) !==
+        input.phaseAPreConstructionResult.phaseAValidationReceipt.stepZImmutableCoreHash) {
+      issues.push("phase_b_step_z_immutable_core_mismatch");
+    }
+  } catch { issues.push("phase_b_step_z_immutable_core_invalid"); }
+  for (const name of stepZ.CAPABILITY_NAMES) {
+    if (input[name] !== input.completeStepZPacket[name]) {
+      issues.push(`phase_b_capability_object_identity_mismatch:${name}`);
+    }
+  }
+  issues.push(...stepZ.validateAllCapabilities(input.completeStepZPacket));
+  if (input.phaseAPreConstructionResult.productionConfigurationManifest
+    .targetSelectorBindingHash !== input.phaseAPreConstructionResult
+      .phaseAValidationReceipt.targetSelectorBindingHash) {
+    issues.push("phase_b_configuration_target_selector_binding_mismatch");
+  }
+  if (issues.length) return safeResult(PUBLIC_STATES[2], {
+    failureClassification: FAILURE_CLASSIFICATIONS[4],
+    blockingIssues: issues });
+  const descriptor = buildPhaseBCommandDescriptor(
+    input.phaseAPreConstructionResult, input.completeStepZPacket);
+  return safeResult(PUBLIC_STATES[1], {
+    productionConfigurationValidated: true,
+    productionAuthorizationVerified: true,
+    signerSeparationValidated: true, nonceValidated: true,
+    chronologyValidated: true, laterExecutionBoundaryValidated: true,
+    phaseAPreConstructionValidated: true, phaseBPostConstructionValidated: true,
+    phaseAValidationReceipt: input.phaseAPreConstructionResult.phaseAValidationReceipt,
+    productionConfigurationManifest:
+      input.phaseAPreConstructionResult.productionConfigurationManifest,
+    productionAuthorization: input.phaseAPreConstructionResult.productionAuthorization,
+    productionInvocationBundle:
+      input.phaseAPreConstructionResult.productionInvocationBundle,
+    sanitizedDependencyDescriptor:
+      input.phaseAPreConstructionResult.sanitizedDependencyDescriptor,
+    sanitizedCommandDescriptor: descriptor,
+  });
+}
+
+const validateLaterExecutionBoundary = validatePhaseAPreConstructionBoundary;
 
 module.exports = {
   ALLOWLIST_ENTRY_FIELDS, ALLOWLIST_FIELDS, AUTHORIZATION_BODY_FIELDS,
   ADAPTER_TARGET_CONTRACT_FIELDS, AUTHORIZATION_FIELDS, BUILDER_FIELDS,
   DEPENDENCY_SCHEMA, EVALUATION_FIELDS,
   FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS, IMPLEMENTATION_BASELINE_SHA,
-  LATER_BOUNDARY_FIELDS, MAXIMUM_AUTHORIZATION_LIFETIME_SECONDS, PUBLIC_STATES,
+  LATER_BOUNDARY_FIELDS, MAXIMUM_AUTHORIZATION_LIFETIME_SECONDS,
+  PHASE_A_PRE_CONSTRUCTION_FIELDS, PHASE_B_POST_CONSTRUCTION_FIELDS,
+  PRIVATE_PRODUCTION_CONFIGURATION_FIELDS, PUBLIC_STATES,
   ROLE, SCOPE, SIGNATURE_ALGORITHM, VERSION,
+  STEP_Z_IMMUTABLE_EXECUTION_MATERIAL_FIELDS,
   authorizationSignaturePayload, authorizationSummary,
   buildAuthorizationBody, buildHistoricalIdentities, buildNoOpFaultInjectorContract,
-  buildLaterExecutionAssemblerContract, buildPlatformAttestation,
+  buildLaterExecutionAssemblerContract,
   buildProductionConfigurationManifest,
   buildProductionInvocationBundle, buildProductionOperatorAllowlist,
   buildReadOnlyProductionConfigurationMaterial, buildStepZExecutionMaterialDescriptor,
   canonicalJson, deepFreeze,
   evaluateProductionRuntimeBundle, hashContract, pathIdentity, safeResult,
   rootPolicyIdentity, sha256,
+  runIsolatedPlatformProbe,
   sealSignedAuthorization, sealUnsignedAuthorization, stepZContractIdentityHash,
   validateBundleSeal, validateLaterExecutionBoundary,
+  validatePhaseAPreConstructionBoundary, validatePhaseBPostConstructionBoundary,
   validateNoOpFaultInjectorContract, validatePlatformAttestation,
-  validateProductionAuthorization,
+  validateProductionAuthorization, deriveRestorationMaterialIdentity,
 };

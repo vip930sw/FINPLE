@@ -18,7 +18,8 @@ syntheticValidationOnly=false
 The signed body binds the explicit execution SHA, current-main provenance,
 configuration and adapter manifests, candidate/target/selector identities,
 historical Step Z contract, operation plan, claim namespace, environment,
-nonce contexts, chronology, effective expiry, and signer identity.
+nonce contexts, chronology, effective expiry, signer identity, and the exact Git
+tree/blob/content identity of the ZB-R runtime and approved no-op implementation.
 
 ## Verification rules
 

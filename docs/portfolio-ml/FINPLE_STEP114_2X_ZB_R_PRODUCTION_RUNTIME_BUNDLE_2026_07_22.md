@@ -50,23 +50,44 @@ execution SHA, data root, state-root parent, candidate, selector, and provenance
 inputs are explicit. There is no cwd, environment, branch, network, provider,
 database, or credential discovery.
 
-The builder verifies Git tree/blob/content membership, approved-root realpaths,
+The builder verifies Git tree/blob/content membership, including the ZB-R
+runtime bundle and approved no-op fault-injector factory sources, approved-root realpaths,
 symlink or junction rejection, path alias rejection, existing predecessor bytes,
 absent create-only versioned targets, actual CSV header/schema/content/dataset/
 row/byte identities, and selector preimage/postimage reference constraints. A
-platform attestation may be generated only from an isolated synthetic probe.
+platform attestation is generated only by a real isolated probe that performs
+exclusive create, file write/fsync, same-directory rename, renamed-content
+verification, directory-fsync capability observation, and cleanup. A caller
+cannot supply a self-asserted attestation.
+
+The runtime target public paths, historical Step Z target-file paths, US/KR
+ordering, selector path, selector preimage and postimage hashes, versioned
+selector references, candidate identities, operation plan, and claim namespace
+must all match directly before a configuration manifest can be built.
+
+Restoration identity is derived from the two exact absent target path states and
+the actual selector preimage path/content/byte count. An arbitrary restoration
+hash is not accepted, and raw restoration bytes remain private.
 
 The builder does not call `createProductionCapabilityAdapters`, create a state
 directory, acquire or terminalize a claim, write a CSV, mutate a selector,
 persist a receipt, rollback, activate a loader, or deploy.
 
-## Later boundary
+## Two-phase later boundary
 
-The sealed dependency descriptor defines two phases. The first phase requires
+Phase A requires
 canonical bundle, signed authorization, allowlist, nonce/clock state, private
 configuration material, exact Step Z material, explicit filesystem/path/Git
-objects, and the no-op fault injector. Only after this boundary is revalidated
-may a later implementation accept the seven explicitly constructed adapters.
+objects, and the factory-branded no-op fault injector. Before any adapter
+construction or state-root creation it reruns the read-only builder and isolated
+probe, rebuilds the manifest, revalidates authorization/nonce/expiry, and checks
+private material, immutable Step Z material, and bundle canonical equality.
 
-This step defines that sanitized contract and stops before construction. Its
-assembler, executor, capability, and mutation counts remain zero.
+Phase B accepts the complete Step Z packet and the exact seven synthetic or
+later explicitly constructed capability objects. It checks exact Step Z fields,
+immutable packet core, top-level object identity, descriptors and method sets,
+and configuration target/selector binding. It returns only a sanitized command
+descriptor; it does not invoke a capability or executor.
+
+PR/CI constructs no actual production adapter. Assembler execution, executor,
+capability-method, state-root, and mutation counts remain zero.

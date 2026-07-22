@@ -10,6 +10,8 @@ const stepZBFixture = require(
 const provenance = require("../lib/metrics-cutover-current-main-provenance-bridge.cjs");
 const adapters = require("../lib/metrics-cutover-production-capability-adapters.cjs");
 const subject = require("../lib/metrics-cutover-production-runtime-bundle.cjs");
+const noOpFaultInjector = require(
+  "../lib/metrics-cutover-production-no-op-fault-injector.cjs");
 
 const EXECUTION_SHA = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
 const TREE_SHA = "1234512345123451234512345123451234512345";
@@ -113,7 +115,9 @@ function buildFixture(testContext) {
   const repositoryRoot = path.join(root, "repository");
   const approvedRoot = path.join(root, "approved");
   const stateRootParent = path.join(root, "state-parent");
+  const platformProbeRoot = path.join(root, "platform-probe");
   fs.mkdirSync(repositoryRoot); fs.mkdirSync(approvedRoot); fs.mkdirSync(stateRootParent);
+  fs.mkdirSync(platformProbeRoot);
   const { built: historicalBuilt, result: historicalResult } = historical();
   const stepZAPacket = historicalBuilt.packet.stepZAPacket;
   const stepZAResult = historicalBuilt.packet.stepZAResult;
@@ -143,8 +147,7 @@ function buildFixture(testContext) {
   const selectorPreimageBytes = Buffer.from(
     za.stepZDirect.executionPackage.selectorPreimage.selectorContentBase64, "base64");
   const selectorExpectedPostimageBytes = Buffer.from(
-    `export const productionMetricTargets = [${targetPaths.map((entry) =>
-      JSON.stringify(entry.publicPath)).join(", ")}];\n`);
+    za.stepZDirect.executionPackage.selectorPostimage.selectorContentBase64, "base64");
   fs.writeFileSync(selectorPath, selectorPreimageBytes);
   const selectorPublicPath = za.stepZDirect.executionPackage.selectorPreimage.selectorPath;
   const selectorPathIdentityHash = subject.pathIdentity("selector", selectorPublicPath);
@@ -157,11 +160,6 @@ function buildFixture(testContext) {
       sourcePathIdentityHash: entry.sourcePathIdentityHash,
       sourceGitBlobSha: entry.sourceGitBlobSha,
       sourceContentSha256: entry.sourceContentSha256 }));
-  const platformAttestation = subject.buildPlatformAttestation({
-    probeRootPolicyIdentity: subject.hashContract(
-      "FINPLE_STEP114_2X_ZB_R_TEST_PROBE_ROOT\0", "isolated"),
-    atomicSameDirectoryRename: true, exclusiveCreate: true, fileFsync: true,
-    directoryFsync: false });
   const adapterManifest = adapters.buildProductionAdapterManifest({
     adapterSourceIdentities: adapterSources, approvedRootPolicyIdentity,
     platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,
@@ -186,7 +184,8 @@ function buildFixture(testContext) {
   const selectorExpectedPostimageIdentity =
     provenance.buildSelectorExpectedPostimageIdentity({ selectorPathIdentityHash,
       selectorPostimageBytes: selectorExpectedPostimageBytes,
-      versionedTargetPublicPaths: targetPaths.map((entry) => entry.publicPath),
+      versionedTargetPublicPaths: targetPaths.map((entry) =>
+        `./${entry.publicPath.split("/").at(-1)}?raw`),
       targetPathIdentities });
   const currentPreimageManifest = provenance.buildCurrentPreimageManifest({
     repositoryHeadSha: EXECUTION_SHA, repositoryTreeSha: TREE_SHA,
@@ -214,6 +213,14 @@ function buildFixture(testContext) {
       healthCheck: false, repositoryOwnership: false } };
   const provenanceResult = provenance.evaluateCurrentMainProvenanceBridge(provenancePacket);
   if (!provenanceResult.ok) throw new Error(`provenance_invalid:${provenanceResult.blockingIssues}`);
+  const restorationMaterial = {
+    contractVersion: "finple.step114-2x-zb-r.private-restoration-material.v1",
+    targets: targetPaths.map((entry) => ({ market: entry.market, path: entry.path,
+      publicPath: entry.publicPath, exists: false })),
+    selector: { path: selectorPath, publicPath: selectorPublicPath,
+      contentBase64: selectorPreimageBytes.toString("base64") },
+    createOnly: true,
+  };
   const readOnlyBuilderInput = { filesystem: fs, pathApi: path, repositoryRoot,
     gitExecutable, gitExecFileSync, executionMainSha: EXECUTION_SHA, approvedRoot,
     stateRootParent, futureStateRootPath: path.join(stateRootParent, "future-state"),
@@ -221,8 +228,12 @@ function buildFixture(testContext) {
     selectorPath: { path: selectorPath, publicPath: selectorPublicPath,
       pathIdentityHash: selectorPathIdentityHash }, candidateContents,
     selectorExpectedPostimageBytes,
-    noOpFaultInjectorContract: subject.buildNoOpFaultInjectorContract(),
-    platformAttestation, restorationMaterialIdentity: subject.sha256("restoration-material"),
+    noOpProductionFaultInjector:
+      noOpFaultInjector.createNoOpProductionFaultInjector(),
+    platformProbe: { probeRoot: platformProbeRoot,
+      probeRootPolicyIdentity: subject.rootPolicyIdentity(
+        "isolated_platform_probe_root", fs.realpathSync(platformProbeRoot)) },
+    restorationMaterial,
     adapterManifest, provenancePacket, provenanceResult, stepZAPacket, stepZAResult };
   const material = subject.buildReadOnlyProductionConfigurationMaterial(readOnlyBuilderInput);
   const configurationManifest = subject.buildProductionConfigurationManifest(material);
@@ -259,6 +270,7 @@ function buildFixture(testContext) {
     evaluationClockInstant: EVALUATION_CLOCK,
     historicalZBPacket: historicalBuilt.packet, historicalZBResult: historicalResult };
   const fixture = { root, repositoryRoot, approvedRoot, stateRootParent,
+    platformProbeRoot, restorationMaterial,
     selectorPath, targetPaths, predecessorPaths, readOnlyBuilderInput, material,
     configurationManifest, allowlist, authorization, packet,
     historicalBuilt, historicalResult, productionKeys: PRODUCTION_KEYS };
@@ -266,11 +278,43 @@ function buildFixture(testContext) {
   return fixture;
 }
 function laterInput(result, fixture, overrides = {}) {
-  return { ...fixture.packet, productionInvocationBundle: result.productionInvocationBundle,
+  const builder = fixture.readOnlyBuilderInput;
+  const privateProductionConfigurationMaterial = {
+    repositoryRoot: builder.repositoryRoot, executionMainSha: builder.executionMainSha,
+    approvedRoot: builder.approvedRoot, stateRootParent: builder.stateRootParent,
+    futureStateRootPath: builder.futureStateRootPath,
+    predecessorPaths: builder.predecessorPaths, targetPaths: builder.targetPaths,
+    selectorPath: builder.selectorPath, candidateContents: builder.candidateContents,
+    selectorExpectedPostimageBytes: builder.selectorExpectedPostimageBytes,
+    platformProbe: builder.platformProbe, restorationMaterial: builder.restorationMaterial,
+    adapterManifest: builder.adapterManifest, provenancePacket: builder.provenancePacket,
+    provenanceResult: builder.provenanceResult,
+    historicalZBPacket: fixture.historicalBuilt.packet,
+    historicalZBResult: fixture.historicalResult,
+  };
+  const stepZImmutableExecutionMaterial = {
+    stepZAPacket: builder.stepZAPacket, stepZAResult: builder.stepZAResult,
+    stepZExecutionMaterialDescriptor:
+      result.productionConfigurationManifest.stepZExecutionMaterialDescriptor,
+  };
+  return { productionInvocationBundle: result.productionInvocationBundle,
+    signedProductionAuthorization: fixture.authorization,
+    productionOperatorAllowlist: fixture.allowlist,
     currentEvaluationClockInstant: "2026-07-18T00:03:29.500Z",
-    currentPriorAuthorizationNonceHashes: [], ...overrides };
+    currentPriorAuthorizationNonceHashes: [], privateProductionConfigurationMaterial,
+    stepZImmutableExecutionMaterial, filesystem: builder.filesystem,
+    pathApi: builder.pathApi, gitExecutable: builder.gitExecutable,
+    gitExecFileSync: builder.gitExecFileSync,
+    noOpProductionFaultInjector: builder.noOpProductionFaultInjector,
+    ...overrides };
+}
+function phaseBInput(phaseAResult, fixture, overrides = {}) {
+  const packet = fixture.readOnlyBuilderInput.stepZAPacket.stepZPacket;
+  return { phaseAPreConstructionResult: phaseAResult, completeStepZPacket: packet,
+    ...Object.fromEntries(require("../lib/metrics-cutover-production-single-use-executor.cjs")
+      .CAPABILITY_NAMES.map((name) => [name, packet[name]])), ...overrides };
 }
 
 module.exports = { EVALUATION_CLOCK, EXECUTION_SHA, PRODUCTION_KEYS, buildFixture,
-  clone, laterInput, productionPem, resealAllowlist, resealAuthorization,
+  clone, laterInput, phaseBInput, productionPem, resealAllowlist, resealAuthorization,
   signAuthorizationBody, signerFromAllowlist };
