@@ -64,11 +64,14 @@ def extract_raw_daily_rows(
     source_id: str = "yfinance",
     provider_or_institution: str = "Yahoo Finance via yfinance",
 ) -> list[dict[str, str]]:
-    """Convert one downloaded history DataFrame without inventing adjustments.
+    """Convert one downloaded yfinance history without inventing adjustments.
 
-    Adj Close is copied only when a complete positive adjusted series exists.
-    Split-adjusted values are calculated only when Stock Splits contains an
-    explicit non-unit event.  The source/license fields remain review-only.
+    With ``auto_adjust=False``, Yahoo ``Close`` is already split-adjusted.  It
+    is therefore copied directly to ``splitAdjustedClose`` for every valid
+    row. ``Stock Splits`` remains corporate-action evidence only and is never
+    applied to ``Close`` again. ``Adj Close`` is copied as an auxiliary total-
+    return reference only when the complete valid series is positive.  The
+    source/license fields remain review-only.
     """
     normalized_market = clean(market).upper()
     normalized_ticker = clean(ticker).upper()
@@ -103,28 +106,6 @@ def extract_raw_daily_rows(
                 adjusted_by_index[index] = value
     has_complete_adjusted_series = len(adjusted_by_index) == len(valid_indices)
 
-    split_events: dict[object, float] = {}
-    if splits is not None:
-        for index in valid_indices:
-            value = finite_float(splits.get(index))
-            if value is not None and value > 0 and value != 1:
-                split_events[index] = value
-
-    split_adjusted_by_index: dict[object, float] = {}
-    if split_events:
-        future_factor = 1.0
-        for index in reversed(valid_indices):
-            split_adjusted_by_index[index] = close_by_index[index] / future_factor
-            if index in split_events:
-                future_factor *= split_events[index]
-
-    if has_complete_adjusted_series:
-        basis = "total_return_adjusted"
-    elif split_events:
-        basis = "split_adjusted"
-    else:
-        basis = "raw_close"
-
     rows: list[dict[str, str]] = []
     seen_dates: set[str] = set()
     for index in valid_indices:
@@ -155,14 +136,14 @@ def extract_raw_daily_rows(
                 "date": date_text,
                 "currency": currency,
                 "close": format_number(close_by_index[index]),
-                "splitAdjustedClose": format_number(split_adjusted_by_index.get(index)),
+                "splitAdjustedClose": format_number(close_by_index[index]),
                 "totalReturnAdjustedClose": format_number(adjusted_by_index.get(index)) if has_complete_adjusted_series else "",
                 "volume": format_number(volume_value) if volume_value is not None and volume_value >= 0 else "",
                 "splitFactor": format_number(split_value),
                 "cashDividend": format_number(dividend_value) if dividend_value is not None and dividend_value >= 0 else "",
                 "sourceId": source_id,
                 "retrievedAt": retrieved_at,
-                "priceAdjustmentBasis": basis,
+                "priceAdjustmentBasis": "split_adjusted",
                 "publicationEligibility": "review_required",
                 "providerOrInstitution": provider_or_institution,
                 "licenseStatus": "review_required",

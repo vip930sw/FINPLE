@@ -673,8 +673,8 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                 Path(temp_dir),
                 raw_rows=raw_rows,
                 source_patch={
-                    "returnBasis": "mixed_reference",
-                    "priceAdjustmentBasis": "mixed_explicit",
+                    "returnBasis": "price_return",
+                    "priceAdjustmentBasis": "split_adjusted",
                     "redistributionReviewStatus": "review_required",
                     "appUseReviewStatus": "review_required",
                 },
@@ -694,6 +694,61 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
                 normalized = list(csv.DictReader(handle))
             self.assertEqual({row["dataStatus"] for row in normalized}, {"normalized_candidate_review"})
+
+    def test_price_return_metrics_ignore_adj_close_reference_and_dividends(self):
+        price_rows = raw_daily_rows()
+        reference_rows: list[dict[str, str]] = []
+        for row_index, row in enumerate(price_rows):
+            reference = dict(row)
+            reference["totalReturnAdjustedClose"] = str(float(row["close"]) * (1 + row_index / 20))
+            reference["cashDividend"] = "100" if row["ticker"] == "005930" else "0"
+            reference_rows.append(reference)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            price_only_input = build_candidate_input(root / "price_only", raw_rows=price_rows)
+            reference_input = build_candidate_input(root / "with_reference", raw_rows=reference_rows)
+            price_only = run_candidate(price_only_input, root / "price_only_out")
+            with_reference = run_candidate(reference_input, root / "with_reference_out")
+
+            self.assertTrue(price_only["candidatePackageReady"])
+            self.assertTrue(with_reference["candidatePackageReady"])
+
+            def read_candidate_metric(result: dict) -> dict[str, str]:
+                with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+
+            price_metric = read_candidate_metric(price_only)
+            reference_metric = read_candidate_metric(with_reference)
+            for field in ["selectedCagr", "rawPriceCagr10y", "selectedMdd", "selectedBeta"]:
+                self.assertEqual(reference_metric[field], price_metric[field])
+
+            def read_review_overlay_metric(result: dict) -> dict[str, str]:
+                with Path(result["outputs"]["krReviewOverlayCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+
+            price_selected = read_review_overlay_metric(price_only)
+            reference_selected = read_review_overlay_metric(with_reference)
+            for field in ["expectedCagr", "priceCagr10y", "mdd", "beta"]:
+                self.assertEqual(reference_selected[field], price_selected[field])
+
+            def read_monthly_returns(result: dict) -> list[dict[str, str]]:
+                with Path(result["outputs"]["monthlyReturnsCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return [row for row in csv.DictReader(handle) if row["ticker"] == "005930"]
+
+            reference_returns = read_monthly_returns(with_reference)
+            price_only_returns = read_monthly_returns(price_only)
+            self.assertEqual(
+                [row["priceReturn"] for row in reference_returns],
+                [row["priceReturn"] for row in price_only_returns],
+            )
+
+            with Path(with_reference["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = [row for row in csv.DictReader(handle) if row["ticker"] == "005930"]
+            self.assertTrue(normalized)
+            self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in normalized))
+            self.assertTrue(all(row["totalReturnAdjustedClose"] for row in normalized))
+            self.assertEqual({row["priceSeriesClassification"] for row in normalized}, {"split_adjusted"})
 
     def test_committed_fixture_cannot_be_reclassified_as_candidate(self):
         with tempfile.TemporaryDirectory() as temp_dir:

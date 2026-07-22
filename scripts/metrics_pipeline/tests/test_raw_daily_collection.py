@@ -6,12 +6,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import pandas as pd
 
 from scripts import build_us_price_metrics_overlay_chunked as us_builder
-from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows
+from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows, prepare_inputs
 from scripts.raw_daily_price_chunks import (
     combine_raw_daily_chunks,
     extract_raw_daily_rows,
@@ -24,8 +25,10 @@ def fake_history(*, split: bool = False) -> pd.DataFrame:
     index = pd.to_datetime(["2025-01-02", "2025-01-03", "2025-01-06"])
     return pd.DataFrame(
         {
-            "Close": [100.0, 52.0 if split else 101.0, 53.0 if split else 102.0],
-            "Adj Close": [50.0 if split else 99.0, 51.5 if split else 100.0, 52.5 if split else 101.0],
+            # Yahoo Close is already on one split-adjusted scale even when the
+            # history also contains explicit Stock Splits evidence.
+            "Close": [50.0, 51.5, 53.0] if split else [100.0, 101.0, 102.0],
+            "Adj Close": [49.0, 50.75, 52.25] if split else [99.0, 100.0, 101.0],
             "Volume": [1000, 1100, 1200],
             "Dividends": [0.0, 0.25, 0.0],
             "Stock Splits": [0.0, 2.0 if split else 0.0, 0.0],
@@ -50,15 +53,15 @@ class RawDailyCollectionTests(unittest.TestCase):
         self.assertEqual(len(rows), 60)
         self.assertEqual(len({(row["market"], row["ticker"]) for row in rows}), 20)
         self.assertEqual(len({(row["market"], row["ticker"], row["date"]) for row in rows}), 60)
-        self.assertEqual(rows[0]["priceAdjustmentBasis"], "total_return_adjusted")
-        self.assertTrue(rows[0]["splitAdjustedClose"])
-        self.assertTrue(rows[0]["totalReturnAdjustedClose"])
+        self.assertEqual(rows[0]["priceAdjustmentBasis"], "split_adjusted")
+        self.assertEqual(rows[0]["splitAdjustedClose"], rows[0]["close"])
+        self.assertEqual(rows[0]["totalReturnAdjustedClose"], "49")
         self.assertEqual(rows[1]["cashDividend"], "0.25")
         self.assertEqual(rows[1]["splitFactor"], "2")
         self.assertEqual(rows[0]["licenseStatus"], "review_required")
         self.assertEqual(rows[0]["publicationAllowed"], "false")
 
-    def test_split_adjusted_close_requires_explicit_split_evidence(self):
+    def test_close_is_split_adjusted_even_without_adj_close_or_split_event(self):
         data = fake_history(split=False).drop(columns=["Adj Close"])
         rows = extract_raw_daily_rows(
             data,
@@ -68,9 +71,36 @@ class RawDailyCollectionTests(unittest.TestCase):
             retrieved_at="2026-07-23T00:00:00+00:00",
         )
         self.assertEqual({row["ticker"] for row in rows}, {"005930"})
-        self.assertEqual({row["priceAdjustmentBasis"] for row in rows}, {"raw_close"})
-        self.assertEqual({row["splitAdjustedClose"] for row in rows}, {""})
+        self.assertEqual({row["priceAdjustmentBasis"] for row in rows}, {"split_adjusted"})
+        self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in rows))
         self.assertEqual({row["totalReturnAdjustedClose"] for row in rows}, {""})
+
+    def test_split_evidence_never_double_adjusts_yahoo_close(self):
+        rows = extract_raw_daily_rows(
+            fake_history(split=True),
+            market="US",
+            ticker="SPLT",
+            currency="USD",
+            retrieved_at="2026-07-23T00:00:00+00:00",
+        )
+        self.assertEqual([row["close"] for row in rows], ["50", "51.5", "53"])
+        self.assertEqual([row["splitAdjustedClose"] for row in rows], ["50", "51.5", "53"])
+        self.assertEqual([row["splitFactor"] for row in rows], ["1", "2", "1"])
+        self.assertEqual([row["totalReturnAdjustedClose"] for row in rows], ["49", "50.75", "52.25"])
+
+    def test_incomplete_adj_close_is_not_partially_preserved(self):
+        data = fake_history(split=False)
+        data.loc[data.index[1], "Adj Close"] = float("nan")
+        rows = extract_raw_daily_rows(
+            data,
+            market="US",
+            ticker="NOADJ",
+            currency="USD",
+            retrieved_at="2026-07-23T00:00:00+00:00",
+        )
+        self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in rows))
+        self.assertEqual({row["totalReturnAdjustedClose"] for row in rows}, {""})
+        self.assertEqual({row["priceAdjustmentBasis"] for row in rows}, {"split_adjusted"})
 
     def test_us_100_asset_checkpoint_and_resume_uses_mock_provider(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -160,6 +190,61 @@ class RawDailyCollectionTests(unittest.TestCase):
         self.assertEqual(len({(row["market"], row["ticker"]) for row in candidates}), 6000)
         self.assertEqual(review, [])
         self.assertEqual({row["isActive"] for row in candidates}, {""})
+
+    def test_prepared_source_declares_split_adjusted_price_return(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            universe_path = root / "universe.csv"
+            with universe_path.open("w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["market", "ticker", "nameKr", "assetType"])
+                writer.writeheader()
+                writer.writerows(
+                    [
+                        {"market": "US", "ticker": "AAA", "nameKr": "", "assetType": "stock"},
+                        {"market": "KR", "ticker": "5930", "nameKr": "", "assetType": "stock"},
+                    ]
+                )
+            us_raw = root / "us_raw.csv"
+            kr_raw = root / "kr_raw.csv"
+            write_raw_daily_rows(
+                us_raw,
+                extract_raw_daily_rows(
+                    fake_history(), market="US", ticker="AAA", currency="USD", retrieved_at="2026-07-23T00:00:00+00:00"
+                ),
+            )
+            write_raw_daily_rows(
+                kr_raw,
+                extract_raw_daily_rows(
+                    fake_history(), market="KR", ticker="5930", currency="KRW", retrieved_at="2026-07-23T00:00:00+00:00"
+                ),
+            )
+            kr_metrics = root / "kr_metrics.csv"
+            with kr_metrics.open("w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["ticker", "benchmarkTicker"])
+                writer.writeheader()
+                writer.writerow({"ticker": "005930", "benchmarkTicker": "069500"})
+
+            output_dir = root / "candidate_input"
+            summary = prepare_inputs(
+                SimpleNamespace(
+                    universe=str(universe_path),
+                    us_raw=str(us_raw),
+                    kr_raw=str(kr_raw),
+                    kr_metrics=str(kr_metrics),
+                    output_dir=str(output_dir),
+                    report=str(root / "report.json"),
+                    metric_base_date="2026-07-23",
+                    as_of="2026-07-23",
+                    acquired_at="",
+                    operator_id="colab-operator",
+                    submission_id="test-price-return",
+                )
+            )
+            source = json.loads((output_dir / "source_declaration.json").read_text(encoding="utf-8"))
+            self.assertEqual(source["returnBasis"], "price_return")
+            self.assertEqual(source["priceAdjustmentBasis"], "split_adjusted")
+            self.assertFalse(summary["productionPublishReady"])
+            self.assertFalse(summary["appExportApproved"])
 
 
 if __name__ == "__main__":
