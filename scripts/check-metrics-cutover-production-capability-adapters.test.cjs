@@ -14,6 +14,38 @@ const {
   context, csvIdentity, csvPayload, expectedPreimages, makeFixture,
 } = require("./test-support/metrics-cutover-production-capability-adapters-fixture.cjs");
 
+function claimPayload() {
+  return { envelopeId: "envelope-1", envelopeHash: sha256("envelope"),
+    approvalNonceHash: sha256("nonce"), effectiveCutoverExpiresAt: "2026-07-22T02:05:00.000Z",
+    singleUse: true, automaticRetryAllowed: false, secondCutoverAttemptAllowed: false,
+    rawMaterialPresent: false };
+}
+function terminalPayload(claimHash) {
+  return { envelopeId: "envelope-1", envelopeHash: sha256("envelope"), claimHash,
+    terminalState: "completed", cutoverReceiptId: null, cutoverReceiptHash: null,
+    automaticRetryAllowed: false, secondCutoverAttemptAllowed: false,
+    rawMaterialPresent: false };
+}
+function selectorPayload(fixture) {
+  return { selectorPath: "synthetic/selector.js",
+    selectorPreimageBase64: fixture.bytes.selectorBefore.toString("base64"),
+    selectorPreimageSha256: sha256(fixture.bytes.selectorBefore),
+    selectorPostimageBase64: fixture.bytes.selectorAfter.toString("base64"),
+    selectorExpectedPostimageSha256: sha256(fixture.bytes.selectorAfter),
+    exactReplacementCount: 2, selectorMutationCountLimit: 1,
+    atomicStagingRenameRequired: true, rawMaterialOutputAllowed: false };
+}
+function receiptPayload() {
+  return { cutoverReceiptId: "receipt-1", cutoverReceiptHash: sha256("receipt"),
+    selectorPath: "synthetic/selector.js", rawMaterialPresent: false };
+}
+function rollbackPayload(fixture, receiptMayExist = false) {
+  return { failureStage: "mutate_selector", envelopeId: "envelope",
+    envelopeHash: sha256("envelope"), exactPreimages: expectedPreimages(fixture),
+    restoreUsTarget: true, restoreKrTarget: true, restoreSelector: true,
+    receiptMayExist, rawMaterialPresent: false };
+}
+
 test("zero-argument capability CLI remains awaiting and non-executing", () => {
   let output = "";
   assert.equal(runCli([], (value) => { output = value; }), 0);
@@ -126,13 +158,7 @@ test("CSV identity and selector mutation are exact and sanitized", async (t) => 
   assert.deepEqual(await fixture.adapters.cutoverPreimageReader.readProductionCsvIdentity(
     { market: "US", targetPath: "synthetic/us.csv", expectedIdentity: expectedUs },
     context(fixture, "verify-us")), expectedUs);
-  const payload = { selectorPath: "synthetic/selector.js",
-    selectorPreimageBase64: fixture.bytes.selectorBefore.toString("base64"),
-    selectorPreimageSha256: sha256(fixture.bytes.selectorBefore),
-    selectorPostimageBase64: fixture.bytes.selectorAfter.toString("base64"),
-    selectorExpectedPostimageSha256: sha256(fixture.bytes.selectorAfter),
-    exactReplacementCount: 2, selectorMutationCountLimit: 1,
-    atomicStagingRenameRequired: true, rawMaterialOutputAllowed: false };
+  const payload = selectorPayload(fixture);
   const result = await fixture.adapters.selectorMutationCoordinator.mutateSelectorExactlyOnce(
     payload, context(fixture, "selector"));
   assert.equal(result.outcome, "mutated");
@@ -144,10 +170,7 @@ test("CSV identity and selector mutation are exact and sanitized", async (t) => 
 test("claim journal is durable, exact-once, terminalized once, and restart-reconcilable", async (t) => {
   const fixture = makeFixture(t);
   const store = fixture.adapters.singleUseCutoverEnvelopeStore;
-  const payload = { envelopeId: "envelope-1", envelopeHash: sha256("envelope"),
-    approvalNonceHash: sha256("nonce"), effectiveCutoverExpiresAt: "2026-07-22T02:05:00.000Z",
-    singleUse: true, automaticRetryAllowed: false, secondCutoverAttemptAllowed: false,
-    rawMaterialPresent: false };
+  const payload = claimPayload();
   const acquired = await store.acquireEnvelopeClaim(payload, context(fixture, "claim"));
   assert.equal(acquired.outcome, "acquired");
   assert.deepEqual(await store.acquireEnvelopeClaim(payload, context(fixture, "claim")),
@@ -156,24 +179,17 @@ test("claim journal is durable, exact-once, terminalized once, and restart-recon
   assert.deepEqual(await restarted.singleUseCutoverEnvelopeStore.reconcileOperationOutcome(
     { operationId: "claim", idempotencyKey: context(fixture, "claim").idempotencyKey },
     context(fixture, "claim")), { outcome: "committed", resourceHash: acquired.claimHash });
-  const terminal = await store.terminalizeEnvelopeClaim({ envelopeId: "envelope-1",
-    envelopeHash: payload.envelopeHash, claimHash: acquired.claimHash,
-    terminalState: "completed", cutoverReceiptId: null, cutoverReceiptHash: null,
-    automaticRetryAllowed: false, secondCutoverAttemptAllowed: false,
-    rawMaterialPresent: false }, context(fixture, "terminalize"));
+  const terminal = await store.terminalizeEnvelopeClaim(terminalPayload(acquired.claimHash),
+    context(fixture, "terminalize"));
   assert.equal(terminal.outcome, "terminalized");
-  await assert.rejects(store.terminalizeEnvelopeClaim({ envelopeId: "envelope-1",
-    envelopeHash: payload.envelopeHash, claimHash: acquired.claimHash,
-    terminalState: "completed", cutoverReceiptId: null, cutoverReceiptHash: null,
-    automaticRetryAllowed: false, secondCutoverAttemptAllowed: false,
-    rawMaterialPresent: false }, context(fixture, "terminalize")),
+  await assert.rejects(store.terminalizeEnvelopeClaim(terminalPayload(acquired.claimHash),
+    context(fixture, "terminalize")),
   /claim_terminalization_invalid/);
 });
 
 test("receipt persistence is exclusive, sanitized, and read-only reconciled", async (t) => {
   const fixture = makeFixture(t);
-  const receipt = { cutoverReceiptId: "receipt-1", cutoverReceiptHash: sha256("receipt"),
-    selectorPath: "synthetic/selector.js", rawMaterialPresent: false };
+  const receipt = receiptPayload();
   const result = await fixture.adapters.cutoverReceiptStore.persistCutoverReceipt(
     receipt, context(fixture, "receipt"));
   assert.equal(result.outcome, "persisted");
@@ -216,15 +232,175 @@ test("receipt or terminalization ambiguity requires manual review and no closeou
     manualReviewRequired: true });
 });
 
+test("prepared journal reconciles exact preimage, postimage, and mismatch", async (t) => {
+  const preimage = makeFixture(t);
+  preimage.fault.stage = "csv_us_after_prepare_before_resource";
+  await assert.rejects(preimage.adapters.atomicProductionCsvReplacer
+    .replaceProductionCsvAtomically(csvPayload("US", preimage.bytes.us, 1),
+      context(preimage, "replace-us")), /synthetic_crash/);
+  preimage.fault.stage = null;
+  assert.deepEqual(await createProductionCapabilityAdapters(preimage.construction)
+    .atomicProductionCsvReplacer.reconcileOperationOutcome(
+      { operationId: "replace-us", idempotencyKey: context(preimage, "replace-us").idempotencyKey },
+      context(preimage, "replace-us")), { outcome: "not_committed", resourceHash: null });
+
+  const postimage = makeFixture(t);
+  postimage.fault.stage = "csv_us_after_resource_before_journal_commit";
+  await assert.rejects(postimage.adapters.atomicProductionCsvReplacer
+    .replaceProductionCsvAtomically(csvPayload("US", postimage.bytes.us, 1),
+      context(postimage, "replace-us")), /synthetic_crash/);
+  postimage.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(postimage.construction)
+    .atomicProductionCsvReplacer.reconcileOperationOutcome(
+      { operationId: "replace-us", idempotencyKey: context(postimage, "replace-us").idempotencyKey },
+      context(postimage, "replace-us"))).outcome, "committed");
+
+  const mismatch = makeFixture(t);
+  mismatch.fault.stage = "csv_us_after_prepare_before_resource";
+  await assert.rejects(mismatch.adapters.atomicProductionCsvReplacer
+    .replaceProductionCsvAtomically(csvPayload("US", mismatch.bytes.us, 1),
+      context(mismatch, "replace-us")), /synthetic_crash/);
+  fs.writeFileSync(mismatch.usPath, Buffer.from("partial"));
+  mismatch.fault.stage = null;
+  assert.deepEqual(await createProductionCapabilityAdapters(mismatch.construction)
+    .atomicProductionCsvReplacer.reconcileOperationOutcome(
+      { operationId: "replace-us", idempotencyKey: context(mismatch, "replace-us").idempotencyKey },
+      context(mismatch, "replace-us")), { outcome: "ambiguous", resourceHash: null });
+});
+
+test("claim created before journal commit crash reconciles committed", async (t) => {
+  const fixture = makeFixture(t);
+  fixture.fault.stage = "claim_after_resource_before_journal_commit";
+  await assert.rejects(fixture.adapters.singleUseCutoverEnvelopeStore.acquireEnvelopeClaim(
+    claimPayload(), context(fixture, "claim")), /synthetic_crash/);
+  fixture.fault.stage = null;
+  const result = await createProductionCapabilityAdapters(fixture.construction)
+    .singleUseCutoverEnvelopeStore.reconcileOperationOutcome(
+      { operationId: "claim", idempotencyKey: context(fixture, "claim").idempotencyKey },
+      context(fixture, "claim"));
+  assert.equal(result.outcome, "committed");
+});
+
+test("selector rename and receipt persistence crashes reconcile committed", async (t) => {
+  const selector = makeFixture(t);
+  selector.fault.stage = "selector_after_resource_before_journal_commit";
+  await assert.rejects(selector.adapters.selectorMutationCoordinator.mutateSelectorExactlyOnce(
+    selectorPayload(selector), context(selector, "selector")), /synthetic_crash/);
+  selector.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(selector.construction)
+    .selectorMutationCoordinator.reconcileOperationOutcome(
+      { operationId: "selector", idempotencyKey: context(selector, "selector").idempotencyKey },
+      context(selector, "selector"))).outcome, "committed");
+
+  const receipt = makeFixture(t);
+  receipt.fault.stage = "receipt_after_resource_before_journal_commit";
+  await assert.rejects(receipt.adapters.cutoverReceiptStore.persistCutoverReceipt(
+    receiptPayload(), context(receipt, "receipt")), /synthetic_crash/);
+  receipt.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(receipt.construction)
+    .cutoverReceiptStore.reconcileOperationOutcome(
+      { operationId: "receipt", idempotencyKey: context(receipt, "receipt").idempotencyKey },
+      context(receipt, "receipt"))).outcome, "committed");
+});
+
+test("terminalization resource update crash reconciles committed", async (t) => {
+  const fixture = makeFixture(t);
+  const acquired = await fixture.adapters.singleUseCutoverEnvelopeStore.acquireEnvelopeClaim(
+    claimPayload(), context(fixture, "claim"));
+  fixture.fault.stage = "terminalization_after_resource_before_journal_commit";
+  await assert.rejects(fixture.adapters.singleUseCutoverEnvelopeStore.terminalizeEnvelopeClaim(
+    terminalPayload(acquired.claimHash), context(fixture, "terminalize")), /synthetic_crash/);
+  fixture.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(fixture.construction)
+    .singleUseCutoverEnvelopeStore.reconcileOperationOutcome(
+      { operationId: "terminalize",
+        idempotencyKey: context(fixture, "terminalize").idempotencyKey },
+      context(fixture, "terminalize"))).outcome, "committed");
+});
+
+test("concurrent terminalization has exact-one successful transition", async (t) => {
+  const fixture = makeFixture(t);
+  const acquired = await fixture.adapters.singleUseCutoverEnvelopeStore.acquireEnvelopeClaim(
+    claimPayload(), context(fixture, "claim"));
+  const payload = terminalPayload(acquired.claimHash);
+  const outcomes = await Promise.allSettled([
+    fixture.adapters.singleUseCutoverEnvelopeStore.terminalizeEnvelopeClaim(
+      payload, context(fixture, "terminalize")),
+    fixture.adapters.singleUseCutoverEnvelopeStore.terminalizeEnvelopeClaim(
+      payload, context(fixture, "terminalize")),
+  ]);
+  assert.equal(outcomes.filter((entry) => entry.status === "fulfilled").length, 1);
+  assert.equal(outcomes.filter((entry) => entry.status === "rejected").length, 1);
+});
+
+test("rollback middle crash is ambiguous and completed restoration before journal commit reconciles", async (t) => {
+  const middle = makeFixture(t);
+  fs.writeFileSync(middle.usPath, middle.bytes.us);
+  fs.writeFileSync(middle.krPath, middle.bytes.kr);
+  fs.writeFileSync(middle.selectorPath, middle.bytes.selectorAfter);
+  middle.fault.stage = "rollback_after_us_restore";
+  await assert.rejects(middle.adapters.rollbackCoordinator.restoreBoundPreimages(
+    rollbackPayload(middle), context(middle, "rollback")), /synthetic_crash/);
+  middle.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(middle.construction)
+    .rollbackCoordinator.reconcileOperationOutcome(
+      { operationId: "rollback", idempotencyKey: context(middle, "rollback").idempotencyKey },
+      context(middle, "rollback"))).outcome, "ambiguous");
+
+  const completed = makeFixture(t);
+  fs.writeFileSync(completed.usPath, completed.bytes.us);
+  fs.writeFileSync(completed.krPath, completed.bytes.kr);
+  fs.writeFileSync(completed.selectorPath, completed.bytes.selectorAfter);
+  completed.fault.stage = "rollback_after_resource_before_journal_commit";
+  await assert.rejects(completed.adapters.rollbackCoordinator.restoreBoundPreimages(
+    rollbackPayload(completed), context(completed, "rollback")), /synthetic_crash/);
+  completed.fault.stage = null;
+  assert.equal((await createProductionCapabilityAdapters(completed.construction)
+    .rollbackCoordinator.reconcileOperationOutcome(
+      { operationId: "rollback", idempotencyKey: context(completed, "rollback").idempotencyKey },
+      context(completed, "rollback"))).outcome, "committed");
+});
+
+test("actual CSV bytes derive and enforce header, schema, and dataset identities", async (t) => {
+  const wrongHeader = makeFixture(t);
+  const bytes = Buffer.from("wrong,ticker,value\nUS,AAA,1\n");
+  const payload = { ...csvPayload("US", bytes, 1),
+    expectedContentSha256: wrongHeader.construction.targetPaths[0].expectedContentSha256,
+    expectedByteCount: wrongHeader.construction.targetPaths[0].expectedByteCount };
+  await assert.rejects(wrongHeader.adapters.atomicProductionCsvReplacer
+    .replaceProductionCsvAtomically(payload, context(wrongHeader, "replace-us")),
+  /csv_header_contract_mismatch/);
+
+  const forgedSchema = makeFixture(t);
+  forgedSchema.construction.targetPaths[0].schemaIdentitySha256 = sha256("forged-schema");
+  assert.throws(() => createProductionCapabilityAdapters(forgedSchema.construction),
+    /target_paths_invalid/);
+  const forgedDataset = makeFixture(t);
+  forgedDataset.construction.targetPaths[0].expectedDatasetIdentityHash =
+    sha256("forged-dataset");
+  assert.throws(() => createProductionCapabilityAdapters(forgedDataset.construction),
+    /target_paths_invalid/);
+
+  const valid = makeFixture(t);
+  await valid.adapters.atomicProductionCsvReplacer.replaceProductionCsvAtomically(
+    csvPayload("US", valid.bytes.us, 1), context(valid, "replace-us"));
+  const expected = csvIdentity("US", valid.bytes.us);
+  assert.deepEqual(await valid.adapters.cutoverPreimageReader.readProductionCsvIdentity(
+    { market: "US", targetPath: "synthetic/us.csv", expectedIdentity: expected },
+    context(valid, "verify-us")), expected);
+});
+
 test("adapter manifest is deterministic, frozen, sanitized, and zero-count", () => {
   const input = { adapterSourceIdentities: [
     { moduleRole: "production_capability_adapters",
+      sourcePath: "scripts/lib/metrics-cutover-production-capability-adapters.cjs",
       sourcePathIdentityHash: sha256("adapter-path"),
-      sourceBlobIdentityHash: sha256("adapter-blob"),
+      sourceGitBlobSha: "1".repeat(40),
       sourceContentSha256: sha256("adapter-content") },
     { moduleRole: "current_main_provenance_bridge",
+      sourcePath: "scripts/lib/metrics-cutover-current-main-provenance-bridge.cjs",
       sourcePathIdentityHash: sha256("bridge-path"),
-      sourceBlobIdentityHash: sha256("bridge-blob"),
+      sourceGitBlobSha: "2".repeat(40),
       sourceContentSha256: sha256("bridge-content") }],
   approvedRootPolicyIdentity: sha256("root-policy"),
   platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,

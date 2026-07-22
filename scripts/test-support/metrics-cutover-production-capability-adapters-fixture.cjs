@@ -4,8 +4,10 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const {
-  createProductionCapabilityAdapters, hashContract, sha256,
+  createProductionCapabilityAdapters, deriveCsvIdentity, hashContract,
+  schemaIdentity, sha256,
 } = require("../lib/metrics-cutover-production-capability-adapters.cjs");
+const stepZ = require("../lib/metrics-cutover-production-single-use-executor.cjs");
 
 const NOW = "2026-07-22T02:00:00.000Z";
 const HEAD_SHA = "64fbcb599ec60e0423abc1b0aa382da6eb8c1bc7";
@@ -42,6 +44,19 @@ function operationBindings() {
   }));
 }
 
+function targetContract(role, market, targetPath, publicPath, bytes) {
+  const schemaVersion = "synthetic.v1";
+  const normalizedHeader = "market,ticker,value";
+  return { role, market, path: targetPath, publicPath, versionedTarget: true,
+    writeMode: "create_only", schemaVersion,
+    normalizedHeader, normalizedHeaderSha256: sha256(normalizedHeader),
+    schemaIdentitySha256: schemaIdentity(role, market, schemaVersion),
+    expectedContentSha256: sha256(bytes),
+    expectedDatasetIdentityHash: stepZ.datasetIdentity({ role, market,
+      contentSha256: sha256(bytes), schemaVersion, rowCount: 1, byteCount: bytes.length }),
+    expectedRowCount: 1, expectedByteCount: bytes.length };
+}
+
 function makeFixture(testContext) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "finple-zb-p-adapters-"));
   const approvedRoot = path.join(root, "approved");
@@ -53,17 +68,21 @@ function makeFixture(testContext) {
   const selectorPath = path.join(approvedRoot, "selector.js");
   fs.writeFileSync(selectorPath, SELECTOR_BEFORE);
   const bindings = operationBindings();
+  const fault = { stage: null, hit(stage) {
+    if (this.stage === stage) throw new Error(`synthetic_crash:${stage}`);
+  } };
   const construction = {
     filesystem: fs, pathApi: path, approvedRoot, stateRoot,
     targetPaths: [
-      { market: "US", path: usPath, publicPath: US_PUBLIC },
-      { market: "KR", path: krPath, publicPath: KR_PUBLIC },
+      targetContract("us_price_metrics", "US", usPath, US_PUBLIC, US_BYTES),
+      targetContract("kr_price_metrics", "KR", krPath, KR_PUBLIC, KR_BYTES),
     ],
     selectorPath: { path: selectorPath, publicPath: SELECTOR_PUBLIC },
     clock: { now: () => NOW }, operationBindings: bindings,
     platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,
       fileFsync: true, directoryFsync: false, crossDeviceFallbackAllowed: false },
     repositoryIdentity: { headSha: HEAD_SHA, treeSha: TREE_SHA },
+    faultInjector: fault,
     restorationMaterial: {
       targets: [
         { market: "US", path: usPath, existed: false, contentBase64: "" },
@@ -74,7 +93,7 @@ function makeFixture(testContext) {
   };
   const fixture = {
     root, approvedRoot, stateRoot, usPath, krPath, selectorPath, construction,
-    adapters: createProductionCapabilityAdapters(construction), bindings,
+    adapters: createProductionCapabilityAdapters(construction), bindings, fault,
     bytes: { us: US_BYTES, kr: KR_BYTES, selectorBefore: SELECTOR_BEFORE,
       selectorAfter: SELECTOR_AFTER },
   };
@@ -114,11 +133,10 @@ function csvPayload(market, bytes, sequence) {
     rawMaterialOutputAllowed: false };
 }
 function csvIdentity(market, bytes) {
-  return { market, targetPath: market === "US" ? US_PUBLIC : KR_PUBLIC,
-    contentSha256: sha256(bytes), schemaVersion: "synthetic.v1",
-    schemaIdentitySha256: sha256("market,ticker,value"),
-    datasetIdentityHash: sha256(`${market}-dataset`), rowCount: 1,
-    byteCount: bytes.length };
+  const publicPath = market === "US" ? US_PUBLIC : KR_PUBLIC;
+  const contract = targetContract(market === "US" ? "us_price_metrics" : "kr_price_metrics",
+    market, publicPath, publicPath, bytes);
+  return deriveCsvIdentity(bytes, contract);
 }
 
 module.exports = {

@@ -1,11 +1,17 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const test = require("node:test");
 const {
-  FAILURE_CLASSIFICATIONS, PUBLIC_STATES, buildHistoricalContracts,
-  evaluateCurrentMainProvenanceBridge,
+  CRITICAL_SOURCE_PATHS, FAILURE_CLASSIFICATIONS, PUBLIC_STATES,
+  buildCurrentPreimageManifest, buildHistoricalContracts,
+  buildReadOnlyRepositoryMaterial, createExplicitReadOnlyGitObjectReader,
+  buildSelectorExpectedPostimageIdentity, evaluateCurrentMainProvenanceBridge,
+  hashContract, validateSources,
 } = require("./lib/metrics-cutover-current-main-provenance-bridge.cjs");
+const { buildProductionAdapterManifest } = require(
+  "./lib/metrics-cutover-production-capability-adapters.cjs");
 const { runCli } = require("./check-metrics-cutover-current-main-provenance-bridge.cjs");
 const {
   clone, h, validPacket,
@@ -53,7 +59,7 @@ test("current head, tree, source blob, and content drift fail closed", () => {
   for (const mutate of [
     (packet) => { packet.repositorySnapshot.headSha = "0".repeat(40); },
     (packet) => { packet.repositorySnapshot.treeSha = "1".repeat(40); },
-    (packet) => { packet.observedSourceIdentities[0].sourceBlobIdentityHash = h("tampered-blob"); },
+    (packet) => { packet.observedSourceIdentities[0].sourceGitBlobSha = "9".repeat(40); },
     (packet) => { packet.observedSourceIdentities[1].sourceContentSha256 = h("tampered-content"); },
   ]) {
     const packet = validPacket(); mutate(packet);
@@ -61,6 +67,126 @@ test("current head, tree, source blob, and content drift fail closed", () => {
     assert.equal(result.status, PUBLIC_STATES[2]);
     assert.equal(result.failureClassification, FAILURE_CLASSIFICATIONS[1]);
   }
+});
+
+function repositoryReader(options = {}) {
+  const blobs = new Map(CRITICAL_SOURCE_PATHS.map(({ sourcePath }, index) => {
+    const bytes = Buffer.from(`synthetic source ${index}\n`);
+    const blobSha = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+    return [sourcePath, { bytes, blobSha }];
+  }));
+  return {
+    resolveCommit: (_root, executionSha) => ({ headSha: executionSha,
+      treeSha: "3".repeat(40) }),
+    readTreeEntry: (_root, _treeSha, sourcePath) => {
+      if (options.absentPath === sourcePath) return null;
+      const blob = blobs.get(sourcePath);
+      return { path: sourcePath, blobSha: blob.blobSha, mode: "100644", type: "blob" };
+    },
+    readBlob: (_root, blobSha) => {
+      const found = [...blobs.values()].find((entry) => entry.blobSha === blobSha);
+      return options.forgeBlob ? Buffer.from("forged source\n") : found.bytes;
+    },
+  };
+}
+
+test("read-only repository builder binds exact tree path, Git blob, and content", () => {
+  const material = buildReadOnlyRepositoryMaterial({ repositoryRoot: "X:/synthetic/repo",
+    executionSha: "a".repeat(40), criticalSourcePaths: CRITICAL_SOURCE_PATHS,
+    gitObjectReader: repositoryReader() });
+  assert.equal(material.repositorySnapshot.headSha, "a".repeat(40));
+  assert.match(material.repositorySnapshot.pathToBlobMembershipHash, /^[0-9a-f]{64}$/);
+  assert.deepEqual(material.observedSourceIdentities.map((entry) => entry.sourcePath),
+    CRITICAL_SOURCE_PATHS.map((entry) => entry.sourcePath));
+  assert.equal(Object.isFrozen(material), true);
+});
+
+test("explicit Git reader uses only injected executable, root, SHA, and paths", () => {
+  const calls = [];
+  const blob = Buffer.from("source\n");
+  const blobSha = createHash("sha1").update(`blob ${blob.length}\0`).update(blob).digest("hex");
+  const reader = createExplicitReadOnlyGitObjectReader({ gitExecutable: "C:/tools/git.exe",
+    execFileSync(executable, args, options) {
+      calls.push({ executable, args, encoding: options.encoding });
+      if (args[2] === "rev-parse" && args[4].endsWith("^{commit}")) return "a".repeat(40) + "\n";
+      if (args[2] === "rev-parse") return "3".repeat(40) + "\n";
+      if (args[2] === "ls-tree") return Buffer.from(
+        `100644 blob ${blobSha}\t${args.at(-1)}\0`);
+      return blob;
+    } });
+  assert.deepEqual(reader.resolveCommit("X:/repo", "a".repeat(40)),
+    { headSha: "a".repeat(40), treeSha: "3".repeat(40) });
+  assert.equal(reader.readTreeEntry("X:/repo", "3".repeat(40),
+    CRITICAL_SOURCE_PATHS[0].sourcePath).blobSha, blobSha);
+  assert.deepEqual(reader.readBlob("X:/repo", blobSha), blob);
+  assert.ok(calls.every((call) => call.executable === "C:/tools/git.exe" &&
+    call.args[0] === "-C" && call.args[1] === "X:/repo"));
+});
+
+test("repository builder rejects a source absent from the tree and a blob mismatch", () => {
+  assert.throws(() => buildReadOnlyRepositoryMaterial({ repositoryRoot: "X:/synthetic/repo",
+    executionSha: "a".repeat(40), criticalSourcePaths: CRITICAL_SOURCE_PATHS,
+    gitObjectReader: repositoryReader({ absentPath: CRITICAL_SOURCE_PATHS[0].sourcePath }) }),
+  /critical_source_tree_membership_invalid/);
+  assert.throws(() => buildReadOnlyRepositoryMaterial({ repositoryRoot: "X:/synthetic/repo",
+    executionSha: "a".repeat(40), criticalSourcePaths: CRITICAL_SOURCE_PATHS,
+    gitObjectReader: repositoryReader({ forgeBlob: true }) }),
+  /critical_source_blob_mismatch/);
+});
+
+test("arbitrary matching reviewed and observed source arrays are rejected", () => {
+  const packet = validPacket();
+  const forged = clone(packet.observedSourceIdentities);
+  forged[0].sourcePath = "scripts/lib/arbitrary.cjs";
+  forged[0].sourcePathIdentityHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_P_SOURCE_PATH_IDENTITY\0", forged[0].sourcePath);
+  assert.ok(validateSources(forged, clone(forged)).includes("reviewed_source_roles_invalid"));
+});
+
+test("adapter manifest source identities must equal observed adapter and bridge sources", () => {
+  const packet = validPacket();
+  const manifest = packet.adapterManifest;
+  const forgedSources = clone(manifest.adapterSourceIdentities);
+  forgedSources[0].sourceContentSha256 = h("forged-adapter-content");
+  packet.adapterManifest = buildProductionAdapterManifest({
+    adapterSourceIdentities: forgedSources,
+    approvedRootPolicyIdentity: manifest.approvedRootPolicyIdentity,
+    platformCapabilities: manifest.platformCapabilities,
+    claimStateSchemaIdentity: manifest.claimStateSchemaIdentity,
+    receiptStateSchemaIdentity: manifest.receiptStateSchemaIdentity,
+    rollbackStateSchemaIdentity: manifest.rollbackStateSchemaIdentity,
+  });
+  const result = evaluateCurrentMainProvenanceBridge(packet);
+  assert.equal(result.failureClassification, FAILURE_CLASSIFICATIONS[1]);
+  assert.ok(result.blockingIssues.includes("adapter_manifest_observed_source_mismatch"));
+});
+
+test("historical Step Z rejects existing targets and accepts versioned absent targets", () => {
+  const packet = validPacket();
+  assert.equal(evaluateCurrentMainProvenanceBridge(packet).ok, true);
+  assert.equal(evaluateCurrentMainProvenanceBridge(packet)
+    .stepZExecutionMaterialConstructible, true);
+  assert.throws(() => buildCurrentPreimageManifest({
+    repositoryHeadSha: packet.executionMainSha,
+    repositoryTreeSha: packet.repositorySnapshot.treeSha,
+    targetPreimageIdentities: packet.currentPreimageManifest.targetPreimageIdentities
+      .map((entry, index) => index === 0 ? { ...entry, exists: true,
+        contentIdentityHash: h("existing-us"), byteCount: 10, rowCount: 1 } : entry),
+    selectorPreimageIdentity: packet.currentPreimageManifest.selectorPreimageIdentity,
+  }), /current_preimage_manifest_input_invalid/);
+  const overwrite = validPacket(); overwrite.targetPathIdentities[0].writeMode = "replace_existing";
+  assert.equal(evaluateCurrentMainProvenanceBridge(overwrite).ok, false);
+});
+
+test("selector expected postimage must actually reference both versioned targets once", () => {
+  const packet = validPacket();
+  assert.throws(() => buildSelectorExpectedPostimageIdentity({
+    selectorPathIdentityHash: packet.selectorPathIdentity.approvedPathIdentityHash,
+    selectorPostimageBytes: Buffer.from(
+      "export const targets = ['synthetic/versioned/us.csv'];\n"),
+    versionedTargetPublicPaths: ["synthetic/versioned/us.csv",
+      "synthetic/versioned/kr.csv"], targetPathIdentities: packet.targetPathIdentities,
+  }), /selector_postimage_versioned_target_reference_invalid/);
 });
 
 test("historical Step Z, ZA, and ZB baselines are preserved exactly", () => {

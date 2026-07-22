@@ -4,7 +4,8 @@ const {
   buildProductionAdapterManifest,
 } = require("../lib/metrics-cutover-production-capability-adapters.cjs");
 const {
-  SOURCE_ROLES, buildCurrentPreimageManifest, buildHistoricalContracts, hashContract,
+  CRITICAL_SOURCE_PATHS, buildCurrentPreimageManifest, buildHistoricalContracts,
+  buildSelectorExpectedPostimageIdentity, hashContract,
 } = require("../lib/metrics-cutover-current-main-provenance-bridge.cjs");
 
 const EXECUTION_MAIN_SHA = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
@@ -15,9 +16,10 @@ function h(label) {
   return hashContract("FINPLE_STEP114_2X_ZB_P_TEST_IDENTITY\0", label);
 }
 function sourceIdentities() {
-  return SOURCE_ROLES.map((role) => ({ role,
-    sourcePathIdentityHash: h(`${role}:path`),
-    sourceBlobIdentityHash: h(`${role}:blob`),
+  return CRITICAL_SOURCE_PATHS.map(({ role, sourcePath }, index) => ({ role, sourcePath,
+    sourcePathIdentityHash: hashContract(
+      "FINPLE_STEP114_2X_ZB_P_SOURCE_PATH_IDENTITY\0", sourcePath),
+    sourceGitBlobSha: String(index + 1).repeat(40),
     sourceContentSha256: h(`${role}:content`),
   }));
 }
@@ -26,8 +28,9 @@ function adapterManifest() {
     ["production_capability_adapters", "current_main_provenance_bridge"].includes(entry.role));
   return buildProductionAdapterManifest({
     adapterSourceIdentities: sources.map((entry) => ({ moduleRole: entry.role,
+      sourcePath: entry.sourcePath,
       sourcePathIdentityHash: entry.sourcePathIdentityHash,
-      sourceBlobIdentityHash: entry.sourceBlobIdentityHash,
+      sourceGitBlobSha: entry.sourceGitBlobSha,
       sourceContentSha256: entry.sourceContentSha256 })),
     approvedRootPolicyIdentity: h("approved-root-policy"),
     platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,
@@ -41,9 +44,11 @@ function validPacket() {
   const sources = sourceIdentities();
   const targetPathIdentities = [
     { market: "US", approvedRootPolicyHash: h("approved-root-policy"),
-      approvedPathIdentityHash: h("us-approved-path") },
+      approvedPathIdentityHash: h("us-approved-path"), versionedTarget: true,
+      writeMode: "create_only" },
     { market: "KR", approvedRootPolicyHash: h("approved-root-policy"),
-      approvedPathIdentityHash: h("kr-approved-path") },
+      approvedPathIdentityHash: h("kr-approved-path"), versionedTarget: true,
+      writeMode: "create_only" },
   ];
   const selectorPathIdentity = { approvedRootPolicyHash: h("approved-root-policy"),
     approvedPathIdentityHash: h("selector-approved-path") };
@@ -55,16 +60,35 @@ function validPacket() {
     selectorPreimageIdentity: { pathIdentityHash: selectorPathIdentity.approvedPathIdentityHash,
       contentIdentityHash: h("selector-preimage"), byteCount: 31 },
   });
+  const membership = sources.map(({ role, sourcePath, sourceGitBlobSha }) =>
+    ({ role, sourcePath, sourceGitBlobSha }));
+  const pathToBlobMembershipHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_P_PATH_TO_BLOB_MEMBERSHIP\0", membership);
+  const repositorySnapshotBody = { headSha: EXECUTION_MAIN_SHA, treeSha: TREE_SHA,
+    pathToBlobMembershipHash };
   return {
     executionMainSha: EXECUTION_MAIN_SHA,
-    repositorySnapshot: { headSha: EXECUTION_MAIN_SHA, treeSha: TREE_SHA,
+    repositorySnapshot: { ...repositorySnapshotBody,
       snapshotIdentityHash: hashContract("FINPLE_STEP114_2X_ZB_P_REPOSITORY_SNAPSHOT\0",
-        { headSha: EXECUTION_MAIN_SHA, treeSha: TREE_SHA }) },
+        repositorySnapshotBody) },
     reviewedSourceIdentities: sources,
     observedSourceIdentities: JSON.parse(JSON.stringify(sources)),
     historicalContracts: buildHistoricalContracts(),
     targetPathIdentities, selectorPathIdentity,
     adapterManifest: adapterManifest(), currentPreimageManifest,
+    predecessorSourceIdentities: ["US", "KR"].map((market) => ({ market,
+      sourcePathIdentityHash: h(`${market}:predecessor-path`),
+      contentSha256: h(`${market}:predecessor-content`), schemaVersion: "synthetic.v1",
+      schemaIdentitySha256: h(`${market}:predecessor-schema`),
+      datasetIdentityHash: h(`${market}:predecessor-dataset`), rowCount: 2,
+      byteCount: 64 })),
+    selectorExpectedPostimageIdentity: buildSelectorExpectedPostimageIdentity({
+      selectorPathIdentityHash: selectorPathIdentity.approvedPathIdentityHash,
+      selectorPostimageBytes: Buffer.from(
+        "export const targets = ['synthetic/versioned/us.csv', 'synthetic/versioned/kr.csv'];\n"),
+      versionedTargetPublicPaths: ["synthetic/versioned/us.csv",
+        "synthetic/versioned/kr.csv"], targetPathIdentities,
+    }),
     operatorMaterialIdentities: null,
     provenanceNonceContext: { priorNonceHashes: [h("prior-a"), h("prior-b")].sort(),
       provenanceNonceHash: h("fresh-provenance"),

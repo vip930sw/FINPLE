@@ -41,6 +41,9 @@ Construction supplies:
 - exact absolute filesystem locations paired with sanitized repository-relative
   public paths;
 - exact US then KR path bindings and one selector binding;
+- exact versioned-target and `create_only` declarations plus the expected
+  header, schema version/identity, content identity, dataset identity, row
+  count, and byte count for each target;
 - exact operation bindings;
 - explicit platform atomicity attestations;
 - an injected clock and repository head/tree identity;
@@ -64,8 +67,23 @@ identity, then perform same-directory rename. No cross-device copy fallback is
 implemented. US must exist before the KR operation can proceed. Create-only
 targets are rejected when already present.
 
-Operation journals contain sanitized identities, state, and counts only. They
-support crash/restart read-only reconciliation without rerunning a mutation.
+Each mutating capability first creates and fsyncs an exclusive `prepared`
+journal binding the operation, idempotency key, resource, preimage, and
+postimage. It then mutates, re-reads the resource, and atomically transitions
+the journal to `committed`. Reconciliation classifies `prepared + preimage` as
+not committed, `prepared + postimage` as committed, and any partial or
+mismatched state as ambiguous. This applies to claims, terminal markers, both
+CSV replacements, selector mutation, receipt persistence, and rollback.
+
+Terminalization additionally uses one exclusive envelope terminal marker, so
+multiple processes cannot win the terminal transition. CSV header, schema,
+content, dataset, row, and byte identities are always derived from the actual
+bytes; expected values are comparison contracts, never identity sources.
+
+Historical Step Z remains create-only: its execution targets must be absent,
+versioned paths. Existing production CSVs are predecessor/source identities,
+not overwrite targets. Supporting replacement of existing production paths
+would require a separately reviewed executor version and remains blocked here.
 
 ## Rollback
 

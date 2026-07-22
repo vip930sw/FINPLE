@@ -32,6 +32,7 @@ const INPUT_FIELDS = Object.freeze([
   "executionMainSha", "repositorySnapshot", "reviewedSourceIdentities",
   "observedSourceIdentities", "historicalContracts", "targetPathIdentities",
   "selectorPathIdentity", "adapterManifest", "currentPreimageManifest",
+  "predecessorSourceIdentities", "selectorExpectedPostimageIdentity",
   "operatorMaterialIdentities", "provenanceNonceContext", "issuedAt",
   "effectiveExpiresAt", "evaluationClockInstant", "authoritySignals",
 ]);
@@ -40,10 +41,28 @@ const SOURCE_ROLES = Object.freeze([
   "current_main_provenance_bridge",
 ]);
 const SOURCE_IDENTITY_FIELDS = Object.freeze([
-  "role", "sourcePathIdentityHash", "sourceBlobIdentityHash", "sourceContentSha256",
+  "role", "sourcePath", "sourcePathIdentityHash", "sourceGitBlobSha",
+  "sourceContentSha256",
+]);
+const CRITICAL_SOURCE_PATHS = Object.freeze([
+  Object.freeze({ role: "step_z",
+    sourcePath: "scripts/lib/metrics-cutover-production-single-use-executor.cjs" }),
+  Object.freeze({ role: "step_za",
+    sourcePath: "scripts/lib/metrics-cutover-production-runtime-ceremony.cjs" }),
+  Object.freeze({ role: "step_zb",
+    sourcePath: "scripts/lib/metrics-cutover-production-explicit-invocation-package.cjs" }),
+  Object.freeze({ role: "production_capability_adapters",
+    sourcePath: "scripts/lib/metrics-cutover-production-capability-adapters.cjs" }),
+  Object.freeze({ role: "current_main_provenance_bridge",
+    sourcePath: "scripts/lib/metrics-cutover-current-main-provenance-bridge.cjs" }),
 ]);
 const TARGET_PATH_FIELDS = Object.freeze([
   "market", "approvedRootPolicyHash", "approvedPathIdentityHash",
+  "versionedTarget", "writeMode",
+]);
+const PREDECESSOR_FIELDS = Object.freeze([
+  "market", "sourcePathIdentityHash", "contentSha256", "schemaVersion",
+  "schemaIdentitySha256", "datasetIdentityHash", "rowCount", "byteCount",
 ]);
 const PREIMAGE_FIELDS = Object.freeze([
   "contractVersion", "repositoryHeadSha", "repositoryTreeSha",
@@ -75,6 +94,10 @@ function canonicalEqual(left, right) {
 function hashContract(domain, value) {
   return createHash("sha256").update(domain).update(canonicalJson(value)).digest("hex");
 }
+function sha256(value) { return createHash("sha256").update(value).digest("hex"); }
+function gitBlobSha(bytes) {
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+}
 function isSha(value) { return typeof value === "string" && /^[0-9a-f]{64}$/.test(value); }
 function isGitSha(value) { return typeof value === "string" && /^[0-9a-f]{40}$/.test(value); }
 function exactKeys(value, fields) {
@@ -100,6 +123,85 @@ function fixedFalse() {
 function emptyCounts() {
   return Object.fromEntries(adapters.CAPABILITY_NAMES.map((name) => [name, 0]));
 }
+
+function createExplicitReadOnlyGitObjectReader(input) {
+  if (!exactKeys(input, ["gitExecutable", "execFileSync"]) ||
+      typeof input.gitExecutable !== "string" ||
+      !/^(?:[a-zA-Z]:[\\/]|[\\/]{2}|\/)/.test(input.gitExecutable) ||
+      typeof input.execFileSync !== "function") {
+    throw new TypeError("explicit_git_reader_input_invalid");
+  }
+  function run(repositoryRoot, args, encoding = "utf8") {
+    return input.execFileSync(input.gitExecutable, ["-C", repositoryRoot, ...args], {
+      encoding, windowsHide: true, maxBuffer: 16 * 1024 * 1024,
+    });
+  }
+  return deepFreeze({
+    resolveCommit(repositoryRoot, executionSha) {
+      const headSha = String(run(repositoryRoot,
+        ["rev-parse", "--verify", `${executionSha}^{commit}`])).trim();
+      const treeSha = String(run(repositoryRoot,
+        ["rev-parse", "--verify", `${executionSha}^{tree}`])).trim();
+      return { headSha, treeSha };
+    },
+    readTreeEntry(repositoryRoot, treeSha, sourcePath) {
+      const output = Buffer.from(run(repositoryRoot,
+        ["ls-tree", "-z", treeSha, "--", sourcePath], "buffer")).toString("utf8");
+      const match = /^(100644|100755) (blob) ([0-9a-f]{40})\t([^\0]+)\0$/.exec(output);
+      return match ? { mode: match[1], type: match[2], blobSha: match[3], path: match[4] } : null;
+    },
+    readBlob(repositoryRoot, blobSha) {
+      return Buffer.from(run(repositoryRoot, ["cat-file", "blob", blobSha], "buffer"));
+    },
+  });
+}
+
+function buildReadOnlyRepositoryMaterial(input) {
+  if (!exactKeys(input, ["repositoryRoot", "executionSha", "criticalSourcePaths",
+    "gitObjectReader"]) || typeof input.repositoryRoot !== "string" ||
+      !/^(?:[a-zA-Z]:[\\/]|[\\/]{2}|\/)/.test(input.repositoryRoot) ||
+      !isGitSha(input.executionSha) ||
+      !canonicalEqual(input.criticalSourcePaths, CRITICAL_SOURCE_PATHS) ||
+      !isRecord(input.gitObjectReader) ||
+      ["resolveCommit", "readTreeEntry", "readBlob"].some(
+        (method) => typeof input.gitObjectReader[method] !== "function")) {
+    throw new TypeError("repository_material_builder_input_invalid");
+  }
+  const commit = input.gitObjectReader.resolveCommit(input.repositoryRoot, input.executionSha);
+  if (!exactKeys(commit, ["headSha", "treeSha"]) ||
+      commit.headSha !== input.executionSha || !isGitSha(commit.treeSha)) {
+    throw new Error("execution_commit_resolution_invalid");
+  }
+  const observedSourceIdentities = CRITICAL_SOURCE_PATHS.map(({ role, sourcePath }) => {
+    const entry = input.gitObjectReader.readTreeEntry(
+      input.repositoryRoot, commit.treeSha, sourcePath);
+    if (!exactKeys(entry, ["path", "blobSha", "mode", "type"]) ||
+        entry.path !== sourcePath || entry.type !== "blob" ||
+        !["100644", "100755"].includes(entry.mode) || !isGitSha(entry.blobSha)) {
+      throw new Error(`critical_source_tree_membership_invalid:${role}`);
+    }
+    const bytes = input.gitObjectReader.readBlob(input.repositoryRoot, entry.blobSha);
+    if (!Buffer.isBuffer(bytes) || gitBlobSha(bytes) !== entry.blobSha) {
+      throw new Error(`critical_source_blob_mismatch:${role}`);
+    }
+    return { role, sourcePath,
+      sourcePathIdentityHash: hashContract(
+        "FINPLE_STEP114_2X_ZB_P_SOURCE_PATH_IDENTITY\0", sourcePath),
+      sourceGitBlobSha: entry.blobSha, sourceContentSha256: sha256(bytes) };
+  });
+  const pathToBlobMembershipHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_P_PATH_TO_BLOB_MEMBERSHIP\0",
+    observedSourceIdentities.map(({ role, sourcePath, sourceGitBlobSha }) =>
+      ({ role, sourcePath, sourceGitBlobSha })));
+  const snapshotBody = { headSha: commit.headSha, treeSha: commit.treeSha,
+    pathToBlobMembershipHash };
+  return deepFreeze({
+    repositorySnapshot: { ...snapshotBody,
+      snapshotIdentityHash: hashContract(
+        "FINPLE_STEP114_2X_ZB_P_REPOSITORY_SNAPSHOT\0", snapshotBody) },
+    observedSourceIdentities,
+  });
+}
 function safeResult(status, overrides = {}) {
   const verified = status === PUBLIC_STATES[1];
   return deepFreeze({
@@ -109,6 +211,7 @@ function safeResult(status, overrides = {}) {
     currentMainBound: verified,
     historicalContractsPreserved: verified,
     productionAdaptersValidated: verified,
+    stepZExecutionMaterialConstructible: verified,
     productionConfigured: false,
     explicitInvocationStillRequired: true,
     provenanceBridge: overrides.provenanceBridge || {},
@@ -169,13 +272,17 @@ function validateSources(reviewed, observed) {
   const issues = [];
   for (const [label, entries] of [["reviewed", reviewed], ["observed", observed]]) {
     if (!Array.isArray(entries) || entries.length !== SOURCE_ROLES.length ||
-        !canonicalEqual(entries.map((entry) => entry.role), SOURCE_ROLES)) {
+        !canonicalEqual(entries.map((entry) => ({ role: entry.role,
+          sourcePath: entry.sourcePath })), CRITICAL_SOURCE_PATHS)) {
       issues.push(`${label}_source_roles_invalid`); continue;
     }
     for (const entry of entries) {
       if (!exactKeys(entry, SOURCE_IDENTITY_FIELDS) ||
-          !isSha(entry.sourcePathIdentityHash) || !isSha(entry.sourceBlobIdentityHash) ||
-          !isSha(entry.sourceContentSha256)) issues.push(`${label}_source_identity_invalid:${entry.role}`);
+          entry.sourcePathIdentityHash !== hashContract(
+            "FINPLE_STEP114_2X_ZB_P_SOURCE_PATH_IDENTITY\0", entry.sourcePath) ||
+          !isGitSha(entry.sourceGitBlobSha) || !isSha(entry.sourceContentSha256)) {
+        issues.push(`${label}_source_identity_invalid:${entry.role}`);
+      }
     }
   }
   if (!canonicalEqual(reviewed, observed)) issues.push("critical_source_blob_or_content_drift");
@@ -191,7 +298,8 @@ function validatePathsAndPreimages(packet) {
   } else {
     for (const entry of packet.targetPathIdentities) {
       if (!exactKeys(entry, TARGET_PATH_FIELDS) ||
-          !isSha(entry.approvedRootPolicyHash) || !isSha(entry.approvedPathIdentityHash)) {
+          !isSha(entry.approvedRootPolicyHash) || !isSha(entry.approvedPathIdentityHash) ||
+          entry.versionedTarget !== true || entry.writeMode !== "create_only") {
         issues.push(`target_path_identity_invalid:${entry.market}`);
       }
     }
@@ -206,6 +314,12 @@ function validatePathsAndPreimages(packet) {
         entry.approvedPathIdentityHash === packet.selectorPathIdentity.approvedPathIdentityHash)) {
     issues.push("selector_path_identity_invalid");
   }
+  const expectedRootPolicy = packet.adapterManifest?.approvedRootPolicyIdentity;
+  if (!isSha(expectedRootPolicy) || packet.targetPathIdentities?.some((entry) =>
+    entry.approvedRootPolicyHash !== expectedRootPolicy) ||
+      packet.selectorPathIdentity?.approvedRootPolicyHash !== expectedRootPolicy) {
+    issues.push("approved_root_policy_binding_invalid");
+  }
   const manifest = packet.currentPreimageManifest;
   if (!exactKeys(manifest, PREIMAGE_FIELDS) || manifest.rawMaterialPresent !== false ||
       manifest.repositoryHeadSha !== packet.executionMainSha ||
@@ -217,10 +331,9 @@ function validatePathsAndPreimages(packet) {
       manifest.targetPreimageIdentities.some((entry) =>
         !exactKeys(entry, ["market", "pathIdentityHash", "exists",
           "contentIdentityHash", "byteCount", "rowCount"]) ||
-        !isSha(entry.pathIdentityHash) || typeof entry.exists !== "boolean" ||
-        !(entry.contentIdentityHash === null || isSha(entry.contentIdentityHash)) ||
-        !Number.isInteger(entry.byteCount) || entry.byteCount < 0 ||
-        !Number.isInteger(entry.rowCount) || entry.rowCount < 0) ||
+        !isSha(entry.pathIdentityHash) || entry.exists !== false ||
+        entry.contentIdentityHash !== null || entry.byteCount !== 0 ||
+        entry.rowCount !== 0) ||
       !isRecord(manifest.selectorPreimageIdentity) || !isSha(manifest.manifestHash) ||
       !exactKeys(manifest.selectorPreimageIdentity,
         ["pathIdentityHash", "contentIdentityHash", "byteCount"]) ||
@@ -253,6 +366,33 @@ function validatePathsAndPreimages(packet) {
           packet.selectorPathIdentity.approvedPathIdentityHash) {
       issues.push("preimage_path_binding_invalid");
     }
+    if (manifest.targetPreimageIdentities.some((entry) => entry.exists !== false ||
+        entry.contentIdentityHash !== null || entry.byteCount !== 0 || entry.rowCount !== 0)) {
+      issues.push("historical_step_z_requires_absent_versioned_targets");
+    }
+  }
+  if (!Array.isArray(packet.predecessorSourceIdentities) ||
+      packet.predecessorSourceIdentities.length !== 2 ||
+      !canonicalEqual(packet.predecessorSourceIdentities.map((entry) => entry.market),
+        ["US", "KR"]) || packet.predecessorSourceIdentities.some((entry) =>
+        !exactKeys(entry, PREDECESSOR_FIELDS) || !isSha(entry.sourcePathIdentityHash) ||
+        !isSha(entry.contentSha256) || typeof entry.schemaVersion !== "string" ||
+        entry.schemaVersion.length === 0 || !isSha(entry.schemaIdentitySha256) ||
+        !isSha(entry.datasetIdentityHash) || !Number.isInteger(entry.rowCount) ||
+        entry.rowCount < 1 || !Number.isInteger(entry.byteCount) || entry.byteCount < 1) ||
+      packet.predecessorSourceIdentities.some((entry) =>
+        packet.targetPathIdentities?.some((target) =>
+          target.approvedPathIdentityHash === entry.sourcePathIdentityHash))) {
+    issues.push("predecessor_source_identity_invalid");
+  }
+  if (!exactKeys(packet.selectorExpectedPostimageIdentity,
+    ["selectorPathIdentityHash", "contentSha256", "referencedTargetPathIdentityHashes"]) ||
+      packet.selectorExpectedPostimageIdentity.selectorPathIdentityHash !==
+        packet.selectorPathIdentity?.approvedPathIdentityHash ||
+      !isSha(packet.selectorExpectedPostimageIdentity.contentSha256) ||
+      !canonicalEqual(packet.selectorExpectedPostimageIdentity.referencedTargetPathIdentityHashes,
+        packet.targetPathIdentities?.map((entry) => entry.approvedPathIdentityHash))) {
+    issues.push("selector_expected_postimage_versioned_target_binding_invalid");
   }
   return uniqueSorted(issues);
 }
@@ -282,6 +422,36 @@ function validateNonceAndChronology(packet) {
   return uniqueSorted(issues);
 }
 
+function buildSelectorExpectedPostimageIdentity(input) {
+  if (!exactKeys(input, ["selectorPathIdentityHash", "selectorPostimageBytes",
+    "versionedTargetPublicPaths", "targetPathIdentities"]) ||
+      !isSha(input.selectorPathIdentityHash) ||
+      !Buffer.isBuffer(input.selectorPostimageBytes) ||
+      input.selectorPostimageBytes.length === 0 ||
+      !Array.isArray(input.versionedTargetPublicPaths) ||
+      input.versionedTargetPublicPaths.length !== 2 ||
+      input.versionedTargetPublicPaths.some((value) => typeof value !== "string" ||
+        value.length === 0 || value.includes("\\") || value.includes("..")) ||
+      !Array.isArray(input.targetPathIdentities) ||
+      input.targetPathIdentities.length !== 2 ||
+      !canonicalEqual(input.targetPathIdentities.map((entry) => entry.market), ["US", "KR"]) ||
+      input.targetPathIdentities.some((entry) => !exactKeys(entry, TARGET_PATH_FIELDS) ||
+        entry.versionedTarget !== true || entry.writeMode !== "create_only" ||
+        !isSha(entry.approvedPathIdentityHash))) {
+    throw new TypeError("selector_expected_postimage_builder_input_invalid");
+  }
+  const selectorText = input.selectorPostimageBytes.toString("utf8");
+  if (Buffer.from(selectorText, "utf8").compare(input.selectorPostimageBytes) !== 0 ||
+      input.versionedTargetPublicPaths.some((targetPath) =>
+        selectorText.split(targetPath).length - 1 !== 1)) {
+    throw new Error("selector_postimage_versioned_target_reference_invalid");
+  }
+  return deepFreeze({ selectorPathIdentityHash: input.selectorPathIdentityHash,
+    contentSha256: sha256(input.selectorPostimageBytes),
+    referencedTargetPathIdentityHashes: input.targetPathIdentities.map(
+      (entry) => entry.approvedPathIdentityHash) });
+}
+
 function buildCurrentPreimageManifest(input) {
   if (!exactKeys(input, ["repositoryHeadSha", "repositoryTreeSha",
     "targetPreimageIdentities", "selectorPreimageIdentity"]) ||
@@ -292,10 +462,9 @@ function buildCurrentPreimageManifest(input) {
       input.targetPreimageIdentities.some((entry) =>
         !exactKeys(entry, ["market", "pathIdentityHash", "exists",
           "contentIdentityHash", "byteCount", "rowCount"]) ||
-        !isSha(entry.pathIdentityHash) || typeof entry.exists !== "boolean" ||
-        !(entry.contentIdentityHash === null || isSha(entry.contentIdentityHash)) ||
-        !Number.isInteger(entry.byteCount) || entry.byteCount < 0 ||
-        !Number.isInteger(entry.rowCount) || entry.rowCount < 0) ||
+        !isSha(entry.pathIdentityHash) || entry.exists !== false ||
+        entry.contentIdentityHash !== null || entry.byteCount !== 0 ||
+        entry.rowCount !== 0) ||
       !exactKeys(input.selectorPreimageIdentity,
         ["pathIdentityHash", "contentIdentityHash", "byteCount"]) ||
       !isSha(input.selectorPreimageIdentity.pathIdentityHash) ||
@@ -323,10 +492,14 @@ function buildProvenanceBridge(packet) {
     repositoryHeadSha: packet.repositorySnapshot.headSha,
     repositoryTreeSha: packet.repositorySnapshot.treeSha,
     repositorySnapshotIdentityHash: packet.repositorySnapshot.snapshotIdentityHash,
+    pathToBlobMembershipHash: packet.repositorySnapshot.pathToBlobMembershipHash,
     criticalSourceIdentities: cloneCanonical(packet.observedSourceIdentities),
     historicalContracts: cloneCanonical(packet.historicalContracts),
     targetPathIdentities: cloneCanonical(packet.targetPathIdentities),
     selectorPathIdentity: cloneCanonical(packet.selectorPathIdentity),
+    predecessorSourceIdentities: cloneCanonical(packet.predecessorSourceIdentities),
+    selectorExpectedPostimageIdentity:
+      cloneCanonical(packet.selectorExpectedPostimageIdentity),
     adapterManifestId: packet.adapterManifest.adapterManifestId,
     adapterManifestHash: packet.adapterManifest.adapterManifestHash,
     currentPreimageManifestId: packet.currentPreimageManifest.manifestId,
@@ -337,6 +510,7 @@ function buildProvenanceBridge(packet) {
     effectiveExpiresAt: packet.effectiveExpiresAt,
     currentMainBound: true, historicalContractsPreserved: true,
     productionAdaptersValidated: true, productionConfigured: false,
+    stepZExecutionMaterialConstructible: true,
     explicitInvocationStillRequired: true,
     capabilityInvocationCounts: emptyCounts(),
     commandConstructionCount: 0, mutationCount: 0,
@@ -362,13 +536,33 @@ function evaluateCurrentMainProvenanceBridge(packet) {
   const sourceIssues = validateSources(packet.reviewedSourceIdentities,
     packet.observedSourceIdentities);
   const repository = packet.repositorySnapshot;
-  if (!exactKeys(repository, ["headSha", "treeSha", "snapshotIdentityHash"]) ||
+  const expectedMembershipHash = hashContract(
+    "FINPLE_STEP114_2X_ZB_P_PATH_TO_BLOB_MEMBERSHIP\0",
+    Array.isArray(packet.observedSourceIdentities)
+      ? packet.observedSourceIdentities.map(({ role, sourcePath, sourceGitBlobSha }) =>
+        ({ role, sourcePath, sourceGitBlobSha })) : []);
+  if (!exactKeys(repository, ["headSha", "treeSha", "pathToBlobMembershipHash",
+    "snapshotIdentityHash"]) ||
       !isGitSha(packet.executionMainSha) || repository.headSha !== packet.executionMainSha ||
-      !isGitSha(repository.treeSha) || !isSha(repository.snapshotIdentityHash) ||
+      !isGitSha(repository.treeSha) || repository.pathToBlobMembershipHash !==
+        expectedMembershipHash || !isSha(repository.snapshotIdentityHash) ||
       repository.snapshotIdentityHash !== hashContract(
         "FINPLE_STEP114_2X_ZB_P_REPOSITORY_SNAPSHOT\0",
-        { headSha: repository.headSha, treeSha: repository.treeSha })) {
+        { headSha: repository.headSha, treeSha: repository.treeSha,
+          pathToBlobMembershipHash: repository.pathToBlobMembershipHash })) {
     sourceIssues.push("execution_main_repository_binding_invalid");
+  }
+  const expectedAdapterSources = Array.isArray(packet.observedSourceIdentities)
+    ? packet.observedSourceIdentities
+      .filter((entry) => ["production_capability_adapters",
+        "current_main_provenance_bridge"].includes(entry.role))
+      .map((entry) => ({ moduleRole: entry.role, sourcePath: entry.sourcePath,
+        sourcePathIdentityHash: entry.sourcePathIdentityHash,
+        sourceGitBlobSha: entry.sourceGitBlobSha,
+        sourceContentSha256: entry.sourceContentSha256 })) : [];
+  if (!canonicalEqual(packet.adapterManifest.adapterSourceIdentities,
+    expectedAdapterSources)) {
+    sourceIssues.push("adapter_manifest_observed_source_mismatch");
   }
   if (!canonicalEqual(packet.historicalContracts, buildHistoricalContracts())) {
     sourceIssues.push("historical_contract_baseline_or_version_drift");
@@ -409,10 +603,13 @@ function evaluateCurrentMainProvenanceBridge(packet) {
 }
 
 module.exports = {
-  AUTHORITY_FIELDS, FAILURE_CLASSIFICATIONS, FIXED_FALSE_FIELDS, INPUT_FIELDS,
+  AUTHORITY_FIELDS, CRITICAL_SOURCE_PATHS, FAILURE_CLASSIFICATIONS,
+  FIXED_FALSE_FIELDS, INPUT_FIELDS,
   MAXIMUM_PROVENANCE_LIFETIME_SECONDS, PREIMAGE_FIELDS, PUBLIC_STATES,
-  SOURCE_IDENTITY_FIELDS, SOURCE_ROLES, TARGET_PATH_FIELDS, VERSION,
+  PREDECESSOR_FIELDS, SOURCE_IDENTITY_FIELDS, SOURCE_ROLES, TARGET_PATH_FIELDS, VERSION,
   buildCurrentPreimageManifest, buildHistoricalContracts, buildProvenanceBridge,
+  buildReadOnlyRepositoryMaterial, buildSelectorExpectedPostimageIdentity,
+  createExplicitReadOnlyGitObjectReader,
   canonicalJson, deepFreeze, evaluateCurrentMainProvenanceBridge, hashContract,
   safeResult, validateAdapterManifest, validateNonceAndChronology,
   validatePathsAndPreimages, validateSources,

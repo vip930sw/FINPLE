@@ -13,7 +13,7 @@ const MUTATING_CAPABILITIES = new Set([
 const CONSTRUCTION_FIELDS = Object.freeze([
   "filesystem", "pathApi", "approvedRoot", "stateRoot", "targetPaths",
   "selectorPath", "clock", "operationBindings", "platformCapabilities",
-  "repositoryIdentity", "restorationMaterial",
+  "repositoryIdentity", "restorationMaterial", "faultInjector",
 ]);
 const PLATFORM_FIELDS = Object.freeze([
   "atomicSameDirectoryRename", "exclusiveCreate", "fileFsync",
@@ -82,6 +82,37 @@ function csvRows(bytes) {
 function csvHeader(bytes) {
   return bytes.toString("utf8").split(/\r?\n/, 1)[0];
 }
+function schemaIdentity(role, market, schemaVersion) {
+  return hashContract("FINPLE_STEP114_2X_X_DATASET_SCHEMA_IDENTITY\0",
+    { role, market, schemaVersion });
+}
+function deriveCsvIdentity(bytes, contract) {
+  const normalizedHeader = csvHeader(bytes);
+  if (normalizedHeader !== contract.normalizedHeader) {
+    throw new Error("csv_header_contract_mismatch");
+  }
+  const contentSha256 = sha256(bytes);
+  const rowCount = csvRows(bytes);
+  const byteCount = bytes.length;
+  if (sha256(Buffer.from(normalizedHeader, "utf8")) !==
+      contract.normalizedHeaderSha256) {
+    throw new Error("csv_header_identity_mismatch");
+  }
+  const derivedSchemaIdentity = schemaIdentity(
+    contract.role, contract.market, contract.schemaVersion);
+  if (derivedSchemaIdentity !== contract.schemaIdentitySha256) {
+    throw new Error("csv_schema_contract_mismatch");
+  }
+  return {
+    market: contract.market, targetPath: contract.publicPath,
+    contentSha256, schemaVersion: contract.schemaVersion,
+    schemaIdentitySha256: derivedSchemaIdentity,
+    datasetIdentityHash: stepZ.datasetIdentity({ role: contract.role,
+      market: contract.market, contentSha256, schemaVersion: contract.schemaVersion,
+      rowCount, byteCount }),
+    rowCount, byteCount,
+  };
+}
 function canonicalBase64(value) {
   if (typeof value !== "string") throw new TypeError("base64_required");
   const bytes = Buffer.from(value, "base64");
@@ -130,6 +161,9 @@ function validateConstruction(input) {
   if (!isRecord(input.clock) || typeof input.clock.now !== "function") {
     throw new TypeError("explicit_clock_invalid");
   }
+  if (!isRecord(input.faultInjector) || typeof input.faultInjector.hit !== "function") {
+    throw new TypeError("explicit_fault_injector_invalid");
+  }
   if (!exactKeys(input.repositoryIdentity, ["headSha", "treeSha"]) ||
       !isGitSha(input.repositoryIdentity.headSha) || !isGitSha(input.repositoryIdentity.treeSha)) {
     throw new TypeError("repository_identity_invalid");
@@ -150,8 +184,29 @@ function validateConstruction(input) {
   }
   if (!Array.isArray(input.targetPaths) || input.targetPaths.length !== 2 ||
       !canonicalEqual(input.targetPaths.map((entry) => entry.market), ["US", "KR"]) ||
-      input.targetPaths.some((entry) => !exactKeys(entry, ["market", "path", "publicPath"]) ||
-        typeof entry.publicPath !== "string" || entry.publicPath.length === 0)) {
+      input.targetPaths.some((entry) => !exactKeys(entry, ["role", "market", "path",
+        "publicPath", "versionedTarget", "writeMode", "schemaVersion",
+        "normalizedHeader", "normalizedHeaderSha256", "schemaIdentitySha256",
+        "expectedContentSha256", "expectedDatasetIdentityHash", "expectedRowCount",
+        "expectedByteCount"]) ||
+        entry.role !== (entry.market === "US" ? "us_price_metrics" :
+          "kr_price_metrics") ||
+        typeof entry.publicPath !== "string" || entry.publicPath.length === 0 ||
+        entry.versionedTarget !== true || entry.writeMode !== "create_only" ||
+        typeof entry.schemaVersion !== "string" || entry.schemaVersion.length === 0 ||
+        typeof entry.normalizedHeader !== "string" || entry.normalizedHeader.length === 0 ||
+        entry.normalizedHeader.includes("\r") || entry.normalizedHeader.includes("\n") ||
+        entry.normalizedHeaderSha256 !== sha256(
+          Buffer.from(entry.normalizedHeader, "utf8")) ||
+        entry.schemaIdentitySha256 !== schemaIdentity(
+          entry.role, entry.market, entry.schemaVersion) ||
+        !isSha(entry.expectedContentSha256) || !isSha(entry.expectedDatasetIdentityHash) ||
+        !Number.isInteger(entry.expectedRowCount) || entry.expectedRowCount < 1 ||
+        !Number.isInteger(entry.expectedByteCount) || entry.expectedByteCount < 1 ||
+        entry.expectedDatasetIdentityHash !== stepZ.datasetIdentity({ role: entry.role,
+          market: entry.market, contentSha256: entry.expectedContentSha256,
+          schemaVersion: entry.schemaVersion, rowCount: entry.expectedRowCount,
+          byteCount: entry.expectedByteCount }))) {
     throw new TypeError("target_paths_invalid");
   }
   if (!exactKeys(input.selectorPath, ["path", "publicPath"]) ||
@@ -229,7 +284,8 @@ function createProductionCapabilityAdapters(input) {
   const operationsRoot = path.join(guard.stateRoot, "operations");
   const claimsRoot = path.join(guard.stateRoot, "claims");
   const receiptsRoot = path.join(guard.stateRoot, "receipts");
-  for (const directory of [operationsRoot, claimsRoot, receiptsRoot]) {
+  const terminalsRoot = path.join(guard.stateRoot, "terminals");
+  for (const directory of [operationsRoot, claimsRoot, receiptsRoot, terminalsRoot]) {
     if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: false });
     guard.assertState(directory);
   }
@@ -288,13 +344,90 @@ function createProductionCapabilityAdapters(input) {
   function operationPath(operationId) {
     return path.join(operationsRoot, `${sha256(operationId)}.json`);
   }
-  function writeOperation(binding, resourceHash, outcome = "committed") {
-    const body = { contractVersion: `${VERSION}.operation.v1`,
+  function terminalPath(envelopeId) {
+    return path.join(terminalsRoot, `${sha256(envelopeId)}.json`);
+  }
+  function fileState(filePath) {
+    if (!fs.existsSync(filePath)) return { exists: false, contentSha256: null, byteCount: 0 };
+    const bytes = fs.readFileSync(filePath);
+    return { exists: true, contentSha256: sha256(bytes), byteCount: bytes.length };
+  }
+  function snapshotHash(resourceKind, snapshot) {
+    return hashContract("FINPLE_STEP114_2X_ZB_P_RESOURCE_SNAPSHOT\0",
+      { resourceKind, snapshot });
+  }
+  function resourceSnapshot(record) {
+    const resource = record.resourceBinding;
+    if (record.resourceKind === "claim_acquisition") {
+      return fileState(claimPath(resource.envelopeId));
+    }
+    if (record.resourceKind === "claim_terminalization") {
+      return { claim: fileState(claimPath(resource.envelopeId)),
+        terminalMarker: fileState(terminalPath(resource.envelopeId)) };
+    }
+    if (record.resourceKind === "csv_replacement") {
+      const target = pathsByMarket.get(resource.market);
+      return target ? fileState(target.path) : { invalidBinding: true };
+    }
+    if (record.resourceKind === "selector_mutation") {
+      return fileState(input.selectorPath.path);
+    }
+    if (record.resourceKind === "receipt_persistence") {
+      return fileState(receiptPath(resource.receiptId));
+    }
+    if (record.resourceKind === "rollback_restoration") {
+      return { targets: resource.markets.map((market) => {
+        const target = pathsByMarket.get(market);
+        return { market, state: target ? fileState(target.path) : { invalidBinding: true } };
+      }), selector: resource.restoreSelector ? fileState(input.selectorPath.path) : null };
+    }
+    return { invalidResourceKind: true };
+  }
+  function sealJournal(body) {
+    return { ...body, journalHash: hashContract(
+      "FINPLE_STEP114_2X_ZB_P_OPERATION_JOURNAL\0", body) };
+  }
+  function validateJournal(record, binding) {
+    if (!exactKeys(record, ["contractVersion", "state", "capabilityName", "methodName",
+      "operationId", "idempotencyKey", "resourceKind", "resourceBinding",
+      "preimageIdentityHash", "postimageIdentityHash", "resourceHash",
+      "automaticRetryAllowed", "rawMaterialPresent", "journalHash"]) ||
+        record.contractVersion !== `${VERSION}.operation.v2` ||
+        !["prepared", "committed"].includes(record.state) ||
+        record.capabilityName !== binding.capabilityName ||
+        record.methodName !== binding.methodName ||
+        record.operationId !== binding.operationId ||
+        record.idempotencyKey !== binding.idempotencyKey ||
+        !isSha(record.preimageIdentityHash) || !isSha(record.postimageIdentityHash) ||
+        !isSha(record.resourceHash) || record.automaticRetryAllowed !== false ||
+        record.rawMaterialPresent !== false) return false;
+    const body = { ...record }; delete body.journalHash;
+    return record.journalHash === hashContract(
+      "FINPLE_STEP114_2X_ZB_P_OPERATION_JOURNAL\0", body);
+  }
+  function prepareOperation(binding, intent) {
+    if (!exactKeys(intent, ["resourceKind", "resourceBinding", "preimageIdentityHash",
+      "postimageIdentityHash", "resourceHash"]) ||
+        !isSha(intent.preimageIdentityHash) || !isSha(intent.postimageIdentityHash) ||
+        !isSha(intent.resourceHash)) throw new TypeError("operation_intent_invalid");
+    const body = { contractVersion: `${VERSION}.operation.v2`, state: "prepared",
       capabilityName: binding.capabilityName, methodName: binding.methodName,
       operationId: binding.operationId, idempotencyKey: binding.idempotencyKey,
-      outcome, resourceHash, automaticRetryAllowed: false, rawMaterialPresent: false };
-    exclusiveWrite(operationPath(binding.operationId), Buffer.from(canonicalJson(body)));
-    return body;
+      ...intent, automaticRetryAllowed: false, rawMaterialPresent: false };
+    const prepared = sealJournal(body);
+    exclusiveWrite(operationPath(binding.operationId), Buffer.from(canonicalJson(prepared)));
+    return prepared;
+  }
+  function commitOperation(binding, prepared) {
+    if (!validateJournal(prepared, binding) || prepared.state !== "prepared") {
+      throw new Error("prepared_journal_invalid");
+    }
+    const committedBody = { ...prepared, state: "committed" };
+    delete committedBody.journalHash;
+    const committed = sealJournal(committedBody);
+    atomicReplace(operationPath(binding.operationId), Buffer.from(canonicalJson(committed)),
+      true, `${binding.operationId}-journal-commit`);
+    return committed;
   }
   function reconcile(capabilityName, payload, context) {
     const reconciliationDeadline = parseInstant(context.deadline);
@@ -321,25 +454,26 @@ function createProductionCapabilityAdapters(input) {
     if (!fs.existsSync(journal)) return { outcome: "not_committed", resourceHash: null };
     try {
       const record = JSON.parse(fs.readFileSync(journal, "utf8"));
-      if (record.operationId !== binding.operationId ||
-          record.idempotencyKey !== binding.idempotencyKey ||
-          record.capabilityName !== capabilityName || !isSha(record.resourceHash)) {
+      if (!validateJournal(record, binding) || record.capabilityName !== capabilityName) {
         return { outcome: "ambiguous", resourceHash: null };
       }
-      return { outcome: "committed", resourceHash: record.resourceHash };
+      const actualIdentityHash = snapshotHash(record.resourceKind, resourceSnapshot(record));
+      if (actualIdentityHash === record.postimageIdentityHash) {
+        return { outcome: "committed", resourceHash: record.resourceHash };
+      }
+      if (record.state === "prepared" && actualIdentityHash === record.preimageIdentityHash) {
+        return { outcome: "not_committed", resourceHash: null };
+      }
+      return { outcome: "ambiguous", resourceHash: null };
     } catch { return { outcome: "ambiguous", resourceHash: null }; }
   }
   function claimPath(envelopeId) { return path.join(claimsRoot, `${sha256(envelopeId)}.json`); }
   function receiptPath(receiptId) { return path.join(receiptsRoot, `${sha256(receiptId)}.json`); }
-  function targetIdentity(market, targetPath, expected = {}) {
+  function targetIdentity(market, targetPath) {
     guard.assertApproved(targetPath, false);
-    const bytes = fs.readFileSync(targetPath);
-    const body = { market, targetPath: expected.targetPath || targetPath,
-      contentSha256: sha256(bytes), schemaVersion: expected.schemaVersion,
-      schemaIdentitySha256: expected.schemaIdentitySha256,
-      datasetIdentityHash: expected.datasetIdentityHash,
-      rowCount: csvRows(bytes), byteCount: bytes.length };
-    return body;
+    const contract = pathsByMarket.get(market);
+    if (!contract || contract.path !== targetPath) throw new Error("target_contract_missing");
+    return deriveCsvIdentity(fs.readFileSync(targetPath), contract);
   }
   function readExpectedPreimages(expected) {
     if (!isRecord(expected) || !Array.isArray(expected.targets) || expected.targets.length !== 2) {
@@ -373,14 +507,31 @@ function createProductionCapabilityAdapters(input) {
       if (fs.existsSync(destination)) return { outcome: "already_consumed", claimHash: null };
       const claimHash = hashContract("FINPLE_STEP114_2X_ZB_P_CLAIM\0", {
         envelopeId: payload.envelopeId, envelopeHash: payload.envelopeHash,
-        approvalNonceHash: payload.approvalNonceHash,
+        approvalNonceHash: payload.approvalNonceHash, operationId: binding.operationId,
+        idempotencyKey: binding.idempotencyKey,
       });
       const record = { contractVersion: `${VERSION}.claim.v1`, envelopeId: payload.envelopeId,
         envelopeHash: payload.envelopeHash, approvalNonceHash: payload.approvalNonceHash,
+        operationId: binding.operationId, idempotencyKey: binding.idempotencyKey,
         claimHash, terminalState: null, terminalizationHash: null,
         automaticRetryAllowed: false, secondAttemptAllowed: false, rawMaterialPresent: false };
-      exclusiveWrite(destination, Buffer.from(canonicalJson(record)));
-      writeOperation(binding, claimHash);
+      const recordBytes = Buffer.from(canonicalJson(record));
+      const resourceBinding = { envelopeId: payload.envelopeId };
+      const prepared = prepareOperation(binding, { resourceKind: "claim_acquisition",
+        resourceBinding,
+        preimageIdentityHash: snapshotHash("claim_acquisition",
+          { exists: false, contentSha256: null, byteCount: 0 }),
+        postimageIdentityHash: snapshotHash("claim_acquisition",
+          { exists: true, contentSha256: sha256(recordBytes), byteCount: recordBytes.length }),
+        resourceHash: claimHash });
+      input.faultInjector.hit("claim_after_prepare_before_resource",
+        { operationId: binding.operationId });
+      exclusiveWrite(destination, recordBytes);
+      if (snapshotHash("claim_acquisition", resourceSnapshot(prepared)) !==
+          prepared.postimageIdentityHash) throw new Error("claim_resource_verification_failed");
+      input.faultInjector.hit("claim_after_resource_before_journal_commit",
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       return { outcome: "acquired", claimHash };
     },
     async reconcileOperationOutcome(payload, context) {
@@ -401,8 +552,32 @@ function createProductionCapabilityAdapters(input) {
         cutoverReceiptId: payload.cutoverReceiptId, cutoverReceiptHash: payload.cutoverReceiptHash,
       });
       const updated = { ...record, terminalState: payload.terminalState, terminalizationHash };
-      atomicReplace(destination, Buffer.from(canonicalJson(updated)), true, binding.operationId);
-      writeOperation(binding, terminalizationHash);
+      const updatedBytes = Buffer.from(canonicalJson(updated));
+      const marker = { contractVersion: `${VERSION}.terminal-marker.v1`,
+        envelopeId: payload.envelopeId, claimHash: payload.claimHash,
+        terminalState: payload.terminalState, terminalizationHash,
+        operationId: binding.operationId, idempotencyKey: binding.idempotencyKey,
+        rawMaterialPresent: false };
+      const markerBytes = Buffer.from(canonicalJson(marker));
+      const resourceBinding = { envelopeId: payload.envelopeId };
+      const preSnapshot = { claim: fileState(destination),
+        terminalMarker: { exists: false, contentSha256: null, byteCount: 0 } };
+      const postSnapshot = { claim: { exists: true, contentSha256: sha256(updatedBytes),
+        byteCount: updatedBytes.length }, terminalMarker: { exists: true,
+        contentSha256: sha256(markerBytes), byteCount: markerBytes.length } };
+      const prepared = prepareOperation(binding, { resourceKind: "claim_terminalization",
+        resourceBinding, preimageIdentityHash: snapshotHash("claim_terminalization", preSnapshot),
+        postimageIdentityHash: snapshotHash("claim_terminalization", postSnapshot),
+        resourceHash: terminalizationHash });
+      input.faultInjector.hit("terminalization_after_prepare_before_resource",
+        { operationId: binding.operationId });
+      exclusiveWrite(terminalPath(payload.envelopeId), markerBytes);
+      atomicReplace(destination, updatedBytes, true, binding.operationId);
+      if (snapshotHash("claim_terminalization", resourceSnapshot(prepared)) !==
+          prepared.postimageIdentityHash) throw new Error("terminal_resource_verification_failed");
+      input.faultInjector.hit("terminalization_after_resource_before_journal_commit",
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       return { outcome: "terminalized", terminalState: payload.terminalState, terminalizationHash };
     },
   };
@@ -432,7 +607,7 @@ function createProductionCapabilityAdapters(input) {
       assertContext("cutoverPreimageReader", "readProductionCsvIdentity", context);
       const bound = pathsByMarket.get(payload.market);
       if (!bound || bound.publicPath !== payload.targetPath) throw new Error("csv_target_path_drift");
-      const identity = targetIdentity(payload.market, bound.path, payload.expectedIdentity);
+      const identity = targetIdentity(payload.market, bound.path);
       if (!canonicalEqual(identity, payload.expectedIdentity)) throw new Error("csv_identity_drift");
       return identity;
     },
@@ -445,7 +620,7 @@ function createProductionCapabilityAdapters(input) {
           sha256(fs.readFileSync(input.selectorPath.path)) !== expected.selectorPostimageSha256 ||
           !Array.isArray(expected.productionCsvResults) ||
           expected.productionCsvResults.some((identity) => !canonicalEqual(
-            targetIdentity(identity.market, pathsByMarket.get(identity.market).path, identity), identity))) {
+            targetIdentity(identity.market, pathsByMarket.get(identity.market).path), identity))) {
         throw new Error("post_cutover_state_drift");
       }
       return JSON.parse(canonicalJson(expected));
@@ -471,17 +646,42 @@ function createProductionCapabilityAdapters(input) {
       guard.assertApproved(target.path, true);
       if (fs.existsSync(target.path)) throw new Error("create_only_target_exists");
       const bytes = canonicalBase64(payload.candidateContentBase64);
-      if (sha256(bytes) !== payload.expectedContentSha256 ||
-          bytes.length !== payload.expectedByteCount || csvRows(bytes) !== payload.expectedRowCount) {
+      const derivedIdentity = deriveCsvIdentity(bytes, target);
+      const expectedIdentity = { market: payload.market, targetPath: payload.targetPath,
+        contentSha256: target.expectedContentSha256,
+        schemaVersion: target.schemaVersion,
+        schemaIdentitySha256: target.schemaIdentitySha256,
+        datasetIdentityHash: target.expectedDatasetIdentityHash,
+        rowCount: target.expectedRowCount, byteCount: target.expectedByteCount };
+      if (payload.expectedContentSha256 !== target.expectedContentSha256 ||
+          payload.expectedSchemaVersion !== target.schemaVersion ||
+          payload.expectedRowCount !== target.expectedRowCount ||
+          payload.expectedByteCount !== target.expectedByteCount ||
+          !canonicalEqual(derivedIdentity, expectedIdentity)) {
         throw new Error("candidate_identity_invalid");
       }
-      atomicReplace(target.path, bytes, false, binding.operationId);
       const replacementHash = hashContract("FINPLE_STEP114_2X_ZB_P_REPLACEMENT\0", {
-        market: payload.market, contentSha256: payload.expectedContentSha256,
-        byteCount: payload.expectedByteCount, rowCount: payload.expectedRowCount,
+        market: payload.market, identity: derivedIdentity,
         operationId: binding.operationId,
       });
-      writeOperation(binding, replacementHash);
+      const resourceBinding = { market: payload.market };
+      const prepared = prepareOperation(binding, { resourceKind: "csv_replacement",
+        resourceBinding,
+        preimageIdentityHash: snapshotHash("csv_replacement",
+          { exists: false, contentSha256: null, byteCount: 0 }),
+        postimageIdentityHash: snapshotHash("csv_replacement",
+          { exists: true, contentSha256: derivedIdentity.contentSha256,
+            byteCount: derivedIdentity.byteCount }),
+        resourceHash: replacementHash });
+      input.faultInjector.hit(`csv_${payload.market.toLowerCase()}_after_prepare_before_resource`,
+        { operationId: binding.operationId });
+      atomicReplace(target.path, bytes, false, binding.operationId);
+      if (!canonicalEqual(targetIdentity(payload.market, target.path), expectedIdentity) ||
+          snapshotHash("csv_replacement", resourceSnapshot(prepared)) !==
+            prepared.postimageIdentityHash) throw new Error("replacement_resource_verification_failed");
+      input.faultInjector.hit(`csv_${payload.market.toLowerCase()}_after_resource_before_journal_commit`,
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       return { outcome: "replaced", replacementHash };
     },
     async reconcileOperationOutcome(payload, context) {
@@ -503,13 +703,25 @@ function createProductionCapabilityAdapters(input) {
       if (sha256(preimage) !== payload.selectorPreimageSha256 ||
           sha256(postimage) !== payload.selectorExpectedPostimageSha256 ||
           sha256(current) !== payload.selectorPreimageSha256) throw new Error("selector_preimage_drift");
-      atomicReplace(input.selectorPath.path, postimage, false, binding.operationId);
       const mutationHash = hashContract("FINPLE_STEP114_2X_ZB_P_SELECTOR_MUTATION\0", {
         selectorPreimageSha256: payload.selectorPreimageSha256,
         selectorExpectedPostimageSha256: payload.selectorExpectedPostimageSha256,
         operationId: binding.operationId,
       });
-      writeOperation(binding, mutationHash);
+      const prepared = prepareOperation(binding, { resourceKind: "selector_mutation",
+        resourceBinding: { selectorRole: "bound_selector" },
+        preimageIdentityHash: snapshotHash("selector_mutation", fileState(input.selectorPath.path)),
+        postimageIdentityHash: snapshotHash("selector_mutation", { exists: true,
+          contentSha256: sha256(postimage), byteCount: postimage.length }),
+        resourceHash: mutationHash });
+      input.faultInjector.hit("selector_after_prepare_before_resource",
+        { operationId: binding.operationId });
+      atomicReplace(input.selectorPath.path, postimage, false, binding.operationId);
+      if (snapshotHash("selector_mutation", resourceSnapshot(prepared)) !==
+          prepared.postimageIdentityHash) throw new Error("selector_resource_verification_failed");
+      input.faultInjector.hit("selector_after_resource_before_journal_commit",
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       return { outcome: "mutated", mutationHash };
     },
     async reconcileOperationOutcome(payload, context) {
@@ -527,8 +739,22 @@ function createProductionCapabilityAdapters(input) {
       const destination = receiptPath(receipt.cutoverReceiptId);
       if (fs.existsSync(destination)) throw new Error("receipt_replay_forbidden");
       const receiptStoreHash = hashContract("FINPLE_STEP114_2X_ZB_P_RECEIPT_STORE\0", receipt);
-      exclusiveWrite(destination, Buffer.from(canonicalJson({ receipt, receiptStoreHash })));
-      writeOperation(binding, receiptStoreHash);
+      const recordBytes = Buffer.from(canonicalJson({ receipt, receiptStoreHash }));
+      const prepared = prepareOperation(binding, { resourceKind: "receipt_persistence",
+        resourceBinding: { receiptId: receipt.cutoverReceiptId },
+        preimageIdentityHash: snapshotHash("receipt_persistence",
+          { exists: false, contentSha256: null, byteCount: 0 }),
+        postimageIdentityHash: snapshotHash("receipt_persistence", { exists: true,
+          contentSha256: sha256(recordBytes), byteCount: recordBytes.length }),
+        resourceHash: receiptStoreHash });
+      input.faultInjector.hit("receipt_after_prepare_before_resource",
+        { operationId: binding.operationId });
+      exclusiveWrite(destination, recordBytes);
+      if (snapshotHash("receipt_persistence", resourceSnapshot(prepared)) !==
+          prepared.postimageIdentityHash) throw new Error("receipt_resource_verification_failed");
+      input.faultInjector.hit("receipt_after_resource_before_journal_commit",
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       return { outcome: "persisted", receiptStoreHash };
     },
     async reconcileOperationOutcome(payload, context) {
@@ -543,6 +769,34 @@ function createProductionCapabilityAdapters(input) {
       if (payload.rawMaterialPresent !== false) throw new TypeError("rollback_raw_material_flag_invalid");
       const restorationTargets = new Map(input.restorationMaterial.targets.map(
         (entry) => [entry.market, entry]));
+      const markets = [["US", payload.restoreUsTarget], ["KR", payload.restoreKrTarget]]
+        .filter(([, enabled]) => enabled).map(([market]) => market);
+      const resourceBinding = { markets, restoreSelector: payload.restoreSelector === true };
+      const preSnapshot = { targets: markets.map((market) => ({ market,
+        state: fileState(pathsByMarket.get(market).path) })),
+      selector: payload.restoreSelector ? fileState(input.selectorPath.path) : null };
+      const postSnapshot = { targets: markets.map((market) => {
+        const material = restorationTargets.get(market);
+        if (!material) throw new TypeError("rollback_target_material_invalid");
+        const bytes = material.existed ? canonicalBase64(material.contentBase64) : null;
+        return { market, state: material.existed
+          ? { exists: true, contentSha256: sha256(bytes), byteCount: bytes.length }
+          : { exists: false, contentSha256: null, byteCount: 0 } };
+      }), selector: payload.restoreSelector ? (() => {
+        const bytes = canonicalBase64(input.restorationMaterial.selector.contentBase64);
+        return { exists: true, contentSha256: sha256(bytes), byteCount: bytes.length };
+      })() : null };
+      const restorationHash = hashContract("FINPLE_STEP114_2X_ZB_P_RESTORATION\0", {
+        envelopeId: payload.envelopeId, envelopeHash: payload.envelopeHash,
+        failureStage: payload.failureStage, exactPreimages: payload.exactPreimages,
+      });
+      const prepared = prepareOperation(binding, { resourceKind: "rollback_restoration",
+        resourceBinding,
+        preimageIdentityHash: snapshotHash("rollback_restoration", preSnapshot),
+        postimageIdentityHash: snapshotHash("rollback_restoration", postSnapshot),
+        resourceHash: restorationHash });
+      input.faultInjector.hit("rollback_after_prepare_before_resource",
+        { operationId: binding.operationId });
       for (const [market, enabled] of [["US", payload.restoreUsTarget], ["KR", payload.restoreKrTarget]]) {
         if (!enabled) continue;
         const material = restorationTargets.get(market);
@@ -552,11 +806,16 @@ function createProductionCapabilityAdapters(input) {
           throw new TypeError("rollback_target_material_invalid");
         }
         if (!material.existed) {
-          if (fs.existsSync(target.path)) fs.unlinkSync(target.path);
+          if (fs.existsSync(target.path)) {
+            fs.unlinkSync(target.path);
+            syncDirectory(path.dirname(target.path));
+          }
         } else {
           atomicReplace(target.path, canonicalBase64(material.contentBase64), false,
             `${binding.operationId}-${market}`);
         }
+        input.faultInjector.hit(`rollback_after_${market.toLowerCase()}_restore`,
+          { operationId: binding.operationId });
       }
       if (payload.restoreSelector) {
         if (input.restorationMaterial.selector.path !== input.selectorPath.path) {
@@ -567,14 +826,14 @@ function createProductionCapabilityAdapters(input) {
           `${binding.operationId}-selector`);
       }
       readExpectedPreimages(payload.exactPreimages);
+      if (snapshotHash("rollback_restoration", resourceSnapshot(prepared)) !==
+          prepared.postimageIdentityHash) throw new Error("rollback_resource_verification_failed");
+      input.faultInjector.hit("rollback_after_resource_before_journal_commit",
+        { operationId: binding.operationId });
+      commitOperation(binding, prepared);
       if (payload.receiptMayExist === true) {
         return { outcome: "ambiguous", restorationHash: null, manualReviewRequired: true };
       }
-      const restorationHash = hashContract("FINPLE_STEP114_2X_ZB_P_RESTORATION\0", {
-        envelopeId: payload.envelopeId, envelopeHash: payload.envelopeHash,
-        failureStage: payload.failureStage, exactPreimages: payload.exactPreimages,
-      });
-      writeOperation(binding, restorationHash);
       return { outcome: "restored", restorationHash };
     },
     async reconcileOperationOutcome(payload, context) {
@@ -596,9 +855,12 @@ function buildProductionAdapterManifest(input) {
       !canonicalEqual(input.adapterSourceIdentities.map((entry) => entry.moduleRole),
         ["production_capability_adapters", "current_main_provenance_bridge"]) ||
       input.adapterSourceIdentities.some((entry) => !exactKeys(entry,
-        ["moduleRole", "sourcePathIdentityHash", "sourceBlobIdentityHash",
-          "sourceContentSha256"]) || !isSha(entry.sourcePathIdentityHash) ||
-          !isSha(entry.sourceBlobIdentityHash) || !isSha(entry.sourceContentSha256)) ||
+        ["moduleRole", "sourcePath", "sourcePathIdentityHash", "sourceGitBlobSha",
+          "sourceContentSha256"]) || typeof entry.sourcePath !== "string" ||
+          entry.sourcePath.length === 0 || entry.sourcePath.startsWith("/") ||
+          entry.sourcePath.includes("\\") || entry.sourcePath.split("/").includes("..") ||
+          !isSha(entry.sourcePathIdentityHash) || !isGitSha(entry.sourceGitBlobSha) ||
+          !isSha(entry.sourceContentSha256)) ||
       !exactKeys(input.platformCapabilities, PLATFORM_FIELDS) ||
       input.platformCapabilities.atomicSameDirectoryRename !== true ||
       input.platformCapabilities.exclusiveCreate !== true ||
@@ -645,5 +907,6 @@ module.exports = {
   CAPABILITY_NAMES, CONSTRUCTION_FIELDS, FIXED_FALSE_FIELDS, MANIFEST_VERSION,
   MUTATING_CAPABILITIES, PLATFORM_FIELDS, REQUIRED_FS_METHODS, VERSION,
   buildProductionAdapterManifest, canonicalEqual, canonicalJson,
-  createProductionCapabilityAdapters, deepFreeze, hashContract, sha256,
+  createProductionCapabilityAdapters, deepFreeze, deriveCsvIdentity, hashContract,
+  schemaIdentity, sha256,
 };
