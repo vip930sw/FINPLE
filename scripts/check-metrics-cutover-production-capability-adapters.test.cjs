@@ -7,7 +7,8 @@ const test = require("node:test");
 const stepZ = require("./lib/metrics-cutover-production-single-use-executor.cjs");
 const {
   CAPABILITY_NAMES, buildProductionAdapterManifest,
-  createProductionCapabilityAdapters, hashContract, sha256,
+  createProductionCapabilityAdapters,
+  getVerifiedProductionAdapterConstructionBinding, hashContract, sha256,
 } = require("./lib/metrics-cutover-production-capability-adapters.cjs");
 const { runCli } = require("./check-metrics-cutover-production-capability-adapters.cjs");
 const {
@@ -64,6 +65,90 @@ test("factories expose exact Step Z descriptors and methods", (t) => {
       ["descriptor", ...stepZ.CAPABILITY_METHODS[name]].sort());
     assert.equal(fixture.adapters[name].descriptor.hardTimeoutMilliseconds, 100);
   }
+});
+
+test("factory construction binding is private, complete, and set-specific", (t) => {
+  const first = makeFixture(t);
+  const second = makeFixture(t);
+  const binding = getVerifiedProductionAdapterConstructionBinding(first.adapters);
+  assert.equal(typeof binding.adapterConstructionBindingHash, "string");
+  assert.equal(Object.isFrozen(binding), true);
+  assert.equal(JSON.stringify(binding).includes(first.approvedRoot), false);
+  assert.equal(getVerifiedProductionAdapterConstructionBinding({
+    ...first.adapters, cutoverClock: { ...first.adapters.cutoverClock } }), null);
+  assert.equal(getVerifiedProductionAdapterConstructionBinding({
+    ...first.adapters, cutoverClock: second.adapters.cutoverClock }), null);
+});
+
+test("factory binding distinguishes approved-relative actual paths without exposing them", (t) => {
+  const fixture = makeFixture(t);
+  const original = getVerifiedProductionAdapterConstructionBinding(fixture.adapters);
+  assert.equal(JSON.stringify(original).includes(fixture.approvedRoot), false);
+  for (const [index, target] of original.targetContracts.entries()) {
+    assert.equal(typeof target.publicPathIdentityHash, "string");
+    assert.equal(typeof target.approvedRelativePathIdentityHash, "string");
+    assert.equal(target.approvedRelativePathIdentityHash,
+      original.restorationMaterialIdentity.targets[index]
+        .approvedRelativePathIdentityHash);
+  }
+  assert.equal(original.selectorBinding.approvedRelativePathIdentityHash,
+    original.restorationMaterialIdentity.selector.approvedRelativePathIdentityHash);
+
+  const variants = fixture.construction.targetPaths.map((_, changedIndex) => {
+    const targetPaths = fixture.construction.targetPaths.map((entry, index) =>
+      index === changedIndex ? { ...entry, path: path.join(fixture.approvedRoot,
+        `${entry.market.toLowerCase()}-alternate.csv`) } : entry);
+    return { ...fixture.construction, targetPaths,
+      restorationMaterial: { ...fixture.construction.restorationMaterial,
+        targets: fixture.construction.restorationMaterial.targets.map((entry, index) =>
+          ({ ...entry, path: targetPaths[index].path })) } };
+  });
+  const alternateSelectorPath = path.join(fixture.approvedRoot,
+    "selector-alternate.js");
+  fs.writeFileSync(alternateSelectorPath, fixture.bytes.selectorBefore);
+  variants.push({ ...fixture.construction,
+    selectorPath: { ...fixture.construction.selectorPath,
+      path: alternateSelectorPath },
+    restorationMaterial: { ...fixture.construction.restorationMaterial,
+      selector: { ...fixture.construction.restorationMaterial.selector,
+        path: alternateSelectorPath } } });
+
+  for (const construction of variants) {
+    const adapterSet = createProductionCapabilityAdapters(construction);
+    const binding = getVerifiedProductionAdapterConstructionBinding(adapterSet);
+    assert.notEqual(binding.adapterConstructionBindingHash,
+      original.adapterConstructionBindingHash);
+  }
+
+  const restorationTargetDrift = {
+    ...fixture.construction.restorationMaterial,
+    targets: fixture.construction.restorationMaterial.targets.map((entry, index) =>
+      index === 0 ? { ...entry,
+        path: path.join(fixture.approvedRoot, "restoration-us-drift.csv") } : entry),
+  };
+  assert.throws(() => createProductionCapabilityAdapters({
+    ...fixture.construction, restorationMaterial: restorationTargetDrift,
+  }), /restoration_target_binding_invalid/);
+  const restorationSelectorDriftPath = path.join(fixture.approvedRoot,
+    "restoration-selector-drift.js");
+  fs.writeFileSync(restorationSelectorDriftPath, fixture.bytes.selectorBefore);
+  assert.throws(() => createProductionCapabilityAdapters({
+    ...fixture.construction,
+    restorationMaterial: { ...fixture.construction.restorationMaterial,
+      selector: { ...fixture.construction.restorationMaterial.selector,
+        path: restorationSelectorDriftPath } },
+  }), /restoration_selector_binding_invalid/);
+
+  const dotAlias = `${fixture.approvedRoot}${path.sep}.${path.sep}${path.basename(
+    fixture.usPath)}`;
+  assert.throws(() => createProductionCapabilityAdapters({
+    ...fixture.construction,
+    targetPaths: fixture.construction.targetPaths.map((entry, index) => index === 0
+      ? { ...entry, path: dotAlias } : entry),
+    restorationMaterial: { ...fixture.construction.restorationMaterial,
+      targets: fixture.construction.restorationMaterial.targets.map((entry, index) =>
+        index === 0 ? { ...entry, path: dotAlias } : entry) },
+  }), /approved_root_escape_or_alias|actual_path_canonicalization_or_root_invalid/);
 });
 
 test("explicit approved roots reject aliases, escapes, and junction traversal", (t) => {

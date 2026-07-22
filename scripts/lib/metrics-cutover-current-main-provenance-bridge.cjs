@@ -38,7 +38,8 @@ const INPUT_FIELDS = Object.freeze([
 ]);
 const SOURCE_ROLES = Object.freeze([
   "step_z", "step_za", "step_zb", "production_capability_adapters",
-  "current_main_provenance_bridge",
+  "current_main_provenance_bridge", "production_runtime_bundle",
+  "production_no_op_fault_injector",
 ]);
 const SOURCE_IDENTITY_FIELDS = Object.freeze([
   "role", "sourcePath", "sourcePathIdentityHash", "sourceGitBlobSha",
@@ -55,6 +56,10 @@ const CRITICAL_SOURCE_PATHS = Object.freeze([
     sourcePath: "scripts/lib/metrics-cutover-production-capability-adapters.cjs" }),
   Object.freeze({ role: "current_main_provenance_bridge",
     sourcePath: "scripts/lib/metrics-cutover-current-main-provenance-bridge.cjs" }),
+  Object.freeze({ role: "production_runtime_bundle",
+    sourcePath: "scripts/lib/metrics-cutover-production-runtime-bundle.cjs" }),
+  Object.freeze({ role: "production_no_op_fault_injector",
+    sourcePath: "scripts/lib/metrics-cutover-production-no-op-fault-injector.cjs" }),
 ]);
 const TARGET_PATH_FIELDS = Object.freeze([
   "market", "approvedRootPolicyHash", "approvedPathIdentityHash",
