@@ -13,7 +13,7 @@ import math
 from pathlib import Path
 from typing import Iterable, Mapping
 
-from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS
+from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 
 
 def clean(value: object) -> str:
@@ -74,9 +74,9 @@ def extract_raw_daily_rows(
     source/license fields remain review-only.
     """
     normalized_market = clean(market).upper()
-    normalized_ticker = clean(ticker).upper()
-    if normalized_market == "KR":
-        normalized_ticker = normalized_ticker.zfill(6)
+    normalized_ticker = clean(ticker)
+    if normalized_market == "KR" and not is_valid_kr_candidate_ticker(normalized_ticker):
+        raise ValueError(f"invalid KR ticker identity: {normalized_ticker}")
 
     close = history_series(data, "Close")
     if close is None:
@@ -169,7 +169,11 @@ def write_raw_daily_rows(path: Path, rows: Iterable[Mapping[str, object]]) -> di
     path.parent.mkdir(parents=True, exist_ok=True)
     normalized: dict[tuple[str, str, str], dict[str, object]] = {}
     for row in rows:
-        key = (clean(row.get("market")).upper(), clean(row.get("ticker")).upper(), clean(row.get("date")))
+        market = clean(row.get("market")).upper()
+        ticker = clean(row.get("ticker"))
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            raise ValueError(f"invalid KR ticker identity: {ticker}")
+        key = (market, ticker, clean(row.get("date")))
         if key in normalized:
             raise ValueError(f"duplicate raw-daily key: {key}")
         normalized[key] = {column: row.get(column, "") for column in RAW_DAILY_PRICE_COLUMNS}
@@ -208,11 +212,11 @@ def combine_raw_daily_chunks(pattern: str, output_path: Path, expected_market: s
                     raise ValueError(f"raw-daily header mismatch: {file_name}")
                 for row in reader:
                     market = clean(row.get("market")).upper()
-                    ticker = clean(row.get("ticker")).upper()
+                    ticker = clean(row.get("ticker"))
                     if market != expected_market:
                         raise ValueError(f"unexpected market in {file_name}: {market}")
-                    if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-                        raise ValueError(f"KR ticker lost six-digit identity: {ticker}")
+                    if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+                        raise ValueError(f"KR ticker lost six-character alphanumeric identity: {ticker}")
                     identity = (market, ticker)
                     date_text = clean(row.get("date"))
                     dates = dates_by_asset.setdefault(identity, set())

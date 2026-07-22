@@ -136,6 +136,9 @@ class NotebookSmokeTests(unittest.TestCase):
                 self.assertIn("--raw-pattern", payload)
                 self.assertIn(f"{market}_raw_daily_prices.csv", payload)
                 self.assertNotIn("GITHUB_TOKEN", payload)
+                if market == "kr":
+                    self.assertIn("re.fullmatch(r'[0-9A-Z]{6}', row['ticker'])", payload)
+                    self.assertNotIn("row['ticker'].isdigit()", payload)
 
     def test_collection_notebooks_use_shallow_fetch_head_detached_checkout(self):
         for path in [US_COLLECTION_NOTEBOOK, KR_COLLECTION_NOTEBOOK]:

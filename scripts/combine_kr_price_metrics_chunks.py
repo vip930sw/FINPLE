@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from scripts.metrics_pipeline.schemas import is_valid_kr_candidate_ticker
 from scripts.raw_daily_price_chunks import combine_raw_daily_chunks
 
 RUNTIME_COLUMNS = [
@@ -50,7 +51,10 @@ def main() -> None:
     frames = [pd.read_csv(path, dtype={"ticker": str}) for path in files]
     df = pd.concat(frames, ignore_index=True)
     df["market"] = df["market"].fillna("KR").astype(str).str.strip().str.upper()
-    df["ticker"] = df["ticker"].astype(str).str.strip().str.upper().str.zfill(6)
+    df["ticker"] = df["ticker"].astype(str).str.strip()
+    invalid_tickers = sorted({ticker for ticker in df["ticker"] if not is_valid_kr_candidate_ticker(ticker)})
+    if invalid_tickers:
+        raise SystemExit(f"Invalid KR ticker identity in runtime chunks: {invalid_tickers[:5]}")
     df = df.drop_duplicates(["market", "ticker"], keep="last")
 
     for column in RUNTIME_COLUMNS:

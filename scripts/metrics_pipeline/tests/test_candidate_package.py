@@ -363,6 +363,42 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                 self.assertFalse(result["candidatePackageReady"])
                 self.assertIn(expected_issue, {issue["issueType"] for issue in result["issues"]})
 
+    def test_alphanumeric_kr_candidate_identity_survives_candidate_package_outputs(self):
+        candidates = [{**candidate_rows()[0], "ticker": "0086C0"}]
+        rows = [
+            {**row, "ticker": "0086C0"} if row["ticker"] == "005930" else row
+            for row in raw_daily_rows()
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir), candidate_rows=candidates, raw_rows=rows)
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertTrue(result["candidatePackageReady"])
+            issue_types = {issue["issueType"] for issue in result["issues"]}
+            self.assertNotIn("candidate_asset_master_invalid", issue_types)
+            self.assertNotIn("ticker_identity_invalid", issue_types)
+
+            for output_key in ["normalizedMonthEndCsv", "monthlyReturnsCsv", "metricsOutputCsv", "krReviewOverlayCsv"]:
+                with Path(result["outputs"][output_key]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    output_rows = list(csv.DictReader(handle))
+                self.assertIn("0086C0", {row["ticker"] for row in output_rows}, output_key)
+
+    def test_invalid_kr_candidate_lengths_and_special_characters_are_rejected(self):
+        for ticker in ["05930", "0005930", "00-930"]:
+            with self.subTest(ticker=ticker), tempfile.TemporaryDirectory() as temp_dir:
+                candidates = [{**candidate_rows()[0], "ticker": ticker}]
+                input_dir = build_candidate_input(Path(temp_dir), candidate_rows=candidates)
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+                self.assertFalse(result["candidatePackageReady"])
+                self.assertIn("candidate_asset_master_invalid", {issue["issueType"] for issue in result["issues"]})
+
+    def test_kr_benchmark_ticker_contract_remains_numeric_six_digit(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            benchmarks = [{"benchmarkKey": "KOSPI200", "benchmarkMarket": "KR", "benchmarkTicker": "0086C0"}]
+            input_dir = build_candidate_input(Path(temp_dir), benchmark_rows=benchmarks)
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("benchmark_ticker_identity_invalid", {issue["issueType"] for issue in result["issues"]})
+
     def test_unknown_duplicate_role_size_mismatch_and_output_inventory(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             input_dir = build_candidate_input(Path(temp_dir))

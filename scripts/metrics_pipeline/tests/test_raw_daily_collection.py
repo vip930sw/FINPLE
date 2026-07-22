@@ -13,6 +13,7 @@ import pandas as pd
 
 from scripts import build_us_price_metrics_overlay_chunked as us_builder
 from scripts import build_kr_price_metrics_overlay_chunked as kr_builder
+from scripts import combine_kr_price_metrics_chunks as kr_combiner
 from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows, prepare_inputs
 from scripts.raw_daily_price_chunks import (
     combine_raw_daily_chunks,
@@ -67,7 +68,7 @@ class RawDailyCollectionTests(unittest.TestCase):
         rows = extract_raw_daily_rows(
             data,
             market="KR",
-            ticker="5930",
+            ticker="005930",
             currency="KRW",
             retrieved_at="2026-07-23T00:00:00+00:00",
         )
@@ -107,6 +108,7 @@ class RawDailyCollectionTests(unittest.TestCase):
         cases = [(us_builder, "US"), (kr_builder, "KR")]
         for builder, market in cases:
             with self.subTest(market=market), tempfile.TemporaryDirectory() as temp_dir:
+                provider_calls: list[str] = []
                 root = Path(temp_dir)
                 input_path = root / "universe.csv"
                 with input_path.open("w", encoding="utf-8-sig", newline="") as handle:
@@ -116,12 +118,12 @@ class RawDailyCollectionTests(unittest.TestCase):
                     )
                     writer.writeheader()
                     for index in range(20):
-                        ticker = f"{index + 1:06d}" if market == "KR" else f"T{index:03d}"
+                        ticker = "0086C0" if market == "KR" and index == 18 else (f"{index + 1:06d}" if market == "KR" else f"T{index:03d}")
                         writer.writerow(
                             {
                                 "market": market,
                                 "ticker": ticker,
-                                "providerSymbol": f"{ticker}.KS" if market == "KR" else ticker,
+                                "providerSymbol": ticker,
                                 "assetType": "stock",
                                 "nameKr": "",
                             }
@@ -143,14 +145,61 @@ class RawDailyCollectionTests(unittest.TestCase):
                     "--checkpoint-every", "5",
                     "--retrieved-at", "2026-07-23T00:00:00+00:00",
                 ]
+                def fake_download(symbol, *_args, **_kwargs):
+                    provider_calls.append(symbol)
+                    if symbol == "0086C0.KS":
+                        return None
+                    return fake_history()
+
                 with mock.patch.object(builder, "pd", pd), mock.patch.object(builder, "yf", object()), mock.patch.object(
-                    builder, "download_history", side_effect=lambda *_args, **_kwargs: fake_history()
+                    builder, "download_history", side_effect=fake_download
                 ), mock.patch.object(sys, "argv", argv):
                     builder.main()
                 result = json.loads(summary.read_text(encoding="utf-8"))
                 self.assertEqual(result["processed_count"], 20)
                 self.assertEqual(result["raw_daily_asset_count"], 20)
-                self.assertEqual(len({(row["market"], row["ticker"]) for row in read_raw_daily_rows(raw)}), 20)
+                raw_rows = read_raw_daily_rows(raw)
+                self.assertEqual(len({(row["market"], row["ticker"]) for row in raw_rows}), 20)
+                if market == "KR":
+                    self.assertIn("0086C0.KS", provider_calls)
+                    self.assertIn("0086C0.KQ", provider_calls)
+                    self.assertIn("0086C0", {row["ticker"] for row in raw_rows})
+
+    def test_kr_candidate_symbols_preserve_numeric_and_alphanumeric_identity(self):
+        self.assertEqual(
+            kr_builder.candidate_symbols({"ticker": "005930", "providerSymbol": ""}),
+            ["005930.KS", "005930.KQ"],
+        )
+        self.assertEqual(
+            kr_builder.candidate_symbols({"ticker": "0086C0", "providerSymbol": "0086C0"}),
+            ["0086C0.KS", "0086C0.KQ"],
+        )
+        self.assertEqual(
+            kr_builder.candidate_symbols({"ticker": "005930", "providerSymbol": "005930.KQ"}),
+            ["005930.KQ", "005930.KS"],
+        )
+
+    def test_kr_raw_identity_is_exact_and_invalid_lengths_or_characters_are_rejected(self):
+        for ticker in ["005930", "0086C0"]:
+            with self.subTest(ticker=ticker):
+                rows = extract_raw_daily_rows(
+                    fake_history(),
+                    market="KR",
+                    ticker=ticker,
+                    currency="KRW",
+                    retrieved_at="2026-07-23T00:00:00+00:00",
+                )
+                self.assertEqual({row["ticker"] for row in rows}, {ticker})
+
+        for ticker in ["05930", "0005930", "00-930"]:
+            with self.subTest(ticker=ticker), self.assertRaisesRegex(ValueError, "invalid KR ticker identity"):
+                extract_raw_daily_rows(
+                    fake_history(),
+                    market="KR",
+                    ticker=ticker,
+                    currency="KRW",
+                    retrieved_at="2026-07-23T00:00:00+00:00",
+                )
 
     def test_us_100_asset_checkpoint_and_resume_uses_mock_provider(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -207,7 +256,7 @@ class RawDailyCollectionTests(unittest.TestCase):
     def test_market_chunk_combine_and_canonical_6000_reconciliation(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            for market, ticker, prefix in [("US", "AAA", "us"), ("KR", "005930", "kr")]:
+            for market, ticker, prefix in [("US", "AAA", "us"), ("KR", "0086C0", "kr")]:
                 rows = extract_raw_daily_rows(
                     fake_history(),
                     market=market,
@@ -229,7 +278,7 @@ class RawDailyCollectionTests(unittest.TestCase):
         with universe_path.open("r", encoding="utf-8-sig", newline="") as handle:
             universe = list(csv.DictReader(handle))
         kr_mapping = {
-            str(row["ticker"]).zfill(6): "KR_KOSPI"
+            str(row["ticker"]): "KR_KOSPI"
             for row in universe
             if row["market"] == "KR"
         }
@@ -241,6 +290,40 @@ class RawDailyCollectionTests(unittest.TestCase):
         self.assertEqual(review, [])
         self.assertEqual({row["isActive"] for row in candidates}, {""})
 
+    def test_kr_runtime_chunk_combine_preserves_alphanumeric_identity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            chunk = root / "kr_part0000.csv"
+            with chunk.open("w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=kr_combiner.RUNTIME_COLUMNS)
+                writer.writeheader()
+                writer.writerow({
+                    "market": "KR",
+                    "ticker": "0086C0",
+                    "expectedCagr": "",
+                    "priceCagr10y": "",
+                    "mdd": "",
+                    "beta": "",
+                    "dataYears": "",
+                    "benchmarkTicker": "069500",
+                    "metricsStatus": "review_required",
+                    "metricsSource": "mock",
+                    "reviewReason": "mock",
+                })
+            output = root / "combined.csv"
+            summary = root / "summary.json"
+            argv = [
+                "combine_kr_price_metrics_chunks.py",
+                "--pattern", str(root / "kr_part*.csv"),
+                "--out-runtime", str(output),
+                "--out-summary", str(summary),
+            ]
+            with mock.patch.object(sys, "argv", argv):
+                kr_combiner.main()
+            with output.open("r", encoding="utf-8-sig", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            self.assertEqual([row["ticker"] for row in rows], ["0086C0"])
+
     def test_prepared_source_declares_split_adjusted_price_return(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -251,7 +334,7 @@ class RawDailyCollectionTests(unittest.TestCase):
                 writer.writerows(
                     [
                         {"market": "US", "ticker": "AAA", "nameKr": "", "assetType": "stock"},
-                        {"market": "KR", "ticker": "5930", "nameKr": "", "assetType": "stock"},
+                        {"market": "KR", "ticker": "005930", "nameKr": "", "assetType": "stock"},
                     ]
                 )
             us_raw = root / "us_raw.csv"
@@ -265,7 +348,7 @@ class RawDailyCollectionTests(unittest.TestCase):
             write_raw_daily_rows(
                 kr_raw,
                 extract_raw_daily_rows(
-                    fake_history(), market="KR", ticker="5930", currency="KRW", retrieved_at="2026-07-23T00:00:00+00:00"
+                    fake_history(), market="KR", ticker="005930", currency="KRW", retrieved_at="2026-07-23T00:00:00+00:00"
                 ),
             )
             kr_metrics = root / "kr_metrics.csv"

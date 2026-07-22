@@ -20,7 +20,7 @@ from scripts.metrics_pipeline.candidate_package import (
     SUBMISSION_MANIFEST_CONTRACT_VERSION,
 )
 from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
-from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS
+from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
 
 
@@ -62,7 +62,9 @@ def sha256(path: Path) -> str:
 def benchmark_keys_from_kr_metrics(path: Path) -> dict[str, str]:
     mapping: dict[str, str] = {}
     for row in read_csv(path):
-        ticker = str(row.get("ticker", "")).strip().zfill(6)
+        ticker = str(row.get("ticker", "")).strip()
+        if not is_valid_kr_candidate_ticker(ticker):
+            raise ValueError(f"invalid KR metrics ticker identity: {ticker}")
         benchmark = str(row.get("benchmarkTicker", "")).strip()
         if benchmark in {"069500", "069500.KS", "^KS11"}:
             mapping[ticker] = "KR_KOSPI"
@@ -77,9 +79,9 @@ def build_candidate_rows(universe_rows: list[dict[str, str]], kr_benchmark_keys:
     seen: set[tuple[str, str]] = set()
     for source in universe_rows:
         market = str(source.get("market", "")).strip().upper()
-        ticker = str(source.get("ticker", "")).strip().upper()
-        if market == "KR":
-            ticker = ticker.zfill(6)
+        ticker = str(source.get("ticker", "")).strip()
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            raise ValueError(f"invalid canonical KR ticker identity: {ticker}")
         identity = (market, ticker)
         if identity in seen:
             raise ValueError(f"duplicate canonical market+ticker: {identity}")
@@ -136,9 +138,9 @@ def combine_market_raw_files(
                     raise ValueError(f"raw-daily header mismatch: {source_path}")
                 for row in reader:
                     market = str(row.get("market", "")).strip().upper()
-                    ticker = str(row.get("ticker", "")).strip().upper()
-                    if market == "KR":
-                        ticker = ticker.zfill(6)
+                    ticker = str(row.get("ticker", "")).strip()
+                    if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+                        raise ValueError(f"invalid raw KR ticker identity: {ticker}")
                     date_text = str(row.get("date", "")).strip()
                     if market != expected_market:
                         raise ValueError(f"unexpected market in {source_path}: {market}")

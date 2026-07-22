@@ -32,6 +32,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
+from scripts.metrics_pipeline.schemas import KR_CANDIDATE_TICKER_PATTERN
 from scripts.raw_daily_price_chunks import (
     extract_raw_daily_rows,
     history_series,
@@ -47,7 +48,7 @@ except Exception:  # pragma: no cover
     yf = None
 
 
-VALID_KR_TICKER_RE = re.compile(r"^\d{6}$")
+VALID_KR_TICKER_RE = re.compile(KR_CANDIDATE_TICKER_PATTERN)
 MIN_READY_YEARS = 3.0
 MIN_SHORT_HISTORY_YEARS = 1.0
 ABNORMAL_CAGR_THRESHOLD = 100.0
@@ -114,7 +115,7 @@ def normalize_market(value: object) -> str:
 
 
 def normalize_ticker(value: object) -> str:
-    return clean(value).upper().replace("\ufeff", "")
+    return clean(value).replace("\ufeff", "")
 
 
 def is_kr_candidate(row: dict[str, str]) -> bool:
@@ -143,26 +144,24 @@ def unique_kr_candidates(rows: Iterable[dict[str, str]]) -> list[dict[str, str]]
 
 def append_kr_suffixes(symbols: list[str], raw_ticker: str) -> None:
     ticker = normalize_ticker(raw_ticker)
-    if VALID_KR_TICKER_RE.match(ticker):
+    if VALID_KR_TICKER_RE.fullmatch(ticker):
         symbols.extend([f"{ticker}.KS", f"{ticker}.KQ"])
 
 
 def candidate_symbols(row: dict[str, str]) -> list[str]:
     """Return Yahoo Finance symbols to try.
 
-    Important: do not try plain numeric symbols such as 005930. Yahoo Finance
-    needs 005930.KS or 005930.KQ, and trying the plain value creates noisy 404
-    logs in Colab even when the later .KS/.KQ lookup succeeds.
+    Important: do not try plain KR symbols such as 005930 or 0086C0. Yahoo
+    Finance needs a .KS or .KQ suffix, and trying the plain value creates noisy
+    404 logs in Colab even when a later suffixed lookup succeeds.
     """
 
     ticker = normalize_ticker(row.get("ticker"))
-    provider = clean(row.get("providerSymbol")).upper()
+    provider = clean(row.get("providerSymbol"))
     symbols: list[str] = []
 
     if provider.endswith(".KS") or provider.endswith(".KQ"):
         symbols.append(provider)
-    else:
-        append_kr_suffixes(symbols, provider)
 
     append_kr_suffixes(symbols, ticker)
 

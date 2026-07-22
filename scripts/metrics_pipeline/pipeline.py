@@ -32,6 +32,7 @@ from .schemas import (
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
+    is_valid_kr_candidate_ticker,
 )
 from .rolling import PERCENTILE_METHOD, ROLLING_METRIC_VERSION, ROLLING_WINDOW_MONTHS, compute_rolling_price_metrics
 from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
@@ -375,8 +376,8 @@ def _validate_candidates(rows: list[dict[str, str]], config: PipelineConfig) -> 
         ticker = row.get("ticker", "")
         if market not in {"US", "KR"}:
             errors.append(f"Unsupported market: {market}")
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-            errors.append(f"Korean ticker not preserved as six-character string: {ticker}")
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            errors.append(f"Korean ticker not preserved as six-character uppercase alphanumeric string: {ticker}")
     return errors
 
 
@@ -424,8 +425,8 @@ def _validate_metric_output_rows(rows: list[dict[str, str]]) -> list[str]:
         if key in seen:
             errors.append(f"duplicate market/ticker output key: {key[0]} {key[1]}")
         seen.add(key)
-        if row.get("market") == "KR" and not (len(row.get("ticker", "")) == 6 and row.get("ticker", "").isdigit()):
-            errors.append(f"Korean ticker lost leading-zero format: {row.get('ticker', '')}")
+        if row.get("market") == "KR" and not is_valid_kr_candidate_ticker(row.get("ticker", "")):
+            errors.append(f"Korean ticker lost six-character uppercase alphanumeric identity: {row.get('ticker', '')}")
         p25 = _safe_optional_float(row.get("rollingCagr10yP25"))
         median = _safe_optional_float(row.get("rollingCagr10yMedian"))
         p75 = _safe_optional_float(row.get("rollingCagr10yP75"))

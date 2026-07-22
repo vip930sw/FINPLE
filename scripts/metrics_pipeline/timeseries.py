@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Iterable, Mapping
 
 from .config import CALCULATION_POLICY_VERSION, SCHEMA_VERSION
-from .schemas import RAW_DAILY_PRICE_COLUMNS
+from .schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 
 
 NORMALIZATION_VERSION = "timeseries-normalization-v1-step114-2b"
@@ -175,8 +175,8 @@ def _validate_daily_row(
     ticker = row.get("ticker", "")
     if market not in {"US", "KR"}:
         errors.append(("inconsistent_market_ticker_identifier", "Market must be US or KR."))
-    if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-        errors.append(("inconsistent_market_ticker_identifier", "KR tickers must remain six-character strings."))
+    if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+        errors.append(("inconsistent_market_ticker_identifier", "KR tickers must remain six-character uppercase alphanumeric strings."))
     if ticker != ticker.strip() or not ticker:
         errors.append(("inconsistent_market_ticker_identifier", "Ticker must be non-empty and trimmed."))
 

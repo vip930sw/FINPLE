@@ -31,6 +31,8 @@ from .schemas import (
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
+    is_valid_kr_benchmark_ticker,
+    is_valid_kr_candidate_ticker,
 )
 from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
 
@@ -508,7 +510,7 @@ def _safe_read_candidate_benchmark_map(path: Path, issues: list[dict[str, str]])
         if market not in {"US", "KR"}:
             _add_issue(issues, "benchmark_market_invalid", "critical", True, "benchmark_map", path.name, f"Unsupported benchmarkMarket {market}.")
             continue
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
+        if market == "KR" and not is_valid_kr_benchmark_ticker(ticker):
             _add_issue(issues, "benchmark_ticker_identity_invalid", "critical", True, "benchmark_map", path.name, "KR benchmarkTicker must preserve six digits.")
             continue
         if not ticker or ticker.strip() != ticker:
@@ -812,8 +814,8 @@ def _validate_raw_daily_candidate_rows(rows: list[dict[str, str]], config: Candi
             _add_issue(issues, "market_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Unsupported market {market}.")
         if market not in config.market_scope:
             _add_issue(issues, "raw_market_scope_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Raw row market outside configured scope: {market}.")
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"KR ticker must preserve leading zeros: {ticker}.")
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"KR ticker must preserve six-character uppercase alphanumeric identity: {ticker}.")
         if not ticker or ticker.strip() != ticker:
             _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Ticker must be non-empty and trimmed.")
         if _parse_date(date_text) is None:
