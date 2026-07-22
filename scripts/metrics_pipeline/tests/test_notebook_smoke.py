@@ -7,6 +7,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 NOTEBOOK_PATH = REPO_ROOT / "notebooks" / "FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb"
+US_COLLECTION_NOTEBOOK = REPO_ROOT / "notebooks" / "FINPLE_US_PRICE_METRICS_COLAB_step108_13.ipynb"
+KR_COLLECTION_NOTEBOOK = REPO_ROOT / "notebooks" / "FINPLE_KR_PRICE_METRICS_COLAB_step108_14.ipynb"
 
 
 class NotebookSmokeTests(unittest.TestCase):
@@ -94,6 +96,31 @@ class NotebookSmokeTests(unittest.TestCase):
         payload = NOTEBOOK_PATH.read_text(encoding="utf-8")
         for private_auth_prompt in ["GITHUB_TOKEN", "getpass(", "github_pat_"]:
             self.assertNotIn(private_auth_prompt, payload)
+
+    def test_existing_collection_notebooks_expose_raw_chunk_smoke_resume_and_combine(self):
+        for path, market in [(US_COLLECTION_NOTEBOOK, "us"), (KR_COLLECTION_NOTEBOOK, "kr")]:
+            with self.subTest(path=path.name):
+                notebook = json.loads(path.read_text(encoding="utf-8"))
+                self.assertEqual(notebook["nbformat"], 4)
+                payload = path.read_text(encoding="utf-8")
+                self.assertIn("--out-raw", payload)
+                self.assertIn("--limit', '20'", payload)
+                self.assertIn("range(0, ", payload)
+                self.assertIn("100", payload)
+                self.assertIn("--checkpoint-every", payload)
+                self.assertIn("--resume", payload)
+                self.assertIn("--raw-pattern", payload)
+                self.assertIn(f"{market}_raw_daily_prices.csv", payload)
+                self.assertNotIn("GITHUB_TOKEN", payload)
+
+    def test_one_click_prepares_existing_contract_and_keeps_review_only_flags(self):
+        payload = NOTEBOOK_PATH.read_text(encoding="utf-8")
+        self.assertIn("prepare_monthly_metrics_candidate_inputs.py", payload)
+        self.assertIn("internal_preview_review_only", payload)
+        self.assertIn("RUN_STEP114_2Y_INTERNAL_PREVIEW", payload)
+        self.assertIn("us_raw_daily_prices.csv", payload)
+        self.assertIn("kr_raw_daily_prices.csv", payload)
+        self.assertIn("kr_price_metrics_overlay.csv", payload)
 
 
 if __name__ == "__main__":

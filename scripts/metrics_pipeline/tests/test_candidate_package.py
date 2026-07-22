@@ -212,7 +212,10 @@ def candidate_csv_output_keys() -> list[str]:
         "normalizedMonthEndCsv",
         "monthlyReturnsCsv",
         "metricsOutputCsv",
+        "selectedMetricsCsv",
         "reviewRequiredCsv",
+        "usReviewOverlayCsv",
+        "krReviewOverlayCsv",
         "sourceAuditCsv",
         "timeseriesAuditCsv",
         "hashInventoryCsv",
@@ -656,6 +659,41 @@ class ProductionCandidatePackageTests(unittest.TestCase):
         for path in forbidden_files:
             if path.exists():
                 self.assertNotIn("run_finple_production_candidate_package", path.read_text(encoding="utf-8"))
+
+    def test_internal_preview_review_only_allows_truthful_unapproved_provenance(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            raw_rows = raw_daily_rows(
+                licenseStatus="review_required",
+                internalUseAllowed="review_required",
+                publicationAllowed="false",
+                publicationEligibility="review_required",
+                redistributionAllowed="false",
+            )
+            input_dir = build_candidate_input(
+                Path(temp_dir),
+                raw_rows=raw_rows,
+                source_patch={
+                    "returnBasis": "mixed_reference",
+                    "priceAdjustmentBasis": "mixed_explicit",
+                    "redistributionReviewStatus": "review_required",
+                    "appUseReviewStatus": "review_required",
+                },
+            )
+            result = run_candidate(
+                input_dir,
+                Path(temp_dir) / "out",
+                internal_preview_review_only=True,
+            )
+            self.assertTrue(result["candidatePackageReady"])
+            self.assertTrue(result["internalPreviewReviewOnly"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
+            self.assertGreater(result["warningIssueCount"], 0)
+            self.assertEqual(result["blockingIssueCount"], 0)
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertEqual({row["dataStatus"] for row in normalized}, {"normalized_candidate_review"})
 
     def test_committed_fixture_cannot_be_reclassified_as_candidate(self):
         with tempfile.TemporaryDirectory() as temp_dir:

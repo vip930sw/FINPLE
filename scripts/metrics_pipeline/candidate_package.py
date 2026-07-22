@@ -27,7 +27,9 @@ from .schemas import (
     MONTHLY_RETURNS_COLUMNS,
     NORMALIZED_MONTH_END_COLUMNS,
     RAW_DAILY_PRICE_COLUMNS,
+    REVIEW_OVERLAY_COLUMNS,
     REVIEW_REQUIRED_COLUMNS,
+    SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
 )
 from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
@@ -90,6 +92,7 @@ class CandidatePackageConfig:
     source_declaration_file: str = DEFAULT_FILENAMES["source_declaration"]
     operator_submission_manifest_file: str = DEFAULT_FILENAMES["operator_submission_manifest"]
     validation_date: date = date.today()
+    internal_preview_review_only: bool = False
 
     @property
     def selected_cagr_policy(self) -> str:
@@ -112,7 +115,7 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
     """Build an offline review-only production data candidate package.
 
     This entry point intentionally does not call external providers and never
-    returns productionPublishReady/appExportApproved=true.
+    never enables productionPublishReady or appExportApproved.
     """
     if not config:
         return _idle_result(["candidate inputs missing"])
@@ -192,6 +195,12 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
             raw_daily_rows,
             source_file_name=paths["raw_daily_price"].name,
             source_sha256=source_sha,
+            allow_review_only_provenance=package_config.internal_preview_review_only,
+            normalized_data_status=(
+                "normalized_candidate_review"
+                if package_config.internal_preview_review_only
+                else "normalized_fixture"
+            ),
         )
     except Exception as exc:  # noqa: BLE001 - normalization remains fail-closed for operator input.
         _add_issue(issues, "normalization_failed", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, str(exc))
@@ -200,11 +209,15 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
     timeseries_audit_rows = list(normalized["auditRows"])
     for row in timeseries_audit_rows:
         if row.get("blocksPublication") == "true":
+            review_only_provenance = (
+                package_config.internal_preview_review_only
+                and row.get("issueType") == "invalid_provenance_publication_policy"
+            )
             _add_issue(
                 issues,
                 row.get("issueType", "timeseries_block"),
-                row.get("severity", "critical"),
-                True,
+                "warning" if review_only_provenance else row.get("severity", "critical"),
+                not review_only_provenance,
                 "raw_daily_price",
                 paths["raw_daily_price"].name,
                 row.get("reviewReason", "Time-series normalization blocked this candidate."),
@@ -246,10 +259,18 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
             source_hash=normalized_hash_by_identity.get(identity, ""),
             raw_source_sha256=source_sha,
         )
-        metrics_row["sourcePolicy"] = "manual_operator_upload_candidate_review_only"
+        metrics_row["sourcePolicy"] = (
+            "internal_preview_review_only_unapproved_provenance"
+            if package_config.internal_preview_review_only
+            else "manual_operator_upload_candidate_review_only"
+        )
         if metrics_row.get("betaPolicy") == "fixture_aligned_monthly_returns":
             metrics_row["betaPolicy"] = "candidate_aligned_monthly_returns"
-        metrics_row["notes"] = "Step 114-2M offline production data candidate; review-only and not app-export-approved."
+        metrics_row["notes"] = (
+            "Step 114-2Y internal Preview candidate; license/publication review required; not production-publish-ready or app-export-approved."
+            if package_config.internal_preview_review_only
+            else "Step 114-2M offline production data candidate; review-only and not app-export-approved."
+        )
         for return_row in candidate_returns:
             return_row["dataStatus"] = return_row.get("dataStatus", "").replace("fixture", "candidate")
         full_rows.append(metrics_row)
@@ -302,6 +323,7 @@ def _load_candidate_config(config: Mapping[str, Any]) -> CandidatePackageConfig:
         source_declaration_file=str(config.get("source_declaration_file", DEFAULT_FILENAMES["source_declaration"])),
         operator_submission_manifest_file=str(config.get("operator_submission_manifest_file", DEFAULT_FILENAMES["operator_submission_manifest"])),
         validation_date=parsed_validation_date,
+        internal_preview_review_only=bool(config.get("internal_preview_review_only", False)),
     )
 
 
@@ -338,6 +360,7 @@ def _blocked_result(config: CandidatePackageConfig, paths: Mapping[str, Path], i
         "candidatePackageReady": False,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
         "warningIssueCount": 0,
         "issues": issues,
@@ -358,6 +381,7 @@ def _blocked_no_write_result(
         "candidatePackageReady": False,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": "",
@@ -384,6 +408,7 @@ def _candidate_result(
         "candidatePackageReady": ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": readiness.get("candidatePackageHash", ""),
@@ -413,7 +438,10 @@ def _output_paths(config: CandidatePackageConfig) -> dict[str, Path]:
         "normalizedMonthEndCsv": config.output_dir / f"finple_candidate_normalized_month_end_{version}.csv",
         "monthlyReturnsCsv": config.output_dir / f"finple_candidate_monthly_returns_{version}.csv",
         "metricsOutputCsv": config.output_dir / f"finple_candidate_metrics_output_{version}.csv",
+        "selectedMetricsCsv": config.output_dir / f"finple_candidate_selected_metrics_{version}.csv",
         "reviewRequiredCsv": config.output_dir / f"finple_candidate_review_required_{version}.csv",
+        "usReviewOverlayCsv": config.output_dir / f"finple_candidate_review_overlay_us_{version}.csv",
+        "krReviewOverlayCsv": config.output_dir / f"finple_candidate_review_overlay_kr_{version}.csv",
         "sourceAuditCsv": config.output_dir / f"finple_candidate_source_audit_{version}.csv",
         "timeseriesAuditCsv": config.output_dir / f"finple_candidate_timeseries_audit_{version}.csv",
         "auditHtml": config.output_dir / f"finple_candidate_audit_{version}.html",
@@ -583,18 +611,40 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
     if source.get("rowCount") != len(raw_rows):
         _add_issue(issues, "source_row_count_mismatch", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, "source declaration rowCount mismatch.")
     if source.get("redistributionReviewStatus") not in {"approved", "allowed", "reviewed_approved"}:
-        _add_issue(issues, "redistribution_review_not_approved", "critical", True, "source_declaration", "source_declaration.json", "Redistribution review is not approved.")
+        _add_issue(
+            issues,
+            "redistribution_review_not_approved",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "source_declaration",
+            "source_declaration.json",
+            "Redistribution review is not approved; internal Preview remains review-only.",
+        )
     if source.get("appUseReviewStatus") not in {"approved", "allowed", "reviewed_approved"}:
-        _add_issue(issues, "app_use_review_not_approved", "critical", True, "source_declaration", "source_declaration.json", "App-use review is not approved.")
+        _add_issue(
+            issues,
+            "app_use_review_not_approved",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "source_declaration",
+            "source_declaration.json",
+            "App-use review is not approved; internal Preview remains review-only.",
+        )
     if source.get("timezone") not in {"Asia/Seoul", "America/New_York", "UTC"}:
         _add_issue(issues, "timezone_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported timezone.")
     if tuple(_normalize_market_scope(source.get("marketScope"))) != config.market_scope:
         _add_issue(issues, "market_scope_mismatch", "critical", True, "source_declaration", "source_declaration.json", "Source marketScope must match config.market_scope exactly.")
     if source.get("currencyMode") not in {"KRW", "USD", "mixed"}:
         _add_issue(issues, "currency_mode_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported currencyMode.")
-    if source.get("returnBasis") not in {"price_return", "total_return"}:
+    allowed_return_bases = {"price_return", "total_return"}
+    if config.internal_preview_review_only:
+        allowed_return_bases.add("mixed_reference")
+    if source.get("returnBasis") not in allowed_return_bases:
         _add_issue(issues, "return_basis_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported returnBasis.")
-    if source.get("priceAdjustmentBasis") not in {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}:
+    allowed_adjustment_bases = {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}
+    if config.internal_preview_review_only:
+        allowed_adjustment_bases.add("mixed_explicit")
+    if source.get("priceAdjustmentBasis") not in allowed_adjustment_bases:
         _add_issue(issues, "price_adjustment_basis_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported priceAdjustmentBasis.")
     if source.get("returnBasis") == "price_return" and source.get("priceAdjustmentBasis") == "total_return_adjusted":
         _add_issue(issues, "return_basis_adjustment_incompatible", "critical", True, "source_declaration", "source_declaration.json", "price_return cannot use total_return_adjusted price basis.")
@@ -709,7 +759,15 @@ def _validate_candidate_csv(rows: list[dict[str, str]], config: CandidatePackage
         if row.get("market", "") not in config.market_scope:
             _add_issue(issues, "candidate_market_scope_mismatch", "critical", True, "candidate_asset_master", config.candidate_asset_master_file, f"Candidate market outside configured scope: {row.get('market', '')}.")
         if not row.get("benchmarkKey"):
-            _add_issue(issues, "candidate_asset_master_invalid", "critical", True, "candidate_asset_master", config.candidate_asset_master_file, "Missing benchmarkKey.")
+            _add_issue(
+                issues,
+                "candidate_asset_master_invalid",
+                "warning" if config.internal_preview_review_only else "critical",
+                not config.internal_preview_review_only,
+                "candidate_asset_master",
+                config.candidate_asset_master_file,
+                "Missing benchmarkKey; asset remains in internal Preview review output.",
+            )
 
 
 def _validate_benchmark_contract(
@@ -765,18 +823,23 @@ def _validate_raw_daily_candidate_rows(rows: list[dict[str, str]], config: Candi
                 raise ValueError
         except ValueError:
             _add_issue(issues, "price_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "close must be positive.")
-        if row.get("priceAdjustmentBasis") != source.get("priceAdjustmentBasis"):
+        source_basis = source.get("priceAdjustmentBasis")
+        row_basis = row.get("priceAdjustmentBasis")
+        mixed_explicit = config.internal_preview_review_only and source_basis == "mixed_explicit"
+        if (mixed_explicit and row_basis not in {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}) or (
+            not mixed_explicit and row_basis != source_basis
+        ):
             _add_issue(issues, "price_adjustment_basis_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row priceAdjustmentBasis must match source declaration.")
         if source.get("currencyMode") in {"KRW", "USD"} and row.get("currency") != source.get("currencyMode"):
             _add_issue(issues, "currency_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row currency must match source currencyMode.")
         if row.get("licenseStatus") != "approved":
-            _add_issue(issues, "license_status_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "licenseStatus must be approved.")
+            _add_issue(issues, "license_status_invalid", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "licenseStatus is not approved; internal Preview remains review-only.")
         if row.get("internalUseAllowed") != "true":
-            _add_issue(issues, "internal_use_not_allowed", "critical", True, "raw_daily_price", config.raw_daily_price_file, "internalUseAllowed must be true.")
+            _add_issue(issues, "internal_use_not_allowed", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "internalUseAllowed is not approved; internal Preview remains review-only.")
         if row.get("publicationAllowed") != "true":
-            _add_issue(issues, "publication_not_allowed", "critical", True, "raw_daily_price", config.raw_daily_price_file, "publicationAllowed must be true for candidate review output.")
+            _add_issue(issues, "publication_not_allowed", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "publicationAllowed is false; production publication remains blocked.")
         if row.get("publicationEligibility") != "approved":
-            _add_issue(issues, "publication_eligibility_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "publicationEligibility must be approved.")
+            _add_issue(issues, "publication_eligibility_invalid", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "publicationEligibility requires review; production publication remains blocked.")
         if row.get("redistributionAllowed") != "true":
             _add_issue(issues, "redistribution_restricted_review_only", "warning", False, "raw_daily_price", config.raw_daily_price_file, "Redistribution is restricted; package remains candidate review-only.")
 
@@ -808,7 +871,15 @@ def _validate_scope_reconciliation(
     raw_identities = {(row.get("market", ""), row.get("ticker", "")) for row in raw_rows}
     missing_candidate_prices = candidate_identities.difference(raw_identities)
     for identity in sorted(missing_candidate_prices):
-        _add_issue(issues, "candidate_raw_identity_missing", "critical", True, "raw_daily_price", "", f"No raw rows for candidate {identity[0]}:{identity[1]}.")
+        _add_issue(
+            issues,
+            "candidate_raw_identity_missing",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "raw_daily_price",
+            "",
+            f"No raw rows for candidate {identity[0]}:{identity[1]}; asset remains review-required.",
+        )
 
 
 def _write_candidate_outputs(
@@ -830,7 +901,20 @@ def _write_candidate_outputs(
     _write_candidate_csv(output_paths["normalizedMonthEndCsv"], NORMALIZED_MONTH_END_COLUMNS, normalized_rows)
     _write_candidate_csv(output_paths["monthlyReturnsCsv"], MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
     _write_candidate_csv(output_paths["metricsOutputCsv"], FULL_METRICS_COLUMNS, full_rows)
+    selected_rows = [{column: row.get(column, "") for column in SELECTED_COLUMNS} for row in full_rows]
+    _write_candidate_csv(output_paths["selectedMetricsCsv"], SELECTED_COLUMNS, selected_rows)
     _write_candidate_csv(output_paths["reviewRequiredCsv"], REVIEW_REQUIRED_COLUMNS, review_rows)
+    overlay_rows = _candidate_review_overlay_rows(full_rows, package_config)
+    _write_candidate_csv(
+        output_paths["usReviewOverlayCsv"],
+        REVIEW_OVERLAY_COLUMNS,
+        [row for row in overlay_rows if row.get("market") == "US"],
+    )
+    _write_candidate_csv(
+        output_paths["krReviewOverlayCsv"],
+        REVIEW_OVERLAY_COLUMNS,
+        [row for row in overlay_rows if row.get("market") == "KR"],
+    )
     _write_candidate_csv(output_paths["sourceAuditCsv"], SOURCE_AUDIT_COLUMNS, source_audit_rows)
     _write_candidate_csv(output_paths["timeseriesAuditCsv"], TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
     _write_audit_html(output_paths["auditHtml"], source_audit_rows, candidate_package_ready, package_config.validation_date)
@@ -843,7 +927,10 @@ def _write_candidate_outputs(
         output_paths["normalizedMonthEndCsv"],
         output_paths["monthlyReturnsCsv"],
         output_paths["metricsOutputCsv"],
+        output_paths["selectedMetricsCsv"],
         output_paths["reviewRequiredCsv"],
+        output_paths["usReviewOverlayCsv"],
+        output_paths["krReviewOverlayCsv"],
         output_paths["sourceAuditCsv"],
         output_paths["timeseriesAuditCsv"],
         output_paths["auditHtml"],
@@ -893,6 +980,7 @@ def _write_candidate_outputs(
         "candidatePackageReady": candidate_package_ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": package_config.internal_preview_review_only,
         "externalProviderCalls": False,
         "sourceKind": source_declaration.get("sourceKind", ""),
         "sourceName": source_declaration.get("sourceName", ""),
@@ -917,6 +1005,7 @@ def _write_candidate_outputs(
         "candidatePackageReady": candidate_package_ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": package_config.internal_preview_review_only,
         "blockingIssueCount": blocking_count,
         "warningIssueCount": warning_count,
         "notProductionApproval": True,
@@ -947,7 +1036,10 @@ def _write_candidate_outputs(
             output_paths["normalizedMonthEndCsv"],
             output_paths["monthlyReturnsCsv"],
             output_paths["metricsOutputCsv"],
+            output_paths["selectedMetricsCsv"],
             output_paths["reviewRequiredCsv"],
+            output_paths["usReviewOverlayCsv"],
+            output_paths["krReviewOverlayCsv"],
             output_paths["sourceAuditCsv"],
             output_paths["timeseriesAuditCsv"],
             output_paths["auditHtml"],
@@ -955,6 +1047,65 @@ def _write_candidate_outputs(
             output_paths["packageIndexJson"],
         ],
     )
+
+
+def _candidate_review_overlay_rows(
+    full_rows: list[dict[str, str]],
+    config: CandidatePackageConfig,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for row in sorted(full_rows, key=lambda item: (item.get("market", ""), item.get("ticker", ""))):
+        review_reason = row.get("reviewReason", "")
+        candidate_note = "Step 114-2Y internal Preview candidate; production publication and app export remain blocked."
+        review_reason = f"{review_reason}; {candidate_note}" if review_reason else candidate_note
+        rows.append(
+            {
+                "market": row.get("market", ""),
+                "ticker": row.get("ticker", ""),
+                "expectedCagr": row.get("selectedCagr", ""),
+                "priceCagr10y": row.get("rawPriceCagr10y", ""),
+                "mdd": row.get("selectedMdd", ""),
+                "beta": row.get("selectedBeta", ""),
+                "dataYears": row.get("dataYears", ""),
+                "benchmarkTicker": row.get("benchmarkTicker", ""),
+                "metricsStatus": "review_only",
+                "metricsSource": f"step114-2y_candidate:{PIPELINE_VERSION}",
+                "reviewReason": review_reason,
+                "metricBaseDate": config.metric_base_date,
+                "reviewOverlayDate": config.validation_date.isoformat(),
+                "overlayStatus": "internal_preview_review_only",
+                "fixturePackageReady": "false",
+                "productionPublishReady": "false",
+                "appExportApproved": "false",
+                "selectedCagr": row.get("selectedCagr", ""),
+                "rawPriceCagr10y": row.get("rawPriceCagr10y", ""),
+                "rollingCagr10yMedian": row.get("rollingCagr10yMedian", ""),
+                "rollingCagr10yP25": row.get("rollingCagr10yP25", ""),
+                "rollingCagr10yP75": row.get("rollingCagr10yP75", ""),
+                "validRollingWindowCount10y": row.get("validRollingWindowCount10y", ""),
+                "rollingCagr5yMedian": row.get("rollingCagr5yMedian", ""),
+                "rollingCagr5yP25": row.get("rollingCagr5yP25", ""),
+                "rollingCagr5yP75": row.get("rollingCagr5yP75", ""),
+                "validRollingWindowCount5y": row.get("validRollingWindowCount5y", ""),
+                "selectedMdd": row.get("selectedMdd", ""),
+                "mddFullPeriod": row.get("mddFullPeriod", ""),
+                "selectedBeta": row.get("selectedBeta", ""),
+                "dividendYield": row.get("dividendYield", ""),
+                "dividendStatus": row.get("dividendStatus", ""),
+                "dataStatus": row.get("dataStatus", ""),
+                "reviewFlag": "review_required",
+                "cagrPolicy": row.get("cagrPolicy", ""),
+                "normalizationPolicy": row.get("normalizationPolicy", ""),
+                "sourcePolicy": row.get("sourcePolicy", ""),
+                "sourceHash": row.get("sourceHash", ""),
+                "rawSourceSha256": row.get("rawSourceSha256", ""),
+                "normalizationVersion": row.get("normalizationVersion", ""),
+                "normalizedSeriesHash": row.get("normalizedSeriesHash", ""),
+                "rollingMetricVersion": row.get("rollingMetricVersion", ""),
+                "notes": row.get("notes", ""),
+            }
+        )
+    return rows
 
 
 def _write_audit_html(path: Path, issues: list[dict[str, str]], candidate_ready: bool, validation_date: date) -> None:
@@ -1012,7 +1163,10 @@ def _build_package_index(output_paths: Mapping[str, Path]) -> dict[str, Any]:
         output_paths["normalizedMonthEndCsv"],
         output_paths["monthlyReturnsCsv"],
         output_paths["metricsOutputCsv"],
+        output_paths["selectedMetricsCsv"],
         output_paths["reviewRequiredCsv"],
+        output_paths["usReviewOverlayCsv"],
+        output_paths["krReviewOverlayCsv"],
         output_paths["sourceAuditCsv"],
         output_paths["timeseriesAuditCsv"],
         output_paths["auditHtml"],

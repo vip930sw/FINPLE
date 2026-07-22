@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from scripts.raw_daily_price_chunks import combine_raw_daily_chunks
+
 RUNTIME_COLUMNS = [
     "market",
     "ticker",
@@ -37,6 +39,8 @@ def main() -> None:
     parser.add_argument("--pattern", required=True)
     parser.add_argument("--out-runtime", required=True)
     parser.add_argument("--out-summary", required=True)
+    parser.add_argument("--raw-pattern", help="Glob for non-overlapping KR RAW_DAILY_PRICE_COLUMNS chunks.")
+    parser.add_argument("--out-raw", help="Combined KR raw-daily CSV path.")
     args = parser.parse_args()
 
     files = sorted([path for path in glob.glob(args.pattern) if "_audit" not in path])
@@ -67,6 +71,10 @@ def main() -> None:
         "blank_cagr_count": int(df["expectedCagr"].isna().sum() + (df["expectedCagr"].astype(str).str.strip() == "").sum()),
         "blank_beta_count": int(df["beta"].isna().sum() + (df["beta"].astype(str).str.strip() == "").sum()),
     }
+    if bool(args.raw_pattern) != bool(args.out_raw):
+        raise SystemExit("--raw-pattern and --out-raw must be provided together")
+    if args.raw_pattern and args.out_raw:
+        summary.update(combine_raw_daily_chunks(args.raw_pattern, Path(args.out_raw), "KR"))
 
     out_summary = Path(args.out_summary)
     out_summary.parent.mkdir(parents=True, exist_ok=True)

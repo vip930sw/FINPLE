@@ -24,6 +24,8 @@ def normalize_daily_price_rows(
     *,
     source_file_name: str,
     source_sha256: str,
+    allow_review_only_provenance: bool = False,
+    normalized_data_status: str = "normalized_fixture",
 ) -> dict[str, object]:
     audit_rows: list[dict[str, str]] = []
     normalized_rows: list[dict[str, str]] = []
@@ -52,6 +54,7 @@ def normalize_daily_price_rows(
     currencies_by_series: dict[tuple[str, str], set[str]] = defaultdict(set)
     basis_by_series: dict[tuple[str, str], set[str]] = defaultdict(set)
     blocked_series: set[tuple[str, str]] = set()
+    provenance_review_series: set[tuple[str, str]] = set()
 
     for row in rows:
         series_key = (row.get("market", ""), row.get("ticker", ""))
@@ -75,9 +78,20 @@ def normalize_daily_price_rows(
             )
         previous_by_series[series_key] = row_date
 
-        row_errors = _validate_daily_row(row)
+        row_errors = _validate_daily_row(row, allow_review_only_provenance=allow_review_only_provenance)
         for issue_type, reason in row_errors:
             audit_rows.append(_audit_row(row, issue_type, "critical", True, reason))
+        if allow_review_only_provenance and _has_review_only_provenance(row) and series_key not in provenance_review_series:
+            provenance_review_series.add(series_key)
+            audit_rows.append(
+                _audit_row(
+                    row,
+                    "invalid_provenance_publication_policy",
+                    "warning",
+                    True,
+                    "Unknown or false publication licensing is retained as review-only internal Preview evidence.",
+                )
+            )
 
         if _has_corporate_action(row):
             if key in action_dates:
@@ -135,7 +149,7 @@ def normalize_daily_price_rows(
             )
 
     publishable_valid_rows = [row for row in valid_rows if (row["market"], row["ticker"]) not in blocked_series]
-    normalized_rows.extend(_normalize_month_ends(publishable_valid_rows, audit_rows))
+    normalized_rows.extend(_normalize_month_ends(publishable_valid_rows, audit_rows, normalized_data_status))
     action_summary = _corporate_action_summary(valid_rows)
     return _result(normalized_rows, audit_rows + action_summary, source_file_name, source_sha256, rows)
 
@@ -151,7 +165,11 @@ def classify_price_series(row: Mapping[str, str]) -> str:
     return "ambiguous"
 
 
-def _validate_daily_row(row: Mapping[str, str]) -> list[tuple[str, str]]:
+def _validate_daily_row(
+    row: Mapping[str, str],
+    *,
+    allow_review_only_provenance: bool = False,
+) -> list[tuple[str, str]]:
     errors: list[tuple[str, str]] = []
     market = row.get("market", "")
     ticker = row.get("ticker", "")
@@ -191,7 +209,9 @@ def _validate_daily_row(row: Mapping[str, str]) -> list[tuple[str, str]]:
     license_status = row.get("licenseStatus", "")
     publication_allowed = row.get("publicationAllowed", "")
     publication_eligibility = row.get("publicationEligibility", "")
-    if license_status != "approved" or publication_allowed != "true" or publication_eligibility != "approved":
+    if not allow_review_only_provenance and (
+        license_status != "approved" or publication_allowed != "true" or publication_eligibility != "approved"
+    ):
         errors.append(
             (
                 "invalid_provenance_publication_policy",
@@ -217,7 +237,21 @@ def _row_is_normalizable(row: Mapping[str, str], errors: list[tuple[str, str]], 
     return classification != "ambiguous" and not any(issue_type in blocking for issue_type, _ in errors)
 
 
-def _normalize_month_ends(rows: Iterable[dict[str, str]], audit_rows: list[dict[str, str]]) -> list[dict[str, str]]:
+def _has_review_only_provenance(row: Mapping[str, str]) -> bool:
+    return (
+        row.get("licenseStatus", "") != "approved"
+        or row.get("publicationAllowed", "") != "true"
+        or row.get("publicationEligibility", "") != "approved"
+        or row.get("internalUseAllowed", "") != "true"
+        or row.get("redistributionAllowed", "") != "true"
+    )
+
+
+def _normalize_month_ends(
+    rows: Iterable[dict[str, str]],
+    audit_rows: list[dict[str, str]],
+    data_status: str,
+) -> list[dict[str, str]]:
     by_series_month: dict[tuple[str, str, str], dict[str, str]] = {}
     dates_by_series: dict[tuple[str, str], list[str]] = defaultdict(list)
     for row in rows:
@@ -250,7 +284,7 @@ def _normalize_month_ends(rows: Iterable[dict[str, str]], audit_rows: list[dict[
                 "priceAdjustmentBasis": row.get("priceAdjustmentBasis", ""),
                 "priceSeriesClassification": classify_price_series(row),
                 "publicationEligibility": row.get("publicationEligibility", ""),
-                "dataStatus": "normalized_fixture",
+                "dataStatus": data_status,
                 "normalizationVersion": NORMALIZATION_VERSION,
             }
         )

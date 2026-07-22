@@ -41,9 +41,16 @@ import re
 import sys
 import time
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable
+
+from scripts.raw_daily_price_chunks import (
+    extract_raw_daily_rows,
+    history_series,
+    read_raw_daily_rows,
+    write_raw_daily_rows,
+)
 
 try:
     import pandas as pd
@@ -165,19 +172,32 @@ def blank_result(candidate: dict[str, str], source_tag: str, reason: str) -> Pri
     )
 
 
-def download_close(symbol: str, start: str, end: str) -> "pd.Series | None":
+def download_history(symbol: str, start: str, end: str):
     if yf is None or pd is None:
         return None
-    data = yf.download(symbol, start=start, end=end, auto_adjust=False, progress=False, threads=False)
+    data = yf.download(
+        symbol,
+        start=start,
+        end=end,
+        auto_adjust=False,
+        actions=True,
+        progress=False,
+        threads=False,
+    )
     if data is None or data.empty:
         return None
 
-    close = data.get("Close")
+    return data
+
+
+def download_close(symbol: str, start: str, end: str) -> "pd.Series | None":
+    data = download_history(symbol, start, end)
+    if data is None:
+        return None
+
+    close = history_series(data, "Close")
     if close is None:
         return None
-    if hasattr(close, "columns"):
-        # yfinance may return a DataFrame for a single symbol under newer versions.
-        close = close.iloc[:, 0]
     close = close.dropna()
     return close if not close.empty else None
 
@@ -244,24 +264,43 @@ def decide_status(cagr: float | None, mdd: float | None, beta: float | None, dat
     return "ready", ""
 
 
-def build_result(candidate: dict[str, str], source_tag: str, start: str, end: str, benchmark_close: "pd.Series", sleep_seconds: float) -> PriceMetricsResult:
+def build_result(
+    candidate: dict[str, str],
+    source_tag: str,
+    start: str,
+    end: str,
+    benchmark_close: "pd.Series",
+    sleep_seconds: float,
+    retrieved_at: str,
+) -> tuple[PriceMetricsResult, list[dict[str, str]]]:
     ticker = normalize_ticker(candidate.get("ticker"))
     symbol = clean(candidate.get("yfSymbol"))
     asset_type = clean(candidate.get("assetType"))
 
     if not symbol or not VALID_YF_SYMBOL_RE.match(symbol):
-        return blank_result(candidate, source_tag, f"invalid yfinance symbol: {symbol}")
+        return blank_result(candidate, source_tag, f"invalid yfinance symbol: {symbol}"), []
 
     try:
-        close = download_close(symbol, start=start, end=end)
+        history = download_history(symbol, start=start, end=end)
     except Exception as exc:
-        return blank_result(candidate, source_tag, f"yfinance exception: {type(exc).__name__}: {exc}")
+        return blank_result(candidate, source_tag, f"yfinance exception: {type(exc).__name__}: {exc}"), []
     finally:
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
 
+    close = history_series(history, "Close") if history is not None else None
+    if close is not None:
+        close = close.dropna()
     if close is None or close.empty:
-        return blank_result(candidate, source_tag, "missing close price data")
+        return blank_result(candidate, source_tag, "missing close price data"), []
+
+    raw_rows = extract_raw_daily_rows(
+        history,
+        market="US",
+        ticker=ticker,
+        currency="USD",
+        retrieved_at=retrieved_at,
+    )
 
     cagr, data_years, start_date, end_date, first_close, latest_close = calculate_cagr(close)
     mdd = calculate_mdd(close)
@@ -290,10 +329,18 @@ def build_result(candidate: dict[str, str], source_tag: str, start: str, end: st
         firstClose=fmt(first_close),
         latestClose=fmt(latest_close),
         observations=int(len(close)),
-    )
+    ), raw_rows
 
 
-def build_summary(results: list[PriceMetricsResult], start_index: int, limit: int, total_candidates: int, as_of: date) -> dict[str, object]:
+def build_summary(
+    results: list[PriceMetricsResult],
+    start_index: int,
+    limit: int,
+    total_candidates: int,
+    as_of: date,
+    raw_rows: list[dict[str, str]] | None = None,
+) -> dict[str, object]:
+    raw_rows = raw_rows or []
     return {
         "as_of": as_of.isoformat(),
         "start": start_index,
@@ -306,10 +353,21 @@ def build_summary(results: list[PriceMetricsResult], start_index: int, limit: in
         "blank_cagr_count": sum(1 for item in results if item.expectedCagr == ""),
         "blank_beta_count": sum(1 for item in results if item.beta == ""),
         "benchmarkTicker": BENCHMARK_TICKER,
+        "raw_daily_row_count": len(raw_rows),
+        "raw_daily_asset_count": len({(row["market"], row["ticker"]) for row in raw_rows}),
     }
 
 
-def save_outputs(results: list[PriceMetricsResult], out_runtime: Path, out_audit: Path, out_summary: Path, summary: dict[str, object]) -> None:
+def save_outputs(
+    results: list[PriceMetricsResult],
+    out_runtime: Path,
+    out_audit: Path,
+    out_summary: Path,
+    summary: dict[str, object],
+    *,
+    out_raw: Path | None = None,
+    raw_rows: list[dict[str, str]] | None = None,
+) -> None:
     audit_rows = [asdict(item) for item in results]
     audit_fields = list(asdict(results[0]).keys()) if results else [
         "market", "ticker", "yfSymbol", "assetType", "expectedCagr", "priceCagr10y", "mdd", "beta",
@@ -326,6 +384,8 @@ def save_outputs(results: list[PriceMetricsResult], out_runtime: Path, out_audit
     write_csv(out_audit, audit_rows, audit_fields)
     out_summary.parent.mkdir(parents=True, exist_ok=True)
     out_summary.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if out_raw is not None:
+        write_raw_daily_rows(out_raw, raw_rows or [])
 
 
 def main() -> None:
@@ -334,12 +394,15 @@ def main() -> None:
     parser.add_argument("--out-runtime", required=True)
     parser.add_argument("--out-audit", required=True)
     parser.add_argument("--out-summary", required=True)
+    parser.add_argument("--out-raw", help="RAW_DAILY_PRICE_COLUMNS chunk output.")
     parser.add_argument("--as-of", default=date.today().isoformat())
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--checkpoint-every", type=int, default=25)
     parser.add_argument("--sleep", type=float, default=0.0)
     parser.add_argument("--years", type=int, default=10)
+    parser.add_argument("--resume", action="store_true", help="Resume from existing audit/raw checkpoint files.")
+    parser.add_argument("--retrieved-at", default="", help="ISO timestamp recorded in raw provenance rows.")
     args = parser.parse_args()
 
     if yf is None or pd is None:
@@ -349,6 +412,7 @@ def main() -> None:
     start_date = date(as_of.year - args.years, as_of.month, as_of.day).isoformat()
     end_date = as_of.isoformat()
     source_tag = f"yfinance_close_price_{as_of.strftime('%Y%m%d')}"
+    retrieved_at = args.retrieved_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     rows = read_csv(Path(args.input))
     all_candidates = unique_us_candidates(rows)
@@ -362,25 +426,51 @@ def main() -> None:
     if benchmark_close is None or benchmark_close.empty:
         raise SystemExit("Unable to download benchmark close series for SPY")
 
-    results: list[PriceMetricsResult] = []
     out_runtime = Path(args.out_runtime)
     out_audit = Path(args.out_audit)
     out_summary = Path(args.out_summary)
+    out_raw = Path(args.out_raw) if args.out_raw else None
+    results: list[PriceMetricsResult] = []
+    raw_rows: list[dict[str, str]] = []
+    if args.resume and out_raw is not None and out_audit.exists() != out_raw.exists():
+        raise SystemExit("Resume requires matching audit and raw-daily checkpoint files.")
+    if args.resume and out_audit.exists():
+        for row in read_csv(out_audit):
+            results.append(PriceMetricsResult(**{field: row.get(field, "") for field in PriceMetricsResult.__annotations__}))
+    if args.resume and out_audit.exists() and out_raw is not None and out_raw.exists():
+        raw_rows = read_raw_daily_rows(out_raw)
+    result_by_ticker = {item.ticker: item for item in results}
+    selected_order = [candidate["ticker"] for candidate in selected]
 
     for offset, candidate in enumerate(selected, start=1):
         absolute_index = args.start + offset - 1
         ticker = candidate.get("ticker", "")
         symbol = candidate.get("yfSymbol", "")
+        if ticker in result_by_ticker:
+            print(f"[{offset}/{len(selected)} | global {absolute_index}] {ticker} checkpoint hit", flush=True)
+            continue
         print(f"[{offset}/{len(selected)} | global {absolute_index}] {ticker} -> {symbol}", flush=True)
-        result = build_result(candidate, source_tag, start_date, end_date, benchmark_close, args.sleep)
+        result, asset_raw_rows = build_result(
+            candidate,
+            source_tag,
+            start_date,
+            end_date,
+            benchmark_close,
+            args.sleep,
+            retrieved_at,
+        )
         results.append(result)
+        result_by_ticker[result.ticker] = result
+        raw_rows.extend(asset_raw_rows)
         if args.checkpoint_every and offset % args.checkpoint_every == 0:
-            summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
-            save_outputs(results, out_runtime, out_audit, out_summary, summary)
+            ordered_results = [result_by_ticker[ticker] for ticker in selected_order if ticker in result_by_ticker]
+            summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of, raw_rows)
+            save_outputs(ordered_results, out_runtime, out_audit, out_summary, summary, out_raw=out_raw, raw_rows=raw_rows)
             print(f"Checkpoint saved: {offset} rows", flush=True)
 
-    summary = build_summary(results, args.start, args.limit, len(all_candidates), as_of)
-    save_outputs(results, out_runtime, out_audit, out_summary, summary)
+    ordered_results = [result_by_ticker[ticker] for ticker in selected_order if ticker in result_by_ticker]
+    summary = build_summary(ordered_results, args.start, args.limit, len(all_candidates), as_of, raw_rows)
+    save_outputs(ordered_results, out_runtime, out_audit, out_summary, summary, out_raw=out_raw, raw_rows=raw_rows)
     print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
 
 
