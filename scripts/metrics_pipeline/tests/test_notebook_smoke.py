@@ -63,6 +63,38 @@ class NotebookSmokeTests(unittest.TestCase):
         for forbidden in forbidden_tokens:
             self.assertNotIn(forbidden, payload)
 
+    def test_public_clone_is_default_and_execution_package_is_fallback_only(self):
+        with NOTEBOOK_PATH.open("r", encoding="utf-8") as handle:
+            notebook = json.load(handle)
+
+        code_sources = [
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"]
+            if cell.get("cell_type") == "code"
+        ]
+        self.assertIn(
+            "!rm -rf /content/FINPLE\n"
+            "!git clone --depth 1 https://github.com/vip930sw/FINPLE.git /content/FINPLE\n"
+            "%cd /content/FINPLE",
+            code_sources,
+        )
+
+        bootstrap_source = next(
+            source for source in code_sources if "finple_step114_2d_execution_package" in source
+        )
+        self.assertIn(
+            "if REPO_ROOT is None:\n"
+            "    try:\n"
+            "        from google.colab import files\n"
+            "        print(\"Public GitHub clone did not produce a FINPLE repository checkout.",
+            bootstrap_source,
+        )
+        self.assertNotIn('["git", "clone"', bootstrap_source)
+
+        payload = NOTEBOOK_PATH.read_text(encoding="utf-8")
+        for private_auth_prompt in ["GITHUB_TOKEN", "getpass(", "github_pat_"]:
+            self.assertNotIn(private_auth_prompt, payload)
+
 
 if __name__ == "__main__":
     unittest.main()
