@@ -20,6 +20,10 @@ configuration and adapter manifests, candidate/target/selector identities,
 historical Step Z contract, operation plan, claim namespace, environment,
 nonce contexts, chronology, effective expiry, signer identity, and the exact Git
 tree/blob/content identity of the ZB-R runtime and approved no-op implementation.
+The configuration manifest also seals the exact factory-derived adapter
+construction binding, so authorization cannot be reused with another root,
+state root, target, selector, operation plan, restoration identity, no-op
+instance, execution tree, or mixed adapter set.
 
 ## Verification rules
 
@@ -41,5 +45,7 @@ cross-environment, non-Ed25519, or synthetic-only material fails closed.
 
 Committed tests use generated synthetic Ed25519 keys and isolated temporary
 directories only. This step does not generate or store a real operator
-signature, configure an actual production path or state root, construct actual
-adapters, or invoke the Step Z executor.
+signature, configure an actual production path or state root, construct a
+production-bound adapter set, or invoke the Step Z executor. Factory provenance
+tests construct adapters only inside isolated synthetic temporary directories
+and invoke no capability method.

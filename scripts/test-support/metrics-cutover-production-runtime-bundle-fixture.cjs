@@ -118,6 +118,8 @@ function buildFixture(testContext) {
   const platformProbeRoot = path.join(root, "platform-probe");
   fs.mkdirSync(repositoryRoot); fs.mkdirSync(approvedRoot); fs.mkdirSync(stateRootParent);
   fs.mkdirSync(platformProbeRoot);
+  const probeRootPolicyIdentity = subject.rootPolicyIdentity(
+    "isolated_platform_probe_root", fs.realpathSync(platformProbeRoot));
   const { built: historicalBuilt, result: historicalResult } = historical();
   const stepZAPacket = historicalBuilt.packet.stepZAPacket;
   const stepZAResult = historicalBuilt.packet.stepZAResult;
@@ -160,10 +162,14 @@ function buildFixture(testContext) {
       sourcePathIdentityHash: entry.sourcePathIdentityHash,
       sourceGitBlobSha: entry.sourceGitBlobSha,
       sourceContentSha256: entry.sourceContentSha256 }));
+  const platformProbeAttestation = subject.runIsolatedPlatformProbe({ filesystem: fs,
+    pathApi: path, probeRoot: platformProbeRoot, probeRootPolicyIdentity,
+    approvedRoot, stateRootParent });
+  const platformCapabilities = Object.fromEntries(adapters.PLATFORM_FIELDS.map(
+    (field) => [field, platformProbeAttestation[field]]));
   const adapterManifest = adapters.buildProductionAdapterManifest({
     adapterSourceIdentities: adapterSources, approvedRootPolicyIdentity,
-    platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,
-      fileFsync: true, directoryFsync: false, crossDeviceFallbackAllowed: false },
+    platformCapabilities,
     claimStateSchemaIdentity: subject.sha256("claim-schema"),
     receiptStateSchemaIdentity: subject.sha256("receipt-schema"),
     rollbackStateSchemaIdentity: subject.sha256("rollback-schema") });
@@ -230,9 +236,7 @@ function buildFixture(testContext) {
     selectorExpectedPostimageBytes,
     noOpProductionFaultInjector:
       noOpFaultInjector.createNoOpProductionFaultInjector(),
-    platformProbe: { probeRoot: platformProbeRoot,
-      probeRootPolicyIdentity: subject.rootPolicyIdentity(
-        "isolated_platform_probe_root", fs.realpathSync(platformProbeRoot)) },
+    platformProbe: { probeRoot: platformProbeRoot, probeRootPolicyIdentity },
     restorationMaterial,
     adapterManifest, provenancePacket, provenanceResult, stepZAPacket, stepZAResult };
   const material = subject.buildReadOnlyProductionConfigurationMaterial(readOnlyBuilderInput);
@@ -308,13 +312,47 @@ function laterInput(result, fixture, overrides = {}) {
     noOpProductionFaultInjector: builder.noOpProductionFaultInjector,
     ...overrides };
 }
+function productionAdapterConstruction(phaseAResult, fixture, overrides = {}) {
+  const builder = fixture.readOnlyBuilderInput;
+  const manifest = phaseAResult.productionConfigurationManifest;
+  const stateRoot = builder.futureStateRootPath;
+  if (!fs.existsSync(stateRoot)) fs.mkdirSync(stateRoot);
+  const construction = {
+    filesystem: fs, pathApi: path, approvedRoot: builder.approvedRoot, stateRoot,
+    targetPaths: builder.targetPaths.map(({ approvedPathIdentityHash: _ignored,
+      ...entry }) => entry),
+    selectorPath: { path: builder.selectorPath.path,
+      publicPath: builder.selectorPath.publicPath },
+    selectorExpectedPostimageBytes: builder.selectorExpectedPostimageBytes,
+    clock: { now: () => builder.stepZAPacket.stepZPacket.executionClockInstant },
+    operationBindings: manifest.operationPlan.map((entry) => ({ ...entry })),
+    platformCapabilities: { ...manifest.adapterConstructionBinding
+      .platformCapabilities },
+    repositoryIdentity: { mainSha: manifest.executionMainSha,
+      headSha: manifest.repositorySnapshot.headSha,
+      treeSha: manifest.repositorySnapshot.treeSha },
+    restorationMaterial: builder.restorationMaterial,
+    faultInjector: builder.noOpProductionFaultInjector,
+    ...overrides,
+  };
+  return construction;
+}
+function createProductionAdapterSet(phaseAResult, fixture, overrides = {}) {
+  return adapters.createProductionCapabilityAdapters(
+    productionAdapterConstruction(phaseAResult, fixture, overrides));
+}
 function phaseBInput(phaseAResult, fixture, overrides = {}) {
-  const packet = fixture.readOnlyBuilderInput.stepZAPacket.stepZPacket;
+  const { adapterSet: suppliedAdapterSet, ...inputOverrides } = overrides;
+  const adapterSet = suppliedAdapterSet || createProductionAdapterSet(
+    phaseAResult, fixture);
+  const historicalPacket = fixture.readOnlyBuilderInput.stepZAPacket.stepZPacket;
+  const packet = { ...historicalPacket, ...adapterSet };
   return { phaseAPreConstructionResult: phaseAResult, completeStepZPacket: packet,
     ...Object.fromEntries(require("../lib/metrics-cutover-production-single-use-executor.cjs")
-      .CAPABILITY_NAMES.map((name) => [name, packet[name]])), ...overrides };
+      .CAPABILITY_NAMES.map((name) => [name, adapterSet[name]])), ...inputOverrides };
 }
 
 module.exports = { EVALUATION_CLOCK, EXECUTION_SHA, PRODUCTION_KEYS, buildFixture,
-  clone, laterInput, phaseBInput, productionPem, resealAllowlist, resealAuthorization,
-  signAuthorizationBody, signerFromAllowlist };
+  clone, createProductionAdapterSet, laterInput, phaseBInput,
+  productionAdapterConstruction, productionPem, resealAllowlist,
+  resealAuthorization, signAuthorizationBody, signerFromAllowlist };

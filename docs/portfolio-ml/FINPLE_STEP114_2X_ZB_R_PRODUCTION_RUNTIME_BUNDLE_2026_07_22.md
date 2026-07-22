@@ -58,7 +58,9 @@ row/byte identities, and selector preimage/postimage reference constraints. A
 platform attestation is generated only by a real isolated probe that performs
 exclusive create, file write/fsync, same-directory rename, renamed-content
 verification, directory-fsync capability observation, and cleanup. A caller
-cannot supply a self-asserted attestation.
+cannot supply a self-asserted attestation. The probe's exact five platform
+capability fields must canonically equal the sealed adapter manifest before the
+configuration manifest, authorization, or invocation bundle can be created.
 
 The runtime target public paths, historical Step Z target-file paths, US/KR
 ordering, selector path, selector preimage and postimage hashes, versioned
@@ -83,11 +85,24 @@ construction or state-root creation it reruns the read-only builder and isolated
 probe, rebuilds the manifest, revalidates authorization/nonce/expiry, and checks
 private material, immutable Step Z material, and bundle canonical equality.
 
-Phase B accepts the complete Step Z packet and the exact seven synthetic or
-later explicitly constructed capability objects. It checks exact Step Z fields,
-immutable packet core, top-level object identity, descriptors and method sets,
-and configuration target/selector binding. It returns only a sanitized command
-descriptor; it does not invoke a capability or executor.
+Phase B accepts the complete Step Z packet and the exact seven explicitly
+constructed capability objects. The adapter factory privately registers each
+complete set and each capability owner with module-private weak collections;
+no public object contains the brand or private path material. The read-only
+factory verifier accepts only seven capabilities from one registered set.
 
-PR/CI constructs no actual production adapter. Assembler execution, executor,
-capability-method, state-root, and mutation counts remain zero.
+The sanitized construction binding covers execution main/head/tree, approved-
+root and state-root policies, exact target contracts, selector binding,
+operation/idempotency plan, probed platform capability identity, restoration
+identity, approved no-op identity, construction schema, and all seven Step Z
+descriptors. Phase B requires canonical equality with the Phase A configuration
+manifest in addition to exact Step Z fields, immutable packet core, top-level
+object identity, descriptors, and method sets. Historical synthetic objects,
+hand-built lookalikes, mixed sets, and differently configured factory sets fail
+closed. The result remains a sanitized command descriptor and never invokes a
+capability or executor.
+
+PR/CI constructs the real factory only against isolated synthetic temporary
+directories, synthetic bytes, and the approved no-op instance. It never uses a
+production path or state root. Assembler execution, executor, capability-method,
+and mutation counts remain zero.

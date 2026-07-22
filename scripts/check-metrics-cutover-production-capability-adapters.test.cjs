@@ -7,7 +7,8 @@ const test = require("node:test");
 const stepZ = require("./lib/metrics-cutover-production-single-use-executor.cjs");
 const {
   CAPABILITY_NAMES, buildProductionAdapterManifest,
-  createProductionCapabilityAdapters, hashContract, sha256,
+  createProductionCapabilityAdapters,
+  getVerifiedProductionAdapterConstructionBinding, hashContract, sha256,
 } = require("./lib/metrics-cutover-production-capability-adapters.cjs");
 const { runCli } = require("./check-metrics-cutover-production-capability-adapters.cjs");
 const {
@@ -64,6 +65,19 @@ test("factories expose exact Step Z descriptors and methods", (t) => {
       ["descriptor", ...stepZ.CAPABILITY_METHODS[name]].sort());
     assert.equal(fixture.adapters[name].descriptor.hardTimeoutMilliseconds, 100);
   }
+});
+
+test("factory construction binding is private, complete, and set-specific", (t) => {
+  const first = makeFixture(t);
+  const second = makeFixture(t);
+  const binding = getVerifiedProductionAdapterConstructionBinding(first.adapters);
+  assert.equal(typeof binding.adapterConstructionBindingHash, "string");
+  assert.equal(Object.isFrozen(binding), true);
+  assert.equal(JSON.stringify(binding).includes(first.approvedRoot), false);
+  assert.equal(getVerifiedProductionAdapterConstructionBinding({
+    ...first.adapters, cutoverClock: { ...first.adapters.cutoverClock } }), null);
+  assert.equal(getVerifiedProductionAdapterConstructionBinding({
+    ...first.adapters, cutoverClock: second.adapters.cutoverClock }), null);
 });
 
 test("explicit approved roots reject aliases, escapes, and junction traversal", (t) => {

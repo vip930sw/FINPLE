@@ -8,6 +8,7 @@ const test = require("node:test");
 const stepZ = require("./lib/metrics-cutover-production-single-use-executor.cjs");
 const stepZA = require("./lib/metrics-cutover-production-runtime-ceremony.cjs");
 const stepZB = require("./lib/metrics-cutover-production-explicit-invocation-package.cjs");
+const adapters = require("./lib/metrics-cutover-production-capability-adapters.cjs");
 const subject = require("./lib/metrics-cutover-production-runtime-bundle.cjs");
 const { runCli } = require("./check-metrics-cutover-production-runtime-bundle.cjs");
 const fixtureSupport = require(
@@ -38,6 +39,37 @@ function resealBundle(bundle, overrides = {}) {
   const withId = { ...body, productionInvocationBundleId: id };
   return { ...withId, productionInvocationBundleHash: subject.hashContract(
     "FINPLE_STEP114_2X_ZB_R_INVOCATION_BUNDLE_HASH\0", withId) };
+}
+function sealedManifestWithDirectoryFsync(fixture, directoryFsync) {
+  const manifest = fixture.readOnlyBuilderInput.adapterManifest;
+  return adapters.buildProductionAdapterManifest({
+    adapterSourceIdentities: manifest.adapterSourceIdentities,
+    approvedRootPolicyIdentity: manifest.approvedRootPolicyIdentity,
+    platformCapabilities: { ...manifest.platformCapabilities, directoryFsync },
+    claimStateSchemaIdentity: manifest.claimStateSchemaIdentity,
+    receiptStateSchemaIdentity: manifest.receiptStateSchemaIdentity,
+    rollbackStateSchemaIdentity: manifest.rollbackStateSchemaIdentity,
+  });
+}
+function filesystemWithDirectoryFsync(probeRoot, supported) {
+  const sentinel = 0x7fffff;
+  return { ...fs,
+    openSync(value, flags, ...rest) {
+      if (value === probeRoot && flags === "r") return sentinel;
+      return fs.openSync(value, flags, ...rest);
+    },
+    fsyncSync(handle) {
+      if (handle === sentinel) {
+        if (supported) return undefined;
+        throw new Error("synthetic_directory_fsync_unsupported");
+      }
+      return fs.fsyncSync(handle);
+    },
+    closeSync(handle) {
+      if (handle === sentinel) return undefined;
+      return fs.closeSync(handle);
+    },
+  };
 }
 
 test("zero input and zero-argument CLI return exact awaiting state", () => {
@@ -389,6 +421,33 @@ test("isolated platform probe performs exclusive create fsync rename content and
   })).status, "blocked");
 });
 
+test("actual platform probe capabilities must exactly equal the sealed adapter manifest", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const valid = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  const actual = Object.fromEntries(adapters.PLATFORM_FIELDS.map((field) =>
+    [field, valid.productionConfigurationManifest.platformAttestation[field]]));
+  assert.deepEqual(actual, fixture.readOnlyBuilderInput.adapterManifest
+    .platformCapabilities);
+
+  for (const [manifestDirectoryFsync, actualDirectoryFsync] of [
+    [true, false], [false, true],
+  ]) {
+    const adapterManifest = sealedManifestWithDirectoryFsync(
+      fixture, manifestDirectoryFsync);
+    const filesystem = filesystemWithDirectoryFsync(
+      fixture.platformProbeRoot, actualDirectoryFsync);
+    const result = subject.evaluateProductionRuntimeBundle(packetWith(fixture, {
+      readOnlyBuilderInput: builderInputWith(fixture,
+        { adapterManifest, filesystem })
+    }));
+    assert.equal(result.status, "blocked");
+    assert.deepEqual(result.blockingIssues,
+      ["adapter_manifest_platform_capabilities_mismatch"]);
+    assert.equal(result.productionAuthorizationVerified, false);
+    assert.equal(result.productionInvocationBundleId, undefined);
+  }
+});
+
 test("restoration identity is derived from exact absent targets and selector preimage", (t) => {
   const fixture = fixtureSupport.buildFixture(t);
   const valid = subject.evaluateProductionRuntimeBundle(fixture.packet);
@@ -471,6 +530,124 @@ test("Phase B binds the complete Step Z packet and seven identical capability ob
   assert.equal(subject.validatePhaseBPostConstructionBoundary({ ...validInput,
     completeStepZPacket: invalidPacket, cutoverClock: invalidCapability }).status,
   "blocked");
+});
+
+test("Phase B accepts only one exact approved factory adapter set and binding", (t) => {
+  const fixture = fixtureSupport.buildFixture(t);
+  const bundle = subject.evaluateProductionRuntimeBundle(fixture.packet);
+  const phaseA = subject.validatePhaseAPreConstructionBoundary(
+    fixtureSupport.laterInput(bundle, fixture));
+  assert.equal(phaseA.phaseAPreConstructionValidated, true);
+  const baseConstruction = fixtureSupport.productionAdapterConstruction(
+    phaseA, fixture);
+  const baseSet = adapters.createProductionCapabilityAdapters(baseConstruction);
+  const binding = adapters.getVerifiedProductionAdapterConstructionBinding(baseSet);
+  assert.deepEqual(binding,
+    phaseA.productionConfigurationManifest.adapterConstructionBinding);
+  assert.equal(Object.isFrozen(binding), true);
+  const serializedBinding = JSON.stringify(binding);
+  assert.equal(serializedBinding.includes(fixture.approvedRoot), false);
+  assert.equal(serializedBinding.includes(fixture.stateRootParent), false);
+
+  const historicalPacket = fixture.readOnlyBuilderInput.stepZAPacket.stepZPacket;
+  const historicalInput = { phaseAPreConstructionResult: phaseA,
+    completeStepZPacket: historicalPacket,
+    ...Object.fromEntries(stepZ.CAPABILITY_NAMES.map((name) =>
+      [name, historicalPacket[name]])) };
+  assert.ok(subject.validatePhaseBPostConstructionBoundary(historicalInput)
+    .blockingIssues.includes("phase_b_adapter_factory_provenance_invalid"));
+
+  const handCraftedSet = { ...baseSet,
+    cutoverClock: { ...baseSet.cutoverClock } };
+  assert.ok(subject.validatePhaseBPostConstructionBoundary(
+    fixtureSupport.phaseBInput(phaseA, fixture,
+      { adapterSet: handCraftedSet })).blockingIssues
+    .includes("phase_b_adapter_factory_provenance_invalid"));
+
+  const alternateStateRoot = path.join(fixture.stateRootParent, "alternate-state");
+  fs.mkdirSync(alternateStateRoot);
+  const secondSet = adapters.createProductionCapabilityAdapters({
+    ...baseConstruction, stateRoot: alternateStateRoot });
+  const mixedSet = { ...baseSet, cutoverClock: secondSet.cutoverClock };
+  assert.ok(subject.validatePhaseBPostConstructionBoundary(
+    fixtureSupport.phaseBInput(phaseA, fixture,
+      { adapterSet: mixedSet })).blockingIssues
+    .includes("phase_b_adapter_factory_provenance_invalid"));
+
+  const changedOperationPlan = baseConstruction.operationBindings.map(
+    (entry, index) => index === 0
+      ? { ...entry, idempotencyKey: subject.sha256("different-operation") }
+      : entry);
+  const changedRestoration = { ...baseConstruction.restorationMaterial,
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      contentBase64: Buffer.from("different restoration\n").toString("base64") } };
+  const changedNoOp = { descriptor: baseConstruction.faultInjector.descriptor,
+    hit() { throw new Error("must_not_be_called"); } };
+  const selectorAltPath = path.join(fixture.approvedRoot, "selector-alt.js");
+  fs.writeFileSync(selectorAltPath, Buffer.from(
+    baseConstruction.restorationMaterial.selector.contentBase64, "base64"));
+  const selectorAltPublic = `${baseConstruction.selectorPath.publicPath}.alt`;
+  const changedSelectorRestoration = {
+    ...baseConstruction.restorationMaterial,
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      path: selectorAltPath, publicPath: selectorAltPublic },
+  };
+  const targetAltPublic = `${baseConstruction.targetPaths[0].publicPath}.alt.csv`;
+  const targetAltPath = path.join(fixture.approvedRoot, "versioned-us-alt.csv");
+  const changedTargets = baseConstruction.targetPaths.map((entry, index) => index === 0
+    ? { ...entry, path: targetAltPath, publicPath: targetAltPublic } : entry);
+  const oldReference = `./${baseConstruction.targetPaths[0]
+    .publicPath.split("/").at(-1)}?raw`;
+  const newReference = `./${targetAltPublic.split("/").at(-1)}?raw`;
+  const changedTargetPostimage = Buffer.from(baseConstruction
+    .selectorExpectedPostimageBytes.toString("utf8").replace(oldReference, newReference));
+  const changedTargetRestoration = {
+    ...baseConstruction.restorationMaterial,
+    targets: baseConstruction.restorationMaterial.targets.map((entry, index) =>
+      index === 0 ? { ...entry, path: targetAltPath, publicPath: targetAltPublic }
+        : entry),
+  };
+  const alternateApprovedRoot = path.join(fixture.root, "alternate-approved");
+  fs.mkdirSync(alternateApprovedRoot);
+  const alternateRootTargets = baseConstruction.targetPaths.map((entry) => ({
+    ...entry, path: path.join(alternateApprovedRoot, path.basename(entry.path)) }));
+  const alternateRootSelectorPath = path.join(alternateApprovedRoot, "selector.js");
+  fs.writeFileSync(alternateRootSelectorPath, Buffer.from(
+    baseConstruction.restorationMaterial.selector.contentBase64, "base64"));
+  const alternateRootRestoration = {
+    ...baseConstruction.restorationMaterial,
+    targets: baseConstruction.restorationMaterial.targets.map((entry, index) => ({
+      ...entry, path: alternateRootTargets[index].path })),
+    selector: { ...baseConstruction.restorationMaterial.selector,
+      path: alternateRootSelectorPath },
+  };
+  const variantConstructions = [
+    { ...baseConstruction, stateRoot: alternateStateRoot },
+    { ...baseConstruction, repositoryIdentity: {
+      mainSha: "f".repeat(40), headSha: "f".repeat(40), treeSha: "e".repeat(40) } },
+    { ...baseConstruction, operationBindings: changedOperationPlan },
+    { ...baseConstruction, restorationMaterial: changedRestoration },
+    { ...baseConstruction, faultInjector: changedNoOp },
+    { ...baseConstruction,
+      selectorPath: { path: selectorAltPath, publicPath: selectorAltPublic },
+      restorationMaterial: changedSelectorRestoration },
+    { ...baseConstruction, targetPaths: changedTargets,
+      selectorExpectedPostimageBytes: changedTargetPostimage,
+      restorationMaterial: changedTargetRestoration },
+    { ...baseConstruction, approvedRoot: alternateApprovedRoot,
+      targetPaths: alternateRootTargets,
+      selectorPath: { ...baseConstruction.selectorPath,
+        path: alternateRootSelectorPath },
+      restorationMaterial: alternateRootRestoration },
+  ];
+  for (const construction of variantConstructions) {
+    const adapterSet = adapters.createProductionCapabilityAdapters(construction);
+    const blocked = subject.validatePhaseBPostConstructionBoundary(
+      fixtureSupport.phaseBInput(phaseA, fixture, { adapterSet }));
+    assert.ok(blocked.blockingIssues.includes(
+      "phase_b_adapter_construction_binding_mismatch"));
+    assert.deepEqual(Object.values(blocked.capabilityInvocationCounts), Array(7).fill(0));
+  }
 });
 
 test("valid Phase A and Phase B return frozen sanitized descriptors with zero calls", (t) => {

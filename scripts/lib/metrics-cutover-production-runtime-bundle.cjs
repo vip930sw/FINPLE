@@ -110,12 +110,7 @@ const DEPENDENCY_SCHEMA = Object.freeze({
   ]),
   postConstructionDependencyNames: Object.freeze([...stepZ.CAPABILITY_NAMES]),
 });
-const ADAPTER_TARGET_CONTRACT_FIELDS = Object.freeze([
-  "role", "market", "path", "publicPath", "versionedTarget", "writeMode",
-  "schemaVersion", "normalizedHeader", "normalizedHeaderSha256",
-  "schemaIdentitySha256", "expectedContentSha256",
-  "expectedDatasetIdentityHash", "expectedRowCount", "expectedByteCount",
-]);
+const ADAPTER_TARGET_CONTRACT_FIELDS = adapters.TARGET_CONTRACT_FIELDS;
 const approvedPhaseAResults = new WeakSet();
 
 function isRecord(value) {
@@ -495,6 +490,12 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
     pathApi: input.pathApi, probeRoot: input.platformProbe.probeRoot,
     probeRootPolicyIdentity: input.platformProbe.probeRootPolicyIdentity,
     approvedRoot: input.approvedRoot, stateRootParent: input.stateRootParent });
+  const actualPlatformCapabilities = Object.fromEntries(
+    adapters.PLATFORM_FIELDS.map((field) => [field, platformAttestation[field]]));
+  if (!canonicalEqual(input.adapterManifest?.platformCapabilities,
+      actualPlatformCapabilities)) {
+    throw new Error("adapter_manifest_platform_capabilities_mismatch");
+  }
   const approvedRootPolicyIdentity = rootPolicyIdentity("approved_data_root",
     guard.approvedReal);
   const stateRootPolicyIdentity = hashContract(
@@ -677,11 +678,38 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
   const stepZExecutionMaterialDescriptor =
     buildStepZExecutionMaterialDescriptor(input.stepZAPacket, input.stepZAResult,
       targetSelectorBindingHash);
-  const adapterConstructionSchemaIdentity = hashContract(
-    "FINPLE_STEP114_2X_ZB_R_ADAPTER_CONSTRUCTION_SCHEMA\0", {
-      constructionFields: adapters.CONSTRUCTION_FIELDS,
-      capabilityNames: adapters.CAPABILITY_NAMES,
-      targetContractFields: [...ADAPTER_TARGET_CONTRACT_FIELDS],
+  const adapterConstructionSchemaIdentity =
+    adapters.buildAdapterConstructionSchemaIdentity();
+  const adapterConstructionBinding =
+    adapters.buildProductionAdapterConstructionBinding({
+      executionIdentity: { mainSha: input.executionMainSha,
+        headSha: repositoryMaterial.repositorySnapshot.headSha,
+        treeSha: repositoryMaterial.repositorySnapshot.treeSha },
+      approvedRootPolicyIdentity, stateRootPolicyIdentity,
+      targetContracts: input.targetPaths.map((entry) => ({
+        role: entry.role, market: entry.market,
+        pathIdentityHash: entry.approvedPathIdentityHash,
+        publicPath: entry.publicPath, versionedTarget: entry.versionedTarget,
+        writeMode: entry.writeMode, schemaVersion: entry.schemaVersion,
+        normalizedHeaderSha256: entry.normalizedHeaderSha256,
+        schemaIdentitySha256: entry.schemaIdentitySha256,
+        expectedContentSha256: entry.expectedContentSha256,
+        expectedDatasetIdentityHash: entry.expectedDatasetIdentityHash,
+        expectedRowCount: entry.expectedRowCount,
+        expectedByteCount: entry.expectedByteCount,
+      })),
+      selectorBinding: { pathIdentityHash: input.selectorPath.pathIdentityHash,
+        publicPath: input.selectorPath.publicPath,
+        preimageSha256: selectorPreimageIdentity.contentIdentityHash,
+        expectedPostimageSha256: selectorExpectedPostimageIdentity.contentSha256,
+        targetReferences: selectorTargetReferences },
+      operationPlan: clone(expectedPlan),
+      platformCapabilities: actualPlatformCapabilities,
+      restorationMaterialIdentity,
+      noOpProductionFaultInjectorIdentity:
+        adapters.buildNoOpProductionFaultInjectorIdentity(
+          input.noOpProductionFaultInjector),
+      adapterConstructionSchemaIdentity,
     });
   const singleUseClaimNamespaceHash = stepZB.buildSingleUseClaimNamespaceHash(
     input.stepZAResult.explicitExecutionHandoff);
@@ -705,7 +733,8 @@ function buildReadOnlyProductionConfigurationMaterial(input) {
     noOpFaultInjectorContractIdentity:
       input.noOpProductionFaultInjector.descriptor.descriptorHash,
     platformAttestation: clone(platformAttestation),
-    adapterConstructionSchemaIdentity, restorationMaterialIdentity,
+    adapterConstructionSchemaIdentity, adapterConstructionBinding,
+    restorationMaterialIdentity,
     operationPlan: clone(expectedPlan), operationPlanHash,
     stepZExecutionMaterialDescriptor, targetSelectorBindingHash,
     idempotencyIdentities: expectedPlan.map((entry) => ({ sequence: entry.sequence,
@@ -744,6 +773,7 @@ function buildProductionConfigurationManifest(material) {
     noOpFaultInjectorContractIdentity: material.noOpFaultInjectorContractIdentity,
     platformAttestation: material.platformAttestation,
     adapterConstructionSchemaIdentity: material.adapterConstructionSchemaIdentity,
+    adapterConstructionBinding: material.adapterConstructionBinding,
     restorationMaterialIdentity: material.restorationMaterialIdentity,
     operationPlan: material.operationPlan, operationPlanHash: material.operationPlanHash,
     stepZExecutionMaterialDescriptor: material.stepZExecutionMaterialDescriptor,
@@ -1243,6 +1273,8 @@ function buildPhaseAValidationReceipt(manifest, bundle, immutableMaterial,
       immutableMaterial.stepZExecutionMaterialDescriptor
         .stepZExecutionMaterialDescriptorHash,
     targetSelectorBindingHash: manifest.targetSelectorBindingHash,
+    adapterConstructionBindingHash:
+      manifest.adapterConstructionBinding.adapterConstructionBindingHash,
     runtimeSourceIdentityHash: manifest.runtimeSourceIdentityHash,
     restorationMaterialIdentityHash:
       manifest.restorationMaterialIdentity.restorationMaterialIdentityHash,
@@ -1362,6 +1394,7 @@ function buildPhaseBCommandDescriptor(phaseAResult, packet) {
       phaseAResult.productionInvocationBundle.productionInvocationBundleHash,
     stepZImmutableCoreHash: stepZImmutableCoreHash(packet),
     targetSelectorBindingHash: receipt.targetSelectorBindingHash,
+    adapterConstructionBindingHash: receipt.adapterConstructionBindingHash,
     capabilityBindings: stepZ.CAPABILITY_NAMES.map((name) => ({
       capabilityName: name, descriptor: clone(packet[name].descriptor),
     })),
@@ -1399,6 +1432,17 @@ function validatePhaseBPostConstructionBoundary(input) {
     if (input[name] !== input.completeStepZPacket[name]) {
       issues.push(`phase_b_capability_object_identity_mismatch:${name}`);
     }
+  }
+  const capabilitySet = Object.fromEntries(stepZ.CAPABILITY_NAMES.map((name) =>
+    [name, input[name]]));
+  const constructionBinding =
+    adapters.getVerifiedProductionAdapterConstructionBinding(capabilitySet);
+  if (!constructionBinding) {
+    issues.push("phase_b_adapter_factory_provenance_invalid");
+  } else if (!canonicalEqual(constructionBinding,
+    input.phaseAPreConstructionResult.productionConfigurationManifest
+      .adapterConstructionBinding)) {
+    issues.push("phase_b_adapter_construction_binding_mismatch");
   }
   issues.push(...stepZ.validateAllCapabilities(input.completeStepZPacket));
   if (input.phaseAPreConstructionResult.productionConfigurationManifest

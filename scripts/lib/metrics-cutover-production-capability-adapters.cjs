@@ -2,6 +2,8 @@
 
 const { createHash } = require("node:crypto");
 const stepZ = require("./metrics-cutover-production-single-use-executor.cjs");
+const noOpFaultInjector = require(
+  "./metrics-cutover-production-no-op-fault-injector.cjs");
 
 const VERSION = "finple.step114-2x-zb-p.production-capability-adapters.v1";
 const MANIFEST_VERSION = "finple.step114-2x-zb-p.production-adapter-manifest.v1";
@@ -12,13 +14,30 @@ const MUTATING_CAPABILITIES = new Set([
 ]);
 const CONSTRUCTION_FIELDS = Object.freeze([
   "filesystem", "pathApi", "approvedRoot", "stateRoot", "targetPaths",
-  "selectorPath", "clock", "operationBindings", "platformCapabilities",
-  "repositoryIdentity", "restorationMaterial", "faultInjector",
+  "selectorPath", "selectorExpectedPostimageBytes", "clock", "operationBindings",
+  "platformCapabilities", "repositoryIdentity", "restorationMaterial",
+  "faultInjector",
+]);
+const TARGET_CONTRACT_FIELDS = Object.freeze([
+  "role", "market", "path", "publicPath", "versionedTarget", "writeMode",
+  "schemaVersion", "normalizedHeader", "normalizedHeaderSha256",
+  "schemaIdentitySha256", "expectedContentSha256",
+  "expectedDatasetIdentityHash", "expectedRowCount", "expectedByteCount",
 ]);
 const PLATFORM_FIELDS = Object.freeze([
   "atomicSameDirectoryRename", "exclusiveCreate", "fileFsync",
   "directoryFsync", "crossDeviceFallbackAllowed",
 ]);
+const ADAPTER_CONSTRUCTION_BINDING_VERSION =
+  "finple.step114-2x-zb-r.production-adapter-construction-binding.v1";
+const ADAPTER_CONSTRUCTION_BINDING_INPUT_FIELDS = Object.freeze([
+  "executionIdentity", "approvedRootPolicyIdentity", "stateRootPolicyIdentity",
+  "targetContracts", "selectorBinding", "operationPlan", "platformCapabilities",
+  "restorationMaterialIdentity", "noOpProductionFaultInjectorIdentity",
+  "adapterConstructionSchemaIdentity",
+]);
+const adapterSetBindings = new WeakMap();
+const capabilityAdapterSetOwners = new WeakMap();
 const FIXED_FALSE_FIELDS = Object.freeze([
   "productionConfigured", "automaticRetryAllowed", "fallbackAllowed",
   "secondAttemptAllowed", "rawOutputAllowed", "providerAccessAllowed",
@@ -73,6 +92,142 @@ function parseInstant(value) {
   if (typeof value !== "string") return null;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === value ? parsed : null;
+}
+function pathIdentity(market, publicPath) {
+  return hashContract("FINPLE_STEP114_2X_ZB_R_PATH_IDENTITY\0",
+    { market, publicPath });
+}
+function rootPolicyIdentity(kind, canonicalRoot) {
+  return hashContract("FINPLE_STEP114_2X_ZB_R_ROOT_POLICY_IDENTITY\0",
+    { kind, canonicalRootIdentityHash: sha256(Buffer.from(canonicalRoot, "utf8")) });
+}
+function buildAdapterConstructionSchemaIdentity() {
+  return hashContract("FINPLE_STEP114_2X_ZB_R_ADAPTER_CONSTRUCTION_SCHEMA\0", {
+    constructionFields: CONSTRUCTION_FIELDS,
+    capabilityNames: CAPABILITY_NAMES,
+    targetContractFields: TARGET_CONTRACT_FIELDS,
+  });
+}
+function buildNoOpProductionFaultInjectorIdentity(faultInjector) {
+  const descriptorHash = isRecord(faultInjector?.descriptor) &&
+    isSha(faultInjector.descriptor.descriptorHash)
+    ? faultInjector.descriptor.descriptorHash : null;
+  if (!descriptorHash) throw new TypeError("fault_injector_descriptor_invalid");
+  const body = { descriptorHash,
+    approvedFactoryInstance:
+      noOpFaultInjector.isApprovedNoOpProductionFaultInjector(faultInjector) };
+  return deepFreeze({ ...body,
+    noOpProductionFaultInjectorIdentityHash: hashContract(
+      "FINPLE_STEP114_2X_ZB_R_NO_OP_FAULT_INJECTOR_IDENTITY\0", body) });
+}
+function buildProductionAdapterConstructionBinding(input) {
+  if (!exactKeys(input, ADAPTER_CONSTRUCTION_BINDING_INPUT_FIELDS) ||
+      !exactKeys(input.executionIdentity, ["mainSha", "headSha", "treeSha"]) ||
+      !isGitSha(input.executionIdentity.mainSha) ||
+      input.executionIdentity.headSha !== input.executionIdentity.mainSha ||
+      !isGitSha(input.executionIdentity.treeSha) ||
+      !isSha(input.approvedRootPolicyIdentity) ||
+      !isSha(input.stateRootPolicyIdentity) ||
+      !Array.isArray(input.targetContracts) || input.targetContracts.length !== 2 ||
+      !canonicalEqual(input.targetContracts.map((entry) => entry.market), ["US", "KR"]) ||
+      input.targetContracts.some((entry) => !exactKeys(entry, [
+        "role", "market", "pathIdentityHash", "publicPath", "versionedTarget",
+        "writeMode", "schemaVersion", "normalizedHeaderSha256",
+        "schemaIdentitySha256", "expectedContentSha256",
+        "expectedDatasetIdentityHash", "expectedRowCount", "expectedByteCount",
+      ]) || !isSha(entry.pathIdentityHash) || typeof entry.publicPath !== "string" ||
+        entry.publicPath.length === 0 || entry.versionedTarget !== true ||
+        entry.writeMode !== "create_only" || !isSha(entry.normalizedHeaderSha256) ||
+        !isSha(entry.schemaIdentitySha256) || !isSha(entry.expectedContentSha256) ||
+        !isSha(entry.expectedDatasetIdentityHash) ||
+        !Number.isInteger(entry.expectedRowCount) || entry.expectedRowCount < 1 ||
+        !Number.isInteger(entry.expectedByteCount) || entry.expectedByteCount < 1) ||
+      !exactKeys(input.selectorBinding, ["pathIdentityHash", "publicPath",
+        "preimageSha256", "expectedPostimageSha256", "targetReferences"]) ||
+      !isSha(input.selectorBinding.pathIdentityHash) ||
+      typeof input.selectorBinding.publicPath !== "string" ||
+      !isSha(input.selectorBinding.preimageSha256) ||
+      !isSha(input.selectorBinding.expectedPostimageSha256) ||
+      !Array.isArray(input.selectorBinding.targetReferences) ||
+      input.selectorBinding.targetReferences.length !== 2 ||
+      !Array.isArray(input.operationPlan) || input.operationPlan.length === 0 ||
+      input.operationPlan.some((entry, index) => !exactKeys(entry,
+        ["sequence", "stage", "capabilityName", "methodName", "operationId",
+          "idempotencyKey"]) || entry.sequence !== index + 1 ||
+        typeof entry.stage !== "string" || entry.stage.length === 0 ||
+        !CAPABILITY_NAMES.includes(entry.capabilityName) ||
+        !stepZ.CAPABILITY_METHODS[entry.capabilityName].includes(entry.methodName) ||
+        typeof entry.operationId !== "string" || entry.operationId.length === 0 ||
+        !isSha(entry.idempotencyKey)) ||
+      !exactKeys(input.platformCapabilities, PLATFORM_FIELDS) ||
+      input.platformCapabilities.atomicSameDirectoryRename !== true ||
+      input.platformCapabilities.exclusiveCreate !== true ||
+      input.platformCapabilities.fileFsync !== true ||
+      typeof input.platformCapabilities.directoryFsync !== "boolean" ||
+      input.platformCapabilities.crossDeviceFallbackAllowed !== false ||
+      !exactKeys(input.restorationMaterialIdentity, ["contractVersion", "targets",
+        "selector", "restorationSchemaVersion", "createOnly", "rawMaterialPresent",
+        "restorationMaterialIdentityHash"]) ||
+      input.restorationMaterialIdentity.contractVersion !==
+        "finple.step114-2x-zb-r.restoration-identity.v1" ||
+      !Array.isArray(input.restorationMaterialIdentity.targets) ||
+      input.restorationMaterialIdentity.targets.length !== 2 ||
+      input.restorationMaterialIdentity.targets.some((entry) => !exactKeys(entry,
+        ["market", "pathIdentityHash", "exists"]) || !isSha(entry.pathIdentityHash) ||
+        entry.exists !== false) ||
+      !exactKeys(input.restorationMaterialIdentity.selector,
+        ["pathIdentityHash", "contentSha256", "byteCount"]) ||
+      !isSha(input.restorationMaterialIdentity.selector.pathIdentityHash) ||
+      !isSha(input.restorationMaterialIdentity.selector.contentSha256) ||
+      !Number.isInteger(input.restorationMaterialIdentity.selector.byteCount) ||
+      input.restorationMaterialIdentity.selector.byteCount < 1 ||
+      input.restorationMaterialIdentity.createOnly !== true ||
+      input.restorationMaterialIdentity.rawMaterialPresent !== false ||
+      !isSha(input.restorationMaterialIdentity.restorationMaterialIdentityHash) ||
+      !exactKeys(input.noOpProductionFaultInjectorIdentity,
+        ["descriptorHash", "approvedFactoryInstance",
+          "noOpProductionFaultInjectorIdentityHash"]) ||
+      !isSha(input.noOpProductionFaultInjectorIdentity.descriptorHash) ||
+      typeof input.noOpProductionFaultInjectorIdentity.approvedFactoryInstance !== "boolean" ||
+      !isSha(input.noOpProductionFaultInjectorIdentity
+        .noOpProductionFaultInjectorIdentityHash) ||
+      input.noOpProductionFaultInjectorIdentity
+        .noOpProductionFaultInjectorIdentityHash !== hashContract(
+          "FINPLE_STEP114_2X_ZB_R_NO_OP_FAULT_INJECTOR_IDENTITY\0", {
+            descriptorHash: input.noOpProductionFaultInjectorIdentity.descriptorHash,
+            approvedFactoryInstance:
+              input.noOpProductionFaultInjectorIdentity.approvedFactoryInstance,
+          }) ||
+      input.adapterConstructionSchemaIdentity !==
+        buildAdapterConstructionSchemaIdentity()) {
+    throw new TypeError("adapter_construction_binding_input_invalid");
+  }
+  const capabilityBindings = CAPABILITY_NAMES.map((capabilityName) => ({
+    capabilityName, descriptor: stepZ.buildCapabilityDescriptor(capabilityName),
+  }));
+  const body = { contractVersion: ADAPTER_CONSTRUCTION_BINDING_VERSION,
+    executionIdentity: input.executionIdentity,
+    approvedRootPolicyIdentity: input.approvedRootPolicyIdentity,
+    stateRootPolicyIdentity: input.stateRootPolicyIdentity,
+    targetContracts: input.targetContracts,
+    selectorBinding: input.selectorBinding,
+    operationPlan: input.operationPlan,
+    operationPlanIdentityHash: hashContract(
+      "FINPLE_STEP114_2X_ZB_R_ADAPTER_OPERATION_PLAN_IDENTITY\0",
+      input.operationPlan),
+    idempotencyIdentities: input.operationPlan.map(({ sequence, operationId,
+      idempotencyKey }) => ({ sequence, operationId, idempotencyKey })),
+    platformCapabilities: input.platformCapabilities,
+    platformCapabilityIdentity: hashContract(
+      "FINPLE_STEP114_2X_ZB_R_PLATFORM_CAPABILITY_IDENTITY\0",
+      input.platformCapabilities),
+    restorationMaterialIdentity: input.restorationMaterialIdentity,
+    noOpProductionFaultInjectorIdentity: input.noOpProductionFaultInjectorIdentity,
+    adapterConstructionSchemaIdentity: input.adapterConstructionSchemaIdentity,
+    capabilityBindings,
+  };
+  return deepFreeze({ ...body, adapterConstructionBindingHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_R_PRODUCTION_ADAPTER_CONSTRUCTION_BINDING\0", body) });
 }
 function csvRows(bytes) {
   const text = bytes.toString("utf8");
@@ -161,16 +316,23 @@ function validateConstruction(input) {
   if (!isRecord(input.clock) || typeof input.clock.now !== "function") {
     throw new TypeError("explicit_clock_invalid");
   }
-  if (!isRecord(input.faultInjector) || typeof input.faultInjector.hit !== "function") {
+  if (!isRecord(input.faultInjector) || typeof input.faultInjector.hit !== "function" ||
+      !isRecord(input.faultInjector.descriptor) ||
+      !isSha(input.faultInjector.descriptor.descriptorHash)) {
     throw new TypeError("explicit_fault_injector_invalid");
   }
-  if (!exactKeys(input.repositoryIdentity, ["headSha", "treeSha"]) ||
+  if (!exactKeys(input.repositoryIdentity, ["mainSha", "headSha", "treeSha"]) ||
+      input.repositoryIdentity.mainSha !== input.repositoryIdentity.headSha ||
+      !isGitSha(input.repositoryIdentity.mainSha) ||
       !isGitSha(input.repositoryIdentity.headSha) || !isGitSha(input.repositoryIdentity.treeSha)) {
     throw new TypeError("repository_identity_invalid");
   }
   if (!Array.isArray(input.operationBindings) || input.operationBindings.length === 0 ||
       input.operationBindings.some((binding) => !exactKeys(binding,
-        ["capabilityName", "methodName", "operationId", "idempotencyKey"]) ||
+        ["sequence", "stage", "capabilityName", "methodName", "operationId",
+          "idempotencyKey"]) ||
+        binding.sequence !== input.operationBindings.indexOf(binding) + 1 ||
+        typeof binding.stage !== "string" || binding.stage.length === 0 ||
         !CAPABILITY_NAMES.includes(binding.capabilityName) ||
         !stepZ.CAPABILITY_METHODS[binding.capabilityName].includes(binding.methodName) ||
         typeof binding.operationId !== "string" || !isSha(binding.idempotencyKey))) {
@@ -184,11 +346,7 @@ function validateConstruction(input) {
   }
   if (!Array.isArray(input.targetPaths) || input.targetPaths.length !== 2 ||
       !canonicalEqual(input.targetPaths.map((entry) => entry.market), ["US", "KR"]) ||
-      input.targetPaths.some((entry) => !exactKeys(entry, ["role", "market", "path",
-        "publicPath", "versionedTarget", "writeMode", "schemaVersion",
-        "normalizedHeader", "normalizedHeaderSha256", "schemaIdentitySha256",
-        "expectedContentSha256", "expectedDatasetIdentityHash", "expectedRowCount",
-        "expectedByteCount"]) ||
+      input.targetPaths.some((entry) => !exactKeys(entry, TARGET_CONTRACT_FIELDS) ||
         entry.role !== (entry.market === "US" ? "us_price_metrics" :
           "kr_price_metrics") ||
         typeof entry.publicPath !== "string" || entry.publicPath.length === 0 ||
@@ -212,10 +370,22 @@ function validateConstruction(input) {
   if (!exactKeys(input.selectorPath, ["path", "publicPath"]) ||
       typeof input.selectorPath.publicPath !== "string" ||
       input.selectorPath.publicPath.length === 0) throw new TypeError("selector_path_invalid");
-  if (!exactKeys(input.restorationMaterial, ["targets", "selector"]) ||
+  if (!Buffer.isBuffer(input.selectorExpectedPostimageBytes)) {
+    throw new TypeError("selector_expected_postimage_bytes_invalid");
+  }
+  if (!exactKeys(input.restorationMaterial,
+    ["contractVersion", "targets", "selector", "createOnly"]) ||
+      input.restorationMaterial.contractVersion !==
+        "finple.step114-2x-zb-r.private-restoration-material.v1" ||
+      input.restorationMaterial.createOnly !== true ||
       !Array.isArray(input.restorationMaterial.targets) ||
       input.restorationMaterial.targets.length !== 2 ||
-      !exactKeys(input.restorationMaterial.selector, ["path", "contentBase64"])) {
+      !canonicalEqual(input.restorationMaterial.targets.map((entry) => entry.market),
+        ["US", "KR"]) || input.restorationMaterial.targets.some((entry) =>
+        !exactKeys(entry, ["market", "path", "publicPath", "exists"]) ||
+        entry.exists !== false) ||
+      !exactKeys(input.restorationMaterial.selector,
+        ["path", "publicPath", "contentBase64"])) {
     throw new TypeError("restoration_material_invalid");
   }
 }
@@ -273,9 +443,108 @@ function buildPathGuard(input) {
     assertPath(raw, stateRoot, stateReal, missing) };
 }
 
+function deriveFactoryRestorationMaterialIdentity(input) {
+  const targetIdentities = input.restorationMaterial.targets.map((entry, index) => {
+    const target = input.targetPaths[index];
+    if (entry.market !== target.market || entry.path !== target.path ||
+        entry.publicPath !== target.publicPath || entry.exists !== false) {
+      throw new Error("restoration_target_binding_invalid");
+    }
+    return { market: entry.market,
+      pathIdentityHash: pathIdentity(entry.market, entry.publicPath), exists: false };
+  });
+  const selectorBytes = canonicalBase64(
+    input.restorationMaterial.selector.contentBase64);
+  if (input.restorationMaterial.selector.path !== input.selectorPath.path ||
+      input.restorationMaterial.selector.publicPath !== input.selectorPath.publicPath) {
+    throw new Error("restoration_selector_binding_invalid");
+  }
+  const body = {
+    contractVersion: "finple.step114-2x-zb-r.restoration-identity.v1",
+    targets: targetIdentities,
+    selector: { pathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+      contentSha256: sha256(selectorBytes), byteCount: selectorBytes.length },
+    restorationSchemaVersion: "create-only-absent-targets-selector-preimage.v1",
+    createOnly: true,
+    rawMaterialPresent: false,
+  };
+  return deepFreeze({ ...body, restorationMaterialIdentityHash: hashContract(
+    "FINPLE_STEP114_2X_ZB_R_RESTORATION_MATERIAL_IDENTITY\0", body) });
+}
+
+function deriveFactoryConstructionBinding(input, guard) {
+  const fs = input.filesystem; const path = input.pathApi;
+  const approvedRootPolicyIdentity = rootPolicyIdentity(
+    "approved_data_root", guard.rootReal);
+  const stateRootParentReal = fs.realpathSync(path.dirname(guard.stateRoot));
+  const stateRootPolicyIdentity = hashContract(
+    "FINPLE_STEP114_2X_ZB_R_STATE_ROOT_POLICY_IDENTITY\0", {
+      parentPolicyIdentity: rootPolicyIdentity(
+        "state_root_parent", stateRootParentReal),
+      futureStateRootPathIdentity: sha256(Buffer.from(guard.stateRoot, "utf8")),
+      stateRootAbsent: true,
+    });
+  const targetContracts = input.targetPaths.map((entry) => ({
+    role: entry.role, market: entry.market,
+    pathIdentityHash: pathIdentity(entry.market, entry.publicPath),
+    publicPath: entry.publicPath, versionedTarget: entry.versionedTarget,
+    writeMode: entry.writeMode, schemaVersion: entry.schemaVersion,
+    normalizedHeaderSha256: entry.normalizedHeaderSha256,
+    schemaIdentitySha256: entry.schemaIdentitySha256,
+    expectedContentSha256: entry.expectedContentSha256,
+    expectedDatasetIdentityHash: entry.expectedDatasetIdentityHash,
+    expectedRowCount: entry.expectedRowCount,
+    expectedByteCount: entry.expectedByteCount,
+  }));
+  const selectorPreimageBytes = canonicalBase64(
+    input.restorationMaterial.selector.contentBase64);
+  const targetReferences = input.targetPaths.map((entry) =>
+    `./${entry.publicPath.split("/").at(-1)}?raw`);
+  const selectorText = input.selectorExpectedPostimageBytes.toString("utf8");
+  if (targetReferences.some((reference) =>
+    selectorText.split(reference).length - 1 !== 1)) {
+    throw new Error("selector_target_reference_binding_invalid");
+  }
+  return buildProductionAdapterConstructionBinding({
+    executionIdentity: { mainSha: input.repositoryIdentity.mainSha,
+      headSha: input.repositoryIdentity.headSha,
+      treeSha: input.repositoryIdentity.treeSha },
+    approvedRootPolicyIdentity, stateRootPolicyIdentity, targetContracts,
+    selectorBinding: {
+      pathIdentityHash: pathIdentity("selector", input.selectorPath.publicPath),
+      publicPath: input.selectorPath.publicPath,
+      preimageSha256: sha256(selectorPreimageBytes),
+      expectedPostimageSha256: sha256(input.selectorExpectedPostimageBytes),
+      targetReferences,
+    },
+    operationPlan: input.operationBindings.map((entry) => ({ ...entry })),
+    platformCapabilities: { ...input.platformCapabilities },
+    restorationMaterialIdentity: deriveFactoryRestorationMaterialIdentity(input),
+    noOpProductionFaultInjectorIdentity:
+      buildNoOpProductionFaultInjectorIdentity(input.faultInjector),
+    adapterConstructionSchemaIdentity: buildAdapterConstructionSchemaIdentity(),
+  });
+}
+
+function getVerifiedProductionAdapterConstructionBinding(adapterSetOrCapabilities) {
+  let adapterSet = adapterSetOrCapabilities;
+  if (!adapterSetBindings.has(adapterSet)) {
+    if (!exactKeys(adapterSetOrCapabilities, CAPABILITY_NAMES)) return null;
+    const owners = CAPABILITY_NAMES.map((name) =>
+      capabilityAdapterSetOwners.get(adapterSetOrCapabilities[name]));
+    if (owners.some((owner) => !owner) ||
+        new Set(owners).size !== 1) return null;
+    [adapterSet] = owners;
+    if (!adapterSetBindings.has(adapterSet) || CAPABILITY_NAMES.some((name) =>
+      adapterSet[name] !== adapterSetOrCapabilities[name])) return null;
+  }
+  return adapterSetBindings.get(adapterSet) || null;
+}
+
 function createProductionCapabilityAdapters(input) {
   validateConstruction(input);
   const guard = buildPathGuard(input);
+  const constructionBinding = deriveFactoryConstructionBinding(input, guard);
   const fs = input.filesystem;
   const path = input.pathApi;
   const bindingByOperation = new Map(input.operationBindings.map((entry) =>
@@ -777,11 +1046,11 @@ function createProductionCapabilityAdapters(input) {
       selector: payload.restoreSelector ? fileState(input.selectorPath.path) : null };
       const postSnapshot = { targets: markets.map((market) => {
         const material = restorationTargets.get(market);
-        if (!material) throw new TypeError("rollback_target_material_invalid");
-        const bytes = material.existed ? canonicalBase64(material.contentBase64) : null;
-        return { market, state: material.existed
-          ? { exists: true, contentSha256: sha256(bytes), byteCount: bytes.length }
-          : { exists: false, contentSha256: null, byteCount: 0 } };
+        if (!material || material.exists !== false) {
+          throw new TypeError("rollback_target_material_invalid");
+        }
+        return { market,
+          state: { exists: false, contentSha256: null, byteCount: 0 } };
       }), selector: payload.restoreSelector ? (() => {
         const bytes = canonicalBase64(input.restorationMaterial.selector.contentBase64);
         return { exists: true, contentSha256: sha256(bytes), byteCount: bytes.length };
@@ -802,17 +1071,13 @@ function createProductionCapabilityAdapters(input) {
         const material = restorationTargets.get(market);
         const target = pathsByMarket.get(market);
         if (!material || !target || material.path !== target.path ||
-            !exactKeys(material, ["market", "path", "existed", "contentBase64"])) {
+            material.publicPath !== target.publicPath || material.exists !== false ||
+            !exactKeys(material, ["market", "path", "publicPath", "exists"])) {
           throw new TypeError("rollback_target_material_invalid");
         }
-        if (!material.existed) {
-          if (fs.existsSync(target.path)) {
-            fs.unlinkSync(target.path);
-            syncDirectory(path.dirname(target.path));
-          }
-        } else {
-          atomicReplace(target.path, canonicalBase64(material.contentBase64), false,
-            `${binding.operationId}-${market}`);
+        if (fs.existsSync(target.path)) {
+          fs.unlinkSync(target.path);
+          syncDirectory(path.dirname(target.path));
         }
         input.faultInjector.hit(`rollback_after_${market.toLowerCase()}_restore`,
           { operationId: binding.operationId });
@@ -841,9 +1106,14 @@ function createProductionCapabilityAdapters(input) {
     },
   };
 
-  return deepFreeze({ singleUseCutoverEnvelopeStore, cutoverClock,
+  const adapterSet = deepFreeze({ singleUseCutoverEnvelopeStore, cutoverClock,
     cutoverPreimageReader, atomicProductionCsvReplacer, selectorMutationCoordinator,
     cutoverReceiptStore, rollbackCoordinator });
+  adapterSetBindings.set(adapterSet, constructionBinding);
+  for (const name of CAPABILITY_NAMES) {
+    capabilityAdapterSetOwners.set(adapterSet[name], adapterSet);
+  }
+  return adapterSet;
 }
 
 function buildProductionAdapterManifest(input) {
@@ -904,9 +1174,13 @@ function buildProductionAdapterManifest(input) {
 }
 
 module.exports = {
+  ADAPTER_CONSTRUCTION_BINDING_INPUT_FIELDS, ADAPTER_CONSTRUCTION_BINDING_VERSION,
   CAPABILITY_NAMES, CONSTRUCTION_FIELDS, FIXED_FALSE_FIELDS, MANIFEST_VERSION,
-  MUTATING_CAPABILITIES, PLATFORM_FIELDS, REQUIRED_FS_METHODS, VERSION,
+  MUTATING_CAPABILITIES, PLATFORM_FIELDS, REQUIRED_FS_METHODS,
+  TARGET_CONTRACT_FIELDS, VERSION, buildAdapterConstructionSchemaIdentity,
+  buildNoOpProductionFaultInjectorIdentity, buildProductionAdapterConstructionBinding,
   buildProductionAdapterManifest, canonicalEqual, canonicalJson,
-  createProductionCapabilityAdapters, deepFreeze, deriveCsvIdentity, hashContract,
-  schemaIdentity, sha256,
+  createProductionCapabilityAdapters, deepFreeze, deriveCsvIdentity,
+  getVerifiedProductionAdapterConstructionBinding, hashContract, pathIdentity,
+  rootPolicyIdentity, schemaIdentity, sha256,
 };

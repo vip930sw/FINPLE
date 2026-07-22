@@ -18,7 +18,9 @@ const SELECTOR_PUBLIC = "synthetic/selector.js";
 const US_BYTES = Buffer.from("market,ticker,value\nUS,AAA,1\n");
 const KR_BYTES = Buffer.from("market,ticker,value\nKR,000001,2\n");
 const SELECTOR_BEFORE = Buffer.from("export const selected = 'before';\n");
-const SELECTOR_AFTER = Buffer.from("export const selected = 'after';\n");
+const SELECTOR_AFTER = Buffer.from(
+  "import us from './us.csv?raw';\nimport kr from './kr.csv?raw';\n" +
+  "export const selected = { us, kr };\n");
 
 const OPERATIONS = Object.freeze([
   ["cutoverClock", "readCutoverClock", "clock"],
@@ -37,7 +39,8 @@ const OPERATIONS = Object.freeze([
 ]);
 
 function operationBindings() {
-  return OPERATIONS.map(([capabilityName, methodName, operationId]) => ({
+  return OPERATIONS.map(([capabilityName, methodName, operationId], index) => ({
+    sequence: index + 1, stage: `synthetic_${operationId}`,
     capabilityName, methodName, operationId,
     idempotencyKey: hashContract("FINPLE_STEP114_2X_ZB_P_TEST_OPERATION\0",
       { capabilityName, methodName, operationId }),
@@ -70,7 +73,7 @@ function makeFixture(testContext) {
   const bindings = operationBindings();
   const fault = { stage: null, hit(stage) {
     if (this.stage === stage) throw new Error(`synthetic_crash:${stage}`);
-  } };
+  }, descriptor: { descriptorHash: sha256("synthetic-fault-injector") } };
   const construction = {
     filesystem: fs, pathApi: path, approvedRoot, stateRoot,
     targetPaths: [
@@ -78,17 +81,21 @@ function makeFixture(testContext) {
       targetContract("kr_price_metrics", "KR", krPath, KR_PUBLIC, KR_BYTES),
     ],
     selectorPath: { path: selectorPath, publicPath: SELECTOR_PUBLIC },
+    selectorExpectedPostimageBytes: SELECTOR_AFTER,
     clock: { now: () => NOW }, operationBindings: bindings,
     platformCapabilities: { atomicSameDirectoryRename: true, exclusiveCreate: true,
       fileFsync: true, directoryFsync: false, crossDeviceFallbackAllowed: false },
-    repositoryIdentity: { headSha: HEAD_SHA, treeSha: TREE_SHA },
+    repositoryIdentity: { mainSha: HEAD_SHA, headSha: HEAD_SHA, treeSha: TREE_SHA },
     faultInjector: fault,
     restorationMaterial: {
+      contractVersion: "finple.step114-2x-zb-r.private-restoration-material.v1",
       targets: [
-        { market: "US", path: usPath, existed: false, contentBase64: "" },
-        { market: "KR", path: krPath, existed: false, contentBase64: "" },
+        { market: "US", path: usPath, publicPath: US_PUBLIC, exists: false },
+        { market: "KR", path: krPath, publicPath: KR_PUBLIC, exists: false },
       ],
-      selector: { path: selectorPath, contentBase64: SELECTOR_BEFORE.toString("base64") },
+      selector: { path: selectorPath, publicPath: SELECTOR_PUBLIC,
+        contentBase64: SELECTOR_BEFORE.toString("base64") },
+      createOnly: true,
     },
   };
   const fixture = {
