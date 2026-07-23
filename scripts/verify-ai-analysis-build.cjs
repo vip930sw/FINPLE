@@ -2,7 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = process.cwd();
-const DIST_ASSETS_DIR = path.join(ROOT, "dist", "assets");
+const BUILD_OUTPUT_DIR = process.env.FINPLE_BUILD_OUTPUT_DIR
+  ? path.resolve(process.env.FINPLE_BUILD_OUTPUT_DIR)
+  : path.join(ROOT, "dist");
+const DIST_ASSETS_DIR = path.join(BUILD_OUTPUT_DIR, "assets");
 
 const SOURCE_CHECKS = [
   {
@@ -57,13 +60,13 @@ function findMainBundle() {
 function verifyBundle() {
   const bundlePath = findMainBundle();
   if (!bundlePath) {
-    throw new Error("AI analysis bundle check failed: dist/assets/index-*.js was not found.");
+    throw new Error(`AI analysis bundle check failed: ${path.join(BUILD_OUTPUT_DIR, "assets", "index-*.js")} was not found.`);
   }
 
   const bundle = readText(bundlePath);
   const missing = BUNDLE_TOKENS.filter((token) => !bundle.includes(token));
 
-  console.log(`[verify-ai-analysis-build] bundle: ${path.relative(ROOT, bundlePath)}`);
+  console.log(`[verify-ai-analysis-build] bundle: ${path.relative(ROOT, bundlePath) || bundlePath}`);
   for (const token of BUNDLE_TOKENS) {
     console.log(`[verify-ai-analysis-build] bundle ${bundle.includes(token) ? "ok" : "missing"}: ${token}`);
   }
