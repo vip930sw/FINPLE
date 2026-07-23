@@ -131,13 +131,15 @@ def combine_market_raw_files(
         writer = csv.DictWriter(output_handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
         writer.writeheader()
         for source_path, expected_market in sources:
-            last_key: tuple[str, str, str] | None = None
+            last_key: tuple[str, str] | None = None
             source_identities: set[tuple[str, str]] = set()
             with source_path.open("r", encoding="utf-8-sig", newline="") as input_handle:
                 reader = csv.DictReader(input_handle)
                 if reader.fieldnames != RAW_DAILY_PRICE_COLUMNS:
                     raise ValueError(f"raw-daily header mismatch: {source_path}")
                 for row in reader:
+                    if None in row:
+                        raise ValueError(f"raw-daily row has more fields than the header: {source_path}")
                     market = str(row.get("market", "")).strip().upper()
                     ticker = str(row.get("ticker", "")).strip()
                     if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
@@ -148,9 +150,11 @@ def combine_market_raw_files(
                     identity = (market, ticker)
                     if identity not in candidate_identities:
                         raise ValueError(f"raw identity is outside canonical universe: {identity}")
-                    key = (market, ticker, date_text)
-                    if last_key is not None and key <= last_key:
-                        raise ValueError(f"raw inputs must be globally sorted with no duplicate key: {key}")
+                    key = (ticker, date_text)
+                    if last_key is not None and key == last_key:
+                        raise ValueError(f"duplicate raw key: {(market, ticker, date_text)}")
+                    if last_key is not None and key < last_key:
+                        raise ValueError(f"raw input out of order: {(market, ticker, date_text)}")
                     last_key = key
                     source_identities.add(identity)
                     row["market"] = market
@@ -246,6 +250,9 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "appUseReviewStatus": "review_required",
         "sourceFileSha256": sha256(raw_path),
         "rowCount": raw_summary["rawDailyRowCount"],
+        "assetCoverageCount": len(covered),
+        "firstDateByMarket": raw_summary["firstDateByMarket"],
+        "lastDateByMarket": raw_summary["lastDateByMarket"],
         "operatorId": args.operator_id,
         "fixtureOnly": False,
         "testOnly": False,

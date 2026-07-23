@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import csv
 import glob
+import heapq
 import math
+from contextlib import ExitStack
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -229,58 +231,131 @@ def write_raw_daily_rows(path: Path, rows: Iterable[Mapping[str, object]]) -> di
 
 
 def combine_raw_daily_chunks(pattern: str, output_path: Path, expected_market: str) -> dict[str, object]:
-    """Stream non-overlapping asset chunks into one exact-schema CSV."""
+    """K-way merge sorted, non-overlapping raw chunks into one global order."""
     files = sorted(glob.glob(pattern))
     if not files:
         raise ValueError(f"No raw-daily chunk files found for pattern: {pattern}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    seen_assets: set[tuple[str, str]] = set()
+    temporary_output = output_path.with_name(f".{output_path.name}.combining")
+    asset_owner: dict[tuple[str, str], int] = {}
     row_count = 0
     first_date = ""
     last_date = ""
-    with output_path.open("w", encoding="utf-8-sig", newline="") as output_handle:
-        writer = csv.DictWriter(output_handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
-        writer.writeheader()
-        for file_name in files:
-            file_assets: set[tuple[str, str]] = set()
-            dates_by_asset: dict[tuple[str, str], set[str]] = {}
-            buffered: list[dict[str, str]] = []
-            with Path(file_name).open("r", encoding="utf-8-sig", newline="") as input_handle:
+    previous_output_key: tuple[str, str, str] | None = None
+
+    try:
+        with ExitStack() as stack:
+            readers: list[csv.DictReader] = []
+            previous_stream_keys: list[tuple[str, str] | None] = []
+            heap: list[tuple[str, str, int, dict[str, str]]] = []
+            for stream_index, file_name in enumerate(files):
+                input_handle = stack.enter_context(
+                    Path(file_name).open("r", encoding="utf-8-sig", newline="")
+                )
                 reader = csv.DictReader(input_handle)
                 if reader.fieldnames != RAW_DAILY_PRICE_COLUMNS:
                     raise ValueError(f"raw-daily header mismatch: {file_name}")
-                for row in reader:
-                    market = clean(row.get("market")).upper()
-                    ticker = clean(row.get("ticker"))
-                    if market != expected_market:
-                        raise ValueError(f"unexpected market in {file_name}: {market}")
-                    if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
-                        raise ValueError(f"KR ticker lost six-character alphanumeric identity: {ticker}")
-                    identity = (market, ticker)
-                    date_text = clean(row.get("date"))
-                    dates = dates_by_asset.setdefault(identity, set())
-                    if date_text in dates:
-                        raise ValueError(f"duplicate market+ticker+date in {file_name}: {identity}:{date_text}")
-                    dates.add(date_text)
-                    file_assets.add(identity)
-                    buffered.append({column: row.get(column, "") for column in RAW_DAILY_PRICE_COLUMNS})
-            overlap = seen_assets.intersection(file_assets)
-            if overlap:
-                raise ValueError(f"asset appears in multiple raw chunks: {sorted(overlap)[:5]}")
-            seen_assets.update(file_assets)
-            for row in sorted(buffered, key=lambda item: (item["market"], item["ticker"], item["date"])):
+                readers.append(reader)
+                previous_stream_keys.append(None)
+                first_row = _next_sorted_chunk_row(
+                    reader,
+                    stream_index=stream_index,
+                    file_name=file_name,
+                    expected_market=expected_market,
+                    previous_stream_keys=previous_stream_keys,
+                )
+                if first_row is not None:
+                    heapq.heappush(
+                        heap,
+                        (first_row["ticker"], first_row["date"], stream_index, first_row),
+                    )
+
+            output_handle = stack.enter_context(
+                temporary_output.open("w", encoding="utf-8-sig", newline="")
+            )
+            writer = csv.DictWriter(output_handle, fieldnames=RAW_DAILY_PRICE_COLUMNS)
+            writer.writeheader()
+
+            while heap:
+                ticker, date_text, stream_index, row = heapq.heappop(heap)
+                market = row["market"]
+                key = (market, ticker, date_text)
+                if previous_output_key is not None:
+                    if key == previous_output_key:
+                        raise ValueError(f"duplicate raw key across chunks: {key}")
+                    if (ticker, date_text) < (previous_output_key[1], previous_output_key[2]):
+                        raise ValueError(f"raw chunk merge produced out-of-order key: {key}")
+
+                identity = (market, ticker)
+                owner = asset_owner.setdefault(identity, stream_index)
+                if owner != stream_index:
+                    raise ValueError(f"asset appears in multiple raw chunks: {identity}")
+
                 writer.writerow(row)
                 row_count += 1
-                date_text = row["date"]
+                previous_output_key = key
                 first_date = date_text if not first_date or date_text < first_date else first_date
                 last_date = date_text if not last_date or date_text > last_date else last_date
+
+                next_row = _next_sorted_chunk_row(
+                    readers[stream_index],
+                    stream_index=stream_index,
+                    file_name=files[stream_index],
+                    expected_market=expected_market,
+                    previous_stream_keys=previous_stream_keys,
+                )
+                if next_row is not None:
+                    heapq.heappush(
+                        heap,
+                        (next_row["ticker"], next_row["date"], stream_index, next_row),
+                    )
+        temporary_output.replace(output_path)
+    except Exception:
+        temporary_output.unlink(missing_ok=True)
+        raise
 
     return {
         "rawChunkFiles": len(files),
         "rawDailyRowCount": row_count,
-        "rawDailyAssetCount": len(seen_assets),
+        "rawDailyAssetCount": len(asset_owner),
         "rawDailyFirstDate": first_date,
         "rawDailyLastDate": last_date,
         "rawDailyFile": str(output_path),
     }
+
+
+def _next_sorted_chunk_row(
+    reader: csv.DictReader,
+    *,
+    stream_index: int,
+    file_name: str,
+    expected_market: str,
+    previous_stream_keys: list[tuple[str, str] | None],
+) -> dict[str, str] | None:
+    try:
+        raw_row = next(reader)
+    except StopIteration:
+        return None
+    if None in raw_row:
+        raise ValueError(f"raw-daily row has more fields than the header: {file_name}")
+
+    row = {column: clean(raw_row.get(column)) for column in RAW_DAILY_PRICE_COLUMNS}
+    market = row["market"].upper()
+    ticker = row["ticker"]
+    date_text = row["date"]
+    if market != expected_market:
+        raise ValueError(f"unexpected market in {file_name}: {market}")
+    if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+        raise ValueError(f"KR ticker lost six-character alphanumeric identity: {ticker}")
+    row["market"] = market
+
+    stream_key = (ticker, date_text)
+    previous = previous_stream_keys[stream_index]
+    if previous is not None:
+        if stream_key == previous:
+            raise ValueError(f"duplicate raw key in chunk: {(market, ticker, date_text)}")
+        if stream_key < previous:
+            raise ValueError(f"raw chunk is out of order: {(market, ticker, date_text)}")
+    previous_stream_keys[stream_index] = stream_key
+    return row

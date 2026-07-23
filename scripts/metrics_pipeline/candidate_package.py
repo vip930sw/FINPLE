@@ -26,7 +26,6 @@ from .schemas import (
     FULL_METRICS_COLUMNS,
     MONTHLY_RETURNS_COLUMNS,
     NORMALIZED_MONTH_END_COLUMNS,
-    RAW_DAILY_PRICE_COLUMNS,
     REVIEW_OVERLAY_COLUMNS,
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
@@ -34,7 +33,11 @@ from .schemas import (
     is_valid_kr_benchmark_ticker,
     is_valid_kr_candidate_ticker,
 )
-from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows, partial_month_metadata
+from .timeseries import (
+    NORMALIZATION_VERSION,
+    normalize_daily_price_file_streaming,
+    partial_month_metadata,
+)
 
 
 CANDIDATE_PACKAGE_CONTRACT_VERSION = "production-candidate-package-v1-step114-2m"
@@ -168,59 +171,81 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
 
     candidates = _safe_read_csv(paths["candidate_asset_master"], issues, "candidate_asset_master")
     benchmark_map = _safe_read_candidate_benchmark_map(paths["benchmark_map"], issues)
-    raw_daily_rows = _safe_read_csv(paths["raw_daily_price"], issues, "raw_daily_price")
     _validate_candidate_csv(candidates, package_config, issues)
     _validate_benchmark_contract(candidates, benchmark_map, package_config, issues)
-    _validate_raw_daily_candidate_rows(raw_daily_rows, package_config, source_declaration, issues)
-    _validate_scope_reconciliation(package_config, source_declaration, submission_manifest, candidates, raw_daily_rows, issues)
-
-    if _has_blocking_issues(issues):
-        _write_candidate_outputs(
-            package_config=package_config,
-            output_paths=output_paths,
-            input_paths=paths,
-            source_declaration=source_declaration,
-            submission_manifest=submission_manifest,
-            candidates=[],
-            normalized_rows=[],
-            monthly_return_rows=[],
-            full_rows=[],
-            review_rows=[],
-            source_audit_rows=issues,
-            timeseries_audit_rows=[],
-            candidate_package_ready=False,
-        )
-        return _candidate_result(package_config, output_paths, issues, False)
 
     source_sha = _sha256(paths["raw_daily_price"])
     try:
-        normalized = normalize_daily_price_rows(
-            raw_daily_rows,
+        normalized = _validate_and_normalize_raw_daily_candidate_file(
+            paths["raw_daily_price"],
+            candidates=candidates,
+            benchmark_map=benchmark_map,
+            config=package_config,
+            source=source_declaration,
+            issues=issues,
             source_file_name=paths["raw_daily_price"].name,
             source_sha256=source_sha,
-            allow_review_only_provenance=package_config.internal_preview_review_only,
-            normalized_data_status=(
-                "normalized_candidate_review"
-                if package_config.internal_preview_review_only
-                else "normalized_fixture"
-            ),
-            requested_as_of_included=str(source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date)),
-            partial_month_policy=package_config.partial_month_policy,
         )
     except Exception as exc:  # noqa: BLE001 - normalization remains fail-closed for operator input.
         _add_issue(issues, "normalization_failed", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, str(exc))
-        normalized = {"normalizedRows": [], "auditRows": []}
+        normalized = {
+            "normalizedRows": [],
+            "auditRows": [],
+            "rawStats": {"identities": set(), "markets": set(), "rowCount": 0, "firstDate": "", "lastDate": ""},
+        }
     normalized_rows = list(normalized["normalizedRows"])
     timeseries_audit_rows = list(normalized["auditRows"])
+    raw_stats = dict(normalized["rawStats"])
+    _validate_scope_reconciliation(
+        package_config,
+        source_declaration,
+        submission_manifest,
+        candidates,
+        set(raw_stats.get("identities", set())),
+        set(raw_stats.get("markets", set())),
+        issues,
+    )
+    if source_declaration.get("actualLastPriceDate") and raw_stats.get("lastDate") != source_declaration.get("actualLastPriceDate"):
+        _add_issue(
+            issues,
+            "raw_actual_last_price_date_mismatch",
+            "critical",
+            True,
+            "raw_daily_price",
+            paths["raw_daily_price"].name,
+            "Observed raw last date does not match source declaration actualLastPriceDate.",
+        )
+    for field, observed in [
+        ("assetCoverageCount", raw_stats.get("assetCount")),
+        ("firstDateByMarket", raw_stats.get("firstDateByMarket")),
+        ("lastDateByMarket", raw_stats.get("lastDateByMarket")),
+    ]:
+        if field in source_declaration and source_declaration.get(field) != observed:
+            _add_issue(
+                issues,
+                "raw_stream_metadata_mismatch",
+                "critical",
+                True,
+                "raw_daily_price",
+                paths["raw_daily_price"].name,
+                f"Observed raw {field} does not match source declaration.",
+            )
     for row in timeseries_audit_rows:
         if row.get("blocksPublication") == "true":
             review_only_provenance = (
                 package_config.internal_preview_review_only
                 and row.get("issueType") == "invalid_provenance_publication_policy"
             )
+            issue_type = {
+                "duplicate_date": "duplicate_market_ticker_date",
+                "non_monotonic_date_order": "raw_input_out_of_order",
+                "non_monotonic_series_order": "raw_input_out_of_order",
+                "non_contiguous_series": "raw_input_out_of_order",
+                "raw_daily_schema_missing_columns": "raw_daily_schema_invalid",
+            }.get(row.get("issueType", ""), row.get("issueType", "timeseries_block"))
             _add_issue(
                 issues,
-                row.get("issueType", "timeseries_block"),
+                issue_type,
                 "warning" if review_only_provenance else row.get("severity", "critical"),
                 not review_only_provenance,
                 "raw_daily_price",
@@ -620,8 +645,8 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
         _add_issue(issues, "synthetic_or_fixture_marker_blocked", "critical", True, "source_declaration", "source_declaration.json", "Fixture/synthetic/test markers are not allowed in candidate mode.")
     if source.get("sourceFileSha256") != _sha256(paths["raw_daily_price"]):
         _add_issue(issues, "source_file_sha256_mismatch", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, "sourceFileSha256 does not match raw daily CSV.")
-    raw_rows = _safe_read_csv(paths["raw_daily_price"], issues, "raw_daily_price") if paths["raw_daily_price"].exists() else []
-    if source.get("rowCount") != len(raw_rows):
+    raw_row_count = _row_count_csv(paths["raw_daily_price"]) if paths["raw_daily_price"].exists() else 0
+    if source.get("rowCount") != raw_row_count:
         _add_issue(issues, "source_row_count_mismatch", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, "source declaration rowCount mismatch.")
     if source.get("redistributionReviewStatus") not in {"approved", "allowed", "reviewed_approved"}:
         _add_issue(
@@ -835,58 +860,120 @@ def _validate_benchmark_contract(
             _add_issue(issues, "benchmark_ticker_identity_invalid", "critical", True, "benchmark_map", config.benchmark_map_file, "Benchmark ticker is empty.")
 
 
-def _validate_raw_daily_candidate_rows(rows: list[dict[str, str]], config: CandidatePackageConfig, source: Mapping[str, Any], issues: list[dict[str, str]]) -> None:
-    if not rows:
-        _add_issue(issues, "raw_daily_missing", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Raw daily price CSV is empty.")
-        return
-    missing = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(rows[0]))
-    for column in missing:
-        _add_issue(issues, "raw_daily_schema_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Missing column {column}.")
-    if missing:
-        return
-    seen: set[tuple[str, str, str]] = set()
-    for row in rows:
+def _validate_and_normalize_raw_daily_candidate_file(
+    path: Path,
+    *,
+    candidates: list[dict[str, str]],
+    benchmark_map: Mapping[str, tuple[str, str]],
+    config: CandidatePackageConfig,
+    source: Mapping[str, Any],
+    issues: list[dict[str, str]],
+    source_file_name: str,
+    source_sha256: str,
+) -> dict[str, object]:
+    candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
+    allowed_raw_identities = candidate_identities.union(benchmark_map.values())
+    reported: set[tuple[str, str, str]] = set()
+
+    def report_once(
+        row: Mapping[str, str],
+        issue_type: str,
+        severity: str,
+        blocks: bool,
+        reason: str,
+    ) -> None:
+        key = (issue_type, row.get("market", ""), row.get("ticker", ""))
+        if key in reported:
+            return
+        reported.add(key)
+        _add_issue(
+            issues,
+            issue_type,
+            severity,
+            blocks,
+            "raw_daily_price",
+            config.raw_daily_price_file,
+            reason,
+        )
+
+    def observe(row: Mapping[str, str]) -> None:
         market = row.get("market", "")
         ticker = row.get("ticker", "")
-        date_text = row.get("date", "")
-        key = (market, ticker, date_text)
-        if key in seen:
-            _add_issue(issues, "duplicate_market_ticker_date", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Duplicate {key}.")
-        seen.add(key)
+        identity = (market, ticker)
         if market not in {"US", "KR"}:
-            _add_issue(issues, "market_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Unsupported market {market}.")
+            report_once(row, "market_invalid", "critical", True, f"Unsupported market {market}.")
         if market not in config.market_scope:
-            _add_issue(issues, "raw_market_scope_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Raw row market outside configured scope: {market}.")
+            report_once(row, "raw_market_scope_mismatch", "critical", True, f"Raw row market outside configured scope: {market}.")
+        if identity not in allowed_raw_identities:
+            report_once(
+                row,
+                "raw_identity_outside_candidate_master",
+                "critical",
+                True,
+                f"Raw identity is outside candidate_asset_master: {market}:{ticker}.",
+            )
         if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
-            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"KR ticker must preserve six-character uppercase alphanumeric identity: {ticker}.")
+            report_once(
+                row,
+                "ticker_identity_invalid",
+                "critical",
+                True,
+                f"KR ticker must preserve six-character uppercase alphanumeric identity: {ticker}.",
+            )
         if not ticker or ticker.strip() != ticker:
-            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Ticker must be non-empty and trimmed.")
-        if _parse_date(date_text) is None:
-            _add_issue(issues, "date_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Invalid date {date_text}.")
+            report_once(row, "ticker_identity_invalid", "critical", True, "Ticker must be non-empty and trimmed.")
+        if _parse_date(row.get("date", "")) is None:
+            report_once(row, "date_invalid", "critical", True, f"Invalid date {row.get('date', '')}.")
         try:
             if float(row.get("close", "")) <= 0:
                 raise ValueError
         except ValueError:
-            _add_issue(issues, "price_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "close must be positive.")
+            report_once(row, "price_invalid", "critical", True, "close must be positive.")
+
         source_basis = source.get("priceAdjustmentBasis")
         row_basis = row.get("priceAdjustmentBasis")
         mixed_explicit = config.internal_preview_review_only and source_basis == "mixed_explicit"
         if (mixed_explicit and row_basis not in {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}) or (
             not mixed_explicit and row_basis != source_basis
         ):
-            _add_issue(issues, "price_adjustment_basis_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row priceAdjustmentBasis must match source declaration.")
+            report_once(
+                row,
+                "price_adjustment_basis_mismatch",
+                "critical",
+                True,
+                "Row priceAdjustmentBasis must match source declaration.",
+            )
         if source.get("currencyMode") in {"KRW", "USD"} and row.get("currency") != source.get("currencyMode"):
-            _add_issue(issues, "currency_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row currency must match source currencyMode.")
+            report_once(row, "currency_mismatch", "critical", True, "Row currency must match source currencyMode.")
+
+        review_severity = "warning" if config.internal_preview_review_only else "critical"
+        review_blocks = not config.internal_preview_review_only
         if row.get("licenseStatus") != "approved":
-            _add_issue(issues, "license_status_invalid", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "licenseStatus is not approved; internal Preview remains review-only.")
+            report_once(row, "license_status_invalid", review_severity, review_blocks, "licenseStatus is not approved; internal Preview remains review-only.")
         if row.get("internalUseAllowed") != "true":
-            _add_issue(issues, "internal_use_not_allowed", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "internalUseAllowed is not approved; internal Preview remains review-only.")
+            report_once(row, "internal_use_not_allowed", review_severity, review_blocks, "internalUseAllowed is not approved; internal Preview remains review-only.")
         if row.get("publicationAllowed") != "true":
-            _add_issue(issues, "publication_not_allowed", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "publicationAllowed is false; production publication remains blocked.")
+            report_once(row, "publication_not_allowed", review_severity, review_blocks, "publicationAllowed is false; production publication remains blocked.")
         if row.get("publicationEligibility") != "approved":
-            _add_issue(issues, "publication_eligibility_invalid", "warning" if config.internal_preview_review_only else "critical", not config.internal_preview_review_only, "raw_daily_price", config.raw_daily_price_file, "publicationEligibility requires review; production publication remains blocked.")
+            report_once(row, "publication_eligibility_invalid", review_severity, review_blocks, "publicationEligibility requires review; production publication remains blocked.")
         if row.get("redistributionAllowed") != "true":
-            _add_issue(issues, "redistribution_restricted_review_only", "warning", False, "raw_daily_price", config.raw_daily_price_file, "Redistribution is restricted; package remains candidate review-only.")
+            report_once(row, "redistribution_restricted_review_only", "warning", False, "Redistribution is restricted; package remains candidate review-only.")
+
+    return normalize_daily_price_file_streaming(
+        path,
+        source_file_name=source_file_name,
+        source_sha256=source_sha256,
+        market_order=config.market_scope,
+        row_observer=observe,
+        allow_review_only_provenance=config.internal_preview_review_only,
+        normalized_data_status=(
+            "normalized_candidate_review"
+            if config.internal_preview_review_only
+            else "normalized_fixture"
+        ),
+        requested_as_of_included=str(source.get("requestedAsOfIncluded", config.metric_base_date)),
+        partial_month_policy=config.partial_month_policy,
+    )
 
 
 def _validate_scope_reconciliation(
@@ -894,13 +981,14 @@ def _validate_scope_reconciliation(
     source: Mapping[str, Any],
     manifest: Mapping[str, Any],
     candidates: list[dict[str, str]],
-    raw_rows: list[dict[str, str]],
+    raw_identities: set[tuple[str, str]],
+    raw_markets: set[str],
     issues: list[dict[str, str]],
 ) -> None:
     source_scope = tuple(_normalize_market_scope(source.get("marketScope")))
     manifest_scope = tuple(_normalize_market_scope(manifest.get("expectedMarketScope")))
     candidate_scope = tuple(sorted({row.get("market", "") for row in candidates if row.get("market", "")}))
-    raw_scope = tuple(sorted({row.get("market", "") for row in raw_rows if row.get("market", "")}))
+    raw_scope = tuple(sorted(market for market in raw_markets if market))
     expected_sorted = tuple(sorted(config.market_scope))
     for label, scope in [
         ("source_declaration", tuple(sorted(source_scope))),
@@ -925,7 +1013,6 @@ def _validate_scope_reconciliation(
         if field in source and manifest.get(field) != source.get(field):
             _add_issue(issues, "collection_metadata_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", f"{field} must match source declaration.")
     candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
-    raw_identities = {(row.get("market", ""), row.get("ticker", "")) for row in raw_rows}
     missing_candidate_prices = candidate_identities.difference(raw_identities)
     for identity in sorted(missing_candidate_prices):
         _add_issue(

@@ -14,7 +14,11 @@ import pandas as pd
 from scripts import build_us_price_metrics_overlay_chunked as us_builder
 from scripts import build_kr_price_metrics_overlay_chunked as kr_builder
 from scripts import combine_kr_price_metrics_chunks as kr_combiner
-from scripts.prepare_monthly_metrics_candidate_inputs import build_candidate_rows, prepare_inputs
+from scripts.prepare_monthly_metrics_candidate_inputs import (
+    build_candidate_rows,
+    combine_market_raw_files,
+    prepare_inputs,
+)
 from scripts.raw_daily_price_chunks import (
     actual_last_price_date,
     collection_date_window,
@@ -332,6 +336,135 @@ class RawDailyCollectionTests(unittest.TestCase):
         self.assertEqual(review, [])
         self.assertEqual({row["isActive"] for row in candidates}, {""})
 
+    def test_three_sorted_chunks_are_streamed_through_global_k_way_merge(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            chunks = [
+                ("us_part0000.csv", "ZZZZ", ["2025-01-02", "2025-01-03"]),
+                ("us_part0001.csv", "APCB", ["2023-05-03", "2023-05-04"]),
+                ("us_part0002.csv", "MMMM", ["2024-02-01", "2024-02-02"]),
+            ]
+            for file_name, ticker, dates in chunks:
+                rows = []
+                for index, date_text in enumerate(dates):
+                    row = extract_raw_daily_rows(
+                        fake_history(),
+                        market="US",
+                        ticker=ticker,
+                        currency="USD",
+                        retrieved_at="2026-07-23T00:00:00+00:00",
+                    )[index]
+                    row["date"] = date_text
+                    rows.append(row)
+                write_raw_daily_rows(root / file_name, rows)
+
+            output = root / "us_combined.csv"
+            summary = combine_raw_daily_chunks(str(root / "us_part*.csv"), output, "US")
+            with output.open("r", encoding="utf-8-sig", newline="") as handle:
+                combined = list(csv.DictReader(handle))
+            keys = [(row["market"], row["ticker"], row["date"]) for row in combined]
+            self.assertEqual(keys, sorted(keys))
+            self.assertEqual([row["ticker"] for row in combined], ["APCB", "APCB", "MMMM", "MMMM", "ZZZZ", "ZZZZ"])
+            self.assertEqual(summary["rawDailyAssetCount"], 3)
+            self.assertEqual(summary["rawDailyRowCount"], 6)
+
+    def test_k_way_merge_rejects_real_duplicate_key_across_streams(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            row = extract_raw_daily_rows(
+                fake_history(),
+                market="US",
+                ticker="APCB",
+                currency="USD",
+                retrieved_at="2026-07-23T00:00:00+00:00",
+            )[0]
+            write_raw_daily_rows(root / "us_part0000.csv", [row])
+            write_raw_daily_rows(root / "us_part0001.csv", [row])
+            with self.assertRaisesRegex(ValueError, "duplicate raw key across chunks"):
+                combine_raw_daily_chunks(str(root / "us_part*.csv"), root / "combined.csv", "US")
+
+    def test_k_way_merge_rejects_one_asset_split_across_chunks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            rows = extract_raw_daily_rows(
+                fake_history(),
+                market="US",
+                ticker="APCB",
+                currency="USD",
+                retrieved_at="2026-07-23T00:00:00+00:00",
+            )
+            write_raw_daily_rows(root / "us_part0000.csv", [rows[0]])
+            write_raw_daily_rows(root / "us_part0001.csv", [rows[1]])
+            with self.assertRaisesRegex(ValueError, "asset appears in multiple raw chunks"):
+                combine_raw_daily_chunks(str(root / "us_part*.csv"), root / "combined.csv", "US")
+
+    def test_k_way_merge_preserves_kr_alphanumeric_identity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            for index, ticker in enumerate(["0086C0", "005930", "229200"]):
+                rows = extract_raw_daily_rows(
+                    fake_history(),
+                    market="KR",
+                    ticker=ticker,
+                    currency="KRW",
+                    retrieved_at="2026-07-23T00:00:00+00:00",
+                )
+                write_raw_daily_rows(root / f"kr_part{index:04d}.csv", rows)
+            output = root / "kr_combined.csv"
+            combine_raw_daily_chunks(str(root / "kr_part*.csv"), output, "KR")
+            with output.open("r", encoding="utf-8-sig", newline="") as handle:
+                combined = list(csv.DictReader(handle))
+            self.assertIn("0086C0", {row["ticker"] for row in combined})
+            self.assertEqual(
+                [(row["ticker"], row["date"]) for row in combined],
+                sorted((row["ticker"], row["date"]) for row in combined),
+            )
+
+    def test_prepare_raw_order_and_duplicate_errors_are_distinct(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            candidate_identities = {("US", "AAA"), ("US", "BBB"), ("KR", "0086C0")}
+            template = extract_raw_daily_rows(
+                fake_history(),
+                market="US",
+                ticker="AAA",
+                currency="USD",
+                retrieved_at="2026-07-23T00:00:00+00:00",
+            )[0]
+            kr_row = {
+                **template,
+                "market": "KR",
+                "ticker": "0086C0",
+                "currency": "KRW",
+            }
+            kr_path = root / "kr.csv"
+            write_raw_daily_rows(kr_path, [kr_row])
+
+            duplicate_path = root / "us_duplicate.csv"
+            duplicate_row = {**template, "ticker": "AAA"}
+            with duplicate_path.open("w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(duplicate_row))
+                writer.writeheader()
+                writer.writerows([duplicate_row, duplicate_row])
+            with self.assertRaisesRegex(ValueError, "duplicate raw key"):
+                combine_market_raw_files(
+                    [(duplicate_path, "US"), (kr_path, "KR")],
+                    root / "duplicate_out.csv",
+                    candidate_identities,
+                )
+
+            out_of_order_path = root / "us_out_of_order.csv"
+            with out_of_order_path.open("w", encoding="utf-8-sig", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(template))
+                writer.writeheader()
+                writer.writerows([{**template, "ticker": "BBB"}, {**template, "ticker": "AAA"}])
+            with self.assertRaisesRegex(ValueError, "raw input out of order"):
+                combine_market_raw_files(
+                    [(out_of_order_path, "US"), (kr_path, "KR")],
+                    root / "order_out.csv",
+                    candidate_identities,
+                )
+
     def test_kr_runtime_chunk_combine_preserves_alphanumeric_identity(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -457,6 +590,9 @@ class RawDailyCollectionTests(unittest.TestCase):
             self.assertTrue(source["partialFinalMonthDetected"])
             self.assertTrue(source["partialFinalMonthExcluded"])
             self.assertEqual(source["partialMonthPolicy"], "exclude_from_metrics")
+            self.assertEqual(source["assetCoverageCount"], 2)
+            self.assertEqual(source["firstDateByMarket"], {"US": "2025-01-02", "KR": "2025-01-02"})
+            self.assertEqual(source["lastDateByMarket"], {"US": "2025-01-06", "KR": "2025-01-06"})
             operator_manifest = json.loads((output_dir / "operator_submission_manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(operator_manifest["requestedAsOfIncluded"], "2026-07-23")
             self.assertEqual(operator_manifest["providerDownloadEndExclusive"], "2026-07-24")

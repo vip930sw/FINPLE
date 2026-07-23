@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import csv
 from calendar import monthrange
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Iterable, Mapping
+from pathlib import Path
+from typing import Callable, Iterable, Mapping
 
 from .config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, SCHEMA_VERSION
 from .schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
@@ -181,6 +183,175 @@ def normalize_daily_price_rows(
     normalized_rows.extend(_normalize_month_ends(metric_input_rows, audit_rows, normalized_data_status))
     action_summary = _corporate_action_summary(valid_rows)
     return _result(normalized_rows, audit_rows + action_summary, source_file_name, source_sha256, rows, partial_metadata)
+
+
+def normalize_daily_price_file_streaming(
+    path: Path,
+    *,
+    source_file_name: str,
+    source_sha256: str,
+    market_order: Iterable[str],
+    row_observer: Callable[[Mapping[str, str]], None] | None = None,
+    allow_review_only_provenance: bool = False,
+    normalized_data_status: str = "normalized_fixture",
+    requested_as_of_included: str = "",
+    partial_month_policy: str = PARTIAL_MONTH_POLICY,
+) -> dict[str, object]:
+    """Normalize a sorted raw CSV while holding only one asset series in memory."""
+    normalized_rows: list[dict[str, str]] = []
+    audit_rows: list[dict[str, str]] = []
+    current_series: list[dict[str, str]] = []
+    current_identity: tuple[str, str] | None = None
+    completed_identities: set[tuple[str, str]] = set()
+    raw_identities: set[tuple[str, str]] = set()
+    raw_markets: set[str] = set()
+    first_date = ""
+    last_date = ""
+    first_date_by_market: dict[str, str] = {}
+    last_date_by_market: dict[str, str] = {}
+    row_count = 0
+    previous_order_key: tuple[int, str, str] | None = None
+    market_rank = {market: index for index, market in enumerate(market_order)}
+
+    def flush_series() -> None:
+        nonlocal current_series, current_identity
+        if not current_series:
+            return
+        result = normalize_daily_price_rows(
+            current_series,
+            source_file_name=source_file_name,
+            source_sha256=source_sha256,
+            allow_review_only_provenance=allow_review_only_provenance,
+            normalized_data_status=normalized_data_status,
+            requested_as_of_included=requested_as_of_included,
+            partial_month_policy=partial_month_policy,
+        )
+        normalized_rows.extend(result["normalizedRows"])
+        audit_rows.extend(result["auditRows"])
+        if current_identity is not None:
+            completed_identities.add(current_identity)
+        current_series = []
+        current_identity = None
+
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        missing_columns = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(reader.fieldnames or []))
+        if missing_columns:
+            audit_rows.append(
+                _audit_row(
+                    {},
+                    "raw_daily_schema_missing_columns",
+                    "critical",
+                    True,
+                    f"Missing required raw daily columns: {', '.join(missing_columns)}.",
+                )
+            )
+        else:
+            for raw_row in reader:
+                if None in raw_row:
+                    audit_rows.append(
+                        _audit_row(
+                            {},
+                            "malformed_csv_row",
+                            "critical",
+                            True,
+                            "CSV row has more fields than the header.",
+                        )
+                    )
+                    continue
+                row = {column: str(raw_row.get(column, "") or "") for column in RAW_DAILY_PRICE_COLUMNS}
+                market = row["market"]
+                ticker = row["ticker"]
+                date_text = row["date"]
+                identity = (market, ticker)
+                raw_identities.add(identity)
+                raw_markets.add(market)
+                row_count += 1
+                if _parse_date(date_text) is not None:
+                    first_date = date_text if not first_date or date_text < first_date else first_date
+                    last_date = date_text if not last_date or date_text > last_date else last_date
+                    first_date_by_market[market] = (
+                        date_text
+                        if market not in first_date_by_market or date_text < first_date_by_market[market]
+                        else first_date_by_market[market]
+                    )
+                    last_date_by_market[market] = (
+                        date_text
+                        if market not in last_date_by_market or date_text > last_date_by_market[market]
+                        else last_date_by_market[market]
+                    )
+                if row_observer is not None:
+                    row_observer(row)
+
+                rank = market_rank.get(market, len(market_rank))
+                order_key = (rank, ticker, date_text)
+                if previous_order_key is not None:
+                    if order_key == previous_order_key:
+                        audit_rows.append(
+                            _audit_row(row, "duplicate_date", "critical", True, "Duplicate market/ticker/date raw key.")
+                        )
+                    elif order_key < previous_order_key:
+                        audit_rows.append(
+                            _audit_row(
+                                row,
+                                "non_monotonic_series_order",
+                                "critical",
+                                True,
+                                "Raw rows must be strictly ordered by configured market, ticker, and date.",
+                            )
+                        )
+                previous_order_key = order_key
+
+                if current_identity is None:
+                    current_identity = identity
+                elif identity != current_identity:
+                    flush_series()
+                    if identity in completed_identities:
+                        audit_rows.append(
+                            _audit_row(
+                                row,
+                                "non_contiguous_series",
+                                "critical",
+                                True,
+                                "A market/ticker series reappeared after another series.",
+                            )
+                        )
+                    current_identity = identity
+                current_series.append(row)
+            flush_series()
+
+    if row_count == 0 and not any(row["issueType"] == "raw_daily_schema_missing_columns" for row in audit_rows):
+        audit_rows.append(_audit_row({}, "raw_daily_missing", "critical", True, "Raw daily price CSV is empty."))
+
+    partial_metadata = partial_month_metadata(
+        requested_as_of_included,
+        last_date,
+        partial_month_policy,
+    )
+    return {
+        "normalizedRows": normalized_rows,
+        "auditRows": audit_rows,
+        "sourceMetadata": {
+            "sourceFileName": source_file_name,
+            "sourceSha256": source_sha256,
+            "normalizationVersion": NORMALIZATION_VERSION,
+            "schemaVersion": SCHEMA_VERSION,
+            "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
+            **partial_metadata,
+        },
+        "partialMonthMetadata": partial_metadata,
+        "rawStats": {
+            "rowCount": row_count,
+            "assetCount": len(raw_identities),
+            "identities": raw_identities,
+            "markets": raw_markets,
+            "firstDate": first_date,
+            "lastDate": last_date,
+            "firstDateByMarket": first_date_by_market,
+            "lastDateByMarket": last_date_by_market,
+        },
+        "blockingIssueCount": sum(1 for row in audit_rows if row["blocksPublication"] == "true"),
+    }
 
 
 def partial_month_metadata(

@@ -172,6 +172,14 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn('"partial_month_policy": PARTIAL_MONTH_POLICY', one_click)
         self.assertIn('"metricDataThroughMonth"', one_click)
         self.assertIn("DOWNLOAD_OUTPUT_ZIP = False", one_click)
+        self.assertIn("candidate-input-attempts", one_click)
+        self.assertIn("attempt-reports", one_click)
+        self.assertIn('RUN_PATHS["one_click"] / "attempts" / ATTEMPT_ID', one_click)
+        self.assertIn('"--submission-id", ATTEMPT_ID', one_click)
+        retry_targets = one_click.split("retry_targets = [", 1)[1].split("for target, expected_parent", 1)[0]
+        self.assertNotIn("COLLECTED_RAW_ROOT", retry_targets)
+        self.assertNotIn('RUN_PATHS["chunks"]', retry_targets)
+        self.assertNotIn('RUN_PATHS["combined"]', retry_targets)
 
     def test_collection_notebooks_use_shallow_fetch_head_detached_checkout(self):
         for path in [US_COLLECTION_NOTEBOOK, KR_COLLECTION_NOTEBOOK]:

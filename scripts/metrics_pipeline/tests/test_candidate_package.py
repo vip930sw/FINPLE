@@ -7,9 +7,11 @@ import tempfile
 import unittest
 from calendar import monthrange
 from pathlib import Path
+from unittest import mock
 from zipfile import ZipFile
 
 from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package, verify_candidate_package
+from scripts.metrics_pipeline import candidate_package as candidate_package_module
 from scripts.metrics_pipeline.candidate_package import (
     CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
     SOURCE_DECLARATION_CONTRACT_VERSION,
@@ -18,7 +20,11 @@ from scripts.metrics_pipeline.candidate_package import (
 from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
 from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS
 from scripts.metrics_pipeline.tests.test_pipeline import FIXTURE_DIR, build_config
-from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
+from scripts.metrics_pipeline.timeseries import (
+    NORMALIZATION_VERSION,
+    normalize_daily_price_file_streaming,
+    normalize_daily_price_rows,
+)
 
 
 def sha256(path: Path) -> str:
@@ -460,7 +466,7 @@ class ProductionCandidatePackageTests(unittest.TestCase):
 
     def test_raw_csv_identity_and_quality_blocks(self):
         invalid_rows = raw_daily_rows()
-        invalid_rows.append(dict(invalid_rows[0]))
+        invalid_rows.insert(1, dict(invalid_rows[0]))
         invalid_price_rows = raw_daily_rows()
         invalid_price_rows[0]["close"] = "0"
         invalid_ticker_rows = raw_daily_rows()
@@ -478,6 +484,47 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                 result = run_candidate(input_dir, Path(temp_dir) / "out")
                 self.assertFalse(result["candidatePackageReady"])
                 self.assertIn(expected_issue, {issue["issueType"] for issue in result["issues"]})
+
+    def test_streaming_normalization_matches_existing_small_fixture(self):
+        rows = raw_daily_rows()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            raw_path = Path(temp_dir) / "raw.csv"
+            write_csv(raw_path, RAW_DAILY_PRICE_COLUMNS, rows)
+            expected = normalize_daily_price_rows(
+                rows,
+                source_file_name=raw_path.name,
+                source_sha256=sha256(raw_path),
+                requested_as_of_included="2026-06-30",
+            )
+            actual = normalize_daily_price_file_streaming(
+                raw_path,
+                source_file_name=raw_path.name,
+                source_sha256=sha256(raw_path),
+                market_order=["KR"],
+                requested_as_of_included="2026-06-30",
+            )
+            self.assertEqual(actual["normalizedRows"], expected["normalizedRows"])
+            self.assertEqual(
+                sorted(row["issueType"] for row in actual["auditRows"]),
+                sorted(row["issueType"] for row in expected["auditRows"]),
+            )
+            self.assertEqual(actual["rawStats"]["rowCount"], len(rows))
+            self.assertEqual(actual["rawStats"]["assetCount"], 2)
+            self.assertEqual(actual["rawStats"]["lastDate"], "2026-06-30")
+
+    def test_candidate_package_never_loads_raw_daily_csv_with_safe_read_list(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            original = candidate_package_module._safe_read_csv
+
+            def guarded_safe_read(path, issues, role):
+                if role == "raw_daily_price":
+                    raise AssertionError("raw daily CSV must not use the list-loading path")
+                return original(path, issues, role)
+
+            with mock.patch.object(candidate_package_module, "_safe_read_csv", side_effect=guarded_safe_read):
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertTrue(result["candidatePackageReady"])
 
     def test_alphanumeric_kr_candidate_identity_survives_candidate_package_outputs(self):
         candidates = [{**candidate_rows()[0], "ticker": "0086C0"}]
