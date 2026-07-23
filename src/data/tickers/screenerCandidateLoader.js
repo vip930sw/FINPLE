@@ -3,6 +3,10 @@ import {
   applyScreenerCandidateOverlays,
   isPriceMetricsAppReadyCandidate,
 } from "./screenerCandidateOverlay";
+import {
+  isAppPreviewRuntimeEnabled,
+  loadAppPreviewCatalog,
+} from "./appPreviewDataSource";
 
 const stripBom = (value = "") => String(value || "").replace(/^\uFEFF/, "");
 const toNumber = (value) => {
@@ -133,13 +137,159 @@ export const US_EXPANSION_CANDIDATES = US_EXTRA_CANDIDATES;
 export const KR_ETF_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "ETF");
 export const KR_STOCK_CANDIDATES = KR_SCREENER_CANDIDATES.filter((candidate) => candidate.type === "stock");
 
+let activeScreenerCandidates = ALL_SCREENER_CANDIDATES;
+let activeScreenerCandidateMap = new Map(
+  activeScreenerCandidates.map((candidate) => [
+    `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`,
+    candidate,
+  ]),
+);
+let appPreviewState = {
+  enabled: false,
+  status: "production_fallback",
+  manifest: null,
+  error: null,
+};
+let appPreviewLoadPromise = null;
+const appPreviewSubscribers = new Set();
+
+function notifyAppPreviewSubscribers() {
+  const snapshot = getScreenerCandidateSnapshot();
+  appPreviewSubscribers.forEach((subscriber) => subscriber(snapshot));
+}
+
+function createAppPreviewCandidate(baseCandidate, metricRow, manifest) {
+  const rawMissing = metricRow.rawPriceCoverageStatus === "missing";
+  return {
+    ...baseCandidate,
+    expectedCagr: metricRow.selectedCagr,
+    priceCagr10y: metricRow.rawPriceCagr10y,
+    rawPriceCagr10y: metricRow.rawPriceCagr10y,
+    rollingCagr10yMedian: metricRow.rollingCagr10yMedian,
+    rollingCagr10yP25: metricRow.rollingCagr10yP25,
+    rollingCagr10yP75: metricRow.rollingCagr10yP75,
+    validRollingWindowCount10y: metricRow.validRollingWindowCount10y,
+    selectedCagr: metricRow.selectedCagr,
+    cagrPolicy: metricRow.cagrPolicy,
+    beta: metricRow.selectedBeta,
+    selectedBeta: metricRow.selectedBeta,
+    betaPolicy: metricRow.betaPolicy,
+    mdd: metricRow.selectedMdd,
+    selectedMdd: metricRow.selectedMdd,
+    mddPolicy: metricRow.mddPolicy,
+    dividendYield: metricRow.dividendYield,
+    displayDividendYield:
+      metricRow.dividendYield === null || metricRow.dividendYield === undefined
+        ? ""
+        : `${Number(metricRow.dividendYield).toFixed(2)}%`,
+    dividendStatus: metricRow.dividendStatus,
+    dividendPolicy: metricRow.dividendStatus,
+    dataStatus: metricRow.dataStatus,
+    metricsStatus: metricRow.dataStatus,
+    reviewFlag: metricRow.reviewFlag,
+    reviewTag: metricRow.reviewFlag,
+    reviewReason: metricRow.reviewReason || "",
+    rawPriceCoverageStatus: metricRow.rawPriceCoverageStatus,
+    priceUnavailable: rawMissing,
+    metricBaseDate: metricRow.metricBaseDate || manifest.metricBaseDate,
+    metricDataThroughMonth: manifest.metricDataThroughMonth,
+    metricsSource: "finple_app_preview_export_step114_2z",
+    sourceHash: metricRow.sourceHash || manifest.sourceCandidatePackageHash,
+    rawSourceSha256: metricRow.rawSourceSha256 || "",
+    normalizationVersion: metricRow.normalizationVersion || "",
+    normalizedSeriesHash: metricRow.normalizedSeriesHash || "",
+    rollingMetricVersion: metricRow.rollingMetricVersion || "",
+    pipelineVersion: manifest.pipelineVersion || "",
+    calculationPolicyVersion: manifest.calculationPolicyVersion || "",
+    overlayStatus: "internal_preview_review_only",
+    internalPreviewReviewOnly: true,
+    previewLoaderEnabled: true,
+    productionPublishReady: false,
+    appExportApproved: false,
+    metricMode: "candidate_app_preview_price_return",
+    dataSource: "finple_app_preview_export_step114_2z",
+  };
+}
+
+function activateAppPreviewCatalog(catalog) {
+  const metricMap = new Map(
+    catalog.overlay.rows.map((row) => [
+      `${normalizeMarket(row.market)}:${normalizeTicker(row.ticker)}`,
+      row,
+    ]),
+  );
+  const nextCandidates = RAW_SCREENER_CANDIDATES.map((candidate) => {
+    const key = `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`;
+    const metricRow = metricMap.get(key);
+    if (!metricRow) throw new TypeError(`app preview metric identity missing: ${key}`);
+    return createAppPreviewCandidate(candidate, metricRow, catalog.manifest);
+  });
+  if (nextCandidates.length !== 6000 || metricMap.size !== 6000) {
+    throw new TypeError("app preview candidate reconciliation must preserve 6000 identities");
+  }
+  activeScreenerCandidates = nextCandidates;
+  activeScreenerCandidateMap = new Map(
+    nextCandidates.map((candidate) => [
+      `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`,
+      candidate,
+    ]),
+  );
+  appPreviewState = {
+    enabled: true,
+    status: "internal_preview_review_only",
+    manifest: catalog.manifest,
+    error: null,
+  };
+  notifyAppPreviewSubscribers();
+  return getScreenerCandidateSnapshot();
+}
+
+export async function loadScreenerAppPreview(options = {}) {
+  if (!isAppPreviewRuntimeEnabled(options)) return getScreenerCandidateSnapshot();
+  if (!appPreviewLoadPromise || options.disableCache === true) {
+    appPreviewLoadPromise = loadAppPreviewCatalog(options)
+      .then(activateAppPreviewCatalog)
+      .catch((error) => {
+        appPreviewState = {
+          enabled: true,
+          status: "preview_load_error",
+          manifest: null,
+          error: error?.message || String(error),
+        };
+        notifyAppPreviewSubscribers();
+        appPreviewLoadPromise = null;
+        throw error;
+      });
+  }
+  return appPreviewLoadPromise;
+}
+
+export function getScreenerCandidateSnapshot() {
+  return {
+    candidates: activeScreenerCandidates,
+    usCandidates: activeScreenerCandidates.filter((candidate) => candidate.market === "US"),
+    krCandidates: activeScreenerCandidates.filter((candidate) => candidate.market === "KR"),
+    preview: { ...appPreviewState },
+  };
+}
+
+export function subscribeScreenerCandidateSnapshot(subscriber) {
+  if (typeof subscriber !== "function") return () => {};
+  appPreviewSubscribers.add(subscriber);
+  return () => appPreviewSubscribers.delete(subscriber);
+}
+
 export function findScreenerCandidateByTicker(ticker, market = "") {
   const normalizedTicker = normalizeTicker(ticker);
   const normalizedMarket = String(market || "").trim().toUpperCase();
   if (!normalizedTicker) return null;
+  if (normalizedMarket) {
+    const exact = activeScreenerCandidateMap.get(`${normalizedMarket}:${normalizedTicker}`);
+    if (exact) return exact;
+  }
   return (
-    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker && (!normalizedMarket || normalizeMarket(candidate?.market) === normalizedMarket)) ||
-    ALL_SCREENER_CANDIDATES.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker) ||
+    activeScreenerCandidates.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker && (!normalizedMarket || normalizeMarket(candidate?.market) === normalizedMarket)) ||
+    activeScreenerCandidates.find((candidate) => normalizeTicker(candidate?.ticker) === normalizedTicker) ||
     null
   );
 }
@@ -170,6 +320,39 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     reviewReason: candidate.reviewReason,
     metricMode: candidate.metricMode || "candidate_6000_balanced_v1",
     dataSource: candidate.dataSource || "finple_app_candidates_6000_balanced_v1",
+    priceCagr10y: candidate.priceCagr10y,
+    rawPriceCagr10y: candidate.rawPriceCagr10y,
+    rollingCagr10yMedian: candidate.rollingCagr10yMedian,
+    rollingCagr10yP25: candidate.rollingCagr10yP25,
+    rollingCagr10yP75: candidate.rollingCagr10yP75,
+    validRollingWindowCount10y: candidate.validRollingWindowCount10y,
+    selectedCagr: candidate.selectedCagr,
+    cagrPolicy: candidate.cagrPolicy,
+    selectedBeta: candidate.selectedBeta,
+    betaPolicy: candidate.betaPolicy,
+    selectedMdd: candidate.selectedMdd,
+    mddPolicy: candidate.mddPolicy,
+    dividendStatus: candidate.dividendStatus,
+    dataStatus: candidate.dataStatus,
+    metricsStatus: candidate.metricsStatus,
+    reviewFlag: candidate.reviewFlag,
+    rawPriceCoverageStatus: candidate.rawPriceCoverageStatus,
+    priceUnavailable: candidate.priceUnavailable,
+    metricBaseDate: candidate.metricBaseDate,
+    metricDataThroughMonth: candidate.metricDataThroughMonth,
+    metricsSource: candidate.metricsSource,
+    sourceHash: candidate.sourceHash,
+    rawSourceSha256: candidate.rawSourceSha256,
+    normalizationVersion: candidate.normalizationVersion,
+    normalizedSeriesHash: candidate.normalizedSeriesHash,
+    rollingMetricVersion: candidate.rollingMetricVersion,
+    pipelineVersion: candidate.pipelineVersion,
+    calculationPolicyVersion: candidate.calculationPolicyVersion,
+    overlayStatus: candidate.overlayStatus,
+    internalPreviewReviewOnly: candidate.internalPreviewReviewOnly,
+    previewLoaderEnabled: candidate.previewLoaderEnabled,
+    productionPublishReady: candidate.productionPublishReady,
+    appExportApproved: candidate.appExportApproved,
   };
 }
 
@@ -184,10 +367,12 @@ export function hydrateAssetFromScreenerCandidate(asset = {}) {
     quantity: asset.quantity ?? 0,
     price: asset.price ?? 0,
     priceMode: asset.priceMode || "manual",
-    cagr: patch.cagr ?? asset.cagr ?? 0,
-    beta: patch.beta ?? asset.beta ?? 0,
-    mdd: patch.mdd ?? asset.mdd ?? 0,
-    dividendYield: patch.dividendYield ?? asset.dividendYield ?? null,
+    cagr: patch.cagr !== undefined ? patch.cagr : asset.cagr,
+    beta: patch.beta !== undefined ? patch.beta : asset.beta,
+    mdd: patch.mdd !== undefined ? patch.mdd : asset.mdd,
+    dividendYield: patch.internalPreviewReviewOnly
+      ? patch.dividendYield
+      : patch.dividendYield ?? asset.dividendYield ?? null,
     displayDividendYield: patch.displayDividendYield || asset.displayDividendYield || "",
     dividendPolicy: patch.dividendPolicy || asset.dividendPolicy || "",
     dividendSource: patch.dividendSource || asset.dividendSource || "",

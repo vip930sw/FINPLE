@@ -46,7 +46,7 @@ export function calculatePortfolioResult(settings = {}, assets) {
   return buildMonthlyBaselineProjection({
     settings: {
       ...safeSettings,
-      startValue: safeSettings.startValue ?? simulationStartValue,
+      startValue: simulationStartValue,
       investmentMonths,
     },
     assets: safeAssets,

@@ -8,7 +8,7 @@ test("app preserves only explicit personal and mypage login destinations", async
   const source = await readFile(SOURCE_PATH, "utf8");
 
   assert.match(source, /if \(!\["mypage", "personal"\]\.includes\(page\)\) return;/);
-  assert.match(source, /if \(page === "personal" && !isFinpleUserLoggedIn\(\)\) \{/);
+  assert.match(source, /if \(page === "personal" && !isFinpleUserLoggedIn\(\) && !isLocalAppPreviewQaEnabled\(\)\) \{/);
   assert.match(source, /if \(page === "mypage" && !isFinpleUserLoggedIn\(\)\) \{/);
   assert.match(source, /rememberPostLoginRedirectPage\("mypage"\);/);
 });

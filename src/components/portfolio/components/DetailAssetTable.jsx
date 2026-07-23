@@ -28,7 +28,9 @@ function isCashAsset(asset) {
 }
 
 function formatMetric(value, formatter) {
-  return formatDashWhenZero(value, formatter);
+  if (value === null || value === undefined || value === "") return "-";
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? formatter(numberValue) : "-";
 }
 
 export default function DetailAssetTable({

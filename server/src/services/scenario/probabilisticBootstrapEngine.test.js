@@ -98,6 +98,7 @@ test("different seed changes trace and output hash", () => {
 test("engine does not use Math.random", () => {
   const source = fs.readFileSync("server/src/services/scenario/probabilisticBootstrapEngine.js", "utf8");
   assert.doesNotMatch(source, /Math\.random/);
+  assert.doesNotMatch(source, /node:crypto/);
 });
 
 test("6-month and 12-month block policies keep exact block lengths", () => {

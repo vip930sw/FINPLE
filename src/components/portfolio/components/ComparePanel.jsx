@@ -111,6 +111,12 @@ export default function ComparePanel({ insightComparisonPortfolios, chartCompari
               <div className="portfolioInsightBox">
                 <span>{portfolio.insight.type}</span>
                 <p>{portfolio.insight.text}</p>
+                {portfolio.assets?.some((asset) => asset?.internalPreviewReviewOnly) &&
+                portfolio.result?.status === "blocked" ? (
+                  <ul aria-label={`${portfolio.name} Internal Preview 계산 보류 사유`}>
+                    {(portfolio.result.blockReasons || []).map((reason) => <li key={reason}>{reason}</li>)}
+                  </ul>
+                ) : null}
               </div>
             </div>
           ))}

@@ -359,6 +359,27 @@ function validateFixtureContext({ result, fixtureContext, fingerprint, expectedI
   if (fixtureContext.payloadSignature !== signature) issues.push("fixture_payload_signature_mismatch");
 }
 
+function validateInternalPreviewContext({ result, context, activePortfolio, assets, expectedInputHash, expectedOutputHash, issues }) {
+  if (context?.reviewOnly !== true) issues.push("internal_preview_review_gate_missing");
+  if (context?.productionPublishReady !== false) issues.push("internal_preview_production_gate_invalid");
+  if (context?.appExportApproved !== false) issues.push("internal_preview_app_export_gate_invalid");
+  if (context?.gapsForwardFilled !== false) issues.push("internal_preview_forward_fill_invalid");
+  if (!isNonEmptyString(context?.sourceCandidatePackageId)) issues.push("internal_preview_source_package_missing");
+  if (String(context?.portfolioId || "") !== String(activePortfolio?.id || "")) {
+    issues.push("portfolioFingerprint_mismatch");
+  }
+  const expectedIdentities = safeArray(assets)
+    .map((asset) => `${normalizeMarket(asset)}:${normalizeTicker(asset)}`)
+    .filter((identity) => !identity.endsWith(":") && !identity.endsWith(":CASH"))
+    .sort();
+  const contextIdentities = safeArray(context?.identities).map((value) => String(value || "").trim()).filter(Boolean).sort();
+  if (expectedIdentities.join("|") !== contextIdentities.join("|")) {
+    issues.push("internal_preview_asset_identity_mismatch");
+  }
+  if (expectedInputHash && expectedInputHash !== result.inputHash) issues.push("expected_inputHash_mismatch");
+  if (expectedOutputHash && expectedOutputHash !== result.outputHash) issues.push("expected_outputHash_mismatch");
+}
+
 function normalizeContributionSeries(result) {
   return result.contributionSeries.map((point) => ({
     monthIndex: point.monthIndex,
@@ -466,8 +487,10 @@ function createReadyViewModel({
   expectedInputHash,
   expectedOutputHash,
   providerApprovalEvidence = null,
+  internalPreviewContext = null,
 }) {
   const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
+  const isInternalPreview = isPlainObject(internalPreviewContext);
   return {
     uiVersion: PROBABILITY_UI_VERSION,
     status: "ready",
@@ -477,11 +500,13 @@ function createReadyViewModel({
     expectedOutputHash: expectedOutputHash || result.outputHash,
     resultInputHash: result.inputHash,
     resultOutputHash: result.outputHash,
-    fixtureOnly: approvalEvidence ? false : true,
+    fixtureOnly: isInternalPreview ? false : approvalEvidence ? false : true,
+    internalPreviewReviewOnly: isInternalPreview,
     productionPublishReady: Boolean(approvalEvidence?.productionPublishReady),
     appExportApproved: Boolean(approvalEvidence?.appExportApproved),
     providerApprovalEvidence: approvalEvidence,
     fixtureContext: result.fixtureContext,
+    internalPreviewContext,
     scenarioVersion: result.scenarioVersion,
     method: result.method,
     prngAlgorithm: result.prngAlgorithm,
@@ -536,6 +561,7 @@ export function buildProbabilityScenarioViewModel({
   expectedInputHash = null,
   expectedOutputHash = null,
   enableFixtureReview = false,
+  enableInternalPreviewReview = false,
   providerApprovalEvidence = null,
 } = {}) {
   const selectedPortfolioName = activePortfolio?.name || "선택 포트폴리오";
@@ -556,11 +582,29 @@ export function buildProbabilityScenarioViewModel({
   const status = normalizeStatus(result.status);
   const issues = [];
   const hasFixtureContext = isPlainObject(result.fixtureContext);
+  const hasInternalPreviewContext = isPlainObject(result.internalPreviewContext);
   const approvalEvidence = normalizeProviderApprovalEvidence(providerApprovalEvidence, result, fingerprint);
   validateContractHeader(result, issues);
 
   if (status === "ready") {
-    if (hasFixtureContext) {
+    if (hasInternalPreviewContext) {
+      if (!enableInternalPreviewReview) {
+        return createStatusViewModel({
+          status: "idle",
+          selectedPortfolioName,
+          reasons: ["internal_preview_review_gate_disabled"],
+        });
+      }
+      validateInternalPreviewContext({
+        result,
+        context: result.internalPreviewContext,
+        activePortfolio,
+        assets,
+        expectedInputHash,
+        expectedOutputHash,
+        issues,
+      });
+    } else if (hasFixtureContext) {
       if (!enableFixtureReview) {
         return createStatusViewModel({
           status: "idle",
@@ -621,6 +665,28 @@ export function buildProbabilityScenarioViewModel({
   }
 
   if (status !== "ready") {
+    if (hasInternalPreviewContext && enableInternalPreviewReview) {
+      return {
+        ...createStatusViewModel({
+          status,
+          selectedPortfolioName,
+          reasons: safeArray(result?.dataQuality?.blockReasons),
+        }),
+        scenarioVersion: result.scenarioVersion,
+        methodology: createMethodology(result),
+        fixtureOnly: false,
+        internalPreviewReviewOnly: true,
+        productionPublishReady: false,
+        appExportApproved: false,
+        internalPreviewContext: result.internalPreviewContext,
+        resultInputHash: result.inputHash,
+        resultOutputHash: result.outputHash,
+        audit: {
+          sourceHashCount: safeArray(result.sourceHashes).length,
+          outputHash: result.outputHash,
+        },
+      };
+    }
     if (!hasFixtureContext || !enableFixtureReview) {
       return createStatusViewModel({
         status: "blocked",
@@ -653,13 +719,17 @@ export function buildProbabilityScenarioViewModel({
 
   return createReadyViewModel({
     result,
-    selectedPortfolioName: result.fixtureContext?.portfolioName || selectedPortfolioName,
+    selectedPortfolioName:
+      result.internalPreviewContext?.portfolioName ||
+      result.fixtureContext?.portfolioName ||
+      selectedPortfolioName,
     assets,
     baselineResult,
     fingerprint,
     expectedInputHash,
     expectedOutputHash,
-    providerApprovalEvidence: hasFixtureContext ? null : approvalEvidence,
+    providerApprovalEvidence: hasFixtureContext || hasInternalPreviewContext ? null : approvalEvidence,
+    internalPreviewContext: hasInternalPreviewContext ? result.internalPreviewContext : null,
   });
 }
 

@@ -77,6 +77,9 @@ function MethodologyPanel({ viewModel }) {
         <summary>개발·감사용 메타데이터</summary>
         <dl>
           <div><dt>fixtureOnly</dt><dd>{String(Boolean(viewModel.fixtureOnly))}</dd></div>
+          <div><dt>internalPreviewReviewOnly</dt><dd>{String(Boolean(viewModel.internalPreviewReviewOnly))}</dd></div>
+          <div><dt>metricDataThroughMonth</dt><dd>{viewModel.internalPreviewContext?.metricDataThroughMonth || "-"}</dd></div>
+          <div><dt>gapsForwardFilled</dt><dd>{String(viewModel.internalPreviewContext?.gapsForwardFilled ?? false)}</dd></div>
           <div><dt>sourceHashCount</dt><dd>{viewModel.audit?.sourceHashCount ?? "-"}</dd></div>
           <div><dt>outputHash</dt><dd>{viewModel.audit?.outputHash ? "available" : "-"}</dd></div>
           <div><dt>betaApplied</dt><dd>{String(viewModel.audit?.betaApplied ?? false)}</dd></div>
@@ -98,7 +101,10 @@ export default function ProbabilityAnalysisPanel({
   expectedInputHash = null,
   expectedOutputHash = null,
   enableFixtureReview = false,
+  enableInternalPreviewReview = false,
   fixtureBaselineResult = null,
+  scenarioLoadStatus = "idle",
+  scenarioLoadError = "",
 }) {
   const activeAssets = getActiveAssets(assets, isEmptyAssetRow);
   const viewModel = buildProbabilityScenarioViewModel({
@@ -110,6 +116,7 @@ export default function ProbabilityAnalysisPanel({
     expectedInputHash,
     expectedOutputHash,
     enableFixtureReview,
+    enableInternalPreviewReview,
   });
   const isReady = isProbabilityViewModelReady(viewModel);
 
@@ -124,10 +131,21 @@ export default function ProbabilityAnalysisPanel({
           </p>
         </div>
         <div className="probabilityFixtureBadge">
-          <span>{enableFixtureReview ? "fixture review" : "idle"}</span>
-          <strong>{enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
+          <span>{enableInternalPreviewReview ? "internal preview" : enableFixtureReview ? "fixture review" : "idle"}</span>
+          <strong>{enableInternalPreviewReview ? "review-only data" : enableFixtureReview ? "production 비활성" : "precomputed 연결 대기"}</strong>
         </div>
       </div>
+
+      {scenarioLoadStatus === "loading" ? (
+        <section className="probabilityStatusPanel" aria-live="polite">
+          <div><strong>월별 수익률을 불러오는 중입니다.</strong><p>선택 자산에 필요한 shard만 로드합니다.</p></div>
+        </section>
+      ) : null}
+      {["error", "unavailable"].includes(scenarioLoadStatus) ? (
+        <section className="probabilityStatusPanel probabilityStatus-error" aria-live="polite">
+          <div><strong>내부 Preview 시나리오를 계산할 수 없습니다.</strong><p>{scenarioLoadError || "월별 수익률 입력을 확인해주세요."}</p></div>
+        </section>
+      ) : null}
 
       <section className="probabilityPortfolioContext" aria-label="확률분석 컨텍스트">
         {isReady ? (
@@ -166,7 +184,7 @@ export default function ProbabilityAnalysisPanel({
           <section className="probabilityReadyNotice" aria-label="확률분석 검증 상태">
             <BarChart3 size={20} aria-hidden="true" />
             <div>
-              <strong>검증된 fixture-safe 확률 밴드</strong>
+              <strong>{enableInternalPreviewReview ? "Internal Preview review-only 월수익률 확률 밴드" : "검증된 fixture-safe 확률 밴드"}</strong>
               <p>
                 P50은 중앙 경로이며 예측 또는 보장 수익률이 아닙니다. 기준전망과 누적 납입금은
                 동일 analysis identity가 확인된 경우에만 함께 표시됩니다.

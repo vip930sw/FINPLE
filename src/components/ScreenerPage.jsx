@@ -90,8 +90,9 @@ function formatCount(value) {
   return Number(value || 0).toLocaleString("ko-KR");
 }
 function formatPercentValue(value, pendingText = "확인 중") {
+  if (value === null || value === undefined || value === "") return pendingText;
   const numberValue = Number(value);
-  if (!Number.isFinite(numberValue) || numberValue === 0) return pendingText;
+  if (!Number.isFinite(numberValue)) return pendingText;
   return `${numberValue.toFixed(2)}%`;
 }
 function formatDividendYieldValue(value, item = {}) {
@@ -229,7 +230,7 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
         <div className="tickerResultTitleBlock"><strong className="tickerResultTicker">{item.ticker}</strong><span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span></div>
         <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
       </div>
-      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span></div>
+      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
       <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
@@ -265,7 +266,7 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
       <div className="assetFinderHeader compact simple">
         <div>
           <h4>{getMarketLabel(market)} 검증 후보 탐색</h4>
-          <p>가격지표가 확인된 자산만 표시합니다. 시장, 자산군, 투자 스타일, 위험도를 순서대로 좁혀 보세요.</p>
+          <p>전체 후보와 가격지표 상태를 표시합니다. 시장, 자산군, 투자 스타일, 위험도를 순서대로 좁혀 보세요.</p>
         </div>
       </div>
       <div className="screenerFilterGrid" aria-label="자산 파인더 필터">
@@ -283,15 +284,28 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
 }
 
 function ScreenerPage({ onBack }) {
-  const { portfolioList, activePortfolioId, activePortfolio, assets, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate } = usePortfolioSimulator();
+  const { portfolioList, activePortfolioId, activePortfolio, assets, screenerCandidateSnapshot, isPortfolioDropdownOpen, setIsPortfolioDropdownOpen, selectPortfolioFromFloating, addAssetFromTickerCandidate } = usePortfolioSimulator();
   const [activeMarket, setActiveMarket] = useState("ALL");
-  const activeCandidates = activeMarket === "KR" ? KR_SCREENER_CANDIDATES : activeMarket === "US" ? US_SCREENER_CANDIDATES : [...US_SCREENER_CANDIDATES, ...KR_SCREENER_CANDIDATES];
+  const usCandidates = screenerCandidateSnapshot?.usCandidates || US_SCREENER_CANDIDATES;
+  const krCandidates = screenerCandidateSnapshot?.krCandidates || KR_SCREENER_CANDIDATES;
+  const activeCandidates = activeMarket === "KR" ? krCandidates : activeMarket === "US" ? usCandidates : [...usCandidates, ...krCandidates];
+  const isInternalPreview = screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only";
   return (
     <main className="page screenerPage">
       <section className="section calculatorSection screenerStandaloneSection screenerUnifiedSection">
         <p className="sectionLabel">Asset Finder</p>
         <h2>FINPLE 자산 파인더</h2>
-        <p className="screenerIntroText">검증된 가격지표를 가진 국내·해외 ETF와 개별주 후보를 탐색하고, 필요한 자산만 현재 포트폴리오에 담을 수 있습니다.</p>
+        <p className="screenerIntroText">
+          {isInternalPreview
+            ? "Canonical 국내·해외 ETF와 개별주 후보를 탐색하고, review-only 지표 상태를 확인할 수 있습니다."
+            : "검증된 가격지표를 가진 국내·해외 ETF와 개별주 후보를 탐색하고, 필요한 자산만 현재 포트폴리오에 담을 수 있습니다."}
+        </p>
+        {isInternalPreview ? (
+          <p className="screenerIntroText" role="status">
+            Internal Preview · review-only · {formatCount(activeCandidates.length)}개 자산 ·
+            지표 기준월 {screenerCandidateSnapshot.preview.manifest?.metricDataThroughMonth || "-"}
+          </p>
+        ) : null}
         <CandidateScreenerPanel key={activeMarket} market={activeMarket} onMarketChange={setActiveMarket} candidates={activeCandidates} assets={assets} addAssetFromTickerCandidate={addAssetFromTickerCandidate} />
       </section>
       <FloatingPortfolioDropdown activePortfolio={activePortfolio} portfolioList={portfolioList} activePortfolioId={activePortfolioId} isPortfolioDropdownOpen={isPortfolioDropdownOpen} setIsPortfolioDropdownOpen={setIsPortfolioDropdownOpen} selectPortfolioFromFloating={selectPortfolioFromFloating} contextLabel="현재 추가 대상" />

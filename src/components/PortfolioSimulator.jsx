@@ -33,6 +33,10 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
     recentlyAddedAssetId,
     dataManagementSummary,
     activeSimulatorTab,
+    screenerCandidateSnapshot,
+    previewScenarioResult,
+    previewScenarioStatus,
+    previewScenarioError,
     isPortfolioDropdownOpen,
     setIsPortfolioDropdownOpen,
     isNewPortfolioMenuOpen,
@@ -298,6 +302,12 @@ const PortfolioSimulator = forwardRef(function PortfolioSimulator(props, ref) {
             result={result}
             settings={settings}
             isEmptyAssetRow={isEmptyAssetRow}
+            scenarioResult={previewScenarioResult}
+            scenarioLoadStatus={previewScenarioStatus}
+            scenarioLoadError={previewScenarioError}
+            enableInternalPreviewReview={
+              screenerCandidateSnapshot?.preview?.status === "internal_preview_review_only"
+            }
           />
         </div>
       )}

@@ -75,6 +75,38 @@ test("ready fixture exposes P10 P25 P50 P75 P90 semantics for one review identit
   assert.deepEqual(viewModel.displayAssets, ["KR:005930", "KR:069500"]);
 });
 
+test("real internal preview result is review-only without pretending app export approval", () => {
+  const result = clone(STEP114_2G_PROBABILITY_FIXTURE_RESULT);
+  delete result.fixtureContext;
+  result.internalPreviewContext = {
+    reviewOnly: true,
+    portfolioId: STEP114_2G_FIXTURE_REVIEW_PORTFOLIO.id,
+    portfolioName: "Internal Preview",
+    identities: ["KR:005930", "KR:069500"],
+    sourceCandidatePackageId: "finple-candidate-test",
+    gapsForwardFilled: false,
+    productionPublishReady: false,
+    appExportApproved: false,
+  };
+  result.productionPublishReady = false;
+  result.appExportApproved = false;
+  const viewModel = buildProbabilityScenarioViewModel({
+    result,
+    activePortfolio: STEP114_2G_FIXTURE_REVIEW_PORTFOLIO,
+    assets: STEP114_2G_FIXTURE_REVIEW_ASSETS,
+    settings: STEP114_2G_FIXTURE_REVIEW_SETTINGS,
+    expectedInputHash: STEP114_2G_FIXTURE_EXPECTED_INPUT_HASH,
+    expectedOutputHash: STEP114_2G_FIXTURE_EXPECTED_OUTPUT_HASH,
+    enableInternalPreviewReview: true,
+  });
+  assert.equal(viewModel.status, "ready");
+  assert.equal(viewModel.fixtureOnly, false);
+  assert.equal(viewModel.internalPreviewReviewOnly, true);
+  assert.equal(viewModel.productionPublishReady, false);
+  assert.equal(viewModel.appExportApproved, false);
+  assert.equal(viewModel.selectedPortfolioName, "Internal Preview");
+});
+
 test("actual portfolio settings or assets change marks the result stale", () => {
   const changedSettings = readyView({
     settings: { ...STEP114_2G_FIXTURE_REVIEW_SETTINGS, monthlyCashFlow: 600000 },

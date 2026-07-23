@@ -21,6 +21,18 @@ function safeFixed(value, digits = 2) {
   return safeNumber(value).toFixed(digits);
 }
 
+function safeMetricFixed(value, digits = 2) {
+  if (value === null || value === undefined || value === "") return "-";
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue.toFixed(digits) : "-";
+}
+
+function formatMoneyMetric(value, formatter) {
+  if (value === null || value === undefined || value === "") return "-";
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? `${formatter(numberValue)}원` : "-";
+}
+
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -112,7 +124,10 @@ export default function DetailPanel({
     : ["목표비중을 조정해 장기 성과와 하락 위험의 변화를 비교해보세요."];
 
   const investmentYears = safeNumber(safeSettings.years, 0);
-  const monthlyDividend = Math.floor(safeNumber(expectedAnnualDividend) / 12);
+  const monthlyDividend =
+    expectedAnnualDividend === null || expectedAnnualDividend === undefined
+      ? null
+      : Math.floor(Number(expectedAnnualDividend) / 12);
   const cumulativeContribution = safeNumber(simulationStartValue) + safeNumber(yearlyContribution) * investmentYears;
   const cumulativeProfit = Math.max(0, safeNumber(futureValue) - cumulativeContribution);
 
@@ -120,21 +135,21 @@ export default function DetailPanel({
     { label: "시작 평가금액", value: `${Math.floor(safeNumber(simulationStartValue)).toLocaleString()}원`, note: "시뮬레이션 기준 금액" },
     { label: `${investmentYears}년 후 예상 자산`, value: `${safeFormatNumber(futureValue)}원`, note: "물가 반영 전 예상값" },
     { label: "물가 반영 실질가치", value: `${safeFormatNumber(inflationAdjustedFutureValue)}원`, note: "구매력 기준 예상값" },
-    { label: "예상 CAGR", value: `${safeFixed(expectedCagr)}%`, note: "자산 비중 가중 평균" },
+    { label: "예상 CAGR", value: safeMetricFixed(expectedCagr) === "-" ? "-" : `${safeMetricFixed(expectedCagr)}%`, note: "자산별 선택 CAGR 정책의 비중 가중 평균" },
     { label: "누적 투자금", value: `${Math.floor(cumulativeContribution).toLocaleString()}원`, note: "시작금액 + 월 투자금" },
     { label: "누적 수익금", value: `${Math.floor(cumulativeProfit).toLocaleString()}원`, note: "예상 자산 - 누적 투자금" },
   ];
 
   const riskMetrics = [
-    { label: "예상 BETA", value: safeFixed(expectedBeta), note: "시장 대비 변동 민감도" },
-    { label: "예상 MDD", value: `${safeFixed(simpleMdd)}%`, note: "최대 하락폭 참고 지표" },
-    { label: "예상 Calmar", value: safeFixed(expectedCalmar), note: "CAGR 대비 MDD 효율" },
+    { label: "예상 BETA", value: safeMetricFixed(expectedBeta), note: "정렬된 월수익률 Beta의 비중 가중값" },
+    { label: "예상 MDD", value: safeMetricFixed(simpleMdd) === "-" ? "-" : `${safeMetricFixed(simpleMdd)}%`, note: "full-period 실제 MDD의 비중 가중 참고값" },
+    { label: "예상 Calmar", value: safeMetricFixed(expectedCalmar), note: "CAGR 대비 MDD 효율" },
   ];
 
   const dividendMetrics = [
-    { label: "예상 연배당금", value: `${Math.floor(safeNumber(expectedAnnualDividend)).toLocaleString()}원`, note: "현재 평가금액 기준" },
-    { label: "월 예상 배당금", value: `${safeFormatNumber(monthlyDividend)}원`, note: "연배당금의 월 환산" },
-    { label: "예상 배당률", value: `${safeFixed(expectedDividendYield)}%`, note: "포트폴리오 가중 평균" },
+    { label: "예상 연배당금", value: formatMoneyMetric(expectedAnnualDividend, (value) => Math.floor(value).toLocaleString()), note: "현재 평가금액 기준" },
+    { label: "월 예상 배당금", value: formatMoneyMetric(monthlyDividend, safeFormatNumber), note: "연배당금의 월 환산" },
+    { label: "예상 배당률", value: safeMetricFixed(expectedDividendYield) === "-" ? "-" : `${safeMetricFixed(expectedDividendYield)}%`, note: "포트폴리오 가중 평균" },
     { label: "배당재투자", value: safeSettings.dividendReinvest ? "적용" : "미적용", note: "장기 복리 효과 반영 여부" },
   ];
 
@@ -154,6 +169,12 @@ export default function DetailPanel({
             <h4>계산 보류</h4>
             <span>준비된 지표만 순위와 차트, 상세 분석에 포함됩니다.</span>
           </div>
+          {safeAssets.some((asset) => asset?.internalPreviewReviewOnly) &&
+          safeArray(safeResult.blockReasons).length > 0 ? (
+            <ul aria-label="Internal Preview 계산 보류 사유">
+              {safeResult.blockReasons.map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          ) : null}
         </div>
       </div>
     );
