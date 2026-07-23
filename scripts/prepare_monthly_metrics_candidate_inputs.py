@@ -19,9 +19,9 @@ from scripts.metrics_pipeline.candidate_package import (
     SOURCE_DECLARATION_CONTRACT_VERSION,
     SUBMISSION_MANIFEST_CONTRACT_VERSION,
 )
-from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
+from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, PIPELINE_VERSION
 from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
-from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
+from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION, partial_month_metadata
 from scripts.raw_daily_price_chunks import collection_date_window
 
 
@@ -215,6 +215,12 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         candidate_identities,
     )
     covered = raw_summary.pop("coveredIdentities")
+    partial_policy = str(getattr(args, "partial_month_policy", PARTIAL_MONTH_POLICY))
+    partial_metadata = partial_month_metadata(
+        args.as_of_included,
+        str(raw_summary["rawDailyLastDate"]),
+        partial_policy,
+    )
 
     acquired_at = args.acquired_at or raw_summary.get("latestRetrievedAt", "")
     if not acquired_at:
@@ -230,6 +236,7 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "providerDownloadEndExclusive": provider_end_exclusive,
         "actualLastPriceDate": raw_summary["rawDailyLastDate"],
         "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
         "marketScope": ["US", "KR"],
         "timezone": "UTC",
         "currencyMode": "mixed",
@@ -261,6 +268,7 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "providerDownloadEndExclusive": provider_end_exclusive,
         "actualLastPriceDate": raw_summary["rawDailyLastDate"],
         "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
         "expectedMarketScope": ["US", "KR"],
         "fileInventory": inventory,
         "expectedPipelineVersion": PIPELINE_VERSION,
@@ -299,6 +307,7 @@ def prepare_inputs(args: argparse.Namespace) -> dict[str, object]:
         "providerDownloadEndExclusive": provider_end_exclusive,
         "actualLastPriceDate": raw_summary["rawDailyLastDate"],
         "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
         **raw_summary,
         "candidateInputDir": str(output_dir),
         "productionPublishReady": False,
@@ -319,6 +328,7 @@ def main() -> None:
     parser.add_argument("--report", required=True)
     parser.add_argument("--metric-base-date", required=True)
     parser.add_argument("--as-of-included", "--as-of", dest="as_of_included", required=True)
+    parser.add_argument("--partial-month-policy", default=PARTIAL_MONTH_POLICY)
     parser.add_argument("--acquired-at", default="", help="Optional override; defaults to latest raw retrievedAt.")
     parser.add_argument("--operator-id", default="colab-operator")
     parser.add_argument("--submission-id", required=True)

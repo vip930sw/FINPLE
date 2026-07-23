@@ -298,6 +298,10 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             "providerDownloadEndExclusive": "2026-07-01",
             "actualLastPriceDate": "2026-06-30",
             "metricBaseDate": "2026-06-30",
+            "metricDataThroughMonth": "2026-06",
+            "partialFinalMonthDetected": False,
+            "partialFinalMonthExcluded": False,
+            "partialMonthPolicy": "exclude_from_metrics",
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -313,6 +317,92 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             for field, expected in metadata.items():
                 self.assertEqual(manifest[field], expected)
                 self.assertEqual(manifest["sourceDeclaration"][field], expected)
+
+    def test_partial_month_is_excluded_from_returns_rolling_beta_and_mdd(self):
+        base_rows = raw_daily_rows()
+        partial_rows: list[dict[str, str]] = []
+        for ticker in ["005930", "069500"]:
+            ticker_rows = [dict(row) for row in base_rows if row["ticker"] == ticker]
+            partial_rows.extend(ticker_rows)
+            july = dict(ticker_rows[-1])
+            july["date"] = "2026-07-22"
+            july["close"] = str(float(july["close"]) * 4)
+            july["splitAdjustedClose"] = july["close"]
+            partial_rows.append(july)
+
+        metadata = {
+            "asOfDate": "2026-07-22",
+            "requestedAsOfIncluded": "2026-07-22",
+            "providerDownloadEndExclusive": "2026-07-23",
+            "actualLastPriceDate": "2026-07-22",
+            "metricBaseDate": "2026-07-22",
+            "metricDataThroughMonth": "2026-06",
+            "partialFinalMonthDetected": True,
+            "partialFinalMonthExcluded": True,
+            "partialMonthPolicy": "exclude_from_metrics",
+        }
+        manifest_metadata = {
+            **metadata,
+            "intendedMetricBaseDate": "2026-07-22",
+        }
+        manifest_metadata.pop("asOfDate")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                raw_rows=partial_rows,
+                source_patch=metadata,
+                manifest_patch=manifest_metadata,
+            )
+            result = run_candidate(
+                input_dir,
+                root / "out",
+                metric_base_date="2026-07-22",
+                validation_date="2026-07-23",
+            )
+            self.assertTrue(result["candidatePackageReady"])
+
+            with (input_dir / "raw_daily_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+                preserved_raw = list(csv.DictReader(handle))
+            self.assertIn("2026-07-22", {row["date"] for row in preserved_raw})
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertEqual(max(row["month"] for row in normalized), "2026-06-30")
+            self.assertNotIn("2026-07", {row["month"][:7] for row in normalized})
+
+            with Path(result["outputs"]["monthlyReturnsCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                monthly_returns = list(csv.DictReader(handle))
+            self.assertEqual(max(row["month"] for row in monthly_returns), "2026-06-30")
+
+            with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                metric = next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+            baseline_input = build_candidate_input(
+                root / "baseline",
+                raw_rows=base_rows,
+                source_patch={**metadata, "actualLastPriceDate": "2026-06-30"},
+                manifest_patch={**manifest_metadata, "actualLastPriceDate": "2026-06-30"},
+            )
+            baseline = run_candidate(
+                baseline_input,
+                root / "baseline-out",
+                metric_base_date="2026-07-22",
+                validation_date="2026-07-23",
+            )
+            with Path(baseline["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                baseline_metric = next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+            for field in ["selectedCagr", "selectedBeta", "selectedMdd", "validRollingWindowCount10y", "validRollingWindowCount5y"]:
+                self.assertEqual(metric[field], baseline_metric[field])
+
+            with Path(result["outputs"]["manifestJson"]).open("r", encoding="utf-8") as handle:
+                final_manifest = json.load(handle)
+            for field in [
+                "requestedAsOfIncluded", "actualLastPriceDate", "metricDataThroughMonth",
+                "partialFinalMonthDetected", "partialFinalMonthExcluded", "partialMonthPolicy",
+            ]:
+                self.assertEqual(final_manifest[field], metadata[field])
+                self.assertEqual(final_manifest["sourceDeclaration"][field], metadata[field])
 
     def test_missing_required_inputs_return_deterministic_blocked_package(self):
         cases = [

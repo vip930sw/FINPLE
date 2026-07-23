@@ -147,6 +147,7 @@ class NotebookSmokeTests(unittest.TestCase):
                 for setting in [
                     'AS_OF_INCLUDED = "2026-07-22"',
                     "HISTORY_YEARS = 20",
+                    'PARTIAL_MONTH_POLICY = "exclude_from_metrics"',
                     "USE_GOOGLE_DRIVE = True",
                     'DRIVE_ROOT = "/content/drive/MyDrive/FINPLE/monthly-metrics"',
                 ]:
@@ -161,11 +162,15 @@ class NotebookSmokeTests(unittest.TestCase):
             self.assertIn("'--as-of-included', AS_OF_INCLUDED", payload)
             self.assertIn("'--years', str(HISTORY_YEARS)", payload)
             self.assertIn("'providerDownloadEndExclusive'", payload)
+            self.assertIn("'--partial-month-policy', PARTIAL_MONTH_POLICY", payload)
             self.assertIn("DOWNLOAD_OUTPUTS = False", payload)
 
         one_click = "\n".join(collection_code_sources(NOTEBOOK_PATH))
         self.assertIn('"metric_base_date": AS_OF_INCLUDED', one_click)
         self.assertIn('"--as-of-included", AS_OF_INCLUDED', one_click)
+        self.assertIn('"--partial-month-policy", PARTIAL_MONTH_POLICY', one_click)
+        self.assertIn('"partial_month_policy": PARTIAL_MONTH_POLICY', one_click)
+        self.assertIn('"metricDataThroughMonth"', one_click)
         self.assertIn("DOWNLOAD_OUTPUT_ZIP = False", one_click)
 
     def test_collection_notebooks_use_shallow_fetch_head_detached_checkout(self):

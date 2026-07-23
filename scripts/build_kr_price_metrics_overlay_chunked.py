@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Iterable
 
 from scripts.metrics_pipeline.schemas import KR_CANDIDATE_TICKER_PATTERN
+from scripts.metrics_pipeline.timeseries import partial_month_metadata
 from scripts.raw_daily_price_chunks import (
     actual_last_price_date,
     collection_date_window,
@@ -403,12 +404,17 @@ def build_summary(
     raw_rows: list[dict[str, str]] | None = None,
 ) -> dict[str, object]:
     raw_rows = raw_rows or []
+    partial_metadata = partial_month_metadata(
+        as_of_included.isoformat(),
+        actual_last_price_date(raw_rows),
+    )
     return {
         "as_of": as_of_included.isoformat(),
         "requestedAsOfIncluded": as_of_included.isoformat(),
         "providerDownloadEndExclusive": provider_end_exclusive,
         "actualLastPriceDate": actual_last_price_date(raw_rows),
         "metricBaseDate": as_of_included.isoformat(),
+        **partial_metadata,
         "start": start_index,
         "limit": limit,
         "processed_count": len(results),

@@ -35,7 +35,7 @@ from .schemas import (
     is_valid_kr_candidate_ticker,
 )
 from .rolling import PERCENTILE_METHOD, ROLLING_METRIC_VERSION, ROLLING_WINDOW_MONTHS, compute_rolling_price_metrics
-from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
+from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows, partial_month_metadata
 
 
 class PipelineCriticalError(RuntimeError):
@@ -80,7 +80,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         raise PipelineCriticalError("; ".join(critical_errors))
 
     source_hashes = {path.name: _sha256(path) for path in source_paths}
-    raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows)
+    raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows, pipeline_config)
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
     normalized_metric_rows = _normalized_metric_rows(normalized_month_end_rows)
@@ -148,6 +148,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         normalized_rows=normalized_month_end_rows,
         timeseries_audit_rows=timeseries_audit_rows,
     )
+    partial_metadata = dict(raw_daily_normalization["partialMonthMetadata"])
+    audit_summary.update(partial_metadata)
     write_audit_report(audit_html, audit_summary, source_hashes)
     adapter_summary_json, adapter_checkpoint_json = write_adapter_artifacts(output_dir, version, source_adapter_result)
     historical_overlay_protection = _historical_overlay_protection(historical_overlay_before)
@@ -193,6 +195,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             normalized_csv=normalized_csv,
             normalized_hash_by_ticker=normalized_hash_by_ticker,
         ),
+        partial_month_metadata=partial_metadata,
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -207,6 +210,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         "pipelineVersion": PIPELINE_VERSION,
         "schemaVersion": SCHEMA_VERSION,
         "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
+        **partial_metadata,
         "summary": audit_summary,
         "sourceHashes": source_hashes,
         "outputs": {
@@ -227,13 +231,20 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     }
 
 
-def _normalize_adapter_rows(source_adapter_result: Any, raw_daily_rows: list[dict[str, str]]) -> dict[str, object]:
+def _normalize_adapter_rows(
+    source_adapter_result: Any,
+    raw_daily_rows: list[dict[str, str]],
+    config: PipelineConfig,
+) -> dict[str, object]:
     if source_adapter_result.lastStatus not in {"already_complete", "resume_no_new_rows"}:
         return normalize_daily_price_rows(
             raw_daily_rows,
             source_file_name=source_adapter_result.sourceFileName,
             source_sha256=source_adapter_result.rawSourceSha256,
+            requested_as_of_included=config.metric_base_date,
+            partial_month_policy=config.partial_month_policy,
         )
+    partial_metadata = partial_month_metadata(config.metric_base_date, "", config.partial_month_policy)
     return {
         "normalizedRows": [],
         "auditRows": [],
@@ -253,7 +264,9 @@ def _normalize_adapter_rows(source_adapter_result: Any, raw_daily_rows: list[dic
             "schemaVersion": SCHEMA_VERSION,
             "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
             "dataStatus": source_adapter_result.lastStatus,
+            **partial_metadata,
         },
+        "partialMonthMetadata": partial_metadata,
         "blockingIssueCount": 0,
     }
 
@@ -700,17 +713,19 @@ def _build_manifest(
     config: PipelineConfig,
     source_hashes: Mapping[str, str],
     output_files: list[Path],
-    audit_summary: Mapping[str, int],
+    audit_summary: Mapping[str, Any],
     source_metadata: list[Mapping[str, Any]],
     source_adapter_summary: Mapping[str, Any],
     historical_overlay_protection: Mapping[str, Any],
     review_overlay_files: list[Path],
     rolling_window_counts: Mapping[str, Any],
     rolling_source_lineage: Mapping[str, Any],
+    partial_month_metadata: Mapping[str, Any],
 ) -> dict[str, Any]:
     review_overlay_hashes = {path.name: _sha256(path) for path in review_overlay_files}
     return {
         "metricBaseDate": config.metric_base_date,
+        **partial_month_metadata,
         "createdAt": config.created_at,
         "createdBy": "FINPLE Step 114-2D fixture-safe rolling metrics pipeline",
         "pipelineVersion": PIPELINE_VERSION,
@@ -724,6 +739,7 @@ def _build_manifest(
             "inputMode": config.input_mode,
             "deterministicFixture": config.deterministic_fixture,
             "randomSeed": config.random_seed,
+            "partialMonthPolicy": config.partial_month_policy,
         },
         "sourceFiles": [
             _source_file_manifest_item(name, sha256, config.input_mode) for name, sha256 in sorted(source_hashes.items())

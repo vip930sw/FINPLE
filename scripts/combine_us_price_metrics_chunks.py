@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from scripts.metrics_pipeline.config import PARTIAL_MONTH_POLICY
+from scripts.metrics_pipeline.timeseries import partial_month_metadata
 from scripts.raw_daily_price_chunks import collection_date_window, combine_raw_daily_chunks
 
 RUNTIME_COLUMNS = [
@@ -46,6 +48,7 @@ def main() -> None:
     parser.add_argument("--requested-as-of-included", default="")
     parser.add_argument("--provider-download-end-exclusive", default="")
     parser.add_argument("--metric-base-date", default="")
+    parser.add_argument("--partial-month-policy", default=PARTIAL_MONTH_POLICY)
     args = parser.parse_args()
 
     files = sorted([path for path in glob.glob(args.pattern) if "_audit" not in path])
@@ -86,11 +89,17 @@ def main() -> None:
             raise SystemExit(f"provider download end must be {expected_end}")
         if args.metric_base_date != args.requested_as_of_included:
             raise SystemExit("metricBaseDate must equal requestedAsOfIncluded")
+    partial_metadata = partial_month_metadata(
+        args.requested_as_of_included,
+        str(summary.get("rawDailyLastDate", "")),
+        args.partial_month_policy,
+    )
     summary.update({
         "requestedAsOfIncluded": args.requested_as_of_included,
         "providerDownloadEndExclusive": args.provider_download_end_exclusive,
         "actualLastPriceDate": summary.get("rawDailyLastDate", ""),
         "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
     })
 
     out_summary = Path(args.out_summary)

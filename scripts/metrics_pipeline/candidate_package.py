@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
+from .config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, PIPELINE_VERSION
 from .package import write_deterministic_zip
 from .pipeline import (
     _build_candidate_outputs,
@@ -34,7 +34,7 @@ from .schemas import (
     is_valid_kr_benchmark_ticker,
     is_valid_kr_candidate_ticker,
 )
-from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
+from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows, partial_month_metadata
 
 
 CANDIDATE_PACKAGE_CONTRACT_VERSION = "production-candidate-package-v1-step114-2m"
@@ -95,6 +95,7 @@ class CandidatePackageConfig:
     operator_submission_manifest_file: str = DEFAULT_FILENAMES["operator_submission_manifest"]
     validation_date: date = date.today()
     internal_preview_review_only: bool = False
+    partial_month_policy: str = PARTIAL_MONTH_POLICY
 
     @property
     def selected_cagr_policy(self) -> str:
@@ -203,6 +204,8 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
                 if package_config.internal_preview_review_only
                 else "normalized_fixture"
             ),
+            requested_as_of_included=str(source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date)),
+            partial_month_policy=package_config.partial_month_policy,
         )
     except Exception as exc:  # noqa: BLE001 - normalization remains fail-closed for operator input.
         _add_issue(issues, "normalization_failed", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, str(exc))
@@ -310,6 +313,9 @@ def _load_candidate_config(config: Mapping[str, Any]) -> CandidatePackageConfig:
         parsed_validation_date = _parse_date(validation_date)
         if parsed_validation_date is None:
             raise ValueError("validation_date must be YYYY-MM-DD")
+    partial_policy = str(config.get("partial_month_policy", PARTIAL_MONTH_POLICY))
+    if partial_policy != PARTIAL_MONTH_POLICY:
+        raise ValueError(f"partial_month_policy must be {PARTIAL_MONTH_POLICY}")
     return CandidatePackageConfig(
         input_dir=Path(config["input_dir"]),
         output_dir=Path(config["output_dir"]),
@@ -324,6 +330,7 @@ def _load_candidate_config(config: Mapping[str, Any]) -> CandidatePackageConfig:
         operator_submission_manifest_file=str(config.get("operator_submission_manifest_file", DEFAULT_FILENAMES["operator_submission_manifest"])),
         validation_date=parsed_validation_date,
         internal_preview_review_only=bool(config.get("internal_preview_review_only", False)),
+        partial_month_policy=partial_policy,
     )
 
 
@@ -415,6 +422,12 @@ def _candidate_result(
         "zipPackageSha256": zip_sha,
         "candidatePackageId": readiness.get("candidatePackageId", ""),
         "validationDate": config.validation_date.isoformat(),
+        "requestedAsOfIncluded": readiness.get("requestedAsOfIncluded", ""),
+        "actualLastPriceDate": readiness.get("actualLastPriceDate", ""),
+        "metricDataThroughMonth": readiness.get("metricDataThroughMonth", ""),
+        "partialFinalMonthDetected": readiness.get("partialFinalMonthDetected", False),
+        "partialFinalMonthExcluded": readiness.get("partialFinalMonthExcluded", False),
+        "partialMonthPolicy": readiness.get("partialMonthPolicy", config.partial_month_policy),
         "outputs": {key: str(path) for key, path in output_paths.items()},
         "issues": issues,
     }
@@ -673,6 +686,25 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
             _add_issue(issues, "actual_last_price_date_invalid", "critical", True, "source_declaration", "source_declaration.json", "actualLastPriceDate must be present and not later than requestedAsOfIncluded.")
         if source_metric_base != metric_base:
             _add_issue(issues, "metric_base_date_mismatch", "critical", True, "source_declaration", "source_declaration.json", "Source metricBaseDate must match candidate config.")
+    partial_fields = [
+        "metricDataThroughMonth",
+        "partialFinalMonthDetected",
+        "partialFinalMonthExcluded",
+        "partialMonthPolicy",
+    ]
+    if any(field in source for field in partial_fields):
+        try:
+            expected_partial = partial_month_metadata(
+                str(source.get("requestedAsOfIncluded", "")),
+                str(source.get("actualLastPriceDate", "")),
+                config.partial_month_policy,
+            )
+        except ValueError as exc:
+            _add_issue(issues, "partial_month_metadata_invalid", "critical", True, "source_declaration", "source_declaration.json", str(exc))
+        else:
+            for field in partial_fields:
+                if source.get(field) != expected_partial[field]:
+                    _add_issue(issues, "partial_month_metadata_mismatch", "critical", True, "source_declaration", "source_declaration.json", f"{field} does not match the requested as-of partial-month policy.")
 
 
 def _validate_submission_manifest(manifest: Mapping[str, Any], paths: Mapping[str, Path], config: CandidatePackageConfig, issues: list[dict[str, str]]) -> None:
@@ -880,7 +912,16 @@ def _validate_scope_reconciliation(
             _add_issue(issues, "market_scope_reconciliation_mismatch", "critical", True, label, "", f"{label} scope {scope} does not match config scope {expected_sorted}.")
     if source.get("operatorId") != manifest.get("submittedBy"):
         _add_issue(issues, "operator_identity_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", "submittedBy must match source operatorId.")
-    for field in ["requestedAsOfIncluded", "providerDownloadEndExclusive", "actualLastPriceDate", "metricBaseDate"]:
+    for field in [
+        "requestedAsOfIncluded",
+        "providerDownloadEndExclusive",
+        "actualLastPriceDate",
+        "metricBaseDate",
+        "metricDataThroughMonth",
+        "partialFinalMonthDetected",
+        "partialFinalMonthExcluded",
+        "partialMonthPolicy",
+    ]:
         if field in source and manifest.get(field) != source.get(field):
             _add_issue(issues, "collection_metadata_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", f"{field} must match source declaration.")
     candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
@@ -967,6 +1008,11 @@ def _write_candidate_outputs(
 
     blocking_count = len([issue for issue in source_audit_rows if issue["blocksCandidate"] == "true"])
     warning_count = len(source_audit_rows) - blocking_count
+    partial_metadata = partial_month_metadata(
+        str(source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date)),
+        str(source_declaration.get("actualLastPriceDate", "")),
+        package_config.partial_month_policy,
+    )
     base_manifest = {
         "candidatePackageId": _candidate_package_id(source_declaration, submission_manifest, package_config),
         "candidatePackageHash": "",
@@ -976,6 +1022,7 @@ def _write_candidate_outputs(
         "requestedAsOfIncluded": source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date),
         "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
         "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
+        **partial_metadata,
         "validationDate": package_config.validation_date.isoformat(),
         "pipelineVersion": PIPELINE_VERSION,
         "normalizationVersion": NORMALIZATION_VERSION,
@@ -1013,6 +1060,10 @@ def _write_candidate_outputs(
             "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
             "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
             "metricBaseDate": source_declaration.get("metricBaseDate", ""),
+            "metricDataThroughMonth": partial_metadata["metricDataThroughMonth"],
+            "partialFinalMonthDetected": partial_metadata["partialFinalMonthDetected"],
+            "partialFinalMonthExcluded": partial_metadata["partialFinalMonthExcluded"],
+            "partialMonthPolicy": partial_metadata["partialMonthPolicy"],
             "redistributionReviewStatus": source_declaration.get("redistributionReviewStatus", ""),
             "appUseReviewStatus": source_declaration.get("appUseReviewStatus", ""),
             "fixtureOnly": source_declaration.get("fixtureOnly", None),
@@ -1033,6 +1084,7 @@ def _write_candidate_outputs(
         "warningIssueCount": warning_count,
         "notProductionApproval": True,
         "validationDate": package_config.validation_date.isoformat(),
+        **partial_metadata,
     }
     output_paths["readinessJson"].write_text(json.dumps(readiness, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     package_index = _build_package_index(output_paths)

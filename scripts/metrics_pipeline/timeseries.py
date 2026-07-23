@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from calendar import monthrange
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Iterable, Mapping
 
-from .config import CALCULATION_POLICY_VERSION, SCHEMA_VERSION
+from .config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, SCHEMA_VERSION
 from .schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 
 
@@ -26,13 +26,21 @@ def normalize_daily_price_rows(
     source_sha256: str,
     allow_review_only_provenance: bool = False,
     normalized_data_status: str = "normalized_fixture",
+    requested_as_of_included: str = "",
+    partial_month_policy: str = PARTIAL_MONTH_POLICY,
 ) -> dict[str, object]:
     audit_rows: list[dict[str, str]] = []
     normalized_rows: list[dict[str, str]] = []
+    actual_last_price_date = _actual_last_price_date(rows)
+    partial_metadata = partial_month_metadata(
+        requested_as_of_included,
+        actual_last_price_date,
+        partial_month_policy,
+    )
 
     if not rows:
         audit_rows.append(_audit_row({}, "raw_daily_missing", "critical", True, "No raw daily fixture rows found."))
-        return _result(normalized_rows, audit_rows, source_file_name, source_sha256, [])
+        return _result(normalized_rows, audit_rows, source_file_name, source_sha256, [], partial_metadata)
 
     missing_columns = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(rows[0]))
     if missing_columns:
@@ -45,7 +53,7 @@ def normalize_daily_price_rows(
                 f"Missing required raw daily columns: {', '.join(missing_columns)}.",
             )
         )
-        return _result(normalized_rows, audit_rows, source_file_name, source_sha256, [])
+        return _result(normalized_rows, audit_rows, source_file_name, source_sha256, [], partial_metadata)
 
     valid_rows: list[dict[str, str]] = []
     seen_dates: set[tuple[str, str, str]] = set()
@@ -149,9 +157,72 @@ def normalize_daily_price_rows(
             )
 
     publishable_valid_rows = [row for row in valid_rows if (row["market"], row["ticker"]) not in blocked_series]
-    normalized_rows.extend(_normalize_month_ends(publishable_valid_rows, audit_rows, normalized_data_status))
+    metric_cutoff_month = str(partial_metadata["metricDataThroughMonth"])
+    metric_input_rows = [
+        row for row in publishable_valid_rows
+        if not metric_cutoff_month or row["date"][:7] <= metric_cutoff_month
+    ]
+    if partial_metadata["partialFinalMonthExcluded"]:
+        excluded_series = sorted({
+            (row["market"], row["ticker"])
+            for row in publishable_valid_rows
+            if row["date"][:7] > metric_cutoff_month
+        })
+        for market, ticker in excluded_series:
+            audit_rows.append(
+                _audit_row(
+                    {"market": market, "ticker": ticker, "date": requested_as_of_included},
+                    "partial_final_month_excluded",
+                    "info",
+                    False,
+                    "Raw partial-final-month observations were preserved but excluded from monthly metrics.",
+                )
+            )
+    normalized_rows.extend(_normalize_month_ends(metric_input_rows, audit_rows, normalized_data_status))
     action_summary = _corporate_action_summary(valid_rows)
-    return _result(normalized_rows, audit_rows + action_summary, source_file_name, source_sha256, rows)
+    return _result(normalized_rows, audit_rows + action_summary, source_file_name, source_sha256, rows, partial_metadata)
+
+
+def partial_month_metadata(
+    requested_as_of_included: str,
+    actual_last_price_date: str,
+    policy: str = PARTIAL_MONTH_POLICY,
+) -> dict[str, object]:
+    if policy != PARTIAL_MONTH_POLICY:
+        raise ValueError(f"partialMonthPolicy must be {PARTIAL_MONTH_POLICY}")
+    if not requested_as_of_included:
+        return {
+            "requestedAsOfIncluded": "",
+            "actualLastPriceDate": actual_last_price_date,
+            "metricDataThroughMonth": actual_last_price_date[:7] if actual_last_price_date else "",
+            "partialFinalMonthDetected": False,
+            "partialFinalMonthExcluded": False,
+            "partialMonthPolicy": policy,
+        }
+
+    requested = _parse_date(requested_as_of_included)
+    if requested is None:
+        raise ValueError("requestedAsOfIncluded must be YYYY-MM-DD")
+    actual = _parse_date(actual_last_price_date) if actual_last_price_date else None
+    if actual_last_price_date and actual is None:
+        raise ValueError("actualLastPriceDate must be YYYY-MM-DD")
+    if actual is not None and actual > requested:
+        raise ValueError("actualLastPriceDate must not be later than requestedAsOfIncluded")
+
+    requested_month_complete = requested.day == monthrange(requested.year, requested.month)[1]
+    partial_detected = not requested_month_complete
+    cutoff_date = requested if requested_month_complete else requested.replace(day=1) - timedelta(days=1)
+    cutoff_month = cutoff_date.strftime("%Y-%m")
+    actual_month = actual.strftime("%Y-%m") if actual is not None else ""
+    metric_data_through_month = min(cutoff_month, actual_month) if actual_month else ""
+    return {
+        "requestedAsOfIncluded": requested.isoformat(),
+        "actualLastPriceDate": actual.isoformat() if actual is not None else "",
+        "metricDataThroughMonth": metric_data_through_month,
+        "partialFinalMonthDetected": partial_detected,
+        "partialFinalMonthExcluded": partial_detected,
+        "partialMonthPolicy": policy,
+    }
 
 
 def classify_price_series(row: Mapping[str, str]) -> str:
@@ -350,6 +421,7 @@ def _result(
     source_file_name: str,
     source_sha256: str,
     rows: list[dict[str, str]],
+    partial_metadata: Mapping[str, object],
 ) -> dict[str, object]:
     source_rows = rows or []
     return {
@@ -370,9 +442,16 @@ def _result(
             "normalizationVersion": NORMALIZATION_VERSION,
             "schemaVersion": SCHEMA_VERSION,
             "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
+            **partial_metadata,
         },
+        "partialMonthMetadata": dict(partial_metadata),
         "blockingIssueCount": sum(1 for row in audit_rows if row["blocksPublication"] == "true"),
     }
+
+
+def _actual_last_price_date(rows: Iterable[Mapping[str, str]]) -> str:
+    valid_dates = [row.get("date", "") for row in rows if _parse_date(row.get("date", "")) is not None]
+    return max(valid_dates) if valid_dates else ""
 
 
 def _combined_value(rows: list[Mapping[str, str]], key: str, default: str) -> str:
