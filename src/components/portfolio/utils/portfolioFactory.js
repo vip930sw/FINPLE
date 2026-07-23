@@ -7,6 +7,7 @@ import {
   GLOBAL_SETTINGS_STORAGE_KEY,
 } from "../constants";
 import { createAssetMarketMetadata, normalizeTickerForMarket } from "../config/marketConfig";
+import { normalizePersistedMetricFields } from "./portfolioAssetPersistence";
 import { readScopedPortfolioStorageItem } from "./portfolioStorageScope";
 
 export function createId() {
@@ -16,11 +17,6 @@ export function createAssetId(index = 0) {
     return `asset-${Date.now()}-${index}-${Math.random()
       .toString(16)
       .slice(2)}`;
-  }
-function normalizeNullableNumber(value, fallback = null) {
-    if (value === null || value === undefined || value === "") return fallback;
-    const numberValue = Number(value);
-    return Number.isFinite(numberValue) ? numberValue : fallback;
   }
 export function normalizeAsset(asset, index = 0) {
     const marketMetadata = createAssetMarketMetadata(asset);
@@ -42,16 +38,7 @@ export function normalizeAsset(asset, index = 0) {
 
       quantity: Number(asset.quantity || 0),
       price: Number(asset.price || 0),
-      targetEvaluationAmount: normalizeNullableNumber(asset.targetEvaluationAmount, null),
-      cagr: Number(asset.cagr || 0),
-      beta: Number(asset.beta || 0),
-      mdd: Number(asset.mdd || 0),
-      dividendYield: normalizeNullableNumber(asset.dividendYield, null),
-      displayDividendYield: asset.displayDividendYield || "",
-      dividendPolicy: asset.dividendPolicy || "",
-      dividendSource: asset.dividendSource || "",
-      reviewTag: asset.reviewTag || "",
-      reviewReason: asset.reviewReason || "",
+      ...normalizePersistedMetricFields(asset),
 
       priceMode: asset.priceMode || "manual",
       metricMode: asset.metricMode || "manual",

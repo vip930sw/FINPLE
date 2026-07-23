@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import { sha256Hex } from "../../../../src/utils/sha256.js";
 
 export const PROBABILISTIC_SCENARIO_VERSION = "probabilistic-scenario-v1-step114-2f";
 export const PROBABILISTIC_PRNG_ALGORITHM = "xorshift32-v1";
@@ -82,7 +82,7 @@ export function stableSerialize(value) {
 }
 
 export function sha256Stable(value) {
-  return crypto.createHash("sha256").update(stableSerialize(value)).digest("hex");
+  return sha256Hex(stableSerialize(value));
 }
 
 export function createXorShift32(seed) {

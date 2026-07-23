@@ -28,6 +28,7 @@ import {
   InvestmentDisclaimerPage,
   RefundPolicyPage,
 } from "./components/LegalPolicyPages";
+import { isLocalAppPreviewQaEnabled } from "./data/tickers/appPreviewDataSource";
 
 const ROUTE_PATHS = {
   home: "/",
@@ -222,7 +223,7 @@ function App() {
   }
 
   function navigateToPage(page, options = {}) {
-    if (page === "personal" && !isFinpleUserLoggedIn()) {
+    if (page === "personal" && !isFinpleUserLoggedIn() && !isLocalAppPreviewQaEnabled()) {
       rememberPostLoginRedirectPage(page);
       setCurrentPage("login");
       if (options.scrollTop !== false) schedulePageTopScroll();
@@ -265,7 +266,7 @@ function App() {
       redirectPage = "login";
     }
 
-    if (currentPage === "personal" && !isFinpleUserLoggedIn()) {
+    if (currentPage === "personal" && !isFinpleUserLoggedIn() && !isLocalAppPreviewQaEnabled()) {
       rememberPostLoginRedirectPage("personal");
       redirectPage = "login";
     }
@@ -415,7 +416,7 @@ function App() {
   }
 
   function goPersonal() {
-    if (!isFinpleUserLoggedIn()) {
+    if (!isFinpleUserLoggedIn() && !isLocalAppPreviewQaEnabled()) {
       navigateToPage("personal");
       return;
     }
@@ -470,7 +471,7 @@ function App() {
     setCurrentPage(page === "mypage" ? "admin-inquiries" : page);
   }
 
-  if (currentPage === "personal" && !isFinpleUserLoggedIn()) return renderShell(<LoginPage onNavigate={navigateToPage} />);
+  if (currentPage === "personal" && !isFinpleUserLoggedIn() && !isLocalAppPreviewQaEnabled()) return renderShell(<LoginPage onNavigate={navigateToPage} />);
   if (currentPage === "personal") {
     return renderShell(
       <PersonalPage

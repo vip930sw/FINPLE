@@ -8,6 +8,7 @@ import {
 import {
   createAssetPatchFromScreenerCandidate,
   findScreenerCandidateByTicker,
+  loadScreenerAppPreview,
 } from "../../../data/tickers/screenerCandidateLoader";
 
 const DEFAULT_PROVIDER = "backend";
@@ -166,9 +167,46 @@ function createLocalCsvAssetData(ticker, candidate, fallbackMarket = "US") {
     dividendSource: patch.dividendSource || "",
     reviewTag: patch.reviewTag || "",
     reviewReason: patch.reviewReason || "",
+    ...Object.fromEntries(
+      [
+        "priceCagr10y",
+        "rawPriceCagr10y",
+        "rollingCagr10yMedian",
+        "rollingCagr10yP25",
+        "rollingCagr10yP75",
+        "validRollingWindowCount10y",
+        "selectedCagr",
+        "cagrPolicy",
+        "selectedBeta",
+        "betaPolicy",
+        "selectedMdd",
+        "mddPolicy",
+        "dividendStatus",
+        "dataStatus",
+        "metricsStatus",
+        "reviewFlag",
+        "rawPriceCoverageStatus",
+        "priceUnavailable",
+        "metricBaseDate",
+        "metricDataThroughMonth",
+        "metricsSource",
+        "sourceHash",
+        "rawSourceSha256",
+        "normalizationVersion",
+        "normalizedSeriesHash",
+        "rollingMetricVersion",
+        "pipelineVersion",
+        "calculationPolicyVersion",
+        "overlayStatus",
+        "internalPreviewReviewOnly",
+        "previewLoaderEnabled",
+        "productionPublishReady",
+        "appExportApproved",
+      ].map((field) => [field, patch[field]])
+    ),
     priceMode: "lookup-required",
-    metricMode: "csv",
-    dataSource: "csv",
+    metricMode: patch.metricMode || "csv",
+    dataSource: patch.dataSource || "csv",
     cacheMode: null,
     rawPrice: null,
     rawCurrency: patch.quoteCurrency || patch.currency || marketMetadata.rawCurrency || null,
@@ -190,17 +228,56 @@ function mergeCsvMetrics(assetData = {}, ticker = "", fallbackMarket = "") {
     currency: assetData.currency || csvData.currency,
     quoteCurrency: assetData.quoteCurrency || csvData.quoteCurrency,
     assetType: assetData.assetType || csvData.assetType,
-    cagr: csvData.cagr ?? assetData.cagr,
-    beta: csvData.beta ?? assetData.beta,
-    mdd: csvData.mdd ?? assetData.mdd,
-    dividendYield: csvData.dividendYield ?? assetData.dividendYield,
+    cagr: csvData.internalPreviewReviewOnly ? csvData.cagr : csvData.cagr ?? assetData.cagr,
+    beta: csvData.internalPreviewReviewOnly ? csvData.beta : csvData.beta ?? assetData.beta,
+    mdd: csvData.internalPreviewReviewOnly ? csvData.mdd : csvData.mdd ?? assetData.mdd,
+    dividendYield: csvData.internalPreviewReviewOnly
+      ? csvData.dividendYield
+      : csvData.dividendYield ?? assetData.dividendYield,
     displayDividendYield: csvData.displayDividendYield || assetData.displayDividendYield || "",
     dividendPolicy: csvData.dividendPolicy || assetData.dividendPolicy || "",
     dividendSource: csvData.dividendSource || assetData.dividendSource || "",
     reviewTag: csvData.reviewTag || assetData.reviewTag || "",
     reviewReason: csvData.reviewReason || assetData.reviewReason || "",
-    metricMode: "csv",
-    dataSource: assetData.dataSource ? `${assetData.dataSource}+csv` : "csv",
+    ...Object.fromEntries(
+      [
+        "priceCagr10y",
+        "rawPriceCagr10y",
+        "rollingCagr10yMedian",
+        "rollingCagr10yP25",
+        "rollingCagr10yP75",
+        "validRollingWindowCount10y",
+        "selectedCagr",
+        "cagrPolicy",
+        "selectedBeta",
+        "betaPolicy",
+        "selectedMdd",
+        "mddPolicy",
+        "dividendStatus",
+        "dataStatus",
+        "metricsStatus",
+        "reviewFlag",
+        "rawPriceCoverageStatus",
+        "priceUnavailable",
+        "metricBaseDate",
+        "metricDataThroughMonth",
+        "metricsSource",
+        "sourceHash",
+        "rawSourceSha256",
+        "normalizationVersion",
+        "normalizedSeriesHash",
+        "rollingMetricVersion",
+        "pipelineVersion",
+        "calculationPolicyVersion",
+        "overlayStatus",
+        "internalPreviewReviewOnly",
+        "previewLoaderEnabled",
+        "productionPublishReady",
+        "appExportApproved",
+      ].map((field) => [field, csvData[field]])
+    ),
+    metricMode: csvData.metricMode || "csv",
+    dataSource: csvData.dataSource || (assetData.dataSource ? `${assetData.dataSource}+csv` : "csv"),
   };
 }
 
@@ -611,6 +688,56 @@ export async function fetchTickerCandidateByTicker(ticker, options = {}) {
   return response.json();
 }
 
+function normalizePreviewMarket(value) {
+  const normalized = String(value || "all").trim().toUpperCase();
+  return normalized === "ALL" ? "all" : normalized;
+}
+
+function previewCandidateMatchesMarket(candidate, market) {
+  const normalizedMarket = normalizePreviewMarket(market);
+  return normalizedMarket === "all" || candidate.market === normalizedMarket;
+}
+
+function previewCandidateMatchesType(candidate, type) {
+  const normalizedType = String(type || "all").trim().toLowerCase();
+  if (normalizedType === "all") return true;
+  if (normalizedType === "stock") return String(candidate.assetType || candidate.type).toLowerCase() === "stock";
+  return String(candidate.assetType || candidate.type).toUpperCase() === String(type).toUpperCase();
+}
+
+function previewCandidateMatchesNumber(value, minimum = "", maximum = "") {
+  if (minimum === "" && maximum === "") return true;
+  if (value === null || value === undefined || value === "" || !Number.isFinite(Number(value))) return false;
+  if (minimum !== "" && Number(value) < Number(minimum)) return false;
+  if (maximum !== "" && Number(value) > Number(maximum)) return false;
+  return true;
+}
+
+async function getPreviewCandidateList() {
+  const snapshot = await loadScreenerAppPreview();
+  return snapshot.preview.enabled && snapshot.preview.status === "internal_preview_review_only"
+    ? snapshot.candidates
+    : null;
+}
+
+function buildPreviewCandidatePayload(results, candidates) {
+  return {
+    results,
+    total: results.length,
+    source: "finple_app_preview_export_step114_2z",
+    internalPreviewReviewOnly: true,
+    productionPublishReady: false,
+    appExportApproved: false,
+    filters: {
+      counts: {
+        ALL: candidates.length,
+        US: candidates.filter((candidate) => candidate.market === "US").length,
+        KR: candidates.filter((candidate) => candidate.market === "KR").length,
+      },
+    },
+  };
+}
+
 export async function searchTickerCandidates({
   query = "",
   market = "all",
@@ -620,6 +747,35 @@ export async function searchTickerCandidates({
   beginnerFit = "all",
   limit = 20,
 } = {}) {
+  const previewCandidates = await getPreviewCandidateList();
+  if (previewCandidates) {
+    const normalizedQuery = String(query || "").trim().toUpperCase();
+    const results = previewCandidates
+      .filter((candidate) => previewCandidateMatchesMarket(candidate, market))
+      .filter((candidate) => previewCandidateMatchesType(candidate, type))
+      .filter((candidate) => riskLevel === "all" || candidate.riskLevel === riskLevel)
+      .filter((candidate) => beginnerFit === "all" || candidate.beginnerFit === (String(beginnerFit) === "true"))
+      .filter((candidate) => category === "all" || candidate.strategy === category || candidate.goals?.includes(category))
+      .filter((candidate) => {
+        if (!normalizedQuery) return true;
+        return [
+          candidate.ticker,
+          candidate.koreanName,
+          candidate.nameKr,
+          candidate.providerSymbol,
+          ...(candidate.tags || []),
+        ].some((value) => String(value || "").toUpperCase().includes(normalizedQuery));
+      })
+      .sort((left, right) => {
+        const leftExact = normalizeTicker(left.ticker, left.market) === normalizedQuery ? 0 : 1;
+        const rightExact = normalizeTicker(right.ticker, right.market) === normalizedQuery ? 0 : 1;
+        return leftExact - rightExact ||
+          left.market.localeCompare(right.market) ||
+          left.ticker.localeCompare(right.ticker);
+      })
+      .slice(0, Math.max(1, Number(limit) || 20));
+    return buildPreviewCandidatePayload(results, previewCandidates);
+  }
   const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
   const url = new URL(`${config.apiBaseUrl}/tickers/search`);
   url.searchParams.set("q", query);
@@ -654,6 +810,24 @@ export async function screenTickerCandidates({
   beginnerOnly = false,
   limit = 30,
 } = {}) {
+  const previewCandidates = await getPreviewCandidateList();
+  if (previewCandidates) {
+    const results = previewCandidates
+      .filter((candidate) => previewCandidateMatchesMarket(candidate, market))
+      .filter((candidate) => previewCandidateMatchesType(candidate, type))
+      .filter((candidate) => goal === "all" || candidate.strategy === goal || candidate.goals?.includes(goal))
+      .filter((candidate) => riskLevel === "all" || candidate.riskLevel === riskLevel)
+      .filter((candidate) => !beginnerOnly || candidate.beginnerFit)
+      .filter((candidate) => previewCandidateMatchesNumber(candidate.dividendYield, minDividendYield, ""))
+      .filter((candidate) => previewCandidateMatchesNumber(candidate.beta, "", maxBeta))
+      .filter((candidate) => previewCandidateMatchesNumber(candidate.expectedCagr, minCagr, ""))
+      .filter((candidate) => previewCandidateMatchesNumber(candidate.mdd, maxMdd, ""))
+      .sort((left, right) =>
+        left.market.localeCompare(right.market) || left.ticker.localeCompare(right.ticker)
+      )
+      .slice(0, Math.max(1, Number(limit) || 30));
+    return buildPreviewCandidatePayload(results, previewCandidates);
+  }
   const config = getRuntimeAssetConfig({ market: market === "all" ? "US" : market });
   const url = new URL(`${config.apiBaseUrl}/tickers/screener`);
   url.searchParams.set("goal", goal);

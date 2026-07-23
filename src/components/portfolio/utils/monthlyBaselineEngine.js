@@ -167,6 +167,19 @@ function validateRequiredLineage(metadata, reasons, ticker) {
 function validatePublishApproval(metadata, reasons, ticker) {
   const productionPublishReady = parseBooleanLike(metadata.productionPublishReady);
   const appExportApproved = parseBooleanLike(metadata.appExportApproved);
+  const isInternalPreviewReviewSource =
+    parseBooleanLike(metadata.internalPreviewReviewOnly) === true &&
+    parseBooleanLike(metadata.previewLoaderEnabled) === true &&
+    normalizeStatus(metadata.overlayStatus) === "internal_preview_review_only";
+  if (isInternalPreviewReviewSource) {
+    if (productionPublishReady !== false) {
+      addBlockReason(reasons, "invalid_internal_preview_gate", `${ticker}.productionPublishReady`);
+    }
+    if (appExportApproved !== false) {
+      addBlockReason(reasons, "invalid_internal_preview_gate", `${ticker}.appExportApproved`);
+    }
+    return;
+  }
   if (productionPublishReady !== true) {
     addBlockReason(reasons, "metric_source_not_publish_approved", `${ticker}.productionPublishReady`);
   }
@@ -305,7 +318,13 @@ function validateAssetMetricSource(rawAsset, index, dividendReinvest) {
   validateReadyStatus(metadata, "dataStatus", new Set(["ready"]), reasons, ticker);
   validateReadyStatus(metadata, "metricsStatus", new Set(["ready"]), reasons, ticker);
   validateReadyStatus(metadata, "reviewFlag", new Set(["none"]), reasons, ticker);
-  validateReadyStatus(metadata, "overlayStatus", new Set(["app_ready", "ready"]), reasons, ticker);
+  validateReadyStatus(
+    metadata,
+    "overlayStatus",
+    new Set(["app_ready", "ready", "internal_preview_review_only"]),
+    reasons,
+    ticker,
+  );
   validatePublishApproval(metadata, reasons, ticker);
   validateRequiredLineage(metadata, reasons, ticker);
 
@@ -364,6 +383,12 @@ function normalizeAssetInput(asset, index, targetWeight, dividendReinvest) {
       pipelineVersion: asset.pipelineVersion || "",
       metricBaseDate: asset.metricBaseDate || "",
       calculationPolicyVersion: asset.calculationPolicyVersion || "",
+      cagrPolicy: asset.cagrPolicy || "",
+      mddPolicy: asset.mddPolicy || "",
+      betaPolicy: asset.betaPolicy || "",
+      internalPreviewReviewOnly: parseBooleanLike(asset.internalPreviewReviewOnly) === true,
+      productionPublishReady: parseBooleanLike(asset.productionPublishReady),
+      appExportApproved: parseBooleanLike(asset.appExportApproved),
     },
   };
 }
@@ -836,16 +861,27 @@ export function buildStep2MonthlyBaselineComparison({ portfolios = [], activePor
   return sortPortfoliosForDeterminism(portfolioList).map((portfolio) => {
     const portfolioAssets = portfolio.id === activePortfolioId ? assets : portfolio.assets;
     const sortedPortfolioAssets = Array.isArray(portfolioAssets) ? sortAssetsForDeterminism(portfolioAssets) : portfolioAssets;
+    const configuredStartValue = toFiniteNumber(settings?.startValue);
+    const portfolioStartValue = Array.isArray(sortedPortfolioAssets)
+      ? sortedPortfolioAssets.reduce((sum, asset) => sum + getAssetWeightValue(asset), 0)
+      : 0;
+    const effectiveSettings = {
+      ...settings,
+      startValue:
+        configuredStartValue !== null && configuredStartValue > 0
+          ? configuredStartValue
+          : portfolioStartValue,
+    };
     const forcedBlockReasons = duplicatePortfolioIds.has(String(portfolio?.id || "").trim())
       ? [`duplicate_portfolio_id:${String(portfolio?.id || "").trim()}`]
       : [];
     return {
       ...portfolio,
-      settings,
+      settings: effectiveSettings,
       assets: sortedPortfolioAssets,
       result: buildMonthlyBaselineProjection({
         portfolioId: portfolio.id,
-        settings,
+        settings: effectiveSettings,
         assets: sortedPortfolioAssets,
         forcedBlockReasons,
       }),

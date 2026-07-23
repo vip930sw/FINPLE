@@ -10,11 +10,13 @@ import {
   buildStep3MonthlyBaselineDetail,
 } from "./monthlyBaselineEngine.js";
 import {
+  calculatePortfolioResult,
   createComparisonPortfolios,
   createInsightComparisonPortfolios,
   createRankedComparisonPortfolios,
   getChartComparisonPortfolios,
 } from "./portfolioCalculations.js";
+import { normalizePersistedMetricFields } from "./portfolioAssetPersistence.js";
 
 const BASE_SETTINGS = Object.freeze({
   startValue: 1200,
@@ -96,6 +98,25 @@ test("one asset positive 12-month price baseline compounds to annual CAGR", () =
   assertClose(result.futureValue, 1344);
   assertClose(result.monthlyBaselinePoints[0].portfolioValueNominal, 1200);
   assertClose(result.monthlyBaselinePoints[12].contributionExcludedIndex, 112);
+});
+
+test("zero configured start value uses current portfolio value for simulator calculations", () => {
+  const result = calculatePortfolioResult(
+    { ...BASE_SETTINGS, startValue: 0 },
+    [asset({ quantity: 10, price: 120, targetWeight: undefined })],
+  );
+  assert.equal(result.status, "ready");
+  assert.equal(result.simulationStartValue, 1200);
+  assert.equal(result.monthlyBaselinePoints[0].portfolioValueNominal, 1200);
+
+  const [comparison] = createComparisonPortfolios(
+    [{ id: "current", name: "Current", assets: [] }],
+    "current",
+    [asset({ quantity: 10, price: 120, targetWeight: undefined })],
+    { ...BASE_SETTINGS, startValue: 0 },
+  );
+  assert.equal(comparison.result.status, "ready");
+  assert.equal(comparison.result.simulationStartValue, 1200);
 });
 
 test("zero and negative CAGR fixtures are handled deterministically", () => {
@@ -288,6 +309,93 @@ test("blocked and review-only metric sources fail closed", () => {
     });
     assert.equal(result.status, "blocked", blockedAsset.ticker);
   }
+});
+
+test("explicit internal app-preview review source calculates while publish gates remain false", () => {
+  const previewAsset = asset({
+    ticker: "QQQ",
+    cagr: 17.11,
+    selectedCagr: 17.11,
+    productionPublishReady: false,
+    appExportApproved: false,
+    internalPreviewReviewOnly: true,
+    previewLoaderEnabled: true,
+    overlayStatus: "internal_preview_review_only",
+    metricsSource: "finple_app_preview_export_step114_2z",
+    sourceHash: "operator-package-source-hash",
+    calculationPolicyVersion: "metrics-calculation-policy-2026-06-26",
+    pipelineVersion: "metrics-v3.0-step114-2d",
+    cagrPolicy: "rolling_10y_median",
+    mddPolicy: "full_period_actual",
+    betaPolicy: "aligned_monthly_return_beta",
+  });
+  const ready = buildMonthlyBaselineProjection({
+    settings: BASE_SETTINGS,
+    assets: [previewAsset],
+  });
+  assert.equal(ready.status, "ready");
+  assert.equal(ready.expectedCagr, 17.11);
+  assert.equal(ready.assets[0].metricLineage.internalPreviewReviewOnly, true);
+  assert.equal(ready.assets[0].metricLineage.productionPublishReady, false);
+  assert.equal(ready.assets[0].metricLineage.appExportApproved, false);
+  assert.equal(ready.assets[0].metricLineage.cagrPolicy, "rolling_10y_median");
+  assert.equal(ready.assets[0].metricLineage.mddPolicy, "full_period_actual");
+  assert.equal(ready.assets[0].metricLineage.betaPolicy, "aligned_monthly_return_beta");
+
+  for (const blockedAsset of [
+    { ...previewAsset, reviewFlag: "review_required" },
+    { ...previewAsset, dataStatus: "review_required" },
+    { ...previewAsset, selectedCagr: null, cagr: null },
+    { ...previewAsset, productionPublishReady: true },
+    { ...previewAsset, appExportApproved: true },
+    { ...previewAsset, previewLoaderEnabled: false },
+  ]) {
+    const blocked = buildMonthlyBaselineProjection({
+      settings: BASE_SETTINGS,
+      assets: [blockedAsset],
+    });
+    assert.equal(blocked.status, "blocked");
+  }
+});
+
+test("saved portfolio normalization preserves preview identity, nulls, policies, and false gates", () => {
+  const serialized = JSON.stringify([
+    {
+      market: "KR",
+      ticker: "0086C0",
+      cagr: null,
+      beta: null,
+      mdd: null,
+      dividendYield: null,
+      selectedCagr: null,
+      cagrPolicy: "insufficient",
+      mddPolicy: "full_period_actual",
+      betaPolicy: "aligned_monthly_return_beta",
+      dataStatus: "review_required",
+      reviewFlag: "review_required",
+      internalPreviewReviewOnly: true,
+      previewLoaderEnabled: true,
+      productionPublishReady: false,
+      appExportApproved: false,
+    },
+  ]);
+  const parsed = JSON.parse(serialized)[0];
+  const reloaded = {
+    ticker: parsed.ticker,
+    ...normalizePersistedMetricFields(parsed),
+  };
+  assert.equal(reloaded.ticker, "0086C0");
+  assert.equal(reloaded.cagr, null);
+  assert.equal(reloaded.beta, null);
+  assert.equal(reloaded.mdd, null);
+  assert.equal(reloaded.dividendYield, null);
+  assert.equal(reloaded.selectedCagr, null);
+  assert.equal(reloaded.cagrPolicy, "insufficient");
+  assert.equal(reloaded.mddPolicy, "full_period_actual");
+  assert.equal(reloaded.betaPolicy, "aligned_monthly_return_beta");
+  assert.equal(reloaded.internalPreviewReviewOnly, true);
+  assert.equal(reloaded.productionPublishReady, false);
+  assert.equal(reloaded.appExportApproved, false);
 });
 
 test("approved metric lineage is required and unknown CAGR fallback is blocked", () => {
