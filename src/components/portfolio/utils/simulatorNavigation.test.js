@@ -108,10 +108,24 @@ test("PortfolioSimulator keeps direct-link refresh, imperative changeTab, and pa
 
 test("SimulatorTabNav uses native step navigation without an incomplete ARIA tab pattern", () => {
   const source = readSource("src/components/portfolio/components/SimulatorTabNav.jsx");
-  assert.match(source, /<nav className="simulatorTabNav fourStepNav sevenStepNav"/);
+  assert.match(source, /className="simulatorTabNav fourStepNav sevenStepNav simulatorDesktopStepNav"/);
   assert.match(source, /type="button"/);
   assert.match(source, /aria-current=/);
-  assert.doesNotMatch(source, /role="tablist"|role="tab"|aria-selected=|aria-controls=/);
+  assert.doesNotMatch(source, /role="tablist"|role="tab"|aria-selected=/);
+});
+
+test("mobile simulator navigation keeps a compact current step with previous next and expandable direct access", () => {
+  const source = readSource("src/components/portfolio/components/SimulatorTabNav.jsx");
+  const styles = readSource("src/App.css");
+  assert.match(source, /simulatorMobileCurrentStep/);
+  assert.match(source, /previousItem/);
+  assert.match(source, /nextItem/);
+  assert.match(source, /aria-expanded=\{isAllStepsOpen\}/);
+  assert.match(source, /simulatorMobileAllSteps/);
+  assert.match(source, /scrollIntoView\(\{[\s\S]*inline:\s*"center"/);
+  assert.match(styles, /@media\s*\(max-width:\s*620px\)[\s\S]*\.simulatorDesktopStepNav\s*\{[\s\S]*display:\s*none\s*!important/);
+  assert.match(styles, /\.simulatorMobileStepControls\s*\{[\s\S]*display:\s*grid/);
+  assert.match(styles, /\.simulatorMobileAllSteps\.open\s*\{[\s\S]*overflow-x:\s*auto/);
 });
 
 test("AI panel is labeled as Step 6 while preserving the existing prop contract", () => {

@@ -326,10 +326,20 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn("scripts.prepare_monthly_metrics_candidate_inputs", payload)
         self.assertIn('[sys.executable, "-m", PREPARE_MODULE, "--help"]', code)
         self.assertIn("internal_preview_review_only", payload)
-        self.assertIn("RUN_STEP114_2Y_INTERNAL_PREVIEW", payload)
+        self.assertIn(
+            'COLLECTION_REF = "codex/step114-2za-same-origin-protected-preview"',
+            code,
+        )
+        self.assertIn("RUN_STEP114_2ZA_DIVIDEND_RECALC", payload)
+        self.assertIn("step114-2za-dividend-", payload)
         self.assertIn("us_raw_daily_prices.csv", payload)
         self.assertIn("kr_raw_daily_prices.csv", payload)
         self.assertIn("kr_price_metrics_overlay.csv", payload)
+        self.assertIn("positiveDividendMonths", payload)
+        self.assertIn("dividendAdjustedReturnMonths", payload)
+        self.assertIn('representative_tickers = {"QQQ", "SPY", "GLD"}', code)
+        self.assertNotIn("build_us_price_metrics_overlay_chunked", code)
+        self.assertNotIn("build_kr_price_metrics_overlay_chunked", code)
 
 
 if __name__ == "__main__":

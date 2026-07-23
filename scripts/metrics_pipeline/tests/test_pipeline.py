@@ -13,14 +13,19 @@ from zipfile import ZipFile
 from scripts.metrics_pipeline import PipelineCriticalError, run_finple_monthly_metrics_pipeline
 from scripts.metrics_pipeline.adapters import run_source_adapter, validate_adapter_result
 from scripts.metrics_pipeline.config import load_config
-from scripts.metrics_pipeline.pipeline import _repo_relative_posix
+from scripts.metrics_pipeline.pipeline import (
+    _dividend_yield,
+    _monthly_return_rows,
+    _normalized_metric_rows,
+    _repo_relative_posix,
+)
 from scripts.metrics_pipeline.rolling import (
     ROLLING_METRIC_VERSION,
     compute_rolling_price_metrics,
     percentile,
     rolling_cagrs_for_test,
 )
-from scripts.metrics_pipeline.timeseries import normalize_daily_price_rows
+from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -96,6 +101,102 @@ def public_source_checkpoint_payload(**overrides):
 
 
 class MetricsPipelineTests(unittest.TestCase):
+    def test_month_end_normalization_aggregates_daily_dividends_and_preserves_status(self):
+        with (FIXTURE_DIR / "raw_daily_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+            template = next(csv.DictReader(handle))
+
+        def row(ticker: str, date_text: str, close: str, dividend: str) -> dict[str, str]:
+            return {
+                **template,
+                "market": "US",
+                "ticker": ticker,
+                "date": date_text,
+                "currency": "USD",
+                "close": close,
+                "splitAdjustedClose": close,
+                "totalReturnAdjustedClose": "",
+                "splitFactor": "1",
+                "cashDividend": dividend,
+                "priceAdjustmentBasis": "split_adjusted",
+            }
+
+        raw_rows = [
+            row("SPY", "2026-01-10", "101", "0.25"),
+            row("SPY", "2026-01-20", "103", "0.35"),
+            row("SPY", "2026-01-30", "105", "0"),
+            row("SPY", "2026-02-10", "106", "0"),
+            row("SPY", "2026-02-27", "107", "0"),
+            row("SPY", "2026-03-10", "108", ""),
+            row("SPY", "2026-03-31", "109", "0"),
+        ]
+        normalized = normalize_daily_price_rows(
+            raw_rows,
+            source_file_name="raw.csv",
+            source_sha256="test",
+            allow_review_only_provenance=True,
+            requested_as_of_included="2026-03-31",
+        )["normalizedRows"]
+
+        self.assertEqual(
+            [(item["month"], item["sourceDate"], item["cashDividend"], item["dividendStatus"]) for item in normalized],
+            [
+                ("2026-01-31", "2026-01-30", "0.6", "confirmed_value"),
+                ("2026-02-28", "2026-02-27", "0", "confirmed_zero"),
+                ("2026-03-31", "2026-03-31", "", "missing"),
+            ],
+        )
+        metric_rows = _normalized_metric_rows(normalized)
+        self.assertEqual(
+            [(item["cashDividend"], item["dividendStatus"]) for item in metric_rows],
+            [("0.6", "confirmed_value"), ("0", "confirmed_zero"), ("", "missing")],
+        )
+
+    def test_monthly_total_return_adds_dividend_without_changing_price_return(self):
+        candidate = {"market": "US", "ticker": "SPY", "benchmarkKey": "US_SPY", "proxyTicker": ""}
+        prices = [
+            {
+                "month": "2025-12-31",
+                "currency": "USD",
+                "close": "100",
+                "cashDividend": "0",
+                "dividendStatus": "confirmed_zero",
+            },
+            {
+                "month": "2026-01-31",
+                "currency": "USD",
+                "close": "105",
+                "cashDividend": "0.6",
+                "dividendStatus": "confirmed_value",
+            },
+        ]
+        row = _monthly_return_rows(candidate, prices)[0]
+        self.assertEqual(row["priceReturn"], "0.050000")
+        self.assertEqual(row["totalReturn"], "0.056000")
+
+    def test_trailing_twelve_month_dividend_yield_distinguishes_value_zero_and_missing(self):
+        def trailing_rows(statuses: list[str], dividends: list[str]) -> list[dict[str, str]]:
+            return [
+                {
+                    "month": f"2025-{index + 1:02d}-28",
+                    "close": "100",
+                    "cashDividend": dividend,
+                    "dividendStatus": status,
+                }
+                for index, (status, dividend) in enumerate(zip(statuses, dividends))
+            ]
+
+        value_rows = trailing_rows(
+            ["confirmed_zero"] * 11 + ["confirmed_value"],
+            ["0"] * 11 + ["2"],
+        )
+        self.assertEqual(_dividend_yield(value_rows), (2.0, "confirmed_value", "confirmed_ttm_cash_dividend"))
+
+        zero_rows = trailing_rows(["confirmed_zero"] * 12, ["0"] * 12)
+        self.assertEqual(_dividend_yield(zero_rows), (0.0, "confirmed_zero", "confirmed_no_dividend"))
+
+        missing_rows = trailing_rows(["confirmed_zero"] * 11 + ["missing"], ["0"] * 11 + [""])
+        self.assertEqual(_dividend_yield(missing_rows), (None, "missing", "unconfirmed_blank"))
+
     def test_partial_final_month_policy_preserves_raw_and_excludes_metric_input(self):
         with (FIXTURE_DIR / "raw_daily_prices.csv").open("r", encoding="utf-8", newline="") as handle:
             template = next(csv.DictReader(handle))
@@ -201,7 +302,7 @@ class MetricsPipelineTests(unittest.TestCase):
                 {"benchmark_map.csv", "candidates.csv", "raw_daily_prices.csv"},
             )
             self.assertEqual(manifest["rollingSourceLineage"]["rawSourceFileName"], "raw_daily_prices.csv")
-            self.assertEqual(manifest["rollingSourceLineage"]["normalizationVersion"], "timeseries-normalization-v1-step114-2b")
+            self.assertEqual(manifest["rollingSourceLineage"]["normalizationVersion"], NORMALIZATION_VERSION)
             self.assertEqual(manifest["rollingSourceLineage"]["rollingMetricVersion"], ROLLING_METRIC_VERSION)
             self.assertIn("SPY", manifest["rollingSourceLineage"]["normalizedSeriesHashes"])
             self.assertIn("sourceMetadata", manifest)

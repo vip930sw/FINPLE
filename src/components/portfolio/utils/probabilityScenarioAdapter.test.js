@@ -247,9 +247,13 @@ test("historical MDD and scenario MDD labels are distinct and disclaimer is pres
 
 test("accessibility labels and mobile fallback are present", () => {
   const chartSource = fs.readFileSync("src/components/portfolio/components/ProbabilityBandChart.jsx", "utf8");
+  const styles = fs.readFileSync("src/App.css", "utf8");
   assert.match(chartSource, /aria-label/);
   assert.match(chartSource, /tabIndex=\{0\}/);
   assert.match(chartSource, /probabilityMobileSummary/);
+  assert.match(styles, /@media\s*\(max-width:\s*620px\)[\s\S]*\.probabilityChartSvgWrap\s*\{[\s\S]*display:\s*block\s*!important/);
+  assert.match(styles, /\.probabilityBandSvg\s*\{[\s\S]*min-width:\s*680px/);
+  assert.match(styles, /\.probabilityMobileSummary\s*\{[\s\S]*display:\s*table/);
 });
 
 test("fingerprint preserves KR leading-zero tickers", () => {

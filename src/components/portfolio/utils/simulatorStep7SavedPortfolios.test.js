@@ -166,6 +166,7 @@ test("direct hash, hashchange, and user clicks share active route auto-scroll wi
   assert.match(personalPage, /aria-current=\{activeSimulatorStep === item\.key \? "step" : undefined\}/);
   assert.match(simulator, /activeTabChangeContextRef/);
   assert.match(simulator, /onTabChange\(nextTab\) \{[\s\S]*userInitiated: false/);
-  assert.match(tabNav, /changeSimulatorTab\(item\.key, \{ userInitiated: true \}\)/);
+  assert.match(tabNav, /changeSimulatorTab\(key, \{ userInitiated: true \}\)/);
+  assert.match(tabNav, /onClick=\{\(\) => selectStep\(item\.key\)\}/);
   assert.doesNotMatch(scrollHelper, /window\.scrollTo|scrollIntoView|\btop\s*:/);
 });

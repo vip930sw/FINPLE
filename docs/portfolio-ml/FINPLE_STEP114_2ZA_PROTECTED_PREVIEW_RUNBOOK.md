@@ -2,6 +2,60 @@
 
 이 문서는 검증된 Step 114-2Z review-only export를 FINPLE Vercel **Preview 배포에만** 같은 origin 정적 파일로 넣는 운영 절차다. 소스 ZIP, 해제 데이터, staging 산출물은 저장소 밖에 두며 Git에 추가하지 않는다.
 
+## 0. 배당 수정 One-Click 재계산
+
+provider 수집과 US/KR combine은 다시 실행하지 않는다. Google Drive의 기존
+`2026-07-22/combined`에 아래 세 파일이 그대로 있어야 한다.
+
+- `us_raw_daily_prices.csv`
+- `kr_raw_daily_prices.csv`
+- `kr_price_metrics_overlay.csv`
+
+GitHub의 현재
+`codex/step114-2za-same-origin-protected-preview` 브랜치에서
+`notebooks/FINPLE_MONTHLY_METRICS_ONE_CLICK.ipynb`를 Colab으로 열고 모든 셀을
+순서대로 실행한다. 설정은 아래 값을 유지한다.
+
+```python
+AS_OF_INCLUDED = "2026-07-22"
+HISTORY_YEARS = 20
+USE_GOOGLE_DRIVE = True
+DRIVE_ROOT = "/content/drive/MyDrive/FINPLE/monthly-metrics"
+```
+
+노트북은 해당 브랜치를 detached `FETCH_HEAD`로 checkout하고, 기존 combined
+파일에서 고유한 `step114-2za-dividend-*` attempt를 만든 뒤 canonical
+`run_finple_production_candidate_package`만 실행한다. US/KR collector notebook과
+combine cell은 실행하지 않는다.
+
+완료 셀에서 다음을 확인한다.
+
+- `candidatePackageReady=true`
+- `packageGlobalBlockingIssueCount=0`
+- `productionPublishReady=false`
+- `appExportApproved=false`
+- QQQ/SPY `positiveDividendMonths > 0`
+- QQQ/SPY `dividendAdjustedReturnMonths > 0`
+- GLD `dividendStatus`가 `confirmed_zero` 또는 `missing`
+
+새 candidate ZIP을 로컬로 받은 뒤 저장소 밖의 새 빈 export 디렉터리에서
+review-only app-preview export를 다시 만든다.
+
+```powershell
+$Repo = (Resolve-Path "<FINPLE repository root>").Path
+$CandidateZip = (Resolve-Path "<new Step 114-2ZA candidate ZIP>").Path
+$PreviewExportRoot = "<new external empty app-preview export directory>"
+$Python = "<Python 3 executable>"
+
+$ExportResult = & $Python -m scripts.export_finple_app_preview `
+  --input-package $CandidateZip `
+  --output-dir $PreviewExportRoot `
+  --shard-count 64 |
+  ConvertFrom-Json
+
+$InputExport = (Resolve-Path $ExportResult.zipPath).Path
+```
+
 ## 불변 조건
 
 - 입력은 operator가 지정한 app-preview ZIP 또는 동일한 해제 디렉터리다.
