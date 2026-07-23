@@ -130,6 +130,53 @@ def raw_daily_rows(**overrides) -> list[dict[str, str]]:
     return rows
 
 
+def long_monthly_raw_series(
+    *,
+    market: str,
+    ticker: str,
+    currency: str,
+    month_count: int = 240,
+    skip_indexes: set[int] | None = None,
+    split_factors: dict[int, str] | None = None,
+    monthly_growth=None,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    price = 100.0
+    skip_indexes = skip_indexes or set()
+    split_factors = split_factors or {}
+    growth = monthly_growth or (lambda index: 0.006)
+    for index in range(month_count):
+        year, month = add_month(2006, 7, index)
+        if index:
+            price *= 1 + growth(index)
+        if index in skip_indexes:
+            continue
+        rows.append(
+            {
+                "market": market,
+                "ticker": ticker,
+                "date": month_end(year, month),
+                "currency": currency,
+                "close": f"{price:.8f}",
+                "splitAdjustedClose": f"{price:.8f}",
+                "totalReturnAdjustedClose": "",
+                "volume": str(100000 + index),
+                "splitFactor": split_factors.get(index, "1"),
+                "cashDividend": "",
+                "sourceId": "manual_candidate_upload",
+                "retrievedAt": "2026-06-30T10:00:00+09:00",
+                "priceAdjustmentBasis": "split_adjusted",
+                "publicationEligibility": "approved",
+                "providerOrInstitution": "Manual Operator Source",
+                "licenseStatus": "approved",
+                "internalUseAllowed": "true",
+                "publicationAllowed": "true",
+                "redistributionAllowed": "false",
+            }
+        )
+    return rows
+
+
 def build_candidate_input(root: Path, **overrides) -> Path:
     input_dir = root / "input"
     input_dir.mkdir(parents=True)
@@ -948,6 +995,203 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in normalized))
             self.assertTrue(all(row["totalReturnAdjustedClose"] for row in normalized))
             self.assertEqual({row["priceSeriesClassification"] for row in normalized}, {"split_adjusted"})
+
+    def test_series_quality_reviews_do_not_block_candidate_package(self):
+        candidate_price_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="005930",
+            currency="KRW",
+            skip_indexes={40},
+            split_factors={93: "125"},
+        )
+        split_evidence_row = next(
+            row for row in candidate_price_rows if row["date"] == "2014-04-30"
+        )
+        split_evidence_row["date"] = "2014-04-10"
+        clean_candidate_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="0086C0",
+            currency="KRW",
+        )
+        benchmark_price_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="069500",
+            currency="KRW",
+            monthly_growth=lambda index: 0.004 + (index % 12) * 0.0002,
+        )
+        candidates = [
+            candidate_rows()[0],
+            {**candidate_rows()[0], "ticker": "0086C0", "nameEn": "Clean Candidate"},
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                candidate_rows=candidates,
+                raw_rows=candidate_price_rows + clean_candidate_rows + benchmark_price_rows,
+            )
+            result = run_candidate(input_dir, root / "out")
+
+            self.assertTrue(result["candidatePackageReady"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
+            self.assertEqual(result["packageGlobalBlockingIssueCount"], 0)
+            self.assertEqual(result["seriesReviewIssueCount"], 2)
+            self.assertEqual(
+                result["affectedSeriesCountByIssueType"],
+                {"implausible_split_factor": 1, "missing_calendar_month": 1},
+            )
+            self.assertEqual(result["missingCalendarMonthCount"], 1)
+            self.assertEqual(result["implausibleSplitFactorSeriesCount"], 1)
+            self.assertEqual(result["metricsOutputRowCount"], 2)
+            self.assertEqual(result["selectedRowCount"], 1)
+            self.assertEqual(result["reviewRequiredRowCount"], 2)
+
+            with Path(result["outputs"]["metricsOutputCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                metrics = {row["ticker"]: row for row in csv.DictReader(handle)}
+            metric = metrics["005930"]
+            self.assertEqual(metric["ticker"], "005930")
+            self.assertEqual(metric["reviewFlag"], "review_required")
+            self.assertEqual(metric["dataStatus"], "review_required")
+            self.assertEqual(metric["cagrPolicy"], "rolling_10y_median")
+            self.assertGreater(int(metric["validRollingWindowCount10y"]), 1)
+            self.assertNotEqual(metric["selectedMdd"], "")
+            self.assertNotEqual(metric["selectedBeta"], "")
+            self.assertEqual(metric["rollingMdd10yMedian"], "")
+            self.assertEqual(metric["rollingBeta10yMedian"], "")
+            self.assertEqual(metric["rollingBeta5yMedian"], "")
+            self.assertIn("splitFactor=125", metric["reviewReason"])
+            self.assertIn("2014-04-10", metric["reviewReason"])
+            self.assertIn("missing calendar month", metric["reviewReason"])
+            self.assertEqual(metrics["0086C0"]["dataStatus"], "ready")
+            self.assertEqual(metrics["0086C0"]["reviewFlag"], "none")
+            with Path(result["outputs"]["selectedMetricsCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                selected = list(csv.DictReader(handle))
+            self.assertEqual([row["ticker"] for row in selected], ["0086C0"])
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                normalized = [
+                    row for row in csv.DictReader(handle) if row["ticker"] == "005930"
+                ]
+            split_row = next(row for row in normalized if row["sourceDate"] == "2014-04-10")
+            self.assertEqual(split_row["splitFactor"], "125")
+            self.assertEqual(split_row["splitAdjustedClose"], split_row["close"])
+
+            with Path(result["outputs"]["monthlyReturnsCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                returns = [
+                    row for row in csv.DictReader(handle) if row["ticker"] == "005930"
+                ]
+            self.assertNotIn("2009-12-31", {row["month"] for row in returns})
+
+            with Path(result["outputs"]["reviewRequiredCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                review_rows = list(csv.DictReader(handle))
+            self.assertEqual(
+                {row["issueType"] for row in review_rows},
+                {"implausible_split_factor", "missing_calendar_month"},
+            )
+            split_review = next(
+                row for row in review_rows if row["issueType"] == "implausible_split_factor"
+            )
+            self.assertEqual(split_review["rawValue"], "125")
+            self.assertIn("2014-04-10", split_review["reviewReason"])
+
+            with Path(result["outputs"]["timeseriesAuditCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                audit_rows = [
+                    row
+                    for row in csv.DictReader(handle)
+                    if row["issueType"]
+                    in {"implausible_split_factor", "missing_calendar_month"}
+                ]
+            self.assertEqual(len(audit_rows), 2)
+            self.assertEqual({row["severity"] for row in audit_rows}, {"warning"})
+            self.assertEqual({row["blocksPublication"] for row in audit_rows}, {"false"})
+
+            for output_key in ["manifestJson", "readinessJson"]:
+                with Path(result["outputs"][output_key]).open("r", encoding="utf-8") as handle:
+                    summary = json.load(handle)
+                self.assertEqual(summary["packageGlobalBlockingIssueCount"], 0)
+                self.assertEqual(summary["seriesReviewIssueCount"], 2)
+                self.assertEqual(summary["missingCalendarMonthCount"], 1)
+                self.assertEqual(summary["implausibleSplitFactorSeriesCount"], 1)
+                self.assertEqual(summary["metricsOutputRowCount"], 2)
+                self.assertEqual(summary["selectedRowCount"], 1)
+                self.assertEqual(summary["reviewRequiredRowCount"], 2)
+
+    def test_twenty_year_official_output_uses_rolling_ten_year_median(self):
+        qqq_candidate = [
+            {
+                **candidate_rows()[0],
+                "ticker": "QQQ",
+                "nameEn": "Invesco QQQ Trust",
+                "market": "US",
+                "assetType": "ETF",
+                "exchange": "NASDAQ",
+                "benchmarkKey": "US_SPY",
+            }
+        ]
+        benchmarks = [
+            {
+                "benchmarkKey": "US_SPY",
+                "benchmarkMarket": "US",
+                "benchmarkTicker": "SPY",
+            }
+        ]
+        qqq_rows = long_monthly_raw_series(
+            market="US",
+            ticker="QQQ",
+            currency="USD",
+            monthly_growth=lambda index: 0.003 + (index / 239) * 0.009,
+        )
+        spy_rows = long_monthly_raw_series(
+            market="US",
+            ticker="SPY",
+            currency="USD",
+            monthly_growth=lambda index: 0.0025 + (index / 239) * 0.005,
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                candidate_rows=qqq_candidate,
+                benchmark_rows=benchmarks,
+                raw_rows=qqq_rows + spy_rows,
+                source_patch={"marketScope": ["US"], "currencyMode": "USD"},
+                manifest_patch={"expectedMarketScope": ["US"]},
+            )
+            result = run_candidate(
+                input_dir,
+                root / "out",
+                market_scope=["US"],
+            )
+            self.assertTrue(result["candidatePackageReady"])
+            with Path(result["outputs"]["metricsOutputCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                metric = next(csv.DictReader(handle))
+            self.assertEqual(metric["ticker"], "QQQ")
+            self.assertEqual(metric["cagrPolicy"], "rolling_10y_median")
+            self.assertEqual(metric["selectedCagr"], metric["rollingCagr10yMedian"])
+            self.assertGreater(int(metric["validRollingWindowCount10y"]), 1)
+            self.assertNotEqual(metric["selectedCagr"], metric["rawPriceCagr10y"])
+
+            with Path(result["outputs"]["usReviewOverlayCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                overlay = next(csv.DictReader(handle))
+            self.assertEqual(overlay["expectedCagr"], metric["rollingCagr10yMedian"])
+            self.assertNotEqual(overlay["expectedCagr"], metric["rawPriceCagr10y"])
 
     def test_committed_fixture_cannot_be_reclassified_as_candidate(self):
         with tempfile.TemporaryDirectory() as temp_dir:

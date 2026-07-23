@@ -19,6 +19,12 @@ PRICE_SERIES_CLASSIFICATIONS = {
     "total_return_adjusted",
     "ambiguous",
 }
+# This is an intentionally narrow allowlist. All other validation failures
+# remain structural/package-global blockers unless an existing policy says otherwise.
+SERIES_REVIEW_ISSUE_TYPES = {
+    "implausible_split_factor",
+    "missing_calendar_month",
+}
 
 
 def normalize_daily_price_rows(
@@ -90,7 +96,16 @@ def normalize_daily_price_rows(
 
         row_errors = _validate_daily_row(row, allow_review_only_provenance=allow_review_only_provenance)
         for issue_type, reason in row_errors:
-            audit_rows.append(_audit_row(row, issue_type, "critical", True, reason))
+            series_review = issue_type in SERIES_REVIEW_ISSUE_TYPES
+            audit_rows.append(
+                _audit_row(
+                    row,
+                    issue_type,
+                    "warning" if series_review else "critical",
+                    not series_review,
+                    reason,
+                )
+            )
         if allow_review_only_provenance and _has_review_only_provenance(row) and series_key not in provenance_review_series:
             provenance_review_series.add(series_key)
             audit_rows.append(
@@ -428,7 +443,16 @@ def _validate_daily_row(
 
     split_factor = _safe_float(row.get("splitFactor"))
     if split_factor is None or split_factor <= 0 or split_factor > 100:
-        errors.append(("implausible_split_factor", "splitFactor must be positive and plausible."))
+        split_factor_evidence = row.get("splitFactor", "") or "<blank>"
+        errors.append(
+            (
+                "implausible_split_factor",
+                (
+                    f"splitFactor={split_factor_evidence} on {row.get('date', '')} is outside "
+                    "the plausible evidence range (0, 100]; Close remains the split-adjusted calculation series."
+                ),
+            )
+        )
 
     cash_dividend_raw = row.get("cashDividend", "")
     cash_dividend = _safe_float(cash_dividend_raw)
@@ -472,7 +496,6 @@ def _row_is_normalizable(row: Mapping[str, str], errors: list[tuple[str, str]], 
         "non_positive_price",
         "missing_required_price_basis",
         "inconsistent_market_ticker_identifier",
-        "implausible_split_factor",
         "corporate_action_inconsistency",
         "invalid_provenance_publication_policy",
     }
@@ -538,8 +561,8 @@ def _normalize_month_ends(
                     _audit_row(
                         {"market": series_key[0], "ticker": series_key[1], "date": f"{expected_month}-01"},
                         "missing_calendar_month",
-                        "critical",
-                        True,
+                        "warning",
+                        False,
                         "No valid daily observation exists for this calendar month; no forward fill was applied.",
                     )
                 )
@@ -552,7 +575,7 @@ def _corporate_action_summary(rows: Iterable[Mapping[str, str]]) -> list[dict[st
     for row in rows:
         split_factor = _safe_float(row.get("splitFactor")) or 1.0
         cash_dividend = _safe_float(row.get("cashDividend")) or 0.0
-        if split_factor != 1.0:
+        if split_factor != 1.0 and 0 < split_factor <= 100:
             key = (row["market"], row["ticker"], "valid_stock_split")
             if key not in seen_types:
                 output.append(_audit_row(row, "valid_stock_split", "info", False, "Split factor evidence is present."))

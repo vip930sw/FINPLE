@@ -517,7 +517,7 @@ def _build_candidate_outputs(
     data_years = _years_between(data_start, data_end)
     closes = [float(row["close"]) for row in prices]
     returns = _period_returns(prices)
-    monthly_return_rows = _monthly_return_rows(candidate, prices, returns)
+    monthly_return_rows = _monthly_return_rows(candidate, prices)
 
     rolling_metrics = compute_rolling_price_metrics(prices, min_years_for_inception=config.min_years_for_inception)
     selected_cagr = rolling_metrics.selectedCagr
@@ -645,9 +645,12 @@ def _select_cagr(
     return None, "blank_review_required", "insufficient_history", "review_required", "Less than three years of fixture history."
 
 
-def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, str]], returns: list[float]) -> list[dict[str, str]]:
+def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, str]]) -> list[dict[str, str]]:
     output: list[dict[str, str]] = []
-    for row, price_return in zip(prices[1:], returns):
+    for previous, row in zip(prices, prices[1:]):
+        if row["month"] != _next_month_end(previous["month"]):
+            continue
+        price_return = float(row["close"]) / float(previous["close"]) - 1
         dividend_component = 0.0
         if row.get("dividendStatus") == "confirmed_value":
             dividend_component = _safe_float(row.get("cashDividend")) / _safe_float(row.get("close"))
@@ -890,6 +893,8 @@ def _next_month_end(value: str) -> str:
 def _period_returns(prices: list[dict[str, str]]) -> list[float]:
     returns: list[float] = []
     for previous, current in zip(prices, prices[1:]):
+        if current["month"] != _next_month_end(previous["month"]):
+            continue
         previous_close = float(previous["close"])
         current_close = float(current["close"])
         returns.append((current_close / previous_close) - 1)
@@ -949,7 +954,12 @@ def _beta(prices: list[dict[str, str]], benchmark_prices: list[dict[str, str]]) 
 
 
 def _returns_by_month(prices: list[dict[str, str]]) -> dict[str, float]:
-    return {row["month"]: value for row, value in zip(prices[1:], _period_returns(prices))}
+    output: dict[str, float] = {}
+    for previous, current in zip(prices, prices[1:]):
+        if current["month"] != _next_month_end(previous["month"]):
+            continue
+        output[current["month"]] = float(current["close"]) / float(previous["close"]) - 1
+    return output
 
 
 def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, str]:

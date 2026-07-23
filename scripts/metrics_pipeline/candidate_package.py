@@ -35,6 +35,7 @@ from .schemas import (
 )
 from .timeseries import (
     NORMALIZATION_VERSION,
+    SERIES_REVIEW_ISSUE_TYPES,
     normalize_daily_price_file_streaming,
     partial_month_metadata,
 )
@@ -252,6 +253,8 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
                 paths["raw_daily_price"].name,
                 row.get("reviewReason", "Time-series normalization blocked this candidate."),
             )
+    series_reviews_by_identity = _series_reviews_by_identity(timeseries_audit_rows)
+    _record_series_review_issues(issues, series_reviews_by_identity)
 
     if _has_blocking_issues(issues):
         _write_candidate_outputs(
@@ -299,6 +302,16 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
             if package_config.internal_preview_review_only
             else "Step 114-2M offline production data candidate; review-only and not app-export-approved."
         )
+        candidate_series_reviews = series_reviews_by_identity.get(identity, {})
+        if candidate_series_reviews:
+            series_reason = _series_review_reason(candidate_series_reviews)
+            metrics_row["reviewFlag"] = "review_required"
+            if metrics_row.get("dataStatus") == "ready":
+                metrics_row["dataStatus"] = "review_required"
+            metrics_row["reviewReason"] = _join_review_reasons(metrics_row.get("reviewReason", ""), series_reason)
+            candidate_review_rows.extend(
+                _series_review_output_rows(candidate, package_config, candidate_series_reviews)
+            )
         for return_row in candidate_returns:
             return_row["dataStatus"] = return_row.get("dataStatus", "").replace("fixture", "candidate")
         full_rows.append(metrics_row)
@@ -368,6 +381,14 @@ def _idle_result(reasons: list[str]) -> dict[str, Any]:
         "productionPublishReady": False,
         "appExportApproved": False,
         "blockingIssueCount": len(reasons),
+        "packageGlobalBlockingIssueCount": len(reasons),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": 0,
         "issues": [
             {
@@ -394,6 +415,16 @@ def _blocked_result(config: CandidatePackageConfig, paths: Mapping[str, Path], i
         "appExportApproved": False,
         "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": len(
+            [issue for issue in issues if issue["blocksCandidate"] == "true"]
+        ),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": 0,
         "issues": issues,
         "outputs": {role: str(path) for role, path in sorted(paths.items())},
@@ -415,6 +446,16 @@ def _blocked_no_write_result(
         "appExportApproved": False,
         "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": len(
+            [issue for issue in issues if issue["blocksCandidate"] == "true"]
+        ),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": "",
         "zipPackageSha256": "",
@@ -442,6 +483,17 @@ def _candidate_result(
         "appExportApproved": False,
         "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": readiness.get(
+            "packageGlobalBlockingIssueCount",
+            len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        ),
+        "seriesReviewIssueCount": readiness.get("seriesReviewIssueCount", 0),
+        "affectedSeriesCountByIssueType": readiness.get("affectedSeriesCountByIssueType", {}),
+        "missingCalendarMonthCount": readiness.get("missingCalendarMonthCount", 0),
+        "implausibleSplitFactorSeriesCount": readiness.get("implausibleSplitFactorSeriesCount", 0),
+        "metricsOutputRowCount": readiness.get("metricsOutputRowCount", 0),
+        "selectedRowCount": readiness.get("selectedRowCount", 0),
+        "reviewRequiredRowCount": readiness.get("reviewRequiredRowCount", 0),
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": readiness.get("candidatePackageHash", ""),
         "zipPackageSha256": zip_sha,
@@ -1026,6 +1078,130 @@ def _validate_scope_reconciliation(
         )
 
 
+def _series_reviews_by_identity(
+    audit_rows: Iterable[Mapping[str, str]],
+) -> dict[tuple[str, str], dict[str, list[Mapping[str, str]]]]:
+    grouped: dict[tuple[str, str], dict[str, list[Mapping[str, str]]]] = {}
+    for row in audit_rows:
+        issue_type = row.get("issueType", "")
+        if issue_type not in SERIES_REVIEW_ISSUE_TYPES:
+            continue
+        identity = (row.get("market", ""), row.get("ticker", ""))
+        grouped.setdefault(identity, {}).setdefault(issue_type, []).append(row)
+    return grouped
+
+
+def _record_series_review_issues(
+    issues: list[dict[str, str]],
+    reviews_by_identity: Mapping[tuple[str, str], Mapping[str, list[Mapping[str, str]]]],
+) -> None:
+    for (market, ticker), by_type in sorted(reviews_by_identity.items()):
+        for issue_type, rows in sorted(by_type.items()):
+            _add_issue(
+                issues,
+                issue_type,
+                "warning",
+                False,
+                "raw_daily_price_series",
+                f"{market}:{ticker}",
+                _series_issue_reason(market, ticker, issue_type, rows),
+            )
+
+
+def _series_issue_reason(
+    market: str,
+    ticker: str,
+    issue_type: str,
+    rows: list[Mapping[str, str]],
+) -> str:
+    if issue_type == "missing_calendar_month":
+        months = sorted({row.get("date", "")[:7] for row in rows if row.get("date", "")})
+        displayed_months = months[:12]
+        if len(months) > 12:
+            displayed_months.append(f"... {months[-1]}")
+        month_text = ", ".join(displayed_months)
+        month_suffix = f" ({month_text})" if month_text else ""
+        return (
+            f"{market}:{ticker} has {len(months)} missing calendar month(s){month_suffix}; "
+            "observed rows are preserved, no forward fill is applied, "
+            "and rolling CAGR/monthly returns crossing a gap are excluded."
+        )
+    evidence = "; ".join(
+        row.get("reviewReason", "")
+        for row in sorted(rows, key=lambda item: item.get("date", ""))
+        if row.get("reviewReason", "")
+    )
+    return f"{market}:{ticker} split evidence requires review: {evidence}"
+
+
+def _series_review_reason(by_type: Mapping[str, list[Mapping[str, str]]]) -> str:
+    reasons: list[str] = []
+    for issue_type, rows in sorted(by_type.items()):
+        market = rows[0].get("market", "") if rows else ""
+        ticker = rows[0].get("ticker", "") if rows else ""
+        reasons.append(_series_issue_reason(market, ticker, issue_type, rows))
+    return "; ".join(reasons)
+
+
+def _series_review_output_rows(
+    candidate: Mapping[str, str],
+    config: CandidatePackageConfig,
+    by_type: Mapping[str, list[Mapping[str, str]]],
+) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for issue_type, rows in sorted(by_type.items()):
+        raw_value = ""
+        if issue_type == "implausible_split_factor":
+            evidence = rows[0].get("reviewReason", "") if rows else ""
+            match = re.search(r"splitFactor=(.+?) on ", evidence)
+            raw_value = match.group(1) if match else ""
+        output.append(
+            {
+                "ticker": candidate.get("ticker", ""),
+                "nameKr": candidate.get("nameKr", ""),
+                "market": candidate.get("market", ""),
+                "assetType": candidate.get("assetType", ""),
+                "metricBaseDate": config.metric_base_date,
+                "issueType": issue_type,
+                "rawValue": raw_value,
+                "selectedValue": "",
+                "reviewReason": _series_issue_reason(
+                    candidate.get("market", ""),
+                    candidate.get("ticker", ""),
+                    issue_type,
+                    rows,
+                ),
+                "recommendedAction": "Review this series; keep production publication and app export blocked.",
+            }
+        )
+    return output
+
+
+def _join_review_reasons(*reasons: str) -> str:
+    return "; ".join(reason for reason in reasons if reason)
+
+
+def _series_review_summary(
+    audit_rows: Iterable[Mapping[str, str]],
+) -> dict[str, Any]:
+    rows = [row for row in audit_rows if row.get("issueType", "") in SERIES_REVIEW_ISSUE_TYPES]
+    affected: dict[str, int] = {}
+    for issue_type in sorted(SERIES_REVIEW_ISSUE_TYPES):
+        affected[issue_type] = len(
+            {
+                (row.get("market", ""), row.get("ticker", ""))
+                for row in rows
+                if row.get("issueType") == issue_type
+            }
+        )
+    return {
+        "seriesReviewIssueCount": len(rows),
+        "affectedSeriesCountByIssueType": affected,
+        "missingCalendarMonthCount": sum(1 for row in rows if row.get("issueType") == "missing_calendar_month"),
+        "implausibleSplitFactorSeriesCount": affected.get("implausible_split_factor", 0),
+    }
+
+
 def _write_candidate_outputs(
     *,
     package_config: CandidatePackageConfig,
@@ -1045,7 +1221,11 @@ def _write_candidate_outputs(
     _write_candidate_csv(output_paths["normalizedMonthEndCsv"], NORMALIZED_MONTH_END_COLUMNS, normalized_rows)
     _write_candidate_csv(output_paths["monthlyReturnsCsv"], MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
     _write_candidate_csv(output_paths["metricsOutputCsv"], FULL_METRICS_COLUMNS, full_rows)
-    selected_rows = [{column: row.get(column, "") for column in SELECTED_COLUMNS} for row in full_rows]
+    selected_rows = [
+        {column: row.get(column, "") for column in SELECTED_COLUMNS}
+        for row in full_rows
+        if row.get("dataStatus") == "ready" and row.get("reviewFlag") == "none"
+    ]
     _write_candidate_csv(output_paths["selectedMetricsCsv"], SELECTED_COLUMNS, selected_rows)
     _write_candidate_csv(output_paths["reviewRequiredCsv"], REVIEW_REQUIRED_COLUMNS, review_rows)
     overlay_rows = _candidate_review_overlay_rows(full_rows, package_config)
@@ -1095,6 +1275,12 @@ def _write_candidate_outputs(
 
     blocking_count = len([issue for issue in source_audit_rows if issue["blocksCandidate"] == "true"])
     warning_count = len(source_audit_rows) - blocking_count
+    series_review_summary = _series_review_summary(timeseries_audit_rows)
+    output_row_summary = {
+        "metricsOutputRowCount": len(full_rows),
+        "selectedRowCount": len(selected_rows),
+        "reviewRequiredRowCount": len(review_rows),
+    }
     partial_metadata = partial_month_metadata(
         str(source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date)),
         str(source_declaration.get("actualLastPriceDate", "")),
@@ -1124,10 +1310,15 @@ def _write_candidate_outputs(
             "normalizedMonthEndRows": len(normalized_rows),
             "monthlyReturnRows": len(monthly_return_rows),
             "metricsOutputRows": len(full_rows),
+            "selectedRows": len(selected_rows),
+            "reviewRequiredRows": len(review_rows),
             "marketTickerIdentityCount": len({(row.get("market", ""), row.get("ticker", "")) for row in normalized_rows}),
         },
         "marketTickerDateCoverage": _coverage(normalized_rows),
         "blockingIssueCount": blocking_count,
+        "packageGlobalBlockingIssueCount": blocking_count,
+        **series_review_summary,
+        **output_row_summary,
         "warningIssueCount": warning_count,
         "fixturePackageReady": False,
         "candidatePackageReady": candidate_package_ready,
@@ -1168,6 +1359,9 @@ def _write_candidate_outputs(
         "appExportApproved": False,
         "internalPreviewReviewOnly": package_config.internal_preview_review_only,
         "blockingIssueCount": blocking_count,
+        "packageGlobalBlockingIssueCount": blocking_count,
+        **series_review_summary,
+        **output_row_summary,
         "warningIssueCount": warning_count,
         "notProductionApproval": True,
         "validationDate": package_config.validation_date.isoformat(),
