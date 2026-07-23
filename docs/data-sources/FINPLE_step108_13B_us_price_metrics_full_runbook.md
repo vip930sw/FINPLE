@@ -33,11 +33,11 @@ Do not combine US and KR calculation logic in one first-pass script. KR requires
 
 ## US full run
 
-Run US assets in 100-row chunks.
+Run US assets in 100-row chunks from the repository root.
 
 ```bash
-python build_us_price_metrics_overlay_chunked.py \
-  --input finple_app_candidates_6000_balanced_v1.csv \
+python -m scripts.build_us_price_metrics_overlay_chunked \
+  --input src/data/tickers/finple_app_candidates_6000_balanced_v1.csv \
   --out-runtime us_price_metrics_overlay_20260528_part0000_0100.csv \
   --out-audit us_price_metrics_overlay_20260528_part0000_0100_audit.csv \
   --out-summary us_price_metrics_overlay_20260528_part0000_0100_summary.json \
@@ -73,7 +73,7 @@ Split into 25-row chunks:
 After all US chunks are generated:
 
 ```bash
-python combine_us_price_metrics_chunks.py \
+python -m scripts.combine_us_price_metrics_chunks \
   --pattern 'us_price_metrics_overlay_20260528_part*.csv' \
   --out-runtime us_price_metrics_overlay_20260528.csv \
   --out-summary us_price_metrics_overlay_20260528_summary.json

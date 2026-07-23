@@ -4,7 +4,7 @@ Run this in Colab after chunk files are created.
 
 Example
 -------
-python combine_us_price_metrics_chunks.py \
+python -m scripts.combine_us_price_metrics_chunks \
   --pattern 'us_price_metrics_overlay_20260528_part*.csv' \
   --out-runtime us_price_metrics_overlay_20260528.csv \
   --out-summary us_price_metrics_overlay_20260528_summary.json
@@ -18,6 +18,10 @@ import json
 from pathlib import Path
 
 import pandas as pd
+
+from scripts.metrics_pipeline.config import PARTIAL_MONTH_POLICY
+from scripts.metrics_pipeline.timeseries import partial_month_metadata
+from scripts.raw_daily_price_chunks import collection_date_window, combine_raw_daily_chunks
 
 RUNTIME_COLUMNS = [
     "market",
@@ -39,6 +43,12 @@ def main() -> None:
     parser.add_argument("--pattern", required=True, help="Glob pattern for runtime chunk CSVs.")
     parser.add_argument("--out-runtime", required=True)
     parser.add_argument("--out-summary", required=True)
+    parser.add_argument("--raw-pattern", help="Glob for non-overlapping US RAW_DAILY_PRICE_COLUMNS chunks.")
+    parser.add_argument("--out-raw", help="Combined US raw-daily CSV path.")
+    parser.add_argument("--requested-as-of-included", default="")
+    parser.add_argument("--provider-download-end-exclusive", default="")
+    parser.add_argument("--metric-base-date", default="")
+    parser.add_argument("--partial-month-policy", default=PARTIAL_MONTH_POLICY)
     args = parser.parse_args()
 
     files = sorted([path for path in glob.glob(args.pattern) if "_audit" not in path])
@@ -69,6 +79,28 @@ def main() -> None:
         "blank_cagr_count": int(df["expectedCagr"].isna().sum() + (df["expectedCagr"].astype(str).str.strip() == "").sum()),
         "blank_beta_count": int(df["beta"].isna().sum() + (df["beta"].astype(str).str.strip() == "").sum()),
     }
+    if bool(args.raw_pattern) != bool(args.out_raw):
+        raise SystemExit("--raw-pattern and --out-raw must be provided together")
+    if args.raw_pattern and args.out_raw:
+        summary.update(combine_raw_daily_chunks(args.raw_pattern, Path(args.out_raw), "US"))
+    if args.requested_as_of_included:
+        expected_end = collection_date_window(args.requested_as_of_included, 1)[1]
+        if args.provider_download_end_exclusive != expected_end:
+            raise SystemExit(f"provider download end must be {expected_end}")
+        if args.metric_base_date != args.requested_as_of_included:
+            raise SystemExit("metricBaseDate must equal requestedAsOfIncluded")
+    partial_metadata = partial_month_metadata(
+        args.requested_as_of_included,
+        str(summary.get("rawDailyLastDate", "")),
+        args.partial_month_policy,
+    )
+    summary.update({
+        "requestedAsOfIncluded": args.requested_as_of_included,
+        "providerDownloadEndExclusive": args.provider_download_end_exclusive,
+        "actualLastPriceDate": summary.get("rawDailyLastDate", ""),
+        "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
+    })
 
     out_summary = Path(args.out_summary)
     out_summary.parent.mkdir(parents=True, exist_ok=True)

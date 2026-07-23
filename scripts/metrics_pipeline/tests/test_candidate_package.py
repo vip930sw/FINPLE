@@ -7,9 +7,11 @@ import tempfile
 import unittest
 from calendar import monthrange
 from pathlib import Path
+from unittest import mock
 from zipfile import ZipFile
 
 from scripts.metrics_pipeline import run_finple_monthly_metrics_pipeline, run_finple_production_candidate_package, verify_candidate_package
+from scripts.metrics_pipeline import candidate_package as candidate_package_module
 from scripts.metrics_pipeline.candidate_package import (
     CANDIDATE_PACKAGE_VERIFICATION_EVIDENCE_CONTRACT_VERSION,
     SOURCE_DECLARATION_CONTRACT_VERSION,
@@ -18,7 +20,11 @@ from scripts.metrics_pipeline.candidate_package import (
 from scripts.metrics_pipeline.config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
 from scripts.metrics_pipeline.schemas import CANDIDATE_COLUMNS, RAW_DAILY_PRICE_COLUMNS
 from scripts.metrics_pipeline.tests.test_pipeline import FIXTURE_DIR, build_config
-from scripts.metrics_pipeline.timeseries import NORMALIZATION_VERSION
+from scripts.metrics_pipeline.timeseries import (
+    NORMALIZATION_VERSION,
+    normalize_daily_price_file_streaming,
+    normalize_daily_price_rows,
+)
 
 
 def sha256(path: Path) -> str:
@@ -124,6 +130,53 @@ def raw_daily_rows(**overrides) -> list[dict[str, str]]:
     return rows
 
 
+def long_monthly_raw_series(
+    *,
+    market: str,
+    ticker: str,
+    currency: str,
+    month_count: int = 240,
+    skip_indexes: set[int] | None = None,
+    split_factors: dict[int, str] | None = None,
+    monthly_growth=None,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    price = 100.0
+    skip_indexes = skip_indexes or set()
+    split_factors = split_factors or {}
+    growth = monthly_growth or (lambda index: 0.006)
+    for index in range(month_count):
+        year, month = add_month(2006, 7, index)
+        if index:
+            price *= 1 + growth(index)
+        if index in skip_indexes:
+            continue
+        rows.append(
+            {
+                "market": market,
+                "ticker": ticker,
+                "date": month_end(year, month),
+                "currency": currency,
+                "close": f"{price:.8f}",
+                "splitAdjustedClose": f"{price:.8f}",
+                "totalReturnAdjustedClose": "",
+                "volume": str(100000 + index),
+                "splitFactor": split_factors.get(index, "1"),
+                "cashDividend": "",
+                "sourceId": "manual_candidate_upload",
+                "retrievedAt": "2026-06-30T10:00:00+09:00",
+                "priceAdjustmentBasis": "split_adjusted",
+                "publicationEligibility": "approved",
+                "providerOrInstitution": "Manual Operator Source",
+                "licenseStatus": "approved",
+                "internalUseAllowed": "true",
+                "publicationAllowed": "true",
+                "redistributionAllowed": "false",
+            }
+        )
+    return rows
+
+
 def build_candidate_input(root: Path, **overrides) -> Path:
     input_dir = root / "input"
     input_dir.mkdir(parents=True)
@@ -212,7 +265,10 @@ def candidate_csv_output_keys() -> list[str]:
         "normalizedMonthEndCsv",
         "monthlyReturnsCsv",
         "metricsOutputCsv",
+        "selectedMetricsCsv",
         "reviewRequiredCsv",
+        "usReviewOverlayCsv",
+        "krReviewOverlayCsv",
         "sourceAuditCsv",
         "timeseriesAuditCsv",
         "hashInventoryCsv",
@@ -268,7 +324,11 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 metrics = list(csv.DictReader(handle))
             self.assertEqual(metrics[0]["ticker"], "005930")
-            self.assertEqual(metrics[0]["betaPolicy"], "candidate_aligned_monthly_returns")
+            self.assertEqual(metrics[0]["mddPolicy"], "full_period_actual")
+            self.assertEqual(metrics[0]["betaPolicy"], "aligned_monthly_return_beta")
+            self.assertEqual(metrics[0]["rollingMdd10yMedian"], "")
+            self.assertEqual(metrics[0]["rollingBeta10yMedian"], "")
+            self.assertEqual(metrics[0]["rollingBeta5yMedian"], "")
             with outputs["metricsOutputCsv"].open("r", encoding="utf-8-sig", newline="") as handle:
                 utf8_sig_metrics = list(csv.DictReader(handle))
             self.assertEqual(utf8_sig_metrics[0]["nameKr"], "삼성전자")
@@ -284,6 +344,118 @@ class ProductionCandidatePackageTests(unittest.TestCase):
             self.assertIn("finple_candidate_manifest_2026_06_candidate.json", names)
             self.assertIn("finple_candidate_hash_inventory_2026_06_candidate.csv", names)
             self.assertIn("finple_candidate_package_index_2026_06_candidate.json", names)
+
+    def test_collection_date_metadata_is_preserved_in_candidate_manifest(self):
+        metadata = {
+            "requestedAsOfIncluded": "2026-06-30",
+            "providerDownloadEndExclusive": "2026-07-01",
+            "actualLastPriceDate": "2026-06-30",
+            "metricBaseDate": "2026-06-30",
+            "metricDataThroughMonth": "2026-06",
+            "partialFinalMonthDetected": False,
+            "partialFinalMonthExcluded": False,
+            "partialMonthPolicy": "exclude_from_metrics",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                source_patch=metadata,
+                manifest_patch=metadata,
+            )
+            result = run_candidate(input_dir, root / "out")
+            self.assertTrue(result["candidatePackageReady"])
+            with Path(result["outputs"]["manifestJson"]).open("r", encoding="utf-8") as handle:
+                manifest = json.load(handle)
+            for field, expected in metadata.items():
+                self.assertEqual(manifest[field], expected)
+                self.assertEqual(manifest["sourceDeclaration"][field], expected)
+
+    def test_partial_month_is_excluded_from_returns_rolling_beta_and_mdd(self):
+        base_rows = raw_daily_rows()
+        partial_rows: list[dict[str, str]] = []
+        for ticker in ["005930", "069500"]:
+            ticker_rows = [dict(row) for row in base_rows if row["ticker"] == ticker]
+            partial_rows.extend(ticker_rows)
+            july = dict(ticker_rows[-1])
+            july["date"] = "2026-07-22"
+            july["close"] = str(float(july["close"]) * 4)
+            july["splitAdjustedClose"] = july["close"]
+            partial_rows.append(july)
+
+        metadata = {
+            "asOfDate": "2026-07-22",
+            "requestedAsOfIncluded": "2026-07-22",
+            "providerDownloadEndExclusive": "2026-07-23",
+            "actualLastPriceDate": "2026-07-22",
+            "metricBaseDate": "2026-07-22",
+            "metricDataThroughMonth": "2026-06",
+            "partialFinalMonthDetected": True,
+            "partialFinalMonthExcluded": True,
+            "partialMonthPolicy": "exclude_from_metrics",
+        }
+        manifest_metadata = {
+            **metadata,
+            "intendedMetricBaseDate": "2026-07-22",
+        }
+        manifest_metadata.pop("asOfDate")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                raw_rows=partial_rows,
+                source_patch=metadata,
+                manifest_patch=manifest_metadata,
+            )
+            result = run_candidate(
+                input_dir,
+                root / "out",
+                metric_base_date="2026-07-22",
+                validation_date="2026-07-23",
+            )
+            self.assertTrue(result["candidatePackageReady"])
+
+            with (input_dir / "raw_daily_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+                preserved_raw = list(csv.DictReader(handle))
+            self.assertIn("2026-07-22", {row["date"] for row in preserved_raw})
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertEqual(max(row["month"] for row in normalized), "2026-06-30")
+            self.assertNotIn("2026-07", {row["month"][:7] for row in normalized})
+
+            with Path(result["outputs"]["monthlyReturnsCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                monthly_returns = list(csv.DictReader(handle))
+            self.assertEqual(max(row["month"] for row in monthly_returns), "2026-06-30")
+
+            with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                metric = next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+            baseline_input = build_candidate_input(
+                root / "baseline",
+                raw_rows=base_rows,
+                source_patch={**metadata, "actualLastPriceDate": "2026-06-30"},
+                manifest_patch={**manifest_metadata, "actualLastPriceDate": "2026-06-30"},
+            )
+            baseline = run_candidate(
+                baseline_input,
+                root / "baseline-out",
+                metric_base_date="2026-07-22",
+                validation_date="2026-07-23",
+            )
+            with Path(baseline["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                baseline_metric = next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+            for field in ["selectedCagr", "selectedBeta", "selectedMdd", "validRollingWindowCount10y", "validRollingWindowCount5y"]:
+                self.assertEqual(metric[field], baseline_metric[field])
+
+            with Path(result["outputs"]["manifestJson"]).open("r", encoding="utf-8") as handle:
+                final_manifest = json.load(handle)
+            for field in [
+                "requestedAsOfIncluded", "actualLastPriceDate", "metricDataThroughMonth",
+                "partialFinalMonthDetected", "partialFinalMonthExcluded", "partialMonthPolicy",
+            ]:
+                self.assertEqual(final_manifest[field], metadata[field])
+                self.assertEqual(final_manifest["sourceDeclaration"][field], metadata[field])
 
     def test_missing_required_inputs_return_deterministic_blocked_package(self):
         cases = [
@@ -341,7 +513,7 @@ class ProductionCandidatePackageTests(unittest.TestCase):
 
     def test_raw_csv_identity_and_quality_blocks(self):
         invalid_rows = raw_daily_rows()
-        invalid_rows.append(dict(invalid_rows[0]))
+        invalid_rows.insert(1, dict(invalid_rows[0]))
         invalid_price_rows = raw_daily_rows()
         invalid_price_rows[0]["close"] = "0"
         invalid_ticker_rows = raw_daily_rows()
@@ -359,6 +531,83 @@ class ProductionCandidatePackageTests(unittest.TestCase):
                 result = run_candidate(input_dir, Path(temp_dir) / "out")
                 self.assertFalse(result["candidatePackageReady"])
                 self.assertIn(expected_issue, {issue["issueType"] for issue in result["issues"]})
+
+    def test_streaming_normalization_matches_existing_small_fixture(self):
+        rows = raw_daily_rows()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            raw_path = Path(temp_dir) / "raw.csv"
+            write_csv(raw_path, RAW_DAILY_PRICE_COLUMNS, rows)
+            expected = normalize_daily_price_rows(
+                rows,
+                source_file_name=raw_path.name,
+                source_sha256=sha256(raw_path),
+                requested_as_of_included="2026-06-30",
+            )
+            actual = normalize_daily_price_file_streaming(
+                raw_path,
+                source_file_name=raw_path.name,
+                source_sha256=sha256(raw_path),
+                market_order=["KR"],
+                requested_as_of_included="2026-06-30",
+            )
+            self.assertEqual(actual["normalizedRows"], expected["normalizedRows"])
+            self.assertEqual(
+                sorted(row["issueType"] for row in actual["auditRows"]),
+                sorted(row["issueType"] for row in expected["auditRows"]),
+            )
+            self.assertEqual(actual["rawStats"]["rowCount"], len(rows))
+            self.assertEqual(actual["rawStats"]["assetCount"], 2)
+            self.assertEqual(actual["rawStats"]["lastDate"], "2026-06-30")
+
+    def test_candidate_package_never_loads_raw_daily_csv_with_safe_read_list(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir))
+            original = candidate_package_module._safe_read_csv
+
+            def guarded_safe_read(path, issues, role):
+                if role == "raw_daily_price":
+                    raise AssertionError("raw daily CSV must not use the list-loading path")
+                return original(path, issues, role)
+
+            with mock.patch.object(candidate_package_module, "_safe_read_csv", side_effect=guarded_safe_read):
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertTrue(result["candidatePackageReady"])
+
+    def test_alphanumeric_kr_candidate_identity_survives_candidate_package_outputs(self):
+        candidates = [{**candidate_rows()[0], "ticker": "0086C0"}]
+        rows = [
+            {**row, "ticker": "0086C0"} if row["ticker"] == "005930" else row
+            for row in raw_daily_rows()
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = build_candidate_input(Path(temp_dir), candidate_rows=candidates, raw_rows=rows)
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertTrue(result["candidatePackageReady"])
+            issue_types = {issue["issueType"] for issue in result["issues"]}
+            self.assertNotIn("candidate_asset_master_invalid", issue_types)
+            self.assertNotIn("ticker_identity_invalid", issue_types)
+
+            for output_key in ["normalizedMonthEndCsv", "monthlyReturnsCsv", "metricsOutputCsv", "krReviewOverlayCsv"]:
+                with Path(result["outputs"][output_key]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    output_rows = list(csv.DictReader(handle))
+                self.assertIn("0086C0", {row["ticker"] for row in output_rows}, output_key)
+
+    def test_invalid_kr_candidate_lengths_and_special_characters_are_rejected(self):
+        for ticker in ["05930", "0005930", "00-930"]:
+            with self.subTest(ticker=ticker), tempfile.TemporaryDirectory() as temp_dir:
+                candidates = [{**candidate_rows()[0], "ticker": ticker}]
+                input_dir = build_candidate_input(Path(temp_dir), candidate_rows=candidates)
+                result = run_candidate(input_dir, Path(temp_dir) / "out")
+                self.assertFalse(result["candidatePackageReady"])
+                self.assertIn("candidate_asset_master_invalid", {issue["issueType"] for issue in result["issues"]})
+
+    def test_kr_benchmark_ticker_contract_remains_numeric_six_digit(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            benchmarks = [{"benchmarkKey": "KOSPI200", "benchmarkMarket": "KR", "benchmarkTicker": "0086C0"}]
+            input_dir = build_candidate_input(Path(temp_dir), benchmark_rows=benchmarks)
+            result = run_candidate(input_dir, Path(temp_dir) / "out")
+            self.assertFalse(result["candidatePackageReady"])
+            self.assertIn("benchmark_ticker_identity_invalid", {issue["issueType"] for issue in result["issues"]})
 
     def test_unknown_duplicate_role_size_mismatch_and_output_inventory(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -656,6 +905,293 @@ class ProductionCandidatePackageTests(unittest.TestCase):
         for path in forbidden_files:
             if path.exists():
                 self.assertNotIn("run_finple_production_candidate_package", path.read_text(encoding="utf-8"))
+
+    def test_internal_preview_review_only_allows_truthful_unapproved_provenance(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            raw_rows = raw_daily_rows(
+                licenseStatus="review_required",
+                internalUseAllowed="review_required",
+                publicationAllowed="false",
+                publicationEligibility="review_required",
+                redistributionAllowed="false",
+            )
+            input_dir = build_candidate_input(
+                Path(temp_dir),
+                raw_rows=raw_rows,
+                source_patch={
+                    "returnBasis": "price_return",
+                    "priceAdjustmentBasis": "split_adjusted",
+                    "redistributionReviewStatus": "review_required",
+                    "appUseReviewStatus": "review_required",
+                },
+            )
+            result = run_candidate(
+                input_dir,
+                Path(temp_dir) / "out",
+                internal_preview_review_only=True,
+            )
+            self.assertTrue(result["candidatePackageReady"])
+            self.assertTrue(result["internalPreviewReviewOnly"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
+            self.assertGreater(result["warningIssueCount"], 0)
+            self.assertEqual(result["blockingIssueCount"], 0)
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = list(csv.DictReader(handle))
+            self.assertEqual({row["dataStatus"] for row in normalized}, {"normalized_candidate_review"})
+
+    def test_price_return_metrics_ignore_adj_close_reference_and_dividends(self):
+        price_rows = raw_daily_rows()
+        reference_rows: list[dict[str, str]] = []
+        for row_index, row in enumerate(price_rows):
+            reference = dict(row)
+            reference["totalReturnAdjustedClose"] = str(float(row["close"]) * (1 + row_index / 20))
+            reference["cashDividend"] = "100" if row["ticker"] == "005930" else "0"
+            reference_rows.append(reference)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            price_only_input = build_candidate_input(root / "price_only", raw_rows=price_rows)
+            reference_input = build_candidate_input(root / "with_reference", raw_rows=reference_rows)
+            price_only = run_candidate(price_only_input, root / "price_only_out")
+            with_reference = run_candidate(reference_input, root / "with_reference_out")
+
+            self.assertTrue(price_only["candidatePackageReady"])
+            self.assertTrue(with_reference["candidatePackageReady"])
+
+            def read_candidate_metric(result: dict) -> dict[str, str]:
+                with Path(result["outputs"]["metricsOutputCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+
+            price_metric = read_candidate_metric(price_only)
+            reference_metric = read_candidate_metric(with_reference)
+            for field in ["selectedCagr", "rawPriceCagr10y", "selectedMdd", "selectedBeta"]:
+                self.assertEqual(reference_metric[field], price_metric[field])
+
+            def read_review_overlay_metric(result: dict) -> dict[str, str]:
+                with Path(result["outputs"]["krReviewOverlayCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return next(row for row in csv.DictReader(handle) if row["ticker"] == "005930")
+
+            price_selected = read_review_overlay_metric(price_only)
+            reference_selected = read_review_overlay_metric(with_reference)
+            for field in ["expectedCagr", "priceCagr10y", "mdd", "beta"]:
+                self.assertEqual(reference_selected[field], price_selected[field])
+
+            def read_monthly_returns(result: dict) -> list[dict[str, str]]:
+                with Path(result["outputs"]["monthlyReturnsCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                    return [row for row in csv.DictReader(handle) if row["ticker"] == "005930"]
+
+            reference_returns = read_monthly_returns(with_reference)
+            price_only_returns = read_monthly_returns(price_only)
+            self.assertEqual(
+                [row["priceReturn"] for row in reference_returns],
+                [row["priceReturn"] for row in price_only_returns],
+            )
+
+            with Path(with_reference["outputs"]["normalizedMonthEndCsv"]).open("r", encoding="utf-8-sig", newline="") as handle:
+                normalized = [row for row in csv.DictReader(handle) if row["ticker"] == "005930"]
+            self.assertTrue(normalized)
+            self.assertTrue(all(row["splitAdjustedClose"] == row["close"] for row in normalized))
+            self.assertTrue(all(row["totalReturnAdjustedClose"] for row in normalized))
+            self.assertEqual({row["priceSeriesClassification"] for row in normalized}, {"split_adjusted"})
+
+    def test_series_quality_reviews_do_not_block_candidate_package(self):
+        candidate_price_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="005930",
+            currency="KRW",
+            skip_indexes={40},
+            split_factors={93: "125"},
+        )
+        split_evidence_row = next(
+            row for row in candidate_price_rows if row["date"] == "2014-04-30"
+        )
+        split_evidence_row["date"] = "2014-04-10"
+        clean_candidate_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="0086C0",
+            currency="KRW",
+        )
+        benchmark_price_rows = long_monthly_raw_series(
+            market="KR",
+            ticker="069500",
+            currency="KRW",
+            monthly_growth=lambda index: 0.004 + (index % 12) * 0.0002,
+        )
+        candidates = [
+            candidate_rows()[0],
+            {**candidate_rows()[0], "ticker": "0086C0", "nameEn": "Clean Candidate"},
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                candidate_rows=candidates,
+                raw_rows=candidate_price_rows + clean_candidate_rows + benchmark_price_rows,
+            )
+            result = run_candidate(input_dir, root / "out")
+
+            self.assertTrue(result["candidatePackageReady"])
+            self.assertFalse(result["productionPublishReady"])
+            self.assertFalse(result["appExportApproved"])
+            self.assertEqual(result["packageGlobalBlockingIssueCount"], 0)
+            self.assertEqual(result["seriesReviewIssueCount"], 2)
+            self.assertEqual(
+                result["affectedSeriesCountByIssueType"],
+                {"implausible_split_factor": 1, "missing_calendar_month": 1},
+            )
+            self.assertEqual(result["missingCalendarMonthCount"], 1)
+            self.assertEqual(result["implausibleSplitFactorSeriesCount"], 1)
+            self.assertEqual(result["metricsOutputRowCount"], 2)
+            self.assertEqual(result["selectedRowCount"], 1)
+            self.assertEqual(result["reviewRequiredRowCount"], 2)
+
+            with Path(result["outputs"]["metricsOutputCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                metrics = {row["ticker"]: row for row in csv.DictReader(handle)}
+            metric = metrics["005930"]
+            self.assertEqual(metric["ticker"], "005930")
+            self.assertEqual(metric["reviewFlag"], "review_required")
+            self.assertEqual(metric["dataStatus"], "review_required")
+            self.assertEqual(metric["cagrPolicy"], "rolling_10y_median")
+            self.assertGreater(int(metric["validRollingWindowCount10y"]), 1)
+            self.assertNotEqual(metric["selectedMdd"], "")
+            self.assertNotEqual(metric["selectedBeta"], "")
+            self.assertEqual(metric["rollingMdd10yMedian"], "")
+            self.assertEqual(metric["rollingBeta10yMedian"], "")
+            self.assertEqual(metric["rollingBeta5yMedian"], "")
+            self.assertIn("splitFactor=125", metric["reviewReason"])
+            self.assertIn("2014-04-10", metric["reviewReason"])
+            self.assertIn("missing calendar month", metric["reviewReason"])
+            self.assertEqual(metrics["0086C0"]["dataStatus"], "ready")
+            self.assertEqual(metrics["0086C0"]["reviewFlag"], "none")
+            with Path(result["outputs"]["selectedMetricsCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                selected = list(csv.DictReader(handle))
+            self.assertEqual([row["ticker"] for row in selected], ["0086C0"])
+
+            with Path(result["outputs"]["normalizedMonthEndCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                normalized = [
+                    row for row in csv.DictReader(handle) if row["ticker"] == "005930"
+                ]
+            split_row = next(row for row in normalized if row["sourceDate"] == "2014-04-10")
+            self.assertEqual(split_row["splitFactor"], "125")
+            self.assertEqual(split_row["splitAdjustedClose"], split_row["close"])
+
+            with Path(result["outputs"]["monthlyReturnsCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                returns = [
+                    row for row in csv.DictReader(handle) if row["ticker"] == "005930"
+                ]
+            self.assertNotIn("2009-12-31", {row["month"] for row in returns})
+
+            with Path(result["outputs"]["reviewRequiredCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                review_rows = list(csv.DictReader(handle))
+            self.assertEqual(
+                {row["issueType"] for row in review_rows},
+                {"implausible_split_factor", "missing_calendar_month"},
+            )
+            split_review = next(
+                row for row in review_rows if row["issueType"] == "implausible_split_factor"
+            )
+            self.assertEqual(split_review["rawValue"], "125")
+            self.assertIn("2014-04-10", split_review["reviewReason"])
+
+            with Path(result["outputs"]["timeseriesAuditCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                audit_rows = [
+                    row
+                    for row in csv.DictReader(handle)
+                    if row["issueType"]
+                    in {"implausible_split_factor", "missing_calendar_month"}
+                ]
+            self.assertEqual(len(audit_rows), 2)
+            self.assertEqual({row["severity"] for row in audit_rows}, {"warning"})
+            self.assertEqual({row["blocksPublication"] for row in audit_rows}, {"false"})
+
+            for output_key in ["manifestJson", "readinessJson"]:
+                with Path(result["outputs"][output_key]).open("r", encoding="utf-8") as handle:
+                    summary = json.load(handle)
+                self.assertEqual(summary["packageGlobalBlockingIssueCount"], 0)
+                self.assertEqual(summary["seriesReviewIssueCount"], 2)
+                self.assertEqual(summary["missingCalendarMonthCount"], 1)
+                self.assertEqual(summary["implausibleSplitFactorSeriesCount"], 1)
+                self.assertEqual(summary["metricsOutputRowCount"], 2)
+                self.assertEqual(summary["selectedRowCount"], 1)
+                self.assertEqual(summary["reviewRequiredRowCount"], 2)
+
+    def test_twenty_year_official_output_uses_rolling_ten_year_median(self):
+        qqq_candidate = [
+            {
+                **candidate_rows()[0],
+                "ticker": "QQQ",
+                "nameEn": "Invesco QQQ Trust",
+                "market": "US",
+                "assetType": "ETF",
+                "exchange": "NASDAQ",
+                "benchmarkKey": "US_SPY",
+            }
+        ]
+        benchmarks = [
+            {
+                "benchmarkKey": "US_SPY",
+                "benchmarkMarket": "US",
+                "benchmarkTicker": "SPY",
+            }
+        ]
+        qqq_rows = long_monthly_raw_series(
+            market="US",
+            ticker="QQQ",
+            currency="USD",
+            monthly_growth=lambda index: 0.003 + (index / 239) * 0.009,
+        )
+        spy_rows = long_monthly_raw_series(
+            market="US",
+            ticker="SPY",
+            currency="USD",
+            monthly_growth=lambda index: 0.0025 + (index / 239) * 0.005,
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = build_candidate_input(
+                root,
+                candidate_rows=qqq_candidate,
+                benchmark_rows=benchmarks,
+                raw_rows=qqq_rows + spy_rows,
+                source_patch={"marketScope": ["US"], "currencyMode": "USD"},
+                manifest_patch={"expectedMarketScope": ["US"]},
+            )
+            result = run_candidate(
+                input_dir,
+                root / "out",
+                market_scope=["US"],
+            )
+            self.assertTrue(result["candidatePackageReady"])
+            with Path(result["outputs"]["metricsOutputCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                metric = next(csv.DictReader(handle))
+            self.assertEqual(metric["ticker"], "QQQ")
+            self.assertEqual(metric["cagrPolicy"], "rolling_10y_median")
+            self.assertEqual(metric["selectedCagr"], metric["rollingCagr10yMedian"])
+            self.assertGreater(int(metric["validRollingWindowCount10y"]), 1)
+            self.assertNotEqual(metric["selectedCagr"], metric["rawPriceCagr10y"])
+
+            with Path(result["outputs"]["usReviewOverlayCsv"]).open(
+                "r", encoding="utf-8-sig", newline=""
+            ) as handle:
+                overlay = next(csv.DictReader(handle))
+            self.assertEqual(overlay["expectedCagr"], metric["rollingCagr10yMedian"])
+            self.assertNotEqual(overlay["expectedCagr"], metric["rawPriceCagr10y"])
 
     def test_committed_fixture_cannot_be_reclassified_as_candidate(self):
         with tempfile.TemporaryDirectory() as temp_dir:

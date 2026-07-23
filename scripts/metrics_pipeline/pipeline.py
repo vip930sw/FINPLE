@@ -32,9 +32,10 @@ from .schemas import (
     REVIEW_REQUIRED_COLUMNS,
     SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
+    is_valid_kr_candidate_ticker,
 )
 from .rolling import PERCENTILE_METHOD, ROLLING_METRIC_VERSION, ROLLING_WINDOW_MONTHS, compute_rolling_price_metrics
-from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
+from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows, partial_month_metadata
 
 
 class PipelineCriticalError(RuntimeError):
@@ -79,7 +80,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         raise PipelineCriticalError("; ".join(critical_errors))
 
     source_hashes = {path.name: _sha256(path) for path in source_paths}
-    raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows)
+    raw_daily_normalization = _normalize_adapter_rows(source_adapter_result, raw_daily_rows, pipeline_config)
     normalized_month_end_rows = list(raw_daily_normalization["normalizedRows"])
     timeseries_audit_rows = list(raw_daily_normalization["auditRows"])
     normalized_metric_rows = _normalized_metric_rows(normalized_month_end_rows)
@@ -147,6 +148,8 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         normalized_rows=normalized_month_end_rows,
         timeseries_audit_rows=timeseries_audit_rows,
     )
+    partial_metadata = dict(raw_daily_normalization["partialMonthMetadata"])
+    audit_summary.update(partial_metadata)
     write_audit_report(audit_html, audit_summary, source_hashes)
     adapter_summary_json, adapter_checkpoint_json = write_adapter_artifacts(output_dir, version, source_adapter_result)
     historical_overlay_protection = _historical_overlay_protection(historical_overlay_before)
@@ -192,6 +195,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
             normalized_csv=normalized_csv,
             normalized_hash_by_ticker=normalized_hash_by_ticker,
         ),
+        partial_month_metadata=partial_metadata,
     )
     manifest_json.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -206,6 +210,7 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
         "pipelineVersion": PIPELINE_VERSION,
         "schemaVersion": SCHEMA_VERSION,
         "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
+        **partial_metadata,
         "summary": audit_summary,
         "sourceHashes": source_hashes,
         "outputs": {
@@ -226,13 +231,20 @@ def run_finple_monthly_metrics_pipeline(config: Mapping[str, Any]) -> dict[str, 
     }
 
 
-def _normalize_adapter_rows(source_adapter_result: Any, raw_daily_rows: list[dict[str, str]]) -> dict[str, object]:
+def _normalize_adapter_rows(
+    source_adapter_result: Any,
+    raw_daily_rows: list[dict[str, str]],
+    config: PipelineConfig,
+) -> dict[str, object]:
     if source_adapter_result.lastStatus not in {"already_complete", "resume_no_new_rows"}:
         return normalize_daily_price_rows(
             raw_daily_rows,
             source_file_name=source_adapter_result.sourceFileName,
             source_sha256=source_adapter_result.rawSourceSha256,
+            requested_as_of_included=config.metric_base_date,
+            partial_month_policy=config.partial_month_policy,
         )
+    partial_metadata = partial_month_metadata(config.metric_base_date, "", config.partial_month_policy)
     return {
         "normalizedRows": [],
         "auditRows": [],
@@ -252,7 +264,9 @@ def _normalize_adapter_rows(source_adapter_result: Any, raw_daily_rows: list[dic
             "schemaVersion": SCHEMA_VERSION,
             "calculationPolicyVersion": CALCULATION_POLICY_VERSION,
             "dataStatus": source_adapter_result.lastStatus,
+            **partial_metadata,
         },
+        "partialMonthMetadata": partial_metadata,
         "blockingIssueCount": 0,
     }
 
@@ -375,8 +389,8 @@ def _validate_candidates(rows: list[dict[str, str]], config: PipelineConfig) -> 
         ticker = row.get("ticker", "")
         if market not in {"US", "KR"}:
             errors.append(f"Unsupported market: {market}")
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-            errors.append(f"Korean ticker not preserved as six-character string: {ticker}")
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            errors.append(f"Korean ticker not preserved as six-character uppercase alphanumeric string: {ticker}")
     return errors
 
 
@@ -424,8 +438,8 @@ def _validate_metric_output_rows(rows: list[dict[str, str]]) -> list[str]:
         if key in seen:
             errors.append(f"duplicate market/ticker output key: {key[0]} {key[1]}")
         seen.add(key)
-        if row.get("market") == "KR" and not (len(row.get("ticker", "")) == 6 and row.get("ticker", "").isdigit()):
-            errors.append(f"Korean ticker lost leading-zero format: {row.get('ticker', '')}")
+        if row.get("market") == "KR" and not is_valid_kr_candidate_ticker(row.get("ticker", "")):
+            errors.append(f"Korean ticker lost six-character uppercase alphanumeric identity: {row.get('ticker', '')}")
         p25 = _safe_optional_float(row.get("rollingCagr10yP25"))
         median = _safe_optional_float(row.get("rollingCagr10yMedian"))
         p75 = _safe_optional_float(row.get("rollingCagr10yP75"))
@@ -503,7 +517,7 @@ def _build_candidate_outputs(
     data_years = _years_between(data_start, data_end)
     closes = [float(row["close"]) for row in prices]
     returns = _period_returns(prices)
-    monthly_return_rows = _monthly_return_rows(candidate, prices, returns)
+    monthly_return_rows = _monthly_return_rows(candidate, prices)
 
     rolling_metrics = compute_rolling_price_metrics(prices, min_years_for_inception=config.min_years_for_inception)
     selected_cagr = rolling_metrics.selectedCagr
@@ -555,16 +569,16 @@ def _build_candidate_outputs(
         "selectedCagr": _format_percent(selected_cagr),
         "cagrPolicy": cagr_policy,
         "normalizationPolicy": f"{rolling_metrics.priceBasisStatus}; total_return_reference_only",
-        "mdd10yRaw": _format_percent(mdd),
+        "mdd10yRaw": "",
         "mddFullPeriod": _format_percent(mdd),
-        "rollingMdd10yMedian": _format_percent(mdd),
-        "selectedMdd": _format_percent(mdd if data_years >= config.min_years_for_inception else None),
-        "mddPolicy": "worst_drawdown_available" if data_years >= config.min_years_for_inception else "blank_review_required",
+        "rollingMdd10yMedian": "",
+        "selectedMdd": _format_percent(mdd),
+        "mddPolicy": "full_period_actual" if mdd is not None else "blank_review_required",
         "beta10yRaw": _format_number(beta),
-        "rollingBeta10yMedian": _format_number(beta),
-        "rollingBeta5yMedian": _format_number(beta),
+        "rollingBeta10yMedian": "",
+        "rollingBeta5yMedian": "",
         "selectedBeta": _format_number(beta),
-        "betaPolicy": "fixture_aligned_monthly_returns" if beta is not None else "blank_review_required",
+        "betaPolicy": "aligned_monthly_return_beta" if beta is not None else "blank_review_required",
         "volatility10y": _format_percent(volatility),
         "dividendYield": _format_percent(dividend_yield),
         "dividendStatus": dividend_status,
@@ -631,9 +645,12 @@ def _select_cagr(
     return None, "blank_review_required", "insufficient_history", "review_required", "Less than three years of fixture history."
 
 
-def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, str]], returns: list[float]) -> list[dict[str, str]]:
+def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, str]]) -> list[dict[str, str]]:
     output: list[dict[str, str]] = []
-    for row, price_return in zip(prices[1:], returns):
+    for previous, row in zip(prices, prices[1:]):
+        if row["month"] != _next_month_end(previous["month"]):
+            continue
+        price_return = float(row["close"]) / float(previous["close"]) - 1
         dividend_component = 0.0
         if row.get("dividendStatus") == "confirmed_value":
             dividend_component = _safe_float(row.get("cashDividend")) / _safe_float(row.get("close"))
@@ -699,17 +716,19 @@ def _build_manifest(
     config: PipelineConfig,
     source_hashes: Mapping[str, str],
     output_files: list[Path],
-    audit_summary: Mapping[str, int],
+    audit_summary: Mapping[str, Any],
     source_metadata: list[Mapping[str, Any]],
     source_adapter_summary: Mapping[str, Any],
     historical_overlay_protection: Mapping[str, Any],
     review_overlay_files: list[Path],
     rolling_window_counts: Mapping[str, Any],
     rolling_source_lineage: Mapping[str, Any],
+    partial_month_metadata: Mapping[str, Any],
 ) -> dict[str, Any]:
     review_overlay_hashes = {path.name: _sha256(path) for path in review_overlay_files}
     return {
         "metricBaseDate": config.metric_base_date,
+        **partial_month_metadata,
         "createdAt": config.created_at,
         "createdBy": "FINPLE Step 114-2D fixture-safe rolling metrics pipeline",
         "pipelineVersion": PIPELINE_VERSION,
@@ -723,6 +742,7 @@ def _build_manifest(
             "inputMode": config.input_mode,
             "deterministicFixture": config.deterministic_fixture,
             "randomSeed": config.random_seed,
+            "partialMonthPolicy": config.partial_month_policy,
         },
         "sourceFiles": [
             _source_file_manifest_item(name, sha256, config.input_mode) for name, sha256 in sorted(source_hashes.items())
@@ -749,8 +769,8 @@ def _build_manifest(
         "rollingSourceLineage": dict(rolling_source_lineage),
         "policy": {
             "selectedCagr": "rolling_median_required_for_all_markets",
-            "selectedMdd": "conservative_worst_drawdown",
-            "selectedBeta": "fixture_aligned_monthly_returns_review_only",
+            "selectedMdd": "full_period_actual_mdd",
+            "selectedBeta": "aligned_monthly_return_beta",
             "totalReturnCagr": "reference_only",
             "currentPriceDisplay": "disabled",
         },
@@ -873,6 +893,8 @@ def _next_month_end(value: str) -> str:
 def _period_returns(prices: list[dict[str, str]]) -> list[float]:
     returns: list[float] = []
     for previous, current in zip(prices, prices[1:]):
+        if current["month"] != _next_month_end(previous["month"]):
+            continue
         previous_close = float(previous["close"])
         current_close = float(current["close"])
         returns.append((current_close / previous_close) - 1)
@@ -932,7 +954,12 @@ def _beta(prices: list[dict[str, str]], benchmark_prices: list[dict[str, str]]) 
 
 
 def _returns_by_month(prices: list[dict[str, str]]) -> dict[str, float]:
-    return {row["month"]: value for row, value in zip(prices[1:], _period_returns(prices))}
+    output: dict[str, float] = {}
+    for previous, current in zip(prices, prices[1:]):
+        if current["month"] != _next_month_end(previous["month"]):
+            continue
+        output[current["month"]] = float(current["close"]) / float(previous["close"]) - 1
+    return output
 
 
 def _dividend_yield(prices: list[dict[str, str]]) -> tuple[float | None, str, str]:

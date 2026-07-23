@@ -1,3 +1,20 @@
+import re
+
+
+KR_CANDIDATE_TICKER_PATTERN = r"^[0-9A-Z]{6}$"
+KR_BENCHMARK_TICKER_PATTERN = r"^[0-9]{6}$"
+KR_CANDIDATE_TICKER_RE = re.compile(KR_CANDIDATE_TICKER_PATTERN)
+KR_BENCHMARK_TICKER_RE = re.compile(KR_BENCHMARK_TICKER_PATTERN)
+
+
+def is_valid_kr_candidate_ticker(ticker: str) -> bool:
+    return bool(KR_CANDIDATE_TICKER_RE.fullmatch(ticker))
+
+
+def is_valid_kr_benchmark_ticker(ticker: str) -> bool:
+    return bool(KR_BENCHMARK_TICKER_RE.fullmatch(ticker))
+
+
 FULL_METRICS_COLUMNS = [
     "ticker",
     "nameKr",

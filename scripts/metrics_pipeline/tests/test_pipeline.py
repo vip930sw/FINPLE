@@ -6,6 +6,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from calendar import monthrange
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from zipfile import ZipFile
 
@@ -19,6 +20,7 @@ from scripts.metrics_pipeline.rolling import (
     percentile,
     rolling_cagrs_for_test,
 )
+from scripts.metrics_pipeline.timeseries import normalize_daily_price_rows
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -94,6 +96,69 @@ def public_source_checkpoint_payload(**overrides):
 
 
 class MetricsPipelineTests(unittest.TestCase):
+    def test_partial_final_month_policy_preserves_raw_and_excludes_metric_input(self):
+        with (FIXTURE_DIR / "raw_daily_prices.csv").open("r", encoding="utf-8", newline="") as handle:
+            template = next(csv.DictReader(handle))
+
+        def row(date_text: str, close: str) -> dict[str, str]:
+            return {
+                **template,
+                "market": "US",
+                "ticker": "PARTIAL",
+                "date": date_text,
+                "currency": "USD",
+                "close": close,
+                "splitAdjustedClose": close,
+                "totalReturnAdjustedClose": "",
+                "splitFactor": "1",
+                "cashDividend": "",
+                "priceAdjustmentBasis": "split_adjusted",
+            }
+
+        raw_rows = [
+            row("2026-05-29", "100"),
+            row("2026-06-29", "101"),
+            row("2026-06-30", "102"),
+            row("2026-07-01", "103"),
+            row("2026-07-22", "104"),
+        ]
+        original = [dict(item) for item in raw_rows]
+
+        june_complete = normalize_daily_price_rows(
+            raw_rows[:3],
+            source_file_name="raw.csv",
+            source_sha256="test",
+            requested_as_of_included="2026-06-30",
+        )
+        self.assertEqual([item["month"] for item in june_complete["normalizedRows"]], ["2026-05-31", "2026-06-30"])
+        self.assertFalse(june_complete["partialMonthMetadata"]["partialFinalMonthDetected"])
+        self.assertEqual(june_complete["partialMonthMetadata"]["metricDataThroughMonth"], "2026-06")
+
+        for as_of in ["2026-07-01", "2026-07-22"]:
+            with self.subTest(as_of=as_of):
+                as_of_rows = [item for item in raw_rows if item["date"] <= as_of]
+                partial = normalize_daily_price_rows(
+                    as_of_rows,
+                    source_file_name="raw.csv",
+                    source_sha256="test",
+                    requested_as_of_included=as_of,
+                )
+                self.assertEqual([item["month"] for item in partial["normalizedRows"]], ["2026-05-31", "2026-06-30"])
+                self.assertEqual(partial["partialMonthMetadata"]["metricDataThroughMonth"], "2026-06")
+                self.assertTrue(partial["partialMonthMetadata"]["partialFinalMonthDetected"])
+                self.assertTrue(partial["partialMonthMetadata"]["partialFinalMonthExcluded"])
+                self.assertEqual(partial["partialMonthMetadata"]["partialMonthPolicy"], "exclude_from_metrics")
+
+        non_trading_month_end = normalize_daily_price_rows(
+            [row("2026-01-29", "99"), row("2026-01-30", "100")],
+            source_file_name="raw.csv",
+            source_sha256="test",
+            requested_as_of_included="2026-01-31",
+        )
+        self.assertEqual(non_trading_month_end["normalizedRows"][0]["month"], "2026-01-31")
+        self.assertEqual(non_trading_month_end["normalizedRows"][0]["sourceDate"], "2026-01-30")
+        self.assertEqual(raw_rows, original)
+
     def test_fixture_pipeline_creates_required_outputs(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             result = run_finple_monthly_metrics_pipeline(build_config(Path(temp_dir)))
@@ -188,6 +253,12 @@ class MetricsPipelineTests(unittest.TestCase):
             self.assertTrue(any(row["ticker"] == "123456" and row["issueType"] == "review_required" for row in review_rows))
             self.assertEqual(full_by_ticker["BADBLK"]["dataStatus"], "review_required")
             self.assertEqual(full_by_ticker["BADBLK"]["reviewFlag"], "review_required")
+            self.assertEqual(full_by_ticker["SPY"]["mddPolicy"], "full_period_actual")
+            self.assertEqual(full_by_ticker["SPY"]["rollingMdd10yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["betaPolicy"], "aligned_monthly_return_beta")
+            self.assertEqual(full_by_ticker["SPY"]["rollingBeta10yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["rollingBeta5yMedian"], "")
+            self.assertEqual(full_by_ticker["SPY"]["selectedMdd"], full_by_ticker["SPY"]["mddFullPeriod"])
 
             required_columns = {
                 "ticker",
@@ -287,6 +358,27 @@ class MetricsPipelineTests(unittest.TestCase):
         self.assertEqual(blocked.validRollingWindowCount10y, 0)
         self.assertEqual(blocked.cagrPolicy, "blank_review_required")
         self.assertIn("Price CAGR blocked", blocked.reviewReason)
+
+    def test_twenty_year_history_selects_multi_window_ten_year_cagr_median(self):
+        rows = []
+        for index in range(242):
+            zero_based = 2006 * 12 + 5 + index
+            year, month_index = divmod(zero_based, 12)
+            rows.append(
+                {
+                    "month": f"{year:04d}-{month_index + 1:02d}-{monthrange(year, month_index + 1)[1]:02d}",
+                    "close": f"{100 * (1.006 ** index):.8f}",
+                    "currency": "USD",
+                    "priceAdjustmentBasis": "split_adjusted",
+                }
+            )
+
+        metrics = compute_rolling_price_metrics(rows)
+        self.assertGreater(metrics.validRollingWindowCount10y, 1)
+        self.assertEqual(metrics.selectedCagr, metrics.rollingCagr10yMedian)
+        self.assertEqual(metrics.cagrPolicy, "rolling_10y_median")
+        self.assertIsNotNone(metrics.rollingCagr10yP25)
+        self.assertIsNotNone(metrics.rollingCagr10yP75)
 
     def test_review_overlay_is_review_only_and_preserves_historical_loader_contract(self):
         protected_paths = [

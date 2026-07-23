@@ -7,11 +7,11 @@ import json
 import re
 import zipfile
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .config import CALCULATION_POLICY_VERSION, PIPELINE_VERSION
+from .config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, PIPELINE_VERSION
 from .package import write_deterministic_zip
 from .pipeline import (
     _build_candidate_outputs,
@@ -26,11 +26,19 @@ from .schemas import (
     FULL_METRICS_COLUMNS,
     MONTHLY_RETURNS_COLUMNS,
     NORMALIZED_MONTH_END_COLUMNS,
-    RAW_DAILY_PRICE_COLUMNS,
+    REVIEW_OVERLAY_COLUMNS,
     REVIEW_REQUIRED_COLUMNS,
+    SELECTED_COLUMNS,
     TIMESERIES_AUDIT_COLUMNS,
+    is_valid_kr_benchmark_ticker,
+    is_valid_kr_candidate_ticker,
 )
-from .timeseries import NORMALIZATION_VERSION, normalize_daily_price_rows
+from .timeseries import (
+    NORMALIZATION_VERSION,
+    SERIES_REVIEW_ISSUE_TYPES,
+    normalize_daily_price_file_streaming,
+    partial_month_metadata,
+)
 
 
 CANDIDATE_PACKAGE_CONTRACT_VERSION = "production-candidate-package-v1-step114-2m"
@@ -90,6 +98,8 @@ class CandidatePackageConfig:
     source_declaration_file: str = DEFAULT_FILENAMES["source_declaration"]
     operator_submission_manifest_file: str = DEFAULT_FILENAMES["operator_submission_manifest"]
     validation_date: date = date.today()
+    internal_preview_review_only: bool = False
+    partial_month_policy: str = PARTIAL_MONTH_POLICY
 
     @property
     def selected_cagr_policy(self) -> str:
@@ -112,7 +122,7 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
     """Build an offline review-only production data candidate package.
 
     This entry point intentionally does not call external providers and never
-    returns productionPublishReady/appExportApproved=true.
+    never enables productionPublishReady or appExportApproved.
     """
     if not config:
         return _idle_result(["candidate inputs missing"])
@@ -162,53 +172,89 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
 
     candidates = _safe_read_csv(paths["candidate_asset_master"], issues, "candidate_asset_master")
     benchmark_map = _safe_read_candidate_benchmark_map(paths["benchmark_map"], issues)
-    raw_daily_rows = _safe_read_csv(paths["raw_daily_price"], issues, "raw_daily_price")
     _validate_candidate_csv(candidates, package_config, issues)
     _validate_benchmark_contract(candidates, benchmark_map, package_config, issues)
-    _validate_raw_daily_candidate_rows(raw_daily_rows, package_config, source_declaration, issues)
-    _validate_scope_reconciliation(package_config, source_declaration, submission_manifest, candidates, raw_daily_rows, issues)
-
-    if _has_blocking_issues(issues):
-        _write_candidate_outputs(
-            package_config=package_config,
-            output_paths=output_paths,
-            input_paths=paths,
-            source_declaration=source_declaration,
-            submission_manifest=submission_manifest,
-            candidates=[],
-            normalized_rows=[],
-            monthly_return_rows=[],
-            full_rows=[],
-            review_rows=[],
-            source_audit_rows=issues,
-            timeseries_audit_rows=[],
-            candidate_package_ready=False,
-        )
-        return _candidate_result(package_config, output_paths, issues, False)
 
     source_sha = _sha256(paths["raw_daily_price"])
     try:
-        normalized = normalize_daily_price_rows(
-            raw_daily_rows,
+        normalized = _validate_and_normalize_raw_daily_candidate_file(
+            paths["raw_daily_price"],
+            candidates=candidates,
+            benchmark_map=benchmark_map,
+            config=package_config,
+            source=source_declaration,
+            issues=issues,
             source_file_name=paths["raw_daily_price"].name,
             source_sha256=source_sha,
         )
     except Exception as exc:  # noqa: BLE001 - normalization remains fail-closed for operator input.
         _add_issue(issues, "normalization_failed", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, str(exc))
-        normalized = {"normalizedRows": [], "auditRows": []}
+        normalized = {
+            "normalizedRows": [],
+            "auditRows": [],
+            "rawStats": {"identities": set(), "markets": set(), "rowCount": 0, "firstDate": "", "lastDate": ""},
+        }
     normalized_rows = list(normalized["normalizedRows"])
     timeseries_audit_rows = list(normalized["auditRows"])
-    for row in timeseries_audit_rows:
-        if row.get("blocksPublication") == "true":
+    raw_stats = dict(normalized["rawStats"])
+    _validate_scope_reconciliation(
+        package_config,
+        source_declaration,
+        submission_manifest,
+        candidates,
+        set(raw_stats.get("identities", set())),
+        set(raw_stats.get("markets", set())),
+        issues,
+    )
+    if source_declaration.get("actualLastPriceDate") and raw_stats.get("lastDate") != source_declaration.get("actualLastPriceDate"):
+        _add_issue(
+            issues,
+            "raw_actual_last_price_date_mismatch",
+            "critical",
+            True,
+            "raw_daily_price",
+            paths["raw_daily_price"].name,
+            "Observed raw last date does not match source declaration actualLastPriceDate.",
+        )
+    for field, observed in [
+        ("assetCoverageCount", raw_stats.get("assetCount")),
+        ("firstDateByMarket", raw_stats.get("firstDateByMarket")),
+        ("lastDateByMarket", raw_stats.get("lastDateByMarket")),
+    ]:
+        if field in source_declaration and source_declaration.get(field) != observed:
             _add_issue(
                 issues,
-                row.get("issueType", "timeseries_block"),
-                row.get("severity", "critical"),
+                "raw_stream_metadata_mismatch",
+                "critical",
                 True,
+                "raw_daily_price",
+                paths["raw_daily_price"].name,
+                f"Observed raw {field} does not match source declaration.",
+            )
+    for row in timeseries_audit_rows:
+        if row.get("blocksPublication") == "true":
+            review_only_provenance = (
+                package_config.internal_preview_review_only
+                and row.get("issueType") == "invalid_provenance_publication_policy"
+            )
+            issue_type = {
+                "duplicate_date": "duplicate_market_ticker_date",
+                "non_monotonic_date_order": "raw_input_out_of_order",
+                "non_monotonic_series_order": "raw_input_out_of_order",
+                "non_contiguous_series": "raw_input_out_of_order",
+                "raw_daily_schema_missing_columns": "raw_daily_schema_invalid",
+            }.get(row.get("issueType", ""), row.get("issueType", "timeseries_block"))
+            _add_issue(
+                issues,
+                issue_type,
+                "warning" if review_only_provenance else row.get("severity", "critical"),
+                not review_only_provenance,
                 "raw_daily_price",
                 paths["raw_daily_price"].name,
                 row.get("reviewReason", "Time-series normalization blocked this candidate."),
             )
+    series_reviews_by_identity = _series_reviews_by_identity(timeseries_audit_rows)
+    _record_series_review_issues(issues, series_reviews_by_identity)
 
     if _has_blocking_issues(issues):
         _write_candidate_outputs(
@@ -246,10 +292,26 @@ def run_finple_production_candidate_package(config: Mapping[str, Any] | None = N
             source_hash=normalized_hash_by_identity.get(identity, ""),
             raw_source_sha256=source_sha,
         )
-        metrics_row["sourcePolicy"] = "manual_operator_upload_candidate_review_only"
-        if metrics_row.get("betaPolicy") == "fixture_aligned_monthly_returns":
-            metrics_row["betaPolicy"] = "candidate_aligned_monthly_returns"
-        metrics_row["notes"] = "Step 114-2M offline production data candidate; review-only and not app-export-approved."
+        metrics_row["sourcePolicy"] = (
+            "internal_preview_review_only_unapproved_provenance"
+            if package_config.internal_preview_review_only
+            else "manual_operator_upload_candidate_review_only"
+        )
+        metrics_row["notes"] = (
+            "Step 114-2Y internal Preview candidate; license/publication review required; not production-publish-ready or app-export-approved."
+            if package_config.internal_preview_review_only
+            else "Step 114-2M offline production data candidate; review-only and not app-export-approved."
+        )
+        candidate_series_reviews = series_reviews_by_identity.get(identity, {})
+        if candidate_series_reviews:
+            series_reason = _series_review_reason(candidate_series_reviews)
+            metrics_row["reviewFlag"] = "review_required"
+            if metrics_row.get("dataStatus") == "ready":
+                metrics_row["dataStatus"] = "review_required"
+            metrics_row["reviewReason"] = _join_review_reasons(metrics_row.get("reviewReason", ""), series_reason)
+            candidate_review_rows.extend(
+                _series_review_output_rows(candidate, package_config, candidate_series_reviews)
+            )
         for return_row in candidate_returns:
             return_row["dataStatus"] = return_row.get("dataStatus", "").replace("fixture", "candidate")
         full_rows.append(metrics_row)
@@ -289,6 +351,9 @@ def _load_candidate_config(config: Mapping[str, Any]) -> CandidatePackageConfig:
         parsed_validation_date = _parse_date(validation_date)
         if parsed_validation_date is None:
             raise ValueError("validation_date must be YYYY-MM-DD")
+    partial_policy = str(config.get("partial_month_policy", PARTIAL_MONTH_POLICY))
+    if partial_policy != PARTIAL_MONTH_POLICY:
+        raise ValueError(f"partial_month_policy must be {PARTIAL_MONTH_POLICY}")
     return CandidatePackageConfig(
         input_dir=Path(config["input_dir"]),
         output_dir=Path(config["output_dir"]),
@@ -302,6 +367,8 @@ def _load_candidate_config(config: Mapping[str, Any]) -> CandidatePackageConfig:
         source_declaration_file=str(config.get("source_declaration_file", DEFAULT_FILENAMES["source_declaration"])),
         operator_submission_manifest_file=str(config.get("operator_submission_manifest_file", DEFAULT_FILENAMES["operator_submission_manifest"])),
         validation_date=parsed_validation_date,
+        internal_preview_review_only=bool(config.get("internal_preview_review_only", False)),
+        partial_month_policy=partial_policy,
     )
 
 
@@ -314,6 +381,14 @@ def _idle_result(reasons: list[str]) -> dict[str, Any]:
         "productionPublishReady": False,
         "appExportApproved": False,
         "blockingIssueCount": len(reasons),
+        "packageGlobalBlockingIssueCount": len(reasons),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": 0,
         "issues": [
             {
@@ -338,7 +413,18 @@ def _blocked_result(config: CandidatePackageConfig, paths: Mapping[str, Path], i
         "candidatePackageReady": False,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": len(
+            [issue for issue in issues if issue["blocksCandidate"] == "true"]
+        ),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": 0,
         "issues": issues,
         "outputs": {role: str(path) for role, path in sorted(paths.items())},
@@ -358,7 +444,18 @@ def _blocked_no_write_result(
         "candidatePackageReady": False,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": len(
+            [issue for issue in issues if issue["blocksCandidate"] == "true"]
+        ),
+        "seriesReviewIssueCount": 0,
+        "affectedSeriesCountByIssueType": {},
+        "missingCalendarMonthCount": 0,
+        "implausibleSplitFactorSeriesCount": 0,
+        "metricsOutputRowCount": 0,
+        "selectedRowCount": 0,
+        "reviewRequiredRowCount": 0,
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": "",
         "zipPackageSha256": "",
@@ -384,12 +481,30 @@ def _candidate_result(
         "candidatePackageReady": ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": config.internal_preview_review_only,
         "blockingIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        "packageGlobalBlockingIssueCount": readiness.get(
+            "packageGlobalBlockingIssueCount",
+            len([issue for issue in issues if issue["blocksCandidate"] == "true"]),
+        ),
+        "seriesReviewIssueCount": readiness.get("seriesReviewIssueCount", 0),
+        "affectedSeriesCountByIssueType": readiness.get("affectedSeriesCountByIssueType", {}),
+        "missingCalendarMonthCount": readiness.get("missingCalendarMonthCount", 0),
+        "implausibleSplitFactorSeriesCount": readiness.get("implausibleSplitFactorSeriesCount", 0),
+        "metricsOutputRowCount": readiness.get("metricsOutputRowCount", 0),
+        "selectedRowCount": readiness.get("selectedRowCount", 0),
+        "reviewRequiredRowCount": readiness.get("reviewRequiredRowCount", 0),
         "warningIssueCount": len([issue for issue in issues if issue["blocksCandidate"] == "false"]),
         "candidatePackageHash": readiness.get("candidatePackageHash", ""),
         "zipPackageSha256": zip_sha,
         "candidatePackageId": readiness.get("candidatePackageId", ""),
         "validationDate": config.validation_date.isoformat(),
+        "requestedAsOfIncluded": readiness.get("requestedAsOfIncluded", ""),
+        "actualLastPriceDate": readiness.get("actualLastPriceDate", ""),
+        "metricDataThroughMonth": readiness.get("metricDataThroughMonth", ""),
+        "partialFinalMonthDetected": readiness.get("partialFinalMonthDetected", False),
+        "partialFinalMonthExcluded": readiness.get("partialFinalMonthExcluded", False),
+        "partialMonthPolicy": readiness.get("partialMonthPolicy", config.partial_month_policy),
         "outputs": {key: str(path) for key, path in output_paths.items()},
         "issues": issues,
     }
@@ -413,7 +528,10 @@ def _output_paths(config: CandidatePackageConfig) -> dict[str, Path]:
         "normalizedMonthEndCsv": config.output_dir / f"finple_candidate_normalized_month_end_{version}.csv",
         "monthlyReturnsCsv": config.output_dir / f"finple_candidate_monthly_returns_{version}.csv",
         "metricsOutputCsv": config.output_dir / f"finple_candidate_metrics_output_{version}.csv",
+        "selectedMetricsCsv": config.output_dir / f"finple_candidate_selected_metrics_{version}.csv",
         "reviewRequiredCsv": config.output_dir / f"finple_candidate_review_required_{version}.csv",
+        "usReviewOverlayCsv": config.output_dir / f"finple_candidate_review_overlay_us_{version}.csv",
+        "krReviewOverlayCsv": config.output_dir / f"finple_candidate_review_overlay_kr_{version}.csv",
         "sourceAuditCsv": config.output_dir / f"finple_candidate_source_audit_{version}.csv",
         "timeseriesAuditCsv": config.output_dir / f"finple_candidate_timeseries_audit_{version}.csv",
         "auditHtml": config.output_dir / f"finple_candidate_audit_{version}.html",
@@ -480,7 +598,7 @@ def _safe_read_candidate_benchmark_map(path: Path, issues: list[dict[str, str]])
         if market not in {"US", "KR"}:
             _add_issue(issues, "benchmark_market_invalid", "critical", True, "benchmark_map", path.name, f"Unsupported benchmarkMarket {market}.")
             continue
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
+        if market == "KR" and not is_valid_kr_benchmark_ticker(ticker):
             _add_issue(issues, "benchmark_ticker_identity_invalid", "critical", True, "benchmark_map", path.name, "KR benchmarkTicker must preserve six digits.")
             continue
         if not ticker or ticker.strip() != ticker:
@@ -579,22 +697,44 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
         _add_issue(issues, "synthetic_or_fixture_marker_blocked", "critical", True, "source_declaration", "source_declaration.json", "Fixture/synthetic/test markers are not allowed in candidate mode.")
     if source.get("sourceFileSha256") != _sha256(paths["raw_daily_price"]):
         _add_issue(issues, "source_file_sha256_mismatch", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, "sourceFileSha256 does not match raw daily CSV.")
-    raw_rows = _safe_read_csv(paths["raw_daily_price"], issues, "raw_daily_price") if paths["raw_daily_price"].exists() else []
-    if source.get("rowCount") != len(raw_rows):
+    raw_row_count = _row_count_csv(paths["raw_daily_price"]) if paths["raw_daily_price"].exists() else 0
+    if source.get("rowCount") != raw_row_count:
         _add_issue(issues, "source_row_count_mismatch", "critical", True, "raw_daily_price", paths["raw_daily_price"].name, "source declaration rowCount mismatch.")
     if source.get("redistributionReviewStatus") not in {"approved", "allowed", "reviewed_approved"}:
-        _add_issue(issues, "redistribution_review_not_approved", "critical", True, "source_declaration", "source_declaration.json", "Redistribution review is not approved.")
+        _add_issue(
+            issues,
+            "redistribution_review_not_approved",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "source_declaration",
+            "source_declaration.json",
+            "Redistribution review is not approved; internal Preview remains review-only.",
+        )
     if source.get("appUseReviewStatus") not in {"approved", "allowed", "reviewed_approved"}:
-        _add_issue(issues, "app_use_review_not_approved", "critical", True, "source_declaration", "source_declaration.json", "App-use review is not approved.")
+        _add_issue(
+            issues,
+            "app_use_review_not_approved",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "source_declaration",
+            "source_declaration.json",
+            "App-use review is not approved; internal Preview remains review-only.",
+        )
     if source.get("timezone") not in {"Asia/Seoul", "America/New_York", "UTC"}:
         _add_issue(issues, "timezone_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported timezone.")
     if tuple(_normalize_market_scope(source.get("marketScope"))) != config.market_scope:
         _add_issue(issues, "market_scope_mismatch", "critical", True, "source_declaration", "source_declaration.json", "Source marketScope must match config.market_scope exactly.")
     if source.get("currencyMode") not in {"KRW", "USD", "mixed"}:
         _add_issue(issues, "currency_mode_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported currencyMode.")
-    if source.get("returnBasis") not in {"price_return", "total_return"}:
+    allowed_return_bases = {"price_return", "total_return"}
+    if config.internal_preview_review_only:
+        allowed_return_bases.add("mixed_reference")
+    if source.get("returnBasis") not in allowed_return_bases:
         _add_issue(issues, "return_basis_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported returnBasis.")
-    if source.get("priceAdjustmentBasis") not in {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}:
+    allowed_adjustment_bases = {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}
+    if config.internal_preview_review_only:
+        allowed_adjustment_bases.add("mixed_explicit")
+    if source.get("priceAdjustmentBasis") not in allowed_adjustment_bases:
         _add_issue(issues, "price_adjustment_basis_unsupported", "critical", True, "source_declaration", "source_declaration.json", "Unsupported priceAdjustmentBasis.")
     if source.get("returnBasis") == "price_return" and source.get("priceAdjustmentBasis") == "total_return_adjusted":
         _add_issue(issues, "return_basis_adjustment_incompatible", "critical", True, "source_declaration", "source_declaration.json", "price_return cannot use total_return_adjusted price basis.")
@@ -610,6 +750,38 @@ def _validate_source_declaration(source: Mapping[str, Any], paths: Mapping[str, 
         _add_issue(issues, "as_of_date_future", "critical", True, "source_declaration", "source_declaration.json", "asOfDate is in the future.")
     elif metric_base and as_of < metric_base:
         _add_issue(issues, "source_data_stale", "critical", True, "source_declaration", "source_declaration.json", "asOfDate is older than metric base date.")
+    requested_as_of = _parse_date(str(source.get("requestedAsOfIncluded", "")))
+    provider_end = _parse_date(str(source.get("providerDownloadEndExclusive", "")))
+    actual_last = _parse_date(str(source.get("actualLastPriceDate", "")))
+    source_metric_base = _parse_date(str(source.get("metricBaseDate", "")))
+    if any(field in source for field in ["requestedAsOfIncluded", "providerDownloadEndExclusive", "actualLastPriceDate", "metricBaseDate"]):
+        if requested_as_of is None or requested_as_of != as_of or requested_as_of != metric_base:
+            _add_issue(issues, "requested_as_of_mismatch", "critical", True, "source_declaration", "source_declaration.json", "requestedAsOfIncluded, asOfDate, and metricBaseDate must match.")
+        if requested_as_of is None or provider_end != requested_as_of + timedelta(days=1):
+            _add_issue(issues, "provider_end_exclusive_invalid", "critical", True, "source_declaration", "source_declaration.json", "providerDownloadEndExclusive must be requestedAsOfIncluded plus one day.")
+        if actual_last is None or (requested_as_of is not None and actual_last > requested_as_of):
+            _add_issue(issues, "actual_last_price_date_invalid", "critical", True, "source_declaration", "source_declaration.json", "actualLastPriceDate must be present and not later than requestedAsOfIncluded.")
+        if source_metric_base != metric_base:
+            _add_issue(issues, "metric_base_date_mismatch", "critical", True, "source_declaration", "source_declaration.json", "Source metricBaseDate must match candidate config.")
+    partial_fields = [
+        "metricDataThroughMonth",
+        "partialFinalMonthDetected",
+        "partialFinalMonthExcluded",
+        "partialMonthPolicy",
+    ]
+    if any(field in source for field in partial_fields):
+        try:
+            expected_partial = partial_month_metadata(
+                str(source.get("requestedAsOfIncluded", "")),
+                str(source.get("actualLastPriceDate", "")),
+                config.partial_month_policy,
+            )
+        except ValueError as exc:
+            _add_issue(issues, "partial_month_metadata_invalid", "critical", True, "source_declaration", "source_declaration.json", str(exc))
+        else:
+            for field in partial_fields:
+                if source.get(field) != expected_partial[field]:
+                    _add_issue(issues, "partial_month_metadata_mismatch", "critical", True, "source_declaration", "source_declaration.json", f"{field} does not match the requested as-of partial-month policy.")
 
 
 def _validate_submission_manifest(manifest: Mapping[str, Any], paths: Mapping[str, Path], config: CandidatePackageConfig, issues: list[dict[str, str]]) -> None:
@@ -709,7 +881,15 @@ def _validate_candidate_csv(rows: list[dict[str, str]], config: CandidatePackage
         if row.get("market", "") not in config.market_scope:
             _add_issue(issues, "candidate_market_scope_mismatch", "critical", True, "candidate_asset_master", config.candidate_asset_master_file, f"Candidate market outside configured scope: {row.get('market', '')}.")
         if not row.get("benchmarkKey"):
-            _add_issue(issues, "candidate_asset_master_invalid", "critical", True, "candidate_asset_master", config.candidate_asset_master_file, "Missing benchmarkKey.")
+            _add_issue(
+                issues,
+                "candidate_asset_master_invalid",
+                "warning" if config.internal_preview_review_only else "critical",
+                not config.internal_preview_review_only,
+                "candidate_asset_master",
+                config.candidate_asset_master_file,
+                "Missing benchmarkKey; asset remains in internal Preview review output.",
+            )
 
 
 def _validate_benchmark_contract(
@@ -732,53 +912,120 @@ def _validate_benchmark_contract(
             _add_issue(issues, "benchmark_ticker_identity_invalid", "critical", True, "benchmark_map", config.benchmark_map_file, "Benchmark ticker is empty.")
 
 
-def _validate_raw_daily_candidate_rows(rows: list[dict[str, str]], config: CandidatePackageConfig, source: Mapping[str, Any], issues: list[dict[str, str]]) -> None:
-    if not rows:
-        _add_issue(issues, "raw_daily_missing", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Raw daily price CSV is empty.")
-        return
-    missing = sorted(set(RAW_DAILY_PRICE_COLUMNS).difference(rows[0]))
-    for column in missing:
-        _add_issue(issues, "raw_daily_schema_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Missing column {column}.")
-    if missing:
-        return
-    seen: set[tuple[str, str, str]] = set()
-    for row in rows:
+def _validate_and_normalize_raw_daily_candidate_file(
+    path: Path,
+    *,
+    candidates: list[dict[str, str]],
+    benchmark_map: Mapping[str, tuple[str, str]],
+    config: CandidatePackageConfig,
+    source: Mapping[str, Any],
+    issues: list[dict[str, str]],
+    source_file_name: str,
+    source_sha256: str,
+) -> dict[str, object]:
+    candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
+    allowed_raw_identities = candidate_identities.union(benchmark_map.values())
+    reported: set[tuple[str, str, str]] = set()
+
+    def report_once(
+        row: Mapping[str, str],
+        issue_type: str,
+        severity: str,
+        blocks: bool,
+        reason: str,
+    ) -> None:
+        key = (issue_type, row.get("market", ""), row.get("ticker", ""))
+        if key in reported:
+            return
+        reported.add(key)
+        _add_issue(
+            issues,
+            issue_type,
+            severity,
+            blocks,
+            "raw_daily_price",
+            config.raw_daily_price_file,
+            reason,
+        )
+
+    def observe(row: Mapping[str, str]) -> None:
         market = row.get("market", "")
         ticker = row.get("ticker", "")
-        date_text = row.get("date", "")
-        key = (market, ticker, date_text)
-        if key in seen:
-            _add_issue(issues, "duplicate_market_ticker_date", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Duplicate {key}.")
-        seen.add(key)
+        identity = (market, ticker)
         if market not in {"US", "KR"}:
-            _add_issue(issues, "market_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Unsupported market {market}.")
+            report_once(row, "market_invalid", "critical", True, f"Unsupported market {market}.")
         if market not in config.market_scope:
-            _add_issue(issues, "raw_market_scope_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Raw row market outside configured scope: {market}.")
-        if market == "KR" and not (len(ticker) == 6 and ticker.isdigit()):
-            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"KR ticker must preserve leading zeros: {ticker}.")
+            report_once(row, "raw_market_scope_mismatch", "critical", True, f"Raw row market outside configured scope: {market}.")
+        if identity not in allowed_raw_identities:
+            report_once(
+                row,
+                "raw_identity_outside_candidate_master",
+                "critical",
+                True,
+                f"Raw identity is outside candidate_asset_master: {market}:{ticker}.",
+            )
+        if market == "KR" and not is_valid_kr_candidate_ticker(ticker):
+            report_once(
+                row,
+                "ticker_identity_invalid",
+                "critical",
+                True,
+                f"KR ticker must preserve six-character uppercase alphanumeric identity: {ticker}.",
+            )
         if not ticker or ticker.strip() != ticker:
-            _add_issue(issues, "ticker_identity_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Ticker must be non-empty and trimmed.")
-        if _parse_date(date_text) is None:
-            _add_issue(issues, "date_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, f"Invalid date {date_text}.")
+            report_once(row, "ticker_identity_invalid", "critical", True, "Ticker must be non-empty and trimmed.")
+        if _parse_date(row.get("date", "")) is None:
+            report_once(row, "date_invalid", "critical", True, f"Invalid date {row.get('date', '')}.")
         try:
             if float(row.get("close", "")) <= 0:
                 raise ValueError
         except ValueError:
-            _add_issue(issues, "price_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "close must be positive.")
-        if row.get("priceAdjustmentBasis") != source.get("priceAdjustmentBasis"):
-            _add_issue(issues, "price_adjustment_basis_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row priceAdjustmentBasis must match source declaration.")
+            report_once(row, "price_invalid", "critical", True, "close must be positive.")
+
+        source_basis = source.get("priceAdjustmentBasis")
+        row_basis = row.get("priceAdjustmentBasis")
+        mixed_explicit = config.internal_preview_review_only and source_basis == "mixed_explicit"
+        if (mixed_explicit and row_basis not in {"raw_close", "split_adjusted", "split_and_dividend_adjusted", "total_return_adjusted"}) or (
+            not mixed_explicit and row_basis != source_basis
+        ):
+            report_once(
+                row,
+                "price_adjustment_basis_mismatch",
+                "critical",
+                True,
+                "Row priceAdjustmentBasis must match source declaration.",
+            )
         if source.get("currencyMode") in {"KRW", "USD"} and row.get("currency") != source.get("currencyMode"):
-            _add_issue(issues, "currency_mismatch", "critical", True, "raw_daily_price", config.raw_daily_price_file, "Row currency must match source currencyMode.")
+            report_once(row, "currency_mismatch", "critical", True, "Row currency must match source currencyMode.")
+
+        review_severity = "warning" if config.internal_preview_review_only else "critical"
+        review_blocks = not config.internal_preview_review_only
         if row.get("licenseStatus") != "approved":
-            _add_issue(issues, "license_status_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "licenseStatus must be approved.")
+            report_once(row, "license_status_invalid", review_severity, review_blocks, "licenseStatus is not approved; internal Preview remains review-only.")
         if row.get("internalUseAllowed") != "true":
-            _add_issue(issues, "internal_use_not_allowed", "critical", True, "raw_daily_price", config.raw_daily_price_file, "internalUseAllowed must be true.")
+            report_once(row, "internal_use_not_allowed", review_severity, review_blocks, "internalUseAllowed is not approved; internal Preview remains review-only.")
         if row.get("publicationAllowed") != "true":
-            _add_issue(issues, "publication_not_allowed", "critical", True, "raw_daily_price", config.raw_daily_price_file, "publicationAllowed must be true for candidate review output.")
+            report_once(row, "publication_not_allowed", review_severity, review_blocks, "publicationAllowed is false; production publication remains blocked.")
         if row.get("publicationEligibility") != "approved":
-            _add_issue(issues, "publication_eligibility_invalid", "critical", True, "raw_daily_price", config.raw_daily_price_file, "publicationEligibility must be approved.")
+            report_once(row, "publication_eligibility_invalid", review_severity, review_blocks, "publicationEligibility requires review; production publication remains blocked.")
         if row.get("redistributionAllowed") != "true":
-            _add_issue(issues, "redistribution_restricted_review_only", "warning", False, "raw_daily_price", config.raw_daily_price_file, "Redistribution is restricted; package remains candidate review-only.")
+            report_once(row, "redistribution_restricted_review_only", "warning", False, "Redistribution is restricted; package remains candidate review-only.")
+
+    return normalize_daily_price_file_streaming(
+        path,
+        source_file_name=source_file_name,
+        source_sha256=source_sha256,
+        market_order=config.market_scope,
+        row_observer=observe,
+        allow_review_only_provenance=config.internal_preview_review_only,
+        normalized_data_status=(
+            "normalized_candidate_review"
+            if config.internal_preview_review_only
+            else "normalized_fixture"
+        ),
+        requested_as_of_included=str(source.get("requestedAsOfIncluded", config.metric_base_date)),
+        partial_month_policy=config.partial_month_policy,
+    )
 
 
 def _validate_scope_reconciliation(
@@ -786,13 +1033,14 @@ def _validate_scope_reconciliation(
     source: Mapping[str, Any],
     manifest: Mapping[str, Any],
     candidates: list[dict[str, str]],
-    raw_rows: list[dict[str, str]],
+    raw_identities: set[tuple[str, str]],
+    raw_markets: set[str],
     issues: list[dict[str, str]],
 ) -> None:
     source_scope = tuple(_normalize_market_scope(source.get("marketScope")))
     manifest_scope = tuple(_normalize_market_scope(manifest.get("expectedMarketScope")))
     candidate_scope = tuple(sorted({row.get("market", "") for row in candidates if row.get("market", "")}))
-    raw_scope = tuple(sorted({row.get("market", "") for row in raw_rows if row.get("market", "")}))
+    raw_scope = tuple(sorted(market for market in raw_markets if market))
     expected_sorted = tuple(sorted(config.market_scope))
     for label, scope in [
         ("source_declaration", tuple(sorted(source_scope))),
@@ -804,11 +1052,154 @@ def _validate_scope_reconciliation(
             _add_issue(issues, "market_scope_reconciliation_mismatch", "critical", True, label, "", f"{label} scope {scope} does not match config scope {expected_sorted}.")
     if source.get("operatorId") != manifest.get("submittedBy"):
         _add_issue(issues, "operator_identity_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", "submittedBy must match source operatorId.")
+    for field in [
+        "requestedAsOfIncluded",
+        "providerDownloadEndExclusive",
+        "actualLastPriceDate",
+        "metricBaseDate",
+        "metricDataThroughMonth",
+        "partialFinalMonthDetected",
+        "partialFinalMonthExcluded",
+        "partialMonthPolicy",
+    ]:
+        if field in source and manifest.get(field) != source.get(field):
+            _add_issue(issues, "collection_metadata_mismatch", "critical", True, "operator_submission_manifest", "operator_submission_manifest.json", f"{field} must match source declaration.")
     candidate_identities = {(row.get("market", ""), row.get("ticker", "")) for row in candidates}
-    raw_identities = {(row.get("market", ""), row.get("ticker", "")) for row in raw_rows}
     missing_candidate_prices = candidate_identities.difference(raw_identities)
     for identity in sorted(missing_candidate_prices):
-        _add_issue(issues, "candidate_raw_identity_missing", "critical", True, "raw_daily_price", "", f"No raw rows for candidate {identity[0]}:{identity[1]}.")
+        _add_issue(
+            issues,
+            "candidate_raw_identity_missing",
+            "warning" if config.internal_preview_review_only else "critical",
+            not config.internal_preview_review_only,
+            "raw_daily_price",
+            "",
+            f"No raw rows for candidate {identity[0]}:{identity[1]}; asset remains review-required.",
+        )
+
+
+def _series_reviews_by_identity(
+    audit_rows: Iterable[Mapping[str, str]],
+) -> dict[tuple[str, str], dict[str, list[Mapping[str, str]]]]:
+    grouped: dict[tuple[str, str], dict[str, list[Mapping[str, str]]]] = {}
+    for row in audit_rows:
+        issue_type = row.get("issueType", "")
+        if issue_type not in SERIES_REVIEW_ISSUE_TYPES:
+            continue
+        identity = (row.get("market", ""), row.get("ticker", ""))
+        grouped.setdefault(identity, {}).setdefault(issue_type, []).append(row)
+    return grouped
+
+
+def _record_series_review_issues(
+    issues: list[dict[str, str]],
+    reviews_by_identity: Mapping[tuple[str, str], Mapping[str, list[Mapping[str, str]]]],
+) -> None:
+    for (market, ticker), by_type in sorted(reviews_by_identity.items()):
+        for issue_type, rows in sorted(by_type.items()):
+            _add_issue(
+                issues,
+                issue_type,
+                "warning",
+                False,
+                "raw_daily_price_series",
+                f"{market}:{ticker}",
+                _series_issue_reason(market, ticker, issue_type, rows),
+            )
+
+
+def _series_issue_reason(
+    market: str,
+    ticker: str,
+    issue_type: str,
+    rows: list[Mapping[str, str]],
+) -> str:
+    if issue_type == "missing_calendar_month":
+        months = sorted({row.get("date", "")[:7] for row in rows if row.get("date", "")})
+        displayed_months = months[:12]
+        if len(months) > 12:
+            displayed_months.append(f"... {months[-1]}")
+        month_text = ", ".join(displayed_months)
+        month_suffix = f" ({month_text})" if month_text else ""
+        return (
+            f"{market}:{ticker} has {len(months)} missing calendar month(s){month_suffix}; "
+            "observed rows are preserved, no forward fill is applied, "
+            "and rolling CAGR/monthly returns crossing a gap are excluded."
+        )
+    evidence = "; ".join(
+        row.get("reviewReason", "")
+        for row in sorted(rows, key=lambda item: item.get("date", ""))
+        if row.get("reviewReason", "")
+    )
+    return f"{market}:{ticker} split evidence requires review: {evidence}"
+
+
+def _series_review_reason(by_type: Mapping[str, list[Mapping[str, str]]]) -> str:
+    reasons: list[str] = []
+    for issue_type, rows in sorted(by_type.items()):
+        market = rows[0].get("market", "") if rows else ""
+        ticker = rows[0].get("ticker", "") if rows else ""
+        reasons.append(_series_issue_reason(market, ticker, issue_type, rows))
+    return "; ".join(reasons)
+
+
+def _series_review_output_rows(
+    candidate: Mapping[str, str],
+    config: CandidatePackageConfig,
+    by_type: Mapping[str, list[Mapping[str, str]]],
+) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for issue_type, rows in sorted(by_type.items()):
+        raw_value = ""
+        if issue_type == "implausible_split_factor":
+            evidence = rows[0].get("reviewReason", "") if rows else ""
+            match = re.search(r"splitFactor=(.+?) on ", evidence)
+            raw_value = match.group(1) if match else ""
+        output.append(
+            {
+                "ticker": candidate.get("ticker", ""),
+                "nameKr": candidate.get("nameKr", ""),
+                "market": candidate.get("market", ""),
+                "assetType": candidate.get("assetType", ""),
+                "metricBaseDate": config.metric_base_date,
+                "issueType": issue_type,
+                "rawValue": raw_value,
+                "selectedValue": "",
+                "reviewReason": _series_issue_reason(
+                    candidate.get("market", ""),
+                    candidate.get("ticker", ""),
+                    issue_type,
+                    rows,
+                ),
+                "recommendedAction": "Review this series; keep production publication and app export blocked.",
+            }
+        )
+    return output
+
+
+def _join_review_reasons(*reasons: str) -> str:
+    return "; ".join(reason for reason in reasons if reason)
+
+
+def _series_review_summary(
+    audit_rows: Iterable[Mapping[str, str]],
+) -> dict[str, Any]:
+    rows = [row for row in audit_rows if row.get("issueType", "") in SERIES_REVIEW_ISSUE_TYPES]
+    affected: dict[str, int] = {}
+    for issue_type in sorted(SERIES_REVIEW_ISSUE_TYPES):
+        affected[issue_type] = len(
+            {
+                (row.get("market", ""), row.get("ticker", ""))
+                for row in rows
+                if row.get("issueType") == issue_type
+            }
+        )
+    return {
+        "seriesReviewIssueCount": len(rows),
+        "affectedSeriesCountByIssueType": affected,
+        "missingCalendarMonthCount": sum(1 for row in rows if row.get("issueType") == "missing_calendar_month"),
+        "implausibleSplitFactorSeriesCount": affected.get("implausible_split_factor", 0),
+    }
 
 
 def _write_candidate_outputs(
@@ -830,7 +1221,24 @@ def _write_candidate_outputs(
     _write_candidate_csv(output_paths["normalizedMonthEndCsv"], NORMALIZED_MONTH_END_COLUMNS, normalized_rows)
     _write_candidate_csv(output_paths["monthlyReturnsCsv"], MONTHLY_RETURNS_COLUMNS, monthly_return_rows)
     _write_candidate_csv(output_paths["metricsOutputCsv"], FULL_METRICS_COLUMNS, full_rows)
+    selected_rows = [
+        {column: row.get(column, "") for column in SELECTED_COLUMNS}
+        for row in full_rows
+        if row.get("dataStatus") == "ready" and row.get("reviewFlag") == "none"
+    ]
+    _write_candidate_csv(output_paths["selectedMetricsCsv"], SELECTED_COLUMNS, selected_rows)
     _write_candidate_csv(output_paths["reviewRequiredCsv"], REVIEW_REQUIRED_COLUMNS, review_rows)
+    overlay_rows = _candidate_review_overlay_rows(full_rows, package_config)
+    _write_candidate_csv(
+        output_paths["usReviewOverlayCsv"],
+        REVIEW_OVERLAY_COLUMNS,
+        [row for row in overlay_rows if row.get("market") == "US"],
+    )
+    _write_candidate_csv(
+        output_paths["krReviewOverlayCsv"],
+        REVIEW_OVERLAY_COLUMNS,
+        [row for row in overlay_rows if row.get("market") == "KR"],
+    )
     _write_candidate_csv(output_paths["sourceAuditCsv"], SOURCE_AUDIT_COLUMNS, source_audit_rows)
     _write_candidate_csv(output_paths["timeseriesAuditCsv"], TIMESERIES_AUDIT_COLUMNS, timeseries_audit_rows)
     _write_audit_html(output_paths["auditHtml"], source_audit_rows, candidate_package_ready, package_config.validation_date)
@@ -843,7 +1251,10 @@ def _write_candidate_outputs(
         output_paths["normalizedMonthEndCsv"],
         output_paths["monthlyReturnsCsv"],
         output_paths["metricsOutputCsv"],
+        output_paths["selectedMetricsCsv"],
         output_paths["reviewRequiredCsv"],
+        output_paths["usReviewOverlayCsv"],
+        output_paths["krReviewOverlayCsv"],
         output_paths["sourceAuditCsv"],
         output_paths["timeseriesAuditCsv"],
         output_paths["auditHtml"],
@@ -864,12 +1275,27 @@ def _write_candidate_outputs(
 
     blocking_count = len([issue for issue in source_audit_rows if issue["blocksCandidate"] == "true"])
     warning_count = len(source_audit_rows) - blocking_count
+    series_review_summary = _series_review_summary(timeseries_audit_rows)
+    output_row_summary = {
+        "metricsOutputRowCount": len(full_rows),
+        "selectedRowCount": len(selected_rows),
+        "reviewRequiredRowCount": len(review_rows),
+    }
+    partial_metadata = partial_month_metadata(
+        str(source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date)),
+        str(source_declaration.get("actualLastPriceDate", "")),
+        package_config.partial_month_policy,
+    )
     base_manifest = {
         "candidatePackageId": _candidate_package_id(source_declaration, submission_manifest, package_config),
         "candidatePackageHash": "",
         "contractVersion": CANDIDATE_PACKAGE_CONTRACT_VERSION,
         "candidatePackageVersion": CANDIDATE_PACKAGE_VERSION,
         "metricBaseDate": package_config.metric_base_date,
+        "requestedAsOfIncluded": source_declaration.get("requestedAsOfIncluded", package_config.metric_base_date),
+        "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
+        "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
+        **partial_metadata,
         "validationDate": package_config.validation_date.isoformat(),
         "pipelineVersion": PIPELINE_VERSION,
         "normalizationVersion": NORMALIZATION_VERSION,
@@ -884,15 +1310,21 @@ def _write_candidate_outputs(
             "normalizedMonthEndRows": len(normalized_rows),
             "monthlyReturnRows": len(monthly_return_rows),
             "metricsOutputRows": len(full_rows),
+            "selectedRows": len(selected_rows),
+            "reviewRequiredRows": len(review_rows),
             "marketTickerIdentityCount": len({(row.get("market", ""), row.get("ticker", "")) for row in normalized_rows}),
         },
         "marketTickerDateCoverage": _coverage(normalized_rows),
         "blockingIssueCount": blocking_count,
+        "packageGlobalBlockingIssueCount": blocking_count,
+        **series_review_summary,
+        **output_row_summary,
         "warningIssueCount": warning_count,
         "fixturePackageReady": False,
         "candidatePackageReady": candidate_package_ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": package_config.internal_preview_review_only,
         "externalProviderCalls": False,
         "sourceKind": source_declaration.get("sourceKind", ""),
         "sourceName": source_declaration.get("sourceName", ""),
@@ -902,6 +1334,14 @@ def _write_candidate_outputs(
             "currencyMode": source_declaration.get("currencyMode", ""),
             "returnBasis": source_declaration.get("returnBasis", ""),
             "priceAdjustmentBasis": source_declaration.get("priceAdjustmentBasis", ""),
+            "requestedAsOfIncluded": source_declaration.get("requestedAsOfIncluded", ""),
+            "providerDownloadEndExclusive": source_declaration.get("providerDownloadEndExclusive", ""),
+            "actualLastPriceDate": source_declaration.get("actualLastPriceDate", ""),
+            "metricBaseDate": source_declaration.get("metricBaseDate", ""),
+            "metricDataThroughMonth": partial_metadata["metricDataThroughMonth"],
+            "partialFinalMonthDetected": partial_metadata["partialFinalMonthDetected"],
+            "partialFinalMonthExcluded": partial_metadata["partialFinalMonthExcluded"],
+            "partialMonthPolicy": partial_metadata["partialMonthPolicy"],
             "redistributionReviewStatus": source_declaration.get("redistributionReviewStatus", ""),
             "appUseReviewStatus": source_declaration.get("appUseReviewStatus", ""),
             "fixtureOnly": source_declaration.get("fixtureOnly", None),
@@ -917,10 +1357,15 @@ def _write_candidate_outputs(
         "candidatePackageReady": candidate_package_ready,
         "productionPublishReady": False,
         "appExportApproved": False,
+        "internalPreviewReviewOnly": package_config.internal_preview_review_only,
         "blockingIssueCount": blocking_count,
+        "packageGlobalBlockingIssueCount": blocking_count,
+        **series_review_summary,
+        **output_row_summary,
         "warningIssueCount": warning_count,
         "notProductionApproval": True,
         "validationDate": package_config.validation_date.isoformat(),
+        **partial_metadata,
     }
     output_paths["readinessJson"].write_text(json.dumps(readiness, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     package_index = _build_package_index(output_paths)
@@ -947,7 +1392,10 @@ def _write_candidate_outputs(
             output_paths["normalizedMonthEndCsv"],
             output_paths["monthlyReturnsCsv"],
             output_paths["metricsOutputCsv"],
+            output_paths["selectedMetricsCsv"],
             output_paths["reviewRequiredCsv"],
+            output_paths["usReviewOverlayCsv"],
+            output_paths["krReviewOverlayCsv"],
             output_paths["sourceAuditCsv"],
             output_paths["timeseriesAuditCsv"],
             output_paths["auditHtml"],
@@ -955,6 +1403,65 @@ def _write_candidate_outputs(
             output_paths["packageIndexJson"],
         ],
     )
+
+
+def _candidate_review_overlay_rows(
+    full_rows: list[dict[str, str]],
+    config: CandidatePackageConfig,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for row in sorted(full_rows, key=lambda item: (item.get("market", ""), item.get("ticker", ""))):
+        review_reason = row.get("reviewReason", "")
+        candidate_note = "Step 114-2Y internal Preview candidate; production publication and app export remain blocked."
+        review_reason = f"{review_reason}; {candidate_note}" if review_reason else candidate_note
+        rows.append(
+            {
+                "market": row.get("market", ""),
+                "ticker": row.get("ticker", ""),
+                "expectedCagr": row.get("selectedCagr", ""),
+                "priceCagr10y": row.get("rawPriceCagr10y", ""),
+                "mdd": row.get("selectedMdd", ""),
+                "beta": row.get("selectedBeta", ""),
+                "dataYears": row.get("dataYears", ""),
+                "benchmarkTicker": row.get("benchmarkTicker", ""),
+                "metricsStatus": "review_only",
+                "metricsSource": f"step114-2y_candidate:{PIPELINE_VERSION}",
+                "reviewReason": review_reason,
+                "metricBaseDate": config.metric_base_date,
+                "reviewOverlayDate": config.validation_date.isoformat(),
+                "overlayStatus": "internal_preview_review_only",
+                "fixturePackageReady": "false",
+                "productionPublishReady": "false",
+                "appExportApproved": "false",
+                "selectedCagr": row.get("selectedCagr", ""),
+                "rawPriceCagr10y": row.get("rawPriceCagr10y", ""),
+                "rollingCagr10yMedian": row.get("rollingCagr10yMedian", ""),
+                "rollingCagr10yP25": row.get("rollingCagr10yP25", ""),
+                "rollingCagr10yP75": row.get("rollingCagr10yP75", ""),
+                "validRollingWindowCount10y": row.get("validRollingWindowCount10y", ""),
+                "rollingCagr5yMedian": row.get("rollingCagr5yMedian", ""),
+                "rollingCagr5yP25": row.get("rollingCagr5yP25", ""),
+                "rollingCagr5yP75": row.get("rollingCagr5yP75", ""),
+                "validRollingWindowCount5y": row.get("validRollingWindowCount5y", ""),
+                "selectedMdd": row.get("selectedMdd", ""),
+                "mddFullPeriod": row.get("mddFullPeriod", ""),
+                "selectedBeta": row.get("selectedBeta", ""),
+                "dividendYield": row.get("dividendYield", ""),
+                "dividendStatus": row.get("dividendStatus", ""),
+                "dataStatus": row.get("dataStatus", ""),
+                "reviewFlag": "review_required",
+                "cagrPolicy": row.get("cagrPolicy", ""),
+                "normalizationPolicy": row.get("normalizationPolicy", ""),
+                "sourcePolicy": row.get("sourcePolicy", ""),
+                "sourceHash": row.get("sourceHash", ""),
+                "rawSourceSha256": row.get("rawSourceSha256", ""),
+                "normalizationVersion": row.get("normalizationVersion", ""),
+                "normalizedSeriesHash": row.get("normalizedSeriesHash", ""),
+                "rollingMetricVersion": row.get("rollingMetricVersion", ""),
+                "notes": row.get("notes", ""),
+            }
+        )
+    return rows
 
 
 def _write_audit_html(path: Path, issues: list[dict[str, str]], candidate_ready: bool, validation_date: date) -> None:
@@ -1012,7 +1519,10 @@ def _build_package_index(output_paths: Mapping[str, Path]) -> dict[str, Any]:
         output_paths["normalizedMonthEndCsv"],
         output_paths["monthlyReturnsCsv"],
         output_paths["metricsOutputCsv"],
+        output_paths["selectedMetricsCsv"],
         output_paths["reviewRequiredCsv"],
+        output_paths["usReviewOverlayCsv"],
+        output_paths["krReviewOverlayCsv"],
         output_paths["sourceAuditCsv"],
         output_paths["timeseriesAuditCsv"],
         output_paths["auditHtml"],

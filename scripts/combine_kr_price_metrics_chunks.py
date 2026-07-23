@@ -2,7 +2,7 @@
 
 Example
 -------
-python combine_kr_price_metrics_chunks.py \
+python -m scripts.combine_kr_price_metrics_chunks \
   --pattern 'kr_price_metrics_overlay_20260528_part*.csv' \
   --out-runtime kr_price_metrics_overlay_20260528.csv \
   --out-summary kr_price_metrics_overlay_20260528_summary.json
@@ -16,6 +16,11 @@ import json
 from pathlib import Path
 
 import pandas as pd
+
+from scripts.metrics_pipeline.config import PARTIAL_MONTH_POLICY
+from scripts.metrics_pipeline.schemas import is_valid_kr_candidate_ticker
+from scripts.metrics_pipeline.timeseries import partial_month_metadata
+from scripts.raw_daily_price_chunks import collection_date_window, combine_raw_daily_chunks
 
 RUNTIME_COLUMNS = [
     "market",
@@ -37,21 +42,34 @@ def main() -> None:
     parser.add_argument("--pattern", required=True)
     parser.add_argument("--out-runtime", required=True)
     parser.add_argument("--out-summary", required=True)
+    parser.add_argument("--raw-pattern", help="Glob for non-overlapping KR RAW_DAILY_PRICE_COLUMNS chunks.")
+    parser.add_argument("--out-raw", help="Combined KR raw-daily CSV path.")
+    parser.add_argument("--requested-as-of-included", default="")
+    parser.add_argument("--provider-download-end-exclusive", default="")
+    parser.add_argument("--metric-base-date", default="")
+    parser.add_argument("--partial-month-policy", default=PARTIAL_MONTH_POLICY)
     args = parser.parse_args()
 
     files = sorted([path for path in glob.glob(args.pattern) if "_audit" not in path])
     if not files:
         raise SystemExit(f"No files found for pattern: {args.pattern}")
 
-    frames = [pd.read_csv(path, dtype={"ticker": str}) for path in files]
+    frames = [pd.read_csv(path, dtype={"ticker": str, "benchmarkTicker": str}, keep_default_na=False) for path in files]
     df = pd.concat(frames, ignore_index=True)
     df["market"] = df["market"].fillna("KR").astype(str).str.strip().str.upper()
-    df["ticker"] = df["ticker"].astype(str).str.strip().str.upper().str.zfill(6)
+    df["ticker"] = df["ticker"].astype(str).str.strip()
+    invalid_tickers = sorted({ticker for ticker in df["ticker"] if not is_valid_kr_candidate_ticker(ticker)})
+    if invalid_tickers:
+        raise SystemExit(f"Invalid KR ticker identity in runtime chunks: {invalid_tickers[:5]}")
     df = df.drop_duplicates(["market", "ticker"], keep="last")
 
     for column in RUNTIME_COLUMNS:
         if column not in df.columns:
             df[column] = ""
+    df["benchmarkTicker"] = df["benchmarkTicker"].astype(str).str.strip()
+    invalid_benchmarks = sorted(set(df["benchmarkTicker"]).difference({"", "069500", "229200"}))
+    if invalid_benchmarks:
+        raise SystemExit(f"Invalid KR benchmarkTicker identity in runtime chunks: {invalid_benchmarks[:5]}")
     df = df[RUNTIME_COLUMNS]
 
     out_runtime = Path(args.out_runtime)
@@ -67,6 +85,28 @@ def main() -> None:
         "blank_cagr_count": int(df["expectedCagr"].isna().sum() + (df["expectedCagr"].astype(str).str.strip() == "").sum()),
         "blank_beta_count": int(df["beta"].isna().sum() + (df["beta"].astype(str).str.strip() == "").sum()),
     }
+    if bool(args.raw_pattern) != bool(args.out_raw):
+        raise SystemExit("--raw-pattern and --out-raw must be provided together")
+    if args.raw_pattern and args.out_raw:
+        summary.update(combine_raw_daily_chunks(args.raw_pattern, Path(args.out_raw), "KR"))
+    if args.requested_as_of_included:
+        expected_end = collection_date_window(args.requested_as_of_included, 1)[1]
+        if args.provider_download_end_exclusive != expected_end:
+            raise SystemExit(f"provider download end must be {expected_end}")
+        if args.metric_base_date != args.requested_as_of_included:
+            raise SystemExit("metricBaseDate must equal requestedAsOfIncluded")
+    partial_metadata = partial_month_metadata(
+        args.requested_as_of_included,
+        str(summary.get("rawDailyLastDate", "")),
+        args.partial_month_policy,
+    )
+    summary.update({
+        "requestedAsOfIncluded": args.requested_as_of_included,
+        "providerDownloadEndExclusive": args.provider_download_end_exclusive,
+        "actualLastPriceDate": summary.get("rawDailyLastDate", ""),
+        "metricBaseDate": args.metric_base_date,
+        **partial_metadata,
+    })
 
     out_summary = Path(args.out_summary)
     out_summary.parent.mkdir(parents=True, exist_ok=True)

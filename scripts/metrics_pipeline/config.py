@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-
 PIPELINE_VERSION = "metrics-v3.0-step114-2d"
 SCHEMA_VERSION = "metrics-csv-schema-v3"
 CALCULATION_POLICY_VERSION = "metrics-calculation-policy-2026-06-26"
+PARTIAL_MONTH_POLICY = "exclude_from_metrics"
 
 
 @dataclass(frozen=True)
@@ -35,6 +35,7 @@ class PipelineConfig:
     public_source_fixture_failure_mode: str = "none"
     public_source_resume_checkpoint_file: str = ""
     source_adapter_max_retry_count: int = 3
+    partial_month_policy: str = PARTIAL_MONTH_POLICY
 
     @property
     def created_at(self) -> str:
@@ -82,6 +83,7 @@ def load_config(config: Mapping[str, Any]) -> PipelineConfig:
         public_source_fixture_failure_mode=str(config.get("public_source_fixture_failure_mode", "none")),
         public_source_resume_checkpoint_file=str(config.get("public_source_resume_checkpoint_file", "")),
         source_adapter_max_retry_count=int(config.get("source_adapter_max_retry_count", 3)),
+        partial_month_policy=str(config.get("partial_month_policy", PARTIAL_MONTH_POLICY)),
     )
 
 
@@ -99,6 +101,8 @@ def validate_config(config: PipelineConfig) -> list[str]:
         errors.append("public_source_fixture_failure_mode must be none, transient_then_success, or permanent_failure")
     if config.source_adapter_max_retry_count < 0 or config.source_adapter_max_retry_count > 3:
         errors.append("source_adapter_max_retry_count must be between 0 and 3")
+    if config.partial_month_policy != PARTIAL_MONTH_POLICY:
+        errors.append(f"partial_month_policy must be {PARTIAL_MONTH_POLICY}")
     for market in config.market_scope:
         if market not in {"US", "KR"}:
             errors.append(f"Unsupported market in Step 114-2D fixture mode: {market}")
