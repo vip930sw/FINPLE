@@ -2,8 +2,10 @@ import {
   readStoredMbtiProfile,
   restoreMbtiProfileFromPortfolios,
 } from "../utils/mbtiProfileStorage";
+import { normalizeFinpleApiBaseUrl } from "./apiBaseUrl.js";
 
-const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
@@ -22,9 +24,8 @@ export function getFinpleApiBaseUrl() {
 }
 
 function buildApiUrl(path) {
-  const baseUrl = String(getFinpleApiBaseUrl() || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const apiBaseUrl = baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`;
+  const apiBaseUrl = normalizeFinpleApiBaseUrl(getFinpleApiBaseUrl());
 
   return `${apiBaseUrl}${normalizedPath}`;
 }

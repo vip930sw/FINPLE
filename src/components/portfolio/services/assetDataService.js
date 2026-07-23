@@ -12,7 +12,8 @@ import {
 } from "../../../data/tickers/screenerCandidateLoader";
 
 const DEFAULT_PROVIDER = "backend";
-const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
 const DEFAULT_BACKEND_TIMEOUT_MS = 12000;
 const DEFAULT_BULK_LOOKUP_DELAY_MS = 1200;
 const CASH_REFERENCE_PRICE = 10000;

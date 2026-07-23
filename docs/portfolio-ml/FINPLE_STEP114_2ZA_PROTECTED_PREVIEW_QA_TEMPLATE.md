@@ -25,6 +25,11 @@
 - [ ] all 64 shard URLs are present in the index
 - [ ] sampled shard SHA-256/size matches the manifest
 - [ ] all app-preview requests are same-origin
+- [ ] `/preview-api/health/live` is same-origin and reaches the Render health endpoint
+- [ ] `/preview-api/auth/login` POST remains same-origin without a browser CORS failure
+- [ ] `/preview-api/auth/login` OPTIONS follows the API proxy route rather than the SPA fallback
+- [ ] browser network contains no direct `https://finple-api.onrender.com/api` request
+- [ ] `/app-preview-data/*` paths remain static files and are not API-proxied
 - [ ] no public external data host was introduced
 - [ ] initial page entry does not request the monthly-return index or all shards
 - [ ] selecting one asset requests only its indexed shard
@@ -40,6 +45,8 @@ Observed initial requests:
 | `metrics-overlay.json` |  |  | initial |
 | `monthly-returns-index.json` |  |  | lazy |
 | selected monthly shard |  |  | lazy |
+| `/preview-api/health/live` |  |  | external rewrite |
+| `/preview-api/auth/login` |  |  | external rewrite |
 
 ## catalog and identity
 
@@ -122,6 +129,7 @@ Mobile:
 - [ ] build without Preview variables keeps existing loader fallback
 - [ ] production selector unchanged
 - [ ] public production CSV unchanged
+- [ ] production bundle/config has no `/preview-api` setting or external API rewrite
 - [ ] production deployment and domain unchanged
 - [ ] provider calls absent
 - [ ] DB/KIS/order/trading changes absent

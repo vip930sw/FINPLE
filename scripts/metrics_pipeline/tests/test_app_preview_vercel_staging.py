@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import unittest
@@ -16,12 +17,14 @@ from scripts.stage_app_preview_vercel import (
     EXPECTED_MONTHLY_RETURN_ROW_COUNT,
     EXPECTED_SHARD_COUNT,
     StagingError,
+    normalize_api_upstream_base_url,
     sha256_file,
     stage_app_preview,
 )
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+API_UPSTREAM = "https://finple-api.onrender.com/api"
 
 
 def _json_bytes(value: object) -> bytes:
@@ -203,14 +206,24 @@ def make_zip(export: Path, output: Path) -> Path:
     return output
 
 
-def fake_build(project_dir: Path, static_output_dir: Path, target_base_url: str) -> None:
+def fake_build(
+    project_dir: Path,
+    static_output_dir: Path,
+    target_base_url: str,
+    preview_api_base_url: str,
+) -> None:
     if project_dir != REPOSITORY_ROOT:
         raise AssertionError("build did not use repository root")
     if target_base_url != "/app-preview-data/2026-07-22":
         raise AssertionError(f"unexpected Preview base URL: {target_base_url}")
+    if preview_api_base_url != "/preview-api":
+        raise AssertionError(f"unexpected Preview API base URL: {preview_api_base_url}")
     (static_output_dir / "assets").mkdir(parents=True, exist_ok=True)
     (static_output_dir / "index.html").write_text("<html>preview</html>", encoding="utf-8")
-    (static_output_dir / "assets" / "index-fixture.js").write_text("preview", encoding="utf-8")
+    (static_output_dir / "assets" / "index-fixture.js").write_text(
+        'const apiBase="/preview-api";',
+        encoding="utf-8",
+    )
 
 
 class AppPreviewVercelStagingTests(unittest.TestCase):
@@ -220,6 +233,7 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
             staging_dir=stage,
             target_segment="2026-07-22",
             expected_zip_sha256=expected_hash,
+            api_upstream_base_url=API_UPSTREAM,
             project_dir=REPOSITORY_ROOT,
             build_runner=fake_build,
         )
@@ -239,6 +253,8 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
             self.assertEqual(summary["monthlyReturnRowCount"], 700375)
             self.assertEqual(summary["shardCount"], 64)
             self.assertEqual(summary["targetBaseUrl"], "/app-preview-data/2026-07-22")
+            self.assertEqual(summary["previewApiBaseUrl"], "/preview-api")
+            self.assertEqual(summary["apiUpstreamBaseUrl"], API_UPSTREAM)
             self.assertTrue(summary["repositoryStatusUnchanged"])
             self.assertFalse(summary["productionSelectorChanged"])
             static = stage / ".vercel" / "output" / "static"
@@ -248,7 +264,38 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
             )
             config = json.loads((stage / ".vercel" / "output" / "config.json").read_text(encoding="utf-8"))
             self.assertEqual(config["version"], 3)
-            self.assertEqual(config["routes"][0], {"handle": "filesystem"})
+            self.assertEqual(
+                config["routes"],
+                [
+                    {
+                        "src": "/preview-api/(.*)",
+                        "dest": "https://finple-api.onrender.com/api/$1",
+                    },
+                    {"handle": "filesystem"},
+                    {"src": "/.*", "dest": "/index.html"},
+                ],
+            )
+
+            proxy_route = config["routes"][0]
+            proxy_pattern = re.compile(proxy_route["src"])
+            for method, path, expected_destination in (
+                ("GET", "/preview-api/health/live", f"{API_UPSTREAM}/health/live"),
+                ("POST", "/preview-api/auth/login", f"{API_UPSTREAM}/auth/login"),
+                ("OPTIONS", "/preview-api/auth/login", f"{API_UPSTREAM}/auth/login"),
+            ):
+                with self.subTest(method=method, path=path):
+                    match = proxy_pattern.fullmatch(path)
+                    self.assertIsNotNone(match)
+                    self.assertNotIn("methods", proxy_route)
+                    self.assertEqual(
+                        proxy_route["dest"].replace("$1", match.group(1)),
+                        expected_destination,
+                    )
+            self.assertIsNone(
+                proxy_pattern.fullmatch(
+                    "/app-preview-data/2026-07-22/app-preview-manifest.json"
+                )
+            )
 
     def test_wrong_zip_hash_fails_before_replacing_existing_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -338,6 +385,35 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
                     "must be outside",
                 ):
                     self._stage(export, unsafe_stage)
+
+    def test_api_upstream_validation_is_https_credential_free_and_normalized(self) -> None:
+        self.assertEqual(
+            normalize_api_upstream_base_url(f"{API_UPSTREAM}/"),
+            API_UPSTREAM,
+        )
+        invalid_values = (
+            "http://finple-api.onrender.com/api",
+            "https://user@finple-api.onrender.com/api",
+            "https://user:password@finple-api.onrender.com/api",
+            "https://finple-api.onrender.com/api?token=value",
+            "https://finple-api.onrender.com/api#fragment",
+            " https://finple-api.onrender.com/api",
+            "https:///api",
+        )
+        for value in invalid_values:
+            with self.subTest(value=value), self.assertRaises(StagingError):
+                normalize_api_upstream_base_url(value)
+
+    def test_runbook_keeps_vercel_curl_in_stage_without_forwarding_cwd(self) -> None:
+        runbook = (
+            REPOSITORY_ROOT
+            / "docs"
+            / "portfolio-ml"
+            / "FINPLE_STEP114_2ZA_PROTECTED_PREVIEW_RUNBOOK.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("--api-upstream-base-url $ApiUpstream", runbook)
+        self.assertIn("Push-Location -LiteralPath $Stage", runbook)
+        self.assertNotRegex(runbook, r"vercel@56\.4\.1 curl[^\n]*--cwd")
 
 
 if __name__ == "__main__":

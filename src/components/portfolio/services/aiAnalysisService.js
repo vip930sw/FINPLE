@@ -1,6 +1,7 @@
 import { getStoredFinpleAuthSession } from "../../authClientService";
 
-const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
 const DEFAULT_AI_ANALYSIS_TIMEOUT_MS = 60000;
 
 function getBuildTimeEnv() {

@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Callable, Mapping
+from urllib.parse import urlsplit, urlunsplit
 import uuid
 import zipfile
 
@@ -33,6 +34,8 @@ MANIFEST_NAME = "app-preview-manifest.json"
 FORBIDDEN_SOURCE_ROLE_TOKENS = ("raw_daily_prices", "normalized_month_end")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+PREVIEW_API_BASE_PATH = "/preview-api"
+LOCAL_API_FALLBACK = "http://localhost:5050/api"
 
 
 class StagingError(ValueError):
@@ -156,6 +159,51 @@ def _validate_sha256(value: object, label: str) -> str:
 def _require_equal(actual: object, expected: object, label: str) -> None:
     if actual != expected:
         raise StagingError(f"{label} must be {expected!r}; received {actual!r}")
+
+
+def normalize_api_upstream_base_url(value: str) -> str:
+    raw_value = str(value or "")
+    if not raw_value or raw_value != raw_value.strip():
+        raise StagingError("API upstream base URL must be a non-empty HTTPS URL without surrounding whitespace")
+    try:
+        parsed = urlsplit(raw_value)
+        parsed_port = parsed.port
+    except ValueError as exc:
+        raise StagingError("API upstream base URL is malformed") from exc
+    if parsed.scheme.lower() != "https" or not parsed.hostname:
+        raise StagingError("API upstream base URL must use HTTPS and include a hostname")
+    if parsed.username is not None or parsed.password is not None:
+        raise StagingError("API upstream base URL must not contain username or password")
+    if parsed.query or parsed.fragment:
+        raise StagingError("API upstream base URL must not contain query or fragment")
+    if parsed_port is not None and not 1 <= parsed_port <= 65535:
+        raise StagingError("API upstream base URL has an invalid port")
+    normalized_path = parsed.path.rstrip("/")
+    return urlunsplit(("https", parsed.netloc, normalized_path, "", ""))
+
+
+def build_vercel_routes(api_upstream_base_url: str) -> list[dict[str, object]]:
+    return [
+        {
+            "src": f"{PREVIEW_API_BASE_PATH}/(.*)",
+            "dest": f"{api_upstream_base_url}/$1",
+        },
+        {"handle": "filesystem"},
+        {"src": "/.*", "dest": "/index.html"},
+    ]
+
+
+def validate_preview_api_bundle(static_output_dir: Path, api_upstream_base_url: str) -> None:
+    bundle_paths = sorted((static_output_dir / "assets").glob("index-*.js"))
+    if not bundle_paths:
+        raise StagingError("Preview build did not produce an index JavaScript bundle")
+    bundle_bytes = b"\n".join(path.read_bytes() for path in bundle_paths)
+    if PREVIEW_API_BASE_PATH.encode("utf-8") not in bundle_bytes:
+        raise StagingError("Preview JavaScript bundle is missing the same-origin API base")
+    if api_upstream_base_url.encode("utf-8") in bundle_bytes:
+        raise StagingError("Preview JavaScript bundle exposes the direct API upstream")
+    if LOCAL_API_FALLBACK.encode("utf-8") in bundle_bytes:
+        raise StagingError("Preview JavaScript bundle still contains the local API fallback")
 
 
 def validate_export(export_root: Path) -> dict[str, object]:
@@ -338,6 +386,7 @@ def run_preview_build(
     project_dir: Path,
     static_output_dir: Path,
     target_base_url: str,
+    preview_api_base_url: str,
     *,
     extra_env: Mapping[str, str] | None = None,
 ) -> None:
@@ -346,6 +395,7 @@ def run_preview_build(
         {
             "VITE_FINPLE_APP_PREVIEW_ENABLED": "true",
             "VITE_FINPLE_APP_PREVIEW_BASE_URL": target_base_url,
+            "VITE_FINPLE_API_BASE_URL": preview_api_base_url,
             "FINPLE_BUILD_OUTPUT_DIR": str(static_output_dir),
         }
     )
@@ -355,7 +405,7 @@ def run_preview_build(
     subprocess.run(command, cwd=project_dir, env=environment, check=True)
 
 
-BuildRunner = Callable[[Path, Path, str], None]
+BuildRunner = Callable[[Path, Path, str, str], None]
 
 
 def _atomic_publish(prepared: Path, final: Path) -> None:
@@ -381,6 +431,7 @@ def stage_app_preview(
     staging_dir: Path,
     target_segment: str,
     expected_zip_sha256: str | None,
+    api_upstream_base_url: str,
     project_dir: Path,
     build_runner: BuildRunner = run_preview_build,
 ) -> dict[str, object]:
@@ -397,6 +448,7 @@ def stage_app_preview(
             raise StagingError("project directory is not a Git worktree")
     if not SEGMENT_RE.fullmatch(target_segment):
         raise StagingError("target segment must be one safe URL path segment")
+    normalized_api_upstream = normalize_api_upstream_base_url(api_upstream_base_url)
 
     source = input_export.resolve(strict=True)
     staging_argument = staging_dir.absolute()
@@ -444,18 +496,16 @@ def stage_app_preview(
         static_root = output_root / "static"
         static_root.mkdir(parents=True, exist_ok=True)
         target_base_url = f"/app-preview-data/{target_segment}"
-        build_runner(project, static_root, target_base_url)
+        build_runner(project, static_root, target_base_url, PREVIEW_API_BASE_PATH)
         if not (static_root / "index.html").is_file():
             raise StagingError("Preview build did not produce index.html")
+        validate_preview_api_bundle(static_root, normalized_api_upstream)
 
         data_target = static_root / "app-preview-data" / target_segment
         shutil.copytree(export_root, data_target)
         config = {
             "version": 3,
-            "routes": [
-                {"handle": "filesystem"},
-                {"src": "/.*", "dest": "/index.html"},
-            ],
+            "routes": build_vercel_routes(normalized_api_upstream),
         }
         (output_root / "config.json").write_text(
             json.dumps(config, ensure_ascii=False, indent=2) + "\n",
@@ -473,6 +523,8 @@ def stage_app_preview(
             "schemaVersion": 1,
             "stagingMode": "vercel_build_output_api_v3",
             "targetBaseUrl": target_base_url,
+            "previewApiBaseUrl": PREVIEW_API_BASE_PATH,
+            "apiUpstreamBaseUrl": normalized_api_upstream,
             "sourceZipSha256": source_zip_hash,
             "sourceCandidatePackageId": manifest.get("sourceCandidatePackageId"),
             "sourceCandidatePackageHash": manifest.get("sourceCandidatePackageHash"),
@@ -518,6 +570,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--target-segment", required=True, help="Single version segment below /app-preview-data/")
     parser.add_argument("--expected-zip-sha256", help="Required SHA-256 for ZIP input")
     parser.add_argument(
+        "--api-upstream-base-url",
+        required=True,
+        help="HTTPS API upstream used only by the generated /preview-api external rewrite",
+    )
+    parser.add_argument(
         "--project-dir",
         type=Path,
         default=Path(__file__).resolve().parents[1],
@@ -534,6 +591,7 @@ def main(argv: list[str] | None = None) -> int:
             staging_dir=args.staging_dir,
             target_segment=args.target_segment,
             expected_zip_sha256=args.expected_zip_sha256,
+            api_upstream_base_url=args.api_upstream_base_url,
             project_dir=args.project_dir,
         )
     except (OSError, subprocess.CalledProcessError, StagingError) as exc:
