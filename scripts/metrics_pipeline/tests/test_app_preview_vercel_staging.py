@@ -413,6 +413,10 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("--api-upstream-base-url $ApiUpstream", runbook)
         self.assertIn("Push-Location -LiteralPath $Stage", runbook)
+        self.assertIn(
+            'curl "/preview-api/auth/login" --deployment $PreviewUrl -- --request OPTIONS',
+            runbook,
+        )
         self.assertNotRegex(runbook, r"vercel@56\.4\.1 curl[^\n]*--cwd")
 
 

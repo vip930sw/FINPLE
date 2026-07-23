@@ -119,13 +119,13 @@ try {
   npx.cmd --yes vercel@56.4.1 curl "/app-preview-data/2026-07-22/metrics-overlay.json" --deployment $PreviewUrl
   npx.cmd --yes vercel@56.4.1 curl "/app-preview-data/2026-07-22/monthly-returns-index.json" --deployment $PreviewUrl
   npx.cmd --yes vercel@56.4.1 curl "/preview-api/health/live" --deployment $PreviewUrl
-  npx.cmd --yes vercel@56.4.1 curl "/preview-api/auth/login" --deployment $PreviewUrl -X OPTIONS
+  npx.cmd --yes vercel@56.4.1 curl "/preview-api/auth/login" --deployment $PreviewUrl -- --request OPTIONS
 } finally {
   Pop-Location
 }
 ```
 
-`vercel curl`은 system curl 인수를 전달하므로 위 절차에서는 Stage를 current directory로 설정하고 `curl` 뒤에 `--cwd`를 사용하지 않는다. 응답 본문, cookie, 인증 header를 PR에 붙이지 않는다. QA에는 HTTP 상태, 크기, SHA-256 일치 여부만 기록한다.
+`vercel curl`은 `--` 뒤의 인수를 system curl에 전달하므로 위 절차에서는 Stage를 current directory로 설정하고 `curl` 뒤에 `--cwd`를 사용하지 않는다. 응답 본문, cookie, 인증 header를 PR에 붙이지 않는다. QA에는 HTTP 상태, 크기, SHA-256 일치 여부만 기록한다.
 
 ## 5. 제품 QA
 
