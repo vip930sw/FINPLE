@@ -194,6 +194,7 @@ NORMALIZED_MONTH_END_COLUMNS = [
     "volume",
     "splitFactor",
     "cashDividend",
+    "dividendStatus",
     "sourceId",
     "retrievedAt",
     "priceAdjustmentBasis",

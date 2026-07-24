@@ -17295,3 +17295,143 @@ body,
     grid-template-columns: repeat(2, minmax(118px, 1fr)) !important;
   }
 }
+
+/* =========================
+   Step 114-2ZA - mobile simulator navigation and probability chart
+========================= */
+
+.simulatorMobileStepControls {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .probabilityChartSvgWrap {
+    display: block !important;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .probabilityBandSvg {
+    width: 680px;
+    min-width: 680px;
+    min-height: 258px;
+    height: auto;
+  }
+
+  .probabilityChartLegend {
+    align-items: flex-start;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .simulatorDesktopStepNav {
+    display: none !important;
+  }
+
+  .simulatorMobileStepControls {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 20px;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    background: #f8fafc;
+  }
+
+  .simulatorMobileCurrentStep {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .simulatorMobileCurrentStep span {
+    flex: 0 0 auto;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+  }
+
+  .simulatorMobileCurrentStep strong {
+    min-width: 0;
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 950;
+    overflow-wrap: anywhere;
+  }
+
+  .simulatorMobileStepActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .simulatorMobileStepActions button,
+  .simulatorMobileAllSteps button {
+    min-width: 0;
+    min-height: 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .simulatorMobileStepActions button:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .simulatorMobileStepActions button:focus-visible,
+  .simulatorMobileAllSteps button:focus-visible {
+    outline: 3px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .simulatorMobileAllSteps[hidden] {
+    display: none !important;
+  }
+
+  .simulatorMobileAllSteps.open {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    overflow-x: auto;
+    padding: 2px 0 6px;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .simulatorMobileAllSteps button {
+    display: grid;
+    flex: 0 0 112px;
+    place-items: center;
+    gap: 2px;
+    padding: 8px;
+    scroll-snap-align: center;
+  }
+
+  .simulatorMobileAllSteps button span {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .simulatorMobileAllSteps button strong {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .simulatorMobileAllSteps button.active {
+    border-color: #0f172a;
+    background: #0f172a;
+    color: #ffffff;
+  }
+}

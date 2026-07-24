@@ -159,6 +159,28 @@ test("disabled preview uses existing loader fallback without requests", async ()
   assert.deepEqual(calls, []);
 });
 
+test("same-origin root-relative preview base requests the versioned protected path", async () => {
+  resetAppPreviewDataSourceForTests();
+  const calls = [];
+  const relativeBaseUrl = "/app-preview-data/2026-07-22";
+  const relativeFiles = new Map(
+    [...fixture()].map(([url, bytes]) => [
+      url.replace(BASE_URL, relativeBaseUrl),
+      bytes,
+    ]),
+  );
+  const result = await loadAppPreviewCatalog({
+    enabled: true,
+    baseUrl: relativeBaseUrl,
+    fetchImpl: createFetch(relativeFiles, calls),
+  });
+  assert.equal(result.overlay.rows.length, 6000);
+  assert.deepEqual(calls, [
+    `${relativeBaseUrl}/app-preview-manifest.json`,
+    `${relativeBaseUrl}/metrics-overlay.json`,
+  ]);
+});
+
 test("local QA access requires both app and asset hosts to be loopback", () => {
   const previousWindow = globalThis.window;
   globalThis.window = { location: { hostname: "127.0.0.1" } };

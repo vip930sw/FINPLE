@@ -348,11 +348,8 @@ def _normalized_metric_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
         elif classification in {"split_and_dividend_adjusted", "total_return_adjusted"}:
             selected_price = row.get("totalReturnAdjustedClose") or row.get("close", "")
 
-        cash_dividend = row.get("cashDividend", "")
-        dividend_status = "missing"
-        dividend_value = _safe_optional_float(cash_dividend)
-        if dividend_value is not None:
-            dividend_status = "confirmed_value" if dividend_value > 0 else "confirmed_zero"
+        dividend_status = _dividend_status(row)
+        cash_dividend = row.get("cashDividend", "") if dividend_status != "missing" else ""
 
         output.append(
             {
@@ -653,7 +650,7 @@ def _monthly_return_rows(candidate: Mapping[str, str], prices: list[dict[str, st
         price_return = float(row["close"]) / float(previous["close"]) - 1
         dividend_component = 0.0
         if row.get("dividendStatus") == "confirmed_value":
-            dividend_component = _safe_float(row.get("cashDividend")) / _safe_float(row.get("close"))
+            dividend_component = _safe_float(row.get("cashDividend")) / _safe_float(previous.get("close"))
         output.append(
             {
                 "market": candidate["market"],

@@ -10,7 +10,8 @@ import {
 const PORTFOLIO_LIST_STORAGE_KEY = "finple-portfolio-list";
 const ACTIVE_PORTFOLIO_STORAGE_KEY = "finple-active-portfolio-id";
 const GLOBAL_SETTINGS_STORAGE_KEY = "finple-global-settings";
-const DEFAULT_API_BASE_URL = "http://localhost:5050/api";
+const DEFAULT_API_BASE_URL =
+  import.meta.env.VITE_FINPLE_API_BASE_URL || "http://localhost:5050/api";
 
 function getApiBaseUrl() {
   const env = import.meta?.env || {};

@@ -3,6 +3,7 @@ import {
   getFinpleApiBaseUrl,
   getStoredFinpleAuthUser,
 } from "../portfolio/services/serverPortfolioService";
+import { normalizeFinpleApiBaseUrl } from "../portfolio/services/apiBaseUrl.js";
 import { normalizeFinplePlan } from "../portfolio/config/planConfig";
 
 export const SUBSCRIPTION_TTL_MS = 45000;
@@ -25,8 +26,7 @@ export function getAuthHeaders() {
 }
 
 export async function fetchJsonWithTimeout(path, options = {}, timeoutMs = 30000) {
-  const base = String(getFinpleApiBaseUrl() || "").replace(/\/+$/, "");
-  const apiBase = base.endsWith("/api") ? base : `${base}/api`;
+  const apiBase = normalizeFinpleApiBaseUrl(getFinpleApiBaseUrl());
   const url = `${apiBase}${path.startsWith("/") ? path : `/${path}`}`;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);

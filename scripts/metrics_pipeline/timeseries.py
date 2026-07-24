@@ -4,6 +4,7 @@ import csv
 from calendar import monthrange
 from collections import defaultdict
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
@@ -11,7 +12,7 @@ from .config import CALCULATION_POLICY_VERSION, PARTIAL_MONTH_POLICY, SCHEMA_VER
 from .schemas import RAW_DAILY_PRICE_COLUMNS, is_valid_kr_candidate_ticker
 
 
-NORMALIZATION_VERSION = "timeseries-normalization-v1-step114-2b"
+NORMALIZATION_VERSION = "timeseries-normalization-v2-step114-2za-dividend"
 PRICE_SERIES_CLASSIFICATIONS = {
     "raw_close",
     "split_adjusted",
@@ -518,10 +519,12 @@ def _normalize_month_ends(
     data_status: str,
 ) -> list[dict[str, str]]:
     by_series_month: dict[tuple[str, str, str], dict[str, str]] = {}
+    dividends_by_series_month: dict[tuple[str, str, str], list[str]] = defaultdict(list)
     dates_by_series: dict[tuple[str, str], list[str]] = defaultdict(list)
     for row in rows:
         month = row["date"][:7]
         key = (row["market"], row["ticker"], month)
+        dividends_by_series_month[key].append(row.get("cashDividend", ""))
         if key not in by_series_month or row["date"] > by_series_month[key]["date"]:
             by_series_month[key] = row
         dates_by_series[(row["market"], row["ticker"])].append(row["date"])
@@ -531,6 +534,9 @@ def _normalize_month_ends(
     for (market, ticker, month), row in sorted(by_series_month.items()):
         months_by_series[(market, ticker)].add(month)
         month_end = _month_end(month)
+        monthly_cash_dividend, dividend_status = _monthly_dividend_evidence(
+            dividends_by_series_month[(market, ticker, month)]
+        )
         normalized.append(
             {
                 "market": market,
@@ -543,7 +549,8 @@ def _normalize_month_ends(
                 "totalReturnAdjustedClose": row.get("totalReturnAdjustedClose", ""),
                 "volume": row.get("volume", ""),
                 "splitFactor": row.get("splitFactor", ""),
-                "cashDividend": row.get("cashDividend", ""),
+                "cashDividend": monthly_cash_dividend,
+                "dividendStatus": dividend_status,
                 "sourceId": row.get("sourceId", ""),
                 "retrievedAt": row.get("retrievedAt", ""),
                 "priceAdjustmentBasis": row.get("priceAdjustmentBasis", ""),
@@ -567,6 +574,30 @@ def _normalize_month_ends(
                     )
                 )
     return normalized
+
+
+def _monthly_dividend_evidence(values: Iterable[str]) -> tuple[str, str]:
+    evidence = [str(value or "") for value in values]
+    parsed: list[Decimal] = []
+    for value in evidence:
+        if value == "":
+            continue
+        try:
+            parsed.append(Decimal(value))
+        except InvalidOperation:
+            continue
+
+    positive_total = sum((value for value in parsed if value > 0), Decimal("0"))
+    if positive_total > 0:
+        return _format_decimal_evidence(positive_total), "confirmed_value"
+    if evidence and len(parsed) == len(evidence) and all(value == 0 for value in parsed):
+        return "0", "confirmed_zero"
+    return "", "missing"
+
+
+def _format_decimal_evidence(value: Decimal) -> str:
+    formatted = format(value, "f").rstrip("0").rstrip(".")
+    return formatted or "0"
 
 
 def _corporate_action_summary(rows: Iterable[Mapping[str, str]]) -> list[dict[str, str]]:
