@@ -369,6 +369,24 @@
   font-weight: 900;
 }
 
+.tickerResultProductMeta,
+.tickerResultRiskNotice {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.tickerResultProductMeta {
+  color: #64748b;
+}
+
+.tickerResultRiskNotice {
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.55rem;
+  background: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+}
+
 .krScreenerBetaGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -275,7 +275,6 @@ def validate_source_package(manifest: dict[str, Any], readiness: dict[str, Any])
     expected = {
         "candidatePackageReady": True,
         "packageGlobalBlockingIssueCount": 0,
-        "metricsOutputRowCount": 6000,
         "productionPublishReady": False,
         "appExportApproved": False,
     }
@@ -286,6 +285,9 @@ def validate_source_package(manifest: dict[str, Any], readiness: dict[str, Any])
     ]
     if failures:
         raise PreviewExportError("source package readiness mismatch: " + "; ".join(failures))
+    asset_count = combined.get("metricsOutputRowCount")
+    if not isinstance(asset_count, int) or asset_count <= 0:
+        raise PreviewExportError("source package metricsOutputRowCount must be a positive integer")
     for field in expected:
         if field in manifest and field in readiness and manifest[field] != readiness[field]:
             raise PreviewExportError(f"source manifest/readiness mismatch: {field}")
@@ -293,8 +295,8 @@ def validate_source_package(manifest: dict[str, Any], readiness: dict[str, Any])
     if not re.fullmatch(r"\d{4}-\d{2}", metric_data_through_month):
         raise PreviewExportError("source package metricDataThroughMonth must be YYYY-MM")
     selected_row_count = combined.get("selectedRowCount")
-    if not isinstance(selected_row_count, int) or not 0 <= selected_row_count <= 6000:
-        raise PreviewExportError("source package selectedRowCount must be an integer from 0 through 6000")
+    if not isinstance(selected_row_count, int) or not 0 <= selected_row_count <= asset_count:
+        raise PreviewExportError("source package selectedRowCount must not exceed manifest asset count")
     if manifest.get("internalPreviewReviewOnly") is not True:
         raise PreviewExportError("source package must be explicitly internalPreviewReviewOnly=true")
     if not str(manifest.get("candidatePackageId") or "").strip():
@@ -343,12 +345,13 @@ def build_metrics_overlay(
             market_counts[market] += 1
             data_status_counts[str(row.get("dataStatus") or "blank")] += 1
     rows.sort(key=lambda row: (row["market"], row["ticker"]))
-    if len(rows) != 6000 or len(identities) != 6000:
-        raise PreviewExportError(f"metrics overlay must preserve exactly 6000 identities, found {len(rows)}")
-    if market_counts != Counter({"US": 3000, "KR": 3000}):
-        raise PreviewExportError(f"unexpected metrics market counts: {dict(market_counts)}")
-    if len(raw_missing_identities) != 16:
-        raise PreviewExportError(f"expected 16 raw-missing identities, found {len(raw_missing_identities)}")
+    expected_asset_count = int(manifest.get("metricsOutputRowCount", 0))
+    if len(rows) != expected_asset_count or len(identities) != expected_asset_count:
+        raise PreviewExportError(
+            f"metrics overlay must match manifest count {expected_asset_count}, found {len(rows)}"
+        )
+    if sum(market_counts.values()) != expected_asset_count:
+        raise PreviewExportError(f"metrics market counts do not reconcile: {dict(market_counts)}")
     overlay = {
         "schemaVersion": EXPORT_SCHEMA_VERSION,
         "exportVersion": EXPORT_VERSION,
@@ -625,11 +628,42 @@ def create_deterministic_zip(bundle_dir: Path, zip_path: Path) -> None:
             archive.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 
-def export_app_preview(input_package: Path, output_dir: Path, shard_count: int = DEFAULT_SHARD_COUNT) -> dict[str, Any]:
+def choose_shard_count(
+    monthly_return_rows: int,
+    *,
+    max_rows_per_shard: int = 12000,
+    target_shard_bytes: int = 1024 * 1024,
+    estimated_bytes_per_row: int = 128,
+) -> tuple[int, dict[str, int]]:
+    required_by_rows = max(1, (monthly_return_rows + max_rows_per_shard - 1) // max_rows_per_shard)
+    estimated_total_bytes = monthly_return_rows * estimated_bytes_per_row
+    required_by_bytes = max(1, (estimated_total_bytes + target_shard_bytes - 1) // target_shard_bytes)
+    required = max(64, required_by_rows, required_by_bytes)
+    for shard_count in (64, 128, 256):
+        if shard_count >= required:
+            return shard_count, {
+                "monthlyReturnRowCount": monthly_return_rows,
+                "maxRowsPerShard": max_rows_per_shard,
+                "targetShardBytes": target_shard_bytes,
+                "estimatedBytesPerRow": estimated_bytes_per_row,
+                "requiredByRows": required_by_rows,
+                "requiredByBytes": required_by_bytes,
+                "selectedShardCount": shard_count,
+            }
+    raise PreviewExportError("monthly-return volume exceeds supported 256-shard ceiling")
+
+
+def export_app_preview(
+    input_package: Path,
+    output_dir: Path,
+    shard_count: int | None = None,
+    max_rows_per_shard: int = 12000,
+    target_shard_bytes: int = 1024 * 1024,
+) -> dict[str, Any]:
     input_package = input_package.resolve()
     output_dir = output_dir.resolve()
-    if shard_count < 1 or shard_count > 256 or shard_count & (shard_count - 1):
-        raise PreviewExportError("--shard-count must be a power of two between 1 and 256")
+    if shard_count is not None and shard_count not in (64, 128, 256):
+        raise PreviewExportError("--shard-count must be 64, 128, or 256")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     reader = create_package_reader(input_package)
@@ -642,6 +676,15 @@ def export_app_preview(input_package: Path, output_dir: Path, shard_count: int =
         manifest = load_json_member(reader, manifest_member)
         readiness = load_json_member(reader, readiness_member)
         validate_source_package(manifest, readiness)
+        monthly_row_count = int(manifest.get("inputRowReconciliation", {}).get("monthlyReturnRows", 0))
+        dynamic_shard_count, shard_decision = choose_shard_count(
+            monthly_row_count,
+            max_rows_per_shard=max_rows_per_shard,
+            target_shard_bytes=target_shard_bytes,
+        )
+        shard_count = shard_count or dynamic_shard_count
+        shard_decision["selectedShardCount"] = shard_count
+        shard_decision["explicitOverride"] = shard_count != dynamic_shard_count
         raw_missing_identities = parse_raw_missing_identities(reader, source_audit_member)
 
         version_date = str(manifest["metricBaseDate"]).replace("-", "_")
@@ -676,7 +719,7 @@ def export_app_preview(input_package: Path, output_dir: Path, shard_count: int =
             monthly_index_path = bundle_dir / "monthly-returns-index.json"
             write_stable_json(monthly_index_path, monthly_index)
 
-            missing_example = sorted(raw_missing_identities)[0]
+            missing_example = sorted(raw_missing_identities)[0] if raw_missing_identities else "US:QQQ"
             qa_summary = {
                 "schemaVersion": EXPORT_SCHEMA_VERSION,
                 "exportVersion": EXPORT_VERSION,
@@ -692,8 +735,8 @@ def export_app_preview(input_package: Path, output_dir: Path, shard_count: int =
                 **metric_stats,
                 **monthly_stats,
                 "checks": {
-                    "canonicalAssetCount6000": metric_stats["assetCount"] == 6000,
-                    "marketCounts3000Each": metric_stats["marketCounts"] == {"KR": 3000, "US": 3000},
+                    "canonicalAssetCountMatchesManifest": metric_stats["assetCount"] == manifest["metricsOutputRowCount"],
+                    "marketCountsReconcile": sum(metric_stats["marketCounts"].values()) == metric_stats["assetCount"],
                     "krLeadingZeroPreserved": any(
                         row["identity"] == "KR:069500" for row in overlay["rows"]
                     ),
@@ -743,6 +786,8 @@ def export_app_preview(input_package: Path, output_dir: Path, shard_count: int =
                 "productionPublishReady": False,
                 "appExportApproved": False,
                 "assetCount": metric_stats["assetCount"],
+                "activeAssetCount": int(manifest.get("activeAssetCount", metric_stats["assetCount"])),
+                "inactiveAssetCount": int(manifest.get("inactiveAssetCount", 0)),
                 "marketAssetCounts": metric_stats["marketCounts"],
                 "rawMissingAssetCount": metric_stats["rawMissingAssetCount"],
                 "monthlyReturnAssetCount": monthly_stats["monthlyReturnAssetCount"],
@@ -754,6 +799,9 @@ def export_app_preview(input_package: Path, output_dir: Path, shard_count: int =
                 "monthlyReturnsIndex": file_record(monthly_index_path, bundle_dir),
                 "qaSummary": file_record(qa_path, bundle_dir),
                 "shards": monthly_index["shards"],
+                "shardCount": monthly_stats["shardCount"],
+                "shardInventory": monthly_index["shards"],
+                "shardDecision": shard_decision,
                 "files": content_inventory,
                 "excludedSourceRoles": ["raw_daily_prices", "normalized_month_end"],
             }
@@ -804,15 +852,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--shard-count",
         type=int,
-        default=DEFAULT_SHARD_COUNT,
-        help="Power-of-two monthly-return shard count (default: 64).",
+        default=None,
+        choices=(64, 128, 256),
+        help="Optional 64/128/256 override; otherwise selected from manifest row volume.",
     )
+    parser.add_argument("--max-rows-per-shard", type=int, default=12000)
+    parser.add_argument("--target-shard-bytes", type=int, default=1024 * 1024)
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    result = export_app_preview(args.input_package, args.output_dir, args.shard_count)
+    result = export_app_preview(
+        args.input_package,
+        args.output_dir,
+        args.shard_count,
+        args.max_rows_per_shard,
+        args.target_shard_bytes,
+    )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False))
     return 0
 

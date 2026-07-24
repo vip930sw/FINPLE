@@ -10,12 +10,7 @@ import unittest
 import zipfile
 
 from scripts.stage_app_preview_vercel import (
-    EXPECTED_ASSET_COUNT,
     EXPECTED_EXPORT_VERSION,
-    EXPECTED_METRIC_DATA_THROUGH_MONTH,
-    EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
-    EXPECTED_MONTHLY_RETURN_ROW_COUNT,
-    EXPECTED_SHARD_COUNT,
     StagingError,
     normalize_api_upstream_base_url,
     sha256_file,
@@ -25,6 +20,11 @@ from scripts.stage_app_preview_vercel import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 API_UPSTREAM = "https://finple-api.onrender.com/api"
+EXPECTED_ASSET_COUNT = 6000
+EXPECTED_MONTHLY_RETURN_ASSET_COUNT = 5318
+EXPECTED_MONTHLY_RETURN_ROW_COUNT = 700375
+EXPECTED_SHARD_COUNT = 64
+EXPECTED_METRIC_DATA_THROUGH_MONTH = "2026-06"
 
 
 def _json_bytes(value: object) -> bytes:
@@ -186,6 +186,8 @@ def make_export(root: Path) -> Path:
         "assetCount": EXPECTED_ASSET_COUNT,
         "monthlyReturnAssetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
         "monthlyReturnRowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
+        "shardCount": EXPECTED_SHARD_COUNT,
+        "shardInventory": shard_records,
         "marketAssetCounts": {"KR": 3000, "US": 3000},
         "excludedSourceRoles": ["raw_daily_prices", "normalized_month_end"],
         "metricsOverlay": by_path["metrics-overlay.json"],

@@ -1,4 +1,5 @@
 import finpleAppCandidates6000Csv from "./finple_app_candidates_6000_balanced_v1.csv?raw";
+import finpleAppCandidatesV2Csv from "./finple_app_candidates_v2.csv?raw";
 import {
   applyScreenerCandidateOverlays,
   isPriceMetricsAppReadyCandidate,
@@ -112,8 +113,30 @@ export function normalizeScreenerCandidate(row = {}) {
     beginnerFit: toBoolean(row.beginnerFit),
     tags: splitPipe(row.tags),
     notes: row.notes || "",
-    metricMode: "candidate_6000_balanced_v1",
-    dataSource: "finple_app_candidates_6000_balanced_v1",
+    underlyingTicker: row.underlyingTicker || "",
+    exposureType: row.exposureType || (assetType === "stock" ? "ordinary_equity" : "ordinary_etf"),
+    leverageMultiple: toNumber(row.leverageMultiple),
+    direction: row.direction || "long",
+    resetFrequency: row.resetFrequency || "not_applicable",
+    optionCoverageRatio: toNumber(row.optionCoverageRatio),
+    distributionFrequency: row.distributionFrequency || "unknown",
+    distributionType: row.distributionType || "unknown",
+    issuer: row.issuer || "",
+    inceptionDate: row.inceptionDate || "",
+    listingStatus: row.listingStatus || "active",
+    active: row.active === "" || row.active === undefined ? true : toBoolean(row.active),
+    firstListedDate: row.firstListedDate || "",
+    lastTradingDate: row.lastTradingDate || "",
+    sourceCheckedAt: row.sourceCheckedAt || "",
+    officialSourceUrl: row.officialSourceUrl || "",
+    sourceId: row.sourceId || "",
+    cagrPolicy: row.cagrPolicy || "",
+    metricMode: row.sourceUniverse === "official_issuer_verified_20260724"
+      ? "candidate_universe_v2_pending_delta"
+      : "candidate_6000_balanced_v1",
+    dataSource: row.sourceUniverse === "official_issuer_verified_20260724"
+      ? "finple_app_candidates_v2"
+      : "finple_app_candidates_6000_balanced_v1",
   };
 }
 
@@ -125,6 +148,7 @@ export function loadScreenerCandidatesFromCsv(csvText = "") {
 
 export const RAW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidates6000Csv);
 export const RAW_SCREENER_CANDIDATE_COUNT = RAW_SCREENER_CANDIDATES.length;
+export const APP_PREVIEW_SCREENER_CANDIDATES = loadScreenerCandidatesFromCsv(finpleAppCandidatesV2Csv);
 
 export const ALL_SCREENER_CANDIDATES = applyScreenerCandidateOverlays(
   RAW_SCREENER_CANDIDATES.filter(isPriceMetricsAppReadyCandidate)
@@ -218,14 +242,24 @@ function activateAppPreviewCatalog(catalog) {
       row,
     ]),
   );
-  const nextCandidates = RAW_SCREENER_CANDIDATES.map((candidate) => {
+  const canonicalCandidates =
+    catalog.manifest.assetCount === APP_PREVIEW_SCREENER_CANDIDATES.length
+      ? APP_PREVIEW_SCREENER_CANDIDATES
+      : catalog.manifest.assetCount === RAW_SCREENER_CANDIDATES.length
+        ? RAW_SCREENER_CANDIDATES
+        : null;
+  if (!canonicalCandidates) {
+    throw new TypeError("app preview manifest does not match a supported canonical universe");
+  }
+  const nextCandidates = canonicalCandidates.map((candidate) => {
     const key = `${normalizeMarket(candidate.market)}:${normalizeTicker(candidate.ticker)}`;
     const metricRow = metricMap.get(key);
     if (!metricRow) throw new TypeError(`app preview metric identity missing: ${key}`);
     return createAppPreviewCandidate(candidate, metricRow, catalog.manifest);
   });
-  if (nextCandidates.length !== 6000 || metricMap.size !== 6000) {
-    throw new TypeError("app preview candidate reconciliation must preserve 6000 identities");
+  if (nextCandidates.length !== catalog.manifest.assetCount ||
+      metricMap.size !== catalog.manifest.assetCount) {
+    throw new TypeError("app preview candidate reconciliation must match manifest assetCount");
   }
   activeScreenerCandidates = nextCandidates;
   activeScreenerCandidateMap = new Map(
@@ -318,6 +352,23 @@ export function createAssetPatchFromScreenerCandidate(candidate = {}) {
     sizeSource: candidate.sizeSource,
     reviewTag: candidate.reviewTag,
     reviewReason: candidate.reviewReason,
+    underlyingTicker: candidate.underlyingTicker,
+    exposureType: candidate.exposureType,
+    leverageMultiple: candidate.leverageMultiple,
+    direction: candidate.direction,
+    resetFrequency: candidate.resetFrequency,
+    optionCoverageRatio: candidate.optionCoverageRatio,
+    distributionFrequency: candidate.distributionFrequency,
+    distributionType: candidate.distributionType,
+    issuer: candidate.issuer,
+    inceptionDate: candidate.inceptionDate,
+    listingStatus: candidate.listingStatus,
+    active: candidate.active,
+    firstListedDate: candidate.firstListedDate,
+    lastTradingDate: candidate.lastTradingDate,
+    sourceCheckedAt: candidate.sourceCheckedAt,
+    officialSourceUrl: candidate.officialSourceUrl,
+    sourceId: candidate.sourceId,
     metricMode: candidate.metricMode || "candidate_6000_balanced_v1",
     dataSource: candidate.dataSource || "finple_app_candidates_6000_balanced_v1",
     priceCagr10y: candidate.priceCagr10y,
