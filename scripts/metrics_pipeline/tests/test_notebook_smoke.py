@@ -338,6 +338,8 @@ class NotebookSmokeTests(unittest.TestCase):
         self.assertIn("positiveDividendMonths", payload)
         self.assertIn("dividendAdjustedReturnMonths", payload)
         self.assertIn('representative_tickers = {"QQQ", "SPY", "GLD"}', code)
+        self.assertIn("import json", code)
+        self.assertLess(code.index("import json"), code.index("json.dumps("))
         self.assertNotIn("build_us_price_metrics_overlay_chunked", code)
         self.assertNotIn("build_kr_price_metrics_overlay_chunked", code)
 
