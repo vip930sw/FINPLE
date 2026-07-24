@@ -46,7 +46,7 @@ function metricRow(market, ticker, overrides = {}) {
   };
 }
 
-function fixture() {
+function fixture({ usAssetCount = 3000 } = {}) {
   const rows = [
     metricRow("KR", "069500"),
     metricRow("KR", "0086C0"),
@@ -74,7 +74,7 @@ function fixture() {
     rows.push(metricRow("KR", ticker));
   }
   let usIndex = 0;
-  while (rows.filter((row) => row.market === "US").length < 3000) {
+  while (rows.filter((row) => row.market === "US").length < usAssetCount) {
     const ticker = `U${String(usIndex).padStart(4, "0")}`;
     usIndex += 1;
     rows.push(metricRow("US", ticker));
@@ -128,10 +128,10 @@ function fixture() {
     internalPreviewReviewOnly: true,
     productionPublishReady: false,
     appExportApproved: false,
-    assetCount: 6000,
-    activeAssetCount: 6000,
+    assetCount: 3000 + usAssetCount,
+    activeAssetCount: 3000 + usAssetCount,
     inactiveAssetCount: 0,
-    marketAssetCounts: { KR: 3000, US: 3000 },
+    marketAssetCounts: { KR: 3000, US: usAssetCount },
     monthlyReturnAssetCount: 3,
     monthlyReturnRowCount: 3,
     shardCount: 64,
@@ -234,6 +234,20 @@ test("catalog preserves 6000 identities, KR tickers, nulls, and QQQ policy", asy
     `${BASE_URL}/app-preview-manifest.json`,
     `${BASE_URL}/metrics-overlay.json`,
   ]);
+});
+
+test("catalog accepts the v2 6029-identity overlay without truncation", async () => {
+  resetAppPreviewDataSourceForTests();
+  const calls = [];
+  const result = await loadAppPreviewCatalog({
+    enabled: true,
+    baseUrl: BASE_URL,
+    fetchImpl: createFetch(fixture({ usAssetCount: 3029 }), calls),
+  });
+  assert.equal(result.manifest.assetCount, 6029);
+  assert.deepEqual(result.manifest.marketAssetCounts, { KR: 3000, US: 3029 });
+  assert.equal(result.overlay.rows.length, 6029);
+  assert.equal(new Set(result.overlay.rows.map((row) => row.identity)).size, 6029);
 });
 
 test("monthly returns request only target shards and deduplicate concurrent loads", async () => {

@@ -17,11 +17,19 @@ Each phase must use a new attempt ID. Never reuse a target-version folder.
 ## Phase A — official-product review
 
 1. Review `candidate-additions.csv` and `source-evidence.json`.
-2. Confirm every addition is `listingStatus=active`, `active=true`, and has an
+2. Treat the deterministic `validate_official_source` build check as URL syntax
+   and required-field validation only. It performs no HTTP request and does not
+   prove that a listing is active.
+3. Separately open each issuer's official product page and perform a real manual
+   listing review. Record `verificationMethod=manual_official_page_review`,
+   verified ticker, verified page title or official product name, official URL,
+   check date, listing status, active state, issuer, and inception date in
+   `source-evidence.json`.
+4. Confirm every addition is `listingStatus=active`, `active=true`, and has an
    HTTPS issuer source checked on `2026-07-24`.
-3. Move failed reviews to `rejected-or-inactive-assets.csv`; do not synthesize
+5. Move failed reviews to `rejected-or-inactive-assets.csv`; do not synthesize
    prices and do not replace missing history with zero.
-4. Regenerate the canonical v2 files locally and run the Step check.
+6. Regenerate the canonical v2 files locally and run the Step check.
 
 ## Phase B — new-ticker delta collection
 
@@ -45,9 +53,14 @@ price-covered assets, and roughly 1,000–1,500 monthly-return rows. The operato
 must replace these estimates with actual manifest counts; unavailable data must
 not be synthesized.
 
-`--resume` is accepted only when target version, canonical SHA, and
-reconciliation SHA match the existing manifest exactly. There is no overwrite
-or force mode.
+`--resume` is accepted only after a fail-closed integrity preflight verifies the
+exact file set, strict `checksums.sha256` syntax and coverage, every covered
+file's SHA-256, no unexpected file or directory, the full canonical candidate
+header and exact 29-row canonical reconciliation, unique identities, raw row
+count and canonical raw header, collection-summary counts, source-evidence
+asset count, manifest addition count, target version, canonical SHA, and
+reconciliation SHA. A missing, malformed, tampered, extra, or count-mismatched
+artifact blocks resume. There is no overwrite or force mode.
 
 Expected output:
 
@@ -66,6 +79,19 @@ universe-deltas/finple-universe-v2-2026-07-24/
 ## Phase C — bounded temporary merge
 
 The source and delta inputs must both be sorted by `market,ticker,date`.
+Both headers must exactly equal `RAW_DAILY_PRICE_COLUMNS`:
+
+```text
+market,ticker,date,currency,close,splitAdjustedClose,totalReturnAdjustedClose,volume,splitFactor,cashDividend,sourceId,retrievedAt,priceAdjustmentBasis,publicationEligibility,providerOrInstitution,licenseStatus,internalUseAllowed,publicationAllowed,redistributionAllowed
+```
+
+The yfinance adapter maps `Close` to both `close` and
+`splitAdjustedClose` because `auto_adjust=False` returns the split-adjusted
+close. It uses `Adj Close` as `totalReturnAdjustedClose` only when the complete
+valid series is present. Missing optional volume/dividend values stay blank
+while real zeros stay `0`; a zero or absent provider no-split event maps to the
+canonical neutral `splitFactor=1`. Raw provider payloads and non-contract
+fields are not written.
 
 ```bash
 python scripts/merge_finple_universe_delta.py \

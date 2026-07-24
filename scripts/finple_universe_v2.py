@@ -281,10 +281,16 @@ def existing_overrides() -> dict[str, dict[str, str]]:
 
 
 def validate_official_source(row: dict[str, str]) -> None:
+    """Validate evidence fields and official-source URL syntax only.
+
+    This deterministic build check performs no HTTP request and does not prove
+    that a product is currently listed. The operator's separate manual
+    official-page review is recorded in the delta source-evidence artifact.
+    """
     url = str(row.get("officialSourceUrl") or "")
     split = urlsplit(url)
     if split.scheme != "https" or not split.netloc or split.username or split.password:
-        raise ValueError(f"official source must be a credential-free HTTPS URL: {identity(row)}")
+        raise ValueError(f"official source URL syntax must be credential-free HTTPS: {identity(row)}")
     if row.get("listingStatus") != "active" or row.get("active") != "True":
         raise ValueError(f"approved addition must be active: {identity(row)}")
     if not row.get("issuer") or not row.get("inceptionDate") or not row.get("sourceId"):

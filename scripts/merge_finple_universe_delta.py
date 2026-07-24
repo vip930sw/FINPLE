@@ -12,6 +12,8 @@ import shutil
 from pathlib import Path
 from typing import Any, Iterator
 
+from scripts.metrics_pipeline.schemas import RAW_DAILY_PRICE_COLUMNS
+
 
 class StreamingMergeError(RuntimeError):
     pass
@@ -33,13 +35,13 @@ def row_key(row: dict[str, str]) -> tuple[str, str, str]:
 
 
 def iter_sorted(path: Path) -> tuple[list[str], Iterator[dict[str, str]]]:
-    handle = path.open(encoding="utf-8", newline="")
-    reader = csv.DictReader(handle)
-    fields = list(reader.fieldnames or [])
+    with path.open(encoding="utf-8-sig", newline="") as header_handle:
+        fields = list(csv.DictReader(header_handle).fieldnames or [])
 
     def iterator() -> Iterator[dict[str, str]]:
         previous: tuple[str, str, str] | None = None
-        try:
+        with path.open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
             for row in reader:
                 key = row_key(row)
                 if previous is not None and key <= previous:
@@ -47,8 +49,6 @@ def iter_sorted(path: Path) -> tuple[list[str], Iterator[dict[str, str]]]:
                     raise StreamingMergeError(f"{path.name} is {relation} at {key}")
                 previous = key
                 yield row
-        finally:
-            handle.close()
 
     return fields, iterator()
 
@@ -58,15 +58,20 @@ def streaming_merge(source: Path, delta: Path, output: Path) -> dict[str, Any]:
         raise StreamingMergeError("output or atomic temporary output already exists")
     source_fields, source_rows = iter_sorted(source)
     delta_fields, delta_rows = iter_sorted(delta)
-    if source_fields != delta_fields:
-        raise StreamingMergeError("source and delta CSV schemas differ")
-    estimated_bytes = source.stat().st_size + delta.stat().st_size
-    free_bytes = shutil.disk_usage(output.parent).free
-    required_bytes = max(estimated_bytes * 2, 64 * 1024 * 1024)
-    if free_bytes < required_bytes:
-        raise StreamingMergeError(
-            f"insufficient local disk: required={required_bytes}, free={free_bytes}"
-        )
+    try:
+        if source_fields != RAW_DAILY_PRICE_COLUMNS or delta_fields != RAW_DAILY_PRICE_COLUMNS:
+            raise StreamingMergeError("source and delta must both use the canonical raw-daily schema")
+        estimated_bytes = source.stat().st_size + delta.stat().st_size
+        free_bytes = shutil.disk_usage(output.parent).free
+        required_bytes = max(estimated_bytes * 2, 64 * 1024 * 1024)
+        if free_bytes < required_bytes:
+            raise StreamingMergeError(
+                f"insufficient local disk: required={required_bytes}, free={free_bytes}"
+            )
+    except Exception:
+        source_rows.close()  # type: ignore[attr-defined]
+        delta_rows.close()  # type: ignore[attr-defined]
+        raise
 
     temp = output.with_suffix(output.suffix + ".tmp")
     source_next = next(source_rows, None)
@@ -99,6 +104,8 @@ def streaming_merge(source: Path, delta: Path, output: Path) -> dict[str, Any]:
         os.replace(temp, output)
     except Exception:
         temp.unlink(missing_ok=True)
+        source_rows.close()  # type: ignore[attr-defined]
+        delta_rows.close()  # type: ignore[attr-defined]
         raise
     return {
         "schemaVersion": "finple-universe-streaming-merge-v1",
