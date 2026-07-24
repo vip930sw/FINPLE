@@ -209,7 +209,7 @@ class AppPreviewExportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             package_dir = build_fixture(root)
-            result = export_app_preview(package_dir, root / "out", shard_count=4)
+            result = export_app_preview(package_dir, root / "out", shard_count=64)
             bundle = Path(result["bundleDirectory"])
             overlay = json.loads((bundle / "metrics-overlay.json").read_text(encoding="utf-8"))
             rows = overlay["rows"]
@@ -230,7 +230,7 @@ class AppPreviewExportTests(unittest.TestCase):
             index = json.loads((bundle / "monthly-returns-index.json").read_text(encoding="utf-8"))
             self.assertEqual(index["rowCount"], 4)
             self.assertEqual(index["lastMonth"], "2026-06-30")
-            self.assertEqual(len(index["shards"]), 4)
+            self.assertEqual(len(index["shards"]), 64)
             for shard in index["shards"]:
                 path = bundle / shard["path"]
                 self.assertEqual(shard["sha256"], sha256(path))
@@ -243,8 +243,8 @@ class AppPreviewExportTests(unittest.TestCase):
             root = Path(temp)
             package_dir = build_fixture(root)
             package_zip = zip_fixture(package_dir, root / "candidate.zip")
-            first = export_app_preview(package_dir, root / "out-a", shard_count=4)
-            second = export_app_preview(package_zip, root / "out-b", shard_count=4)
+            first = export_app_preview(package_dir, root / "out-a", shard_count=64)
+            second = export_app_preview(package_zip, root / "out-b", shard_count=64)
             self.assertEqual(first["zipSha256"], second["zipSha256"])
             self.assertEqual(first["zipSizeBytes"], second["zipSizeBytes"])
 
@@ -253,7 +253,7 @@ class AppPreviewExportTests(unittest.TestCase):
             root = Path(temp)
             package_dir = build_fixture(root, non_finite=True)
             with self.assertRaisesRegex(PreviewExportError, "non-finite"):
-                export_app_preview(package_dir, root / "out", shard_count=4)
+                export_app_preview(package_dir, root / "out", shard_count=64)
 
 
 if __name__ == "__main__":

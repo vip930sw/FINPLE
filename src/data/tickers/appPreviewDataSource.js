@@ -40,12 +40,25 @@ function assertManifest(manifest) {
     internalPreviewReviewOnly: true,
     productionPublishReady: false,
     appExportApproved: false,
-    assetCount: 6000,
   };
   for (const [field, value] of Object.entries(expected)) {
     if (manifest[field] !== value) {
       throw new TypeError(`app preview manifest ${field} mismatch`);
     }
+  }
+  if (!Number.isInteger(manifest.assetCount) || manifest.assetCount <= 0) {
+    throw new TypeError("app preview manifest assetCount must be a positive integer");
+  }
+  const marketTotal = Object.values(manifest.marketAssetCounts || {})
+    .reduce((sum, value) => sum + Number(value || 0), 0);
+  if (marketTotal !== manifest.assetCount) {
+    throw new TypeError("app preview manifest market counts do not reconcile");
+  }
+  if (!Number.isInteger(manifest.shardCount) ||
+      ![64, 128, 256].includes(manifest.shardCount) ||
+      !Array.isArray(manifest.shardInventory) ||
+      manifest.shardInventory.length !== manifest.shardCount) {
+    throw new TypeError("app preview manifest dynamic shard inventory mismatch");
   }
   if (!/^\d{4}-\d{2}$/.test(String(manifest.metricDataThroughMonth || ""))) {
     throw new TypeError("app preview manifest metricDataThroughMonth is invalid");
@@ -56,8 +69,8 @@ function assertManifest(manifest) {
 }
 
 function assertMetricsOverlay(overlay, manifest) {
-  if (!Array.isArray(overlay?.rows) || overlay.rows.length !== 6000) {
-    throw new TypeError("app preview metrics overlay must contain exactly 6000 rows");
+  if (!Array.isArray(overlay?.rows) || overlay.rows.length !== manifest.assetCount) {
+    throw new TypeError("app preview metrics overlay must match manifest assetCount");
   }
   const identities = new Set();
   for (const row of overlay.rows) {
@@ -199,8 +212,11 @@ async function loadMonthlyIndex(catalog, options = {}) {
     }).then((index) => {
       if (index.exportVersion !== EXPECTED_EXPORT_VERSION ||
           index.metricDataThroughMonth !== catalog.manifest.metricDataThroughMonth ||
+          index.rowCount !== catalog.manifest.monthlyReturnRowCount ||
+          index.assetCount !== catalog.manifest.monthlyReturnAssetCount ||
           !index.assets ||
-          !Array.isArray(index.shards)) {
+          !Array.isArray(index.shards) ||
+          index.shards.length !== catalog.manifest.shardCount) {
         throw new TypeError("app preview monthly-return index mismatch");
       }
       return index;

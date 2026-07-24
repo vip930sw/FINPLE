@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "check:frontend": "npm run build",
     "check:ai-production": "node scripts/check-ai-analysis-production.mjs",
+    "check:step114-2zb-dynamic-universe-megacap-income": "node --test scripts/check-step114-2zb.test.mjs",
     "check:scenario-data": "node scripts/verify-scenario-data-coverage.cjs",
     "check:scenario-monthly-input": "node scripts/verify-scenario-monthly-input.cjs && node --test scripts/verify-scenario-monthly-input.test.cjs",
     "check:scenario-readiness": "node scripts/generate-scenario-monthly-readiness.cjs --check",

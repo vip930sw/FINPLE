@@ -39,6 +39,19 @@ const RISK_OPTIONS = [
   { value: "high", label: "높음" },
   { value: "very-high", label: "매우 높음" },
 ];
+const EXPOSURE_OPTIONS = [
+  { value: "all", label: "전체 노출 유형" },
+  { value: "single_stock_leveraged", label: "레버리지" },
+  { value: "single_stock_inverse", label: "인버스" },
+  { value: "single_stock_option_income", label: "단일종목 옵션인컴" },
+  { value: "single_stock_weekly_income", label: "주간 옵션인컴" },
+  { value: "index_covered_call", label: "커버드콜" },
+  { value: "index_covered_call_growth", label: "커버드콜 성장형" },
+  { value: "thematic_equity_premium_income", label: "테마 프리미엄 인컴" },
+  { value: "broad_equity_premium_income", label: "광범위 프리미엄 인컴" },
+  { value: "ordinary_equity", label: "일반 주식" },
+  { value: "ordinary_etf", label: "일반 ETF" },
+];
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 const TAG_LABEL_MAP = {
   core: "핵심",
@@ -101,6 +114,9 @@ function formatDividendYieldValue(value, item = {}) {
   if (item.dividendPolicy === "review_required" || item.reviewTag === "review_required") return "확인 필요";
   return formatPercentValue(value, "확인 중");
 }
+function isOptionDistribution(item = {}) {
+  return item.distributionType && !["ordinary_cash_dividend", "none", "unknown"].includes(item.distributionType);
+}
 function getSearchQuery(query = "") {
   return normalizeTicker(query).toLowerCase();
 }
@@ -138,6 +154,7 @@ function isCryptoBlockchainCandidate(item = {}) {
   return /가상화폐|블록체인|비트코인|이더리움|crypto|bitcoin|ethereum|ether|blockchain|digital assets?/i.test(text);
 }
 function inferExposureType(item = {}) {
+  if (item.exposureType) return item.exposureType;
   const tagText = getTagText(item);
   const name = item.koreanName || "";
   if (item.type === "stock") return "single_stock";
@@ -152,6 +169,16 @@ function inferExposureType(item = {}) {
 }
 function getExposureLabel(item = {}) {
   return {
+    single_stock_leveraged: "레버리지",
+    single_stock_inverse: "인버스",
+    single_stock_option_income: "옵션인컴",
+    single_stock_weekly_income: "주간 옵션인컴",
+    index_covered_call: "커버드콜",
+    index_covered_call_growth: "커버드콜 성장형",
+    thematic_equity_premium_income: "테마 프리미엄 인컴",
+    broad_equity_premium_income: "프리미엄 인컴",
+    ordinary_equity: "일반 주식",
+    ordinary_etf: "일반 ETF",
     broad_index: "대표지수/분산",
     sector: "섹터 ETF",
     single_stock: "개별 기업",
@@ -190,7 +217,7 @@ function sortCandidates(candidates = [], normalizedQuery = "") {
     return compareText(a.ticker, b.ticker);
   });
 }
-function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
+function filterCandidates({ candidates, query, styleFilter, riskLevel, type, exposureType }) {
   const normalizedQuery = getSearchQuery(query);
   const filtered = candidates.filter((item) => {
     const searchable = [
@@ -201,6 +228,9 @@ function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
       item.type,
       getTypeLabel(item.type),
       item.strategy,
+      item.underlyingTicker,
+      item.issuer,
+      item.exposureType,
       getGoalLabel(item.strategy),
       getExposureLabel(item),
       ...(item.goals || []),
@@ -211,7 +241,8 @@ function filterCandidates({ candidates, query, styleFilter, riskLevel, type }) {
     const matchesStyle = matchesStyleFilter(item, styleFilter);
     const matchesRisk = riskLevel === "all" || item.riskLevel === riskLevel;
     const matchesType = type === "all" || item.type === type;
-    return matchesQuery && matchesStyle && matchesRisk && matchesType;
+    const matchesExposure = exposureType === "all" || inferExposureType(item) === exposureType;
+    return matchesQuery && matchesStyle && matchesRisk && matchesType && matchesExposure;
   });
   return sortCandidates(filtered, normalizedQuery);
 }
@@ -230,9 +261,12 @@ function ScreenerCandidateCard({ item, isAdded, onAdd, canAdd = true }) {
         <div className="tickerResultTitleBlock"><strong className="tickerResultTicker">{item.ticker}</strong><span className="tickerResultName" title={item.koreanName}>{item.koreanName}</span></div>
         <button type="button" className={isAdded ? "tickerResultAction added" : "tickerResultAction"} onClick={() => onAdd(item)} disabled={isAdded || !canAdd}>{isAdded ? "추가됨" : canAdd ? "추가" : "준비 중"}</button>
       </div>
-      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      <div className="tickerResultTypeBadge"><span>{getMarketLabel(item.market)}</span><span>{getTypeLabel(item.type)}</span><span>{getExposureLabel(item)}</span>{item.listingStatus && item.listingStatus !== "active" ? <span>{item.listingStatus}</span> : null}{item.priceUnavailable ? <span>가격 없음 · review-only</span> : null}</div>
+      {item.underlyingTicker ? <p className="tickerResultProductMeta">기초자산 {item.underlyingTicker} · {item.issuer || "발행사 확인 필요"}</p> : null}
+      {["single_stock_leveraged", "single_stock_inverse"].includes(inferExposureType(item)) ? <p className="tickerResultRiskNotice">일일 재설정·경로 의존성·변동성 손실로 장기 성과가 단순 배수와 다를 수 있습니다.</p> : null}
+      {/covered_call|option_income|premium_income/.test(inferExposureType(item)) ? <p className="tickerResultRiskNotice">상승 제한, 옵션 프리미엄·분배금 변동 및 원금환급 가능성이 있습니다. 분배율은 일반 배당수익률과 다릅니다.</p> : null}
       <p className="tickerResultDescription">{getCandidateDescription(item)}</p>
-      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span><span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span><span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
+      <div className="tickerResultMetaGrid compact"><span>전략 {getGoalLabel(item.strategy)}</span><span>위험 {getRiskLabel(item.riskLevel)}</span><span>CAGR {formatPercentValue(item.expectedCagr, "-")}</span>{isOptionDistribution(item) ? <span>분배 {item.distributionFrequency || "변동"} · 배당수익률과 별도</span> : <span>배당 {formatDividendYieldValue(item.dividendYield, item)}</span>}<span>MDD {formatPercentValue(item.mdd, "-")}</span><span>초보자 {item.beginnerFit ? "적합" : "주의"}</span></div>
       <div className="tickerTagList compact">{(item.tags || []).slice(0, 4).map((tag) => <span key={`${item.ticker}-${tag}`}>{getTagLabel(tag)}</span>)}</div>
     </article>
   );
@@ -243,17 +277,18 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
   const [styleFilter, setStyleFilter] = useState("all");
   const [riskLevel, setRiskLevel] = useState("all");
   const [type, setType] = useState("all");
+  const [exposureType, setExposureType] = useState("all");
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const addedTickerSet = useMemo(() => new Set((assets || []).map((asset) => normalizeTicker(asset?.ticker)).filter(Boolean)), [assets]);
-  const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type }), [candidates, query, styleFilter, riskLevel, type]);
+  const results = useMemo(() => filterCandidates({ candidates, query, styleFilter, riskLevel, type, exposureType }), [candidates, query, styleFilter, riskLevel, type, exposureType]);
   const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = results.length > 0 ? (safeCurrentPage - 1) * pageSize : 0;
   const endIndex = Math.min(startIndex + pageSize, results.length);
   const pagedResults = useMemo(() => results.slice(startIndex, endIndex), [results, startIndex, endIndex]);
   const pageNumbers = useMemo(() => getPageNumbers(safeCurrentPage, totalPages), [safeCurrentPage, totalPages]);
-  useEffect(() => { setCurrentPage(1); }, [market, query, styleFilter, riskLevel, type, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [market, query, styleFilter, riskLevel, type, exposureType, pageSize]);
 
   function handleAdd(item) {
     const ticker = normalizeTicker(item?.ticker);
@@ -274,10 +309,11 @@ function CandidateScreenerPanel({ market, onMarketChange, candidates, assets, ad
         <label className="screenerFilterSelectLabel"><span>2차 자산군</span><select value={type} onChange={(event) => setType(event.target.value)}>{TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>3차 투자 스타일</span><select value={styleFilter} onChange={(event) => setStyleFilter(event.target.value)}>{STYLE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>
         <label className="screenerFilterSelectLabel"><span>4차 위험도</span><select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value)}>{RISK_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        <label className="screenerFilterSelectLabel"><span>5차 노출 유형</span><select value={exposureType} onChange={(event) => setExposureType(event.target.value)}>{EXPOSURE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
       </div>
       <form className="tickerSearchForm" onSubmit={(event) => event.preventDefault()}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="예: QQQ, O, T, ETF, 배당, 삼성전자" /><button type="submit" className="primaryFinderButton">검색</button></form>
       <div className="assetFinderResultToolbar paged"><div><span>{results.length > 0 ? `${formatCount(results.length)}개 후보 중 ${startIndex + 1}-${endIndex} 표시` : "후보 자산 없음"}</span><small>현재 조합: {getMarketLabel(market)} · {getTypeLabel(type)} · {getStyleLabel(styleFilter)} · {getRiskLabel(riskLevel)}</small></div><label className="pageSizeSelector"><span>표시 개수</span><select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{PAGE_SIZE_OPTIONS.map((option) => <option key={option} value={option}>{option}개</option>)}</select></label></div>
-      <div className="tickerResultGrid compact">{pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
+      <div className="tickerResultGrid compact">{pagedResults.length > 0 ? pagedResults.map((item) => <ScreenerCandidateCard key={`${item.market}-${item.ticker}`} item={item} isAdded={addedTickerSet.has(normalizeTicker(item.ticker))} onAdd={handleAdd} canAdd={item.active !== false && item.listingStatus === "active" && !item.priceUnavailable} />) : <div className="tickerResultEmpty">조건에 맞는 후보가 없습니다.</div>}</div>
       {results.length > pageSize ? <nav className="screenerPagination" aria-label="자산 파인더 페이지 이동"><button type="button" onClick={() => setCurrentPage(1)} disabled={safeCurrentPage <= 1}>처음</button><button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage <= 1}>이전</button><div className="screenerPageNumbers">{pageNumbers.map((page, index) => { const previousPage = pageNumbers[index - 1]; const showEllipsis = previousPage && page - previousPage > 1; return <span key={page} className="pageNumberWrap">{showEllipsis ? <i>...</i> : null}<button type="button" className={page === safeCurrentPage ? "active" : ""} onClick={() => setCurrentPage(page)} aria-current={page === safeCurrentPage ? "page" : undefined}>{page}</button></span>; })}</div><button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage >= totalPages}>다음</button><button type="button" onClick={() => setCurrentPage(totalPages)} disabled={safeCurrentPage >= totalPages}>끝</button></nav> : null}
     </section>
   );
@@ -303,6 +339,7 @@ function ScreenerPage({ onBack }) {
         {isInternalPreview ? (
           <p className="screenerIntroText" role="status">
             Internal Preview · review-only · {formatCount(activeCandidates.length)}개 자산 ·
+            active {formatCount(screenerCandidateSnapshot.preview.manifest?.activeAssetCount)} · inactive {formatCount(screenerCandidateSnapshot.preview.manifest?.inactiveAssetCount)} ·
             지표 기준월 {screenerCandidateSnapshot.preview.manifest?.metricDataThroughMonth || "-"}
           </p>
         ) : null}

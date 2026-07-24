@@ -10,12 +10,7 @@ import unittest
 import zipfile
 
 from scripts.stage_app_preview_vercel import (
-    EXPECTED_ASSET_COUNT,
     EXPECTED_EXPORT_VERSION,
-    EXPECTED_METRIC_DATA_THROUGH_MONTH,
-    EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
-    EXPECTED_MONTHLY_RETURN_ROW_COUNT,
-    EXPECTED_SHARD_COUNT,
     StagingError,
     normalize_api_upstream_base_url,
     sha256_file,
@@ -25,6 +20,11 @@ from scripts.stage_app_preview_vercel import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 API_UPSTREAM = "https://finple-api.onrender.com/api"
+EXPECTED_ASSET_COUNT = 6000
+EXPECTED_MONTHLY_RETURN_ASSET_COUNT = 5318
+EXPECTED_MONTHLY_RETURN_ROW_COUNT = 700375
+EXPECTED_SHARD_COUNT = 64
+EXPECTED_METRIC_DATA_THROUGH_MONTH = "2026-06"
 
 
 def _json_bytes(value: object) -> bytes:
@@ -74,7 +74,7 @@ def _metric_row(market: str, ticker: str) -> dict[str, object]:
     }
 
 
-def make_export(root: Path) -> Path:
+def make_export(root: Path, *, shard_count: int = EXPECTED_SHARD_COUNT) -> Path:
     export = root / "export"
     export.mkdir()
 
@@ -121,10 +121,10 @@ def make_export(root: Path) -> Path:
     _write_json(export / "metrics-overlay.json", overlay)
     _write_json(export / "app-preview-qa-summary.json", {"status": "fixture"})
 
-    asset_counts = _distribute(EXPECTED_MONTHLY_RETURN_ASSET_COUNT, EXPECTED_SHARD_COUNT)
-    row_counts = _distribute(EXPECTED_MONTHLY_RETURN_ROW_COUNT, EXPECTED_SHARD_COUNT)
+    asset_counts = _distribute(EXPECTED_MONTHLY_RETURN_ASSET_COUNT, shard_count)
+    row_counts = _distribute(EXPECTED_MONTHLY_RETURN_ROW_COUNT, shard_count)
     shard_records: list[dict[str, object]] = []
-    for index in range(EXPECTED_SHARD_COUNT):
+    for index in range(shard_count):
         shard_id = f"{index:02x}"
         shard_path = export / "monthly-returns" / f"monthly-returns-{shard_id}.json"
         _write_json(
@@ -148,7 +148,7 @@ def make_export(root: Path) -> Path:
 
     index_assets: dict[str, dict[str, object]] = {}
     for index, row in enumerate(rows[:EXPECTED_MONTHLY_RETURN_ASSET_COUNT]):
-        shard = shard_records[index % EXPECTED_SHARD_COUNT]
+        shard = shard_records[index % shard_count]
         index_assets[str(row["identity"])] = {
             "market": row["market"],
             "ticker": row["ticker"],
@@ -186,6 +186,8 @@ def make_export(root: Path) -> Path:
         "assetCount": EXPECTED_ASSET_COUNT,
         "monthlyReturnAssetCount": EXPECTED_MONTHLY_RETURN_ASSET_COUNT,
         "monthlyReturnRowCount": EXPECTED_MONTHLY_RETURN_ROW_COUNT,
+        "shardCount": shard_count,
+        "shardInventory": shard_records,
         "marketAssetCounts": {"KR": 3000, "US": 3000},
         "excludedSourceRoles": ["raw_daily_prices", "normalized_month_end"],
         "metricsOverlay": by_path["metrics-overlay.json"],
@@ -296,6 +298,21 @@ class AppPreviewVercelStagingTests(unittest.TestCase):
                     "/app-preview-data/2026-07-22/app-preview-manifest.json"
                 )
             )
+
+    def test_dynamic_128_shard_export_stages_without_fixed_64_assumption(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            export = make_export(root, shard_count=128)
+            summary = self._stage(export, root / "stage")
+            self.assertEqual(summary["shardCount"], 128)
+            staged_manifest = json.loads(
+                (
+                    root / "stage" / ".vercel" / "output" / "static"
+                    / "app-preview-data" / "2026-07-22" / "app-preview-manifest.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(staged_manifest["shardCount"], 128)
+            self.assertEqual(len(staged_manifest["shardInventory"]), 128)
 
     def test_wrong_zip_hash_fails_before_replacing_existing_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
