@@ -142,6 +142,7 @@ test("release and source receipt schemas match the conditional operator runbook"
   const qaTemplate = read(
     "docs/portfolio-ml/FINPLE_STEP114_2ZC_PRODUCTION_CUTOVER_QA_TEMPLATE.md",
   );
+  const sourceRecovery = read("scripts/recover_production_app_export_source.py");
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.properties.assetCount.const, 6029);
   assert.equal(schema.properties.monthlyReturnAssetCount.const, 5347);
@@ -182,12 +183,36 @@ test("release and source receipt schemas match the conditional operator runbook"
     assert.match(runbook, new RegExp(field, "i"), field);
   }
   assert.match(runbook, /git -C \$Repo worktree add --detach \$SourceWorktree \$SourceGitSha/);
-  assert.match(runbook, /\$RunA = & \$Python -m scripts\.export_finple_app_preview/);
-  assert.match(runbook, /\$RunB = & \$Python -m scripts\.export_finple_app_preview/);
+  assert.match(runbook, /-m scripts\.recover_production_app_export_source/);
+  for (const flag of [
+    "--source-worktree",
+    "--candidate-zip",
+    "--run-a-dir",
+    "--run-b-dir",
+    "--receipt-output",
+    "--operator-id",
+    "--expected-source-git-sha",
+    "--expected-candidate-zip-sha256",
+    "--expected-candidate-package-hash",
+  ]) {
+    assert.match(runbook, new RegExp(flag), flag);
+    assert.match(sourceRecovery, new RegExp(flag), flag);
+  }
+  assert.match(sourceRecovery, /def atomic_write_receipt\(/);
+  assert.match(sourceRecovery, /def compare_artifacts\(/);
+  assert.match(sourceRecovery, /source_worktree_not_detached/);
+  assert.match(sourceRecovery, /candidate_zip_sha256_mismatch/);
+  assert.doesNotMatch(
+    sourceRecovery,
+    /requests\.|urllib\.request|google\.colab|googleapiclient|yfinance|vercel deploy|vercel promote/,
+  );
   assert.match(runbook, /과거 protected Preview와\s+byte-identical하다고 주장하지 않는다/);
   assert.match(runbook, /Production-mode\s+Preview QA 전체를 다시 통과/);
   assert.match(runbook, /receipt와 raw artifact는 Git에 추가하거나/);
   assert.doesNotMatch(runbook, /비교할 수 없으므로 exporter를 재실행하지 않는다/);
   assert.match(qaTemplate, /deterministicMatch=true/);
+  assert.match(qaTemplate, /recover_production_app_export_source/);
+  assert.match(qaTemplate, /same sanitized environment and no retry/);
+  assert.match(qaTemplate, /failure stdout contains only safe status\/reason fields/);
   assert.match(qaTemplate, /no claim of byte identity with the historical protected Preview/);
 });

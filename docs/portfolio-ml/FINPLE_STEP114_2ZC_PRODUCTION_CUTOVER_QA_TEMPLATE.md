@@ -10,6 +10,8 @@
 - [ ] candidatePackageHash:
 - [ ] exporter command:
 - [ ] exporter version:
+- [ ] `scripts.recover_production_app_export_source` preflight passed
+- [ ] Run A/B used the same sanitized environment and no retry
 - [ ] Run A ZIP SHA-256:
 - [ ] Run B ZIP SHA-256:
 - [ ] deterministicMatch=true
@@ -27,6 +29,7 @@
 - [ ] monthly-return assets 5,347 / rows 701,485 reconciled
 - [ ] metric data through `2026-06`
 - [ ] receipt is external/untracked and contains no local raw path
+- [ ] failure stdout contains only safe status/reason fields
 - [ ] receipt and raw artifact were not attached to Git, Issue, PR, or public storage
 - [ ] no claim of byte identity with the historical protected Preview
 

@@ -68,48 +68,36 @@ $RunBRoot = "<new external empty Run B directory>"
 $ReceiptPath = "<external untracked receipt JSON path>"
 $OperatorId = "<approved operator ID>"
 
-if ((Get-FileHash -LiteralPath $CandidateZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $CandidateZipSha256) {
-  throw "Candidate ZIP SHA-256 mismatch"
-}
-
 git -C $Repo worktree add --detach $SourceWorktree $SourceGitSha
-if ((git -C $SourceWorktree rev-parse HEAD).Trim() -ne $SourceGitSha) {
-  throw "Source worktree HEAD mismatch"
-}
-if ((git -C $SourceWorktree status --porcelain).Length -ne 0) {
-  throw "Source worktree must be clean"
-}
 
-Push-Location -LiteralPath $SourceWorktree
+Push-Location -LiteralPath $Repo
 try {
-  $CandidateVerification = & $Python -c `
-    "import json,sys; from scripts.metrics_pipeline.candidate_package import verify_candidate_package; print(json.dumps(verify_candidate_package(sys.argv[1]), sort_keys=True))" `
-    $CandidateZip | ConvertFrom-Json
-  if (-not $CandidateVerification.ok) {
-    throw "Candidate package verification failed"
+  $RecoveryResult = & $Python -m scripts.recover_production_app_export_source `
+    --source-worktree $SourceWorktree `
+    --candidate-zip $CandidateZip `
+    --run-a-dir $RunARoot `
+    --run-b-dir $RunBRoot `
+    --receipt-output $ReceiptPath `
+    --operator-id $OperatorId `
+    --expected-source-git-sha $SourceGitSha `
+    --expected-candidate-zip-sha256 $CandidateZipSha256 `
+    --expected-candidate-package-hash $CandidatePackageHash |
+    ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) {
+    throw "Production source recovery blocked: $($RecoveryResult.reasonCode)"
   }
-  if ($CandidateVerification.candidatePackageHash -ne $CandidatePackageHash) {
-    throw "candidatePackageHash mismatch"
-  }
-
-  $RunA = & $Python -m scripts.export_finple_app_preview `
-    --input-package $CandidateZip `
-    --output-dir $RunARoot `
-    --shard-count 64 `
-    --max-rows-per-shard 12000 `
-    --target-shard-bytes 1048576 | ConvertFrom-Json
-
-  $RunB = & $Python -m scripts.export_finple_app_preview `
-    --input-package $CandidateZip `
-    --output-dir $RunBRoot `
-    --shard-count 64 `
-    --max-rows-per-shard 12000 `
-    --target-shard-bytes 1048576 | ConvertFrom-Json
 }
 finally {
   Pop-Location
 }
 ```
+
+이 단일 operator script가 Candidate 검증, detached/clean worktree 검증,
+Run A/B 단발 실행, output boundary 검증, deterministic comparison, receipt schema
+검증과 atomic receipt write를 모두 수행한다. retry, 기존 output overwrite,
+release manifest 생성, provider/Colab/Drive/Candidate 계산 호출은 없다.
+실패 stdout은 `status`, safe `reasonCode`, `receiptCreated=false`만 포함하며 raw
+bytes, digest 또는 absolute path를 출력하지 않는다.
 
 다음 검증은 순서대로 모두 성공해야 한다.
 
