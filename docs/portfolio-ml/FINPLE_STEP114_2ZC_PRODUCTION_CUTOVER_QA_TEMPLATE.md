@@ -4,19 +4,35 @@
 
 ## Exact bindings
 
+- [ ] source artifact policy: preserved artifact / deterministic Run A+B
+- [ ] source Git main SHA:
+- [ ] Candidate ZIP SHA-256:
+- [ ] candidatePackageHash:
+- [ ] exporter command:
+- [ ] exporter version:
+- [ ] Run A ZIP SHA-256:
+- [ ] Run B ZIP SHA-256:
+- [ ] deterministicMatch=true
 - [ ] source app-export ZIP SHA-256:
 - [ ] Production release manifest SHA-256:
 - [ ] source review manifest SHA-256:
-- [ ] source Git main SHA:
+- [ ] metrics overlay SHA-256:
+- [ ] monthly index SHA-256:
+- [ ] complete shard inventory equality passed
+- [ ] complete file inventory hash:
 - [ ] inventory file count / bytes:
 - [ ] all inventory SHA-256 checks passed
 - [ ] 6,029 / US 3,029 / KR 3,000 reconciled
 - [ ] price-covered 6,013 / missing 16 reconciled
 - [ ] monthly-return assets 5,347 / rows 701,485 reconciled
 - [ ] metric data through `2026-06`
+- [ ] receipt is external/untracked and contains no local raw path
+- [ ] receipt and raw artifact were not attached to Git, Issue, PR, or public storage
+- [ ] no claim of byte identity with the historical protected Preview
 
 ## Runtime QA
 
+- [ ] new source artifact received a complete Production-mode Preview QA run
 - [ ] QQQ selected CAGR equals rolling 10-year median
 - [ ] SPY / VOO / 069500 ready
 - [ ] GLD confirmed zero remains distinct from missing

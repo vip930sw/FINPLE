@@ -24,10 +24,151 @@ Step 114-2ZC 시작 기준은 Git `main`
 - monthly-return assets: 5,347; rows: 701,485
 - metric data through: `2026-06`
 
-현재 작업공간에는 이전 6,029 app-preview export가 보존돼 있지 않다. Candidate
-ZIP SHA는 read-only로 확인했지만, 이전 export의 ZIP SHA 또는 inventory와 byte
-비교할 수 없으므로 exporter를 재실행하지 않는다. 아래 절차는 보존 export와
-승인 release manifest가 별도로 공급된 뒤에만 실행할 수 있다.
+Production source artifact 선택 정책은 다음과 같다.
+
+1. 보존된 6,029 app-export가 있으면 그 ZIP SHA-256과 전체 inventory를 검증해
+   source artifact로 사용한다.
+2. 보존 artifact가 없으면 아래의 결정론적 복구 절차만 허용한다. exact source
+   Git SHA의 detached worktree, 고정 Candidate ZIP, 명시된 exporter 인자와 서로
+   독립된 빈 출력 경로를 사용해야 한다.
+3. Run A와 Run B의 ZIP SHA-256, source manifest, metrics overlay, monthly index,
+   complete shard inventory와 complete file inventory가 모두 같아야 한다.
+   하나라도 다르면 fail-closed로 중단한다.
+4. 일치 결과는 새로운 Production source artifact다. 과거 protected Preview와
+   byte-identical하다고 주장하지 않는다.
+5. 새로운 source artifact는 Production release 승인 전에 Production-mode
+   Preview QA 전체를 다시 통과해야 한다.
+
+현재 작업공간에는 이전 6,029 app-preview export가 보존돼 있지 않으므로 2번
+경로가 적용된다. 이 PR은 절차와 검증 계약만 제공하며 exporter, staging,
+Preview 배포, Production deploy 또는 promote를 실행하지 않는다.
+
+## 보존 artifact 부재 시 결정론적 source 복구
+
+고정값은 다음과 같고 다른 값으로 대체할 수 없다.
+
+```powershell
+$SourceGitSha = "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef"
+$CandidateZipSha256 = "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e"
+$CandidatePackageHash = "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276"
+$ExporterVersion = "finple-app-preview-export-v1-step114-2z"
+```
+
+작업 경로는 모두 저장소 밖에 두고 Run A/Run B 출력 경로는 실행 전에 존재하지
+않거나 비어 있어야 한다. 로컬 실제 경로는 receipt, Git, Issue, PR 또는 공개
+로그에 기록하지 않는다.
+
+```powershell
+$Repo = (Resolve-Path "<FINPLE repository root>").Path
+$Python = "<approved Python 3 executable>"
+$CandidateZip = (Resolve-Path "<verified Candidate ZIP>").Path
+$SourceWorktree = "<new external detached source worktree>"
+$RunARoot = "<new external empty Run A directory>"
+$RunBRoot = "<new external empty Run B directory>"
+$ReceiptPath = "<external untracked receipt JSON path>"
+$OperatorId = "<approved operator ID>"
+
+if ((Get-FileHash -LiteralPath $CandidateZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $CandidateZipSha256) {
+  throw "Candidate ZIP SHA-256 mismatch"
+}
+
+git -C $Repo worktree add --detach $SourceWorktree $SourceGitSha
+if ((git -C $SourceWorktree rev-parse HEAD).Trim() -ne $SourceGitSha) {
+  throw "Source worktree HEAD mismatch"
+}
+if ((git -C $SourceWorktree status --porcelain).Length -ne 0) {
+  throw "Source worktree must be clean"
+}
+
+Push-Location -LiteralPath $SourceWorktree
+try {
+  $CandidateVerification = & $Python -c `
+    "import json,sys; from scripts.metrics_pipeline.candidate_package import verify_candidate_package; print(json.dumps(verify_candidate_package(sys.argv[1]), sort_keys=True))" `
+    $CandidateZip | ConvertFrom-Json
+  if (-not $CandidateVerification.ok) {
+    throw "Candidate package verification failed"
+  }
+  if ($CandidateVerification.candidatePackageHash -ne $CandidatePackageHash) {
+    throw "candidatePackageHash mismatch"
+  }
+
+  $RunA = & $Python -m scripts.export_finple_app_preview `
+    --input-package $CandidateZip `
+    --output-dir $RunARoot `
+    --shard-count 64 `
+    --max-rows-per-shard 12000 `
+    --target-shard-bytes 1048576 | ConvertFrom-Json
+
+  $RunB = & $Python -m scripts.export_finple_app_preview `
+    --input-package $CandidateZip `
+    --output-dir $RunBRoot `
+    --shard-count 64 `
+    --max-rows-per-shard 12000 `
+    --target-shard-bytes 1048576 | ConvertFrom-Json
+}
+finally {
+  Pop-Location
+}
+```
+
+다음 검증은 순서대로 모두 성공해야 한다.
+
+1. `$RunA.zipSha256`와 `$RunB.zipSha256`가 같고 각 ZIP을 다시
+   `Get-FileHash`한 값과도 같다.
+2. 두 bundle의 `app-preview-manifest.json`, manifest가 가리키는
+   `metricsOverlay.path`, `monthlyReturnsIndex.path` SHA-256이 각각 같다.
+3. 두 manifest의 `shardInventory` JSON이 field-by-field 동일하다.
+4. 각 bundle의 모든 regular file을 상대 경로 오름차순으로 정렬하고
+   `path`, `sizeBytes`, `sha256`을 기록한 complete file inventory가 동일하다.
+5. 위 inventory의 whitespace 없는 UTF-8 canonical JSON SHA-256이 동일하다.
+6. source review manifest의 false gate, 6,029/3,029/3,000,
+   6,013/16, 5,347/701,485, `2026-06` 계약을 다시 확인한다.
+
+ZIP, source manifest, overlay, index, shard inventory 또는 complete file
+inventory 중 하나라도 다르면 receipt를 만들지 않고 두 run을 격리한 채
+fail-closed로 종료한다.
+
+동일성 검증이 끝난 뒤에만
+`docs/portfolio-ml/contracts/finple-production-source-artifact-receipt.schema.json`
+계약으로 외부 receipt를 작성한다. `sourceManifestSha256`,
+`metricsOverlaySha256`, `monthlyIndexSha256`와 `completeShardInventory`는
+동일성이 확인된 Run A 값을 기록한다. `completeFileInventoryHash`는 위
+canonical complete file inventory의 SHA-256이다.
+
+receipt의 exact fields는 다음과 같다.
+
+- `schemaVersion`
+- `sourceGitMainSha`
+- `candidateZipSha256`
+- `candidatePackageHash`
+- `exporterCommand`
+- `exporterVersion`
+- `runAZipSha256`
+- `runBZipSha256`
+- `sourceManifestSha256`
+- `metricsOverlaySha256`
+- `monthlyIndexSha256`
+- `completeShardInventory`
+- `completeFileInventoryHash`
+- `generatedAt`
+- `operatorId`
+- `deterministicMatch`
+
+`exporterCommand`에는 실제 로컬 경로를 제외한 다음 정규화 명령을 기록한다.
+
+```text
+python -m scripts.export_finple_app_preview --input-package <candidate-zip> --output-dir <empty-output> --shard-count 64 --max-rows-per-shard 12000 --target-shard-bytes 1048576
+```
+
+receipt는 `generatedAt` UTC timestamp와 승인된 `operatorId`를 포함하고
+`deterministicMatch=true`여야 한다. receipt와 raw artifact는 Git에 추가하거나
+Issue/PR에 첨부하거나 공개하지 않는다.
+
+결정론적으로 생성된 source artifact는 새 artifact이므로 기존 protected Preview
+검증을 상속하지 않는다. 별도 non-Production QA 환경에서 Production-mode loader,
+Step 3/4, saved reload, 분배 정책, fallback, PDF/print/share, 1440px, 375px와
+일반 AI 회귀를 모두 다시 검증한 뒤에만 Production release manifest 승인을
+요청할 수 있다.
 
 ## Production release manifest
 
@@ -35,7 +176,8 @@ ZIP SHA는 read-only로 확인했지만, 이전 export의 ZIP SHA 또는 invento
 `docs/portfolio-ml/contracts/finple-production-app-export-release-manifest.schema.json`
 에 있다. 승인자는 다음을 수행해야 한다.
 
-1. 보존 app-export ZIP SHA-256과 기존 Preview inventory를 대조한다.
+1. 보존 artifact 경로이면 기존 ZIP SHA-256/inventory를 검증한다. 결정론적 복구
+   경로이면 Run A/B receipt의 `deterministicMatch=true`와 전체 binding을 검증한다.
 2. source review manifest, metrics overlay, monthly index, 전체 shard record를
    release manifest에 그대로 binding한다.
 3. `sourceAppExportSha256`, `approvedAt`, `approvedBy`를 기록한다.

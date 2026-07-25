@@ -129,9 +129,18 @@ test("desktop/mobile and PDF print share controls remain wired", () => {
   assert.match(navigationCss, /\.simulatorTabNav/);
 });
 
-test("release JSON Schema parses and forbids extra top-level fields", () => {
+test("release and source receipt schemas match the conditional operator runbook", () => {
   const schema = JSON.parse(
     read("docs/portfolio-ml/contracts/finple-production-app-export-release-manifest.schema.json"),
+  );
+  const receiptSchema = JSON.parse(
+    read("docs/portfolio-ml/contracts/finple-production-source-artifact-receipt.schema.json"),
+  );
+  const runbook = read(
+    "docs/portfolio-ml/FINPLE_STEP114_2ZC_PRODUCTION_APP_EXPORT_CUTOVER_RUNBOOK.md",
+  );
+  const qaTemplate = read(
+    "docs/portfolio-ml/FINPLE_STEP114_2ZC_PRODUCTION_CUTOVER_QA_TEMPLATE.md",
   );
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.properties.assetCount.const, 6029);
@@ -139,4 +148,46 @@ test("release JSON Schema parses and forbids extra top-level fields", () => {
   assert.equal(schema.properties.monthlyReturnRowCount.const, 701485);
   assert.equal(schema.properties.productionPublishReady.const, true);
   assert.equal(schema.properties.appExportApproved.const, true);
+  assert.equal(receiptSchema.additionalProperties, false);
+  assert.equal(
+    receiptSchema.properties.sourceGitMainSha.const,
+    "18c6bcc552ce20a6a1c27a0543040fdaec8c7bef",
+  );
+  assert.equal(
+    receiptSchema.properties.candidateZipSha256.const,
+    "9042b1d662ef5881f23ecc6bcf47be60f3a949b65e70656219e7923e5ef8789e",
+  );
+  assert.equal(
+    receiptSchema.properties.candidatePackageHash.const,
+    "6f77088863eae5a8e1c6a2a613694cc252ad3a035627031346399a4812a3b276",
+  );
+  assert.equal(receiptSchema.properties.deterministicMatch.const, true);
+  assert.equal(receiptSchema.properties.completeShardInventory.minItems, 64);
+  assert.equal(receiptSchema.properties.completeShardInventory.maxItems, 64);
+  for (const field of [
+    "exporterCommand",
+    "exporterVersion",
+    "runAZipSha256",
+    "runBZipSha256",
+    "sourceManifestSha256",
+    "metricsOverlaySha256",
+    "monthlyIndexSha256",
+    "completeShardInventory",
+    "completeFileInventoryHash",
+    "generatedAt",
+    "operatorId",
+    "deterministicMatch",
+  ]) {
+    assert.ok(receiptSchema.required.includes(field), field);
+    assert.match(runbook, new RegExp(field, "i"), field);
+  }
+  assert.match(runbook, /git -C \$Repo worktree add --detach \$SourceWorktree \$SourceGitSha/);
+  assert.match(runbook, /\$RunA = & \$Python -m scripts\.export_finple_app_preview/);
+  assert.match(runbook, /\$RunB = & \$Python -m scripts\.export_finple_app_preview/);
+  assert.match(runbook, /과거 protected Preview와\s+byte-identical하다고 주장하지 않는다/);
+  assert.match(runbook, /Production-mode\s+Preview QA 전체를 다시 통과/);
+  assert.match(runbook, /receipt와 raw artifact는 Git에 추가하거나/);
+  assert.doesNotMatch(runbook, /비교할 수 없으므로 exporter를 재실행하지 않는다/);
+  assert.match(qaTemplate, /deterministicMatch=true/);
+  assert.match(qaTemplate, /no claim of byte identity with the historical protected Preview/);
 });
